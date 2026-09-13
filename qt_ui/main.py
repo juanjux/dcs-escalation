@@ -11,7 +11,7 @@ from typing import Optional
 import yaml
 from PySide6 import QtWidgets
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QApplication, QCheckBox, QSplashScreen
 from dcs.liveries.liverycache import LiveryCache
 from dcs.payloads import PayloadDirectories
@@ -85,6 +85,7 @@ def run_ui(game: Optional[Game], ui_flags: UiFlags) -> None:
     )
 
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon("./resources/icon.ico"))
 
     # Native file/colour/font dialogs, i.e. Qt's default. They were switched off
     # for a while because a native dialog opened over the live QtWebEngine map
