@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import random
+import re
 import time
-from typing import Any, List, TYPE_CHECKING
+from typing import Any, Iterable, List, TYPE_CHECKING
 
 from dcs.country import Country
 
@@ -446,6 +447,13 @@ ANIMALS: tuple[str, ...] = (
 )
 
 
+def _highest_numbered(names: Iterable[str], prefix: str) -> int:
+    """The largest number already handed out under this prefix, or zero."""
+    pattern = re.compile(rf"^{re.escape(prefix)} (\d+)$")
+    numbers = [int(m.group(1)) for name in names if (m := pattern.match(name))]
+    return max(numbers, default=0)
+
+
 class NameGenerator:
     number = 0
     infantry_number = 0
@@ -529,6 +537,25 @@ class NameGenerator:
     def next_cargo_ship_name(cls) -> str:
         cls.cargo_ship_number += 1
         return f"Cargo Ship {cls.cargo_ship_number:03}"
+
+    @classmethod
+    def resume_after(cls, names: Iterable[str]) -> None:
+        """Carry on numbering after the transports a campaign already has on the road.
+
+        These counters are class state, and the save carries the generator by
+        reference -- the class, not the numbers on it -- so every counter is back at
+        zero in a fresh process. A campaign loaded with a convoy still travelling then
+        minted a second `Convoy 001` for the next one, and the two answered to the
+        same name: the debrief credits a kill to whichever it finds first, and
+        mission generation refuses two groups with one name.
+
+        Given the names already in use, the counters start above them.
+        """
+        names = list(names)
+        cls.convoy_number = max(cls.convoy_number, _highest_numbered(names, "Convoy"))
+        cls.cargo_ship_number = max(
+            cls.cargo_ship_number, _highest_numbered(names, "Cargo Ship")
+        )
 
     @classmethod
     def next_jtac_name(cls) -> str:
