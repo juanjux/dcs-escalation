@@ -123,22 +123,34 @@ def test_a_shortcut_is_worth_searching_for(qt_app: Any) -> None:
 def _window(shape: dict[str, list[str]]) -> Any:
     """A real window, because the palette is a dialog and a dialog needs a parent.
 
+    Its menus are built the way the main window builds them: a QMenuBar inside a strip
+    that also holds the toolbar icons, installed with ``setMenuWidget``. That shape is
+    the whole point -- a window with an ordinary menu bar would not have caught the
+    palette calling ``menuBar()``, which on this one threw the strip away.
+
     It carries the three things the palette asks of the main window: its menus, the
     campaign, and the index of it.
     """
     from PySide6.QtGui import QAction
-    from PySide6.QtWidgets import QMainWindow
+    from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QWidget
 
     from game.search.index import GameIndex
 
     window = cast(Any, QMainWindow())
+    window.menu_bar = _menubar({})
     for menu_name, items in shape.items():
-        menu = window.menuBar().addMenu(menu_name)
+        menu = window.menu_bar.addMenu(menu_name)
         for item in items:
             if item == "-":
                 menu.addSeparator()
             else:
                 menu.addAction(QAction(item, window))
+
+    window.menu_strip = QWidget()
+    row = QHBoxLayout()
+    row.addWidget(window.menu_bar)
+    window.menu_strip.setLayout(row)
+    window.setMenuWidget(window.menu_strip)
 
     window.game_model = type("Model", (), {"game": None})()
     window.search_index = GameIndex()
@@ -219,3 +231,64 @@ def test_searching_without_a_campaign_still_finds_commands(qt_app: Any) -> None:
     palette.query.setText("save")
     palette.run_search()
     assert [hit.entry.label for hit in palette._hits] == ["Save"]
+
+
+def test_opening_the_palette_leaves_the_menu_row_alone(qt_app: Any) -> None:
+    """The window's menus and its toolbar icons share one strip, and QMainWindow's
+    menuBar() builds an empty bar and installs it in the strip's place when the window
+    has no bar of its own -- which took the whole row off the window, for good, on the
+    first Ctrl+P, and the shortcut with it."""
+    palette = _palette(qt_app)
+    window = palette._test_window
+    strip = window.menu_strip
+
+    palette.run_search()
+    palette.follow_selected()
+
+    assert window.menuWidget() is strip
+    assert [_clean(action.text()) for action in window.menu_bar.actions()] == [
+        "File",
+        "Help",
+    ]
+
+
+def test_the_menu_bar_is_found_without_being_built(qt_app: Any) -> None:
+    from qt_ui.windows.palette.actions import menu_bar_of
+
+    window = _window({"&File": ["&Save"]})
+    assert menu_bar_of(window) is window.menu_bar
+
+    # Any other window answers with its real bar, and with nothing when it has none.
+    from PySide6.QtWidgets import QMainWindow
+
+    plain = cast(Any, QMainWindow())
+    bar = plain.menuBar()
+    assert menu_bar_of(plain) is bar
+    assert menu_bar_of(None) is None
+
+
+def _clean(text: str) -> str:
+    from qt_ui.windows.palette.actions import clean
+
+    return clean(text)
+
+
+def test_a_pilot_opens_his_own_dialog_when_the_window_has_one(qt_app: Any) -> None:
+    """And his squadron's when it has not: the two are separate changes, and a row
+    that does nothing is worse than a row that does the nearest thing."""
+    from game.search.index import Follow
+    from game.search.providers import PILOT
+    from qt_ui.windows.palette.follow import _open_pilot
+
+    window = _window({"&File": ["&Save"]})
+    pilot, squadron = object(), object()
+
+    opened: list[Any] = []
+    window.open_pilot_dialog = opened.append
+    _open_pilot(window, pilot, squadron)
+    assert opened == [pilot]
+
+    # Nothing to open him with, and nobody to open: no exception either way.
+    del window.open_pilot_dialog
+    _open_pilot(window, None, None)
+    assert Follow(PILOT, "x").kind == PILOT
