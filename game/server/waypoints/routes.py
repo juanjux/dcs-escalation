@@ -222,28 +222,62 @@ def insert_waypoint(
     _waypoint_of(flight, waypoint_idx)
     waypoints = flight.flight_plan.waypoints
     # add_waypoint inserts AFTER its anchor, so inserting before a waypoint is
-    # inserting after the one in front of it. Waypoint 1 has only the departure in
-    # front, which the plan does not hold, so it anchors on itself: the layout puts a
-    # nav point at the head of the outbound leg for a takeoff anyway.
+    # inserting after the one in front of it.
     anchor_idx = max(1, waypoint_idx - 1 if insert.before else waypoint_idx)
     anchor = waypoints[anchor_idx - 1]
     following = waypoints[anchor_idx] if anchor_idx < len(waypoints) else None
     before = list(waypoints)
     if not flight.flight_plan.layout.add_waypoint(anchor, following):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"There is no room for a waypoint next to {anchor.display_name}. Nav "
-                "points go on the way out or on the way home."
-            ),
+        raise _no_room(anchor)
+
+    added = _added_waypoint(before, flight.flight_plan.waypoints)
+    if added is not None and not _landed_after(flight, anchor, added):
+        # The layout keeps its nav points in lists, and a list does not always begin
+        # where the anchor ends: asked for a point between a takeoff and a hold, it
+        # puts one at the head of the outbound leg, which is on the far side of the
+        # hold, and positions it on the near side. The route then doubles back.
+        #
+        # Refused only if it can be taken back out: a refusal that leaves the
+        # waypoint in the route says nothing happened while something did, and the
+        # player would have no way to find the thing to undo.
+        if flight.flight_plan.layout.delete_waypoint(added):
+            raise _no_room(anchor)
+
+    if insert.position is not None and added is not None:
+        added.position = Point.from_latlng(
+            LatLng(insert.position.lat, insert.position.lng), game.theater.terrain
         )
-    if insert.position is not None:
-        added = _added_waypoint(before, flight.flight_plan.waypoints)
-        if added is not None:
-            added.position = Point.from_latlng(
-                LatLng(insert.position.lat, insert.position.lng), game.theater.terrain
-            )
     _re_time_and_publish(flight, GameUpdateEvents())
+
+
+def _no_room(anchor: FlightWaypoint) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=(
+            f"There is no room for a waypoint next to {anchor.display_name}. Nav "
+            "points go on the way out or on the way home."
+        ),
+    )
+
+
+def _landed_after(
+    flight: Flight, anchor: FlightWaypoint, added: FlightWaypoint
+) -> bool:
+    """Whether the new waypoint went where it was asked to go.
+
+    The layout is free to put it somewhere else, and if it does the route ends up
+    visiting it out of the order its position implies -- which draws as a detour
+    back the way the flight came.
+    """
+    # By identity: two nav points on the same spot are equal without being the same
+    # waypoint, so index() would find whichever of them came first.
+    at = {
+        id(waypoint): index
+        for index, waypoint in enumerate(flight.flight_plan.waypoints)
+    }
+    if id(added) not in at or id(anchor) not in at:
+        return False
+    return at[id(added)] == at[id(anchor)] + 1
 
 
 def _added_waypoint(

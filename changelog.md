@@ -2,6 +2,9 @@
 
 ## Features/Improvements
 * **[UI]** Command palette: Ctrl+P finds settings, bases, objectives, squadrons, pilots, flights and every command in the menus, and opens what is chosen.
+* **[FIX]** A pilot who had drifted one step away from a squadron mate was shown as going cold, while one who had drifted a step closer was shown as nothing: the Neutral band was not centred on the value every pair starts at.
+* **[Live Pilots]** A pilot's record now keeps what he has shot down and destroyed by type, the missions he came home from, the aircraft he has lost and walked away from, his wounds, and who finally got him.
+* **[FIX]** Inserting a waypoint where the flight plan had no room for one drew a detour back the way the flight came instead of saying so.
 * **[FIX]** Base menu: ordering a ground unit took seconds and the window resized itself on opening.
 * **[UI]** A flight plan is no longer drawn through its target: the target waypoints are marked in red, a dashed red run joins the ingress to each of them, the route carries on to the next navigation point, and every leg is labelled with its length in nautical miles. Double-clicking a target opens the objective.
 * **[UI]** Base menu: the buy lists sort by any column and their headings line up with the figures, a squadron opens from anywhere on its row, a base states what it has no ammunition or factory rather than going quiet, a FARP counts its helipads instead of claiming a runway, and the ammunition and factory pills explain what they do.
