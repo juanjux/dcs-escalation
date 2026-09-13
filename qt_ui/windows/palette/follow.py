@@ -132,16 +132,20 @@ def _open_squadron(window: Any, squadron: Any) -> None:
     from qt_ui.models import SquadronModel
     from qt_ui.windows.SquadronDialog import SquadronDialog
 
-    dialog = SquadronDialog(
-        window.game_model.ato_model,
-        SquadronModel(squadron),
-        window.game_model.game.theater,
-        window.game_model.sim_controller,
-        window,
+    from qt_ui.dialogs import open_once
+
+    # open_once holds it as well as keeping there being one of it; Qt would collect
+    # it the moment this returns otherwise.
+    open_once(
+        f"squadron:{squadron.id}",
+        lambda: SquadronDialog(
+            window.game_model.ato_model,
+            SquadronModel(squadron),
+            window.game_model.game.theater,
+            window.game_model.sim_controller,
+            window,
+        ),
     )
-    # Held, or Qt collects it the moment this returns.
-    window.palette_child_dialogs.append(dialog)
-    dialog.show()
 
 
 def _open_setting(window: Any, key: str) -> None:
