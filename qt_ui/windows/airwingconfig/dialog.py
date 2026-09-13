@@ -141,6 +141,13 @@ class SquadronsPane(QWidget):
             item = self.cards_column.takeAt(0)
             widget = item.widget() if item is not None else None
             if widget is not None:
+                # Hidden first. Taking a card out of the column leaves it without a
+                # parent, and a widget with no parent that still has its shown flag is
+                # a window on the desktop -- one nothing ever closes, because the pane
+                # keeps its cards and puts them back. Changing a squadron's pilot limit
+                # rebuilds this column, so one click of the spinner scattered the whole
+                # list of them across the screen.
+                widget.hide()
                 widget.setParent(None)
         for card in cards:
             self.cards_column.addWidget(card)

@@ -1,6 +1,7 @@
 ﻿# Escalation v1.6.3 (414th)
 
 ## Features/Improvements
+* **[FIX]** Changing a squadron's pilot limit in the Air Wing cheat dialog left a stray window on the desktop for every squadron in the list, and nothing closed them.
 * **[Escalation]** The fork is called **DCS Escalation** now. Your campaigns, factions, layouts and payloads are untouched: they stay in `Saved Games\DCS\Retribution` and saves keep the `.retribution` extension, so nothing has to be moved.
 * **[FIX]** Opening a package from the ATO list raised "'Package' object has no attribute 'id'".
 * **[FIX]** Choosing a pilot in the command palette did nothing for anyone who was wounded, on leave or gone.
