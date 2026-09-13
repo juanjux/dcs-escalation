@@ -28,7 +28,7 @@ from game.squadrons.pilot import Pilot, PilotStatus
 from game.squadrons.pilotranks import rank_for_skill
 from game.squadrons.squadron import Squadron
 from qt_ui.uiconstants import AIRCRAFT_ICONS
-from qt_ui.widgets.cards import make_transparent, shrinkable
+from qt_ui.widgets.cards import make_transparent, shrinkable_widget
 from qt_ui.windows.pilot.common import (
     ACCENT,
     AMBER,
@@ -43,16 +43,13 @@ from qt_ui.windows.pilot.common import (
     TEXT_SECONDARY,
     TEXT_TERTIARY,
     Bar,
+    Clickable,
     Elided,
     chip,
     label,
     rich,
     stars,
 )
-
-#: The one link in the header. A href rather than a button because it sits in the
-#: middle of a sentence.
-AIR_WING = "retribution:air-wing"
 
 HEADER_HEIGHT = 104
 NAME_LIVING = "#FFFFFF"
@@ -149,6 +146,11 @@ def _ladder_of(squadron: Squadron) -> tuple:
             ),
         ),
     )
+
+
+def _dot() -> QLabel:
+    """The separator between the pieces of the line under the name."""
+    return label("·", 12.5, "#4F6070")
 
 
 def figure(caption: str, value: QWidget, hint: str = "") -> QWidget:
@@ -250,7 +252,13 @@ class PilotHeader(QWidget):
         return morale_rules.rank_level(self.squadron.pilot_skill(self.pilot))
 
     def _where(self) -> QHBoxLayout:
-        """What he flies, who with, and from where. The squadron knows all of it."""
+        """What he flies, who with, and from where. The squadron knows all of it.
+
+        Separate labels rather than one line of rich text with a link in it: a link
+        inside a label that has been told to give up its width is a small target that
+        does not always take the press, and a squadron you can open should look like
+        something you can press.
+        """
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(8)
@@ -259,26 +267,33 @@ class PilotHeader(QWidget):
         if banner is not None:
             row.addWidget(banner)
 
-        dot = "<span style='color:#4F6070'> · </span>"
-        pieces = [
-            f"<span style='color:{TEXT_SECONDARY}'>"
-            f"{self.squadron.aircraft.display_name}</span>",
-            # The squadron opens the Air Wing: the roster is where a man is read in
-            # the company of everybody he flies with.
-            f"<a href='{AIR_WING}' style='color:{ACCENT};text-decoration:none'>"
-            f"{self.squadron.name}</a>",
-            f"<span style='color:{TEXT_TERTIARY}'>{self.squadron.location.name}</span>",
-        ]
+        line = QWidget()
+        make_transparent(line)
+        pieces = QHBoxLayout()
+        pieces.setContentsMargins(0, 0, 0, 0)
+        pieces.setSpacing(6)
+        line.setLayout(pieces)
+
+        pieces.addWidget(
+            label(self.squadron.aircraft.display_name, 12.5, TEXT_SECONDARY)
+        )
+        pieces.addWidget(_dot())
+
+        self.squadron_link = Clickable(self.squadron.name, 12.5, ACCENT)
+        self.squadron_link.setToolTip("Open the Air Wing")
+        self.squadron_link.clicked.connect(lambda: open_air_wing(self))
+        pieces.addWidget(self.squadron_link)
+
+        pieces.addWidget(_dot())
+        pieces.addWidget(label(self.squadron.location.name, 12.5, TEXT_TERTIARY))
         if self.living or self.pilot.player:
-            pieces.append(
-                f"<span style='color:{TEXT_TERTIARY}'>"
-                f"{'PLAYER' if self.pilot.player else 'AI'}</span>"
+            pieces.addWidget(_dot())
+            pieces.addWidget(
+                label("PLAYER" if self.pilot.player else "AI", 12.5, TEXT_TERTIARY)
             )
-        line = rich(dot.join(pieces), 12.5)
-        line.setToolTip("Open the Air Wing")
-        line.setOpenExternalLinks(False)
-        line.linkActivated.connect(lambda _href: open_air_wing(self))
-        row.addWidget(shrinkable(line), 1)
+        pieces.addStretch()
+
+        row.addWidget(shrinkable_widget(line), 1)
         return row
 
     def _banner(self) -> Optional[QLabel]:
