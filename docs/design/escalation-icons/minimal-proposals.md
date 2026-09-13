@@ -1,6 +1,6 @@
 # Minimal icon proposals
 
-Generated with the built-in image generation tool, without reference images. These replace the first set as selection candidates; runtime assets are unchanged. Background and edge cleanup remain pending selection.
+Generated with the built-in image generation tool, without reference images. The user selected proposal 04, then approved its outlined refinement in `04-simple-jet-outlined.png`, which is installed as the application icon.
 
 ## 04-simple-jet
 

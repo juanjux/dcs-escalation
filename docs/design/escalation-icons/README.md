@@ -1,8 +1,8 @@
 # DCS Escalation executable icon proposals
 
-Generated with the built-in image generation tool. The accepted dawn splash is the visual reference. Selection pending; runtime `resources/icon.ico` and `resources/icon.png` are unchanged.
+Generated with the built-in image generation tool. The accepted dawn splash is the visual reference. The user selected `04-simple-jet-outlined.png`; see [production exports](../export_assets.py) for the executable, Qt window and browser icon outputs.
 
-These are concept images, not production ICO files. Background cleanup/true alpha, small-size visual checks and multi-resolution ICO packaging remain after selection. Do not treat any visible checkerboard as a guaranteed transparent channel.
+The first three proposals below were rejected. The selected outlined fighter has verified alpha transparency and multi-resolution ICO exports; the earlier previews remain for design history.
 
 ## 01-dawn-falcon
 

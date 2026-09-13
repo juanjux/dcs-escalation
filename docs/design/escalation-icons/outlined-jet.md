@@ -1,6 +1,6 @@
 # Selected fighter icon: contrast refinement
 
-The user selected proposal 04. This revision adds a navy outline so the ivory silhouette remains readable on light backgrounds. Generated through the built-in image tool in edit mode. Runtime assets are unchanged pending refinement approval.
+The user selected and approved this outlined revision of proposal 04. The navy outline keeps the ivory silhouette readable on light backgrounds. Generated through the built-in image tool in edit mode. Installed as the executable, Qt window and browser icons by `../export_assets.py`.
 
 ![Outlined fighter](04-simple-jet-outlined.png)
 

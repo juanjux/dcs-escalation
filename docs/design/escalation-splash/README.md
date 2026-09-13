@@ -1,6 +1,6 @@
 # DCS Escalation splash proposals
 
-Preview candidates generated with the built-in image generation tool from `resources/ui/splash_screen.png`. The user accepted `02-dawn-slava-ukraini.png`. Runtime asset sizing and installation are pending the accompanying icon selection; no runtime asset or code has been replaced.
+Preview candidates generated with the built-in image generation tool from the original `resources/ui/splash_screen.png`. The user accepted `02-dawn-slava-ukraini.png`. Installed at 647 × 458 pixels as `resources/ui/splash_screen.png`, retaining the original splash dimensions. The mission briefing also uses this asset.
 
 Branch: `codex/escalation-splash`.
 

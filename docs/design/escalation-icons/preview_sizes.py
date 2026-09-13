@@ -5,7 +5,6 @@ import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
-
 ROOT = Path(__file__).resolve().parent
 SOURCES = ["01-dawn-falcon", "02-escalation-e", "03-ukraine-insignia"]
 LABELS = ["1 · F-16", "2 · E", "3 · Escudo"]
