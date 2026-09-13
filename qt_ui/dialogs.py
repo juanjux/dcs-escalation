@@ -24,15 +24,27 @@ _live: dict[str, QWidget] = {}
 Window = TypeVar("Window", bound=QWidget)
 
 
-def open_once(key: str, build: Callable[[], Window]) -> Window:
+def open_once(
+    key: str,
+    build: Callable[[], Window],
+    about: Optional[Callable[[QWidget], bool]] = None,
+) -> Window:
     """The window for this thing: the one already up, or a new one.
 
     A window that has been closed is rebuilt rather than shown again, so it never
     comes back with a turn-old view of the game.
+
+    ``about`` is asked whether the window already up is still about the thing being
+    asked for. Only a key that is not really an identity needs it: a package has no
+    id of its own, so its key is the address of the object, and an address that has
+    been freed can be handed to a new package.
     """
     existing = _live.get(key)
     if existing is not None:
-        if shiboken6.isValid(existing) and existing.isVisible():
+        still_it = shiboken6.isValid(existing) and existing.isVisible()
+        if still_it and about is not None:
+            still_it = about(existing)
+        if still_it:
             if existing.isMinimized():
                 existing.showNormal()
             existing.raise_()
@@ -127,9 +139,15 @@ class Dialog:
     @classmethod
     def open_edit_package_dialog(cls, package_model: PackageModel):
         """Opens the dialog to edit the given package."""
+        # By the object, because a package has no id of its own -- and checked on the
+        # way back out, because an address a deleted package gave up can be handed to
+        # the next one.
+        package = package_model.package
         dialog = open_once(
-            f"package:{package_model.package.id}",
+            f"package:{id(package)}",
             lambda: QEditPackageDialog(cls.game_model, package_model),
+            about=lambda window: getattr(window, "package_model", None) is not None
+            and window.package_model.package is package,
         )
         cls._remember("edit_package_dialog", dialog)
 

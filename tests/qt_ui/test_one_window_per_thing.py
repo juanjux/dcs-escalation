@@ -87,3 +87,28 @@ def test_a_window_qt_destroyed_is_let_go_of(qt_app: Any) -> None:
     again = open_once("pilot:1", QDialog)
     assert again is not None
     again.close()
+
+
+def test_a_window_is_not_raised_for_something_it_is_not_about(qt_app: Any) -> None:
+    """A package has no id of its own, so its key is the address of the object -- and
+    an address a deleted package gave up can be handed to the next one."""
+    from PySide6.QtWidgets import QDialog
+
+    from qt_ui.dialogs import open_once
+
+    first = QDialog()
+    first.about = "package A"  # type: ignore[attr-defined]
+    second = QDialog()
+    second.about = "package B"  # type: ignore[attr-defined]
+
+    opened = open_once("package:1", lambda: first)
+    assert opened is first
+
+    # The same key, a different package: the window up is not the one being asked for.
+    again = open_once(
+        "package:1",
+        lambda: second,
+        about=lambda window: getattr(window, "about", None) == "package B",
+    )
+    assert again is second
+    second.close()

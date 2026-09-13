@@ -1,6 +1,7 @@
 ﻿# Retribution v1.6.3 (414th)
 
 ## Features/Improvements
+* **[FIX]** Opening a package from the ATO list raised "'Package' object has no attribute 'id'".
 * **[FIX]** Choosing a pilot in the command palette did nothing for anyone who was wounded, on leave or gone.
 * **[FIX]** Choosing a plugin option in the command palette opened the settings window on its first page for many of them, Skynet's among them.
 * **[UI]** The command palette zooms the map in on what was chosen rather than only centring on it.
