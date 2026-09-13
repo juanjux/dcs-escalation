@@ -14,6 +14,10 @@ if "--minimal" in sys.argv:
     SOURCES = ["04-simple-jet", "05-simple-e", "06-simple-formation"]
     LABELS = ["4 · Caza", "5 · E", "6 · Trío"]
     OUTPUT = "minimal-size-comparison.png"
+if "--outlined" in sys.argv:
+    SOURCES = ["04-simple-jet", "04-simple-jet-outlined"]
+    LABELS = ["Original", "Con borde"]
+    OUTPUT = "outlined-size-comparison.png"
 SIZES = [16, 24, 32, 48, 64]
 font = ImageFont.truetype("C:/Windows/Fonts/segoeui.ttf", 13)
 heading = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", 15)
