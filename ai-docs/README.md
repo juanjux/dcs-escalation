@@ -10,7 +10,7 @@
 
 A setting **"Allow OPFOR AI control"** lets an external LLM plan the enemy's
 (OPFOR / red) turns, so the human plays against a competent, adaptive opponent
-instead of the rigid scripted commander. When enabled, Retribution exposes its
+instead of the rigid scripted commander. When enabled, Escalation exposes its
 **live game** over a small HTTP API. The user points an LLM at a single URL; the
 LLM reads the turn context, plans red's missions/purchases, and writes them back —
 **without ever touching the disk**. The same API is reachable two ways from one

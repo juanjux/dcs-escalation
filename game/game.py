@@ -147,7 +147,7 @@ class Game:
         # Per-turn loss summaries for the OPFOR-AI prev_turns after-action.
         self.debrief_history: list[dict[str, int]] = []
         # The last debriefing, as data. The window used to be the only place the report
-        # lived, so it was gone the moment Retribution was closed; kept here it can be
+        # lived, so it was gone the moment Escalation was closed; kept here it can be
         # reopened from the Misc bar in a later session.
         self.last_debriefing_report: Optional[DebriefingReport] = None
         # Opaque JSON blob with the web client's map-layer panel state (which layers
@@ -867,7 +867,7 @@ class Game:
     @staticmethod
     def _carcass_key(data: dict[str, Union[float, str]]) -> tuple[str, int, int]:
         # (type, x, z) quantized to 1 m identifies one carcass. Statics that
-        # Retribution respawns ALIVE each mission (FARP fuel/ammo depots,
+        # Escalation respawns ALIVE each mission (FARP fuel/ammo depots,
         # motorpool Garage_A) fire a fresh S_EVENT_DEAD at the same deterministic
         # spot every time they are bombed; keying on this collapses them to a
         # single wreck. Type is in the key so adjacent different-type statics

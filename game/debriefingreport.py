@@ -3,7 +3,7 @@
 A `Debriefing` is assembled from the mission's state file and its unit map, and it holds
 references to the flights, control points and theater objects of a mission that is over.
 It was never stored anywhere: the window built from it was the only place that report
-lived, so closing Retribution lost it, and there was nothing to reopen.
+lived, so closing Escalation lost it, and there was nothing to reopen.
 
 This is the same report reduced to what the window actually reads -- counts, names and
 the pilot records, all of them plain -- which is small enough to ride in the save and

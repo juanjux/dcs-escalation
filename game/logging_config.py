@@ -20,4 +20,4 @@ def init_logging(version: str) -> None:
     with log_config.open(encoding="utf-8") as log_file:
         logging.config.dictConfig(yaml.safe_load(log_file))
 
-    logging.info(f"DCS Retribution {version}")
+    logging.info(f"DCS Escalation {version}")

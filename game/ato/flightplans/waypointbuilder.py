@@ -819,5 +819,5 @@ class WaypointBuilder:
             alt_type,
             description="Recovery tanker for aircraft carriers",
             pretty_name="Recovery",
-            only_for_player=True,  # for visual purposes in Retribution only
+            only_for_player=True,  # for visual purposes in Escalation only
         )

@@ -188,7 +188,7 @@ def capabilities() -> dict:
     """A small machine-readable manifest of what this OPFOR-AI API offers (so a client
     can discover the endpoints without guessing). Full prose is in /howtoplay."""
     return {
-        "name": "DCS Retribution OPFOR-AI",
+        "name": "DCS Escalation OPFOR-AI",
         "side": "red",
         "docs": "GET /retribution-ai/start and /howtoplay (full briefing)",
         "reads": [

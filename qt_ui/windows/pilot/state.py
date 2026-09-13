@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from qt_ui.uiconstants import app_settings
 from game.squadrons import friendship
 from game.squadrons import hardening
 from game.squadrons import morale as morale_rules
@@ -84,7 +85,7 @@ QSETTINGS_LOG_OPEN = "pilotDialog/moraleLogOpen"
 
 def _store() -> QSettings:
     """The same store the dialogs keep their geometry in."""
-    return QSettings("DCS Retribution", "Qt UI")
+    return app_settings()
 
 
 # --- morale ----------------------------------------------------------------------

@@ -117,7 +117,7 @@ def run_ui(game: Optional[Game], ui_flags: UiFlags) -> None:
     inject_custom_payloads(persistency.base_path())
 
     # Before anything can write to the payload directory, and before the user goes
-    # looking for whatever made them open Retribution today.
+    # looking for whatever made them open Escalation today.
     snapshot = backup_payloads(
         persistency.payloads_dir(), persistency.payload_backups_dir()
     )
@@ -148,21 +148,21 @@ def run_ui(game: Optional[Game], ui_flags: UiFlags) -> None:
             message_box.setWindowTitle("No DCS installation directory.")
             message_box.setText(
                 "The DCS Installation directory is not set correctly. "
-                "This will prevent DCS Retribution from working properly, as the MissionScripting "
+                "This will prevent DCS Escalation from working properly, as the MissionScripting "
                 "file will not be modified."
                 "<br/><br/>To solve this problem, you can set the Installation directory "
                 "within the preferences menu. You can also manually edit or replace the "
                 "following file:"
                 "<br/><br/><strong>&lt;dcs_installation_directory&gt;/Scripts/MissionScripting.lua</strong>"
-                "<br/><br/>The easiest way to do it is to replace the original file with the file in dcs-retribution "
+                "<br/><br/>The easiest way to do it is to replace the original file with the file in dcs-escalation "
                 "distribution (&lt;dcs_retribution_installation&gt;/resources/scripts/MissionScripting.lua)."
-                "<br/><br/>You can find more information on how to manually change this file in the Retribution Wiki "
+                "<br/><br/>You can find more information on how to manually change this file in the Escalation Wiki "
                 "(Page: Dedicated Server Guide) on GitHub.</p>"
             )
             message_box.setDefaultButton(QtWidgets.QMessageBox.StandardButton.Ok)
             message_box.setCheckBox(ignore_checkbox)
             message_box.exec_()
-    # Replace DCS Mission scripting file to allow DCS Retribution to work
+    # Replace DCS Mission scripting file to allow DCS Escalation to work
     try:
         liberation_install.replace_mission_scripting_file()
     except Exception as e:
@@ -291,7 +291,7 @@ def create_game(
     first_start = liberation_install.init()
     if first_start:
         sys.exit(
-            "Cannot generate campaign without configuring DCS Retribution. Start the UI "
+            "Cannot generate campaign without configuring DCS Escalation. Start the UI "
             "for the first run configuration."
         )
 
@@ -442,7 +442,7 @@ def _acquire_single_instance_lock() -> bool:
     without ever showing a window, and is left orphaned when the first window closes.
     """
     global _single_instance_lock
-    lock_path = Path(tempfile.gettempdir()) / "dcs_retribution.lock"
+    lock_path = Path(tempfile.gettempdir()) / "dcs_escalation.lock"
     try:
         handle = open(lock_path, "w")
     except OSError:
@@ -468,7 +468,7 @@ def main():
 
     if not _acquire_single_instance_lock():
         logging.warning(
-            "DCS Retribution is already running; exiting this duplicate instance."
+            "DCS Escalation is already running; exiting this duplicate instance."
         )
         sys.exit(0)
 

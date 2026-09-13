@@ -1,7 +1,7 @@
 """Per-squadron DCS country resolution for mission generation.
 
 DCS plays nation-specific voiceovers and comms based on the *country* a group
-belongs to. Retribution historically collapsed every unit on a side onto a
+belongs to. Escalation historically collapsed every unit on a side onto a
 single faction country, so a coalition (CJTF) faction flying squadrons drawn
 from several nations all shared one nation's radio voice.
 

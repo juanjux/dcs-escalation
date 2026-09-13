@@ -2,7 +2,7 @@
 INVENTARIO DE FEATURES — FORK bradyccox/414Ret
 ================================================================================
 Propósito: catálogo de todo lo que el fork 414Ret añade sobre upstream DCS
-Retribution, con la decisión (SÍ portar / NO) de cada feature y los detalles de
+Escalation, con la decisión (SÍ portar / NO) de cada feature y los detalles de
 implementación a nivel de código. Sirve para:
   - re-chequear el fork en el futuro y meter mejoras nuevas en sus features,
   - reevaluar los "NO" (pueden pasar a SÍ si maduran o cambia el contexto),
@@ -369,6 +369,6 @@ para DCS World. Pone clases de alto nivel (spawns, despachadores de IA A2A, ATC,
 detección, rangos...) sobre la API cruda de DCS. Si una feature es "MOOSE-dep":
 el .miz carga toda la librería MOOSE (varios MB) en el sim, la lógica corre DENTRO
 de DCS en tiempo real (no se unit-testea en Python, se prueba volando), queda atada
-a una versión de MOOSE/API de DCS, y mete código de terceros en el repo. Retribution
+a una versión de MOOSE/API de DCS, y mete código de terceros en el repo. Escalation
 ya empaqueta MOOSE para algunos plugins. Excepción: #2 JAMMING NO usa MOOSE.
 ================================================================================

@@ -2,7 +2,7 @@
 
 The state a site ends up in -- part of the network, on its own, or switched off -- is
 decided inside DCS and never comes back out. It is not guesswork, though: Skynet reaches
-it from things Retribution already knows, so the same answer can be reached here.
+it from things Escalation already knows, so the same answer can be reached here.
 
 The rules below are lifted from the plugin, function by function:
 

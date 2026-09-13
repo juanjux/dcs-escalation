@@ -31,7 +31,7 @@ def _user_data_path() -> Path:
 
 USER_PATH = _user_data_path()
 
-PREFERENCES_PATH = USER_PATH / "retribution_preferences.json"
+PREFERENCES_PATH = USER_PATH / "escalation_preferences.json"
 
 
 def init():
@@ -45,7 +45,7 @@ def init():
 
     if PREFERENCES_PATH.exists():
         try:
-            logging.debug("Loading Retribution preferences from %s", PREFERENCES_PATH)
+            logging.debug("Loading Escalation preferences from %s", PREFERENCES_PATH)
             with PREFERENCES_PATH.open() as prefs:
                 pref_data = json.load(prefs)
             __dcs_saved_game_directory = pref_data["saved_game_dir"]

@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 # user mark a specific named payload as the default for an aircraft + flight type.
 # Stored globally (all campaigns) next to the DCS payload files, keyed by aircraft
 # id then FlightType name. default_for_task_and_aircraft consults these before the
-# "Retribution <task>" name conventions. This only changes WHICH named payload is
+# "Escalation <task>" name conventions. This only changes WHICH named payload is
 # picked as default; it never renames or overwrites a payload.
 _DEFAULT_LOADOUT_OVERRIDES_FILE = "retribution_default_loadouts.json"
 
@@ -314,6 +314,10 @@ class Loadout:
         # names, so those have been included here too. The priority goes from first to
         # last - the first element in the tuple will be tried first, then the second,
         # etc.
+        # The payload names keep the old spelling: they are strings inside the
+        # player's own MissionEditor/UnitPayloads, put there by every version of this
+        # program and by Liberation before it. A renamed application still has to find
+        # the loadouts already on his disk.
         loadout_names = {
             t: (
                 [f"Liberation {t.value}", f"Retribution {t.value}"]
@@ -396,7 +400,7 @@ class Loadout:
             return cls.empty_loadout()
 
         # A user-chosen default (set via the payload editor's "Set as default"
-        # button) takes priority over the "Retribution <task>" name conventions.
+        # button) takes priority over the "Escalation <task>" name conventions.
         # If its payload is missing or invalid we fall through to the conventions.
         names = list(cls.default_loadout_names_for(task))
         override = get_default_loadout_override(dcs_unit_type.id, task)

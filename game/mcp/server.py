@@ -16,9 +16,9 @@ from mcp.server.transport_security import TransportSecuritySettings
 from game.agent import service
 
 mcp = FastMCP(
-    "DCS Retribution OPFOR AI",
+    "DCS Escalation OPFOR AI",
     instructions=(
-        "Plan the enemy (red/OPFOR) turn of a DCS Retribution campaign. Call "
+        "Plan the enemy (red/OPFOR) turn of a DCS Escalation campaign. Call "
         "`start` then `howtoplay` once, then on each 'your turn': read "
         "turn_context/get_packages, create_packages / buy / stances. The toolbar "
         "robot lights up on its own with every call — nothing to toggle on/off."

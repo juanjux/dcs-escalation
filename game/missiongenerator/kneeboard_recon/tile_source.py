@@ -25,7 +25,7 @@ from urllib.request import Request, urlopen
 
 from PIL import Image, UnidentifiedImageError
 
-from game.version import VERSION as _RETRIBUTION_VERSION
+from game.version import VERSION as _ESCALATION_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +33,9 @@ ESRI_WORLD_IMAGERY_URL = (
     "https://services.arcgisonline.com/ArcGIS/rest/services/"
     "World_Imagery/MapServer/tile/{z}/{y}/{x}"
 )
-# Track the live Retribution version automatically so the tile-service ToS
+# Track the live Escalation version automatically so the tile-service ToS
 # identifier stays accurate across releases without manual edits here.
-USER_AGENT = f"retribution-kneeboard/{_RETRIBUTION_VERSION}"
+USER_AGENT = f"escalation-kneeboard/{_ESCALATION_VERSION}"
 DEFAULT_TIMEOUT = 15.0
 
 # Defensive cap on per-tile response body size. Real Esri PNG tiles are
