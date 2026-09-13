@@ -230,3 +230,117 @@ def test_a_weapon_that_is_the_aircraft_is_not_said_twice() -> None:
     """A vehicle kills with itself, and "a T-72B with a T-72B" reads as a bug."""
     parts = KilledBy("T-72B", "", "T-72B", "T-72B", False, 3)
     assert killer_sentence(parts) == "T-72B"
+
+
+# --- the kill log -----------------------------------------------------------
+
+
+def test_a_kill_is_written_down_as_well_as_counted() -> None:
+    """The count is read at a glance; the entry is what the row opens into."""
+    record = PilotRecord()
+    record.note_kill(
+        air=False, what="SA-15 Tor", kill_class="Air defence", turn=11, weapon="AGM-88C"
+    )
+
+    assert record.ground_kills == {"SA-15 Tor": 1}
+    assert len(record.kills) == 1
+    kill = record.kills[0]
+    assert (kill.what, kill.kill_class, kill.turn, kill.weapon) == (
+        "SA-15 Tor",
+        "Air defence",
+        11,
+        "AGM-88C",
+    )
+
+
+def test_the_log_is_capped_and_the_counts_are_not() -> None:
+    """A year of a good pilot would carry every shot of it into every save."""
+    from game.squadrons.pilot import KILL_HISTORY_LIMIT
+
+    record = PilotRecord()
+    for turn in range(KILL_HISTORY_LIMIT + 40):
+        record.note_kill(air=True, what="Su-27", turn=turn)
+
+    assert len(record.kills) == KILL_HISTORY_LIMIT
+    assert record.air_kills["Su-27"] == KILL_HISTORY_LIMIT + 40
+    # The oldest go, so what is left is the recent story.
+    assert record.kills[-1].turn == KILL_HISTORY_LIMIT + 39
+
+
+def test_the_kills_behind_one_row_can_be_asked_for() -> None:
+    record = PilotRecord()
+    record.note_kill(air=False, what="SA-15 Tor", kill_class="Air defence", turn=8)
+    record.note_kill(air=False, what="T-72B", kill_class="Armour", turn=8)
+    record.note_kill(air=False, what="SA-15 Tor", kill_class="Air defence", turn=11)
+
+    assert len(record.kills_of("SA-15 Tor")) == 2
+    assert len(record.kills_in("Armour")) == 1
+
+
+def test_ground_kills_are_grouped_the_way_a_pilot_would_tell_it() -> None:
+    """ "Five air defence" reads at a glance; five separate launcher names do not."""
+    record = PilotRecord()
+    record.note_kill(air=False, what="SA-15 Tor", kill_class="Air defence", turn=8)
+    record.note_kill(air=False, what="ZU-23", kill_class="Air defence", turn=8)
+    record.note_kill(air=False, what="T-72B", kill_class="Armour", turn=9)
+    record.note_kill(air=True, what="Su-27", turn=9)
+
+    assert record.ground_kills_by_class() == {"Air defence": 2, "Armour": 1}
+
+
+def test_an_older_save_reads_an_empty_kill_log() -> None:
+    record = PilotRecord.__new__(PilotRecord)
+    record.__setstate__({"missions_flown": 7, "xp": 120})
+    assert record.kills == []
+
+
+def test_two_pilots_from_an_older_save_do_not_share_a_kill_log() -> None:
+    first, second = PilotRecord.__new__(PilotRecord), PilotRecord.__new__(PilotRecord)
+    first.__setstate__({})
+    second.__setstate__({})
+    first.note_kill(air=True, what="Su-27")
+    assert second.kills == []
+
+
+# --- the classes ------------------------------------------------------------
+
+
+def test_a_launcher_and_its_radar_are_both_air_defence() -> None:
+    """What a pilot would say, not what the unit table splits them into."""
+    from game.data.units import UnitClass
+    from game.sim.missionresultsprocessor import AIR_DEFENCE, ground_class_of
+
+    assert ground_class_of(UnitClass.SHORAD) == AIR_DEFENCE
+    assert ground_class_of(UnitClass.SEARCH_RADAR) == AIR_DEFENCE
+    assert ground_class_of(UnitClass.MANPAD) == AIR_DEFENCE
+
+
+def test_tanks_and_carriers_of_infantry_are_both_armour() -> None:
+    from game.data.units import UnitClass
+    from game.sim.missionresultsprocessor import ARMOUR, ground_class_of
+
+    assert ground_class_of(UnitClass.TANK) == ARMOUR
+    assert ground_class_of(UnitClass.APC) == ARMOUR
+    assert ground_class_of(UnitClass.IFV) == ARMOUR
+
+
+def test_anything_else_on_wheels_is_soft() -> None:
+    from game.data.units import UnitClass
+    from game.sim.missionresultsprocessor import SOFT_VEHICLES, ground_class_of
+
+    assert ground_class_of(UnitClass.LOGISTICS) == SOFT_VEHICLES
+    assert ground_class_of(UnitClass.INFANTRY) == SOFT_VEHICLES
+    assert ground_class_of(UnitClass.UNKNOWN) == SOFT_VEHICLES
+
+
+def test_a_building_is_a_structure_and_a_hull_is_a_ship() -> None:
+    from game.dcs.shipunittype import ShipUnitType
+    from game.sim.missionresultsprocessor import SHIPS, STRUCTURES
+
+    assert (
+        _processor()._victim_kind(_victim_unit(None, "oil")).ground_class == STRUCTURES
+    )
+
+    ship = MagicMock(spec=ShipUnitType)
+    ship.display_name = "Type 052C"
+    assert _processor()._victim_kind(_victim_unit(ship)).ground_class == SHIPS

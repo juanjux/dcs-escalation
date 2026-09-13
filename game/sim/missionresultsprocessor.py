@@ -61,6 +61,43 @@ UNKNOWN = "unknown"
 NOTHING = "nothing"
 
 
+#: How a pilot would group what he destroyed on the ground -- coarser than the unit
+#: table's classes, which split armour four ways and are for buying rather than for
+#: telling somebody what happened.
+AIR_DEFENCE = "Air defence"
+ARMOUR = "Armour"
+ARTILLERY = "Artillery"
+SOFT_VEHICLES = "Soft vehicles"
+STRUCTURES = "Structures"
+SHIPS = "Ships"
+
+
+def ground_class_of(unit_class: Any) -> str:
+    """Which of those a unit belongs to."""
+    from game.data.units import UnitClass
+
+    if unit_class in {
+        UnitClass.AAA,
+        UnitClass.SHORAD,
+        UnitClass.MANPAD,
+        UnitClass.TELAR,
+        UnitClass.MISSILE,
+        UnitClass.LAUNCHER,
+        UnitClass.SEARCH_RADAR,
+        UnitClass.TRACK_RADAR,
+        UnitClass.SEARCH_TRACK_RADAR,
+        UnitClass.OPTICAL_TRACKER,
+        UnitClass.SEARCH_LIGHT,
+        UnitClass.EARLY_WARNING_RADAR,
+    }:
+        return AIR_DEFENCE
+    if unit_class in {UnitClass.TANK, UnitClass.IFV, UnitClass.APC}:
+        return ARMOUR
+    if unit_class in {UnitClass.ARTILLERY, UnitClass.ATGM}:
+        return ARTILLERY
+    return SOFT_VEHICLES
+
+
 @dataclass(frozen=True)
 class Victim:
     """What was destroyed, and what it was called."""
@@ -69,6 +106,9 @@ class Victim:
     name: str = ""
     #: For a building, the campaign's own category for it, which is what it is paid by.
     building_category: Optional[str] = None
+    #: How a pilot would group it when telling somebody. Empty for an air kill, which
+    #: is grouped by the aircraft's own name.
+    ground_class: str = ""
 
 
 def _named(unit_type: Any) -> str:
@@ -76,6 +116,12 @@ def _named(unit_type: Any) -> str:
     if unit_type is None:
         return ""
     return str(getattr(unit_type, "display_name", None) or unit_type)
+
+
+def _ground_class(unit_type: Any) -> str:
+    """What a pilot would call the sort of thing it was."""
+    unit_class = getattr(unit_type, "unit_class", None)
+    return SOFT_VEHICLES if unit_class is None else ground_class_of(unit_class)
 
 
 def killer_sentence(parts: KilledBy) -> str:
@@ -748,11 +794,18 @@ class MissionResultsProcessor:
 
         convoy = getattr(victim, "convoy", None)
         if convoy is not None:
-            return Victim(VEHICLE, _named(getattr(victim, "unit_type", None)))
+            unit_type = getattr(victim, "unit_type", None)
+            return Victim(
+                VEHICLE, _named(unit_type), ground_class=_ground_class(unit_type)
+            )
 
         if hasattr(victim, "unit_type") and getattr(victim, "origin", None) is not None:
             # Front line and motorpool vehicles.
-            return Victim(VEHICLE, _named(victim.unit_type))
+            return Victim(
+                VEHICLE,
+                _named(victim.unit_type),
+                ground_class=_ground_class(victim.unit_type),
+            )
 
         unit = getattr(victim, "theater_unit", None) or getattr(
             victim, "ground_unit", None
@@ -765,15 +818,19 @@ class MissionResultsProcessor:
             from game.dcs.shipunittype import ShipUnitType
 
             if isinstance(unit_type, ShipUnitType):
-                return Victim(SHIP, _named(unit_type))
-            return Victim(VEHICLE, _named(unit_type))
+                return Victim(SHIP, _named(unit_type), ground_class=SHIPS)
+            return Victim(
+                VEHICLE, _named(unit_type), ground_class=_ground_class(unit_type)
+            )
 
         # No unit type: a static or a scenery objective, named by what it is part of.
         tgo = getattr(unit, "ground_object", None)
         if tgo is None:
             return Victim(UNKNOWN)
         category = getattr(tgo, "category", None)
-        return Victim(BUILDING, str(tgo), building_category=category)
+        return Victim(
+            BUILDING, str(tgo), building_category=category, ground_class=STRUCTURES
+        )
 
     def _kill_xp(self, victim: Any) -> int:
         """What destroying this was worth.
@@ -798,8 +855,9 @@ class MissionResultsProcessor:
 
     def _credited_events(
         self, details: Any, debriefing: Debriefing, note_friendly_fire: bool = False
-    ) -> Iterator[tuple[Pilot, str, Any, Any]]:
-        """(pilot, target name, target, the killer's flight) for every credited record.
+    ) -> Iterator[tuple[Pilot, str, Any, Any, str]]:
+        """(pilot, target name, target, the killer's flight, the weapon) for every
+        credited record.
 
         Shared by kills and hits, which the plugin writes in the same shape. Anything
         that cannot be resolved to a roster pilot is dropped, as is anything he did to
@@ -826,7 +884,9 @@ class MissionResultsProcessor:
                 if note_friendly_fire:
                     self._note_friendly_fire_event(killer, victim)
                 continue
-            yield killer.pilot, str(target), victim, killer.flight
+            yield killer.pilot, str(target), victim, killer.flight, str(
+                detail.get("weapon") or ""
+            )
 
     def _experience_from_kills(
         self, debriefing: Debriefing
@@ -838,7 +898,7 @@ class MissionResultsProcessor:
         """
         earned: dict[int, int] = {}
         credited: set[tuple[int, str]] = set()
-        for pilot, target, victim, flight in self._credited_events(
+        for pilot, target, victim, flight, weapon in self._credited_events(
             debriefing.state_data.kill_details, debriefing, note_friendly_fire=True
         ):
             credited.add((id(pilot), target))
@@ -851,10 +911,18 @@ class MissionResultsProcessor:
             # the whole reason for. Kept only for what has a name: "one of something
             # unrecognised" is not worth a row.
             if kind.kind == AIR:
-                pilot.record.note_kill(air=True, what=kind.name)
+                pilot.record.note_kill(
+                    air=True, what=kind.name, turn=self.game.turn, weapon=weapon
+                )
                 self._note_morale(pilot, morale_rules.AIR_KILL)
             else:
-                pilot.record.note_kill(air=False, what=kind.name)
+                pilot.record.note_kill(
+                    air=False,
+                    what=kind.name,
+                    kill_class=kind.ground_class,
+                    turn=self.game.turn,
+                    weapon=weapon,
+                )
                 if not self._was_the_assigned_target(victim, flight):
                     self._note_morale(pilot, morale_rules.UNPLANNED_KILL)
         return earned, credited
@@ -890,7 +958,7 @@ class MissionResultsProcessor:
         it. The pilot credited with the kill is skipped -- that kill already paid him.
         """
         earned: dict[int, int] = {}
-        for pilot, target, victim, _flight in self._credited_events(
+        for pilot, target, victim, _flight, _weapon in self._credited_events(
             debriefing.state_data.hit_details, debriefing
         ):
             if (id(pilot), target) in credited:
