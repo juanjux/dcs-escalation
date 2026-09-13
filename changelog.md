@@ -141,6 +141,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** Two convoys on the road at once could both be called `Convoy 001`: the counter behind the name is not in the save, so a reloaded campaign started numbering again from one. A campaign that already holds such a pair is repaired on load.
 * **[FIX]** Opening the same package, flight, squadron, pilot or the Air Wing twice opened a second window of it instead of raising the one already up.
 * **[FIX]** A black console window flashed over the game whenever the live weather was fetched.
 * **[FIX]** One of a strike's several target points could never be deleted: the rule meant to allow it asked the wrong object and never fired.
