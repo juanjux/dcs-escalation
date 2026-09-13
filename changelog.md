@@ -1,6 +1,7 @@
 ﻿# Retribution v1.6.3 (414th)
 
 ## Features/Improvements
+* **[Live Pilots]** A pilot's record now keeps what he has shot down and destroyed by type, the missions he came home from, the aircraft he has lost and walked away from, his wounds, and who finally got him.
 * **[FIX]** Inserting a waypoint where the flight plan had no room for one drew a detour back the way the flight came instead of saying so.
 * **[FIX]** Base menu: ordering a ground unit took seconds and the window resized itself on opening.
 * **[UI]** A flight plan is no longer drawn through its target: the target waypoints are marked in red, a dashed red run joins the ingress to each of them, the route carries on to the next navigation point, and every leg is labelled with its length in nautical miles. Double-clicking a target opens the objective.
