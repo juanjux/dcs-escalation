@@ -645,28 +645,60 @@ def state_column(
 
         column.addWidget(pair)
         column.addWidget(MoraleLog(pilot))
-    elif hardened_in_play:
+    else:
+        # A card that is not there needs saying, in as many words, where it would
+        # have been.
         anything = True
-        # The one hint kept: a card that is not there needs saying, and this is
-        # where morale would have been.
-        hint = (
-            "morale is not shown for the fallen"
-            if not pilot.alive
-            else "the player's own morale is his own business"
-        )
-        column.addWidget(
-            captioned(
-                "Hardened",
-                hardening_card(pilot, squadron, True),
-                hint,
-                tooltip=HARDENING_TOOLTIP,
+        column.addWidget(_no_morale(pilot))
+        if hardened_in_play:
+            column.addWidget(
+                captioned(
+                    "Hardened",
+                    hardening_card(pilot, squadron, True),
+                    tooltip=HARDENING_TOOLTIP,
+                )
             )
-        )
 
     if not anything:
         return None
     column.addStretch()
     return column
+
+
+def _no_morale(pilot: Pilot) -> QWidget:
+    """Why there is no morale card, said plainly.
+
+    Two men have none: the player, who decides for himself whether he is up to a
+    sortie, and one who is not coming back.
+    """
+    if not pilot.alive:
+        said = (
+            "Morale is not shown for a pilot who is gone. What he had is in the log"
+            " of what moved him, and everything else on this page still stands."
+        )
+    else:
+        said = (
+            "The player's own pilot has no morale. You decide whether you are up to a"
+            " sortie, so the campaign never grounds you, sends you on leave or has"
+            " you walk away. Everything else — hardening, relationships, the"
+            " record -- works the same as for anybody else."
+        )
+    holder = QWidget()
+    make_transparent(holder)
+    column = QVBoxLayout()
+    column.setContentsMargins(0, 0, 0, 0)
+    column.setSpacing(CAPTION_GAP)
+    column.addWidget(heading("Morale"))
+    card = panel(_wrapped(said), margins=(14, 12, 14, 12))
+    column.addWidget(card)
+    holder.setLayout(column)
+    return holder
+
+
+def _wrapped(text: str) -> QLabel:
+    said = label(text, 12, TEXT_TERTIARY)
+    said.setWordWrap(True)
+    return said
 
 
 def _morale_headings(with_hardening: bool) -> QWidget:

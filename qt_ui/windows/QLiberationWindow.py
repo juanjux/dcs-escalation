@@ -33,7 +33,7 @@ from game.server.dependencies import QtCallbacks, QtContext
 from game.theater import ControlPoint, MissionTarget, TheaterGroundObject
 from game.theater.controlpoint import motorpools_inside_capture_zone
 from qt_ui import liberation_install
-from qt_ui.dialogs import Dialog
+from qt_ui.dialogs import Dialog, open_once
 from qt_ui.models import GameModel
 from qt_ui.simcontroller import SimController
 from qt_ui.uiconstants import URLS
@@ -754,8 +754,10 @@ class QLiberationWindow(QMainWindow):
         """
         if self.game is None:
             return
-        self._pilot_dialog = PilotDialog(pilot, self.game, self)
-        self._pilot_dialog.show()
+        game = self.game
+        self._pilot_dialog = open_once(
+            f"pilot:{pilot.id}", lambda: PilotDialog(pilot, game, self)
+        )
 
     def _qsettings(self) -> QSettings:
         return QSettings("DCS Retribution", "Qt UI")

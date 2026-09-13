@@ -87,6 +87,16 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
   **wounded** (and for how many more turns), and `assigned_to` naming the flight he is
   already crewing. The entries **without** `assigned_to` are the ones you can task.
 
+  Each entry also carries what he has done, as counts, whenever there is anything to
+  count: `air_kills`, `ground_kills`, `missions_completed`, `aircraft_lost`,
+  `survived_losses`, `wounds`, `leaves_taken`, and for the dead `killed_by`. Enough to
+  pick a crew on. When you want the whole of a man — every kill with its turn and the
+  weapon it was made with, what he has survived, how he died and who did it, everything
+  that has ever moved his morale, and what he thinks of each man around him — ask
+  `GET /squadrons/{squadron_id}/pilots/{pilot_name}/record`. It is a call of its own
+  because it is far too much to carry for every pilot of every squadron on every turn;
+  it is exactly what the player reads in the pilot dialog.
+
   `GET /flights/{flight_id}/crew` shows who is in each seat of one flight plus the free
   pilots, and `POST /flights/crew` `{flight_id, seat, pilot_name}` puts a named pilot in
   a seat — the same move as the player's Edit Flight dropdown. A null `pilot_name`

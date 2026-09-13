@@ -32,6 +32,7 @@ from qt_ui.widgets.squadronpanel import (
     SquadronFilterProxy,
     SquadronPanel,
 )
+from qt_ui.dialogs import open_once
 from qt_ui.models import AirWingModel, AtoModel, GameModel, SquadronModel
 from qt_ui.simcontroller import SimController
 from qt_ui.windows.AirWingConfigurationDialog import AirWingConfigurationDialog
@@ -80,18 +81,19 @@ class SquadronList(QListView):
     def on_double_click(self, index: QModelIndex) -> None:
         if not index.isValid() or not self.grouped.proxy_index(index).isValid():
             return
-        self.dialog = SquadronDialog(
-            self.ato_model,
-            SquadronModel(
-                self.air_wing_model.squadron_at_index(
-                    self.proxy.mapToSource(self.grouped.proxy_index(index))
-                )
-            ),
-            self.theater,
-            self.sim_controller,
-            self,
+        squadron = self.air_wing_model.squadron_at_index(
+            self.proxy.mapToSource(self.grouped.proxy_index(index))
         )
-        self.dialog.show()
+        self.dialog = open_once(
+            f"squadron:{squadron.id}",
+            lambda: SquadronDialog(
+                self.ato_model,
+                SquadronModel(squadron),
+                self.theater,
+                self.sim_controller,
+                self,
+            ),
+        )
 
 
 @dataclass(frozen=True)
