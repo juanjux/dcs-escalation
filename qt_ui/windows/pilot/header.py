@@ -11,7 +11,7 @@ where that relationship is visible.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -378,12 +378,20 @@ def open_air_wing(widget: QWidget) -> None:
     for, and a second one showing the same roster is a bug players have reported
     before.
     """
+    panel = _top_panel(widget)
+    if panel is None:
+        return
+    panel.open_air_wing()
+    _to_the_front(getattr(panel, "air_wing_dialog", None))
+
+
+def _top_panel(widget: QWidget) -> Optional[Any]:
+    """The main window's top panel, from anywhere under it."""
     node: Optional[QWidget] = widget
     while node is not None:
         panel = getattr(node, "top_panel", None)
         if panel is not None and hasattr(panel, "open_air_wing"):
-            panel.open_air_wing()
-            return
+            return panel
         node = node.parentWidget()
 
     # Opened from somewhere with no main window above it -- the command palette, a
@@ -391,5 +399,20 @@ def open_air_wing(widget: QWidget) -> None:
     for window in QApplication.topLevelWidgets():
         panel = getattr(window, "top_panel", None)
         if panel is not None and hasattr(panel, "open_air_wing"):
-            panel.open_air_wing()
-            return
+            return panel
+    return None
+
+
+def _to_the_front(dialog: Optional[QWidget]) -> None:
+    """Put it where the player is looking.
+
+    It was opened from a dialog that is itself in front of the main window, so
+    showing it puts it behind the one the click came from -- which reads as the click
+    having done nothing at all.
+    """
+    if dialog is None:
+        return
+    if dialog.isMinimized():
+        dialog.showNormal()
+    dialog.raise_()
+    dialog.activateWindow()
