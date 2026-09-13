@@ -45,6 +45,7 @@ class GameUpdateEventsJs(BaseModel):
     updated_supply_routes: list[SupplyRouteJs]
     reset_on_map_center: LeafletPoint | None
     fly_to: LeafletPoint | None
+    fly_to_zoom: int | None
     game_unloaded: bool
     new_turn: bool
 
@@ -142,6 +143,7 @@ class GameUpdateEventsJs(BaseModel):
             updated_supply_routes=updated_supply_routes,
             reset_on_map_center=events.reset_on_map_center,
             fly_to=events.fly_to,
+            fly_to_zoom=events.fly_to_zoom,
             game_unloaded=events.game_unloaded,
             new_turn=events.new_turn,
         )

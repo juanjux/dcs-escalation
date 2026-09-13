@@ -34,7 +34,7 @@ import { unculledZonesUpdated } from "./unculledZonesSlice";
 import { LatLng } from "leaflet";
 import { updateIadsConnection, removeIadsConnection } from "./iadsNetworkSlice";
 import { supplyRoutesUpdated } from "./supplyRoutesSlice";
-import { setMapCenter } from "./mapSlice";
+import { setMapView } from "./mapSlice";
 
 interface GameUpdateEvents {
   updated_flight_positions: { [id: string]: LatLng };
@@ -58,6 +58,7 @@ interface GameUpdateEvents {
   updated_supply_routes: SupplyRoute[];
   reset_on_map_center: LatLng | null;
   fly_to: LatLng | null;
+  fly_to_zoom: number | null;
   game_unloaded: boolean;
   new_turn: boolean;
 }
@@ -152,7 +153,7 @@ export const handleStreamedEvents = (
   // store, because the map re-centres itself on what the store says after every
   // render and a flyTo of its own would be undone by the next one.
   if (events.fly_to != null) {
-    dispatch(setMapCenter(events.fly_to));
+    dispatch(setMapView({ center: events.fly_to, zoom: events.fly_to_zoom }));
   }
 
   if (events.game_unloaded) {
