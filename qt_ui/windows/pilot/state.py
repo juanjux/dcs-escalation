@@ -650,7 +650,10 @@ def state_column(
         # have been.
         anything = True
         column.addWidget(_no_morale(pilot))
-        if hardened_in_play:
+        # Hardening is earned a point at a time from the turns a man spends Shaken or
+        # worse, so a pilot with no morale can never earn any -- and what it buys is
+        # softer morale knocks. The fallen keep what they earned while alive.
+        if hardened_in_play and not pilot.player:
             column.addWidget(
                 captioned(
                     "Hardened",
@@ -680,8 +683,9 @@ def _no_morale(pilot: Pilot) -> QWidget:
         said = (
             "The player's own pilot has no morale. You decide whether you are up to a"
             " sortie, so the campaign never grounds you, sends you on leave or has"
-            " you walk away. Everything else — hardening, relationships, the"
-            " record -- works the same as for anybody else."
+            " you walk away. With no morale there is no hardening either: that is"
+            " earned from the turns a man spends Shaken or worse. The record and"
+            " the relationships work the same as for anybody else."
         )
     holder = QWidget()
     make_transparent(holder)
