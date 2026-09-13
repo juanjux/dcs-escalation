@@ -216,11 +216,16 @@ def pilot_entries(game: Any) -> Iterator[Entry]:
 
 
 def _pilots_of(squadron: Any) -> Iterator[Any]:
+    """Everybody on the roster, and everybody waiting to join it.
+
+    The roster, not the lists cut out of it: active_pilots is the men fit for a
+    sortie this minute, so a pilot on leave, in a hospital bed or gone over the wall
+    could not be found by name at all -- which is most of the reason to look one up.
+    """
     seen: set[int] = set()
     for group in (
-        getattr(squadron, "active_pilots", ()),
+        getattr(squadron, "current_roster", ()),
         getattr(squadron, "pilot_pool", ()),
-        getattr(squadron, "dead_pilots", ()),
     ):
         for pilot in group:
             if id(pilot) not in seen:

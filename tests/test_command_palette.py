@@ -292,3 +292,59 @@ def test_a_pilot_opens_his_own_dialog_when_the_window_has_one(qt_app: Any) -> No
     del window.open_pilot_dialog
     _open_pilot(window, None, None)
     assert Follow(PILOT, "x").kind == PILOT
+
+
+def test_a_setting_opens_the_page_it_lives_on(
+    qt_app: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """QSettingsWindow is a dialog wrapped round a QSettingsWidget, and the pages and
+    go_to are the widget's. Asking the window raised an AttributeError that the
+    catch-all swallowed, and the settings opened on page one."""
+    from types import SimpleNamespace
+
+    from game.settings import Settings
+    from qt_ui.windows.palette import follow as follow_module
+    from qt_ui.windows.settings import QSettingsWindow as settings_module
+
+    went_to: list[Any] = []
+
+    class FakeWidget:
+        @staticmethod
+        def go_to(hit: Any) -> None:
+            went_to.append(hit)
+
+    class FakeWindow:
+        def __init__(self, game: Any) -> None:
+            self.settings_widget = FakeWidget()
+
+        def show(self) -> None:
+            pass
+
+    monkeypatch.setattr(settings_module, "QSettingsWindow", FakeWindow)
+    window = _window({"&File": ["&Save"]})
+    window.game_model = SimpleNamespace(game=SimpleNamespace(settings=Settings()))
+    follow_module._open_setting(window, "live_pilots_enabled")
+
+    assert [hit.key for hit in went_to] == ["live_pilots_enabled"]
+
+
+def test_a_place_puts_the_map_on_it(
+    qt_app: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Half of what a player wants from finding a place is to see where it is."""
+    from dcs.mapping import LatLng
+
+    from game.server import EventStream
+    from qt_ui.windows.palette.follow import _look_at
+
+    class Somewhere:
+        @staticmethod
+        def latlng() -> LatLng:
+            return LatLng(37.2, -115.8)
+
+    sent: list[Any] = []
+    monkeypatch.setattr(EventStream, "put_nowait", sent.append)
+    _look_at(Somewhere())
+
+    assert len(sent) == 1
+    assert sent[0].fly_to == LatLng(37.2, -115.8)

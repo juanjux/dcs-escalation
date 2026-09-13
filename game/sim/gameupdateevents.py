@@ -40,6 +40,9 @@ class GameUpdateEvents:
     deleted_iads_connections: set[UUID] = field(default_factory=set)
     updated_supply_routes: bool = False
     reset_on_map_center: LatLng | None = None
+    #: Somewhere the player asked to be shown, rather than somewhere the campaign
+    #: has moved to. The map takes it as its new centre and keeps its zoom.
+    fly_to: LatLng | None = None
     game_unloaded: bool = False
     new_turn: bool = False
     shutting_down: bool = False
@@ -167,6 +170,11 @@ class GameUpdateEvents:
                 game.theater.terrain.map_view_default.position.latlng()
             )
             self.game_unloaded = False
+        return self
+
+    def look_at(self, latlng: LatLng) -> GameUpdateEvents:
+        """Point the map at this, wherever it was looking."""
+        self.fly_to = latlng
         return self
 
     def begin_new_turn(self) -> GameUpdateEvents:
