@@ -44,6 +44,7 @@ class GameUpdateEventsJs(BaseModel):
     deleted_iads: set[UUID]
     updated_supply_routes: list[SupplyRouteJs]
     reset_on_map_center: LeafletPoint | None
+    fly_to: LeafletPoint | None
     game_unloaded: bool
     new_turn: bool
 
@@ -140,6 +141,7 @@ class GameUpdateEventsJs(BaseModel):
             deleted_iads=events.deleted_iads_connections,
             updated_supply_routes=updated_supply_routes,
             reset_on_map_center=events.reset_on_map_center,
+            fly_to=events.fly_to,
             game_unloaded=events.game_unloaded,
             new_turn=events.new_turn,
         )

@@ -54,9 +54,11 @@ def _follow(window: Any, target: Follow) -> None:
     if kind == BASE:
         cp = _control_point(game, key)
         if cp is not None:
+            _look_at(cp.position)
             window.open_control_point_info_dialog(cp)
     elif kind == OBJECTIVE:
         tgo = game.db.tgos.get(UUID(key))
+        _look_at(tgo.position)
         window.open_tgo_info_dialog(tgo)
     elif kind == FLIGHT:
         flight = game.db.flights.get(UUID(key))
@@ -67,6 +69,18 @@ def _follow(window: Any, target: Follow) -> None:
             _open_squadron(window, squadron)
     elif kind == PILOT:
         _open_pilot(window, *_pilot_and_squadron(game, key))
+
+
+def _look_at(position: Any) -> None:
+    """Put the map on it as well as opening its dialog.
+
+    Half of what a player wants from finding a place is to see where it is, and the
+    map search on the other side of the window has always done this.
+    """
+    from game.server import EventStream
+    from game.sim import GameUpdateEvents
+
+    EventStream.put_nowait(GameUpdateEvents().look_at(position.latlng()))
 
 
 def _control_point(game: Any, key: str) -> Optional[Any]:
@@ -151,5 +165,9 @@ def _open_setting(window: Any, key: str) -> None:
 
     for hit in search(key, game.settings):
         if hit.key == key:
-            dialog.go_to(hit)
+            # On the widget inside the window, not on the window: QSettingsWindow is a
+            # dialog wrapped round a QSettingsWidget, and that is where the pages, the
+            # index and go_to all live. Asking the window raised an AttributeError,
+            # which the catch above swallowed, and the dialog opened on page one.
+            dialog.settings_widget.go_to(hit)
             return

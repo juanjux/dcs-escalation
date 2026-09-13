@@ -1,6 +1,9 @@
 ﻿# Retribution v1.6.3 (414th)
 
 ## Features/Improvements
+* **[FIX]** The command palette found no pilot who was not fit to fly this minute: the wounded, the men on leave and the deserters were not indexed at all.
+* **[FIX]** Choosing a setting in the command palette opened the settings window on its first page instead of the setting's own.
+* **[UI]** Choosing a base or an objective in the command palette puts the map on it.
 * **[FIX]** Opening the command palette took the menu row -- the menus and the toolbar icons -- off the main window for good, and Ctrl+P with it.
 * **[UI]** The command palette opens a pilot's own dialog instead of his squadron's.
 * **[Live Pilots]** Double-clicking a pilot on a squadron's roster opens his own dialog: his combat record, what he has survived, how he died, his morale and hardening with the log behind them, and his friendships in both directions.
