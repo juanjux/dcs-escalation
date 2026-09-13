@@ -1,4 +1,4 @@
-﻿# Escalation v1.6.3 (414th)
+﻿# Escalation v1.0.0
 
 ## Features/Improvements
 * **[FIX]** Changing a squadron's pilot limit in the Air Wing cheat dialog left a stray window on the desktop for every squadron in the list, and nothing closed them.
