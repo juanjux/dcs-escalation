@@ -36,9 +36,9 @@ def follow(window: Any, follow_this: Follow) -> None:
 def _follow(window: Any, target: Follow) -> None:
     kind, key = target.kind, target.key
     if kind == ACTION:
-        from qt_ui.windows.palette.actions import action_at
+        from qt_ui.windows.palette.actions import action_at, menu_bar_of
 
-        action = action_at(window.menuBar(), key)
+        action = action_at(menu_bar_of(window), key)
         if action is not None:
             action.trigger()
         return
@@ -66,10 +66,7 @@ def _follow(window: Any, target: Follow) -> None:
         if squadron is not None:
             _open_squadron(window, squadron)
     elif kind == PILOT:
-        # Until the pilot dialog exists, his squadron is the nearest thing to it.
-        squadron = _squadron_of_pilot(game, key)
-        if squadron is not None:
-            _open_squadron(window, squadron)
+        _open_pilot(window, *_pilot_and_squadron(game, key))
 
 
 def _control_point(game: Any, key: str) -> Optional[Any]:
@@ -87,7 +84,7 @@ def _squadron(game: Any, key: str) -> Optional[Any]:
     return None
 
 
-def _squadron_of_pilot(game: Any, key: str) -> Optional[Any]:
+def _pilot_and_squadron(game: Any, key: str) -> tuple[Optional[Any], Optional[Any]]:
     for coalition in game.coalitions:
         for squadron in coalition.air_wing.iter_squadrons():
             for group in (
@@ -97,8 +94,24 @@ def _squadron_of_pilot(game: Any, key: str) -> Optional[Any]:
             ):
                 for pilot in group:
                     if str(pilot.id) == key:
-                        return squadron
-    return None
+                        return pilot, squadron
+    return None, None
+
+
+def _open_pilot(window: Any, pilot: Optional[Any], squadron: Optional[Any]) -> None:
+    """His own dialog, and his squadron's when the window has none to offer.
+
+    Asked of the window rather than imported: the pilot dialog is a separate change,
+    and until it is in the same tree the nearest thing to a man's record is the roster
+    he is on.
+    """
+    if pilot is None:
+        return
+    opens_pilots = getattr(window, "open_pilot_dialog", None)
+    if opens_pilots is not None:
+        opens_pilots(pilot)
+    elif squadron is not None:
+        _open_squadron(window, squadron)
 
 
 def _open_squadron(window: Any, squadron: Any) -> None:

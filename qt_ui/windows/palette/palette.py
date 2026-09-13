@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 
 from game.search.index import Hit, Index
 from qt_ui.widgets.cards import CARD_BG, CARD_BORDER, HINT
-from qt_ui.windows.palette.actions import action_entries
+from qt_ui.windows.palette.actions import action_entries, menu_bar_of
 from qt_ui.windows.palette.follow import follow
 from qt_ui.windows.palette.resultrow import (
     KINDS,
@@ -170,7 +170,7 @@ class CommandPalette(QDialog):
         them again per search costs nothing measurable.
         """
         campaign = self.window_.search_index.of(self.window_.game_model.game)
-        commands = Index(action_entries(self.window_.menuBar()))
+        commands = Index(action_entries(menu_bar_of(self.window_)))
 
         if not typed.strip():
             return self.recently_followed(campaign, commands)
