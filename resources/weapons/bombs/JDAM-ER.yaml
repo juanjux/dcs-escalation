@@ -1,4 +1,5 @@
 name: JDAM-ER
+range: 40  # nm - the wing kit is what carries it this far
 year: 2015
 fallback: GBU-32(V)2/B
 clsids:

@@ -1,4 +1,5 @@
 name: GBU-38
+range: 15  # nm - release range, planned from the mid-twenties
 year: 2002
 fallback: GBU-12
 clsids:
