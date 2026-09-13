@@ -1,5 +1,5 @@
 # game/missiongenerator/kneeboard_recon/tests/test_atis.py
-"""Tests for ATIS block extraction from Retribution Weather."""
+"""Tests for ATIS block extraction from Escalation Weather."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def _stub_weather(
     # spec= guards against typoed attribute names silently returning a fresh
     # MagicMock instead of raising AttributeError. Sub-objects whose real
     # shapes matter for the ATIS pipeline (atmospheric, wind, clouds, fog)
-    # are also spec'd to their actual Retribution classes.
+    # are also spec'd to their actual Escalation classes.
     m = MagicMock(spec=Weather)
     m.atmospheric = MagicMock(spec=AtmosphericConditions)
     m.atmospheric.qnh = inches_hg(qnh_inhg)
@@ -298,7 +298,7 @@ def test_build_atis_block_zulu_optional_when_no_conversion_available() -> None:
 
 
 def test_build_atis_block_converts_wind_mps_to_knots() -> None:
-    # Retribution stores Wind.speed in m/s (see game/weather/windspeedgenerators.py).
+    # Escalation stores Wind.speed in m/s (see game/weather/windspeedgenerators.py).
     # 25 m/s ≈ 48.6 kt; output is labeled "kt" so the value must be converted.
     block = build_atis_block(
         weather=_stub_weather(

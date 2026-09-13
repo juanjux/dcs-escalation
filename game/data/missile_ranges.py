@@ -1,7 +1,7 @@
 """Minimum engagement ranges for the launchers that arm missile sites.
 
 pydcs exposes ``threat_range`` but not the minimum, and several of these launchers have
-one that nothing in Retribution has ever respected: a DF-21D battery cannot engage
+one that nothing in Escalation has ever respected: a DF-21D battery cannot engage
 anything inside 300 km, an ATACMS or Iskander battery nothing inside 75. Tasked at a
 closer target they fire anyway and the rounds go nowhere.
 

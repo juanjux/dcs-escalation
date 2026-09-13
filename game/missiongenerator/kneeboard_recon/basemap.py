@@ -60,7 +60,7 @@ _THEATERS_DIR = _RESOURCES_DIR / "theaters"
 # Bound the per-process caches so a long-running multi-theater process
 # (campaign server, gen_recon_kneeboards.py looping over terrains) does
 # not retain every theater GIF and landmap pickle ever loaded. Practical
-# usage touches at most a handful of theaters in a single Retribution
+# usage touches at most a handful of theaters in a single Escalation
 # session, so a small bound is plenty.
 _MAX_CACHED_THEATERS = 4
 

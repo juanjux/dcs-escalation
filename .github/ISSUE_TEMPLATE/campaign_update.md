@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 This form should only be used for submitted updated miz/json files for campaigns
-distributed with Retribution. If you are _requesting_ an update to a campaign, see
+distributed with Escalation. If you are _requesting_ an update to a campaign, see
 https://github.com/dcs-retribution/dcs-retribution/wiki/Campaign-maintenance. If the
 campaign has an owner, it will be updated before release. If it does not, you can
 volunteer to own it.

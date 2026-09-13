@@ -3,7 +3,7 @@
 ## Branch reality
 
 - This work lives on **`experiment-mcp`**, cut from **`master`** (juanjux's fork —
-  `origin` is `juanjux/dcs-retribution`; there is **no `upstream` remote** in this
+  `origin` is `juanjux/dcs-escalation`; there is **no `upstream` remote** in this
   clone). Base commit: `7f063a0`.
 - Repo branch roles (from the fork README):
   - **`dev`** — pristine mirror of upstream `dcs-retribution/dev`.
@@ -176,7 +176,7 @@ Out of scope for v1, but worth not precluding architecturally:
   (dropped for now until local models are cheap/good — [`03`](03-opfor-planner.md)).
 - **Blue-assist (enh. #11).** The API is coalition-agnostic, so the same machinery
   could *suggest* (or pre-fill) the player's own blue plan as an advisor. Note that
-  Retribution's scripted commander **already auto-plans blue** too — the player just
+  Escalation's scripted commander **already auto-plans blue** too — the player just
   prunes it (typically keeping BARCAP and replacing the rest); an LLM blue-assist
   would be an opt-in upgrade to that. Architecturally free; out of scope for v1.
 - **In-mission control via Combined Arms.** If the player owns the DCS **Combined

@@ -7,7 +7,7 @@ from typing import Any
 from game.data.groups import GroupTask
 from game.utils import Distance, meters, nautical_miles
 
-#: What the two reach when Retribution works a network out by distance rather than
+#: What the two reach when Escalation works a network out by distance rather than
 #: reading it from the campaign. Plugin options, so a theatre whose infrastructure is
 #: further apart than this can say so.
 DEFAULT_COMMS_RANGE_NM = 15.0

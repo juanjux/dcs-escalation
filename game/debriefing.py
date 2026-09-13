@@ -285,7 +285,7 @@ class Debriefing:
         self.ground_losses = self.dead_ground_units()
         self.base_captures = self.base_capture_events()
         self.kill_info_by_unit_id = self._index_kill_details()
-        # ids of air losses injected by the Retribution sim (no DCS kill record);
+        # ids of air losses injected by the Escalation sim (no DCS kill record);
         # they are real combat losses, so is_non_combat_loss() must not refund them.
         self._sim_loss_ids: set[int] = set()
         # ids of air losses with no DCS shooter that are still combat kills:
@@ -449,7 +449,7 @@ class Debriefing:
     def is_non_combat_loss(self, flying_unit: "FlyingUnit") -> bool:
         """True if this air loss was a non-combat write-off: a crash, a collision,
         or a death with no shooter credited by DCS — as opposed to being shot down
-        by a weapon or SAM. Retribution-sim combat losses (no DCS kill record) are
+        by a weapon or SAM. Escalation-sim combat losses (no DCS kill record) are
         NOT treated as crashes, nor are inferred 'indirect' kills (destroyed
         parked, or the same attack as a confirmed weapon-kill flightmate)."""
         if id(flying_unit) in self._sim_loss_ids:
@@ -781,7 +781,7 @@ class Debriefing:
         seen = set()
         captures = []
         for capture in reversed(self.state_data.base_capture_events):
-            # The ID string in the JSON file will be the UUID generated from retribution
+            # The ID string in the JSON file will be the UUID generated from escalation
             cp_id, new_owner_id_str, _name = capture.split("||")
 
             # Only the most recent capture event matters.

@@ -1,6 +1,6 @@
 """How far comms and power reach is a setting, not a constant in the source.
 
-Only consulted when Retribution works a network out by distance: a campaign that
+Only consulted when Escalation works a network out by distance: a campaign that
 wires its own IADS says what is connected to what, and no range is applied to it.
 """
 

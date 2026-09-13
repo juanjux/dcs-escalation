@@ -1,4 +1,4 @@
-"""Maps generated units back to their Retribution types."""
+"""Maps generated units back to their Escalation types."""
 
 from __future__ import annotations
 

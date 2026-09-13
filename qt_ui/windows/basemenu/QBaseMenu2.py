@@ -30,7 +30,7 @@ from qt_ui.widgets.controls import button
 from qt_ui.windows.airwingconfig.common import CHEAT_BORDER, CHEAT_HINT
 from qt_ui.windows.basemenu.header import BaseHeader, FiguresStrip, kind_of
 from qt_ui.models import GameModel
-from qt_ui.uiconstants import EVENT_ICONS
+from qt_ui.uiconstants import app_settings, EVENT_ICONS
 from qt_ui.widgets.QFrequencyWidget import QFrequencyWidget
 from qt_ui.widgets.QICLSWidget import QICLSWidget
 from qt_ui.widgets.QLink4Widget import QLink4Widget
@@ -329,7 +329,7 @@ class QBaseMenu2(QDialog):
 
     @staticmethod
     def _qsettings() -> QSettings:
-        return QSettings("DCS Retribution", "Qt UI")
+        return app_settings()
 
     def _restore_geometry(self) -> bool:
         """Whether there was a remembered size to go back to."""

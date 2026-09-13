@@ -163,9 +163,9 @@ class QLiberationPreferences(QFrame):
                 self,
                 "The DCS Installation directory was not set",
                 "You set an empty DCS Installation directory! "
-                "<br/><br/>Without this directory, DCS Retribution can not replace the MissionScripting.lua for you and will not work properly. "
+                "<br/><br/>Without this directory, DCS Escalation can not replace the MissionScripting.lua for you and will not work properly. "
                 "In this case, you need to edit the MissionScripting.lua yourself. The easiest way to do it is to replace the original file (&lt;dcs_installation_directory&gt;/Scripts/MissionScripting.lua) with the file in dcs-liberation distribution (&lt;dcs_liberation_installation&gt;/resources/scripts/MissionScripting.lua)."
-                "<br/><br/>You can find more information on how to manually change this file in the Retribution Wiki (Page: Dedicated Server Guide) on GitHub.</p>"
+                "<br/><br/>You can find more information on how to manually change this file in the Escalation Wiki (Page: Dedicated Server Guide) on GitHub.</p>"
                 "<br/><br/>Are you sure that you want to leave the installation directory empty?"
                 "<br/><br/><strong>This is only recommended for expert users!</strong>",
                 QMessageBox.StandardButton.Yes,
@@ -178,10 +178,10 @@ class QLiberationPreferences(QFrame):
                 self,
                 "Wrong DCS installation directory.",
                 self.dcs_install_dir
-                + " is not a valid directory. DCS Retribution requires the installation directory to replace the MissionScripting.lua"
-                "<br/><br/>If you ignore this Error, DCS Retribution can not work properly and needs your attention. "
+                + " is not a valid directory. DCS Escalation requires the installation directory to replace the MissionScripting.lua"
+                "<br/><br/>If you ignore this Error, DCS Escalation can not work properly and needs your attention. "
                 "In this case, you need to edit the MissionScripting.lua yourself. The easiest way to do it is to replace the original file (&lt;dcs_installation_directory&gt;/Scripts/MissionScripting.lua) with the file in dcs-liberation distribution (&lt;dcs_liberation_installation&gt;/resources/scripts/MissionScripting.lua)."
-                "<br/><br/>You can find more information on how to manually change this file in the Retribution Wiki (Page: Dedicated Server Guide) on GitHub.</p>"
+                "<br/><br/>You can find more information on how to manually change this file in the Escalation Wiki (Page: Dedicated Server Guide) on GitHub.</p>"
                 "<br/><br/><strong>This is only recommended for expert users!</strong>",
                 QMessageBox.StandardButton.Ignore,
                 QMessageBox.StandardButton.Ok,

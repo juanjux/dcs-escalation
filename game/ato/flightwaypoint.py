@@ -60,7 +60,7 @@ class FlightWaypoint:
 
     @property
     def display_name(self) -> str:
-        """User-facing name for Retribution displays: the override if the player set
+        """User-facing name for Escalation displays: the override if the player set
         one, otherwise the auto pretty_name."""
         return self.custom_name or self.pretty_name
 

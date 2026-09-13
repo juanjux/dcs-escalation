@@ -347,7 +347,7 @@ class QFlightCreator(QDialog):
             self.loadout_selector.addItem(loadout.name, loadout)
         task = self.task_selector.currentData()
         # A user-set default (per aircraft + task, set with the payload editor's
-        # "Set as default" button) wins over the "Retribution <task>" name
+        # "Set as default" button) wins over the "Escalation <task>" name
         # conventions, mirroring Loadout.default_for_task_and_aircraft.
         override = get_default_loadout_override(ac_type.dcs_unit_type.id, task)
         candidates = ([override] if override else []) + list(

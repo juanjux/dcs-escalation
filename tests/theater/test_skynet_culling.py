@@ -8,7 +8,7 @@ Two things need guarding, and both are about absence meaning the wrong thing.
 
 What is left out is *not* removed from the mission -- that is perf_culling's job, a
 different setting -- so a flight that strays off the planned route still meets it. But
-Retribution generates ground SAMs at alarm state green when perf_red_alert_state is off,
+Escalation generates ground SAMs at alarm state green when perf_red_alert_state is off,
 on the assumption that Skynet will wake them; a site nobody is going to wake has to come
 up red instead, or the radius would quietly disarm the map.
 

@@ -36,7 +36,7 @@ from qt_ui import liberation_install
 from qt_ui.dialogs import Dialog, open_once
 from qt_ui.models import GameModel
 from qt_ui.simcontroller import SimController
-from qt_ui.uiconstants import URLS
+from qt_ui.uiconstants import app_settings, URLS
 from qt_ui.uiflags import UiFlags
 from qt_ui.uncaughtexceptionhandler import UncaughtExceptionHandler
 from qt_ui.widgets.QTopPanel import QTopPanel
@@ -200,7 +200,7 @@ class QLiberationWindow(QMainWindow):
         self.commandPaletteAction.setShortcut("CTRL+P")
         self.commandPaletteAction.triggered.connect(self.open_command_palette)
 
-        self.showAboutDialogAction = QAction("&About DCS Retribution", self)
+        self.showAboutDialogAction = QAction("&About DCS Escalation", self)
         self.showAboutDialogAction.setIcon(QIcon.fromTheme("help-about"))
         self.showAboutDialogAction.triggered.connect(self.showAboutDialog)
 
@@ -456,11 +456,11 @@ class QLiberationWindow(QMainWindow):
 
     def updateWindowTitle(self, save_path: Optional[str] = None) -> None:
         """
-        Window title format: DCS Retribution - vX.X.X - campaign_name - file_name
+        Window title format: DCS Escalation - vX.X.X - campaign_name - file_name
         Campaign name is shown if a game is loaded and has a campaign_name.
         File name is appended only if save_path is provided.
         """
-        window_title = f"DCS Retribution - v{VERSION}"
+        window_title = f"DCS Escalation - v{VERSION}"
 
         if self.game and self.game.campaign_name:
             window_title += f" - {self.game.campaign_name}"
@@ -538,7 +538,7 @@ class QLiberationWindow(QMainWindow):
                 self,
                 "Could not load save game",
                 "The save game you have loaded is incompatible with this "
-                "version of DCS Retribution.\n"
+                "version of DCS Escalation.\n"
                 "\n"
                 f"{traceback.format_exc()}",
                 QMessageBox.StandardButton.Ok,
@@ -613,12 +613,13 @@ class QLiberationWindow(QMainWindow):
             "StillClock1",
         ]
         text = (
-            "<h3>DCS Retribution " + VERSION + "</h3>" + "<b>Source code : </b>"
-            "<a href='https://github.com/juanjux/dcs-retribution' style='color:white'>"
-            "https://github.com/juanjux/dcs-retribution </a>"
+            "<h3>DCS Escalation " + VERSION + "</h3>" + "<b>Source code : </b>"
+            "<a href='https://github.com/juanjux/dcs-escalation' style='color:white'>"
+            "https://github.com/juanjux/dcs-escalation </a>"
             + "<h4>Authors</h4>"
-            + "<p>This build is a personal fork of DCS Retribution by <b>juanjux</b>, "
-            "carrying features and fixes that are not in upstream Retribution.</p>"
+            + "<p>DCS Escalation is a personal fork of <b>DCS Retribution</b> by "
+            "<b>juanjux</b>, carrying features and fixes that are not in Retribution "
+            "itself.</p>"
             "<p>DCS Retribution is an (independent) fork of DCS Liberation, "
             "which was originally developed by <b>shdwp</b>. "
             "DCS Liberation 2.0 is a partial rewrite based on this work by <b>Khopa</b>. "
@@ -645,7 +646,7 @@ class QLiberationWindow(QMainWindow):
             "[https://www.facebook.com/AndriyDankovych]</a>"
         )
         about = QMessageBox()
-        about.setWindowTitle("About DCS Retribution")
+        about.setWindowTitle("About DCS Escalation")
         about.setIcon(QMessageBox.Icon.Information)
         about.setText(text)
         logging.info(about.textFormat())
@@ -760,7 +761,7 @@ class QLiberationWindow(QMainWindow):
         )
 
     def _qsettings(self) -> QSettings:
-        return QSettings("DCS Retribution", "Qt UI")
+        return app_settings()
 
     def _restore_window_geometry(self) -> None:
         settings = self._qsettings()
@@ -775,7 +776,7 @@ class QLiberationWindow(QMainWindow):
     def closeEvent(self, event: QCloseEvent) -> None:
         result = QMessageBox.question(
             self,
-            "Quit Retribution?",
+            "Quit Escalation?",
             "Would you like to save before quitting?",
             QMessageBox.StandardButton.Yes
             | QMessageBox.StandardButton.No

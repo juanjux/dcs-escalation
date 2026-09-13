@@ -162,9 +162,9 @@ app.mount("/mcp", mcp.streamable_http_app())        # MCP endpoint at /mcp
 from mcp.server.fastmcp import FastMCP
 from game.agent import service
 
-mcp = FastMCP("DCS Retribution OPFOR AI", stateless_http=True, json_response=True)
+mcp = FastMCP("DCS Escalation OPFOR AI", stateless_http=True, json_response=True)
 
-@mcp.resource("retribution://turn_context/{side}")
+@mcp.resource("escalation://turn_context/{side}")
 def turn_context(side: str):
     return service.turn_context(side)               # SAME function the REST route calls
 

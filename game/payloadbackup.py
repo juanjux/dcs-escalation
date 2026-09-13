@@ -1,6 +1,6 @@
 """Snapshots of the user's DCS payload library.
 
-The custom loadouts a player builds -- in the Mission Editor or in Retribution's own
+The custom loadouts a player builds -- in the Mission Editor or in Escalation's own
 payload editor -- live as one ``.lua`` per airframe under
 ``Saved Games/DCS/MissionEditor/UnitPayloads``. Two things make that directory worth
 protecting:

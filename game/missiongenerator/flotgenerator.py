@@ -333,7 +333,7 @@ class FlotGenerator:
 
     @staticmethod
     def _tic_managed_role(role: CombatGroupRole) -> bool:
-        """Roles handed over to the TIC script. Artillery keeps Retribution's
+        """Roles handed over to the TIC script. Artillery keeps Escalation's
         fire-mission tasking; SHORAD/AAA keep vanilla air-defense AI."""
         return role in (
             CombatGroupRole.TANK,

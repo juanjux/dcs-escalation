@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from qt_ui.uiconstants import app_settings
 from game.search.index import Hit, Index
 from qt_ui.widgets.cards import CARD_BG, CARD_BORDER, HINT
 from qt_ui.windows.palette.actions import action_entries, menu_bar_of
@@ -216,7 +217,7 @@ class CommandPalette(QDialog):
 
     @staticmethod
     def _qsettings() -> QSettings:
-        return QSettings("DCS Retribution", "Qt UI")
+        return app_settings()
 
     def recent_keys(self) -> list[str]:
         stored = self._qsettings().value(self.RECENT_KEY)
