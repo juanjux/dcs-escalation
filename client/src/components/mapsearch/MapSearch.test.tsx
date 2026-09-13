@@ -72,6 +72,9 @@ const state = {
       sunbear: tgo("sunbear", "SUNBEAR", "commandcenter", ["Command Center"]),
       wreck: tgo("wreck", "AARDVARK", "aa", ["SAM Patriot LN"], false, true),
       ours: tgo("ours", "BADGER", "aa", ["SAM Patriot LN"], true),
+      silkworm: tgo("silkworm", "SILKWORM", "factory", ["Workshop A"], true),
+      arapaima: tgo("arapaima", "ARAPAIMA", "ware", ["Warehouse"]),
+      lobster: tgo("lobster", "LOBSTER", "fuel", ["Fuel tank"]),
     },
   },
   controlPoints: {
@@ -156,6 +159,22 @@ describe("MapSearch", () => {
     open();
     fireEvent.click(screen.getByText("Bases"));
     expect(names()).toEqual(["Creech AFB"]);
+  });
+
+  it("tells the three kinds of stores apart", () => {
+    // A factory is what lets a base recruit ground units, so finding one is worth a
+    // chip of its own rather than a rummage through every building on the map.
+    open();
+    fireEvent.click(screen.getByText("Factories"));
+    expect(names()).toEqual(["SILKWORM"]);
+
+    fireEvent.click(screen.getByText("Factories"));
+    fireEvent.click(screen.getByText("Warehouses"));
+    expect(names()).toEqual(["ARAPAIMA"]);
+
+    fireEvent.click(screen.getByText("Warehouses"));
+    fireEvent.click(screen.getByText("Fuel depots"));
+    expect(names()).toEqual(["LOBSTER"]);
   });
 
   it("puts the wrecks last", () => {

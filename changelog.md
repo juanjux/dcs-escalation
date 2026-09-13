@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** The map search filters factories, warehouses, fuel depots and oil separately instead of lumping them under Buildings: which base can recruit ground units is a factory away, and the three kinds of stores are each worth a different sortie.
 * **[Escalation]** The fork is called **DCS Escalation** now. Campaigns, factions, layouts and payloads are untouched: they stay in `Saved Games\DCS\Retribution` and saves keep the `.retribution` extension, so nothing has to be moved.
 * **[OPFOR-AI]** The external planner can read a pilot's whole record: `GET /squadrons/{id}/pilots/{name}/record` (MCP `pilot_record`), and the roster carries his kills and what he has survived as counts.
 * **[Live Pilots]** Double-clicking a pilot on a squadron's roster opens his own dialog: his combat record, what he has survived, how he died, his morale and hardening with the log behind them, and his relationships -- warm and cold -- in both directions.
