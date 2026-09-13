@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 from types import SimpleNamespace
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import pytest
 
@@ -259,10 +259,22 @@ def _friend(his: float, theirs: float) -> Any:
     return Friend(pilot, other, True, Settings())
 
 
-def test_the_middle_of_the_neutral_band_is_not_a_friendship() -> None:
-    """Neutral runs from 4 to 6, so "above 5" would have put half of the band on a
-    card called Friendships."""
+def test_the_middle_of_the_neutral_band_is_not_a_relationship() -> None:
+    """Neutral runs from 4 to 6, so "above 5" would have put half of the band on the
+    card."""
     assert not _friend(5.5, 5.5).worth_showing
+
+
+def test_a_man_he_cannot_stand_is_worth_a_row() -> None:
+    """It costs the flight the same as a friendship does, in the other direction."""
+    assert _friend(1.5, 5.0).worth_showing
+    assert _friend(5.0, 1.5).worth_showing
+
+
+def test_the_row_carries_the_wash_the_roster_uses() -> None:
+    """The same colour in both places, so it is learnt once."""
+    assert _friend(9.0, 9.0).tint.startswith("rgba(")
+    assert _friend(5.0, 5.0).tint == ""
 
 
 def test_a_friendship_one_way_is_worth_a_row() -> None:
@@ -393,3 +405,71 @@ def test_a_man_lost_with_nobody_credited_says_so(qt_app: Any) -> None:
     stack = killed_in_action(_pilot(status=PilotStatus.Dead))
     assert stack is not None
     assert len(stack.rows) == 1
+
+
+def test_show_all_opens_the_rest_of_the_log(qt_app: Any) -> None:
+    """It sat on a row that toggles the card, so the press that asked for every event
+    shut the card instead."""
+    from PySide6.QtCore import QEvent, QPoint, Qt
+    from PySide6.QtGui import QMouseEvent
+    from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+
+    from game.squadrons.morale import MoraleLogEntry
+    from qt_ui.windows.pilot.state import LOG_PREVIEW, MoraleLog
+
+    pilot = _pilot()
+    pilot.morale_log = [
+        MoraleLogEntry(turn, 3, "flew the mission", 50) for turn in range(25)
+    ]
+    log = MoraleLog(pilot)
+    log.open = True
+    log._apply()
+
+    holder = QWidget()
+    column = QVBoxLayout()
+    column.addWidget(log)
+    column.addStretch()
+    holder.setLayout(column)
+    holder.resize(400, 900)
+    holder.show()
+    QApplication.processEvents()
+
+    def shown() -> int:
+        return sum(1 for row in log.rows if not row.isHidden())
+
+    assert shown() == LOG_PREVIEW
+    press = QMouseEvent(
+        QEvent.Type.MouseButtonPress,
+        QPoint(5, 5),
+        Qt.MouseButton.LeftButton,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    QApplication.sendEvent(log.more, press)
+    QApplication.processEvents()
+    assert shown() == 25
+    assert log.open
+
+    # And the row itself still shuts the card.
+    QApplication.sendEvent(log.head, press)
+    QApplication.processEvents()
+    assert shown() == 0
+    holder.close()
+
+
+def test_the_air_wing_is_opened_by_the_window_that_owns_it(qt_app: Any) -> None:
+    """One Air Wing window, whoever asks for it: the top panel keeps it that way."""
+    from PySide6.QtWidgets import QWidget
+
+    from qt_ui.windows.pilot.header import open_air_wing
+
+    asked: list[bool] = []
+    parent = cast(Any, QWidget())
+    parent.top_panel = SimpleNamespace(open_air_wing=lambda: asked.append(True))
+    child = QWidget(parent)
+
+    open_air_wing(child)
+    assert asked == [True]
+
+    # Nothing above it that knows about air wings: no exception.
+    open_air_wing(QWidget())

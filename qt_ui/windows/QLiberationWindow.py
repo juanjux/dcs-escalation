@@ -57,6 +57,8 @@ from qt_ui.windows.preferences.QLiberationPreferencesWindow import (
 from game.search.index import GameIndex
 from qt_ui.windows.palette import CommandPalette
 from qt_ui.windows.settings.QSettingsWindow import QSettingsWindow
+from game.squadrons.pilot import Pilot
+from qt_ui.windows.pilot import PilotDialog
 from qt_ui.windows.stats.QStatsWindow import QStatsWindow
 
 
@@ -743,6 +745,17 @@ class QLiberationWindow(QMainWindow):
 
     def on_select_flight(self, flight: Flight) -> None:
         self.ato_panel.select_flight_on_map(flight)
+
+    def open_pilot_dialog(self, pilot: Pilot) -> None:
+        """One man's record, for anything holding a pilot and no squadron.
+
+        The roster opens its own on a double click; this is the way in for anything
+        that has found him some other way.
+        """
+        if self.game is None:
+            return
+        self._pilot_dialog = PilotDialog(pilot, self.game, self)
+        self._pilot_dialog.show()
 
     def _qsettings(self) -> QSettings:
         return QSettings("DCS Retribution", "Qt UI")

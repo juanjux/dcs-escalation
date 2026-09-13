@@ -14,7 +14,13 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QVBoxLayout,
+    QWidget,
+)
 
 from game.dcs.skills import SKILL_LADDER, experience_for_skill
 from game.squadrons import morale as morale_rules
@@ -43,6 +49,10 @@ from qt_ui.windows.pilot.common import (
     rich,
     stars,
 )
+
+#: The one link in the header. A href rather than a button because it sits in the
+#: middle of a sentence.
+AIR_WING = "retribution:air-wing"
 
 HEADER_HEIGHT = 104
 NAME_LIVING = "#FFFFFF"
@@ -253,7 +263,10 @@ class PilotHeader(QWidget):
         pieces = [
             f"<span style='color:{TEXT_SECONDARY}'>"
             f"{self.squadron.aircraft.display_name}</span>",
-            f"<span style='color:{TEXT_SECONDARY}'>{self.squadron.name}</span>",
+            # The squadron opens the Air Wing: the roster is where a man is read in
+            # the company of everybody he flies with.
+            f"<a href='{AIR_WING}' style='color:{ACCENT};text-decoration:none'>"
+            f"{self.squadron.name}</a>",
             f"<span style='color:{TEXT_TERTIARY}'>{self.squadron.location.name}</span>",
         ]
         if self.living or self.pilot.player:
@@ -261,7 +274,11 @@ class PilotHeader(QWidget):
                 f"<span style='color:{TEXT_TERTIARY}'>"
                 f"{'PLAYER' if self.pilot.player else 'AI'}</span>"
             )
-        row.addWidget(shrinkable(rich(dot.join(pieces), 12.5)), 1)
+        line = rich(dot.join(pieces), 12.5)
+        line.setToolTip("Open the Air Wing")
+        line.setOpenExternalLinks(False)
+        line.linkActivated.connect(lambda _href: open_air_wing(self))
+        row.addWidget(shrinkable(line), 1)
         return row
 
     def _banner(self) -> Optional[QLabel]:
@@ -336,3 +353,28 @@ class PilotHeader(QWidget):
             Bar(earned / (price - held), "#E0C070", width=XP_BAR_WIDTH, height=4)
         )
         return row
+
+
+def open_air_wing(widget: QWidget) -> None:
+    """The Air Wing dialog, or the one already open brought to the front.
+
+    Asked of the main window's top panel rather than built here: that is the thing
+    that keeps there being exactly one Air Wing window however many times it is asked
+    for, and a second one showing the same roster is a bug players have reported
+    before.
+    """
+    node: Optional[QWidget] = widget
+    while node is not None:
+        panel = getattr(node, "top_panel", None)
+        if panel is not None and hasattr(panel, "open_air_wing"):
+            panel.open_air_wing()
+            return
+        node = node.parentWidget()
+
+    # Opened from somewhere with no main window above it -- the command palette, a
+    # test. The application has one all the same.
+    for window in QApplication.topLevelWidgets():
+        panel = getattr(window, "top_panel", None)
+        if panel is not None and hasattr(panel, "open_air_wing"):
+            panel.open_air_wing()
+            return

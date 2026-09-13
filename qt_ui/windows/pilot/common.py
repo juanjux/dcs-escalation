@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
 )
 
 from qt_ui.widgets.cards import CARD_BG, CARD_BORDER, card, make_transparent
-from qt_ui.widgets.controls import mono
+from qt_ui.widgets.controls import mono, wrapped_tooltip
 from qt_ui.windows.airwingconfig.common import (
     ACCENT,
     AMBER,
@@ -73,7 +73,9 @@ __all__ = [
     "TEXT_TERTIARY",
     "Bands",
     "Bar",
+    "Clickable",
     "Elided",
+    "captioned",
     "Row",
     "Stack",
     "chip",
@@ -215,6 +217,82 @@ def stars(level: int, size: float = 13.0, dimmed: bool = False) -> QLabel:
     return widget
 
 
+#: Section headings. Brighter than the caption grey the other dialogs use, and sat
+#: closer to the card, because at that distance and that weight they read as floating
+#: over the page rather than as the name of the box under them.
+CAPTION_INK = "#8E9DAA"
+CAPTION_GAP = 5
+
+
+class Clickable(QLabel):
+    """A word you can press.
+
+    A link inside a row that is itself clickable is not enough: the row sees the press
+    first and shuts itself under the finger. This takes the press.
+    """
+
+    clicked = Signal()
+
+    def __init__(
+        self, text: str = "", size: float = 11.0, colour: str = ACCENT
+    ) -> None:
+        super().__init__(text)
+        self.colour = colour
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setStyleSheet(
+            f"font-size: {size}px; color: {colour}; background: transparent;"
+            " border: none;"
+        )
+
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+            # Accepted, so whatever is behind it never sees the press.
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+
+def captioned(
+    name: str,
+    content: QWidget,
+    hint: str = "",
+    ink: str = "",
+    tooltip: str = "",
+) -> QWidget:
+    """A heading and the card it names, as one thing to put in a column."""
+    holder = QWidget()
+    make_transparent(holder)
+    column = QVBoxLayout()
+    column.setContentsMargins(0, 0, 0, 0)
+    column.setSpacing(CAPTION_GAP)
+    column.addWidget(heading(name, hint, ink, tooltip))
+    column.addWidget(content)
+    holder.setLayout(column)
+    return holder
+
+
+def heading(name: str, hint: str = "", ink: str = "", tooltip: str = "") -> QWidget:
+    """The heading on its own, for the one row two cards share."""
+    holder = QWidget()
+    make_transparent(holder)
+    row = QHBoxLayout()
+    row.setContentsMargins(0, 0, 0, 0)
+    row.setSpacing(8)
+    title = label(name.upper(), 11, ink or CAPTION_INK, bold=True)
+    title.setStyleSheet(title.styleSheet() + " letter-spacing: 1px;")
+    row.addWidget(title)
+    if hint:
+        # Not shrinkable: Ignored gives up its width to the stretch beside it, and the
+        # hint was drawn at nothing pixels wide.
+        row.addWidget(label(hint, 11, EMPTY))
+    row.addStretch()
+    holder.setLayout(row)
+    if tooltip:
+        holder.setToolTip(wrapped_tooltip(tooltip))
+    return holder
+
+
 class Bar(QWidget):
     """A thin bar with a fraction of it filled.
 
@@ -352,6 +430,10 @@ class Row(QWidget):
         if on != self.separator:
             self.separator = on
             self._restyle()
+
+    def set_fill(self, fill: str) -> None:
+        self.fill = fill
+        self._restyle()
 
     def _restyle(self) -> None:
         fill = self.fill or "transparent"

@@ -19,9 +19,9 @@ from game.squadrons import hardening
 from game.squadrons import morale as morale_rules
 from game.squadrons.pilot import Pilot
 from game.squadrons.squadron import Squadron
-from qt_ui.widgets.cards import caption, shrinkable
+from qt_ui.widgets.cards import make_transparent, shrinkable
 from qt_ui.widgets.controls import wrapped_tooltip
-from qt_ui.widgets.pilotrow import MORALE_COLOURS
+from qt_ui.widgets.pilotrow import MORALE_COLOURS, affinity_tint
 from qt_ui.windows.pilot.common import (
     ACCENT,
     AMBER,
@@ -40,10 +40,14 @@ from qt_ui.windows.pilot.common import (
     TEXT_TERTIARY,
     Bands,
     Bar,
+    CAPTION_GAP,
+    Clickable,
     Elided,
     Row,
     Stack,
+    captioned,
     chip,
+    heading,
     label,
     panel,
     rich,
@@ -96,7 +100,16 @@ def morale_card(pilot: Pilot, squadron: Squadron) -> QWidget:
     head.addWidget(dot)
     head.addWidget(label(state.name, 18, colour, bold=True))
     head.addStretch()
-    head.addWidget(label(str(pilot.morale), 13, TEXT_TERTIARY, monospace=True))
+    # The same shape as the figure in the card beside it: a number is worth more with
+    # the top of its scale next to it.
+    head.addWidget(
+        rich(
+            f"<span style='color:{TEXT_SECONDARY}'>{pilot.morale}</span>"
+            f"<span style='color:{TEXT_LABEL};font-size:11.5px'>"
+            f" / {morale_rules.MORALE_MAX}</span>",
+            13,
+        )
+    )
     column.addLayout(head)
 
     column.addWidget(_scale(pilot, settings))
@@ -235,15 +248,15 @@ class MoraleLog(QWidget):
         self.arrow = label("▸", 10, TEXT_TERTIARY)
         self.arrow.setFixedWidth(12)
         self.head.add(self.arrow)
-        heading = label("WHAT MOVED IT", 11, TEXT_MUTED, bold=True)
+        heading = label("MORALE EVENTS", 11, TEXT_MUTED, bold=True)
         heading.setStyleSheet(heading.styleSheet() + " letter-spacing: 1px;")
         self.head.add(heading)
         self.count = label("", 11, EMPTY)
         self.head.add(self.count)
         self.head.stretch()
-        self.more = rich("", 11)
-        self.more.setOpenExternalLinks(False)
-        self.more.linkActivated.connect(lambda _href: self.show_all())
+        self.more = Clickable("", 11)
+        self.more.clicked.connect(self.show_all)
+        self.more.setVisible(False)
         self.head.add(self.more)
         self.head.clicked.connect(self.toggle)
         self.stack.append(self.head)
@@ -268,7 +281,10 @@ class MoraleLog(QWidget):
         self._apply()
 
     def show_all(self) -> None:
+        """Every event, not just the recent ones. Never a way of shutting the card:
+        the row it sits on toggles, and a press meant for this must not reach it."""
         self.showing_all = True
+        self.open = True
         self._apply()
 
     def _apply(self) -> None:
@@ -282,12 +298,9 @@ class MoraleLog(QWidget):
             if self.open and total > shown
             else (f"{total} events" if total else "nothing yet")
         )
-        self.more.setText(
-            f"<a style='color:{ACCENT};text-decoration:none' href='#'>"
-            f"Show all {total}</a>"
-            if self.open and total > shown
-            else ""
-        )
+        more = self.open and total > shown
+        self.more.setText(f"Show all {total}" if more else "")
+        self.more.setVisible(more)
         self.stack.refresh()
 
     def _row(self, index: int) -> Row:
@@ -335,13 +348,31 @@ class Friend:
 
     @property
     def worth_showing(self) -> bool:
-        """Above the Neutral band one way or the other.
+        """Out of the Neutral band one way or the other, warm or cold.
 
         The band rather than the number: Neutral runs from 4 to 6, so a 5.5 is a man
-        he has an opinion of no more than the campaign gave him.
+        he has no more opinion of than the campaign gave him. A man he cannot stand is
+        as worth a row as a friend -- it costs the flight the same either way.
         """
-        neutral = friendship.band(friendship.FRIENDSHIP_START, self.settings).floor
-        return self.his_band.floor > neutral or self.their_band.floor > neutral
+        # By name: a campaign that has moved a band's floor gets fresh band objects
+        # out of every call, so two reads of the same band are not the same object.
+        neutral = friendship.band(friendship.FRIENDSHIP_START, self.settings).name
+        return self.his_band.name != neutral or self.their_band.name != neutral
+
+    @property
+    def tint(self) -> str:
+        """The wash the pilot lists put behind this pair, as a stylesheet colour.
+
+        The same one, so a player who has learnt the colour in the roster reads it
+        here without being told.
+        """
+        colour = affinity_tint(self.his, settings=self.settings)
+        if colour is None:
+            return ""
+        return (
+            f"rgba({colour.red()}, {colour.green()}, {colour.blue()},"
+            f" {colour.alpha() / 255:.3f})"
+        )
 
     @property
     def line(self) -> str:
@@ -402,7 +433,7 @@ def _who_likes(pilot: Pilot, wing: dict[UUID, tuple[Squadron, Pilot]]) -> set[UU
     }
 
 
-def friendship_card(
+def relationship_card(
     pilot: Pilot,
     squadron: Squadron,
     wing: dict[UUID, tuple[Squadron, Pilot]],
@@ -412,7 +443,7 @@ def friendship_card(
     stack = Stack()
     if not friends:
         row = Row(height=44)
-        row.add(label("No friendships yet", 12.5, EMPTY))
+        row.add(label("Nobody he has an opinion of yet", 12.5, EMPTY))
         stack.append(row)
         stack.refresh()
         return stack, ""
@@ -430,7 +461,7 @@ def friendship_card(
     others = here - len(friends)
     note = "The top bar is what he feels, the bottom what they feel back."
     if others > 0:
-        note += f" {others} others at {squadron.location.name} are Neutral or below."
+        note += f" {others} others at {squadron.location.name} are Neutral."
     return stack, note
 
 
@@ -441,7 +472,7 @@ def _friend_row(friend: Friend, squadron: Squadron, alpha: float) -> Row:
     because a pair of stacked bars is taller than one line of text and the digits
     beside them were being cut in half.
     """
-    row = Row(height=44, margins=(14, 7, 14, 7), spacing=10)
+    row = Row(height=44, fill=friend.tint, margins=(14, 7, 14, 7), spacing=10)
 
     who = QVBoxLayout()
     who.setContentsMargins(0, 0, 0, 0)
@@ -508,15 +539,37 @@ def _arrow(mark: str, value: float, colour: str, ink: str, alpha: float) -> QHBo
 # --- the column ------------------------------------------------------------------
 
 
+MORALE_TOOLTIP = (
+    "How he is this week, 0 to 100, and which of the six bands that puts him in."
+    " It moves with what happens to him -- a mission flown, a squadron mate lost,"
+    " a promotion, a week at home -- and the log under it says what moved it."
+    "\n\n"
+    "It is not decoration: a band above or below Normal shifts the rung he flies"
+    " at in the mission, and a man at the bottom of the scale refuses to fly and"
+    " may walk away altogether."
+)
+
+RELATIONSHIPS_TOOLTIP = (
+    "What he thinks of the other pilots at his base, 0 to 10, and what each of them"
+    " thinks back. It is directed: the two halves move on their own rolls and need"
+    " not agree."
+    "\n\n"
+    "A crew that gets on flies at a better rung and looks after each other when"
+    " somebody is shot down; a crew that does not pays for it the same way. Men"
+    " who are close ask for leave together, and a friend lost costs more morale"
+    " than a name."
+)
+
+
 def state_column(
     pilot: Pilot,
     squadron: Squadron,
     wing: dict[UUID, tuple[Squadron, Pilot]],
 ) -> Optional[QVBoxLayout]:
-    """Morale, hardening and friendships -- whichever of them this campaign has.
+    """Morale, hardening and relationships -- whichever of them this campaign has.
 
-    Nothing at all when Live Pilots is switched off, and the dialog then gives the
-    whole width to what he did, which is all there is to say about him.
+    Nothing at all when Live Pilots is switched off, and the dialog then gives
+    the whole width to what he did, which is all there is to say about him.
     """
     column = QVBoxLayout()
     column.setContentsMargins(0, 0, 0, 0)
@@ -528,7 +581,7 @@ def state_column(
 
     if shows_morale:
         anything = True
-        column.addWidget(_morale_captions(hardened_in_play))
+        column.addWidget(_morale_headings(hardened_in_play))
         pair = QHBoxLayout()
         pair.setContentsMargins(0, 0, 0, 0)
         pair.setSpacing(10)
@@ -541,24 +594,31 @@ def state_column(
         column.addWidget(MoraleLog(pilot))
     elif hardened_in_play:
         anything = True
+        # The one hint kept: a card that is not there needs saying, and this is
+        # where morale would have been.
         hint = (
             "morale is not shown for the fallen"
             if not pilot.alive
             else "the player's own morale is his own business"
         )
         column.addWidget(
-            _captioned("Hardened", hardening_card(pilot, squadron, True), hint)
+            captioned(
+                "Hardened",
+                hardening_card(pilot, squadron, True),
+                hint,
+                tooltip=HARDENING_TOOLTIP,
+            )
         )
 
     if squadron.friendship_in_play:
         anything = True
-        card, note = friendship_card(pilot, squadron, wing)
-        hint = "above Neutral · strongest first" if pilot.alive else "as they stood"
+        card, note = relationship_card(pilot, squadron, wing)
         holder = QWidget()
+        make_transparent(holder)
         inner = QVBoxLayout()
         inner.setContentsMargins(0, 0, 0, 0)
-        inner.setSpacing(10)
-        inner.addWidget(caption("Friendships", hint))
+        inner.setSpacing(CAPTION_GAP)
+        inner.addWidget(heading("Relationships", tooltip=RELATIONSHIPS_TOOLTIP))
         inner.addWidget(card)
         if note:
             explanation = label(note, 11, TEXT_MUTED)
@@ -573,26 +633,16 @@ def state_column(
     return column
 
 
-def _morale_captions(with_hardening: bool) -> QWidget:
-    """One caption row for the two cards: "this week" against "everything before it"."""
+def _morale_headings(with_hardening: bool) -> QWidget:
+    """One heading row for the two cards: they are meant to be read together."""
     holder = QWidget()
+    make_transparent(holder)
     row = QHBoxLayout()
     row.setContentsMargins(0, 0, 0, 0)
     row.setSpacing(10)
-    row.addWidget(caption("Morale", "this week"))
+    row.addWidget(heading("Morale", tooltip=MORALE_TOOLTIP))
     row.addStretch()
     if with_hardening:
-        row.addWidget(caption("Hardened", "everything before it"))
+        row.addWidget(heading("Hardened", tooltip=HARDENING_TOOLTIP))
     holder.setLayout(row)
-    return holder
-
-
-def _captioned(name: str, content: QWidget, hint: str = "") -> QWidget:
-    holder = QWidget()
-    column = QVBoxLayout()
-    column.setContentsMargins(0, 0, 0, 0)
-    column.setSpacing(10)
-    column.addWidget(caption(name, hint))
-    column.addWidget(content)
-    holder.setLayout(column)
     return holder
