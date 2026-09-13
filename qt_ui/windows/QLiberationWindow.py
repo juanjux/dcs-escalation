@@ -54,6 +54,8 @@ from qt_ui.windows.notes.QNotesWindow import QNotesWindow
 from qt_ui.windows.preferences.QLiberationPreferencesWindow import (
     QLiberationPreferencesWindow,
 )
+from game.search.index import GameIndex
+from qt_ui.windows.palette import CommandPalette
 from qt_ui.windows.settings.QSettingsWindow import QSettingsWindow
 from qt_ui.windows.stats.QStatsWindow import QStatsWindow
 
@@ -74,6 +76,13 @@ class QLiberationWindow(QMainWindow):
         self.sim_controller.sim_update.connect(EventStream.put_nowait)
         self.game_model = GameModel(game, self.sim_controller)
         GameContext.set_model(self.game_model)
+
+        # What the command palette searches. Built the first time it is asked for and
+        # again when the campaign or the turn changes, never per keystroke.
+        self.search_index = GameIndex()
+        self._palette: Optional[CommandPalette] = None
+        #: Dialogs the palette opened. Held, or Qt collects them as they are shown.
+        self.palette_child_dialogs: list[QWidget] = []
         self.new_package_signal.connect(
             lambda target: Dialog.open_new_package_dialog(target, self)
         )
@@ -182,6 +191,12 @@ class QLiberationWindow(QMainWindow):
         self.saveAsAction.setIcon(QIcon(CONST.ICONS["Save"]))
         self.saveAsAction.triggered.connect(self.saveGameAs)
         self.saveAsAction.setShortcut("CTRL+A")
+
+        # In the menu as well as on the shortcut: a palette nobody knows about is a
+        # palette nobody uses, and the menu is where a player looks for what exists.
+        self.commandPaletteAction = QAction("&Command Palette", self)
+        self.commandPaletteAction.setShortcut("CTRL+P")
+        self.commandPaletteAction.triggered.connect(self.open_command_palette)
 
         self.showAboutDialogAction = QAction("&About DCS Retribution", self)
         self.showAboutDialogAction.setIcon(QIcon.fromTheme("help-about"))
@@ -306,6 +321,8 @@ class QLiberationWindow(QMainWindow):
         self.menu = self.menu_bar
 
         file_menu = self.menu.addMenu("&File")
+        file_menu.addAction(self.commandPaletteAction)
+        file_menu.addSeparator()
         file_menu.addAction(self.newGameAction)
         file_menu.addAction(self.openAction)
         file_menu.addSeparator()
@@ -712,6 +729,13 @@ class QLiberationWindow(QMainWindow):
 
     def open_tgo_info_dialog(self, tgo: TheaterGroundObject) -> None:
         QGroundObjectMenu(self, tgo, tgo.control_point, self.game_model).show()
+
+    def open_command_palette(self) -> None:
+        """One box that finds a setting, a base, an objective, a squadron, a pilot,
+        a flight or any command in the menus."""
+        if self._palette is None:
+            self._palette = CommandPalette(self)
+        self._palette.open_over(self)
 
     def open_control_point_info_dialog(self, cp: ControlPoint) -> None:
         self._cp_dialog = QBaseMenu2(None, cp, self.game_model)
