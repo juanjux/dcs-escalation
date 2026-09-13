@@ -122,6 +122,9 @@ class _Squadron:
         self.owned_aircraft = 12
         self.primary_task = SimpleNamespace(value="CAS")
         self.nickname = "Lemmings"
+        # The whole roster, which is what the palette indexes: the men fit to fly
+        # this minute are a cut of it, and a pilot on leave is still a pilot.
+        self.current_roster = pilots or []
         self.active_pilots = pilots or []
         self.pilot_pool: list[Any] = []
         self.dead_pilots: list[Any] = []
@@ -217,3 +220,19 @@ def test_a_flight_with_a_name_of_its_own_uses_it() -> None:
     game.coalitions[0].ato.packages = [package]
 
     assert next(iter(flight_entries(cast(Any, game)))).label == "Strike · UZI"
+
+
+def test_a_pilot_off_the_flying_list_is_still_found() -> None:
+    """Wounded, on leave, deserted: none of them are on active_pilots, and a name is
+    most worth looking up when its owner is not where you expected him."""
+    flying = SimpleNamespace(
+        id="p1", name="Solis", status=SimpleNamespace(value="Active")
+    )
+    resting = SimpleNamespace(
+        id="p2", name="Adri", status=SimpleNamespace(value="On leave")
+    )
+    squadron = _squadron("VMA-223", "AV-8B", [flying, resting])
+    squadron.active_pilots = [flying]
+
+    entries = list(pilot_entries(cast(Any, _wing([squadron]))))
+    assert [entry.label for entry in entries] == ["Capt Solis", "Capt Adri"]
