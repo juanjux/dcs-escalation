@@ -1,6 +1,6 @@
 # DCS Escalation splash proposals
 
-Preview candidates generated with the built-in image generation tool from `resources/ui/splash_screen.png`. No runtime asset or code has been replaced. Selection pending.
+Preview candidates generated with the built-in image generation tool from `resources/ui/splash_screen.png`. The user accepted `02-dawn-slava-ukraini.png`. Runtime asset sizing and installation are pending the accompanying icon selection; no runtime asset or code has been replaced.
 
 Branch: `codex/escalation-splash`.
 
