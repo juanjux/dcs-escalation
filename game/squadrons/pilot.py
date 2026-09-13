@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import unique, Enum
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID, uuid4
 
 from faker import Faker
@@ -21,8 +21,32 @@ from game.squadrons.morale import (
 )
 
 
+@dataclass(frozen=True)
+class KilledBy:
+    """Who ended it, with what, and when.
+
+    Kept in pieces rather than as the sentence the debriefing prints, because the
+    pilot dialog lays them out and a sentence would have to be taken apart again.
+    """
+
+    pilot_name: str = ""
+    squadron: str = ""
+    aircraft: str = ""
+    weapon: str = ""
+    friendly_fire: bool = False
+    turn: int = 0
+
+
 @dataclass
 class PilotRecord:
+    """Everything a campaign remembers about what one pilot did.
+
+    Every field defaults, and :meth:`__setstate__` fills in the ones a save written
+    before them does not carry. A dataclass keeps a plain default as a class
+    attribute, so those read through even without the setdefault; the mutable ones
+    need a factory and so genuinely need it.
+    """
+
     missions_flown: int = field(default=0)
 
     #: What the pilot has earned in the air, which is what decides his rank. A plain
@@ -31,10 +55,58 @@ class PilotRecord:
     #: raising.
     xp: int = field(default=0)
 
+    #: Sorties he came home from. Not the same as flown: the difference is how often
+    #: he was shot down, which is the more interesting of the two numbers.
+    missions_completed: int = field(default=0)
+
+    #: What he has shot down, by aircraft type, and what he has destroyed on the
+    #: ground, by what it was. Grouped rather than listed: a campaign can run to
+    #: hundreds of kills and the dialog asks for counts.
+    air_kills: dict[str, int] = field(default_factory=dict)
+    ground_kills: dict[str, int] = field(default_factory=dict)
+
+    #: How many aircraft he has lost, and how many of those he walked or was carried
+    #: away from. DCS reports no ejection of its own, so the first is every loss and
+    #: the second is every loss he was alive after.
+    aircraft_lost: int = field(default=0)
+    survived_losses: int = field(default=0)
+
+    #: Wounds taken and the turns they cost him.
+    wounds: int = field(default=0)
+    turns_in_hospital: int = field(default=0)
+
+    #: Set once, when it is over.
+    killed_by: Optional[KilledBy] = field(default=None)
+
     def __setstate__(self, state: dict[str, Any]) -> None:
-        # Belt and braces for the same case: older saves carry no xp at all.
-        state.setdefault("xp", 0)
+        for name, default in (
+            ("xp", 0),
+            ("missions_completed", 0),
+            ("aircraft_lost", 0),
+            ("survived_losses", 0),
+            ("wounds", 0),
+            ("turns_in_hospital", 0),
+            ("killed_by", None),
+        ):
+            state.setdefault(name, default)
+        for name in ("air_kills", "ground_kills"):
+            state.setdefault(name, {})
         self.__dict__.update(state)
+
+    def note_kill(self, air: bool, what: str) -> None:
+        """One more of these, by what it was called."""
+        if not what:
+            return
+        tally = self.air_kills if air else self.ground_kills
+        tally[what] = tally.get(what, 0) + 1
+
+    @property
+    def total_air_kills(self) -> int:
+        return sum(self.air_kills.values())
+
+    @property
+    def total_ground_kills(self) -> int:
+        return sum(self.ground_kills.values())
 
 
 @unique

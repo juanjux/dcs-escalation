@@ -22,11 +22,20 @@
 /* The waypoint tooltip: smaller than Leaflet's default, because at the zoom where it
    turns permanent there is one of these on every waypoint of every selected flight. */
 .wp-tip {
-  font-size: 10.5px;
-  line-height: 1.25;
-  padding: 2px 5px;
+  font-size: 9.5px;
+  line-height: 1.2;
+  padding: 1px 4px;
   border-radius: 2px;
   white-space: nowrap;
+}
+
+/* Leaflet draws a little arrow sized for its own tooltip; at this size it is bigger
+   than the box it points out of. */
+.wp-tip.leaflet-tooltip-left::before,
+.wp-tip.leaflet-tooltip-right::before,
+.wp-tip.leaflet-tooltip-top::before,
+.wp-tip.leaflet-tooltip-bottom::before {
+  border-width: 4px;
 }
 
 /* The distance on a leg. Sits beside the line rather than on it, so the line stays
