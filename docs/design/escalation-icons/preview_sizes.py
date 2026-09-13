@@ -1,12 +1,19 @@
 """Render unchanged icon proposals at exact pixel sizes for comparison."""
 
 from pathlib import Path
+import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
 
 ROOT = Path(__file__).resolve().parent
 SOURCES = ["01-dawn-falcon", "02-escalation-e", "03-ukraine-insignia"]
+LABELS = ["1 · F-16", "2 · E", "3 · Escudo"]
+OUTPUT = "icon-size-comparison.png"
+if "--minimal" in sys.argv:
+    SOURCES = ["04-simple-jet", "05-simple-e", "06-simple-formation"]
+    LABELS = ["4 · Caza", "5 · E", "6 · Trío"]
+    OUTPUT = "minimal-size-comparison.png"
 SIZES = [16, 24, 32, 48, 64]
 font = ImageFont.truetype("C:/Windows/Fonts/segoeui.ttf", 13)
 heading = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", 15)
@@ -20,7 +27,7 @@ for offset, background, foreground, title in [
 ]:
     draw.rectangle((offset, 0, offset + 359, 461), fill=background)
     draw.text((offset + 20, 14), title, fill=foreground, font=heading)
-    for index, label in enumerate(["1 · F-16", "2 · E", "3 · Escudo"]):
+    for index, label in enumerate(LABELS):
         draw.text((offset + 78 + index * 92, 46), label, fill=foreground, font=font)
     for row, size in enumerate(SIZES):
         center_y = 95 + row * 76
@@ -30,7 +37,7 @@ for offset, background, foreground, title in [
             center_x = offset + 104 + index * 92
             canvas.paste(resized, (center_x - size // 2, center_y - size // 2), resized)
 
-output = ROOT / "icon-size-comparison.png"
+output = ROOT / OUTPUT
 canvas.save(output)
 print(output)
 for name, source in zip(SOURCES, images):
