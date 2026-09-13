@@ -94,9 +94,17 @@ class PilotRecord:
     aircraft_lost: int = field(default=0)
     survived_losses: int = field(default=0)
 
-    #: Wounds taken and the turns they cost him.
+    #: Wounds taken and the turns they cost him, and the last one on its own: "one
+    #: wound, three turns" and "wounded last on turn nine" are different questions.
     wounds: int = field(default=0)
     turns_in_hospital: int = field(default=0)
+    last_wound_turn: int = field(default=0)
+    last_wound_turns: int = field(default=0)
+
+    #: Leave granted, and the turns of it. Open-ended leave is granted with no length
+    #: at all, so the count is the honest figure and the turns are what is known.
+    leaves_taken: int = field(default=0)
+    leave_turns_total: int = field(default=0)
 
     #: Set once, when it is over.
     killed_by: Optional[KilledBy] = field(default=None)
@@ -113,6 +121,10 @@ class PilotRecord:
             ("survived_losses", 0),
             ("wounds", 0),
             ("turns_in_hospital", 0),
+            ("last_wound_turn", 0),
+            ("last_wound_turns", 0),
+            ("leaves_taken", 0),
+            ("leave_turns_total", 0),
             ("killed_by", None),
         ):
             state.setdefault(name, default)
@@ -389,6 +401,8 @@ class Pilot:
         self.status = PilotStatus.OnLeave
         self.leave_turns = turns
         self.leave_on_turn = turn
+        self.record.leaves_taken += 1
+        self.record.leave_turns_total += turns
         self.wants_leave = False
         self.leave_turns_requested = 0
 

@@ -600,6 +600,8 @@ class MissionResultsProcessor:
             pilot.record.survived_losses += 1
             pilot.record.wounds += 1
             pilot.record.turns_in_hospital += turns
+            pilot.record.last_wound_turn = self.game.turn
+            pilot.record.last_wound_turns = turns
             self._wounded_this_turn.add(id(pilot))
             self._note_flight_morale(
                 loss.flight, pilot, morale_rules.FLIGHT_WOUND, turns
