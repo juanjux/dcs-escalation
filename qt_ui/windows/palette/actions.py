@@ -6,13 +6,32 @@ in the menu, and nothing has to remember to register it.
 
 from __future__ import annotations
 
-from typing import Iterator, Optional
+from typing import Any, Iterator, Optional
 
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QMenu, QMenuBar
+from PySide6.QtWidgets import QMenu, QMenuBar, QWidget
 
 from game.search.index import Entry, Follow
 from game.search.providers import ACTION
+
+
+def menu_bar_of(window: Any) -> Optional[QMenuBar]:
+    """The window's menu bar -- asked for, never built.
+
+    ``QMainWindow.menuBar()`` *creates* an empty bar when the window has none, and
+    installs it in the menu area. This window has none: its menus and its toolbar
+    icons share one strip, which is set with ``setMenuWidget``. Calling ``menuBar()``
+    therefore threw that strip out and put an empty bar in its place -- the menus and
+    the icons went off the window for good, and Ctrl+P went with them, because the
+    action carrying the shortcut lives in the File menu of the strip's own bar.
+    """
+    bar = getattr(window, "menu_bar", None)
+    if isinstance(bar, QMenuBar):
+        return bar
+    if isinstance(window, QWidget):
+        # Any other window: its real bar if it has one, and nothing if it has not.
+        return window.findChild(QMenuBar)
+    return None
 
 
 def clean(text: str) -> str:

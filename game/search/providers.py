@@ -27,9 +27,6 @@ SQUADRON = "squadron"
 PILOT = "pilot"
 FLIGHT = "flight"
 
-#: Said on every pilot row until the pilot dialog exists.
-PILOT_NOTE = "opens the squadron for now"
-
 
 def entries_for(game: Optional[Any]) -> Iterator[Entry]:
     """Everything there is to find. Settings exist without a campaign; nothing else."""
@@ -215,7 +212,6 @@ def pilot_entries(game: Any) -> Iterator[Entry]:
                             str(squadron),
                         ]
                     ),
-                    note=PILOT_NOTE,
                 )
 
 
