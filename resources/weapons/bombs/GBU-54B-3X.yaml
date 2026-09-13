@@ -1,4 +1,5 @@
 name: 3xGBU-54B
+range: 15  # nm - release range, planned from the mid-twenties
 year: 2012
 fallback: 3xGBU-38
 clsids:

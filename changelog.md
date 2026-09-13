@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[FIX]** A strike armed with JDAMs began its attack run 45 nm out, the same as a JSOW package: the ingress point now follows the range the weapons are actually released from.
 * **[FIX]** Changing a squadron's pilot limit in the Air Wing cheat dialog left a stray window on the desktop for every squadron in the list, and nothing closed them.
 * **[FIX]** The rename asked for the first-start configuration again: the file holding your DCS paths, theme and server port was renamed with everything else.
 * **[Escalation]** The fork is called **DCS Escalation** now. Your campaigns, factions, layouts and payloads are untouched: they stay in `Saved Games\DCS\Retribution` and saves keep the `.retribution` extension, so nothing has to be moved.
