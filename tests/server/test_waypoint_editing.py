@@ -230,3 +230,80 @@ def test_the_added_waypoint_is_found_by_identity() -> None:
 
     assert routes._added_waypoint([first, second], [first, added, second]) is added
     assert routes._added_waypoint([first, second], [first, second]) is None
+
+
+def test_an_insert_the_layout_puts_somewhere_else_is_refused() -> None:
+    """A layout keeps its nav points in lists, and a list does not always begin where
+    the anchor ends.
+
+    Asked for a point between a takeoff and a hold, the standard layout puts one at
+    the head of the outbound leg -- which is on the far side of the hold -- and
+    positions it on the near side. The route then doubles back on itself, which is
+    what it drew: a Z between the airfield and the hold.
+    """
+    takeoff = _waypoint("TAKEOFF", FlightWaypointType.TAKEOFF)
+    hold = _waypoint("HOLD", FlightWaypointType.LOITER)
+    nav = _waypoint("NAV")
+
+    class _Displacing(_Plan):
+        def add_waypoint(self, anchor: Any, following: Any) -> bool:
+            # Wherever it was asked for, it goes at the head of the outbound leg.
+            self.waypoints.insert(2, _waypoint("NAV"))
+            return True
+
+        def delete_waypoint(self, waypoint: Any) -> bool:
+            # A nav point in one of the nav lists, which the real layout will give up.
+            self.waypoints = [w for w in self.waypoints if w is not waypoint]
+            return True
+
+    plan = _Displacing([takeoff, hold, nav])
+    flight_id, game = _game(_flight(plan))
+
+    with pytest.raises(HTTPException) as excinfo:
+        routes.insert_waypoint(flight_id, 2, routes.WaypointInsert(before=True), game)
+
+    assert excinfo.value.status_code == 409
+    assert "no room" in excinfo.value.detail
+    # And it is taken back out rather than left in the route it spoils.
+    assert plan.waypoints == [takeoff, hold, nav]
+
+
+def test_an_insert_that_lands_where_it_was_asked_for_is_kept() -> None:
+    """The same layout, asked for somewhere it can honour."""
+    takeoff = _waypoint("TAKEOFF", FlightWaypointType.TAKEOFF)
+    hold = _waypoint("HOLD", FlightWaypointType.LOITER)
+    nav = _waypoint("NAV")
+    plan = _Plan([takeoff, hold, nav])
+    flight_id, game = _game(_flight(plan))
+
+    routes.insert_waypoint(flight_id, 2, routes.WaypointInsert(before=False), game)
+
+    assert len(plan.waypoints) == 4
+    assert plan.waypoints[1] is hold
+    assert plan.waypoints[3] is nav
+
+
+def test_an_insert_that_cannot_be_taken_back_out_is_left_alone() -> None:
+    """Better an odd route than a refusal that leaves a waypoint nobody was told about.
+
+    The real layout always gives up a nav point it has just added, so this is the
+    case that should not arise -- but a refusal and a changed route together is the
+    one outcome with no way back.
+    """
+    takeoff = _waypoint("TAKEOFF", FlightWaypointType.TAKEOFF)
+    hold = _waypoint("HOLD", FlightWaypointType.LOITER)
+
+    class _Stubborn(_Plan):
+        def add_waypoint(self, anchor: Any, following: Any) -> bool:
+            self.waypoints.insert(2, _waypoint("NAV"))
+            return True
+
+        def delete_waypoint(self, waypoint: Any) -> bool:
+            return False
+
+    plan = _Stubborn([takeoff, hold])
+    flight_id, game = _game(_flight(plan))
+
+    routes.insert_waypoint(flight_id, 2, routes.WaypointInsert(before=True), game)
+
+    assert len(plan.waypoints) == 3

@@ -44,9 +44,24 @@ def test_every_band_is_reachable_and_named() -> None:
     assert friendship.band_name(7.1) == "Close"
     assert friendship.band_name(7.0) == "Friendly"
     assert friendship.band_name(5.0) == "Neutral"
-    assert friendship.band_name(4.0) == "Frosty"
+    assert friendship.band_name(3.0) == "Frosty"
     assert friendship.band_name(2.0) == "Hostile"
     assert friendship.band_name(0.0) == "Bad blood"
+
+
+def test_neutral_is_symmetric_about_where_every_pair_starts() -> None:
+    """Drift moves a pair by a whole point, so one quiet turn leaves it on four or
+    on six. Neutral held six and not four, so an even walk painted every pair that
+    had drifted down once as going cold and every pair that had drifted up once as
+    nothing at all -- and a campaign came out looking like nobody got on with
+    anybody.
+    """
+    assert friendship.band_name(4.0) == "Neutral"
+    assert friendship.band_name(6.0) == "Neutral"
+
+    # And two steps is a relationship, either way.
+    assert friendship.band_name(3.0) == "Frosty"
+    assert friendship.band_name(7.0) == "Friendly"
 
 
 # --- direction ------------------------------------------------------------------
@@ -340,3 +355,22 @@ def test_a_formation_is_what_the_men_in_it_experience() -> None:
         friendship.move(wingman, lead, 4.0)
     # Each wingman: (2*9 + 5 + 5) / 4 = 7.0. The lead, unweighted: 5.0.
     assert friendship.synergy([lead, two, three, four], lead) == (7.0 * 3 + 5.0) / 4
+
+
+def test_a_campaign_that_never_moved_the_bands_gets_the_straight_ones() -> None:
+    """The floors are settings, so they live in the save: a campaign under way would
+    have kept the lopsided pair for ever."""
+    from game.settings import Settings
+
+    state = {"friendship_band_neutral": 4.1, "friendship_band_frosty": 3.1}
+    Settings._migrate_lopsided_friendship_bands(state)
+    assert state == {"friendship_band_neutral": 4.0, "friendship_band_frosty": 3.0}
+
+
+def test_a_campaign_that_set_its_own_bands_keeps_them() -> None:
+    """Only the floors that shipped are corrected. Anything else was chosen."""
+    from game.settings import Settings
+
+    state = {"friendship_band_neutral": 4.5, "friendship_band_frosty": 2.0}
+    Settings._migrate_lopsided_friendship_bands(state)
+    assert state == {"friendship_band_neutral": 4.5, "friendship_band_frosty": 2.0}

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 import random
+from dataclasses import dataclass
 from typing import Any, Iterator, Optional, TYPE_CHECKING
 
 from game.debriefing import Debriefing
+from game.squadrons.pilot import KilledBy
 from game.squadrons.experience import (
     PilotDeath,
     PilotPromotion,
@@ -46,6 +48,47 @@ if TYPE_CHECKING:
 MINOR_DEFEAT_INFLUENCE = 0.1
 DEFEAT_INFLUENCE = 0.3
 STRONG_DEFEAT_INFLUENCE = 0.5
+
+
+#: What a destroyed thing was, in the terms both the XP table and a pilot's record
+#: care about. Strings rather than an enum: one of them is a building category that
+#: comes from the campaign's own data.
+AIR = "air"
+SHIP = "ship"
+VEHICLE = "vehicle"
+BUILDING = "building"
+UNKNOWN = "unknown"
+NOTHING = "nothing"
+
+
+@dataclass(frozen=True)
+class Victim:
+    """What was destroyed, and what it was called."""
+
+    kind: str
+    name: str = ""
+    #: For a building, the campaign's own category for it, which is what it is paid by.
+    building_category: Optional[str] = None
+
+
+def _named(unit_type: Any) -> str:
+    """What to call it in a pilot's record, or nothing if it cannot be named."""
+    if unit_type is None:
+        return ""
+    return str(getattr(unit_type, "display_name", None) or unit_type)
+
+
+def killer_sentence(parts: KilledBy) -> str:
+    """ "Capt Ortega (F-15C) with AIM-120C", from the pieces.
+
+    One place, so the debriefing line and anything else that says who did it agree.
+    """
+    said = parts.pilot_name
+    if parts.aircraft and parts.aircraft != said:
+        said = f"{said} ({parts.aircraft})"
+    if parts.weapon and parts.weapon != parts.aircraft:
+        said = f"{said} with {parts.weapon}"
+    return said
 
 
 class MissionResultsProcessor:
@@ -443,6 +486,7 @@ class MissionResultsProcessor:
         record = self._describe_loss(loss, debriefing)
         # However this ends for him, he did not bring the aircraft home.
         debriefing.pilot_outcomes.lost_aircraft.add(id(pilot))
+        pilot.record.aircraft_lost += 1
         # What the men who were up there with him think of *him*: the half of
         # friendship that decides how hard anybody looks. Positive only -- being
         # disliked does not make somebody slower to reach a burning cockpit -- and read
@@ -494,6 +538,7 @@ class MissionResultsProcessor:
                 )
 
         if survived:
+            pilot.record.survived_losses += 1
             note("walked away")
             debriefing.pilot_outcomes.survivors.append(record)
             logging.info(f"{pilot.name} survived the loss of his aircraft")
@@ -506,6 +551,9 @@ class MissionResultsProcessor:
             if getattr(settings, "morale_enabled", True):
                 turns = morale_rules.recovery_turns(turns, pilot.morale, settings)
             pilot.wound(turns, self.game.turn)
+            pilot.record.survived_losses += 1
+            pilot.record.wounds += 1
+            pilot.record.turns_in_hospital += turns
             self._wounded_this_turn.add(id(pilot))
             self._note_flight_morale(
                 loss.flight, pilot, morale_rules.FLIGHT_WOUND, turns
@@ -532,6 +580,12 @@ class MissionResultsProcessor:
             return
 
         note("died")
+        pilot.record.killed_by = self._killer_parts(
+            debriefing.kill_info_by_unit_id.get(id(loss)),
+            debriefing,
+            squadron.player.is_blue,
+            self.game.turn,
+        )
         pilot.kill()
         self._dead_this_turn.setdefault(str(squadron), []).append(pilot)
         self._note_flight_morale(loss.flight, pilot, morale_rules.FLIGHT_DEATH)
@@ -599,44 +653,64 @@ class MissionResultsProcessor:
             blue=squadron.player.is_blue,
         )
 
-    def _describe_killer(
+    def _killer_parts(
         self,
         detail: Optional[dict[str, Any]],
         debriefing: Debriefing,
         victim_is_blue: bool,
-    ) -> tuple[Optional[str], bool]:
-        """Name whoever did it, as precisely as the data allows.
+        turn: int = 0,
+    ) -> Optional[KilledBy]:
+        """Who did it, with what, and from which side, in pieces.
 
         DCS credits exactly one initiator per kill and has no notion of an assist, so
         this is whoever landed the killing blow. In order of preference: the roster
         pilot behind the killing aircraft, the human's own name, the airframe or
-        vehicle type. No initiator at all means nobody shot him down.
+        vehicle type. No detail at all is a crash, which nobody is credited with.
+
+        In pieces rather than as the sentence below, so a pilot's record can keep the
+        weapon as a weapon. The sentence is built from these, so the debriefing line
+        and the record can never say different things.
         """
         if not detail:
-            return "a crash", False
+            return None
 
-        name: Optional[str] = None
+        name = ""
+        squadron = ""
         friendly = False
         initiator = detail.get("initiator")
         if initiator:
             killer = debriefing.unit_map.flight(str(initiator))
             if killer is not None:
                 friendly = killer.flight.squadron.player.is_blue == victim_is_blue
+                squadron = str(killer.flight.squadron)
                 if killer.pilot is not None:
                     name = killer.pilot.name
 
-        if name is None:
-            name = detail.get("initiator_player") or detail.get("initiator_type")
-        if name is None:
-            return None, friendly
+        if not name:
+            name = detail.get("initiator_player") or detail.get("initiator_type") or ""
 
-        airframe = detail.get("initiator_type")
-        if airframe and airframe != name:
-            name = f"{name} ({airframe})"
-        weapon = detail.get("weapon")
-        if weapon and weapon != airframe:
-            name = f"{name} with {weapon}"
-        return name, friendly
+        return KilledBy(
+            pilot_name=name,
+            squadron=squadron,
+            aircraft=str(detail.get("initiator_type") or ""),
+            weapon=str(detail.get("weapon") or ""),
+            friendly_fire=friendly,
+            turn=turn,
+        )
+
+    def _describe_killer(
+        self,
+        detail: Optional[dict[str, Any]],
+        debriefing: Debriefing,
+        victim_is_blue: bool,
+    ) -> tuple[Optional[str], bool]:
+        """The same thing as one line, for the debriefing."""
+        if not detail:
+            return "a crash", False
+        parts = self._killer_parts(detail, debriefing, victim_is_blue)
+        if parts is None or not parts.pilot_name:
+            return None, parts.friendly_fire if parts is not None else False
+        return killer_sentence(parts), parts.friendly_fire
 
     def _victim_is_blue(self, victim: Any) -> Optional[bool]:
         """Which side the destroyed thing belonged to, where that can be established."""
@@ -657,6 +731,50 @@ class MissionResultsProcessor:
             return bool(convoy.player_owned.is_blue)
         return None
 
+    @staticmethod
+    def _victim_kind(victim: Any) -> Victim:
+        """What was destroyed: what sort of thing it was, and what it was called.
+
+        One walk rather than two. The XP table and the pilot's tally were each going
+        to ask the same questions of the same object in the same order, and two
+        copies of that walk would disagree the first time either was touched.
+        """
+        if victim is None:
+            return Victim(NOTHING)
+
+        flight = getattr(victim, "flight", None)
+        if flight is not None:
+            return Victim(AIR, _named(getattr(flight, "unit_type", None)))
+
+        convoy = getattr(victim, "convoy", None)
+        if convoy is not None:
+            return Victim(VEHICLE, _named(getattr(victim, "unit_type", None)))
+
+        if hasattr(victim, "unit_type") and getattr(victim, "origin", None) is not None:
+            # Front line and motorpool vehicles.
+            return Victim(VEHICLE, _named(victim.unit_type))
+
+        unit = getattr(victim, "theater_unit", None) or getattr(
+            victim, "ground_unit", None
+        )
+        if unit is None:
+            return Victim(NOTHING)
+
+        unit_type = getattr(unit, "unit_type", None)
+        if unit_type is not None:
+            from game.dcs.shipunittype import ShipUnitType
+
+            if isinstance(unit_type, ShipUnitType):
+                return Victim(SHIP, _named(unit_type))
+            return Victim(VEHICLE, _named(unit_type))
+
+        # No unit type: a static or a scenery objective, named by what it is part of.
+        tgo = getattr(unit, "ground_object", None)
+        if tgo is None:
+            return Victim(UNKNOWN)
+        category = getattr(tgo, "category", None)
+        return Victim(BUILDING, str(tgo), building_category=category)
+
     def _kill_xp(self, victim: Any) -> int:
         """What destroying this was worth.
 
@@ -665,32 +783,18 @@ class MissionResultsProcessor:
         magnitude anywhere, so nothing divides an element any finer -- hurting one
         without destroying it is paid as an assist instead, at XP_DAMAGE_SHARE.
         """
-        if victim is None:
-            return 0
-        if getattr(victim, "flight", None) is not None:
+        victim_kind = self._victim_kind(victim)
+        if victim_kind.kind == AIR:
             return XP_AIR_KILL
-        if getattr(victim, "convoy", None) is not None:
+        if victim_kind.kind == SHIP:
+            return XP_SHIP_KILL
+        if victim_kind.kind == VEHICLE:
             return XP_GROUND_KILL
-        if hasattr(victim, "unit_type") and getattr(victim, "origin", None) is not None:
-            return XP_GROUND_KILL  # front line and motorpool vehicles
-
-        unit = getattr(victim, "theater_unit", None) or getattr(
-            victim, "ground_unit", None
-        )
-        if unit is None:
-            return 0
-        unit_type = getattr(unit, "unit_type", None)
-        if unit_type is not None:
-            from game.dcs.shipunittype import ShipUnitType
-
-            if isinstance(unit_type, ShipUnitType):
-                return XP_SHIP_KILL
-            return XP_GROUND_KILL
-        # No unit type: a static or a scenery objective, paid by what it is worth.
-        tgo = getattr(unit, "ground_object", None)
-        if tgo is None:
+        if victim_kind.kind == BUILDING:
+            return building_xp(victim_kind.building_category)
+        if victim_kind.kind == UNKNOWN:
             return XP_UNKNOWN_KILL
-        return building_xp(getattr(tgo, "category", None))
+        return 0
 
     def _credited_events(
         self, details: Any, debriefing: Debriefing, note_friendly_fire: bool = False
@@ -738,14 +842,21 @@ class MissionResultsProcessor:
             debriefing.state_data.kill_details, debriefing, note_friendly_fire=True
         ):
             credited.add((id(pilot), target))
+            kind = self._victim_kind(victim)
             xp = self._kill_xp(victim)
             if xp:
                 earned[id(pilot)] = earned.get(id(pilot), 0) + xp
                 self.xp_log.award(pilot, xp, "destroyed", victim, target)
-            if getattr(victim, "flight", None) is not None:
+            # His own tally, which the campaign never reads and the pilot dialog is
+            # the whole reason for. Kept only for what has a name: "one of something
+            # unrecognised" is not worth a row.
+            if kind.kind == AIR:
+                pilot.record.note_kill(air=True, what=kind.name)
                 self._note_morale(pilot, morale_rules.AIR_KILL)
-            elif not self._was_the_assigned_target(victim, flight):
-                self._note_morale(pilot, morale_rules.UNPLANNED_KILL)
+            else:
+                pilot.record.note_kill(air=False, what=kind.name)
+                if not self._was_the_assigned_target(victim, flight):
+                    self._note_morale(pilot, morale_rules.UNPLANNED_KILL)
         return earned, credited
 
     @staticmethod
@@ -828,6 +939,7 @@ class MissionResultsProcessor:
                     # than the sortie, so being shot down is never the better outcome.
                     extras = []
                     if id(pilot) not in debriefing.pilot_outcomes.lost_aircraft:
+                        pilot.record.missions_completed += 1
                         extras.append(
                             ("returned", "mission complete", XP_MISSION_COMPLETE)
                         )
