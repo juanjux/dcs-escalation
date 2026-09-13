@@ -1,9 +1,18 @@
-# DCS Escalation — juanjux fork
+<p align="center">
+  <img src="resources/ui/splash_screen.png" width="720" alt="DCS Escalation">
+</p>
 
-A personal fork of [DCS Retribution](https://github.com/dcs-retribution/dcs-retribution)
-that bundles a number of features and fixes which are not (yet) in upstream
-Retribution. Some features and fixes are also adapted from the
+# DCS Escalation
+
+A dynamic campaign generator for DCS World, and the third name in one line of work:
+**DCS Liberation** was written by shdwp and rewritten by Khopa; **DCS Retribution**
+was forked from it in 2022 and is still
+[actively developed](https://github.com/dcs-retribution/dcs-retribution). **DCS
+Escalation** is a personal fork of Retribution by **juanjux**, carrying features and
+fixes that are not (yet) in it — some of them adapted from the
 [414Ret fork](https://github.com/bradyccox/414Ret).
+
+Everything Retribution does, Escalation does. What follows is what it does on top.
 
 ## How development works here
 
@@ -72,33 +81,51 @@ list is the [pull requests](https://github.com/juanjux/dcs-escalation/pulls?q=is
 
 
 ### Live Pilots
-This is a completely new feature that make pilots be more than a name in a list. When enabling Live Pilots, instead of "Pilot #2", the actual name 
-of the pilot and the abbreviated rank is shown in the long label in-engine.
 
-- **Ranks and experience.** Pilots now have ranks, that map to real DCS skill levels, starting as cadets (2nd Lieutenant or whatever is the O1 equivalent in
-the country selected) and earning XP by completing missions, destroying targets, and downing enemies, among other things, going up in the ladder (and in-engine skill)
-as they do so.
+A squadron of people instead of a list of slots. Switched on, a pilot has a name, a
+rank and a history, and DCS shows him by name in the cockpit label rather than as
+"Pilot #2". What happens to him is remembered, and it feeds back into how he flies:
+the campaign is not only aircraft and fuel any more, it is also who is left and how
+they are holding up.
 
-- **Morale.** Pilots are human and thus can feel shaken or triumphant based on their own performance, their promotions, mates lost in the battle and other events (all
-can be seen and their impact configured in the settings). The morale levels can make pilots act better or worse on the missions in-engine, and can improve or worsen
-their surival chances on the battlefield if they are downed among other effects. Giving pilots a leave is not now useless, as it improves quickly their morale, even more
-if they go together with friends. If the morale is low enough, for example when a pilot has lost several friends on a single flight, they could even refuse to fly or even desert, so try to have your pilots happy!
+- **He earns his rank.** Experience comes from flying the mission and from what he
+  destroys, and each rung of it is a real DCS skill level — a promotion makes him
+  measurably better in the air. Ranks are named in the nation's own convention.
 
-- **Hardening.** A pilot that has suffered some shit, lost mates and airframes, is hardened over time. Hardened pilots lost morale more slowly, have a higher
-chance of surviving being downed, but also are slower to make friends or enemies.
+- **He has good weeks and bad ones.** Morale moves with everything that happens to
+  him: a mission flown, a kill, a promotion, a squadron mate lost, a week at home. It
+  shifts the rung he actually flies at, and at the bottom of the scale he refuses to
+  fly and may walk away for good. Leave is worth granting.
 
-- **Friendship.** Each pilot values each other as friends or even enemies, with different levels. Friendship have many effects and provide a positive or negative
-XP multiplier for missions, modelling the synergy among the members of a flight or package and make being downed easy to survive if your friends are in the same flight (they look for you, help in the CSAR, et cetera) and make a pilot quicker to regain positive morale levels (comforting) and less prone to deserting.
+- **He gets used to it.** A man who has been through a run of bad turns is harder to
+  shake, likelier to walk away from a wreck, and slower to get close to anybody —
+  which is the price of it.
 
-- **Pilot dossier.** Double-clicking a pilot on the squadron roster opens his own dialog. It holds his rank and how much experience the next one takes, his kills grouped the way he would tell them -- air by what he shot down, ground by the sort of thing it was -- with every row opening in place to the individual kills (what, when, with what); what he has survived, and if he is gone, who got him and with what; his morale, the whole band scale, and the log of everything that has moved him; his hardening and what its three effects are worth as percentages; and his relationships in both directions -- what he thinks of each man and what that man thinks back -- friendly and unfriendly alike, washed in the same colours the rosters use. An optional cheat strip renames, promotes, heals and revives.
+- **He has opinions about the others.** Every pair of pilots has a relationship, and a
+  directed one: what he thinks of a man and what that man thinks back need not agree.
+  A crew that gets on flies better and looks after its own when somebody goes down;
+  one that does not pays for it the same way. Friends ask for leave together, and
+  losing one costs more than losing a stranger.
 
-- **Rivals (coming soon).** Pilots can have _rivals_. Rivals are reciprocal between two pilots with an unfriendly relation and it makes them
-try to best the other in XP earned when they fly in the same flight or package and thus really improves their performance in-engine. Think of Maverick and Ice! Over time,
-rivals tend to be friends (but _not_ in the Tarantino interpretation of the film... or yes, that's to your imagination and preferences!).
+- **And it is all readable.** Double-clicking a pilot opens his record: his rank and
+  what the next one costs, every kill grouped the way he would tell it and openable to
+  the individual ones, what he has survived, how he died and who did it, his morale
+  with the log of everything that moved it, and his relationships in both directions.
+  An optional cheat strip renames, promotes, heals and revives.
 
-- **Mate's Quests (coming soon).** In some turns, some mate will ask for help with some specific requirements. For example, a B52 pilot could ask you to escort him in his next mission, or a cadet could ask you, as a more experienced pilot, to fly with him on a SEAD mission with HARM missiles. These quests are optional, but if you accept and successfully fly it, both pilots will get a boost in XP and friendship.
-  
-- **Cantina (coming soon).** The cantina is a unified interface where you can explore all your pilots inter-relations, complete historic and stats related details of a single pilot, morale stats, leave requests and some warnings.
+Still to come:
+
+- **Rivals.** Two pilots who cannot stand each other try to out-score one another in
+  the same flight or package, and fly better for it. Maverick and Ice. Over time a
+  rivalry tends to turn into friendship.
+
+- **Mate's quests.** Now and then a pilot asks for something specific — an escort on
+  his next mission, a SEAD sortie flown alongside an experienced hand. Optional, and
+  worth experience and friendship to both men when it comes off.
+
+- **The cantina.** One place for the whole crew room: who gets on with whom, a man's
+  history and statistics, morale across the squadron, leave requests, and whatever is
+  worth a warning.
 
 ### Missions, AI & tasking
 - **Fix escort and sead escorts not honoring the "ahead" TOT offset setting.** 
