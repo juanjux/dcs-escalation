@@ -18,7 +18,7 @@ handlers:
     class: logging.handlers.RotatingFileHandler
     level: DEBUG
     formatter: default
-    filename: logs/retribution.log
+    filename: logs/escalation.log
     maxBytes: 5242880
     backupCount: 1
     encoding: utf8

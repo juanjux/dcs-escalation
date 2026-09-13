@@ -107,7 +107,7 @@ def format_visibility(fog: Optional["Fog"]) -> str:
 def wind_from_deg(blows_to_deg: float) -> int:
     """Convert a DCS "blows-to" wind direction to the aviation "wind from".
 
-    Retribution stores ``wind.direction`` using DCS's "blows-to" convention
+    Escalation stores ``wind.direction`` using DCS's "blows-to" convention
     (verified empirically: a 271° value in the .miz reads as wind blowing
     toward 271° in-cockpit). Pilots expect "wind from" by aviation
     convention, so flip 180° at the display boundary. Shared by the recon

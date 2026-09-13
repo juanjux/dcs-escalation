@@ -53,14 +53,14 @@ input/output as a compressed blob rather than an HTTP request.
 
 **Activation flow:**
 1. Player checks the setting and **closes the settings dialog**.
-2. Retribution immediately generates an **initial briefing blob** — the
+2. Escalation immediately generates an **initial briefing blob** — the
    equivalent of `start` + a condensed `howtoplay` + copy-paste protocol
    instructions (how to decode the turn blob, how to format the response blob).
    This is shown in a Qt dialog with a read-only text area and a **Copy** button.
    Player pastes it into their LLM chat once. The LLM acknowledges and waits.
 
 **Per-turn flow:**
-1. At the start of each OPFOR turn Retribution serialises the full turn context
+1. At the start of each OPFOR turn Escalation serialises the full turn context
    (same data as `GET /turn_context` + `prev_turns` + `stored_context`) into a
    **compressed+encoded turn blob** (zlib → base64, or msgpack → base64 — whichever
    is smallest). A dialog opens with this blob in a read-only text area + **Copy**
@@ -72,7 +72,7 @@ input/output as a compressed blob rather than an HTTP request.
    transfers, `stored_context` update, optional status message).
 4. Below the outgoing blob, the same dialog shows a **text input area** labelled
    *"Paste the LLM's response here"* and an **OK** button.
-5. Retribution decodes the response blob, validates all actions through the normal
+5. Escalation decodes the response blob, validates all actions through the normal
    service layer (budget, inventory, range, etc.), and applies the valid ones.
 6. **On validation error:** a new dialog shows the error description formatted as
    a human-readable + pasteable snippet, with instructions for the LLM to correct
@@ -107,7 +107,7 @@ process and the live `Game`:
 from contextlib import asynccontextmanager, AsyncExitStack
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("DCS Retribution OPFOR AI", stateless_http=True, json_response=True)
+mcp = FastMCP("DCS Escalation OPFOR AI", stateless_http=True, json_response=True)
 # ... register MCP tools/resources in game/mcp/, all delegating to game/agent/service ...
 
 @asynccontextmanager
@@ -162,7 +162,7 @@ dependency isolated matters for the eventual `dev` PR ([`07`](07-branching-pr-an
 ## The bootstrap URL & "start" document
 
 `GET /retribution-ai/start` (and the MCP equivalent resource/prompt) returns the
-**bootstrap document** the LLM reads first: what DCS World and Retribution are, the
+**bootstrap document** the LLM reads first: what DCS World and Escalation are, the
 LLM's role as OPFOR planner, the list of operations, and the recommended workflow
 (read `howtoplay` once → read `turn_context` + `prev_turns` + `stored_context` →
 plan → POST packages/buys → optionally update `stored_context`). It's served from

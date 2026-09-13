@@ -1,4 +1,4 @@
-"""Build a stripped-down .miz with Retribution own mission generator, for testing.
+"""Build a stripped-down .miz with Escalation own mission generator, for testing.
 
 A campaign mission carries ~750 groups, none of which has anything to do with
 whatever you are testing, and that is what makes time acceleration crawl. This

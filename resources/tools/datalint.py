@@ -95,7 +95,7 @@ class Linter(LinterBase):
         yield H1("Retribution data report")
         yield self.describe_version()
         yield Paragraph(
-            "This report documents missing supplemental data in Retribution. This is "
+            "This report documents missing supplemental data in Escalation. This is "
             "only able to report data that is missing as compared to pydcs. If pydcs "
             "is missing DCS data, that cannot be reported."
         )
@@ -113,7 +113,7 @@ class Linter(LinterBase):
             text=True,
         ).stdout.strip()
         return Paragraph(
-            f"This report was generated for DCS Retribution {VERSION} ({sha}) on "
+            f"This report was generated for DCS Escalation {VERSION} ({sha}) on "
             f"{date.today()} with pydcs {self.describe_pydcs()}."
         )
 

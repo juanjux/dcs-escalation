@@ -11,4 +11,4 @@ tasks:
   Armed Recon: 300
   Strike: 1    # current VWV version (v2.3.0) does not have any weapons for Voodoo
   Intercept: 1    # current VWV version (v2.3.0) does not have any weapons for Voodoo
-  CAS: 1    # Retribution wants a fallback task
+  CAS: 1    # Escalation wants a fallback task

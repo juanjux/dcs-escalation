@@ -153,7 +153,7 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
     @staticmethod
     def _migrator() -> Dict[str, str]:
         return {
-            # DCS calls it an EW Radio Jammer; Retribution only ever uses it to deny
+            # DCS calls it an EW Radio Jammer; Escalation only ever uses it to deny
             # GPS, and the site it builds is a GPS Jamming Site.
             "EW Radio Jammer (Red)": "GPS Jammer (Red)",
             "EW Radio Jammer (Blue)": "GPS Jammer (Blue)",

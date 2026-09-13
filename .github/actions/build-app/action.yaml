@@ -1,5 +1,5 @@
-name: Build Retribution package
-description: Assembles the full Retribution application.
+name: Build Escalation package
+description: Assembles the full Escalation application.
 runs:
   using: composite
   steps:

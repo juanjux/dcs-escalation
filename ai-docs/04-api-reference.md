@@ -57,17 +57,17 @@ models (JSON). Reads never mutate; writes only succeed at a turn/planning bounda
 
 | Op | REST | MCP | Service → engine |
 |----|------|-----|------------------|
-| **start** — role, first steps, endpoint catalog, workflow (points to howtoplay) | `GET /start` | resource `retribution://start` (and/or a `prompt`) | static doc — **draft in [`start.md`](start.md)** |
-| **howtoplay** — the commander's briefing (once/session): role, game concepts, package composition doctrine, fair-play rules, advising the human, and the "your turn" trigger | `GET /howtoplay` | resource `retribution://howtoplay` | static doc — **draft written in [`howtoplay.md`](howtoplay.md)** |
-| **settings** — current settings + each explained | `GET /settings` | resource `retribution://settings` | `Settings` (`game/settings/settings.py:93`) + descriptions |
-| **human_notes** — player's freeform rules/notes | `GET /human_notes` | resource `retribution://human_notes` | stored in `Settings`/save ([`05`](05-context-and-persistence.md)) |
-| **capabilities** *(enh. #3)* — what THIS install/campaign supports, so the LLM adapts and never calls an unsupported op: `api_version`, `air_wing_cheat` on?, `movable_ships` present?, `map_image` available?, `combined_arms`?, fog level, factions, mission-duration | `GET /capabilities` | resource `retribution://capabilities` | read `Settings` + feature presence (gates fork-vs-`dev` features) |
+| **start** — role, first steps, endpoint catalog, workflow (points to howtoplay) | `GET /start` | resource `escalation://start` (and/or a `prompt`) | static doc — **draft in [`start.md`](start.md)** |
+| **howtoplay** — the commander's briefing (once/session): role, game concepts, package composition doctrine, fair-play rules, advising the human, and the "your turn" trigger | `GET /howtoplay` | resource `escalation://howtoplay` | static doc — **draft written in [`howtoplay.md`](howtoplay.md)** |
+| **settings** — current settings + each explained | `GET /settings` | resource `escalation://settings` | `Settings` (`game/settings/settings.py:93`) + descriptions |
+| **human_notes** — player's freeform rules/notes | `GET /human_notes` | resource `escalation://human_notes` | stored in `Settings`/save ([`05`](05-context-and-persistence.md)) |
+| **capabilities** *(enh. #3)* — what THIS install/campaign supports, so the LLM adapts and never calls an unsupported op: `api_version`, `air_wing_cheat` on?, `movable_ships` present?, `map_image` available?, `combined_arms`?, fog level, factions, mission-duration | `GET /capabilities` | resource `escalation://capabilities` | read `Settings` + feature presence (gates fork-vs-`dev` features) |
 
 ## B. Read — situation (the "operational picture")
 
 | Op | REST | MCP | Service → engine |
 |----|------|-----|------------------|
-| **turn_context** — campaign, map, all OPFOR items (bases, wings, pilots, aircraft, ground units, units outside bases, buildings, SAMs, EWRs: position + alive/dead + health); OWNFOR detail limited per **`map_coalition_visibility`** (the real "Fog of war" map mode — see [`05`](05-context-and-persistence.md)); **+ computed decision-support** *(enh. #5)*: affordability (what red can buy), force-ratio trend vs blue, your most-threatened bases, ranked threats — so the LLM needn't do raw bookkeeping | `GET /turn_context` | resource `retribution://turn_context/{side}` | `theater.controlpoints`/`ground_objects`, `AirWing.iter_squadrons`, `Squadron.*`, `game.threat_zone_for`, `ObjectiveFinder.*` (already ranks targets), coords via `leaflet` ([`02`](02-codebase-map.md)) |
+| **turn_context** — campaign, map, all OPFOR items (bases, wings, pilots, aircraft, ground units, units outside bases, buildings, SAMs, EWRs: position + alive/dead + health); OWNFOR detail limited per **`map_coalition_visibility`** (the real "Fog of war" map mode — see [`05`](05-context-and-persistence.md)); **+ computed decision-support** *(enh. #5)*: affordability (what red can buy), force-ratio trend vs blue, your most-threatened bases, ranked threats — so the LLM needn't do raw bookkeeping | `GET /turn_context` | resource `escalation://turn_context/{side}` | `theater.controlpoints`/`ground_objects`, `AirWing.iter_squadrons`, `Squadron.*`, `game.threat_zone_for`, `ObjectiveFinder.*` (already ranks targets), coords via `leaflet` ([`02`](02-codebase-map.md)) |
 | **prev_turns** — per prior turn: units lost (how / who killed them), bases captured, key events; `?n=K` for K turns ago (1 = last) | `GET /prev_turns?n=1` | tool `get_prev_turns(n)` | debrief history + `game.informations` + stats ([`05`](05-context-and-persistence.md)) |
 | **packages** (read) — current packages/flights **incl. waypoints & TOTs**; each package and flight carries a **stable `id`** and each flight its **pilot names** (so the LLM can pick which to delete — by id, or by pilot) | `GET /packages?side=red` | tool `get_packages(side)` | `coalition.ato.packages`, `Package.id`, `Flight.id` (uuid4), `Flight.flight_plan.waypoints`, `FlightMembers` pilots (reuses existing `flights`/`waypoints` route shapes) |
 | **flight waypoints** — ordered waypoints of one flight (lat/lng, type, alt, tot) | `GET /waypoints/{flight_id}` | tool `get_flight_waypoints(flight_id)` | existing `game/server/waypoints/routes.py:38` (`list_all_waypoints_for_flight`) |
@@ -216,7 +216,7 @@ task/target mismatch, no route). A bad flight fails *itself* only; the rest appl
 
 | Op | REST | MCP | Service → engine |
 |----|------|-----|------------------|
-| **stored_context** read | `GET /stored_context` | resource `retribution://stored_context` | persisted with the campaign ([`05`](05-context-and-persistence.md)) |
+| **stored_context** read | `GET /stored_context` | resource `escalation://stored_context` | persisted with the campaign ([`05`](05-context-and-persistence.md)) |
 | **stored_context** write/append | `PUT /stored_context` (replace) / `POST /stored_context` (append) | tool `set_stored_context` / `append_stored_context` | same store |
 | **stored_context** delete one key | `DELETE /stored_context/{key}` | tool `delete_stored_context(key)` | pop the key from the store |
 | **stored_context** clear all | `DELETE /stored_context` | tool `clear_stored_context()` | reset the store |

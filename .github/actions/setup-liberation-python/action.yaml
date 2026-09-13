@@ -1,5 +1,5 @@
-name: Retribution Python set-up
-description: Sets up the Retribution Python environment.
+name: Escalation Python set-up
+description: Sets up the Escalation Python environment.
 runs:
   using: composite
   steps:

@@ -373,6 +373,12 @@ def base_path() -> Path:
     return _create_dir_if_needed(Path(_dcs_saved_game_folder))
 
 
+# These folders keep the name the fork was called when the player's campaigns, his
+# factions, his layouts and his kneeboards were written into them. The application is
+# DCS Escalation; the shelf his things are already on is still Retribution, and
+# renaming it would hide every one of them.
+
+
 def debug_dir() -> Path:
     return _create_dir_if_needed(base_path() / "Retribution" / "Debug")
 
@@ -413,7 +419,7 @@ def tile_cache_dir() -> Path:
     """Directory for cached basemap tiles used by recon kneeboards.
 
     Prefers ``<save_dir>/Retribution/TileCache`` under the Saved Games tree
-    that retribution already writes to. When ``persistency.setup`` has not
+    that escalation already writes to. When ``persistency.setup`` has not
     been called (standalone dev scripts, golden-image generators, ad-hoc
     test harnesses), falls back to the OS-conventional user cache location
     so the tile pipeline still works.
@@ -438,7 +444,7 @@ def tile_cache_dir() -> Path:
 def mission_archive_dir() -> Path:
     """Directory holding the archived copy of each generated mission.
 
-    A subfolder of ``Missions`` rather than the Retribution tree, so DCS's own
+    A subfolder of ``Missions`` rather than the Escalation tree, so DCS's own
     mission browser lists it and an archived turn opens straight from the game.
     """
     return _create_dir_if_needed(base_path() / "Missions" / "Retribution Archive")

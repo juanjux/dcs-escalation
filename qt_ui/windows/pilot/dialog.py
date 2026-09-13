@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from qt_ui.uiconstants import app_settings
 from game.game import Game
 from game.squadrons.pilot import Pilot
 from game.squadrons.squadron import Squadron
@@ -202,7 +203,7 @@ class PilotDialog(QDialog):
 
     @staticmethod
     def _qsettings() -> QSettings:
-        return QSettings("DCS Retribution", "Qt UI")
+        return app_settings()
 
     def _restore_geometry(self) -> None:
         saved = self._qsettings().value(QSETTINGS_GEOMETRY)

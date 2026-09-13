@@ -15,7 +15,7 @@ force, no operational shape. It is trivial to read after a few turns.
 
 ## The idea
 
-Put an **LLM in the commander's seat for OPFOR**. Retribution exposes its live
+Put an **LLM in the commander's seat for OPFOR**. Escalation exposes its live
 game over an HTTP API; an LLM reads a rich turn context (front lines, threats,
 IADS, what red has, what the player did last turn) and produces an **operational
 plan** — what to prioritise, where to concentrate, what to fly, what to buy. The
@@ -34,7 +34,7 @@ engine turns that intent into concrete, validated missions.
    > `http://127.0.0.1:8322/retribution-ai/start?token=…`
 2. The user hands that URL to their LLM:
    - **Desktop agent** (Claude Code): it `GET`s the start URL, receives a
-     bootstrap document (what DCS/Retribution are, its role as OPFOR planner, the
+     bootstrap document (what DCS/Escalation are, its role as OPFOR planner, the
      API list and the workflow), then calls the endpoints (GET to read, POST to
      write packages) over plain HTTP. **No config files, no connector setup.**
    - **Web LLM** (claude.ai): the user adds the **MCP** URL as a custom connector,

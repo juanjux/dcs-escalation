@@ -31,7 +31,7 @@ def _candidate_state_dirs() -> list[Path]:
     fail.
     """
     dirs: list[Path] = []
-    export_dir = os.getenv("RETRIBUTION_EXPORT_DIR")
+    export_dir = os.getenv("ESCALATION_EXPORT_DIR")
     if export_dir:
         dirs.append(Path(export_dir))
     # The install dir is what the app passes to the mission as
@@ -65,7 +65,7 @@ def _candidate_state_files() -> list[Path]:
 
     Handles both the normal ``state.json`` and the timestamped
     ``state-<n>.json`` variant produced when the
-    ``RETRIBUTION_EXPORT_STAMPED_STATE`` env var is set on the DCS side.
+    ``ESCALATION_EXPORT_STAMPED_STATE`` env var is set on the DCS side.
     """
     files: list[Path] = []
     for d in _candidate_state_dirs():

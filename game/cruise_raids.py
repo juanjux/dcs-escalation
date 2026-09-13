@@ -2,7 +2,7 @@
 
 Warships with land-attack cruise missiles (the Burke's Tomahawks, the CurrentHill
 Kalibr hulls) can strike shore targets through a DCS ``FireAtPoint`` task with the
-cruise-missile weapon flag, but nothing in Retribution ever tasked them. This is the
+cruise-missile weapon flag, but nothing in Escalation ever tasked them. This is the
 campaign half of the feature; the ``cruisemissiles`` Lua plugin is the in-mission half.
 
 * **Eligibility** — :data:`LACM_SHIP_DCS_IDS`, a hand-curated set of DCS ship types.

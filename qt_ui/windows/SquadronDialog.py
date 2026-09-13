@@ -80,7 +80,7 @@ from qt_ui.rankstars import (
 from qt_ui.errorreporter import report_errors
 from qt_ui.models import AtoModel, SquadronModel
 from qt_ui.simcontroller import SimController
-from qt_ui.uiconstants import AIRCRAFT_ICONS
+from qt_ui.uiconstants import app_settings, AIRCRAFT_ICONS
 from qt_ui.dialogs import open_once
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.pilot import PilotDialog
@@ -1018,7 +1018,7 @@ class SquadronDialog(QDialog):
 
     @staticmethod
     def _qsettings() -> QSettings:
-        return QSettings("DCS Retribution", "Qt UI")
+        return app_settings()
 
     def _restore_geometry(self) -> None:
         saved = self._qsettings().value(self.GEOMETRY_KEY)

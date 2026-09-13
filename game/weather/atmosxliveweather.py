@@ -9,7 +9,7 @@ clock -- and we take only ``vdata``.
 
 Nothing here is allowed to stop a mission being generated. Every failure (no CLI, no
 network, an ICAO with no observation, a malformed file) logs and returns, leaving the
-weather Retribution had already generated.
+weather Escalation had already generated.
 """
 
 from __future__ import annotations
@@ -527,7 +527,7 @@ def fetch_observation(
     """The current observation for this campaign's terrain, or None with a reason logged.
 
     Every way this can fail returns None: the campaign must still be playable with the
-    weather Retribution generates when ATMOS-X is absent, the network is down, or the
+    weather Escalation generates when ATMOS-X is absent, the network is down, or the
     station reported nothing.
     """
     from game.settings.settings import CloudPresetPack
@@ -602,7 +602,7 @@ def fetch_observation(
 class LiveWeather(GameWeather):
     """A real observation, in the shape the rest of the game already understands.
 
-    Retribution decides a turn's weather when the turn begins, and the turn display,
+    Escalation decides a turn's weather when the turn begins, and the turn display,
     the kneeboards, the active-runway choice and the carrier's course into wind all read
     that decision -- so the observation has to *be* the turn's weather, not something
     grafted onto the .miz at the end. What the model cannot hold (visibility distance,

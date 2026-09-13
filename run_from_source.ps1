@@ -93,11 +93,11 @@ if (-not (Test-Path (Join-Path $repo 'client\build\index.html'))) {
 # One at a time. The app takes a lock in %TEMP% and a second instance exits without
 # a window, which from a desktop icon looks exactly like nothing happening.
 $running = Get-CimInstance Win32_Process | Where-Object {
-    $_.Name -eq 'retribution_main.exe' -or
+    $_.Name -eq 'escalation_main.exe' -or
     ($_.Name -like 'python*.exe' -and $_.CommandLine -like '*qt_ui.main*')
 }
 if ($running) {
-    Die ('Retribution is already running (' + $running[0].Name +
+    Die ('Escalation is already running (' + $running[0].Name +
          '). Close it first -- only one instance can have the web server.')
 }
 

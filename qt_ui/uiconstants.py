@@ -1,6 +1,7 @@
 import os
 from typing import Dict
 
+from PySide6.QtCore import QSettings
 from PySide6.QtGui import QPixmap
 
 from .liberation_theme import get_theme_icons
@@ -10,14 +11,27 @@ from .liberation_theme import get_theme_icons
 #: upstream on purpose: that documentation is real and ours would be an empty wiki.
 URLS: Dict[str, str] = {
     "Manual": "https://github.com/dcs-retribution/dcs-retribution/wiki",
-    "Repository": "https://github.com/juanjux/dcs-retribution",
+    "Repository": "https://github.com/juanjux/dcs-escalation",
     "ForumThread": "https://forum.dcs.world/topic/368593-dcs-retribution-dynamic-campaign-generator/",
-    "Issues": "https://github.com/juanjux/dcs-retribution/issues",
-    "Releases": "https://github.com/juanjux/dcs-retribution/releases",
+    "Issues": "https://github.com/juanjux/dcs-escalation/issues",
+    "Releases": "https://github.com/juanjux/dcs-escalation/releases",
 }
 
 LABELS_OPTIONS = ["Full", "Abbreviated", "Dot Only", "Neutral Dot", "Off"]
 SKILL_OPTIONS = ["Average", "Good", "High", "Excellent"]
+
+#: Where Qt remembers window sizes, positions and the odd preference. It keeps the
+#: name the fork had when the player's were written: this is a key in his registry
+#: rather than anything he ever reads, and renaming it would put every window back to
+#: its default size and lose the command palette's history on the next launch.
+QSETTINGS_ORGANISATION = "DCS Retribution"
+QSETTINGS_APPLICATION = "Qt UI"
+
+
+def app_settings() -> QSettings:
+    """The store the windows remember themselves in."""
+    return QSettings(QSETTINGS_ORGANISATION, QSETTINGS_APPLICATION)
+
 
 AIRCRAFT_ICONS: Dict[str, QPixmap] = {}
 VEHICLES_ICONS: Dict[str, QPixmap] = {}

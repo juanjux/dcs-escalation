@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from game.squadrons import Squadron
+from qt_ui.uiconstants import app_settings
 from qt_ui.models import AirWingModel
 from qt_ui.widgets.squadrondelegate import GroupHeaderRole
 
@@ -50,8 +51,6 @@ GROUPINGS = [
 ]
 
 #: Same store as the main window's geometry, so the choice outlives the app.
-SETTINGS_ORGANISATION = "DCS Retribution"
-SETTINGS_APPLICATION = "Qt UI"
 GROUPING_KEY = "airwing/grouping"
 SORT_KEY = "airwing/sort"
 
@@ -317,7 +316,7 @@ class SquadronPanel(QWidget):
 
     @staticmethod
     def _settings() -> QSettings:
-        return QSettings(SETTINGS_ORGANISATION, SETTINGS_APPLICATION)
+        return app_settings()
 
     def on_filter_changed(self, needle: str) -> None:
         self.proxy.set_needle(needle)

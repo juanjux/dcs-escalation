@@ -1,6 +1,6 @@
 class: ElectronicWarfare
 description: Ground-based radio/navigation jammer. DCS lists it as a Radio jammer with
-  a 50 km detection range. Retribution drives the GPS-denial effect itself
+  a 50 km detection range. Escalation drives the GPS-denial effect itself
   rather than relying on that unverified in-sim behaviour - the `gps_jamming` block
   below makes this unit deny satellite guidance over an area around itself, so a
   JDAM/JSOW/JASSM aimed at anything inside that area lands off the aimpoint.

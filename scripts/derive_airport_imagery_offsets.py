@@ -82,7 +82,7 @@ def _parse_osm_ele_metres(raw) -> Optional[float]:
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 OPEN_ELEVATION_URL = "https://api.open-elevation.com/api/v1/lookup"
-USER_AGENT = "retribution-kneeboard-osm-import/1.0"
+USER_AGENT = "escalation-kneeboard-osm-import/1.0"
 OVERPASS_TIMEOUT = 60.0
 OPEN_ELEVATION_TIMEOUT = 30.0
 QUERY_RADIUS_M = 5_000.0
