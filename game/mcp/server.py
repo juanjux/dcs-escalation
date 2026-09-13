@@ -121,6 +121,15 @@ def squadron_pilots(squadron_id: str, side: str = "red") -> dict:
 
 
 @_tool()
+def pilot_record(squadron_id: str, pilot_name: str, side: str = "red") -> dict:
+    """Everything the campaign remembers about one pilot: every kill with its turn and
+    weapon, what he has survived, how he died and who did it, his whole morale log, and
+    what he thinks of the men around him. squadron_pilots carries the counts; this is
+    what they are made of. Names come from squadron_pilots."""
+    return service.pilot_record(side, squadron_id, pilot_name)
+
+
+@_tool()
 def flight_crew(flight_id: str, side: str = "red") -> dict:
     """Who is in each seat of a flight, and which of the squadron's pilots are still free.
     Seat numbers are what set_flight_crew expects."""

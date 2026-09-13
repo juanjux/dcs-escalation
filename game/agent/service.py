@@ -274,6 +274,14 @@ def squadron_pilots(side: str, squadron_id: str) -> dict:
 
 
 @opfor_only
+def pilot_record(side: str, squadron_id: str, pilot_name: str) -> dict:
+    """Everything the campaign remembers about one pilot."""
+    from game.agent import planner
+
+    return planner.pilot_record(_require_game(), side, squadron_id, pilot_name)
+
+
+@opfor_only
 def flight_crew(side: str, flight_id: str) -> dict:
     """Who is in each seat of a flight, and which pilots are still free."""
     from game.agent import planner

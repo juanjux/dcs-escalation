@@ -1,6 +1,7 @@
 ﻿# Retribution v1.6.3 (414th)
 
 ## Features/Improvements
+* **[OPFOR-AI]** The external planner can read a pilot's whole record: `GET /squadrons/{id}/pilots/{name}/record` (MCP `pilot_record`), and the roster carries his kills and what he has survived as counts.
 * **[FIX]** The command palette found no pilot who was not fit to fly this minute: the wounded, the men on leave and the deserters were not indexed at all.
 * **[FIX]** Choosing a setting in the command palette opened the settings window on its first page instead of the setting's own.
 * **[UI]** Choosing a base or an objective in the command palette puts the map on it.
