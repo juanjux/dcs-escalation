@@ -335,7 +335,7 @@ def test_a_place_puts_the_map_on_it(
     from dcs.mapping import LatLng
 
     from game.server import EventStream
-    from qt_ui.windows.palette.follow import _look_at
+    from qt_ui.windows.palette.follow import OBJECTIVE_ZOOM, _look_at
 
     class Somewhere:
         @staticmethod
@@ -344,7 +344,10 @@ def test_a_place_puts_the_map_on_it(
 
     sent: list[Any] = []
     monkeypatch.setattr(EventStream, "put_nowait", sent.append)
-    _look_at(Somewhere())
+    _look_at(Somewhere(), OBJECTIVE_ZOOM)
 
     assert len(sent) == 1
     assert sent[0].fly_to == LatLng(37.2, -115.8)
+    # And close enough to see it: a site is a couple of hundred metres across, and
+    # centring on it at whatever zoom you happened to be at leaves you hunting.
+    assert sent[0].fly_to_zoom == OBJECTIVE_ZOOM

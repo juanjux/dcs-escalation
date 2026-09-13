@@ -54,11 +54,11 @@ def _follow(window: Any, target: Follow) -> None:
     if kind == BASE:
         cp = _control_point(game, key)
         if cp is not None:
-            _look_at(cp.position)
+            _look_at(cp.position, BASE_ZOOM)
             window.open_control_point_info_dialog(cp)
     elif kind == OBJECTIVE:
         tgo = game.db.tgos.get(UUID(key))
-        _look_at(tgo.position)
+        _look_at(tgo.position, OBJECTIVE_ZOOM)
         window.open_tgo_info_dialog(tgo)
     elif kind == FLIGHT:
         flight = game.db.flights.get(UUID(key))
@@ -71,7 +71,14 @@ def _follow(window: Any, target: Follow) -> None:
         _open_pilot(window, *_pilot_and_squadron(game, key))
 
 
-def _look_at(position: Any) -> None:
+#: How close to look at what was chosen. A site is a couple of hundred metres across
+#: and has to be zoomed to be found at all; an airbase is kilometres of it and wants
+#: to be seen whole.
+OBJECTIVE_ZOOM = 16
+BASE_ZOOM = 14
+
+
+def _look_at(position: Any, zoom: int) -> None:
     """Put the map on it as well as opening its dialog.
 
     Half of what a player wants from finding a place is to see where it is, and the
@@ -80,7 +87,7 @@ def _look_at(position: Any) -> None:
     from game.server import EventStream
     from game.sim import GameUpdateEvents
 
-    EventStream.put_nowait(GameUpdateEvents().look_at(position.latlng()))
+    EventStream.put_nowait(GameUpdateEvents().look_at(position.latlng(), zoom))
 
 
 def _control_point(game: Any, key: str) -> Optional[Any]:
@@ -99,12 +106,17 @@ def _squadron(game: Any, key: str) -> Optional[Any]:
 
 
 def _pilot_and_squadron(game: Any, key: str) -> tuple[Optional[Any], Optional[Any]]:
+    """The man the row is about, and whose roster he is on.
+
+    The whole roster, the way the index is built from it: looking only at the men fit
+    to fly this minute found no one who was wounded, on leave or gone, so those rows
+    were in the palette and did nothing when chosen.
+    """
     for coalition in game.coalitions:
         for squadron in coalition.air_wing.iter_squadrons():
             for group in (
-                getattr(squadron, "active_pilots", ()),
+                getattr(squadron, "current_roster", ()),
                 getattr(squadron, "pilot_pool", ()),
-                getattr(squadron, "dead_pilots", ()),
             ):
                 for pilot in group:
                     if str(pilot.id) == key:
@@ -152,11 +164,12 @@ def _open_setting(window: Any, key: str) -> None:
     """Open the settings dialog on the page this setting lives on, and flash it.
 
     The navigation is the dialog's own: go_to knows about pages, about sections
-    behind a gear and about the plugins page, and none of that is worth a second
-    copy. It takes the hit the settings search produces, so the key is searched for
-    exactly to get one.
+    behind a gear and about the plugins page, and none of that is worth a second copy.
+    What it needs is the settings dialog's own description of the option, which is
+    looked up rather than searched for -- searching for an option by its own key finds
+    nothing at all for every Skynet option and a third of Splash Damage's.
     """
-    from game.settings.search import search
+    from game.search.providers import setting_hit
     from qt_ui.windows.settings.QSettingsWindow import QSettingsWindow
 
     game = window.game_model.game
@@ -167,11 +180,9 @@ def _open_setting(window: Any, key: str) -> None:
     window.palette_child_dialogs.append(dialog)
     dialog.show()
 
-    for hit in search(key, game.settings):
-        if hit.key == key:
-            # On the widget inside the window, not on the window: QSettingsWindow is a
-            # dialog wrapped round a QSettingsWidget, and that is where the pages, the
-            # index and go_to all live. Asking the window raised an AttributeError,
-            # which the catch above swallowed, and the dialog opened on page one.
-            dialog.settings_widget.go_to(hit)
-            return
+    hit = setting_hit(game.settings, key)
+    if hit is not None:
+        # On the widget inside the window, not on the window: QSettingsWindow is a
+        # dialog wrapped round a QSettingsWidget, and that is where the pages, the
+        # index and go_to all live.
+        dialog.settings_widget.go_to(hit)

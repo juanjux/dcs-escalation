@@ -236,3 +236,19 @@ def test_a_pilot_off_the_flying_list_is_still_found() -> None:
 
     entries = list(pilot_entries(cast(Any, _wing([squadron]))))
     assert [entry.label for entry in entries] == ["Capt Solis", "Capt Adri"]
+
+
+def test_a_setting_is_looked_up_by_its_key() -> None:
+    """The dialog's own search answers nothing at all for a good many options when
+    the query is the option's own key -- every Skynet one, and a third of Splash
+    Damage's -- so the palette looks the option up in the population instead."""
+    from game.search.providers import setting_hit
+    from game.settings import Settings
+
+    settings = Settings()
+    hit = setting_hit(settings, "live_pilots_enabled")
+    assert hit is not None
+    assert hit.key == "live_pilots_enabled"
+    assert hit.page
+
+    assert setting_hit(settings, "no_such_setting") is None

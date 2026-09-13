@@ -1,6 +1,9 @@
 ﻿# Retribution v1.6.3 (414th)
 
 ## Features/Improvements
+* **[FIX]** Choosing a pilot in the command palette did nothing for anyone who was wounded, on leave or gone.
+* **[FIX]** Choosing a plugin option in the command palette opened the settings window on its first page for many of them, Skynet's among them.
+* **[UI]** The command palette zooms the map in on what was chosen rather than only centring on it.
 * **[FIX]** Opening the same package, flight, squadron, pilot or the Air Wing twice opened a second window of it instead of raising the one already up.
 * **[OPFOR-AI]** The external planner can read a pilot's whole record: `GET /squadrons/{id}/pilots/{name}/record` (MCP `pilot_record`), and the roster carries his kills and what he has survived as counts.
 * **[FIX]** A black console window flashed over the game whenever the live weather was fetched.

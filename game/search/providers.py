@@ -61,6 +61,21 @@ def settings_entries(game: Optional[Any]) -> Iterator[Entry]:
         )
 
 
+def setting_hit(settings: Optional[Any], key: str) -> Optional[Any]:
+    """The dialog's own description of one setting -- its page, its section, whether
+    it belongs to a plugin -- which is what the settings window needs to go to it.
+
+    Looked up in the population rather than searched for. The dialog's search answers
+    a query, and for a good many options it answers nothing at all when the query is
+    the option's own key: every Skynet option, and a third of Splash Damage's. The
+    palette had already found the option; asking again was a way to lose it.
+    """
+    for hit in _all_settings(settings):
+        if hit.key == key:
+            return hit
+    return None
+
+
 def _all_settings(settings: Optional[Any]) -> Iterable[Any]:
     """Every setting there is, as SettingHits, without searching for anything.
 
