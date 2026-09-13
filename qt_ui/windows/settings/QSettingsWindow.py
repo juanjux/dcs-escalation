@@ -146,6 +146,15 @@ class CheatSettingsBox(QGroupBox):
         )
         self.main_layout.addLayout(self.air_wing_cheat)
 
+        # What may be done to one pilot: rename, promote, heal, revive.
+        self.pilot_cheats_checkbox = QCheckBox()
+        self.pilot_cheats_checkbox.setChecked(sc.settings.enable_pilot_cheats)
+        self.pilot_cheats_checkbox.toggled.connect(apply_settings)
+        self.pilot_cheat = QLabeledWidget(
+            "Enable pilot cheats:", self.pilot_cheats_checkbox
+        )
+        self.main_layout.addLayout(self.pilot_cheat)
+
         # Buy/Sell actions for OPFOR
         self.opfor_buysell_checkbox = QCheckBox()
         self.opfor_buysell_checkbox.setChecked(sc.settings.enable_enemy_buy_sell)
@@ -174,6 +183,10 @@ class CheatSettingsBox(QGroupBox):
     @property
     def enable_air_wing_cheats(self) -> bool:
         return self.air_wing_adjustments_checkbox.isChecked()
+
+    @property
+    def enable_pilot_cheats(self) -> bool:
+        return self.pilot_cheats_checkbox.isChecked()
 
     @property
     def enable_redfor_buysell(self) -> bool:
@@ -1480,6 +1493,7 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
             self.cheat_options.enable_air_wing_cheats
         )
         self.settings.enable_enemy_buy_sell = self.cheat_options.enable_redfor_buysell
+        self.settings.enable_pilot_cheats = self.cheat_options.enable_pilot_cheats
 
         self._publish_settings_update()
 
@@ -1548,6 +1562,9 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         )
         self.cheat_options.opfor_buysell_checkbox.setChecked(
             self.settings.enable_enemy_buy_sell
+        )
+        self.cheat_options.pilot_cheats_checkbox.setChecked(
+            self.settings.enable_pilot_cheats
         )
 
         self.pluginsPage.update_from_settings()

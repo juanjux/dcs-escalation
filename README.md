@@ -90,6 +90,8 @@ chance of surviving being downed, but also are slower to make friends or enemies
 - **Friendship.** Each pilot values each other as friends or even enemies, with different levels. Friendship have many effects and provide a positive or negative
 XP multiplier for missions, modelling the synergy among the members of a flight or package and make being downed easy to survive if your friends are in the same flight (they look for you, help in the CSAR, et cetera) and make a pilot quicker to regain positive morale levels (comforting) and less prone to deserting.
 
+- **Pilot dossier.** Double-clicking a pilot on the squadron roster opens his own dialog. It holds his rank and how much experience the next one takes, his kills grouped the way he would tell them -- air by what he shot down, ground by the sort of thing it was -- with every row opening in place to the individual kills (what, when, with what); what he has survived, and if he is gone, who got him and with what; his morale, the whole band scale, and the log of everything that has moved him; his hardening and what its three effects are worth as percentages; and his friendships in both directions, his towards them and theirs back. An optional cheat strip renames, promotes, heals and revives.
+
 - **Rivals (coming soon).** Pilots can have _rivals_. Rivals are reciprocal between two pilots with an unfriendly relation and it makes them
 try to best the other in XP earned when they fly in the same flight or package and thus really improves their performance in-engine. Think of Maverick and Ice! Over time,
 rivals tend to be friends (but _not_ in the Tarantino interpretation of the film... or yes, that's to your imagination and preferences!).

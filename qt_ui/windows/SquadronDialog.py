@@ -82,6 +82,7 @@ from qt_ui.models import AtoModel, SquadronModel
 from qt_ui.simcontroller import SimController
 from qt_ui.uiconstants import AIRCRAFT_ICONS
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
+from qt_ui.windows.pilot import PilotDialog
 from qt_ui.widgets.combos.QSquadronLiverySelector import SquadronLiverySelector
 from qt_ui.widgets.combos.primarytaskselector import PrimaryTaskSelector
 
@@ -990,10 +991,16 @@ class SquadronDialog(QDialog):
         self.pilot_list.selectionModel().selectionChanged.connect(
             self.on_selection_changed
         )
+        self.pilot_list.doubleClicked.connect(
+            partial(self.open_pilot, self.squadron_model)
+        )
         right_column.addWidget(self.pilot_list, stretch=3)
 
         right_column.addWidget(_section_label("KIA & discharged"))
         self.dead_pilot_list = PilotList(self.dead_squadron_model, fallen=True)
+        self.dead_pilot_list.doubleClicked.connect(
+            partial(self.open_pilot, self.dead_squadron_model)
+        )
         right_column.addWidget(self.dead_pilot_list, stretch=1)
 
         # Under the roster, not under the aircraft: these all act on a pilot.
@@ -1156,6 +1163,11 @@ class SquadronDialog(QDialog):
         self.roster_summary.setStyleSheet("font-size: 12px; color: #8E9DAA;")
         row.addWidget(self.roster_summary)
         row.addStretch()
+        # A double click is the only way into a man's record, and nothing else on the
+        # window would tell anybody that.
+        opens = QLabel("double-click a pilot for his record")
+        opens.setStyleSheet("font-size: 11px; color: #4F6070;")
+        row.addWidget(opens)
 
         self._refresh_roster_summary()
         return row
@@ -1278,6 +1290,26 @@ class SquadronDialog(QDialog):
         dialog.resize(520, 360)
         self._parking_warning = dialog
         dialog.show()
+
+    def open_pilot(self, model: SquadronModel, index: QModelIndex) -> None:
+        """His own dialog, on a double click. The roll of the fallen opens too: a
+        dead man's record is most of what there is to read about him."""
+        if not index.isValid():
+            return
+        dialog = PilotDialog(
+            model.pilot_at_index(index), self.squadron.coalition.game, self
+        )
+        dialog.pilot_changed.connect(self._pilot_changed)
+        self._child_dialogs.append(dialog)
+        dialog.show()
+
+    def _pilot_changed(self) -> None:
+        """A cheat moved a man between the two lists, or renamed him in both."""
+        for model in (self.squadron_model, self.dead_squadron_model):
+            model.beginResetModel()
+            model.endResetModel()
+        self._refresh_roster_summary()
+        self.reset_button_states(self.pilot_list.currentIndex())
 
     def _open_overflow_squadron(self, href: str) -> None:
         squadron = self._overflow_squadrons.get(href)

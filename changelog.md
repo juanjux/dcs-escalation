@@ -1,6 +1,9 @@
 ﻿# Retribution v1.6.3 (414th)
 
 ## Features/Improvements
+* **[Live Pilots]** Double-clicking a pilot on a squadron's roster opens his own dialog: his combat record, what he has survived, how he died, his morale and hardening with the log behind them, and his friendships in both directions.
+* **[Live Pilots]** Optional pilot cheats (Settings, Cheats page): rename, set rank, heal and revive.
+* **[Live Pilots]** A pilot's kills are kept individually as well as counted -- what, when and with what -- and his ground kills are grouped by class.
 * **[UI]** Command palette: Ctrl+P finds settings, bases, objectives, squadrons, pilots, flights and every command in the menus, and opens what is chosen.
 * **[FIX]** A pilot who had drifted one step away from a squadron mate was shown as going cold, while one who had drifted a step closer was shown as nothing: the Neutral band was not centred on the value every pair starts at.
 * **[Live Pilots]** A pilot's record now keeps what he has shot down and destroyed by type, the missions he came home from, the aircraft he has lost and walked away from, his wounds, and who finally got him.

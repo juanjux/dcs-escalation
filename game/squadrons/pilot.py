@@ -20,6 +20,29 @@ from game.squadrons.morale import (
     apply as apply_morale,
 )
 
+#: What a pilot's kill log holds at most. Capped exactly as the morale log is: a
+#: campaign can run long enough for a good pilot to pass a hundred, the dialog shows
+#: the recent ones under a class, and a save should not carry every shot of a year.
+KILL_HISTORY_LIMIT = 150
+
+
+@dataclass(frozen=True)
+class Kill:
+    """One thing destroyed: what it was, when, and with what.
+
+    The counts in :attr:`PilotRecord.air_kills` are the summary; this is what a row
+    opens into. Kept as a list because the interesting part is the detail -- a Tor
+    killed with a HARM reads differently from one killed with a bomb.
+    """
+
+    what: str
+    #: "Air defence", "Armour", "Structures"... What the dialog groups ground kills
+    #: by. Empty for an air kill, which is grouped by the aircraft's own name.
+    kill_class: str = ""
+    turn: int = 0
+    weapon: str = ""
+    air: bool = False
+
 
 @dataclass(frozen=True)
 class KilledBy:
@@ -71,12 +94,24 @@ class PilotRecord:
     aircraft_lost: int = field(default=0)
     survived_losses: int = field(default=0)
 
-    #: Wounds taken and the turns they cost him.
+    #: Wounds taken and the turns they cost him, and the last one on its own: "one
+    #: wound, three turns" and "wounded last on turn nine" are different questions.
     wounds: int = field(default=0)
     turns_in_hospital: int = field(default=0)
+    last_wound_turn: int = field(default=0)
+    last_wound_turns: int = field(default=0)
+
+    #: Leave granted, and the turns of it. Open-ended leave is granted with no length
+    #: at all, so the count is the honest figure and the turns are what is known.
+    leaves_taken: int = field(default=0)
+    leave_turns_total: int = field(default=0)
 
     #: Set once, when it is over.
     killed_by: Optional[KilledBy] = field(default=None)
+
+    #: Every kill, most recent last, capped. The counts above are what is read at a
+    #: glance; this is what one of them opens into.
+    kills: list[Kill] = field(default_factory=list)
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         for name, default in (
@@ -86,19 +121,58 @@ class PilotRecord:
             ("survived_losses", 0),
             ("wounds", 0),
             ("turns_in_hospital", 0),
+            ("last_wound_turn", 0),
+            ("last_wound_turns", 0),
+            ("leaves_taken", 0),
+            ("leave_turns_total", 0),
             ("killed_by", None),
         ):
             state.setdefault(name, default)
         for name in ("air_kills", "ground_kills"):
             state.setdefault(name, {})
+        state.setdefault("kills", [])
         self.__dict__.update(state)
 
-    def note_kill(self, air: bool, what: str) -> None:
-        """One more of these, by what it was called."""
+    def note_kill(
+        self,
+        air: bool,
+        what: str,
+        kill_class: str = "",
+        turn: int = 0,
+        weapon: str = "",
+    ) -> None:
+        """One more of these: counted, and written down.
+
+        The count is what the dialog reads at a glance and is never trimmed. The
+        entry is what a row opens into, and the oldest go when there are too many:
+        the last hundred and fifty is the story, and the first of four hundred is
+        not.
+        """
         if not what:
             return
         tally = self.air_kills if air else self.ground_kills
         tally[what] = tally.get(what, 0) + 1
+
+        self.kills.append(Kill(what, kill_class, turn, weapon, air))
+        if len(self.kills) > KILL_HISTORY_LIMIT:
+            del self.kills[: len(self.kills) - KILL_HISTORY_LIMIT]
+
+    def kills_of(self, what: str) -> list[Kill]:
+        """The individual kills behind one row of the summary."""
+        return [kill for kill in self.kills if kill.what == what]
+
+    def kills_in(self, kill_class: str) -> list[Kill]:
+        """The individual kills behind one ground class."""
+        return [kill for kill in self.kills if kill.kill_class == kill_class]
+
+    def ground_kills_by_class(self) -> dict[str, int]:
+        """How many of each class, which is how the dialog groups the ground ones."""
+        counts: dict[str, int] = {}
+        for kill in self.kills:
+            if kill.air or not kill.kill_class:
+                continue
+            counts[kill.kill_class] = counts.get(kill.kill_class, 0) + 1
+        return counts
 
     @property
     def total_air_kills(self) -> int:
@@ -327,6 +401,8 @@ class Pilot:
         self.status = PilotStatus.OnLeave
         self.leave_turns = turns
         self.leave_on_turn = turn
+        self.record.leaves_taken += 1
+        self.record.leave_turns_total += turns
         self.wants_leave = False
         self.leave_turns_requested = 0
 
