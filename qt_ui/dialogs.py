@@ -1,6 +1,6 @@
 """Application-wide dialog management."""
 
-from typing import Callable, Optional, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 import shiboken6
 from PySide6.QtWidgets import QWidget
@@ -60,6 +60,14 @@ def open_once(
     # Python wrapper after that and asking it anything raises.
     window.destroyed.connect(lambda *_: _forget_window(key, window))
     window.show()
+    return window
+
+
+def live_window(key: str) -> Optional[QWidget]:
+    """Whatever window is up for this thing, if one is."""
+    window = _live.get(key)
+    if window is None or not shiboken6.isValid(window):
+        return None
     return window
 
 
@@ -126,6 +134,31 @@ class Dialog:
             cls.edit_flight_dialog = None
             return None
         return dialog
+
+    @classmethod
+    def open_squadron_dialog(cls, squadron: Any, parent=None) -> None:
+        """One squadron's roster, from wherever it was asked for.
+
+        The pilot dialog, the command palette and the Air Wing list all want this and
+        all have a different half of what it takes to build one; what they share is
+        the game model, which is here.
+        """
+        from qt_ui.models import SquadronModel
+        from qt_ui.windows.SquadronDialog import SquadronDialog
+
+        model = cls.game_model
+        if model is None or model.game is None:
+            return
+        open_once(
+            f"squadron:{squadron.id}",
+            lambda: SquadronDialog(
+                model.ato_model,
+                SquadronModel(squadron),
+                model.game.theater,
+                model.sim_controller,
+                parent,
+            ),
+        )
 
     @classmethod
     def open_new_package_dialog(cls, mission_target: MissionTarget, parent=None):

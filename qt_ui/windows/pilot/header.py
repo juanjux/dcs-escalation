@@ -11,7 +11,7 @@ where that relationship is visible.
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -280,8 +280,8 @@ class PilotHeader(QWidget):
         pieces.addWidget(_dot())
 
         self.squadron_link = Clickable(self.squadron.name, 12.5, ACCENT)
-        self.squadron_link.setToolTip("Open the Air Wing")
-        self.squadron_link.clicked.connect(lambda: open_air_wing(self))
+        self.squadron_link.setToolTip(f"Open {self.squadron}")
+        self.squadron_link.clicked.connect(lambda: open_squadron(self, self.squadron))
         pieces.addWidget(self.squadron_link)
 
         pieces.addWidget(_dot())
@@ -370,36 +370,37 @@ class PilotHeader(QWidget):
         return row
 
 
-def open_air_wing(widget: QWidget) -> None:
-    """The Air Wing dialog, or the one already open brought to the front.
+def open_squadron(widget: QWidget, squadron: Squadron) -> None:
+    """His own squadron's roster, and it comes to the front.
 
-    Asked of the main window's top panel rather than built here: that is the thing
-    that keeps there being exactly one Air Wing window however many times it is asked
-    for, and a second one showing the same roster is a bug players have reported
-    before.
+    His squadron rather than the whole Air Wing: the wing is a list of every squadron
+    in the campaign, and a man's own is the one you were pointing at.
     """
-    panel = _top_panel(widget)
-    if panel is None:
-        return
-    panel.open_air_wing()
-    _to_the_front(getattr(panel, "air_wing_dialog", None))
+    from qt_ui.dialogs import Dialog
+
+    Dialog.open_squadron_dialog(squadron, _main_window(widget))
+    _to_the_front(_squadron_window(squadron))
 
 
-def _top_panel(widget: QWidget) -> Optional[Any]:
-    """The main window's top panel, from anywhere under it."""
+def _squadron_window(squadron: Squadron) -> Optional[QWidget]:
+    from qt_ui.dialogs import live_window
+
+    return live_window(f"squadron:{squadron.id}")
+
+
+def _main_window(widget: QWidget) -> Optional[QWidget]:
+    """The window everything else hangs off, from anywhere under it."""
     node: Optional[QWidget] = widget
     while node is not None:
-        panel = getattr(node, "top_panel", None)
-        if panel is not None and hasattr(panel, "open_air_wing"):
-            return panel
+        if getattr(node, "top_panel", None) is not None:
+            return node
         node = node.parentWidget()
 
     # Opened from somewhere with no main window above it -- the command palette, a
     # test. The application has one all the same.
     for window in QApplication.topLevelWidgets():
-        panel = getattr(window, "top_panel", None)
-        if panel is not None and hasattr(panel, "open_air_wing"):
-            return panel
+        if getattr(window, "top_panel", None) is not None:
+            return window
     return None
 
 

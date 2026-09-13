@@ -141,23 +141,10 @@ def _open_pilot(window: Any, pilot: Optional[Any], squadron: Optional[Any]) -> N
 
 
 def _open_squadron(window: Any, squadron: Any) -> None:
-    from qt_ui.models import SquadronModel
-    from qt_ui.windows.SquadronDialog import SquadronDialog
+    """His squadron's roster, the same window the pilot dialog and the Air Wing open."""
+    from qt_ui.dialogs import Dialog
 
-    from qt_ui.dialogs import open_once
-
-    # open_once holds it as well as keeping there being one of it; Qt would collect
-    # it the moment this returns otherwise.
-    open_once(
-        f"squadron:{squadron.id}",
-        lambda: SquadronDialog(
-            window.game_model.ato_model,
-            SquadronModel(squadron),
-            window.game_model.game.theater,
-            window.game_model.sim_controller,
-            window,
-        ),
-    )
+    Dialog.open_squadron_dialog(squadron, window)
 
 
 def _open_setting(window: Any, key: str) -> None:

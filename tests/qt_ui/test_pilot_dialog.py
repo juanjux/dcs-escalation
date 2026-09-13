@@ -474,19 +474,30 @@ def test_show_all_opens_the_rest_of_the_log(qt_app: Any) -> None:
     holder.close()
 
 
-def test_the_air_wing_is_opened_by_the_window_that_owns_it(qt_app: Any) -> None:
-    """One Air Wing window, whoever asks for it: the top panel keeps it that way."""
+def test_the_squadron_link_opens_his_own_squadron(
+    qt_app: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """His squadron, not the Air Wing: the wing is a list of every squadron in the
+    campaign, and his own is the one that was being pointed at."""
     from PySide6.QtWidgets import QWidget
 
-    from qt_ui.windows.pilot.header import open_air_wing
+    from qt_ui.dialogs import Dialog
+    from qt_ui.windows.pilot.header import open_squadron
 
-    asked: list[bool] = []
+    asked: list[Any] = []
+    monkeypatch.setattr(
+        Dialog,
+        "open_squadron_dialog",
+        classmethod(lambda cls, squadron, parent=None: asked.append(squadron)),
+    )
+
     parent = cast(Any, QWidget())
-    parent.top_panel = SimpleNamespace(open_air_wing=lambda: asked.append(True))
+    parent.top_panel = SimpleNamespace()
     child = QWidget(parent)
+    squadron = SimpleNamespace(id="sq-1", name="VMA-223")
 
-    open_air_wing(child)
-    assert asked == [True]
+    open_squadron(child, cast(Any, squadron))
+    assert asked == [squadron]
 
-    # Nothing above it that knows about air wings: no exception.
-    open_air_wing(QWidget())
+    # Nothing above it that knows about a game: no exception.
+    open_squadron(QWidget(), cast(Any, squadron))
