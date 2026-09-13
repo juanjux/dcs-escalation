@@ -1,6 +1,7 @@
 ﻿# Escalation v1.6.3 (414th)
 
 ## Features/Improvements
+* **[FIX]** The rename asked for the first-start configuration again: the file holding your DCS paths, theme and server port was renamed with everything else.
 * **[Escalation]** The fork is called **DCS Escalation** now. Your campaigns, factions, layouts and payloads are untouched: they stay in `Saved Games\DCS\Retribution` and saves keep the `.retribution` extension, so nothing has to be moved.
 * **[FIX]** Opening a package from the ATO list raised "'Package' object has no attribute 'id'".
 * **[FIX]** Choosing a pilot in the command palette did nothing for anyone who was wounded, on leave or gone.
