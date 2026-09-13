@@ -432,25 +432,28 @@ def _fact(key: str, value_html: str) -> Row:
 
 
 KILLS_TOOLTIP = (
-    "What he has shot down and destroyed, grouped the way a pilot would tell it:"
-    " air by aircraft type, ground by the sort of thing it was."
+    "Everything he has destroyed. Air kills are listed by aircraft type, ground"
+    " kills by what sort of target it was."
     "\n\n"
-    "Every row opens in place to the individual kills -- what, on which turn, and"
-    " with which weapon."
+    "Click a row to see the individual kills: what it was, the turn, and the"
+    " weapon used."
 )
 
 SURVIVAL_TOOLTIP = (
-    "What he has walked away from. An aircraft lost is a sortie he did not come"
-    " home from; the second figure is how often he was alive afterwards, which is"
-    " the roll his rank, his hardening and his friends all lean on."
+    "How often he has been shot down, and how often he survived it. Rank,"
+    " hardening and friends in the same flight all improve those odds."
     "\n\n"
-    "A wound keeps him off the roster for a turn or four. Leave is granted by the"
-    " player and is the fastest way to lift a man who is sliding."
+    "A wound keeps him off the roster for 1 to 4 turns. Leave is granted by you"
+    " and raises morale quickly."
 )
 
 
-def record_column(pilot: Pilot) -> QVBoxLayout:
-    """The left-hand half of the dialog, top to bottom."""
+def record_column(pilot: Pilot, also: Optional[QWidget] = None) -> QVBoxLayout:
+    """The left-hand half of the dialog, top to bottom.
+
+    ``also`` is whatever else wants the elastic column rather than the fixed one --
+    the relationships, whose rows are sentences and need the room.
+    """
     column = QVBoxLayout()
     column.setContentsMargins(0, 0, 0, 0)
     column.setSpacing(22)
@@ -465,5 +468,7 @@ def record_column(pilot: Pilot) -> QVBoxLayout:
     column.addWidget(
         captioned("Survival", survival_rows(pilot), tooltip=SURVIVAL_TOOLTIP)
     )
+    if also is not None:
+        column.addWidget(also)
     column.addStretch()
     return column

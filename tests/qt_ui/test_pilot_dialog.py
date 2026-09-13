@@ -259,16 +259,13 @@ def _friend(his: float, theirs: float) -> Any:
     return Friend(pilot, other, True, Settings())
 
 
-def test_the_middle_of_the_neutral_band_is_not_a_relationship() -> None:
-    """Neutral runs from 4 to 6, so "above 5" would have put half of the band on the
-    card."""
-    assert not _friend(5.5, 5.5).worth_showing
-
-
-def test_a_man_he_cannot_stand_is_worth_a_row() -> None:
-    """It costs the flight the same as a friendship does, in the other direction."""
-    assert _friend(1.5, 5.0).worth_showing
-    assert _friend(5.0, 1.5).worth_showing
+def test_a_pair_is_ranked_by_how_far_it_is_from_where_it_started() -> None:
+    """Warm and cold both count, and either direction: a man he cannot stand costs
+    the flight what a friend earns it."""
+    assert _friend(5.0, 5.0).strength == 0
+    assert _friend(1.5, 5.0).strength == 3.5
+    assert _friend(5.0, 1.5).strength == 3.5
+    assert _friend(9.0, 5.0).strength == 4.0
 
 
 def test_the_row_carries_the_wash_the_roster_uses() -> None:
@@ -277,10 +274,24 @@ def test_the_row_carries_the_wash_the_roster_uses() -> None:
     assert _friend(5.0, 5.0).tint == ""
 
 
-def test_a_friendship_one_way_is_worth_a_row() -> None:
-    """The interesting half, in fact: a man who thinks nothing of somebody who thinks
-    the world of him."""
-    assert _friend(5.0, 8.0).worth_showing
+def test_the_card_is_never_empty_for_a_man_who_knows_people() -> None:
+    """Filtering by band left the player's own pilot -- a whole squadron of Neutral,
+    which is most of a first campaign -- with nothing on the card at all."""
+    from qt_ui.windows.pilot.state import friends_of
+
+    squadron = _squadron()
+    pilot = _pilot("He")
+    others = [_pilot(f"Other {index}") for index in range(3)]
+    for index, other in enumerate(others):
+        pilot.friendships[other.id] = 5.2 + index * 0.1
+
+    wing = {man.id: (squadron, man) for man in [pilot, *others]}
+    friends = friends_of(pilot, wing, squadron)
+    assert [friend.other.name for friend in friends] == [
+        "Other 2",
+        "Other 1",
+        "Other 0",
+    ]
 
 
 def test_two_men_who_agree_read_as_mutual() -> None:
@@ -450,7 +461,13 @@ def test_show_all_opens_the_rest_of_the_log(qt_app: Any) -> None:
     assert shown() == 25
     assert log.open
 
-    # And the row itself still shuts the card.
+    # And there is a way back to the recent ones.
+    assert "last" in log.more.text()
+    QApplication.sendEvent(log.more, press)
+    QApplication.processEvents()
+    assert shown() == LOG_PREVIEW
+
+    # The row itself still shuts the card.
     QApplication.sendEvent(log.head, press)
     QApplication.processEvents()
     assert shown() == 0

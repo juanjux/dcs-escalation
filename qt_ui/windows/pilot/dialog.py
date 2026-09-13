@@ -32,7 +32,7 @@ from qt_ui.windows.pilot.cheats import CheatStrip
 from qt_ui.windows.pilot.common import LINE, PANEL, TEXT_LABEL, label
 from qt_ui.windows.pilot.header import PilotHeader
 from qt_ui.windows.pilot.record import record_column
-from qt_ui.windows.pilot.state import state_column
+from qt_ui.windows.pilot.state import relationships_section, state_column
 
 DIALOG_WIDTH = 920
 DIALOG_HEIGHT = 760
@@ -125,8 +125,15 @@ class PilotDialog(QDialog):
         columns.setSpacing(20)
         inner.setLayout(columns)
 
-        columns.addLayout(record_column(self.pilot), 1)
-        state = state_column(self.pilot, self.squadron, self._wing())
+        wing = self._wing()
+        columns.addLayout(
+            record_column(
+                self.pilot,
+                relationships_section(self.pilot, self.squadron, wing),
+            ),
+            1,
+        )
+        state = state_column(self.pilot, self.squadron, wing)
         if state is not None:
             holder = QWidget()
             make_transparent(holder)
