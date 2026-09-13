@@ -15,7 +15,6 @@ from game.search.providers import (
     FLIGHT,
     OBJECTIVE,
     PILOT,
-    PILOT_NOTE,
     SQUADRON,
     base_entries,
     flight_entries,
@@ -156,14 +155,13 @@ def test_a_pilot_carries_his_rank_and_his_squadron() -> None:
     assert "captain" in entries[0].haystack
 
 
-def test_a_pilot_row_admits_it_does_not_open_a_pilot_dialog_yet() -> None:
-    """There is none, and a row that silently opens something else is worse than one
-    that says what it will do."""
+def test_a_pilot_row_says_nothing_it_does_not_have_to() -> None:
+    """It carried a note admitting there was no pilot dialog to open. There is one."""
     pilot = SimpleNamespace(
         id="p1", name="Solis", status=SimpleNamespace(value="Active")
     )
     entries = list(pilot_entries(cast(Any, _wing([_squadron("V", "AV-8B", [pilot])]))))
-    assert entries[0].note == PILOT_NOTE
+    assert entries[0].note == ""
 
 
 def test_a_pilot_on_two_lists_is_offered_once() -> None:
