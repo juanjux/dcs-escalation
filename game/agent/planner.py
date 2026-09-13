@@ -24,6 +24,7 @@ from game.profiling import MultiEventTracer
 from game.agent import schemas, views
 from game.dcs.skills import SKILL_LADDER
 from game.squadrons import friendship
+from game.sim.missionresultsprocessor import killer_sentence
 from game.squadrons import hardening
 from game.squadrons import morale as morale_rules
 
@@ -1757,6 +1758,130 @@ def _wing_index(squadron: Any) -> dict[Any, Any]:
     return air_wing.pilot_index() if air_wing is not None else {}
 
 
+def _record_figures(record: Any) -> dict[str, Any]:
+    """The pilot's record as counts, leaving out whatever has not happened to him."""
+    figures: dict[str, Any] = {}
+    for name, value in (
+        ("missions_completed", record.missions_completed),
+        ("air_kills", record.total_air_kills),
+        ("ground_kills", record.total_ground_kills),
+        ("aircraft_lost", record.aircraft_lost),
+        ("survived_losses", record.survived_losses),
+        ("wounds", record.wounds),
+        ("leaves_taken", record.leaves_taken),
+    ):
+        if value:
+            figures[name] = value
+    if record.killed_by is not None:
+        figures["killed_by"] = killer_sentence(record.killed_by) or "unknown"
+        if record.killed_by.turn:
+            figures["killed_on_turn"] = record.killed_by.turn
+    return figures
+
+
+def pilot_record(
+    game: Game, side: str, squadron_id: str, pilot_name: str
+) -> dict[str, Any]:
+    """Everything the campaign remembers about one man.
+
+    The roster gives figures; this is what they are made of -- every kill with the
+    turn and the weapon, what he has survived, how he died and who did it, everything
+    that has moved his morale, and what he thinks of the men around him. It is the
+    pilot dialog, in other words, and it is a call of its own because it is far too
+    much to carry for every pilot of every squadron on every turn.
+    """
+    for coalition in (game.blue, game.red):
+        if (coalition.player.name.lower() == "blue") != (side.lower() == "blue"):
+            continue
+        for squadron in coalition.air_wing.iter_squadrons():
+            if str(squadron.id) != squadron_id and squadron.name != squadron_id:
+                continue
+            for pilot in squadron.current_roster:
+                if pilot.name != pilot_name and str(pilot.id) != pilot_name:
+                    continue
+                return _pilot_record_view(squadron, pilot)
+            known = ", ".join(sorted(p.name for p in squadron.current_roster))
+            raise ValueError(f"{squadron} has no {pilot_name} (roster: {known})")
+    raise ValueError(f"No squadron {squadron_id} on {side}")
+
+
+def _pilot_record_view(squadron: Any, pilot: Any) -> dict[str, Any]:
+    """The dossier itself, built on top of the roster's own view of him."""
+    record = pilot.record
+    view = _pilot_view(squadron, pilot)
+    view["squadron"] = str(squadron)
+    view["aircraft"] = str(squadron.aircraft)
+    view["base"] = squadron.location.name
+
+    view["kills"] = {
+        "air_by_type": dict(record.air_kills),
+        "ground_by_type": dict(record.ground_kills),
+        "ground_by_class": record.ground_kills_by_class(),
+        # Each one, most recent last, capped at what the record keeps.
+        "log": [
+            {
+                "what": kill.what,
+                "turn": kill.turn,
+                "weapon": kill.weapon,
+                "air": kill.air,
+                "class": kill.kill_class,
+            }
+            for kill in record.kills
+        ],
+    }
+
+    survival: dict[str, Any] = {
+        "missions_flown": record.missions_flown,
+        "missions_completed": record.missions_completed,
+        "aircraft_lost": record.aircraft_lost,
+        "survived_losses": record.survived_losses,
+        "wounds": record.wounds,
+        "turns_in_hospital": record.turns_in_hospital,
+        "leaves_taken": record.leaves_taken,
+        "leave_turns_total": record.leave_turns_total,
+    }
+    if record.last_wound_turn:
+        survival["last_wound_turn"] = record.last_wound_turn
+        survival["last_wound_turns"] = record.last_wound_turns
+    view["survival"] = survival
+
+    if record.killed_by is not None:
+        killed = record.killed_by
+        view["killed_by_detail"] = {
+            "pilot": killed.pilot_name,
+            "squadron": killed.squadron,
+            "aircraft": killed.aircraft,
+            "weapon": killed.weapon,
+            "friendly_fire": killed.friendly_fire,
+            "turn": killed.turn,
+        }
+
+    if pilot.has_morale and getattr(squadron, "morale_in_play", False):
+        view["morale_state"] = morale_rules.morale_state(
+            pilot.morale, squadron.settings
+        ).name
+        view["morale_last_turn"] = pilot.morale_last_turn
+        view["morale_log"] = [
+            {
+                "turn": entry.turn,
+                "amount": entry.amount,
+                "reason": entry.reason,
+                "morale_after": entry.morale_after,
+            }
+            for entry in pilot.morale_log
+        ]
+    elif pilot.player:
+        view["morale_note"] = (
+            "The player's own pilot has no morale: he is never grounded, sent on"
+            " leave or made to desert by it."
+        )
+
+    view["turns_since_leave"] = pilot.turns_since_leave
+    if pilot.wants_leave:
+        view["leave_turns_requested"] = pilot.leave_turns_requested
+    return view
+
+
 def _pilot_view(
     squadron: Any, pilot: Any, index: Any = None, flight: Any = None
 ) -> dict[str, Any]:
@@ -1776,6 +1901,10 @@ def _pilot_view(
         view["wounded_turns_remaining"] = pilot.wounded_turns
     if pilot.player:
         view["player"] = True
+    # What he has done and been through, as figures. Only what is not zero: this is
+    # built for every pilot of every squadron on every turn, and a roster of thirty
+    # men carrying eight zeroes each is a page of nothing.
+    view.update(_record_figures(pilot.record))
 
     settings = getattr(squadron, "settings", None)
     if settings is not None and getattr(settings, "morale_enabled", True):

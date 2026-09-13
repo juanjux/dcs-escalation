@@ -62,7 +62,10 @@ tool/resource of the same name.
 - `GET /packages?side=red` — current packages/flights (each with `id` + pilots + waypoints)
 - `GET /waypoints/{flight_id}` — a flight's waypoints
 - `GET /squadrons/{squadron_id}/pilots` — the squadron's roster: rank, experience,
-  skill, wounds, and `assigned_to` for anyone already crewing a flight
+  skill, wounds, kills, and `assigned_to` for anyone already crewing a flight
+- `GET /squadrons/{squadron_id}/pilots/{pilot_name}/record` — one pilot in full: every
+  kill with its turn and weapon, what he has survived, how he died and who did it, his
+  whole morale log, and what he thinks of the men around him
 - `GET /flights/{flight_id}/crew` — who is in each seat, plus the pilots still free
 - `GET /map/image?side=red[&bbox=s,w,n,e]` — rendered PNG strategic map (control points, front lines, threat umbrellas, your naval) for visual analysis; `bbox` (lat/lng south,west,north,east) zooms in
 - `GET /iads?side=red` — the enemy air-defense network as a graph: each site's role
