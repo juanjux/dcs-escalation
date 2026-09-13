@@ -341,6 +341,19 @@ def rank_stations(
 # --- fetching and applying -------------------------------------------------------
 
 
+def _no_console() -> dict[str, Any]:
+    """Keep Windows from opening a console for the CLI.
+
+    It is a console program, so Windows gives it a console of its own -- a black
+    window that pops up over whatever the player is doing and goes again. Redirecting
+    the pipes does not stop that; only the flag does. The weather is fetched once per
+    station tried, so a theater whose nearest airfields have no report flashes several
+    in a row.
+    """
+    flag = getattr(subprocess, "CREATE_NO_WINDOW", None)
+    return {"creationflags": flag} if flag is not None else {}
+
+
 def fetch_preset(cli: Path, icao: str, timeout: int = 60) -> Optional[dict[str, Any]]:
     """Run the CLI's read-only metar command and parse what it saves.
 
@@ -353,7 +366,11 @@ def fetch_preset(cli: Path, icao: str, timeout: int = 60) -> Optional[dict[str, 
         command = [str(cli), "metar", icao, "--save", str(out)]
         try:
             result = subprocess.run(
-                command, capture_output=True, text=True, timeout=timeout
+                command,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                **_no_console(),
             )
         except (OSError, subprocess.SubprocessError) as exc:
             raise LiveWeatherUnavailable(f"{CLI_NAME} could not be run: {exc}") from exc

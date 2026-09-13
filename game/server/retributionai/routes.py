@@ -148,6 +148,18 @@ def squadron_pilots(squadron_id: str, side: str = "red") -> dict:
     return service.squadron_pilots(side, squadron_id)
 
 
+@router.get(
+    "/squadrons/{squadron_id}/pilots/{pilot_name}/record",
+    operation_id="ai_get_pilot_record",
+)
+def pilot_record(squadron_id: str, pilot_name: str, side: str = "red") -> dict:
+    """Everything the campaign remembers about one pilot: every kill with its turn and
+    weapon, what he has survived, how he died and who did it, everything that has moved
+    his morale, and what he thinks of the men around him. The roster carries the counts;
+    this is what they are made of."""
+    return service.pilot_record(side, squadron_id, pilot_name)
+
+
 @router.get("/flights/{flight_id}/crew", operation_id="ai_get_flight_crew")
 def flight_crew(flight_id: str, side: str = "red") -> dict:
     """Who is in each seat of a flight, and which of the squadron's pilots are free."""
