@@ -14,7 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional, Sequence
 
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from game.squadrons.pilot import Kill, Pilot, PilotRecord, PilotStatus
 from game.sim.missionresultsprocessor import (
@@ -25,7 +25,7 @@ from game.sim.missionresultsprocessor import (
     SOFT_VEHICLES,
     STRUCTURES,
 )
-from qt_ui.widgets.cards import caption, shrinkable
+from qt_ui.widgets.cards import shrinkable
 from qt_ui.windows.pilot.common import (
     AIR_FAMILY,
     GREEN,
@@ -39,6 +39,7 @@ from qt_ui.windows.pilot.common import (
     TEXT_SECONDARY,
     Row,
     Stack,
+    captioned,
     empty_row,
     label,
     rich,
@@ -430,6 +431,24 @@ def _fact(key: str, value_html: str) -> Row:
     return row
 
 
+KILLS_TOOLTIP = (
+    "What he has shot down and destroyed, grouped the way a pilot would tell it:"
+    " air by aircraft type, ground by the sort of thing it was."
+    "\n\n"
+    "Every row opens in place to the individual kills -- what, on which turn, and"
+    " with which weapon."
+)
+
+SURVIVAL_TOOLTIP = (
+    "What he has walked away from. An aircraft lost is a sortie he did not come"
+    " home from; the second figure is how often he was alive afterwards, which is"
+    " the roll his rank, his hardening and his friends all lean on."
+    "\n\n"
+    "A wound keeps him off the roster for a turn or four. Leave is granted by the"
+    " player and is the fastest way to lift a man who is sliding."
+)
+
+
 def record_column(pilot: Pilot) -> QVBoxLayout:
     """The left-hand half of the dialog, top to bottom."""
     column = QVBoxLayout()
@@ -440,31 +459,11 @@ def record_column(pilot: Pilot) -> QVBoxLayout:
     if fallen is not None:
         where = pilot.record.killed_by
         hint = f"turn {where.turn}" if where is not None and where.turn else ""
-        column.addWidget(_captioned("Killed in action", fallen, hint, RED))
+        column.addWidget(captioned("Killed in action", fallen, hint, ink=RED))
 
-    final = "final" if not pilot.alive else "kills by class · click a row for each one"
-    column.addWidget(_captioned("Combat record", KillRows(pilot), final))
-    column.addWidget(_captioned("Survival", survival_rows(pilot)))
+    column.addWidget(captioned("Combat record", KillRows(pilot), tooltip=KILLS_TOOLTIP))
+    column.addWidget(
+        captioned("Survival", survival_rows(pilot), tooltip=SURVIVAL_TOOLTIP)
+    )
     column.addStretch()
     return column
-
-
-def _captioned(name: str, content: QWidget, hint: str = "", ink: str = "") -> QWidget:
-    holder = QWidget()
-    column = QVBoxLayout()
-    column.setContentsMargins(0, 0, 0, 0)
-    column.setSpacing(10)
-    head = caption(name, hint)
-    if ink:
-        # The only caption that is a colour: a man's death should not read as a
-        # heading like any other.
-        first = head.findChild(QLabel)
-        if first is not None:
-            first.setStyleSheet(
-                f"font-size: 11px; font-weight: bold; letter-spacing: 1px;"
-                f" color: {ink}; background: transparent; border: none;"
-            )
-    column.addWidget(head)
-    column.addWidget(content)
-    holder.setLayout(column)
-    return holder

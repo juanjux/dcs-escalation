@@ -1,6 +1,7 @@
 ﻿# Retribution v1.6.3 (414th)
 
 ## Features/Improvements
+* **[Live Pilots]** Double-clicking a pilot on a squadron's roster opens his own dialog: his combat record, what he has survived, how he died, his morale and hardening with the log behind them, and his relationships -- warm and cold -- in both directions.
 * **[FIX]** Opening the command palette took the menu row -- the menus and the toolbar icons -- off the main window for good, and Ctrl+P with it.
 * **[UI]** The command palette opens a pilot's own dialog instead of his squadron's.
 * **[Live Pilots]** Double-clicking a pilot on a squadron's roster opens his own dialog: his combat record, what he has survived, how he died, his morale and hardening with the log behind them, and his friendships in both directions.
