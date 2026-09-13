@@ -1,6 +1,6 @@
 """Application-wide dialog management."""
 
-from typing import Optional
+from typing import Callable, Optional, TypeVar
 
 import shiboken6
 from PySide6.QtWidgets import QWidget
@@ -13,6 +13,49 @@ from .windows.mission.QPackageDialog import (
     QEditPackageDialog,
     QNewPackageDialog,
 )
+
+#: Every window that is about one particular thing, by what it is about. A package,
+#: a flight, a pilot, a squadron and the air wing are all windows a player reaches
+#: from several places -- the map, the ATO list, the roster, the command palette --
+#: and each of those used to build another one, so clicking the same package twice
+#: left two identical windows stacked on each other.
+_live: dict[str, QWidget] = {}
+
+Window = TypeVar("Window", bound=QWidget)
+
+
+def open_once(key: str, build: Callable[[], Window]) -> Window:
+    """The window for this thing: the one already up, or a new one.
+
+    A window that has been closed is rebuilt rather than shown again, so it never
+    comes back with a turn-old view of the game.
+    """
+    existing = _live.get(key)
+    if existing is not None:
+        if shiboken6.isValid(existing) and existing.isVisible():
+            if existing.isMinimized():
+                existing.showNormal()
+            existing.raise_()
+            existing.activateWindow()
+            return existing  # type: ignore[return-value]
+        _forget_window(key, existing)
+        if shiboken6.isValid(existing):
+            existing.deleteLater()
+
+    window = build()
+    _live[key] = window
+    # Qt deletes the C++ object when whatever it is parented to goes; holding the
+    # Python wrapper after that and asking it anything raises.
+    window.destroyed.connect(lambda *_: _forget_window(key, window))
+    window.show()
+    return window
+
+
+def _forget_window(key: str, window: QWidget) -> None:
+    # By identity and without touching the object: it may be being destroyed, and a
+    # newer window may already have taken its place.
+    if _live.get(key) is window:
+        del _live[key]
 
 
 class Dialog:
@@ -45,7 +88,12 @@ class Dialog:
         the C++ object underneath while this class goes on holding the Python
         wrapper. Touching one of those afterwards raises, which is how a closed
         package dialog left the flight editor unopenable for the rest of the session.
+
+        Which window it is comes from :func:`open_once`; this is the name the rest of
+        the application reaches the most recent one by.
         """
+        if getattr(cls, name, None) is dialog:
+            return
         setattr(cls, name, dialog)
         dialog.destroyed.connect(lambda *_: cls._forget(name, dialog))
 
@@ -70,30 +118,30 @@ class Dialog:
     @classmethod
     def open_new_package_dialog(cls, mission_target: MissionTarget, parent=None):
         """Opens the dialog to create a new package with the given target."""
-        cls._remember(
-            "new_package_dialog",
-            QNewPackageDialog(cls.game_model, mission_target, parent=parent),
+        dialog = open_once(
+            f"new-package:{mission_target.name}",
+            lambda: QNewPackageDialog(cls.game_model, mission_target, parent=parent),
         )
-        assert cls.new_package_dialog is not None
-        cls.new_package_dialog.show()
+        cls._remember("new_package_dialog", dialog)
 
     @classmethod
     def open_edit_package_dialog(cls, package_model: PackageModel):
         """Opens the dialog to edit the given package."""
-        cls._remember(
-            "edit_package_dialog", QEditPackageDialog(cls.game_model, package_model)
+        dialog = open_once(
+            f"package:{package_model.package.id}",
+            lambda: QEditPackageDialog(cls.game_model, package_model),
         )
-        assert cls.edit_package_dialog is not None
-        cls.edit_package_dialog.show()
+        cls._remember("edit_package_dialog", dialog)
 
     @classmethod
     def open_edit_flight_dialog(
         cls, package_model: PackageModel, flight: Flight, parent=None
     ) -> None:
         """Opens the dialog to edit the given flight."""
-        cls._remember(
-            "edit_flight_dialog",
-            QEditFlightDialog(cls.game_model, package_model, flight, parent=parent),
+        dialog = open_once(
+            f"flight:{flight.id}",
+            lambda: QEditFlightDialog(
+                cls.game_model, package_model, flight, parent=parent
+            ),
         )
-        assert cls.edit_flight_dialog is not None
-        cls.edit_flight_dialog.show()
+        cls._remember("edit_flight_dialog", dialog)

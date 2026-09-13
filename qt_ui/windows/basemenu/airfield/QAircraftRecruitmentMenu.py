@@ -245,13 +245,16 @@ class QAircraftRecruitmentMenu(UnitTransactionFrame[Squadron]):
         return True
 
     def on_item_clicked(self, item: Squadron) -> None:
+        from qt_ui.dialogs import open_once
         from qt_ui.windows.SquadronDialog import SquadronDialog
 
-        self.squadron_dialog = SquadronDialog(
-            self.game_model.ato_model,
-            SquadronModel(item),
-            self.game_model.game.theater,
-            self.game_model.sim_controller,
-            self,
+        self.squadron_dialog = open_once(
+            f"squadron:{item.id}",
+            lambda: SquadronDialog(
+                self.game_model.ato_model,
+                SquadronModel(item),
+                self.game_model.game.theater,
+                self.game_model.sim_controller,
+                self,
+            ),
         )
-        self.squadron_dialog.show()

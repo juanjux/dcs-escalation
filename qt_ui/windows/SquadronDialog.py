@@ -81,6 +81,7 @@ from qt_ui.errorreporter import report_errors
 from qt_ui.models import AtoModel, SquadronModel
 from qt_ui.simcontroller import SimController
 from qt_ui.uiconstants import AIRCRAFT_ICONS
+from qt_ui.dialogs import open_once
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.pilot import PilotDialog
 from qt_ui.widgets.combos.QSquadronLiverySelector import SquadronLiverySelector
@@ -1296,12 +1297,13 @@ class SquadronDialog(QDialog):
         dead man's record is most of what there is to read about him."""
         if not index.isValid():
             return
-        dialog = PilotDialog(
-            model.pilot_at_index(index), self.squadron.coalition.game, self
+        pilot = model.pilot_at_index(index)
+        dialog = open_once(
+            f"pilot:{pilot.id}",
+            lambda: PilotDialog(pilot, self.squadron.coalition.game, self),
         )
-        dialog.pilot_changed.connect(self._pilot_changed)
-        self._child_dialogs.append(dialog)
-        dialog.show()
+        if isinstance(dialog, PilotDialog):
+            dialog.pilot_changed.connect(self._pilot_changed)
 
     def _pilot_changed(self) -> None:
         """A cheat moved a man between the two lists, or renamed him in both."""
@@ -1315,15 +1317,16 @@ class SquadronDialog(QDialog):
         squadron = self._overflow_squadrons.get(href)
         if squadron is None:
             return
-        dialog = SquadronDialog(
-            self.ato_model,
-            SquadronModel(squadron),
-            self.theater,
-            self.sim_controller,
-            self,
+        open_once(
+            f"squadron:{squadron.id}",
+            lambda: SquadronDialog(
+                self.ato_model,
+                SquadronModel(squadron),
+                self.theater,
+                self.sim_controller,
+                self,
+            ),
         )
-        self._child_dialogs.append(dialog)
-        dialog.show()
 
     @property
     def squadron(self) -> Squadron:

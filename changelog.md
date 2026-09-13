@@ -1,6 +1,7 @@
 ﻿# Retribution v1.6.3 (414th)
 
 ## Features/Improvements
+* **[FIX]** Opening the same package, flight, squadron, pilot or the Air Wing twice opened a second window of it instead of raising the one already up.
 * **[OPFOR-AI]** The external planner can read a pilot's whole record: `GET /squadrons/{id}/pilots/{name}/record` (MCP `pilot_record`), and the roster carries his kills and what he has survived as counts.
 * **[FIX]** A black console window flashed over the game whenever the live weather was fetched.
 * **[FIX]** The command palette found no pilot who was not fit to fly this minute: the wounded, the men on leave and the deserters were not indexed at all.
