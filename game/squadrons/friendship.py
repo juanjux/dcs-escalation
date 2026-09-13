@@ -57,12 +57,17 @@ class FriendshipBand:
 
 
 #: Highest first, so the first match wins.
+#:
+#: Neutral is symmetric about the five every pair starts on, and it has to be: drift
+#: moves by a whole point, so one quiet turn leaves a pair on four or on six, and a
+#: band that holds one of those and not the other paints half of an even walk as
+#: going sour.
 FRIENDSHIP_BANDS: tuple[FriendshipBand, ...] = (
     FriendshipBand(9.1, "Inseparable", "#8FC3F0", "friendship_band_inseparable"),
     FriendshipBand(7.1, "Close", "#86C39A", "friendship_band_close"),
     FriendshipBand(6.1, "Friendly", "#A9C99A", "friendship_band_friendly"),
-    FriendshipBand(4.1, "Neutral", None, "friendship_band_neutral"),
-    FriendshipBand(3.1, "Frosty", "#E0A86B", "friendship_band_frosty"),
+    FriendshipBand(4.0, "Neutral", None, "friendship_band_neutral"),
+    FriendshipBand(3.0, "Frosty", "#E0A86B", "friendship_band_frosty"),
     FriendshipBand(1.1, "Hostile", "#D97B4F", "friendship_band_hostile"),
     FriendshipBand(FRIENDSHIP_MIN, "Bad blood", "#D9645E"),
 )

@@ -2274,7 +2274,7 @@ class Settings:
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_FRIENDSHIP_SECTION,
         subsection=LIVE_PILOTS_FRIENDSHIP_BANDS_SECTION,
-        default=4.1,
+        default=4.0,
         min=0.0,
         max=10.0,
         divisor=10,
@@ -2285,7 +2285,7 @@ class Settings:
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_FRIENDSHIP_SECTION,
         subsection=LIVE_PILOTS_FRIENDSHIP_BANDS_SECTION,
-        default=3.1,
+        default=3.0,
         min=0.0,
         max=10.0,
         divisor=10,
@@ -2718,6 +2718,7 @@ class Settings:
         s = Settings()
         Settings._migrate_legacy_bandit_clouds(state)
         Settings._migrate_settings_into_plugins(state)
+        Settings._migrate_lopsided_friendship_bands(state)
         for key, value in list(state.items()):
             default = s.__dict__.get(key)
             if isinstance(default, Enum):
@@ -2791,6 +2792,28 @@ class Settings:
                 # The feature ran only when the setting AND the plugin were on.
                 value = value and bool(plugins.get(option, True))
             plugins[option] = value
+
+    #: The floors the friendship bands shipped with, and what they should have been.
+    #: Drift moves a pair by a whole point from a start of five, so one quiet turn
+    #: leaves it on four or six -- and with Neutral starting at 4.1, four fell out of
+    #: it into Frosty while six stayed in. Every pair that had drifted down once was
+    #: painted as going cold and every pair that had drifted up once was painted as
+    #: nothing, which read as a campaign where nobody gets on with anybody.
+    LOPSIDED_FRIENDSHIP_BANDS = {
+        "friendship_band_neutral": (4.1, 4.0),
+        "friendship_band_frosty": (3.1, 3.0),
+    }
+
+    @staticmethod
+    def _migrate_lopsided_friendship_bands(state: dict[str, Any]) -> None:
+        """Straighten the bands in a campaign that never moved them itself.
+
+        Only when the stored floor is still the one that shipped: a player who has
+        set these to something of their own keeps it.
+        """
+        for key, (was, should_be) in Settings.LOPSIDED_FRIENDSHIP_BANDS.items():
+            if state.get(key) == was:
+                state[key] = should_be
 
     @staticmethod
     def _migrate_legacy_bandit_clouds(state: dict[str, Any]) -> None:

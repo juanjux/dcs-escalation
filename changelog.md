@@ -1,6 +1,7 @@
 ﻿# Retribution v1.6.3 (414th)
 
 ## Features/Improvements
+* **[FIX]** A pilot who had drifted one step away from a squadron mate was shown as going cold, while one who had drifted a step closer was shown as nothing: the Neutral band was not centred on the value every pair starts at.
 * **[Live Pilots]** A pilot's record now keeps what he has shot down and destroyed by type, the missions he came home from, the aircraft he has lost and walked away from, his wounds, and who finally got him.
 * **[FIX]** Inserting a waypoint where the flight plan had no room for one drew a detour back the way the flight came instead of saying so.
 * **[FIX]** Base menu: ordering a ground unit took seconds and the window resized itself on opening.
