@@ -113,6 +113,13 @@ class ControlPointView(BaseModel):
     parking_free: int | None = None  # free aircraft slots (room to buy/station here)
     parking_total: int | None = None  # total aircraft slots
     can_recruit_ground: bool | None = None  # has a factory/front — buy ground here
+    factories: dict[str, str] | None = (
+        None  # the factories standing at this base, by name -> "alive" / "repairing" /
+        # "destroyed". Only bases that have one carry this. A base recruits ground units
+        # only while one of its factories is alive, so this is the *why* behind
+        # can_recruit_ground: a dead factory is a repair worth paying for, and on the
+        # enemy's side it is the strike that stops their army being replaced.
+    )
     links: list[str] | None = None  # adjacent control-point ids (land moves / fronts)
     ground: dict[str, int] | None = None  # armor on hand here (unit name -> count)
     ground_pending_transfer: int | None = (
@@ -261,6 +268,17 @@ class TargetView(BaseModel):
     kind: str  # sam / ship / building / motorpool / front / convoy / cargo_ship
     suggested_task: str  # DEAD / ANTISHIP / STRIKE / BAI / CAS
     pos: list[float]  # [lat, lng]
+    category: str | None = (
+        None  # buildings only: which kind of building, since "building" covers every
+        # fixed target that is not a SAM. factory / ware / fuel / oil / derrick / ammo /
+        # power / comms / commandcenter / village / farp / fob / allycamp / ww2bunker.
+        # Worth reading: a factory is what lets its base recruit ground units, oil and
+        # derricks are income, ammo and fuel are what the garrison fights on.
+    )
+    base: str | None = (
+        None  # the control point this sits at. Which base loses the factory, or which
+        # airfield the SAM is defending, without matching coordinates by hand.
+    )
     threat_nm: int | None = (
         None  # air-defense umbrella radius (nm) — danger to ANY flight transiting it,
         # not only the attacker; ships carry it too (naval SAMs like SM-6 reach far)
@@ -760,6 +778,7 @@ def build_control_point(
         parking_free=(park[1] - park[0]) if park else None,
         parking_total=park[1] if park else None,
         can_recruit_ground=recruit,
+        factories=_factories(cp),
         links=links,
         ground=ground or None,
         ground_pending_transfer=pending_out,
@@ -770,6 +789,28 @@ def build_control_point(
         no_launch_reason=(None if operational else _no_launch_reason(cp)),
         runway_repair_turns_remaining=repair_turns,
     )
+
+
+def _factories(cp: ControlPoint) -> dict[str, str] | None:
+    """What each of this base's factories is doing, or nothing if it has none.
+
+    A base recruits ground units only while a factory of its own is alive, and nothing
+    else in these views says whether it has one -- a factory reads as "building" in the
+    target list and does not appear at all among your own. So the state is named here,
+    on both sides: your own to know which repair buys the army back, the enemy's to know
+    which strike stops theirs.
+    """
+    factories = {}
+    for tgo in cp.connected_objectives:
+        if not getattr(tgo, "is_factory", False):
+            continue
+        if not tgo.is_dead:
+            factories[tgo.name] = "alive"
+        elif tgo.has_pending_repairs:
+            factories[tgo.name] = "repairing"
+        else:
+            factories[tgo.name] = "destroyed"
+    return factories or None
 
 
 def _squadron_flyable(sq: Squadron, grounded: bool) -> int:
@@ -921,12 +962,16 @@ def _build_target(game: Game, tgo, kind: str, task: str) -> TargetView:
     iads_state = status.state.value if notable and status is not None else None
     iads_reason = status.reason if notable and status is not None else None
     iads_blind = True if status is not None and status.blind else None
+    base = getattr(tgo, "control_point", None)
     return TargetView(
         id=str(tgo.id),
         name=tgo.name,
         kind=kind,
         suggested_task=task,
         pos=[_r(ll.lat), _r(ll.lng)],
+        # Only where "building" is all the kind says. A SAM is a SAM.
+        category=getattr(tgo, "category", None) if kind == "building" else None,
+        base=base.name if base is not None and kind != "ship" else None,
         threat_nm=threat or None,
         detection_nm=detection or None,
         group_id=group_id,
