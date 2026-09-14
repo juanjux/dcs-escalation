@@ -2,6 +2,8 @@
 
 ## Features/Improvements
 * **[UI]** The map search filters factories, warehouses, fuel depots and oil separately instead of lumping them under Buildings: which base can recruit ground units is a factory away, and the three kinds of stores are each worth a different sortie.
+* **[OPFOR-AI]** A building target says which kind it is (`category`: factory, warehouse, fuel, oil, ammo...) and which base it sits at, and every base reports what its own factories are doing -- alive, repairing or destroyed -- which is the reason behind `can_recruit_ground`.
+* **[UI]** Every flight plan on the map draws its run in to each target, not only the one selected: red for the flight being worked on and the flight's own colour for the rest, so a glance says which targets already have somebody on them.
 * **[Escalation]** The fork is called **DCS Escalation** now. Campaigns, factions, layouts and payloads are untouched: they stay in `Saved Games\DCS\Retribution` and saves keep the `.retribution` extension, so nothing has to be moved.
 * **[OPFOR-AI]** The external planner can read a pilot's whole record: `GET /squadrons/{id}/pilots/{name}/record` (MCP `pilot_record`), and the roster carries his kills and what he has survived as counts.
 * **[Live Pilots]** Double-clicking a pilot on a squadron's roster opens his own dialog: his combat record, what he has survived, how he died, his morale and hardening with the log behind them, and his relationships -- warm and cold -- in both directions.
@@ -142,6 +144,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** A package whose target was nearer than the doctrine's minimum ingress distance could not be planned at all -- *No solutions found for waypoint* -- because lowering the ingress ceiling to the weapons' reach closed the window the IP is looked for in. CAS from a base nine miles from the front line is the case that found it.
 * **[FIX]** Two convoys on the road at once could both be called `Convoy 001`: the counter behind the name is not in the save, so a reloaded campaign started numbering again from one. A campaign that already holds such a pair is repaired on load.
 * **[FIX]** Opening the same package, flight, squadron, pilot or the Air Wing twice opened a second window of it instead of raising the one already up.
 * **[FIX]** A black console window flashed over the game whenever the live weather was fetched.

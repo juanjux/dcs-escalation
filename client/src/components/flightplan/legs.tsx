@@ -100,6 +100,10 @@ export function LegDistance(props: LegProps): ReactElement | null {
 export function TargetRuns(props: {
   waypoints: Waypoint[];
   drawn: Waypoint[];
+  /** The run's colour. The flight's own, when its plan is only part of the picture. */
+  color?: string;
+  /** How long each run is. Worth saying for the flight being worked on, and only it. */
+  labelled?: boolean;
 }): ReactElement {
   const runs: ReactElement[] = [];
   for (const target of props.waypoints.filter((w) => w.is_target)) {
@@ -112,21 +116,23 @@ export function TargetRuns(props: {
         key={`run-${target.index}`}
         positions={[from.position, target.position]}
         pathOptions={{
-          color: TARGET_PATH,
+          color: props.color ?? TARGET_PATH,
           weight: 2,
           dashArray: "7 6",
           interactive: false,
         }}
       />,
     );
-    runs.push(
-      <LegDistance
-        key={`run-label-${target.index}`}
-        from={from.position}
-        to={target.position}
-        toTarget
-      />,
-    );
+    if (props.labelled) {
+      runs.push(
+        <LegDistance
+          key={`run-label-${target.index}`}
+          from={from.position}
+          to={target.position}
+          toTarget
+        />,
+      );
+    }
   }
   return <>{runs}</>;
 }

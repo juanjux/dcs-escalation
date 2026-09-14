@@ -51,16 +51,26 @@ class PackageWaypoints:
         Only what is known moves it. A weapon with no range in its data -- a dumb
         bomb, a rocket -- leaves the doctrine alone.
 
-        Bounded below by the doctrine's own minimum ingress distance, and above by
-        the distance to the target: some IpSolver strategies (the backtracking
-        fallbacks used when the primary ones find no safe IP) do not otherwise bound
-        the search area, and a 200 nm missile on a much shorter route could send the
-        IP far off the route or off the map.
+        Bounded above by the distance to the target: some IpSolver strategies (the
+        backtracking fallbacks used when the primary ones find no safe IP) do not
+        otherwise bound the search area, and a 200 nm missile on a much shorter route
+        could send the IP far off the route or off the map.
+
+        Not bounded below, because there is no floor to raise it to. The solver looks
+        for the IP in the ring between the doctrine's minimum ingress distance and its
+        maximum, and a ring whose inner and outer radius are the same holds no points
+        at all: every strategy fails and the package cannot be planned. That is what a
+        CAS package from a base nine miles from the front line got, the distance to the
+        target being under the minimum and the ceiling clamped back up to it. A weapon
+        that cannot shoot from further out than the doctrine would send the flight
+        anyway is no reason to move the ingress point, so the doctrine keeps its own
+        ceiling in that case.
         """
         if weapon_range is None:
             return doctrine
         wanted = min(weapon_range, distance_to_target)
-        wanted = max(wanted, doctrine.min_ingress_distance)
+        if wanted <= doctrine.min_ingress_distance:
+            return doctrine
         if wanted == doctrine.max_ingress_distance:
             return doctrine
         return replace(doctrine, max_ingress_distance=wanted)
