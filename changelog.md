@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** The map search filters factories, warehouses, fuel depots and oil separately instead of lumping them under Buildings: which base can recruit ground units is a factory away, and the three kinds of stores are each worth a different sortie.
 * **[OPFOR-AI]** A building target says which kind it is (`category`: factory, warehouse, fuel, oil, ammo...) and which base it sits at, and every base reports what its own factories are doing -- alive, repairing or destroyed -- which is the reason behind `can_recruit_ground`.
 * **[UI]** Every flight plan on the map draws its run in to each target, not only the one selected: red for the flight being worked on and the flight's own colour for the rest, so a glance says which targets already have somebody on them.
 * **[Escalation]** The fork is called **DCS Escalation** now. Campaigns, factions, layouts and payloads are untouched: they stay in `Saved Games\DCS\Retribution` and saves keep the `.retribution` extension, so nothing has to be moved.

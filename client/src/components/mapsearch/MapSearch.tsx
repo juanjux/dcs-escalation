@@ -20,8 +20,9 @@ import { createPortal } from "react-dom";
 import { useMap } from "react-leaflet";
 
 // The kinds worth filtering by, and which objective categories fall into each. Grouped
-// rather than one chip per category: twenty-one chips is a list to read, and nobody
-// looks for a derrick and a warehouse as different things.
+// rather than one chip per category -- twenty-one chips is a list to read -- except
+// where the difference is one worth acting on: a factory is what lets a base recruit
+// ground units, and the three kinds of stores are each worth a different sortie.
 const KINDS: { id: string; label: string; categories: string[] }[] = [
   { id: "base", label: "Bases", categories: [] },
   {
@@ -38,22 +39,14 @@ const KINDS: { id: string; label: string; categories: string[] }[] = [
   { id: "power", label: "Power", categories: ["power"] },
   { id: "armor", label: "Armor", categories: ["armor", "motorpool"] },
   { id: "ship", label: "Ships", categories: ["ship"] },
+  { id: "factory", label: "Factories", categories: ["factory"] },
+  { id: "ware", label: "Warehouses", categories: ["ware"] },
+  { id: "fuel", label: "Fuel depots", categories: ["fuel"] },
+  { id: "derrick", label: "Oil & derricks", categories: ["derrick", "oil"] },
   {
     id: "building",
-    label: "Buildings",
-    categories: [
-      "allycamp",
-      "ammo",
-      "derrick",
-      "factory",
-      "farp",
-      "fob",
-      "fuel",
-      "oil",
-      "village",
-      "ware",
-      "ww2bunker",
-    ],
+    label: "Other buildings",
+    categories: ["allycamp", "ammo", "farp", "fob", "village", "ww2bunker"],
   },
 ];
 
