@@ -22,11 +22,27 @@ class Theater:
         self.landmap = "the map, which no save carries"
 
 
+class Ato:
+    def __init__(self) -> None:
+        self.packages: list[object] = []
+
+
+class Coalition:
+    def __init__(self) -> None:
+        self.ato = Ato()
+
+
 class Campaign:
-    """As much of a Game as a fingerprint touches."""
+    """As much of a Game as fingerprinting one touches.
+
+    Both sides included, empty: the campaign is settled before it is fingerprinted, and
+    settling walks the flights of every package.
+    """
 
     def __init__(self) -> None:
         self.theater = Theater()
+        self.blue = Coalition()
+        self.red = Coalition()
         self.turn = 1
         self.budget = 1000
 
@@ -104,3 +120,19 @@ def test_a_campaign_that_cannot_be_fingerprinted_is_treated_as_unsaved(
 
     # Being asked once too often costs a keystroke; the other mistake costs the campaign.
     assert persistency.has_unsaved_changes(campaign) is True  # type: ignore[arg-type]
+
+
+def test_the_campaign_is_settled_before_it_is_fingerprinted(monkeypatch: Any) -> None:
+    """Whatever the first look at the campaign builds, it is built before the print.
+
+    A flight's plan is laid out on demand, and the first thing to ask for it is the map
+    drawing itself -- so a fingerprint taken before that is of a campaign that stops
+    existing a moment later, and closing an untouched campaign asks to save it.
+    """
+    settled = []
+    monkeypatch.setattr(persistency, "settle", lambda game: settled.append(game))
+
+    campaign = Campaign()
+    persistency.remember_saved_state(campaign)  # type: ignore[arg-type]
+
+    assert settled == [campaign]
