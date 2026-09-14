@@ -114,13 +114,32 @@ function FlightPlanPath(props: PathProps) {
     />
   );
 
+  // Every flight drawn on the map shows what it is going in against, not only the one
+  // being worked on: that is how you see at a glance which targets already have
+  // somebody on them. The run to the target is red for the selected flight, where it
+  // is the thing you are looking at, and the flight's own colour in the crowd.
+  const runs = (
+    <TargetRuns
+      waypoints={waypoints}
+      drawn={drawn}
+      color={props.selected ? undefined : color}
+      labelled={props.selected}
+    />
+  );
+
   if (!interactive) {
-    return visible;
+    return (
+      <>
+        {visible}
+        {runs}
+      </>
+    );
   }
 
   return (
     <>
       {visible}
+      {runs}
       {props.selected && (
         <>
           {drawn.slice(0, -1).map((waypoint, index) => (
@@ -130,7 +149,6 @@ function FlightPlanPath(props: PathProps) {
               to={drawn[index + 1].position}
             />
           ))}
-          <TargetRuns waypoints={waypoints} drawn={drawn} />
         </>
       )}
       <Polyline
