@@ -1194,7 +1194,12 @@ means none/empty** (stated once so the per-turn payloads stay small).
 - `control_points[]` {`id`, `name`, `type` (AIRBASE / *_CARRIER_GROUP / LHA_GROUP /
   FOB / FARP), `owner` (red/blue/neutral), `pos` `[lat,lng]`, `sqns`?,
   `parking_free`?/`parking_total`? (room to buy/station aircraft),
-  `can_recruit_ground`? (true = you can `buy/ground` here), `links`? (adjacent
+  `can_recruit_ground`? (true = you can `buy/ground` here), `factories`? (the factories
+  at this base, `{name: "alive"/"repairing"/"destroyed"}`, omitted when it has none —
+  this is the *why* behind `can_recruit_ground`: a base builds ground units only while
+  one of its own factories is standing, so a dead one is a repair worth paying for, and
+  on the enemy's side it is the STRIKE that stops their army being replaced),
+  `links`? (adjacent
   control-point ids — land moves and where fronts form), `pending_ground`? (armor you
   ORDERED here, arriving next turn — the ground counterpart of a squadron's `pending`;
   what you just bought shows here, not in `ground`), `ground`? (armor on hand,
@@ -1263,6 +1268,14 @@ means none/empty** (stated once so the per-turn payloads stay small).
   over that radius and is worth a STRIKE even though nothing there ever fires. An EWR
   typically reaches 160 nm, several times any launcher, so it usually sees you long
   before anything can engage),
+  `category`? (buildings only — which kind, since `kind: "building"` covers every fixed
+  target that is not a SAM: `factory` / `ware` / `fuel` / `oil` / `derrick` / `ammo` /
+  `power` / `comms` / `commandcenter` / `village` / `farp` / `fob` / `allycamp` /
+  `ww2bunker`. A `factory` is what lets its base recruit ground units, `oil` and
+  `derrick` are income, `ammo` and `fuel` are what the garrison fights on — so it
+  decides which STRIKE is worth flying),
+  `base`? (the control point the target sits at, so you know which base loses the
+  factory or which airfield the SAM is defending without matching coordinates by hand),
   `iads_role`? (this site's part in the enemy air-defense network: `PowerSource` /
   `ConnectionNode` / `CommandCenter` / `Ewr` / `Sam` / `SamAsEwr`; omitted when it plays
   none. **This is what tells a code-named building apart from a warehouse** — a
