@@ -68,6 +68,9 @@ function FlightPlanPath(props: PathProps) {
   const map = useMap();
 
   const polylineRef = useRef<LPolyline | null>(null);
+  // Only while the pointer is on it: the run goes back to the flight's own colour on
+  // the way out, unless the click landed and the flight is the selected one now.
+  const [hovered, setHovered] = useState(false);
 
   // Flight paths should be drawn under everything else. There seems to be an
   // issue where `interactive: false` doesn't do as its told (there's nuance,
@@ -114,15 +117,18 @@ function FlightPlanPath(props: PathProps) {
     />
   );
 
-  // Pointing at a plan lights it up; clicking it selects the flight and its package in
-  // the sidebar. The route and the runs in to the target share this: they are one plan,
-  // and a run is often the leg nearest what you are looking at.
+  // Pointing at a plan lights it up: the route yellow and its runs in to the target
+  // red, which is what they are for the flight being worked on. Clicking selects the
+  // flight and its package in the sidebar. The route and the runs share this -- they
+  // are one plan, and a run is often the leg nearest what you are looking at.
   const highlight = {
     mouseover: () => {
+      setHovered(true);
       polylineRef.current?.setStyle({ color: SELECTED_PATH });
       polylineRef.current?.bringToFront();
     },
     mouseout: () => {
+      setHovered(false);
       if (!props.selected) {
         polylineRef.current?.setStyle({ color: color });
         polylineRef.current?.bringToBack();
@@ -138,7 +144,7 @@ function FlightPlanPath(props: PathProps) {
     <TargetRuns
       waypoints={waypoints}
       drawn={drawn}
-      color={props.selected ? undefined : color}
+      color={props.selected || hovered ? undefined : color}
       labelled={props.selected}
       handlers={
         interactive
