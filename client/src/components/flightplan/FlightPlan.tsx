@@ -114,6 +114,22 @@ function FlightPlanPath(props: PathProps) {
     />
   );
 
+  // Pointing at a plan lights it up; clicking it selects the flight and its package in
+  // the sidebar. The route and the runs in to the target share this: they are one plan,
+  // and a run is often the leg nearest what you are looking at.
+  const highlight = {
+    mouseover: () => {
+      polylineRef.current?.setStyle({ color: SELECTED_PATH });
+      polylineRef.current?.bringToFront();
+    },
+    mouseout: () => {
+      if (!props.selected) {
+        polylineRef.current?.setStyle({ color: color });
+        polylineRef.current?.bringToBack();
+      }
+    },
+  };
+
   // Every flight drawn on the map shows what it is going in against, not only the one
   // being worked on: that is how you see at a glance which targets already have
   // somebody on them. The run to the target is red for the selected flight, where it
@@ -124,6 +140,21 @@ function FlightPlanPath(props: PathProps) {
       drawn={drawn}
       color={props.selected ? undefined : color}
       labelled={props.selected}
+      handlers={
+        interactive
+          ? {
+              ...highlight,
+              // No alt-click: a nav point cannot be drawn into a run. The route takes
+              // those, and this is the one leg that is not part of it.
+              click: () => {
+                selectFlight({ flightId: props.flight.id });
+              },
+            }
+          : undefined
+      }
+      tooltip={
+        interactive ? <FlightTooltip flight={props.flight} /> : undefined
+      }
     />
   );
 
@@ -160,16 +191,7 @@ function FlightPlanPath(props: PathProps) {
           interactive: true,
         }}
         eventHandlers={{
-          mouseover: () => {
-            polylineRef.current?.setStyle({ color: SELECTED_PATH });
-            polylineRef.current?.bringToFront();
-          },
-          mouseout: () => {
-            if (!props.selected) {
-              polylineRef.current?.setStyle({ color: color });
-              polylineRef.current?.bringToBack();
-            }
-          },
+          ...highlight,
           click: async (event: LeafletMouseEvent) => {
             if (!event.originalEvent.altKey) {
               selectFlight({ flightId: props.flight.id });
