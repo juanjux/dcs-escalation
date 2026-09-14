@@ -140,6 +140,8 @@ class QLiberationWindow(QMainWindow):
                 game = self.migrate_game(game, last_save_file)
                 self.onGameGenerated(game)
                 self.updateWindowTitle(last_save_file if game else None)
+                if game is not None:
+                    persistency.remember_saved_state(game)
             else:
                 logging.info("No existing save game")
         else:
@@ -402,6 +404,8 @@ class QLiberationWindow(QMainWindow):
             GameUpdateSignal.get_instance().game_loaded.emit(game)
 
             self.updateWindowTitle(file[0])
+            if game is not None:
+                persistency.remember_saved_state(game)
 
     def migrate_game(self, game, path):
         if game:
@@ -774,6 +778,12 @@ class QLiberationWindow(QMainWindow):
         settings.setValue("windowState", self.saveState())
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        # Nothing to lose, nothing to ask: the campaign is exactly what its own save
+        # file already holds, or there is no campaign open at all.
+        if not persistency.has_unsaved_changes(self.game):
+            self._shut_down(event)
+            return
+
         result = QMessageBox.question(
             self,
             "Quit Escalation?",
@@ -786,11 +796,14 @@ class QLiberationWindow(QMainWindow):
         if result in [QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No]:
             if result == QMessageBox.StandardButton.Yes:
                 self.saveGame()
-            self._save_window_geometry()
-            super().closeEvent(event)
-            self.dialog = None
-            self.debriefing = None
-            for window in QApplication.topLevelWidgets():
-                window.close()
+            self._shut_down(event)
         else:
             event.ignore()
+
+    def _shut_down(self, event: QCloseEvent) -> None:
+        self._save_window_geometry()
+        super().closeEvent(event)
+        self.dialog = None
+        self.debriefing = None
+        for window in QApplication.topLevelWidgets():
+            window.close()

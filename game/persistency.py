@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import pickle
 import shutil
@@ -491,7 +492,48 @@ def mission_path_for(name: str) -> Path:
     return base_path() / "Missions" / name
 
 
+#: What the campaign looked like when it was last written to its save file. Kept here
+#: rather than on the game because it is a fingerprint *of* the game: putting it on the
+#: game would change the thing it describes.
+_saved_signature: Optional[str] = None
+
+
+def game_signature(game: Game) -> str:
+    """A fingerprint of the campaign as a save file would hold it.
+
+    Pickling a campaign of a few hundred objectives takes about fifty milliseconds and
+    gives the same bytes for the same state, so this is an exact answer to "has anything
+    changed", and cheap enough to ask when the window closes.
+    """
+    data = _unload_static_data(game)
+    try:
+        return hashlib.sha256(pickle.dumps(game)).hexdigest()
+    finally:
+        _restore_static_data(game, data)
+
+
+def has_unsaved_changes(game: Optional[Game]) -> bool:
+    """Whether closing now would lose something.
+
+    A campaign that has never been saved has everything to lose. Anything that cannot
+    be worked out -- no save yet, or a fingerprint that could not be taken -- counts as
+    unsaved: being asked once too often costs a keystroke, and the other mistake costs
+    the evening's campaign.
+    """
+    if game is None:
+        return False
+    if _saved_signature is None:
+        return True
+    try:
+        return game_signature(game) != _saved_signature
+    except Exception:
+        logging.exception("Could not tell whether the campaign has been modified")
+        return True
+
+
 def load_game(path: str) -> Optional[Game]:
+    global _saved_signature
+    _saved_signature = None
     with open(path, "rb") as f:
         try:
             save = MigrationUnpickler(f).load()
@@ -502,6 +544,16 @@ def load_game(path: str) -> Optional[Game]:
             return None
 
 
+def remember_saved_state(game: Game) -> None:
+    """This is the campaign as it now sits in its save file."""
+    global _saved_signature
+    try:
+        _saved_signature = game_signature(game)
+    except Exception:
+        logging.exception("Could not fingerprint the saved campaign")
+        _saved_signature = None
+
+
 def save_game(game: Game) -> bool:
     with logged_duration("Saving game"):
         try:
@@ -510,6 +562,7 @@ def save_game(game: Game) -> bool:
                 pickle.dump(game, f)
                 _restore_static_data(game, data)
             shutil.copy(_temporary_save_file(), game.savepath)
+            remember_saved_state(game)
             return True
         except Exception:
             logging.exception("Could not save game")
