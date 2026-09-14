@@ -525,10 +525,12 @@ def has_unsaved_changes(game: Optional[Game]) -> bool:
     if _saved_signature is None:
         return True
     try:
-        return game_signature(game) != _saved_signature
+        if game_signature(game) == _saved_signature:
+            return False
     except Exception:
         logging.exception("Could not tell whether the campaign has been modified")
         return True
+    return True
 
 
 def load_game(path: str) -> Optional[Game]:
@@ -544,10 +546,35 @@ def load_game(path: str) -> Optional[Game]:
             return None
 
 
+def settle(game: Game) -> None:
+    """Build what the first look at the campaign builds anyway.
+
+    A flight's plan is laid out on demand -- and a package whose weapons have changed
+    range since it was laid out has its waypoints rebuilt, join and IP and split
+    re-rolled -- and the first thing to ask for any of that is the map drawing itself,
+    moments after the campaign is loaded. Fingerprinting before that compares the
+    campaign against a version of itself that stopped existing as soon as it was drawn,
+    which is why closing an untouched campaign still asked whether to save it.
+
+    Cheap: about fifty milliseconds over a full ATO, and none of it is work the map was
+    not about to do.
+    """
+    from game.server.flights.models import FlightJs
+
+    for coalition in (game.blue, game.red):
+        for package in coalition.ato.packages:
+            for flight in package.flights:
+                try:
+                    FlightJs.for_flight(flight, with_waypoints=True)
+                except Exception:
+                    logging.exception("Could not settle %s", flight)
+
+
 def remember_saved_state(game: Game) -> None:
     """This is the campaign as it now sits in its save file."""
     global _saved_signature
     try:
+        settle(game)
         _saved_signature = game_signature(game)
     except Exception:
         logging.exception("Could not fingerprint the saved campaign")
