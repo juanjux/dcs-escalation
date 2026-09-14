@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Map]** The factory, warehouse and fuel depot icons are drawn a fifth larger, letters and all: the frame had the room and the stock symbol was not using it.
 * **[Map]** A factory, a warehouse and a fuel depot are three icons now instead of one lettered STOR: the factory keeps the shed with chimneys and reads FTRY, the warehouse is a crate reading WARE, and the fuel depot a drum reading FUEL.
 * **[UI]** The map search filters factories, warehouses, fuel depots and oil separately instead of lumping them under Buildings: which base can recruit ground units is a factory away, and the three kinds of stores are each worth a different sortie.
 * **[OPFOR-AI]** A building target says which kind it is (`category`: factory, warehouse, fuel, oil, ammo...) and which base it sits at, and every base reports what its own factories are doing -- alive, repairing or destroyed -- which is the reason behind `can_recruit_ground`.

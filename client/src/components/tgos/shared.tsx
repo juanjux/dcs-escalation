@@ -76,17 +76,24 @@ function relabelAsGps(svg: string): string {
 // and the other two are each worth a different sortie.
 //
 // milsymbol draws the store as one <path> and the letters as one <text>, so both can
-// be swapped for something that says which it is. The factory keeps the stock icon --
-// a shed with two chimneys is already a factory -- and only loses the wrong letters.
+// be swapped for something that says which it is. The frame is 150 wide and the stock
+// store fills 60 of it, which leaves the icon small and the letters smaller; these are
+// drawn about a fifth larger, up to the room the frame actually has.
 const STORE_BUILDING = /d="m 104,75[^"]*"/;
+const STORE_LETTERS = /(<text[^>]*?)font-size="23"([^>]*>)STOR<\/text>/;
+const STORE_FONT_SIZE = 28;
 
-const STORE_ICONS: Record<string, { label: string; glyph?: string }> = {
-  factory: { label: "FTRY" },
-  ware: { label: "WARE", glyph: "M74,80 h52 v44 h-52 z M74,92 h52" },
+const STORE_ICONS: Record<string, { label: string; glyph: string }> = {
+  // The stock shed with two chimneys, scaled up about its own centre.
+  factory: {
+    label: "FTRY",
+    glyph: "M105,70 H111 V86 H122 V70 H128 V86 H136 V130 H64 V86 H105 Z",
+  },
+  ware: { label: "WARE", glyph: "M64,78 h72 v52 h-72 z M64,94 h72" },
   fuel: {
     label: "FUEL",
     glyph:
-      "M80,86 a20,9 0 0,1 40,0 v32 a20,9 0 0,1 -40,0 z M80,86 a20,9 0 0,0 40,0",
+      "M73,84 a27,10 0 0,1 54,0 v42 a27,10 0 0,1 -54,0 z M73,84 a27,10 0 0,0 54,0",
   },
 };
 
@@ -99,11 +106,15 @@ function relabelStore(svg: string, category: string): string {
   if (icon === undefined) {
     return svg;
   }
-  let out = svg.replace(/>STOR<\/text>/, `>${icon.label}</text>`);
-  if (icon.glyph !== undefined) {
-    out = out.replace(STORE_BUILDING, `d="${icon.glyph}"`);
-  }
-  return out;
+  // The size is milsymbol's own, picked from the length of the stock letters; the
+  // second pass is for a version that picks a different one, where only the letters
+  // change and they stay the size they were.
+  let out = svg.replace(
+    STORE_LETTERS,
+    `$1font-size="${STORE_FONT_SIZE}"$2${icon.label}</text>`,
+  );
+  out = out.replace(/>STOR<\/text>/, `>${icon.label}</text>`);
+  return out.replace(STORE_BUILDING, `d="${icon.glyph}"`);
 }
 
 export function iconForTgo(tgo: TgoModel) {
