@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mission Plugins]** **Realistic CAS** adds gradual ground-target discovery for both coalitions through visual, EO/IR and ground-radar observations, with terrain LOS and approximate weather, daylight and cover effects. Firing reveals a group immediately; contacts expire after a configurable lifetime. Ground combat shares the fog, while fixed map SAM objectives remain known and frontline SAMs do not. Experimental and off by default, with bounded processing and optional diagnostic logging; F10 and weapon accuracy are unchanged. Requires TIC, CTLD and Moose Autolase to be disabled and temporarily omits generated legacy JTACs. Campaign-scale tuning and replacement JTACs remain pending. ([#195](https://github.com/juanjux/dcs-escalation/pull/195))
 * **[Live Pilots]** A pilot who is liked more than he likes back comes round sooner: each point between the two halves of a pair adds to his chance of warming (5% a point by default, a new setting under Friendship). The cooling roll is untouched, and the pilot who is already the warmer of the two gains nothing.
 * **[UI]** The dashed run in to a target answers the pointer like the rest of the route: hovering lights the plan up -- the route yellow and its runs red -- and clicking selects the flight and its package.
 * **[UI]** Closing only asks whether to save when there is something to save: the campaign is settled and fingerprinted as a save would write it, so quitting after a save, or after a look around that changed nothing, just quits.

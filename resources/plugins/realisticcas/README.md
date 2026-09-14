@@ -251,7 +251,7 @@ JTAC/TIC/CTLD combinations; it is not the complete planned feature.
 In-engine controls 35–37 additionally passed night/IR, controlled cloud
 transmission, and RBM/GMTI with live DCS radar-on/target velocities. These validate
 the model/bridge, not native radar-mode telemetry or physical cloud calibration.
-See `docs/dev/design/realistic-cas-*-results-20260909.md` for exact evidence.
+Development trial notes are kept locally, outside the repository.
 
 ## Campaign registry boundary
 

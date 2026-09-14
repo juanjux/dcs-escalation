@@ -128,6 +128,20 @@ Still to come:
   worth a warning.
 
 ### Missions, AI & tasking
+
+- **Realistic CAS** — an experimental, off-by-default Mission Plugin that makes
+  ground targets something to discover instead of immediately available to every
+  AI attacker. Both sides search using visual, EO/IR and ground-radar observations,
+  with terrain line of sight and approximate weather, daylight and cover effects.
+  Firing reveals a group immediately; observed contacts expire after a configurable
+  time. Ground units also spot enemies, and revealing one vehicle reveals its group.
+  Fixed map SAM sites stay known; frontline SAMs participate in the fog. F10 and
+  weapon accuracy are unchanged. Enable **Realistic CAS (experimental)** in Mission
+  Plugins; **TIC, CTLD and Moose Autolase must be disabled**, and legacy generated
+  JTACs are temporarily omitted. Campaign-scale tuning and replacement JTACs remain
+  pending. [Plugin details](resources/plugins/realisticcas/README.md).
+  ([#195](https://github.com/juanjux/dcs-escalation/pull/195))
+
 - **Fix escort and sead escorts not honoring the "ahead" TOT offset setting.** 
   ([#220](https://github.com/juanjux/dcs-escalation/pull/220))
   
