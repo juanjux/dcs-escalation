@@ -87,7 +87,7 @@ function FlightPlanPath(props: PathProps) {
   // behind everything than was added before them. Anything added after always
   // goes on top.
   useEffect(() => {
-    if (props.selected) {
+    if (props.selected || hovered) {
       polylineRef.current?.bringToFront();
     } else {
       polylineRef.current?.bringToBack();
@@ -112,7 +112,10 @@ function FlightPlanPath(props: PathProps) {
   const visible = (
     <Polyline
       positions={points}
-      pathOptions={{ color: color, interactive: false }}
+      pathOptions={{
+        color: hovered ? SELECTED_PATH : color,
+        interactive: false,
+      }}
       ref={polylineRef}
     />
   );
@@ -121,19 +124,14 @@ function FlightPlanPath(props: PathProps) {
   // red, which is what they are for the flight being worked on. Clicking selects the
   // flight and its package in the sidebar. The route and the runs share this -- they
   // are one plan, and a run is often the leg nearest what you are looking at.
+  //
+  // The colour is part of the render rather than something a handler paints on: a
+  // painted style lasts exactly until the next render, which re-applies the colour the
+  // render says the line has. That is why the yellow used to last a single frame -- the
+  // handler set it and the re-render this state change causes took it straight back off.
   const highlight = {
-    mouseover: () => {
-      setHovered(true);
-      polylineRef.current?.setStyle({ color: SELECTED_PATH });
-      polylineRef.current?.bringToFront();
-    },
-    mouseout: () => {
-      setHovered(false);
-      if (!props.selected) {
-        polylineRef.current?.setStyle({ color: color });
-        polylineRef.current?.bringToBack();
-      }
-    },
+    mouseover: () => setHovered(true),
+    mouseout: () => setHovered(false),
   };
 
   // Every flight drawn on the map shows what it is going in against, not only the one

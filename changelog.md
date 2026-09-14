@@ -149,6 +149,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** A flight plan lit up yellow under the pointer for a single frame and went out: the colour was painted on by a handler, and the next render put the line's own colour straight back.
 * **[FIX]** A package whose target was nearer than the doctrine's minimum ingress distance could not be planned at all -- *No solutions found for waypoint* -- because lowering the ingress ceiling to the weapons' reach closed the window the IP is looked for in. CAS from a base nine miles from the front line is the case that found it.
 * **[FIX]** Two convoys on the road at once could both be called `Convoy 001`: the counter behind the name is not in the save, so a reloaded campaign started numbering again from one. A campaign that already holds such a pair is repaired on load.
 * **[FIX]** Opening the same package, flight, squadron, pilot or the Air Wing twice opened a second window of it instead of raising the one already up.

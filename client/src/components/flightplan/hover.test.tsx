@@ -79,6 +79,16 @@ function runColor(): string {
   return runs[runs.length - 1].pathOptions.color;
 }
 
+/** The route's own colour, from the last time it was drawn. */
+function routeColor(): string {
+  const routes = drawn().filter(
+    (props) =>
+      props.pathOptions?.dashArray === undefined &&
+      props.pathOptions?.opacity === undefined,
+  );
+  return routes[routes.length - 1].pathOptions.color;
+}
+
 /** The wide invisible twin that catches the mouse. */
 function grab(): any {
   return drawn().find((props) => props.pathOptions?.weight === 16);
@@ -107,4 +117,16 @@ it("puts it back when the pointer leaves", () => {
   act(() => grab().eventHandlers.mouseout());
 
   expect(runColor()).toBe(BLUE);
+});
+
+it("keeps the route yellow for as long as the pointer is on it", () => {
+  // The colour belongs to the render. Painted on by hand it lasted one frame: the
+  // re-render that the hover causes put the line's own colour straight back.
+  expect(routeColor()).toBe(BLUE);
+
+  act(() => grab().eventHandlers.mouseover());
+  expect(routeColor()).toBe("#ffff00");
+
+  act(() => grab().eventHandlers.mouseout());
+  expect(routeColor()).toBe(BLUE);
 });
