@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Live Pilots]** A pilot who is liked more than he likes back comes round sooner: each point between the two halves of a pair adds to his chance of warming (5% a point by default, a new setting under Friendship). The cooling roll is untouched, and the pilot who is already the warmer of the two gains nothing.
 * **[UI]** The dashed run in to a target answers the pointer like the rest of the route: hovering lights the plan up -- the route yellow and its runs red -- and clicking selects the flight and its package.
 * **[UI]** Closing only asks whether to save when there is something to save: the campaign is settled and fingerprinted as a save would write it, so quitting after a save, or after a look around that changed nothing, just quits.
 * **[UI]** The dashed run in to a target answers the pointer like the rest of the route: hovering lights the flight plan up, clicking selects the flight and its package.

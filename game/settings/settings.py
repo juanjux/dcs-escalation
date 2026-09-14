@@ -2348,6 +2348,25 @@ class Settings:
         min=0,
         max=100,
     )
+    friendship_reciprocity_per_point: int = bounded_int_option(
+        "Added to the warming chance per point of difference (%)",
+        page=LIVE_PILOTS_PAGE,
+        section=LIVE_PILOTS_FRIENDSHIP_SECTION,
+        subsection=LIVE_PILOTS_FRIENDSHIP_DRIFT_SECTION,
+        default=5,
+        min=0,
+        max=20,
+        detail=(
+            "The two pilots in a pair can think different things of each other. When"
+            " the other pilot likes him more than he likes the other pilot, his chance"
+            " of warming goes up by this much for each point of difference on the 0 to"
+            " 10 scale. Example: the other pilot is at 9 and he is at 5, a difference"
+            " of 4, so with this set to 5% his chance of warming to that pilot goes up"
+            " by 20 points -- from 35% to 55% for a squadron mate. His chance of"
+            " cooling is not changed, and the other pilot, who already likes him more,"
+            " gets nothing. Set it to 0 and each side drifts on its own."
+        ),
+    )
     friendship_drift_step: float = bounded_float_option(
         "How much it moves when it moves",
         page=LIVE_PILOTS_PAGE,

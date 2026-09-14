@@ -374,3 +374,53 @@ def test_a_campaign_that_set_its_own_bands_keeps_them() -> None:
     state = {"friendship_band_neutral": 4.5, "friendship_band_frosty": 2.0}
     Settings._migrate_lopsided_friendship_bands(state)
     assert state == {"friendship_band_neutral": 4.5, "friendship_band_frosty": 2.0}
+
+
+# --- reciprocity ----------------------------------------------------------------
+#
+# The two halves of a pair are separate numbers, and they can sit a long way apart: he
+# is at 5 about a man who is at 9 about him. Being liked is noticed, so the half that
+# is behind rolls likelier to close.
+
+
+def _drift_with(roll: float, current: float, returned: float | None) -> float:
+    with patch("game.squadrons.friendship.random.random", return_value=roll / 100):
+        return friendship.drift_step(True, current, None, returned=returned)
+
+
+def test_being_liked_more_than_he_likes_back_makes_him_likelier_to_warm() -> None:
+    # He is at 5 and the other man at 9: four points, five each, twenty more, so
+    # warming reaches 55. The same roll of 50 that cools an even pair warms this one.
+    assert _drift_with(50.0, current=5.0, returned=9.0) == 1.0
+    assert _drift_with(50.0, current=5.0, returned=5.0) == -1.0
+
+
+def test_the_man_who_is_already_the_warmer_of_the_two_gets_nothing() -> None:
+    # The other half of the same pair: he is at 9 about a man who is at 5 about him,
+    # and rolls the ordinary table -- 50 is a cooling turn.
+    assert _drift_with(50.0, current=9.0, returned=5.0) == -1.0
+
+
+def test_the_cooling_roll_is_left_alone() -> None:
+    # 35 + 20 of bonus puts warming at 55, so cooling still starts there and ends at
+    # 75 -- the same twenty points it always had, just later in the roll.
+    assert _drift_with(60.0, current=5.0, returned=9.0) == -1.0
+    assert _drift_with(80.0, current=5.0, returned=9.0) == 0.0
+
+
+def test_nothing_changes_for_a_pair_that_was_never_asked_about_the_other_half() -> None:
+    assert _drift_with(50.0, current=5.0, returned=None) == -1.0
+
+
+def test_the_bonus_is_a_setting() -> None:
+    settings = SimpleNamespace(friendship_reciprocity_per_point=0)
+    assert friendship.reciprocity_bonus(5.0, 9.0, settings) == 0.0
+
+    settings = SimpleNamespace(friendship_reciprocity_per_point=10)
+    assert friendship.reciprocity_bonus(5.0, 9.0, settings) == 40.0
+
+
+def test_a_whole_scale_apart_is_still_a_chance_and_not_a_certainty_of_more() -> None:
+    # Ten points of difference at five each would be 50 over the 35, which is 85 --
+    # high, and still short of never rolling a cooling turn.
+    assert _drift_with(90.0, current=0.0, returned=10.0) == -1.0
