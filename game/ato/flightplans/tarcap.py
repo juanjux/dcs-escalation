@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Type
 
-from game.utils import Distance, Speed
+from game.utils import Distance, Speed, nautical_miles
 from .capbuilder import CapBuilder
+from .refuelneed import needs_refuelling
 from .patrolling import PatrollingFlightPlan, PatrollingLayout
 from .waypointbuilder import WaypointBuilder
 
@@ -16,29 +16,11 @@ if TYPE_CHECKING:
 
 @dataclass
 class TarCapLayout(PatrollingLayout):
-    refuel: FlightWaypoint | None
+    """Kept as its own type only so the plan class can be parameterised on it.
 
-    def iter_waypoints(self) -> Iterator[FlightWaypoint]:
-        yield self.departure
-        yield from self.nav_to
-        yield self.patrol_start
-        yield self.patrol_end
-        if self.refuel is not None:
-            yield self.refuel
-        yield from self.nav_from
-        yield self.arrival
-        if self.divert is not None:
-            yield self.divert
-        yield self.bullseye
-        yield from self.custom_waypoints
-
-    def delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
-        if waypoint == self.refuel:
-            self.refuel = None
-            return True
-        elif super().delete_waypoint(waypoint):
-            return True
-        return False
+    The refuel slot, and the waypoint ordering that carries it, now belong to every
+    patrol (:class:`PatrollingLayout`), so there is nothing left to add here.
+    """
 
 
 class TarCapFlightPlan(PatrollingFlightPlan[TarCapLayout]):
@@ -110,8 +92,27 @@ class Builder(CapBuilder[TarCapFlightPlan, TarCapLayout]):
         refuel = None
         nav_from_origin = orbit1p
 
-        if self.package.waypoints is not None:
-            refuel = builder.refuel(self.package.waypoints.refuel)
+        # TARCAP asked for neither a helicopter check nor a tanker in the air wing,
+        # so it was the one plan that added the waypoint unconditionally.
+        #
+        # Its laps are most of what it burns: a patrol judged on the way out and back
+        # alone comes out at about half its real need, which is the one flight type
+        # that most often does want a tanker.
+        settings = self.flight.coalition.game.settings
+        hours = settings.desired_tarcap_mission_duration.total_seconds() / 3600.0
+        on_station = nautical_miles(
+            self.flight.unit_type.preferred_patrol_speed(patrol_alt).knots * hours
+        )
+        meeting_point = self.package.refuel_point
+        if meeting_point is not None and needs_refuelling(
+            self.flight,
+            self.package,
+            settings,
+            patrol_alt,
+            patrol_alt,
+            on_station,
+        ):
+            refuel = builder.refuel(meeting_point)
             nav_from_origin = refuel.position
 
         return TarCapLayout(

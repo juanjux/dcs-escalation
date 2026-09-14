@@ -18,6 +18,8 @@ from ..radio.RadioFrequencyContainer import RadioFrequencyContainer
 from ..radio.radios import RadioFrequency
 
 if TYPE_CHECKING:
+    from dcs.mapping import Point
+
     from game.theater import ControlPoint, MissionTarget
 
 
@@ -154,6 +156,7 @@ class Package(RadioFrequencyContainer):
         """Adds a flight to the package."""
         self.flights.append(flight)
         self._db.add(flight.id, flight)
+        self.label_formation_waypoints()
 
     def remove_flight(self, flight: Flight) -> None:
         """Removes a flight from the package."""
@@ -164,6 +167,18 @@ class Package(RadioFrequencyContainer):
             flight.cargo.transport = None
         if not self.flights:
             self.waypoints = None
+        self.label_formation_waypoints()
+
+    def label_formation_waypoints(self) -> None:
+        """Name every flight's join and split for the size of the package.
+
+        A package of one has nobody to meet and nobody to part from, so those two
+        points read as nav points; a second flight makes them a join and a split
+        again, for every flight in the package. Done here rather than per flight
+        because adding one flight changes what every other flight's route says.
+        """
+        for flight in self.flights:
+            flight.label_formation_waypoints()
 
     @property
     def primary_flight(self) -> Optional[Flight]:
@@ -235,6 +250,39 @@ class Package(RadioFrequencyContainer):
         if task in oca_strike_types:
             return "OCA Strike"
         return str(task)
+
+    @property
+    def refuel_point(self) -> Optional["Point"]:
+        """Where a flight in this package meets its tanker, or None if nowhere.
+
+        An offensive package gets one from its own geometry, behind the split point.
+        A defensive one -- a BARCAP over a friendly base -- has no package geometry at
+        all, because there is no ingress to solve for, so the point is put halfway
+        between the field the package flies from and what it is defending. Both ends
+        are friendly ground by construction, which is the only property the refuelling
+        point has to have.
+
+        An OFFENSIVE package that has simply not solved its geometry yet gets None
+        rather than the fallback: halfway to an enemy target is not a place to send a
+        tanker.
+        """
+        if self.waypoints is not None:
+            return self.waypoints.refuel
+        if not self.flights:
+            return None
+        if not self.target.is_friendly(self.flights[0].coalition.player):
+            return None
+        try:
+            origin = self.departure_closest_to_target()
+        except RuntimeError:
+            # It only knows about airfields, so a package flying off a carrier has no
+            # answer for it. The flight's own departure always does.
+            origin = self.flights[0].departure
+        target = self.target.position
+        return origin.position.point_from_heading(
+            origin.position.heading_between_point(target),
+            origin.position.distance_to_point(target) / 2,
+        )
 
     def departure_closest_to_target(self) -> ControlPoint:
         # We'll always have a package, but if this is being planned via the UI

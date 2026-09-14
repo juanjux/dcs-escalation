@@ -24,7 +24,10 @@ from game.dcs.skills import SKILL_LADDER
 if TYPE_CHECKING:
     from game.settings import Settings
 
-MORALE_MIN = 0
+#: Rock bottom is below zero so that being Broken lasts. At a floor of zero one quiet
+#: turn of drift lifted a man straight back out of the band, whatever had put him
+#: there, and Broken could not describe more than a single turn.
+MORALE_MIN = -30
 MORALE_MAX = 100
 
 #: Where a pilot starts, and where he drifts back to. A campaign that has done nothing
@@ -45,10 +48,27 @@ class MoraleEvent:
     default: int
     reason: str
 
+    #: What this copy of the event is worth, when it is worth something other than the
+    #: campaign's figure -- leave taken in company, say. It wins over the settings key,
+    #: because it was worked out from that figure to begin with.
+    override: Optional[int] = None
+
     def amount(self, settings: Optional["Settings"] = None) -> int:
+        if self.override is not None:
+            return self.override
         if settings is None:
             return self.default
         return int(getattr(settings, self.key, self.default))
+
+    def scaled_by(
+        self, factor: float, settings: Optional["Settings"] = None
+    ) -> "MoraleEvent":
+        """The same event, worth more to one man than to the next.
+
+        Whole numbers, because morale is one: a factor that rounds to nothing leaves
+        the event exactly as the campaign wrote it.
+        """
+        return replace(self, override=round(self.amount(settings) * factor))
 
 
 # --- what wears him down ----------------------------------------------------
@@ -60,7 +80,8 @@ LOST_AIRCRAFT = MoraleEvent("morale_lost_aircraft", -15, "lost his aircraft")
 #: He flew a strike, a CAS or a SEAD and destroyed nothing at all.
 ACHIEVED_NOTHING = MoraleEvent("morale_achieved_nothing", -10, "came home empty")
 
-#: Per pilot of his own squadron killed. Friendship weighting is Tier IV.
+#: Per pilot of his own squadron killed, weighted by what he thought of the man:
+#: see :func:`game.squadrons.friendship.grief_times`.
 SQUADRON_DEATH = MoraleEvent("morale_squadron_death", -20, "lost a squadron mate")
 
 #: On top of the above, for the men who were in the same flight and watched it happen.
@@ -109,6 +130,13 @@ PROMOTED = MoraleEvent("morale_promoted", 20, "promoted")
 #: Per turn of leave served.
 ON_LEAVE = MoraleEvent("morale_on_leave", 15, "on leave")
 
+#: He walked out of the hospital. The mirror of the wound: losing him for a few turns
+#: cost the squadron, and having him back pays some of it in. Never all of it -- a wound
+#: has to be worth avoiding.
+SQUADRON_RECOVERED = MoraleEvent(
+    "morale_squadron_recovered", 4, "a man came back from the hospital"
+)
+
 #: Every event, for the settings page and for tests that check nothing was forgotten.
 MORALE_EVENTS: tuple[MoraleEvent, ...] = (
     LOST_AIRCRAFT,
@@ -126,6 +154,7 @@ MORALE_EVENTS: tuple[MoraleEvent, ...] = (
     MISSION_COMPLETE,
     PROMOTED,
     ON_LEAVE,
+    SQUADRON_RECOVERED,
 )
 
 
@@ -144,15 +173,15 @@ def wound_is_felt_for(turns: int) -> int:
 #: A campaign can have sat out more than one re-weighing, which is why it is a list.
 PREVIOUS_DEFAULTS: dict[str, tuple[int, ...]] = {
     "morale_lost_aircraft": (-15,),
-    "morale_achieved_nothing": (-5, -10),
-    "morale_squadron_death": (-8,),
-    "morale_flight_death": (-6,),
+    "morale_achieved_nothing": (-10, -7),
+    "morale_squadron_death": (-8, -20),
+    "morale_flight_death": (-6, -10),
     "morale_squadron_wound": (-2, -3),
     "morale_flight_wound": (-2,),
     "morale_base_lost": (-6, -2),
-    "morale_no_leave": (-2,),
+    "morale_no_leave": (-2, -4),
     "morale_leave_refused": (-6, -5),
-    "morale_leave_cancelled": (-10, -8),
+    "morale_leave_cancelled": (-10, -8, -7),
     "morale_air_kill": (10,),
     "morale_unplanned_kill": (3,),
     "morale_mission_complete": (4,),
@@ -165,23 +194,31 @@ def clamp(morale: int) -> int:
     return max(MORALE_MIN, min(MORALE_MAX, morale))
 
 
-#: How far a pilot settles back towards the middle each turn. Big enough that one very
-#: good or one very bad turn does not decide the rest of his campaign: a man knocked
-#: from 50 to 20 is back to Normal in three quiet turns, not thirty.
+#: How far a pilot settles back towards the middle in a quiet turn, when the campaign
+#: has not said otherwise. Big enough that one very good or one very bad turn does not
+#: decide the rest of his campaign: a man knocked from 50 to 20 is back to Normal in
+#: three quiet turns, not thirty.
 DRIFT_PER_TURN = 5
 
 
-def drift(morale: int) -> int:
+def drift_per_turn(settings: Any = None) -> int:
+    if settings is None:
+        return DRIFT_PER_TURN
+    return int(getattr(settings, "morale_drift_per_turn", DRIFT_PER_TURN))
+
+
+def drift(morale: int, settings: Any = None) -> int:
     """A step back towards the middle, from either side, never past it.
 
     Applied once a turn before anything else. Rock bottom is not exempt -- he climbs
     out of it like anyone else -- but the events of a hard turn can put him straight
     back, and every turn he is there is another roll of :func:`desertion_chance`.
     """
+    step = drift_per_turn(settings)
     if morale > MORALE_START:
-        return -min(DRIFT_PER_TURN, morale - MORALE_START)
+        return -min(step, morale - MORALE_START)
     if morale < MORALE_START:
-        return min(DRIFT_PER_TURN, MORALE_START - morale)
+        return min(step, MORALE_START - morale)
     return 0
 
 
@@ -210,11 +247,26 @@ def resistance(skill: Skill) -> float:
     return 1.0 - 0.15 * rung
 
 
-def apply(morale: int, event: MoraleEvent, skill: Skill, settings: Any = None) -> int:
-    """Move a pilot by one event, softened by his rank if it is a knock."""
+def apply(
+    morale: int,
+    event: MoraleEvent,
+    skill: Skill,
+    settings: Any = None,
+    relief: float = 0.0,
+) -> int:
+    """Move a pilot by one event, softened if it is a knock.
+
+    Twice over: by his rank, which is armour he was given, and by ``relief`` -- what he
+    has already been through, which is armour he earned. The two multiply, because they
+    are separate reasons the same news lands lighter, and neither applies to good news.
+
+    A knock never costs nothing, however hard the man: the floor of one point is the
+    rule rather than a rounding guard.
+    """
     amount = event.amount(settings)
     if amount < 0:
-        amount = -max(1, round(-amount * resistance(skill)))
+        softened = resistance(skill) * max(0.0, 1.0 - relief)
+        amount = -max(1, round(-amount * softened))
     return clamp(morale + amount)
 
 
@@ -267,16 +319,24 @@ def band_ceiling(name: str, settings: Any = None) -> int:
     return MORALE_MAX + 1
 
 
-def shifted_skill(skill: Skill, morale: int, settings: Any = None) -> Skill:
-    """The rung he will actually fly at, clamped to the ladder."""
-    shift = skill_shift(morale, settings)
-    if not shift:
+def bumped_skill(skill: Skill, rungs: int) -> Skill:
+    """A rung up or down the ladder, clamped to its ends.
+
+    Shared by the two things that move a pilot off his rank: how he is holding up, and
+    whether the formation around him is one he gets on with.
+    """
+    if not rungs:
         return skill
     try:
         rung = SKILL_LADDER.index(skill)
     except ValueError:
         return skill
-    return SKILL_LADDER[max(0, min(len(SKILL_LADDER) - 1, rung + shift))]
+    return SKILL_LADDER[max(0, min(len(SKILL_LADDER) - 1, rung + rungs))]
+
+
+def shifted_skill(skill: Skill, morale: int, settings: Any = None) -> Skill:
+    """The rung he will actually fly at, clamped to the ladder."""
+    return bumped_skill(skill, skill_shift(morale, settings))
 
 
 @dataclass(frozen=True)
@@ -326,6 +386,25 @@ def morale_state(morale: int, settings: Any = None) -> MoraleState:
         if morale >= state.floor:
             return state
     return MORALE_STATES[-1]
+
+
+#: One face per band, for the lists with no room for the word -- the pilot selector
+#: above all, where every name looks alike and the man's state is the thing you are
+#: choosing on. Keyed by state NAME, so a campaign that moves a band's floor cannot
+#: end up with the wrong face on it.
+STATE_EMOJI: dict[str, str] = {
+    "Triumphant": "😄",
+    "Confident": "🙂",
+    "Normal": "😐",
+    "Shaken": "😟",
+    "Shattered": "😢",
+    "Broken": "😭",
+}
+
+
+def emoji_for(morale: int, settings: Any = None) -> str:
+    """The band's face, or nothing for a band nobody has given one."""
+    return STATE_EMOJI.get(morale_state(morale, settings).name, "")
 
 
 def state_named(name: str, settings: Any = None) -> MoraleState:

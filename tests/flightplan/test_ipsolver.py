@@ -151,3 +151,35 @@ def test_ip_stays_on_route_when_ingress_distance_exceeds_route_length() -> None:
 
     ip_distance_from_departure = meters(math.hypot(ip.x, ip.y))
     assert ip_distance_from_departure.nautical_miles <= route_length.nautical_miles + 1
+
+
+def test_a_target_nearer_than_the_minimum_ingress_distance_can_still_be_planned() -> (
+    None
+):
+    """CAS from a base nine and a half miles from the front line.
+
+    The solver looks for the IP in the ring between the doctrine's minimum ingress
+    distance and its maximum. PackageWaypoints lowers that maximum to the reach of the
+    weapons, and where the target was nearer than the doctrine's own minimum, the
+    maximum was clamped back up to it -- inner radius and outer radius the same, a ring
+    with no points in it. Every strategy failed on a geometry that is perfectly
+    solvable, and the package could not be planned at all.
+    """
+    from game.ato.packagewaypoints import PackageWaypoints
+
+    doctrine = ALL_DOCTRINES[0]
+    reach = doctrine.min_ingress_distance - nautical_miles(0.5)
+    departure = Point(0, 0)
+    target = point_at_heading(departure, Heading.from_degrees(90), reach)
+
+    planned = PackageWaypoints.doctrine_for_weapon_range(
+        doctrine, nautical_miles(100), reach
+    )
+    ip = IpSolver(departure, target, planned, MultiPolygon([])).solve()
+
+    assert ip is not None
+    # It is behind the departure, which is what the backtracking strategies are for:
+    # there is no room for a ten mile run in at a target nine and a half miles away.
+    assert meters(math.hypot(ip.x - target.x, ip.y - target.y)) >= (
+        doctrine.min_ingress_distance
+    )

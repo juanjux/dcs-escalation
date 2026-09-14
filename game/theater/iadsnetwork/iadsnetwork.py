@@ -4,11 +4,13 @@ import logging
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Iterator, Optional
+from typing import Any, TYPE_CHECKING, Iterator, Optional
 from uuid import UUID
 
+from game.data.units import UnitClass
 from game.dcs.groundunittype import GroundUnitType
 from game.theater.iadsnetwork.iadsrole import IadsRole
+from game.theater.iadsnetwork.iadsstate import IadsStateMap, IadsStatus
 from game.theater.theatergroundobject import (
     IadsBuildingGroundObject,
     IadsGroundObject,
@@ -36,6 +38,41 @@ class IadsNetworkException(Exception):
 STATIC_BACKED_ROLES = frozenset(
     {IadsRole.COMMAND_CENTER, IadsRole.CONNECTION_NODE, IadsRole.POWER_SOURCE}
 )
+
+
+def _settings_of(tgo: TheaterGroundObject) -> Any:
+    """This campaign's settings, reached through the objective that needs them.
+
+    The network is built from a list of objectives and never handed the game, and
+    the two ranges below are plugin options rather than constants. None for a test
+    double that stops short of a game, which then gets the defaults.
+    """
+    coalition = getattr(tgo.control_point, "coalition", None)
+    game = getattr(coalition, "game", None)
+    return getattr(game, "settings", None)
+
+
+def brings_its_own_power(group: IadsGroundGroup) -> bool:
+    """Whether this site generates its own electricity.
+
+    A Patriot battery deploys with an EPP-III, a SAMP/T with its MGE: the power is
+    part of the site, not something it is fed. Bombing the substation that happens to
+    be nearest does nothing to it, and until now it switched it off.
+
+    Read from the unit class the campaign data already carries, rather than a list of
+    ids in Python: a mod that ships a generator is classed Power like the rest, and
+    starts working the day it is registered.
+
+    Alive units only, and asked when the mission is written rather than when the
+    network is built: kill the generator and the site is back on the grid the next
+    time a mission is generated.
+    """
+    return any(
+        unit.alive
+        and unit.unit_type is not None
+        and unit.unit_type.unit_class is UnitClass.POWER
+        for unit in group.units
+    )
 
 
 @dataclass
@@ -125,6 +162,35 @@ class IadsNetwork:
             else:
                 raise RuntimeError("Invalid iads_config in campaign")
 
+        self._state_map: Optional[IadsStateMap] = None
+        # A network built by this code keeps its destroyed sites, so the one-time
+        # repair in the migrator has nothing to do to it.
+        self.keeps_destroyed_nodes = True
+
+    def __getstate__(self) -> dict[str, Any]:
+        # Derived from the nodes, so it is rebuilt rather than carried in the save.
+        state = self.__dict__.copy()
+        state["_state_map"] = None
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        state.setdefault("_state_map", None)
+        self.__dict__.update(state)
+
+    @property
+    def state_map(self) -> IadsStateMap:
+        """What Skynet will do with each site: networked, autonomous or dark.
+
+        Worked out once and kept until something changes the network, because every
+        site's answer depends on every other site's.
+        """
+        if self._state_map is None:
+            self._state_map = IadsStateMap(self)
+        return self._state_map
+
+    def invalidate_state_map(self) -> None:
+        self._state_map = None
+
     def skynet_nodes(self, game: Game) -> list[SkynetNode]:
         """Get all skynet nodes from the IADS Network"""
         skynet_nodes: list[SkynetNode] = []
@@ -147,7 +213,13 @@ class IadsNetwork:
             #  (originating from SkynetNode.dcs_name_for_group)
             # but if it does, we want to know because it's supposed to be impossible afaict
             skynet_node = SkynetNode.from_group(node.group)
+            self_powered = brings_its_own_power(node.group)
             for connection in node.connections.values():
+                # A site with its own generator has no power dependency at all. An
+                # empty list is exactly what Skynet reads as "powered", so leaving the
+                # connection out IS the feature -- no Lua change needed.
+                if self_powered and connection.iads_role is IadsRole.POWER_SOURCE:
+                    continue
                 # A destroyed building has to keep reaching Skynet. Dropping it here left
                 # the element with an empty list, and genericCheckOneObjectIsAlive reads
                 # an empty list as alive -- so bombing a power station switched its SAMs
@@ -219,7 +291,30 @@ class IadsNetwork:
             self._update_network(tgo, events)
 
     def update_tgo(self, tgo: TheaterGroundObject, events: GameUpdateEvents) -> None:
-        """Update the IADS Network for the given TGO"""
+        """Update the IADS Network for the given TGO, and anything it drags with it."""
+        # One site's power station going down changes what half the network is doing,
+        # so the derived state is thrown away wholesale rather than patched -- and
+        # every site whose answer changed is pushed to the map. Without that second
+        # half, bombing a substation leaves its SAMs drawing confident threat rings
+        # until the campaign is reloaded, because nothing touched THOSE objects.
+        before = {obj: status for obj, status in self.state_map}
+        self.invalidate_state_map()
+        try:
+            self._update_tgo(tgo, events)
+        finally:
+            self._push_state_changes(before, events)
+
+    def _push_state_changes(
+        self,
+        before: dict[TheaterGroundObject, IadsStatus],
+        events: GameUpdateEvents,
+    ) -> None:
+        after = {obj: status for obj, status in self.state_map}
+        for obj in before.keys() | after.keys():
+            if before.get(obj) != after.get(obj):
+                events.update_tgo(obj)
+
+    def _update_tgo(self, tgo: TheaterGroundObject, events: GameUpdateEvents) -> None:
         if self.advanced_iads and IadsRole.for_category(tgo.category).is_comms_or_power:
             return self._update_iads_comms_and_power(tgo, events)
         # Remove existing nodes for the given tgo. Iterate a copy: removing from the
@@ -259,17 +354,36 @@ class IadsNetwork:
                 return cn
 
         # Create new connection_node if none exists
+        # A destroyed site used to be taken out of the network altogether, which took
+        # its links off the map with it: a link whose POWER STATION died drew broken,
+        # and a link whose SAM died simply vanished -- so the state you most want to
+        # see was the one state never drawn. A site with nothing alive still gets a
+        # node, and its links go dashed like any other break.
+        #
+        # Whoever is alive still leads, though. A site whose SAM is dead but whose
+        # point defence is not keeps being led by that point defence, which is how it
+        # goes on reaching Skynet and fighting; handing the lead to the dead group
+        # would have taken a live Vulcan out of the IADS.
+        #
+        # What Skynet is given barely changes: skynet_nodes drops a node whose group is
+        # entirely dead, except for the static-backed roles, where being missing is read
+        # as "no such dependency". That exception is the second thing this fixes -- a
+        # command centre bombed flat used to leave the network, and Skynet's
+        # isCommandCenterUsable() returns true on an empty table, so losing the last
+        # command centre handed command back.
+        groups = [g for g in tgo.groups if isinstance(g, IadsGroundGroup)]
+        leaders = [g for g in groups if g.iads_role.participate and g.alive_units > 0]
+        if not leaders:
+            leaders = [g for g in groups if g.iads_role.participate]
+
         node: Optional[IadsNetworkNode] = None
-        for group in tgo.groups:
-            # TODO Cleanup
-            if isinstance(group, IadsGroundGroup) and group.alive_units > 0:
-                # The first IadsGroundGroup is always the primary Group
-                if not node and group.iads_role.participate:
-                    # Primary Node
-                    node = self.node_for_group(group)
-                elif node and group.iads_role == IadsRole.POINT_DEFENSE:
-                    # Point Defense Node for this TGO
-                    node.add_connection_for_group(group)
+        for group in groups:
+            if not node and group in leaders:
+                # Primary Node
+                node = self.node_for_group(group)
+            elif node and group.iads_role == IadsRole.POINT_DEFENSE:
+                # Point Defense Node for this TGO
+                node.add_connection_for_group(group)
 
         if node is None:
             logging.debug(f"TGO {tgo.name} not participating to IADS")
@@ -291,6 +405,7 @@ class IadsNetwork:
         # basic mode if no advanced iads support or network init created no connections
         if not self.nodes:
             self.initialize_basic_iads()
+        self.invalidate_state_map()
 
     def initialize_basic_iads(self) -> None:
         """Initialize the IADS Network in basic mode (SAM & EWR only)"""
@@ -366,9 +481,10 @@ class IadsNetwork:
         iads_role = IadsRole.for_category(tgo.category)
         if not iads_role.is_comms_or_power:
             return
+        reach = iads_role.connection_range(_settings_of(tgo)).meters
         for node in self.nodes:
             dist = node.group.ground_object.position.distance_to_point(tgo.position)
-            in_range = dist < iads_role.connection_range.meters
+            in_range = dist < reach
             if in_range and self._is_friendly(node, tgo):
                 node.add_connection_for_tgo(tgo)
                 events.update_iads_node(node)
@@ -381,6 +497,8 @@ class IadsNetwork:
             if not iads_role.is_comms_or_power or nearby_go == tgo:
                 continue
             dist = nearby_go.position.distance_to_point(tgo.position)
-            in_range = dist <= iads_role.connection_range.meters
+            in_range = (
+                dist <= iads_role.connection_range(_settings_of(nearby_go)).meters
+            )
             if in_range and self._is_friendly(node, nearby_go):
                 node.add_connection_for_tgo(nearby_go)

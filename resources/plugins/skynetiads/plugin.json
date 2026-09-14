@@ -114,6 +114,22 @@
             "defaultValue": 100
         },
         {
+            "nameInUI": "Comms tower range (nm)",
+            "descriptionInUI": "How far a communications tower reaches when Retribution works the network out by distance. A campaign that wires its own IADS says what is connected to what and is not bound by this.",
+            "mnemonic": "commsRangeNm",
+            "defaultValue": 15,
+            "minimumValue": 1,
+            "maximumValue": 500
+        },
+        {
+            "nameInUI": "Power station range (nm)",
+            "descriptionInUI": "How far a power station reaches when Retribution works the network out by distance. A campaign that wires its own IADS says what is connected to what and is not bound by this.",
+            "mnemonic": "powerRangeNm",
+            "defaultValue": 35,
+            "minimumValue": 1,
+            "maximumValue": 500
+        },
+        {
             "nameInUI": "Radius from the action (km, 0 = whole map)",
             "descriptionInUI": "Skynet gets slower the more radars it coordinates, and it is handed every site on the map, for both coalitions. Set a radius and it is handed only what lies within that distance of the front line, a package target or a carrier. The rest are still generated and still fight -- they go to red alert and defend themselves -- they are simply not in the network: they never go dark, never share contacts and never react to a HARM.",
             "mnemonic": "radiusKm",

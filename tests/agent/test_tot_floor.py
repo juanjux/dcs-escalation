@@ -24,7 +24,11 @@ def _package(*minutes: float, target: str = "FAWN") -> Any:
     flights = [
         SimpleNamespace(
             flight_plan=SimpleNamespace(
-                minimum_duration_from_start_to_tot=lambda m=m: timedelta(minutes=m)
+                minimum_duration_from_start_to_tot=lambda m=m: timedelta(minutes=m),
+                # Every real flight plan carries one; the floor now reads it, because
+                # a flight offset AHEAD of its package needs the package that much
+                # later than its own transit demands.
+                tot_offset=timedelta(),
             ),
             departure=SimpleNamespace(name="Ramat David"),
         )

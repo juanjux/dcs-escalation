@@ -185,7 +185,7 @@ class PydcsWaypointBuilder:
     def defensive_jamming(self, waypoint: MovingPoint, action: str) -> None:
         # Explodes incoming missiles within the jamming bubble through the EW-Jamming script
         settings = self.flight.coalition.game.settings
-        ecm_required = settings.plugin_option("ewrj.ecm_required")
+        ecm_required = settings.plugin_option_or("ewrj.ecm_required", True)
         for unit, member in zip(self.group.units, self.flight.iter_members()):
             has_jammer = member.loadout.has_weapon_of_type(
                 WeaponType.JAMMER
@@ -204,7 +204,7 @@ class PydcsWaypointBuilder:
     def offensive_jamming(self, waypoint: MovingPoint, action: str) -> None:
         # Silences enemy radars through the EW-Jamming script
         settings = self.flight.coalition.game.settings
-        ecm_required = settings.plugin_option("ewrj.ecm_required")
+        ecm_required = settings.plugin_option_or("ewrj.ecm_required", True)
         for unit, member in zip(self.group.units, self.flight.iter_members()):
             has_jammer = member.loadout.has_weapon_of_type(WeaponType.OFFENSIVE_JAMMER)
             built_in_jammer = self.flight.squadron.aircraft.has_built_in_jamming

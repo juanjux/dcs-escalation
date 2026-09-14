@@ -1,55 +1,142 @@
+"""What the units here do about each neighbour they share a front with.
+
+It was a group box called "Frontline operations :" holding a bare base name and a
+combo of enum constants, which named neither what the decision was about nor what
+either side had to fight with. A stance is a decision about a specific enemy, so each
+row names that enemy and shows the odds.
+"""
+
 from collections.abc import Callable
 
-from PySide6.QtWidgets import QGroupBox, QLabel, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from game import Game
 from game.server import EventStream
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater import ControlPoint
+from qt_ui.widgets.cards import HINT, card, carded, make_transparent, shrinkable
+from qt_ui.widgets.controls import KEY, mono
+from qt_ui.windows.airwingconfig.common import CHEAT_BG, CHEAT_BORDER, CHEAT_HEADER
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
+from qt_ui.windows.basemenu.buylist import BRIGHT, QUIET
 from qt_ui.windows.basemenu.ground_forces.QGroundForcesStrategySelector import (
     QGroundForcesStrategySelector,
 )
 
 
-class QGroundForcesStrategy(QGroupBox):
+class QGroundForcesStrategy(QWidget):
     def __init__(self, cp: ControlPoint, game: Game):
-        super(QGroundForcesStrategy, self).__init__("Frontline operations :")
+        super().__init__()
         self.cp = cp
         self.game = game
-        self.init_ui()
 
-    def init_ui(self):
-        def make_cheat_callback(
-            enemy_point: ControlPoint, advance: bool
-        ) -> Callable[[], None]:
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addLayout(
+            carded("Front lines", self._rows(), "stance per enemy neighbour")
+        )
+        self.setLayout(layout)
+
+    def neighbours(self) -> list[ControlPoint]:
+        """The enemy bases this one shares a front with."""
+        return [
+            other
+            for other in self.cp.connected_points
+            if other.captured != self.cp.captured and not other.captured.is_neutral
+        ]
+
+    def _rows(self) -> QWidget:
+        column = QVBoxLayout()
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(12)
+
+        neighbours = self.neighbours()
+        if not neighbours:
+            nobody = QLabel("No front line here: this base has no enemy neighbour.")
+            nobody.setStyleSheet(
+                f"font-size: 11.5px; color: {HINT}; background: transparent;"
+                " border: none;"
+            )
+            column.addWidget(shrinkable(nobody))
+        for enemy in neighbours:
+            column.addLayout(self._row(enemy))
+
+        holder = QWidget()
+        make_transparent(holder)
+        holder.setLayout(column)
+        return holder
+
+    def _row(self, enemy: ControlPoint) -> QVBoxLayout:
+        row = QVBoxLayout()
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(5)
+
+        heading = QHBoxLayout()
+        heading.setContentsMargins(0, 0, 0, 0)
+        heading.setSpacing(8)
+
+        name = QLabel(f"→ {enemy.name}")
+        name.setStyleSheet(
+            f"font-size: 13px; font-weight: 600; color: {BRIGHT};"
+            " background: transparent; border: none;"
+        )
+        heading.addWidget(name)
+        heading.addStretch()
+
+        odds = QLabel()
+        odds.setFont(mono(12))
+        odds.setStyleSheet(f"color: {KEY}; background: transparent; border: none;")
+        odds.setText(f"{self.cp.base.total_armor} vs {enemy.base.total_armor}")
+        heading.addWidget(odds)
+
+        units = QLabel("units")
+        units.setStyleSheet(
+            f"font-size: 11px; color: {QUIET}; background: transparent; border: none;"
+        )
+        heading.addWidget(units)
+        row.addLayout(heading)
+
+        row.addWidget(QGroundForcesStrategySelector(self.cp, enemy))
+        if self.game.settings.enable_frontline_cheats:
+            row.addWidget(self._cheats(enemy))
+        return row
+
+    def _cheats(self, enemy: ControlPoint) -> QWidget:
+        def move(advance: bool) -> Callable[[], None]:
             def cheat() -> None:
-                self.cheat_alter_front_line(enemy_point, advance)
+                self.cheat_alter_front_line(enemy, advance)
 
             return cheat
 
-        layout = QVBoxLayout()
-        for enemy_cp in self.cp.connected_points:
-            if enemy_cp.captured.is_red:
-                layout.addWidget(QLabel(enemy_cp.name))
-                layout.addWidget(QGroundForcesStrategySelector(self.cp, enemy_cp))
-                if self.game.settings.enable_frontline_cheats:
-                    advance_button = QPushButton("CHEAT: Advance")
-                    advance_button.setProperty("style", "btn-danger")
-                    layout.addWidget(advance_button)
-                    advance_button.clicked.connect(
-                        make_cheat_callback(enemy_cp, advance=True)
-                    )
+        line = QHBoxLayout()
+        line.setContentsMargins(8, 4, 8, 4)
+        line.setSpacing(6)
 
-                    retreat_button = QPushButton("CHEAT: Retreat")
-                    retreat_button.setProperty("style", "btn-danger")
-                    layout.addWidget(retreat_button)
-                    retreat_button.clicked.connect(
-                        make_cheat_callback(enemy_cp, advance=False)
-                    )
+        tag = QLabel("CHEAT")
+        tag.setStyleSheet(
+            f"color: {CHEAT_HEADER}; font-size: 10px; font-weight: bold;"
+            " letter-spacing: 1px; background: transparent; border: none;"
+        )
+        line.addWidget(tag)
+        for label, advance in (("Advance", True), ("Retreat", False)):
+            button = QPushButton(label)
+            button.clicked.connect(move(advance))
+            line.addWidget(button)
+        line.addStretch()
 
-        layout.addStretch()
-        self.setLayout(layout)
+        holder = card()
+        holder.setStyleSheet(
+            f"#{holder.objectName()} {{ background: {CHEAT_BG};"
+            f" border: 1px solid {CHEAT_BORDER}; border-radius: 3px; }}"
+        )
+        holder.setLayout(line)
+        return holder
 
     def cheat_alter_front_line(self, enemy_point: ControlPoint, advance: bool) -> None:
         amount = 0.2

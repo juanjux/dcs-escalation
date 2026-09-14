@@ -17,8 +17,10 @@ from game.ato.fuelestimate import (
     NOMINAL_RANGE_NM,
     _airframe_class,
     assumed_consumption,
+    nominal_range_nm,
 )
 from game.dcs.aircrafttype import AircraftType
+from game.utils import KG_TO_LBS
 
 
 @pytest.fixture(autouse=True)
@@ -75,3 +77,26 @@ def test_every_airframe_gets_an_answer() -> None:
         guess = assumed_consumption(aircraft)
         assert guess.cruise > 0
         assert guess.min_safe > 0
+
+
+def _internal_pounds(aircraft: AircraftType) -> float:
+    return float(aircraft.dcs_unit_type.fuel_max) * KG_TO_LBS
+
+
+def test_a_bomber_is_not_charged_a_fighters_rate_per_mile() -> None:
+    """A flat range per class read 195,000 lb of B-1B fuel as 433 lb a mile."""
+    for aircraft in AircraftType.iter_all():
+        if aircraft.helicopter or _internal_pounds(aircraft) < 100000:
+            continue
+        implied = _internal_pounds(aircraft) / assumed_consumption(aircraft).cruise
+        assert implied > 2000, f"{aircraft} guessed at only {implied:.0f} nm"
+
+
+def test_the_guessed_range_grows_with_the_fuel_carried() -> None:
+    """The bug was the opposite: more fuel meant a worse figure per mile."""
+    jets = sorted(
+        (a for a in AircraftType.iter_all() if _airframe_class(a) == "jet"),
+        key=_internal_pounds,
+    )
+    ranges = [nominal_range_nm(a) for a in jets]
+    assert ranges == sorted(ranges)

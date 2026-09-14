@@ -12,7 +12,8 @@ it — is the one thing painted in amber.
 
 from __future__ import annotations
 
-from typing import Optional
+from datetime import datetime
+from typing import Any, Optional
 
 from PySide6.QtCore import QModelIndex, QRect, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter
@@ -24,7 +25,6 @@ from qt_ui.models import AtoModel, PackageModel
 from qt_ui.widgets.squadrondelegate import (
     ACCENT,
     AMBER,
-    CHIP_FAMILIES,
     CHIP_ON_SELECTED,
     HOVER_BAR,
     HOVER_FILL,
@@ -34,11 +34,15 @@ from qt_ui.widgets.squadrondelegate import (
     TEXT_PRIMARY,
     TEXT_SECONDARY,
     TEXT_TERTIARY,
-    chip_family,
+    chip_colours,
 )
 
 ROW_HEIGHT = 56
 SEPARATOR_Y = 55
+
+#: A flight row carries a third line of times, so it is taller than a package row.
+FLIGHT_ROW_HEIGHT = 74
+FLIGHT_SEPARATOR_Y = 73
 
 CHIP_X = 14
 CHIP_Y = 9
@@ -49,6 +53,7 @@ CHIP_PADDING = 8
 #: Baselines from the top of the row.
 LINE_1 = 24
 LINE_2 = 44
+LINE_3 = 63
 MARGIN = 14
 
 WARNING = "▲"
@@ -63,6 +68,33 @@ def _font(
     return font
 
 
+def flight_timeline(plan: Any) -> list[tuple[str, datetime]]:
+    """(label, time) for a flight's departure, its working point, and its landing.
+
+    The middle one is whatever that kind of flight plan actually does: the ingress
+    for anything that runs in on a target, the start of the corridor for a fighter
+    sweep, the start of the orbit for a patrol or a tanker. A plan with none of
+    those just gets the two ends.
+    """
+    timeline: list[tuple[str, datetime]] = [("dep", plan.takeoff_time())]
+
+    sweep_start = getattr(plan, "sweep_start_time", None)
+    ingress = getattr(plan, "ingress_time", None)
+    patrol_start = getattr(plan, "patrol_start_time", None)
+    if sweep_start is not None:
+        timeline.append(("sweep", sweep_start))
+    elif ingress is not None:
+        timeline.append(("ing", ingress))
+    elif patrol_start is not None:
+        timeline.append(("racestart", patrol_start))
+
+    try:
+        timeline.append(("land", plan.landing_time))
+    except NotImplementedError:
+        pass
+    return timeline
+
+
 class AtoRowDelegate(QStyledItemDelegate):
     """What the two rows share: the background, the chip and the eliding."""
 
@@ -71,26 +103,31 @@ class AtoRowDelegate(QStyledItemDelegate):
 
     @staticmethod
     def _paint_background(
-        painter: QPainter, width: int, selected: bool, hovered: bool
+        painter: QPainter,
+        width: int,
+        selected: bool,
+        hovered: bool,
+        height: int = ROW_HEIGHT,
+        separator_y: int = SEPARATOR_Y,
     ) -> None:
         if selected:
-            painter.fillRect(0, 0, width, ROW_HEIGHT, SELECTED_FILL)
-            painter.fillRect(0, 0, 3, ROW_HEIGHT, ACCENT)
+            painter.fillRect(0, 0, width, height, SELECTED_FILL)
+            painter.fillRect(0, 0, 3, height, ACCENT)
         elif hovered:
-            painter.fillRect(0, 0, width, ROW_HEIGHT, HOVER_FILL)
-            painter.fillRect(0, 0, 3, ROW_HEIGHT, HOVER_BAR)
-        painter.fillRect(0, SEPARATOR_Y, width, 1, SEPARATOR)
+            painter.fillRect(0, 0, width, height, HOVER_FILL)
+            painter.fillRect(0, 0, 3, height, HOVER_BAR)
+        painter.fillRect(0, separator_y, width, 1, SEPARATOR)
 
     @staticmethod
     def _paint_chip(
         painter: QPainter, x: int, task, selected: bool, label: Optional[str] = None
     ) -> int:
-        """The task, in the same three colour families the Air Wing list uses.
+        """The task, in the same colour the Air Wing list gives it.
 
         Returns the x the chip ends at, so the caller can lay out after it.
         """
         text = label if label is not None else str(task)
-        fill, ink = CHIP_FAMILIES[chip_family(task)]
+        fill, ink = chip_colours(task)
         painter.setFont(_font(10, QFont.Weight.Bold))
         width = painter.fontMetrics().horizontalAdvance(text) + 2 * CHIP_PADDING
         painter.setPen(Qt.PenStyle.NoPen)
@@ -202,7 +239,26 @@ class PackageRowDelegate(AtoRowDelegate):
 
 
 class FlightRowDelegate(AtoRowDelegate):
-    """Aircraft and how many, then who flies them and from where."""
+    """Aircraft and how many, who flies them and from where, and when.
+
+    The third line is the flight's own timeline. Lining those up across a package is
+    how TOT offsets get set, and doing it meant opening every flight in turn.
+    """
+
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
+        return QSize(0, FLIGHT_ROW_HEIGHT)
+
+    @staticmethod
+    def _paint_player_chip(
+        painter: QPainter, x: int, text: str, selected: bool
+    ) -> None:
+        width = painter.fontMetrics().horizontalAdvance(text) + 2 * CHIP_PADDING
+        rect = QRect(x, LINE_2 - 11, width, 15)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(PLAYER_CHIP_BG_SELECTED if selected else PLAYER_CHIP_BG)
+        painter.drawRoundedRect(rect, 3, 3)
+        painter.setPen(PLAYER_CHIP_TEXT)
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
 
     @staticmethod
     def flight(index: QModelIndex) -> Flight:
@@ -217,7 +273,14 @@ class FlightRowDelegate(AtoRowDelegate):
 
         with _painting(painter, option):
             width = option.rect.width()
-            self._paint_background(painter, width, selected, hovered)
+            self._paint_background(
+                painter,
+                width,
+                selected,
+                hovered,
+                height=FLIGHT_ROW_HEIGHT,
+                separator_y=FLIGHT_SEPARATOR_Y,
+            )
 
             # The chip sits on the right here: the aircraft is what you scan for in a
             # package whose task you already know from the row above.
@@ -250,15 +313,44 @@ class FlightRowDelegate(AtoRowDelegate):
                 CHIP_X, LINE_2, self._elided(painter, where, width - CHIP_X - 110)
             )
 
-            try:
-                painter.setFont(_font(11.5, mono=True))
-                painter.setPen(TEXT_LABEL)
-                takeoff = f"dep {flight.flight_plan.takeoff_time():%H:%M}"
-                room = painter.fontMetrics().horizontalAdvance(takeoff)
-                painter.drawText(width - MARGIN - room, LINE_2, takeoff)
-            except Exception:
-                # A flight plan that cannot answer yet is not worth a broken row.
-                pass
+            # The package row says the package has player slots; this says which
+            # flight they are in, which is the question you ask next.
+            clients = flight.client_count
+            if clients:
+                seats = "seat" if clients == 1 else "seats"
+                after_where = CHIP_X + painter.fontMetrics().horizontalAdvance(
+                    self._elided(painter, where, width - CHIP_X - 110)
+                )
+                painter.setFont(_font(10, QFont.Weight.Bold))
+                self._paint_player_chip(
+                    painter, after_where + 8, f"{clients} player {seats}", selected
+                )
+
+            self._paint_times(painter, flight, width)
+
+    @staticmethod
+    def _paint_times(painter: QPainter, flight: Flight, width: int) -> None:
+        """The flight's own line of times, below the squadron.
+
+        On its own line rather than beside the squadron, which a long squadron name
+        would have pushed off the row.
+        """
+        try:
+            parts = [
+                f"{label} {when:%H:%M}"
+                for label, when in flight_timeline(flight.flight_plan)
+            ]
+        except Exception:
+            # A flight plan that cannot answer yet is not worth a broken row.
+            return
+        painter.setFont(_font(11.5, mono=True))
+        painter.setPen(TEXT_LABEL)
+        painter.drawText(CHIP_X, LINE_3, "   ".join(parts))
+
+
+PLAYER_CHIP_BG = QColor("#2B4A66")
+PLAYER_CHIP_BG_SELECTED = QColor("#3A5D7D")
+PLAYER_CHIP_TEXT = QColor("#BEDCF6")
 
 
 def _right_text(

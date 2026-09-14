@@ -188,7 +188,7 @@ def capabilities() -> dict:
     """A small machine-readable manifest of what this OPFOR-AI API offers (so a client
     can discover the endpoints without guessing). Full prose is in /howtoplay."""
     return {
-        "name": "DCS Retribution OPFOR-AI",
+        "name": "DCS Escalation OPFOR-AI",
         "side": "red",
         "docs": "GET /retribution-ai/start and /howtoplay (full briefing)",
         "reads": [
@@ -200,8 +200,10 @@ def capabilities() -> dict:
             "aircraft/pylons (weapons each pylon accepts, to build a custom payload)",
             "aircraft/loadouts (named ready-made loadouts for an airframe)",
             "waypoints/{flight_id} (a flight's waypoints, to adjust its route)",
-            "squadrons/{squadron_id}/pilots (rank, experience, skill, wounds, and who is already flying)",
-            "flights/{flight_id}/crew (who is in each seat, and which pilots are free)",
+            "squadrons/{squadron_id}/pilots (rank, experience, skill, wounds, who is"
+            " already flying, and who gets on with whom)",
+            "flights/{flight_id}/crew (who is in each seat, which pilots are free, and"
+            " how well the crew flies together)",
             "ground/mine (YOUR OWN ground objects with their ids -- turn_context.targets is the enemy's, so this is the only place to get an id to rebuild/upgrade one of yours)",
             "ground/options/{tgo_id} (what a SAM/EWR/armor/ship site can be rebuilt into + costs)",
             "validate",
@@ -216,6 +218,8 @@ def capabilities() -> dict:
             "payload/validate (check a {pylon: clsid} loadout is valid for an airframe)",
             "waypoints/edit (move/adjust a flight waypoint — never deletes)",
             "flights/crew (put a named pilot in a seat, or empty it)",
+            "pilots/leave (answer a pilot listed in turn_context.leave_requests)",
+            "pilots/leave/set (rest a pilot who never asked, or call one back early)",
             "flights/loadout (re-arm a flight that already exists — ferries launch empty)",
             "flights/tot_offset (shift ONE flight's TOT off its package's — negative puts escorts over the target ahead of the strikers)",
             "packages/{index} (delete)",
@@ -270,6 +274,14 @@ def squadron_pilots(side: str, squadron_id: str) -> dict:
 
 
 @opfor_only
+def pilot_record(side: str, squadron_id: str, pilot_name: str) -> dict:
+    """Everything the campaign remembers about one pilot."""
+    from game.agent import planner
+
+    return planner.pilot_record(_require_game(), side, squadron_id, pilot_name)
+
+
+@opfor_only
 def flight_crew(side: str, flight_id: str) -> dict:
     """Who is in each seat of a flight, and which pilots are still free."""
     from game.agent import planner
@@ -286,6 +298,22 @@ def answer_leave_request(
 
     return planner.answer_leave_request(
         _require_game(), side, squadron_id, pilot_name, grant, turns
+    )
+
+
+@opfor_only
+def set_pilot_leave(
+    side: str,
+    squadron_id: str,
+    pilot_name: str,
+    on_leave: bool = True,
+    turns: int = 0,
+):
+    """Rest a pilot who never asked, or call one back early."""
+    from game.agent import planner
+
+    return planner.set_pilot_leave(
+        _require_game(), side, squadron_id, pilot_name, on_leave, turns
     )
 
 

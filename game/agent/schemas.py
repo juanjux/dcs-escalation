@@ -120,6 +120,13 @@ class OpResult(BaseModel):
     error: str | None = None
 
 
+class PilotLeaveResult(OpResult):
+    """Where the pilot stands after the call, so the state need not be re-read."""
+
+    status: str | None = None  # Active / On leave / Wounded / Dead
+    leave_turns_remaining: int | None = None  # 0 while on open-ended leave
+
+
 # --- REST request bodies ---
 
 
@@ -166,6 +173,14 @@ class LeaveRequestAnswer(BaseModel):
     pilot_name: str
     grant: bool
     turns: int = 0  # 0 grants everything he asked for; more than he asked is capped
+
+
+class PilotLeaveRequest(BaseModel):
+    side: str = "red"
+    squadron_id: str  # from turn_context.air_wing
+    pilot_name: str  # from squadrons/{id}/pilots -- he need NOT have asked for leave
+    on_leave: bool = True  # False calls a man back early (costs him morale)
+    turns: int = 0  # 0 is open-ended: he stays out until you call him back
 
 
 class FlightLoadoutRequest(BaseModel):

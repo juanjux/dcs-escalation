@@ -1,11 +1,12 @@
 import json
 import logging
+import os
 import textwrap
 import zipfile
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 from PySide6 import QtWidgets
-from PySide6.QtCore import QItemSelectionModel, QPoint, QSize, Qt, QTimer
+from PySide6.QtCore import QItemSelectionModel, QPoint, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QShowEvent, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -50,6 +51,8 @@ from game.settings import (
 )
 from game.settings.ISettingsContainer import SettingsContainer
 from game.settings.settings import (
+    LIVE_PILOTS_FRIENDSHIP_SECTION,
+    LIVE_PILOTS_HARDENING_SECTION,
     LIVE_PILOTS_MORALE_EVENTS_SECTION,
     LIVE_PILOTS_MORALE_STATES_SECTION,
     LIVE_PILOTS_MORALE_SECTION,
@@ -143,6 +146,15 @@ class CheatSettingsBox(QGroupBox):
         )
         self.main_layout.addLayout(self.air_wing_cheat)
 
+        # What may be done to one pilot: rename, promote, heal, revive.
+        self.pilot_cheats_checkbox = QCheckBox()
+        self.pilot_cheats_checkbox.setChecked(sc.settings.enable_pilot_cheats)
+        self.pilot_cheats_checkbox.toggled.connect(apply_settings)
+        self.pilot_cheat = QLabeledWidget(
+            "Enable pilot cheats:", self.pilot_cheats_checkbox
+        )
+        self.main_layout.addLayout(self.pilot_cheat)
+
         # Buy/Sell actions for OPFOR
         self.opfor_buysell_checkbox = QCheckBox()
         self.opfor_buysell_checkbox.setChecked(sc.settings.enable_enemy_buy_sell)
@@ -171,6 +183,10 @@ class CheatSettingsBox(QGroupBox):
     @property
     def enable_air_wing_cheats(self) -> bool:
         return self.air_wing_adjustments_checkbox.isChecked()
+
+    @property
+    def enable_pilot_cheats(self) -> bool:
+        return self.pilot_cheats_checkbox.isChecked()
 
     @property
     def enable_redfor_buysell(self) -> bool:
@@ -253,6 +269,26 @@ class AutoSettingsLayout(QGridLayout):
                 [name for name in self.settings_map if name != "morale_enabled"],
                 lambda settings: settings.live_pilots_enabled
                 and getattr(settings, "morale_enabled", True),
+            )
+        if self.section == LIVE_PILOTS_HARDENING_SECTION:
+            # It is earned from the morale bands and most of what it does is to
+            # morale, so it follows morale as well as Live Pilots.
+            morale_on = lambda settings: settings.live_pilots_enabled and getattr(
+                settings, "morale_enabled", True
+            )
+            self._wire_enabled(["hardening_enabled"], morale_on)
+            self._wire_enabled(
+                [name for name in self.settings_map if name != "hardening_enabled"],
+                lambda settings: morale_on(settings)
+                and getattr(settings, "hardening_enabled", True),
+            )
+        if self.section == LIVE_PILOTS_FRIENDSHIP_SECTION:
+            # As with morale: the whole section is a detail of the switch at the top
+            # of it, and of Live Pilots.
+            self._wire_enabled(
+                [name for name in self.settings_map if name != "friendship_enabled"],
+                lambda settings: settings.live_pilots_enabled
+                and getattr(settings, "friendship_enabled", True),
             )
         if self.section == LIVE_PILOTS_SURVIVAL_SECTION:
             self._wire_survival_odds()
@@ -783,6 +819,8 @@ class AutoSettingsLayout(QGridLayout):
             description.max,
             self.sc.settings.__dict__[name],
             divisor=description.divisor,
+            prefix=description.prefix,
+            decimals=description.decimals,
         )
 
         def on_changed() -> None:
@@ -1149,10 +1187,18 @@ class AutoSettingsPage(QWidget):
 
 
 class QSettingsWindow(QDialog):
+    #: Emitted exactly once when settings are successfully applied, loaded, or
+    #: default-loaded. ``QLiberationWindow.showSettingsDialog`` connects this to
+    #: ``TransferModel.sync_game_and_visibility``.
+    settings_applied = Signal()
+
     def __init__(self, game: Game):
         super().__init__()
         self.game = game
-        self.setLayout(QSettingsWidget(game.settings, game).layout)
+        self.settings_widget = QSettingsWidget(game.settings, game)
+        self.setLayout(self.settings_widget.layout)
+        # Forward successful settings completion to the outer window signal.
+        self.settings_widget.settings_applied.connect(self.settings_applied)
 
         self.setModal(True)
         self.setWindowTitle("Settings")
@@ -1194,6 +1240,10 @@ class QSettingsWindow(QDialog):
 
 
 class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
+    #: Emitted exactly once when settings are successfully applied, loaded, or
+    #: default-loaded. Cancelled or failed loads emit zero times.
+    settings_applied = Signal()
+
     def __init__(self, settings: Settings, game: Optional[Game] = None):
         super().__init__()
 
@@ -1443,12 +1493,22 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
             self.cheat_options.enable_air_wing_cheats
         )
         self.settings.enable_enemy_buy_sell = self.cheat_options.enable_redfor_buysell
+        self.settings.enable_pilot_cheats = self.cheat_options.enable_pilot_cheats
 
-        if self.game:
-            events = GameUpdateEvents()
-            self.game.compute_unculled_zones(events)
-            EventStream.put_nowait(events)
-            GameUpdateSignal.get_instance().updateGame(self.game)
+        self._publish_settings_update()
+
+        # Announce successful completion exactly once. The ``updating_ui`` early
+        # return above ensures programmatic refreshes never emit.
+        self.settings_applied.emit()
+
+    def _publish_settings_update(self) -> None:
+        if self.game is None:
+            return
+        events = GameUpdateEvents()
+        self.game.compute_unculled_zones(events)
+        events.update_motorpools_at(*self.game.theater.controlpoints)
+        EventStream.put_nowait(events)
+        GameUpdateSignal.get_instance().updateGame(self.game)
 
     def _ensure_page(self, index: int) -> None:
         """Build a settings page the first time it is looked at.
@@ -1503,6 +1563,9 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         self.cheat_options.opfor_buysell_checkbox.setChecked(
             self.settings.enable_enemy_buy_sell
         )
+        self.cheat_options.pilot_cheats_checkbox.setChecked(
+            self.settings.enable_pilot_cheats
+        )
 
         self.pluginsPage.update_from_settings()
 
@@ -1514,13 +1577,17 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         if fd.exec_():
             zipfilename = fd.selectedFiles()[0]
             with zipfile.ZipFile(zipfilename, "r") as zf:
-                filename = zipfilename.split("/")[-1].replace(".zip", ".json")
+                filename = os.path.basename(zipfilename).replace(".zip", ".json")
                 settings = json.loads(
                     zf.read(filename).decode("utf-8"),
                     object_hook=self.settings.obj_hook,
                 )
                 self.settings.__setstate__(settings)
                 self.update_from_settings()
+            self._publish_settings_update()
+            # Emit exactly once only after an accepted, successfully decoded
+            # and applied archive.
+            self.settings_applied.emit()
 
     def save_settings(self):
         sd = settings_dir()
@@ -1529,7 +1596,7 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         if fd.exec_():
             zipfilename = fd.selectedFiles()[0]
             with zipfile.ZipFile(zipfilename, "w", zipfile.ZIP_DEFLATED) as zf:
-                filename = zipfilename.split("/")[-1].replace(".zip", ".json")
+                filename = os.path.basename(zipfilename).replace(".zip", ".json")
                 zf.writestr(
                     filename,
                     json.dumps(
@@ -1546,13 +1613,14 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         if default_zip_path.exists():
             with zipfile.ZipFile(default_zip_path, "r") as zf:
                 filename = [n for n in zf.namelist() if n.lower() == "default.json"]
-                if filename:
-                    filename = filename[0]
-                    settings_data = json.loads(
-                        zf.read(filename).decode("utf-8"),
-                        object_hook=self.settings.obj_hook,
-                    )
-                    self.settings.__setstate__(settings_data)
+                if not filename:
+                    return
+                filename = filename[0]
+                settings_data = json.loads(
+                    zf.read(filename).decode("utf-8"),
+                    object_hook=self.settings.obj_hook,
+                )
+                self.settings.__setstate__(settings_data)
         else:
             if self.settings is None:
                 default_settings = Settings()
@@ -1570,3 +1638,7 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
                     zipfile.ZIP_DEFLATED,
                 )
             self.settings.__setstate__(default_settings.__dict__)
+
+        self._publish_settings_update()
+        # Emit exactly once after loading or creating/applying defaults.
+        self.settings_applied.emit()

@@ -13,6 +13,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 from game.theater.controlpoint import ControlPoint, GroundUnitAllocations
+from game.sim import GameUpdateEvents
 from game.transfers import TransferOrder, PendingTransfers
 
 
@@ -34,9 +35,9 @@ def test_a_transfer_that_never_left_gives_nothing_back() -> None:
     orders = PendingTransfers.__new__(PendingTransfers)
     transfer = _transfer(origin, MagicMock(), {MagicMock(): 12}, departed=False)
     orders.pending_transfers = [transfer]
-    orders._send_supply_route_event_stream_update = lambda: None  # type: ignore[method-assign]
 
-    orders.cancel_transfer(transfer)
+    # Events passed in, so nothing is published to the stream from a unit test.
+    orders.cancel_transfer(transfer, GameUpdateEvents())
 
     origin.base.commission_units.assert_not_called()
     assert orders.pending_transfers == []
@@ -48,9 +49,9 @@ def test_a_transfer_that_left_is_given_back_on_cancel() -> None:
     units = {MagicMock(): 12}
     transfer = _transfer(origin, MagicMock(), units, departed=True)
     orders.pending_transfers = [transfer]
-    orders._send_supply_route_event_stream_update = lambda: None  # type: ignore[method-assign]
 
-    orders.cancel_transfer(transfer)
+    # Events passed in, so nothing is published to the stream from a unit test.
+    orders.cancel_transfer(transfer, GameUpdateEvents())
 
     origin.base.commission_units.assert_called_once_with(units)
 

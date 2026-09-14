@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from game.ato.package import Package
 from game.ato.packagewaypoints import PackageWaypoints
 from game.data.doctrine import ALL_DOCTRINES
-from game.utils import nautical_miles
+from game.utils import meters, nautical_miles
 
 
 def _fake_package(waypoints: object, standoff: object) -> Package:
@@ -40,26 +40,74 @@ def test_waypoints_regenerate_when_standoff_range_changes() -> None:
 
 def test_doctrine_unchanged_when_no_standoff_weapon() -> None:
     doctrine = ALL_DOCTRINES[0]
-    result = PackageWaypoints.doctrine_for_standoff_range(
+    result = PackageWaypoints.doctrine_for_weapon_range(
         doctrine, None, nautical_miles(300)
     )
     assert result is doctrine
 
 
-def test_doctrine_unchanged_when_standoff_range_within_doctrine_ingress() -> None:
+def test_doctrine_ingress_lowered_to_a_short_weapon_range() -> None:
+    """A flight of JDAMs has no business starting its run where a JSOW would.
+
+    The doctrine's ceiling is where every straight-in package ends up, because the IP
+    solver takes the point nearest the departure that the rules allow.
+    """
     doctrine = ALL_DOCTRINES[0]
     short_range = doctrine.max_ingress_distance / 2
-    result = PackageWaypoints.doctrine_for_standoff_range(
+    result = PackageWaypoints.doctrine_for_weapon_range(
         doctrine, short_range, nautical_miles(300)
     )
-    assert result is doctrine
+    assert result.max_ingress_distance == short_range
+
+
+def test_doctrine_left_alone_by_a_weapon_that_cannot_stand_off() -> None:
+    """Rockets and iron do not drag the attack run onto the target itself.
+
+    Nor onto the minimum ingress distance, which would leave the solver looking for
+    the IP in a ring with no width between it and the maximum. There are no points in
+    such a ring, so every strategy fails and the package cannot be planned at all.
+    """
+    doctrine = ALL_DOCTRINES[0]
+    result = PackageWaypoints.doctrine_for_weapon_range(
+        doctrine, doctrine.min_ingress_distance / 2, nautical_miles(300)
+    )
+    assert result.max_ingress_distance == doctrine.max_ingress_distance
+    assert result.max_ingress_distance > result.min_ingress_distance
+
+
+def test_doctrine_left_alone_when_the_target_is_nearer_than_the_minimum() -> None:
+    """A CAS package from a base nine miles from the front line.
+
+    The ingress window is the ring between the doctrine's minimum and maximum, and
+    the distance to the target was shorter than the minimum, so clamping the ceiling
+    up to the floor closed the ring: 'No solutions found for waypoint', and no CAS
+    from that base at all.
+    """
+    doctrine = ALL_DOCTRINES[0]
+    result = PackageWaypoints.doctrine_for_weapon_range(
+        doctrine, nautical_miles(100), doctrine.min_ingress_distance - meters(1)
+    )
+    assert result.max_ingress_distance > result.min_ingress_distance
+
+
+def test_the_ingress_window_is_never_closed() -> None:
+    """Whatever the weapon and wherever the target, there is somewhere to put the IP."""
+    for doctrine in ALL_DOCTRINES:
+        for weapon_range in [meters(0), nautical_miles(3), nautical_miles(45)]:
+            for distance in [meters(1), nautical_miles(9), nautical_miles(300)]:
+                result = PackageWaypoints.doctrine_for_weapon_range(
+                    doctrine, weapon_range, distance
+                )
+                assert (
+                    result.max_ingress_distance > result.min_ingress_distance
+                ), f"{doctrine.name}: {weapon_range} weapon, target {distance} away"
 
 
 def test_doctrine_ingress_raised_to_standoff_range() -> None:
     # Regression for issue #34: a Kh-22-class range should widen the ingress distance.
     doctrine = ALL_DOCTRINES[0]
     standoff = doctrine.max_ingress_distance + nautical_miles(50)
-    result = PackageWaypoints.doctrine_for_standoff_range(
+    result = PackageWaypoints.doctrine_for_weapon_range(
         doctrine, standoff, nautical_miles(300)
     )
     assert result.max_ingress_distance == standoff
@@ -72,7 +120,7 @@ def test_doctrine_ingress_clamped_to_departure_target_distance() -> None:
     doctrine = ALL_DOCTRINES[0]
     distance_to_target = doctrine.max_ingress_distance + nautical_miles(20)
     standoff = distance_to_target + nautical_miles(500)
-    result = PackageWaypoints.doctrine_for_standoff_range(
+    result = PackageWaypoints.doctrine_for_weapon_range(
         doctrine, standoff, distance_to_target
     )
     assert result.max_ingress_distance == distance_to_target

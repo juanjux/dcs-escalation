@@ -3,7 +3,7 @@
 
 Generates a self-contained Caucasus .miz that reproduces the "carrier hugs the
 shore, escorts spawn on land" case the naval relocation handles, wired up exactly
-like Retribution wires the base plugin: mist loads first, then land_relocate.lua,
+like Escalation wires the base plugin: mist loads first, then land_relocate.lua,
 then a small diagnostic script that logs every ship's surface type and position.
 
 Run from the repo root:

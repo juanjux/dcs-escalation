@@ -28,9 +28,16 @@ def _unit(*, alive: bool, turns: Any) -> SimpleNamespace:
 class _FakeGroundObject:
     """Hashable stand-in for TheaterGroundObject (real TGOs are dict-keyable)."""
 
-    def __init__(self, name: str, units: list[SimpleNamespace]) -> None:
+    def __init__(
+        self, name: str, units: list[SimpleNamespace], kind: str = "AA Defense Site"
+    ) -> None:
         self.obj_name = name
         self.units = units
+        self._kind = kind
+
+    def __str__(self) -> str:
+        # The real one answers with the name of its category, which the message uses.
+        return self._kind
 
     @property
     def has_pending_repairs(self) -> bool:
@@ -118,7 +125,8 @@ def test_in_progress_ground_object_player_only() -> None:
     go = _ground_object("SAM Bravo", [_unit(alive=False, turns=2)])
     _report(cp_blue, blue, runway_was_repairing=False, gos=[go])
     assert any(
-        "Repairs at SAM Bravo in progress" in m and "2 turns remaining" in m
+        "Repairs at SAM Bravo (AA Defense Site) in progress" in m
+        and "2 turns remaining" in m
         for m in blue.messages
     )
 

@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QScrollArea,
     QSpinBox,
@@ -92,6 +93,14 @@ class PluginOptionsBox(QGroupBox):
                 spinbox.valueChanged.connect(option.set_value)
                 layout.addWidget(spinbox, row, 1)
                 self.widgets[option.identifier] = spinbox
+            elif isinstance(val, str):
+                # A text option used to draw its label and no control at all, so a
+                # plugin that wanted a word from the player silently could not ask.
+                field = QLineEdit(val)
+                field.setPlaceholderText("(empty)")
+                field.textChanged.connect(option.set_value)
+                layout.addWidget(field, row, 1)
+                self.widgets[option.identifier] = field
 
             row += 1
 
@@ -103,6 +112,8 @@ class PluginOptionsBox(QGroupBox):
                 w.setChecked(value)
             elif isinstance(w, (QDoubleSpinBox, QSpinBox)):
                 w.setValue(value)
+            elif isinstance(w, QLineEdit):
+                w.setText("" if value is None else str(value))
 
 
 class PluginOptionsDialog(QDialog):

@@ -40,12 +40,16 @@ class WeaponLaserCodeSelector(QComboBox):
                 if own == self.flight_member.weapon_laser_code:
                     selected_index = idx
                 idx += 1
-            for idx, front in enumerate(self.game.theater.conflicts(), idx):
-                self.addItem(
-                    f"JTAC {front.name} ({front.laser_code})", front.laser_code
-                )
-                if front.laser_code == self.flight_member.weapon_laser_code:
-                    selected_index = idx
+            # A JTAC's code is only worth offering if a JTAC is going to be there.
+            # With the campaign's JTAC switch off, none is generated, and the code
+            # would be one nobody is lasing with.
+            if self.game.settings.use_jtac:
+                for idx, front in enumerate(self.game.theater.conflicts(), idx):
+                    self.addItem(
+                        f"JTAC {front.name} ({front.laser_code})", front.laser_code
+                    )
+                    if front.laser_code == self.flight_member.weapon_laser_code:
+                        selected_index = idx
 
             if selected_index is not None:
                 self.setCurrentIndex(selected_index)

@@ -26,5 +26,5 @@ class PlanStrike(PackagePlanningTask[TheaterGroundObject]):
         tgt_count = self.target.alive_unit_count
         self.propose_flight(FlightType.STRIKE, min(4, (tgt_count // 2) + tgt_count % 2))
         self.propose_common_escorts()
-        if self.target.coalition.game.settings.autoplan_tankers_for_strike:
+        if self.target.coalition.game.settings.plan_refuelling_when_needed:
             self.propose_flight(FlightType.REFUELING, 1, EscortType.Refuel)

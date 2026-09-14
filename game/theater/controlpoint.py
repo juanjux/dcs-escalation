@@ -1065,6 +1065,9 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         self.release_parking_slots()
         self.depopulate_uncapturable_tgos()
         self._coalition = new_coalition
+        from game.missiongenerator.motorpoolpopulator import MotorpoolPopulator
+
+        MotorpoolPopulator(game)._rehome_motorpools(events)
         self.base.set_strength_to_minimum()
         self._clear_front_lines(events)
         self._create_missing_front_lines(game.laser_code_registry, events)
@@ -1206,6 +1209,9 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
             ground_objects_repairing: Ground objects that had pending repairs
                 before this turn was processed.
         """
+        # Local: game.squadrons reaches back into this module.
+        from ..squadrons.experience import turns_phrase
+
         if self.captured.is_neutral:
             return
         is_player = self.captured.is_blue
@@ -1225,14 +1231,17 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
                 )
 
         for ground_object in ground_objects_repairing:
+            # A codename says nothing on its own: PYTHON and PRONGHORN are a factory
+            # and a SAM site, and which of the two came back matters.
+            what = f"{ground_object.obj_name} ({ground_object})"
             if not ground_object.has_pending_repairs:
-                game.message(f"{who} finished repairs at {ground_object.obj_name}")
+                game.message(f"{who} finished repairs at {what}")
             elif is_player:
                 turns_remaining = ControlPoint._max_pending_repair_turns(ground_object)
                 if turns_remaining is not None:
                     game.message(
-                        f"Repairs at {ground_object.obj_name} in progress, "
-                        f"{turns_remaining} turns remaining"
+                        f"Repairs at {what} in progress, "
+                        f"{turns_phrase(turns_remaining)} remaining"
                     )
 
     def process_turn(self, game: Game, events: GameUpdateEvents) -> None:
@@ -1240,7 +1249,7 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         # we don't know what time the next turn will start yet. It doesn't actually
         # matter though, because the first thing the start of turn action will do is
         # clear the ATO and replan the airlifts with the correct time.
-        self.ground_unit_orders.process(game, game.conditions.start_time)
+        self.ground_unit_orders.process(game, game.conditions.start_time, events)
 
         self.release_parking_slots()
 

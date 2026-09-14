@@ -1,6 +1,6 @@
 """Archive every generated mission so the flown ``.miz`` is never lost.
 
-Retribution generates each turn to one fixed path -- ``retribution_nextturn.miz``,
+Escalation generates each turn to one fixed path -- ``retribution_nextturn.miz``,
 the name the wiki, the bug-report template and every dedicated-server workflow
 tell you to load -- so each **Take off** silently overwrites the mission that was
 just flown. That is fine for flying and lossy for everything after it: a bug found in a

@@ -1,6 +1,6 @@
-# DCS Retribution Client
+# DCS Escalation Client
 
-This is a React app for the front-end of DCS Retribution. It is a work in
+This is a React app for the front-end of DCS Escalation. It is a work in
 progress that just barely implements the map. This is not useful for players
 yet.
 

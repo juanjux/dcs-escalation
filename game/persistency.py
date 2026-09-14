@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import pickle
 import shutil
@@ -373,6 +374,12 @@ def base_path() -> Path:
     return _create_dir_if_needed(Path(_dcs_saved_game_folder))
 
 
+# These folders keep the name the fork was called when the player's campaigns, his
+# factions, his layouts and his kneeboards were written into them. The application is
+# DCS Escalation; the shelf his things are already on is still Retribution, and
+# renaming it would hide every one of them.
+
+
 def debug_dir() -> Path:
     return _create_dir_if_needed(base_path() / "Retribution" / "Debug")
 
@@ -413,7 +420,7 @@ def tile_cache_dir() -> Path:
     """Directory for cached basemap tiles used by recon kneeboards.
 
     Prefers ``<save_dir>/Retribution/TileCache`` under the Saved Games tree
-    that retribution already writes to. When ``persistency.setup`` has not
+    that escalation already writes to. When ``persistency.setup`` has not
     been called (standalone dev scripts, golden-image generators, ad-hoc
     test harnesses), falls back to the OS-conventional user cache location
     so the tile pipeline still works.
@@ -438,7 +445,7 @@ def tile_cache_dir() -> Path:
 def mission_archive_dir() -> Path:
     """Directory holding the archived copy of each generated mission.
 
-    A subfolder of ``Missions`` rather than the Retribution tree, so DCS's own
+    A subfolder of ``Missions`` rather than the Escalation tree, so DCS's own
     mission browser lists it and an archived turn opens straight from the game.
     """
     return _create_dir_if_needed(base_path() / "Missions" / "Retribution Archive")
@@ -485,7 +492,50 @@ def mission_path_for(name: str) -> Path:
     return base_path() / "Missions" / name
 
 
+#: What the campaign looked like when it was last written to its save file. Kept here
+#: rather than on the game because it is a fingerprint *of* the game: putting it on the
+#: game would change the thing it describes.
+_saved_signature: Optional[str] = None
+
+
+def game_signature(game: Game) -> str:
+    """A fingerprint of the campaign as a save file would hold it.
+
+    Pickling a campaign of a few hundred objectives takes about fifty milliseconds and
+    gives the same bytes for the same state, so this is an exact answer to "has anything
+    changed", and cheap enough to ask when the window closes.
+    """
+    data = _unload_static_data(game)
+    try:
+        return hashlib.sha256(pickle.dumps(game)).hexdigest()
+    finally:
+        _restore_static_data(game, data)
+
+
+def has_unsaved_changes(game: Optional[Game]) -> bool:
+    """Whether closing now would lose something.
+
+    A campaign that has never been saved has everything to lose. Anything that cannot
+    be worked out -- no save yet, or a fingerprint that could not be taken -- counts as
+    unsaved: being asked once too often costs a keystroke, and the other mistake costs
+    the evening's campaign.
+    """
+    if game is None:
+        return False
+    if _saved_signature is None:
+        return True
+    try:
+        if game_signature(game) == _saved_signature:
+            return False
+    except Exception:
+        logging.exception("Could not tell whether the campaign has been modified")
+        return True
+    return True
+
+
 def load_game(path: str) -> Optional[Game]:
+    global _saved_signature
+    _saved_signature = None
     with open(path, "rb") as f:
         try:
             save = MigrationUnpickler(f).load()
@@ -496,6 +546,41 @@ def load_game(path: str) -> Optional[Game]:
             return None
 
 
+def settle(game: Game) -> None:
+    """Build what the first look at the campaign builds anyway.
+
+    A flight's plan is laid out on demand -- and a package whose weapons have changed
+    range since it was laid out has its waypoints rebuilt, join and IP and split
+    re-rolled -- and the first thing to ask for any of that is the map drawing itself,
+    moments after the campaign is loaded. Fingerprinting before that compares the
+    campaign against a version of itself that stopped existing as soon as it was drawn,
+    which is why closing an untouched campaign still asked whether to save it.
+
+    Cheap: about fifty milliseconds over a full ATO, and none of it is work the map was
+    not about to do.
+    """
+    from game.server.flights.models import FlightJs
+
+    for coalition in (game.blue, game.red):
+        for package in coalition.ato.packages:
+            for flight in package.flights:
+                try:
+                    FlightJs.for_flight(flight, with_waypoints=True)
+                except Exception:
+                    logging.exception("Could not settle %s", flight)
+
+
+def remember_saved_state(game: Game) -> None:
+    """This is the campaign as it now sits in its save file."""
+    global _saved_signature
+    try:
+        settle(game)
+        _saved_signature = game_signature(game)
+    except Exception:
+        logging.exception("Could not fingerprint the saved campaign")
+        _saved_signature = None
+
+
 def save_game(game: Game) -> bool:
     with logged_duration("Saving game"):
         try:
@@ -504,6 +589,7 @@ def save_game(game: Game) -> bool:
                 pickle.dump(game, f)
                 _restore_static_data(game, data)
             shutil.copy(_temporary_save_file(), game.savepath)
+            remember_saved_state(game)
             return True
         except Exception:
             logging.exception("Could not save game")

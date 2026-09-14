@@ -9,6 +9,7 @@
   "aircrafts": [
     "F-14A Tomcat (AI)",
     "F-14A Tomcat (Block 135-GR Late)",
+    "F-14A Tomcat (Block 95-GR Export)",
     "F-4E Phantom II",
     "F-4E-45MC Phantom II",
     "F-5E Tiger II",
@@ -83,14 +84,15 @@
     "[CH] IRGCN FAC MANPADS"
   ],
   "air_defense_units": [
+    "EWR 1L13",
+    "EWR 55G6",
     "SAM P19 \"Flat Face\" SR (SA-2/3)",
     "SAM Hawk SR (AN/MPQ-50)",
     "SA-15 Tor",
     "ZSU-57-2 'Sparka'",
     "ZU-23 on Ural-375",
     "AAA ZU-23 Insurgent Closed Emplacement",
-    "ZSU-23-4 Shilka",
-    "EWR 1L13"
+    "ZSU-23-4 Shilka"
   ],
   "helicopter_carrier_names": [],
   "requirements": {

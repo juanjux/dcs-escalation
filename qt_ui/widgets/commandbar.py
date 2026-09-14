@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Callable, Optional
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QColor, QFont, QMouseEvent, QPainter, QPixmap
+from PySide6.QtGui import QColor, QFont, QIcon, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QFrame,
     QLayout,
@@ -30,9 +30,16 @@ from game import Game
 from game.income import Income
 from game.theater import Player
 from game.weather.conditions import Conditions
+from qt_ui import uiconstants as CONST
 from qt_ui.widgets.conditions.QWeatherWidget import forecast_summary, wind_summary
 
 BAR_BG = "#26343F"
+#: The weather refresh button. Big enough to be an easy target between planning and
+#: take-off, with the icon inset so it reads as a button rather than as a character
+#: that happens to be clickable.
+REFRESH_BUTTON_PX = 28
+REFRESH_ICON_PX = 16
+
 CELL_BG = "#2D3E50"
 CELL_BORDER = "#3A4B5C"
 CELL_HOVER = "#33475C"
@@ -233,11 +240,18 @@ class WeatherCell(Cell):
             self.winds.append(line)
         self.body.addWidget(self.winds_holder)
 
-        self.refresh = QPushButton("⟳")
-        self.refresh.setFixedSize(24, 24)
-        glyph = self.refresh.font()
-        glyph.setPointSize(14)
-        self.refresh.setFont(glyph)
+        # A drawn icon rather than the text glyph U+27F3, which falls back to
+        # whatever font on the machine has it: wrong weight, off the button's
+        # centre, and on some machines not an arrow at all. The icon set already
+        # carries reload.png for both themes.
+        #
+        # The same fix was made to QWeatherWidget, which is the panel this command
+        # bar REPLACED -- so it was invisible, and the button people actually press
+        # kept its glyph.
+        self.refresh = QPushButton()
+        self.refresh.setIcon(QIcon(CONST.ICONS["Reload"]))
+        self.refresh.setIconSize(QSize(REFRESH_ICON_PX, REFRESH_ICON_PX))
+        self.refresh.setFixedSize(REFRESH_BUTTON_PX, REFRESH_BUTTON_PX)
         self.refresh.setToolTip("Fetch a fresh observation")
         self.refresh.setCursor(Qt.CursorShape.PointingHandCursor)
         self.refresh.setStyleSheet(

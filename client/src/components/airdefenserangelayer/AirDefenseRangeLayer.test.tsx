@@ -59,7 +59,6 @@ describe("AirDefenseRangeLayer", () => {
               dead: false,
               purchasable: true,
               sidc: "",
-              task: [],
               mobile: false,
             },
           },
@@ -91,7 +90,6 @@ describe("AirDefenseRangeLayer", () => {
               dead: false,
               purchasable: true,
               sidc: "",
-              task: [],
               mobile: false,
             },
           },
@@ -132,7 +130,6 @@ describe("AirDefenseRangeLayer", () => {
               dead: false,
               purchasable: true,
               sidc: "",
-              task: [],
               mobile: false,
             },
           },
@@ -175,29 +172,90 @@ describe("AirDefenseRangeLayer", () => {
     },
   });
 
-  // An EWR or a jamming site sees but does not shoot, so it has no threat ring at
-  // all. It draws its detection ring on the threat layer instead, dashed, or it is
-  // invisible unless you happen to have SAM detection ranges turned on.
-  it("draws a radar-only site on the threat layer, dashed", () => {
+  // A site that only detects has no threat ring, and its detection ring belongs on
+  // the detection layer under the switch the player already has for it. Drawing it on
+  // the threat layer dashed made a radar-only SAM look exactly like a GPS jammer.
+  it("keeps a radar-only site off the threat layer", () => {
     renderWithProviders(<AirDefenseRangeLayer blue={true} />, {
+      preloadedState: radarOnlyState(true) as any,
+    });
+    expect(mockCircle).not.toHaveBeenCalled();
+  });
+
+  it("draws a radar-only site on the detection layer", () => {
+    renderWithProviders(<AirDefenseRangeLayer blue={true} detection />, {
       preloadedState: radarOnlyState(true) as any,
     });
     expect(mockCircle).toHaveBeenCalledWith(
       expect.objectContaining({
         radius: 300,
-        pathOptions: expect.objectContaining({
-          color: colorFor(true, false),
-          dashArray: expect.any(String),
-        }),
+        pathOptions: expect.objectContaining({ color: colorFor(true, true) }),
       }),
     );
   });
 
-  it("does not draw a radar-only site twice", () => {
-    renderWithProviders(<AirDefenseRangeLayer blue={true} detection />, {
-      preloadedState: radarOnlyState(true) as any,
+  const withIadsState = (
+    state: string | null,
+    blind = false,
+    detection_ranges: number[] = [],
+  ) => ({
+    tgos: {
+      tgos: {
+        sam: {
+          id: "sam",
+          name: "Sam",
+          control_point_name: "Bar",
+          category: "AA",
+          blue: false,
+          position: { lat: 10, lng: 20 },
+          units: [],
+          threat_ranges: [500],
+          detection_ranges,
+          dead: false,
+          purchasable: true,
+          sidc: "",
+          task: [],
+          mobile: false,
+          iads_state: state,
+          iads_reason: "Because.",
+          iads_blind: blind,
+        },
+      },
+    },
+  });
+
+  // A site Skynet will not switch on gets no ring at all: it will not see and it will
+  // not shoot for the whole mission, so drawing the circle it would have had is drawing
+  // a threat that is not there.
+  it("draws no ring at all for a dark site", () => {
+    renderWithProviders(<AirDefenseRangeLayer blue={false} />, {
+      preloadedState: withIadsState("dark") as any,
     });
     expect(mockCircle).not.toHaveBeenCalled();
+  });
+
+  it("draws no detection ring for a dark site either", () => {
+    renderWithProviders(<AirDefenseRangeLayer blue={false} detection />, {
+      preloadedState: withIadsState("dark", false, [400]) as any,
+    });
+    expect(mockCircle).not.toHaveBeenCalled();
+  });
+
+  // An autonomous site still shoots, at whatever its own radar finds, so its ring is
+  // left exactly as it is. Dashing or recolouring it would say "jamming bubble".
+  it("leaves an autonomous site's ring alone", () => {
+    renderWithProviders(<AirDefenseRangeLayer blue={false} />, {
+      preloadedState: withIadsState("autonomous") as any,
+    });
+    expect(mockCircle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        radius: 500,
+        pathOptions: expect.objectContaining({
+          color: colorFor(false, false),
+          dashArray: undefined,
+        }),
+      }),
+    );
   });
 
   it("leaves a shooting site's threat ring solid", () => {

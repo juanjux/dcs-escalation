@@ -8,7 +8,7 @@ from collections.abc import Iterator
 from copy import deepcopy
 from datetime import date, datetime, time, timedelta
 from enum import Enum
-from typing import Any, List, Optional, TYPE_CHECKING, Union, cast
+from typing import Any, Callable, List, Optional, TYPE_CHECKING, Union, cast
 from uuid import UUID
 
 from dcs.countries import (
@@ -58,6 +58,7 @@ if TYPE_CHECKING:
     from .navmesh import NavMesh
     from .sim import GameUpdateEvents
     from .squadrons import AirWing
+    from .transfers import MultiGroupTransport
     from .threatzones import ThreatZones
 
 COMMISION_UNIT_VARIETY = 4
@@ -147,7 +148,7 @@ class Game:
         # Per-turn loss summaries for the OPFOR-AI prev_turns after-action.
         self.debrief_history: list[dict[str, int]] = []
         # The last debriefing, as data. The window used to be the only place the report
-        # lived, so it was gone the moment Retribution was closed; kept here it can be
+        # lived, so it was gone the moment Escalation was closed; kept here it can be
         # reopened from the Misc bar in a later session.
         self.last_debriefing_report: Optional[DebriefingReport] = None
         # Opaque JSON blob with the web client's map-layer panel state (which layers
@@ -479,12 +480,13 @@ class Game:
 
         if not hasattr(self, "name_generator"):
             self.name_generator = naming.namegen
-        # Hack: Replace the global name generator state with the state from the save
-        # game.
-        #
-        # We need to persist this state so that names generated after game load don't
-        # conflict with those generated before exit.
+        # This was meant to carry the name generator's state across a save, and cannot:
+        # what the save holds is the generator itself, and it is a class, which pickle
+        # stores by reference -- the counters on it are not in the save at all. So the
+        # line below hands back the same class this process started with, counting from
+        # zero, and the transports already on the road are named from the last one.
         naming.namegen = self.name_generator
+        self._resume_transport_names()
         LuaPluginManager.load_settings(self.settings)
         ObjectiveDistanceCache.set_theater(self.theater)
         self.compute_unculled_zones(GameUpdateEvents())
@@ -496,6 +498,40 @@ class Game:
             # We don't need to push events that happen during load. The UI will fully
             # reset when we're done.
             self.compute_threat_zones(GameUpdateEvents())
+
+    def _resume_transport_names(self) -> None:
+        """Number the next convoy and cargo ship after the ones already travelling.
+
+        A transport is a campaign object, not a mission one: it keeps its name for as
+        long as it is on the road, and that name is how the debrief credits what was
+        killed on it. Its number comes from a counter no save carries, so a campaign
+        loaded with a convoy in transit would mint the same name a second time. A save
+        that already holds such a pair is healed here -- the later one is renamed --
+        rather than left with two columns answering to one name.
+        """
+        travelling: list[tuple[MultiGroupTransport, Callable[[], str]]] = []
+        for coalition in (self.blue, self.red):
+            transfers = getattr(coalition, "transfers", None)
+            if transfers is None:
+                continue
+            travelling.extend(
+                (transport, minter)
+                for transports, minter in (
+                    (transfers.convoys, naming.namegen.next_convoy_name),
+                    (transfers.cargo_ships, naming.namegen.next_cargo_ship_name),
+                )
+                for transport in transports
+            )
+
+        naming.namegen.resume_after(transport.name for transport, _ in travelling)
+
+        taken: set[str] = set()
+        for transport, next_name in travelling:
+            if transport.name in taken:
+                was = transport.name
+                transport.name = next_name()
+                logging.info(f"Renamed a second {was} in transit to {transport.name}")
+            taken.add(transport.name)
 
     def finish_turn(self, events: GameUpdateEvents, skipped: bool = False) -> None:
         """Finalizes the current turn and advances to the next turn.
@@ -532,19 +568,11 @@ class Game:
         # since the coalition-specific finalization handles transit network updates and
         # transfer processing. If in the other order, units may be delivered to captured
         # bases, and freshly delivered units will spawn one leg through their journey.
-        self.blue.end_turn()
-        self.red.end_turn()
+        self.blue.end_turn(events)
+        self.red.end_turn(events)
 
         for control_point in self.theater.controlpoints:
             control_point.process_turn(self, events)
-
-        # Movable ship TGOs snap to their destination and re-parent to the
-        # nearest friendly CP. Runs after captures are committed (process_results
-        # precedes pass_turn -> finish_turn), so re-parenting sees post-capture
-        # ownership.
-        from game.theater.shipmovement import move_and_reparent_ships
-
-        move_and_reparent_ships(self.theater.controlpoints)
 
         # Movable ship TGOs snap to their destination and re-parent to the
         # nearest friendly CP. Runs after captures are committed (process_results
@@ -738,9 +766,9 @@ class Game:
 
         # Plan Coalition specific turn
         if for_blue:
-            self.blue.initialize_turn(self.turn == 0 and squadrons_start_full)
+            self.blue.initialize_turn(self.turn == 0 and squadrons_start_full, events)
         if for_red:
-            self.red.initialize_turn(self.turn == 0 and squadrons_start_full)
+            self.red.initialize_turn(self.turn == 0 and squadrons_start_full, events)
 
         self.plan_ground_war()
 
@@ -875,7 +903,7 @@ class Game:
     @staticmethod
     def _carcass_key(data: dict[str, Union[float, str]]) -> tuple[str, int, int]:
         # (type, x, z) quantized to 1 m identifies one carcass. Statics that
-        # Retribution respawns ALIVE each mission (FARP fuel/ammo depots,
+        # Escalation respawns ALIVE each mission (FARP fuel/ammo depots,
         # motorpool Garage_A) fire a fresh S_EVENT_DEAD at the same deterministic
         # spot every time they are bombed; keying on this collapses them to a
         # single wreck. Type is in the key so adjacent different-type statics

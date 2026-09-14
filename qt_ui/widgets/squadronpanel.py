@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from game.squadrons import Squadron
+from qt_ui.uiconstants import app_settings
 from qt_ui.models import AirWingModel
 from qt_ui.widgets.squadrondelegate import GroupHeaderRole
 
@@ -50,8 +51,6 @@ GROUPINGS = [
 ]
 
 #: Same store as the main window's geometry, so the choice outlives the app.
-SETTINGS_ORGANISATION = "DCS Retribution"
-SETTINGS_APPLICATION = "Qt UI"
 GROUPING_KEY = "airwing/grouping"
 SORT_KEY = "airwing/sort"
 
@@ -60,6 +59,7 @@ SORT_ORDERS = [
     ("Squadron", "squadron"),
     ("Base", "base"),
     ("Aircraft count", "aircraft"),
+    ("Cohesion", "cohesion"),
 ]
 
 
@@ -84,6 +84,21 @@ class SquadronFilterProxy(QSortFilterProxyModel):
     def _squadron(self, index: QModelIndex) -> Squadron | None:
         squadron = index.data(AirWingModel.SquadronRole)
         return squadron if isinstance(squadron, Squadron) else None
+
+    def friendship_in_play(self) -> bool:
+        """Whether the squadrons in this list have friendship switched on.
+
+        Sorting by cohesion is meaningless without it, and an entry in a menu that
+        does nothing is worse than one that is not there.
+        """
+        source = self.sourceModel()
+        if source is None:
+            return False
+        for row in range(source.rowCount()):
+            squadron = self._squadron(source.index(row, 0))
+            if squadron is not None:
+                return bool(squadron.friendship_in_play)
+        return False
 
     def filterAcceptsRow(self, row: int, parent: QModelIndex) -> bool:
         if not self.needle:
@@ -113,6 +128,13 @@ class SquadronFilterProxy(QSortFilterProxyModel):
         if self.order == "aircraft":
             # Most aircraft first: the question behind this sort is what you have.
             return (-squadron.owned_aircraft, squadron.aircraft.display_name.lower())
+        if self.order == "cohesion":
+            # The crews first, the lists of names last.
+            cohesion = squadron.cohesion
+            return (
+                -(cohesion if cohesion is not None else 0.0),
+                squadron.aircraft.display_name.lower(),
+            )
         return (squadron.aircraft.display_name.lower(), squadron.name.lower())
 
     def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
@@ -252,7 +274,10 @@ class SquadronPanel(QWidget):
 
         self.sort_combo = QComboBox()
         self.sort_combo.setFixedHeight(FIELD_HEIGHT)
+        cohesion_in_play = proxy.friendship_in_play()
         for label, key in SORT_ORDERS:
+            if key == "cohesion" and not cohesion_in_play:
+                continue
             self.sort_combo.addItem(f"Sort: {label}", key)
         self.sort_combo.currentIndexChanged.connect(self.on_sort_changed)
 
@@ -291,7 +316,7 @@ class SquadronPanel(QWidget):
 
     @staticmethod
     def _settings() -> QSettings:
-        return QSettings(SETTINGS_ORGANISATION, SETTINGS_APPLICATION)
+        return app_settings()
 
     def on_filter_changed(self, needle: str) -> None:
         self.proxy.set_needle(needle)

@@ -102,3 +102,57 @@ def test_a_static_is_named_after_its_objective_not_its_type() -> None:
     targets = FormationAttackBuilder.strike_targets_for(location)  # type: ignore[arg-type]
 
     assert [t.name for t in targets] == ["Factory Zaragoza-2 #0", "SA-10 ln #1"]
+
+
+def test_one_of_several_target_points_can_be_dropped() -> None:
+    """A strike spreads itself over one waypoint per target, and dropping one is the
+    player saying he does not want that building. The rule existed in the flight
+    editor but asked a freshly built TARGET AREA waypoint whose own `targets` are
+    units, so it never once fired."""
+    from types import SimpleNamespace
+
+    from game.ato.flightplans.formationattack import FormationAttackFlightPlan
+    from game.ato.flightwaypoint import FlightWaypoint
+    from game.ato.flightwaypointtype import FlightWaypointType
+    from game.utils import meters
+
+    def _target(name: str) -> FlightWaypoint:
+        return FlightWaypoint(
+            name,
+            FlightWaypointType.TARGET_POINT,
+            SimpleNamespace(x=0.0, y=0.0),  # type: ignore[arg-type]
+            meters(0),
+        )
+
+    # Two target points on identical buildings: equal by value, not the same
+    # waypoint, which is why the rule has to use identity.
+    first, second = _target("Warehouse"), _target("Warehouse")
+    assert first == second
+
+    plan = FormationAttackFlightPlan.__new__(FormationAttackFlightPlan)
+    plan.layout = SimpleNamespace(targets=[first, second])
+
+    assert plan.can_delete_waypoint(first)
+    assert plan.delete_waypoint(first)
+    assert [id(t) for t in plan.layout.targets] == [id(second)]
+
+
+def test_the_last_target_point_cannot_be_dropped() -> None:
+    """An attack with nothing to attack is the degrade-to-custom path, not this."""
+    from types import SimpleNamespace
+
+    from game.ato.flightplans.formationattack import FormationAttackFlightPlan
+    from game.ato.flightwaypoint import FlightWaypoint
+    from game.ato.flightwaypointtype import FlightWaypointType
+    from game.utils import meters
+
+    only = FlightWaypoint(
+        "T1",
+        FlightWaypointType.TARGET_POINT,
+        SimpleNamespace(x=0.0, y=0.0),  # type: ignore[arg-type]
+        meters(0),
+    )
+    plan = FormationAttackFlightPlan.__new__(FormationAttackFlightPlan)
+    plan.layout = SimpleNamespace(targets=[only], can_delete_waypoint=lambda _w: False)
+
+    assert not plan.can_delete_waypoint(only)

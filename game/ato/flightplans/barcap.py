@@ -4,10 +4,11 @@ from datetime import timedelta
 from typing import Type
 
 from game.theater import FrontLine
-from game.utils import Distance, Speed
+from game.utils import Distance, Speed, nautical_miles
 from .capbuilder import CapBuilder
 from .invalidobjectivelocation import InvalidObjectiveLocation
 from .patrolling import PatrollingFlightPlan, PatrollingLayout
+from .refuelneed import needs_refuelling
 from .waypointbuilder import WaypointBuilder
 
 
@@ -45,16 +46,40 @@ class Builder(CapBuilder[BarCapFlightPlan, PatrollingLayout]):
 
         start, end = builder.race_track(start_pos, end_pos, patrol_alt)
 
+        # A BARCAP orbits for hours, so its laps -- not the transit -- are most of what
+        # it burns, and it is the flight type most likely to need a tanker. Judging it
+        # on the way out and back alone said "it makes it" for a patrol that plainly
+        # does not.
+        refuel = None
+        nav_from_origin = end.position
+        settings = self.flight.coalition.game.settings
+        hours = settings.desired_barcap_mission_duration.total_seconds() / 3600.0
+        on_station = nautical_miles(
+            self.flight.unit_type.preferred_patrol_speed(patrol_alt).knots * hours
+        )
+        meeting_point = self.package.refuel_point
+        if meeting_point is not None and needs_refuelling(
+            self.flight,
+            self.package,
+            settings,
+            patrol_alt,
+            patrol_alt,
+            on_station,
+        ):
+            refuel = builder.refuel(meeting_point)
+            nav_from_origin = refuel.position
+
         return PatrollingLayout(
             departure=builder.takeoff(self.flight.departure),
             nav_to=builder.nav_path(
                 self.flight.departure.position, start.position, patrol_alt
             ),
             nav_from=builder.nav_path(
-                end.position, self.flight.arrival.position, patrol_alt
+                nav_from_origin, self.flight.arrival.position, patrol_alt
             ),
             patrol_start=start,
             patrol_end=end,
+            refuel=refuel,
             arrival=builder.land(self.flight.arrival),
             divert=builder.divert(self.flight.divert),
             bullseye=builder.bullseye(),

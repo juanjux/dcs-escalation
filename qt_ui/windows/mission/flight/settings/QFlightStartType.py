@@ -1,49 +1,68 @@
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QComboBox,
-    QGroupBox,
-    QHBoxLayout,
     QLabel,
     QVBoxLayout,
+    QWidget,
 )
 
 from game.ato.flight import Flight
 from game.ato.starttype import StartType
 from game.theater import OffMapSpawn
 from qt_ui.models import PackageModel
+from qt_ui.widgets.controls import Segmented
+
+AMBER = "#E0A86B"
 
 
-class QFlightStartType(QGroupBox):
+class QFlightStartType(QWidget):
+    """How the flight is on the ground when the mission loads.
+
+    Four mutually exclusive choices, so they are four buttons rather than a combo box:
+    the set is short, it never changes, and which one is picked is something you want
+    to see without clicking. The balance note appears only when it applies -- as a
+    permanent sentence it was furniture, and furniture is not read.
+    """
+
+    #: Anything other than Cold makes the flight untargetable by OCA, which the header
+    #: shows as a pill. Emitted however the start type moved -- picked by hand, or
+    #: reset because a player took a seat.
+    start_type_changed = Signal()
+
     def __init__(self, package_model: PackageModel, flight: Flight):
         super().__init__()
         self.package_model = package_model
         self.flight = flight
 
-        self.layout = QVBoxLayout()
-        self.main_row = QHBoxLayout()
-        self.start_type_label = QLabel("Start type:")
-        self.start_type = QComboBox()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
 
-        for start_type in StartType:
-            self.start_type.addItem(start_type.value, start_type)
-        self.start_type.setCurrentText(flight.start_type.value)
-
-        if isinstance(self.flight.departure, OffMapSpawn):
-            self.start_type.setEnabled(False)
-
-        self.start_type.currentTextChanged.connect(self._on_start_type_selected)
-        self.main_row.addWidget(self.start_type_label)
-        self.main_row.addWidget(self.start_type)
-
-        self.layout.addLayout(self.main_row)
-        self.layout.addWidget(
-            QLabel(
-                "Any option other than Cold will make this flight non-targetable "
-                + "by OCA/Aircraft missions. This will affect game balance."
-            )
+        self.segmented = Segmented(
+            [(start_type.value, start_type) for start_type in StartType],
+            current=flight.start_type,
         )
-        self.setLayout(self.layout)
+        self.segmented.selection_changed.connect(self._on_start_type_selected)
+        if isinstance(self.flight.departure, OffMapSpawn):
+            self.segmented.set_enabled(False)
+        layout.addWidget(self.segmented)
 
-    def on_pilot_selected(self):
+        self.balance_note = QLabel(
+            "Anything but Cold makes this flight untargetable by OCA/Aircraft "
+            "missions, which affects balance."
+        )
+        self.balance_note.setWordWrap(True)
+        self.balance_note.setStyleSheet(
+            f"font-size: 11px; color: {AMBER}; background: transparent; border: none;"
+        )
+        layout.addWidget(self.balance_note)
+        self._update_note()
+
+        self.setLayout(layout)
+
+    def _update_note(self) -> None:
+        self.balance_note.setVisible(self.flight.start_type is not StartType.COLD)
+
+    def on_pilot_selected(self) -> None:
         # Pilot selection detected. If this is a player flight, set start_type
         # as configured for players in the settings.
         # Otherwise, set the start_type as configured for AI.
@@ -60,11 +79,14 @@ class QFlightStartType(QGroupBox):
                 self.flight.coalition.game.settings.default_start_type
             )
 
-        self.start_type.setCurrentText(self.flight.start_type.value)
+        self.segmented.set_value(self.flight.start_type)
+        self._update_note()
 
         self.package_model.update_tot()
+        self.start_type_changed.emit()
 
-    def _on_start_type_selected(self):
-        selected = self.start_type.currentData()
-        self.flight.start_type = selected
+    def _on_start_type_selected(self, start_type: StartType) -> None:
+        self.flight.start_type = start_type
+        self._update_note()
         self.package_model.update_tot()
+        self.start_type_changed.emit()

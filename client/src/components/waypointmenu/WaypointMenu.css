@@ -1,0 +1,160 @@
+.wp-menu,
+.wp-dialog {
+  position: fixed;
+  z-index: 1200;
+  background: #161e2b;
+  color: #d7dde6;
+  border: 1px solid #2b3647;
+  border-radius: 8px;
+  font:
+    13px/1.3 system-ui,
+    sans-serif;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.wp-menu {
+  min-width: 190px;
+  padding: 4px 0;
+}
+
+.wp-menu-title {
+  padding: 6px 12px 8px;
+  color: #8fa3bd;
+  border-bottom: 1px solid #2b3647;
+  margin-bottom: 4px;
+}
+
+.wp-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.wp-menu button:hover:not(:disabled) {
+  background: #223146;
+}
+
+.wp-menu button:disabled {
+  color: #5d6b7f;
+  cursor: default;
+}
+
+.wp-menu .wp-danger:hover:not(:disabled) {
+  background: #3b2523;
+  color: #e8b7b3;
+}
+
+.wp-dialog {
+  width: 290px;
+  padding: 12px 14px 14px;
+}
+
+.wp-dialog h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #e8f0fb;
+}
+
+.wp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.wp-row label {
+  color: #8fa3bd;
+}
+
+.wp-row input,
+.wp-row select {
+  width: 130px;
+  background: #0f1622;
+  color: #e8f0fb;
+  border: 1px solid #2b3647;
+  border-radius: 6px;
+  padding: 5px 7px;
+  font: inherit;
+  outline: none;
+}
+
+.wp-row input:focus,
+.wp-row select:focus {
+  border-color: #3f5a80;
+}
+
+/* The speed is what the plan flies, not something to set: a package holds a
+   formation speed between its join and its split whatever each flight would do. */
+.wp-readonly {
+  font-variant-numeric: tabular-nums;
+  color: #d7dde6;
+}
+
+.wp-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.wp-actions button {
+  background: #223146;
+  color: #e8f0fb;
+  border: 1px solid #2b3647;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.wp-actions button:hover {
+  background: #2c3f5a;
+}
+
+.wp-error {
+  color: #e8b7b3;
+  background: #3b2523;
+  border: 1px solid #a8443f;
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-top: 8px;
+}
+
+/* A refusal from the server, said where the player is looking rather than in the
+   console: "that waypoint is part of the plan" is an answer, not an error. */
+.wp-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 1300;
+  max-width: 460px;
+  background: #3b2523;
+  color: #e8b7b3;
+  border: 1px solid #a8443f;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font:
+    13px/1.35 system-ui,
+    sans-serif;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+/* Why the menu is as short as it is, rather than leaving the reader to wonder where
+   the other four items went. */
+.wp-menu-note {
+  max-width: 210px;
+  padding: 4px 8px 2px;
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: #8fa3bd;
+}

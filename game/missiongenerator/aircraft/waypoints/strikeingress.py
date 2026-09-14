@@ -1,17 +1,15 @@
 import copy
-from typing import Union
+from collections.abc import Sequence
+from typing import Any, Union
 
 from dcs import Point
 from dcs.planes import B_17G, B_52H, Tu_22M3, B_1B, F_15ESE
 from dcs.point import MovingPoint
 from dcs.task import Bombing, Expend, OptFormation, WeaponType, CarpetBombing
 
+from game.theater.theatergroundobject import MotorpoolGroundObject
 from game.utils import mach, meters
 from .pydcswaypointbuilder import PydcsWaypointBuilder
-
-#: Bounds DCS accepts for a bombing carpet. pydcs defaults to the upper one.
-MIN_CARPET_LENGTH = 500.0
-MAX_CARPET_LENGTH = 3000.0
 
 
 class StrikeIngressBuilder(PydcsWaypointBuilder):
@@ -27,19 +25,21 @@ class StrikeIngressBuilder(PydcsWaypointBuilder):
             self.add_strike_tasks(waypoint, WeaponType.GuidedBombs)
 
         waypoint.tasks.append(OptFormation.ww2_bomber_element_close())
-        if bomber or bomber_guided:
-            # A heavy bomber covers the whole objective in a single pass.
-            self.add_bombing_tasks(waypoint)
-        else:
-            # Everything else re-attacks: one aimpoint per target with the load
-            # split between them, rather than emptying the racks into the middle
-            # of the objective and cratering whatever already died there.
-            self.add_strike_tasks(waypoint, WeaponType.Bombs)
+        self.add_bombing_tasks(waypoint)
         waypoint.tasks.append(OptFormation.finger_four_open())
         self.register_special_ingress_points()
 
     def add_bombing_tasks(self, waypoint: MovingPoint) -> None:
         targets = self.waypoint.targets
+        if isinstance(self.package.target, MotorpoolGroundObject):
+            # The motorpool is a live cache reconciled from the current reserve;
+            # re-derive the units at ingress so the tasks match what actually
+            # rendered. Mission spec: one bomb task per parked unit (an empty
+            # reserve adds nothing), not a single centroid task.
+            targets = self.package.target.strike_targets
+            if targets:
+                self.add_bombing_task_per_target(waypoint, targets, WeaponType.Bombs)
+            return
         if not targets:
             return
 
@@ -47,19 +47,17 @@ class StrikeIngressBuilder(PydcsWaypointBuilder):
         for target in targets[1:]:
             center += target.position
         center /= len(targets)
-        # The carpet is laid along the run-in, so it has to span the objective
-        # rather than its mean radius. The average came out at roughly a third of
-        # the real spread -- 65 m over a camp several hundred metres across --
-        # which stacked every bomb around the centroid, pass after pass.
-        spread = max(center.distance_to_point(t.position) for t in targets)
-        carpet_length = min(max(2.0 * spread, MIN_CARPET_LENGTH), MAX_CARPET_LENGTH)
+        avg_spacing = 0.0
+        for t in targets:
+            avg_spacing += center.distance_to_point(t.position)
+        avg_spacing /= len(targets)
         bombing: Union[CarpetBombing, Bombing]
         if self.group.task == "Ground Attack":
             bombing = CarpetBombing(
                 center,
                 weapon_type=WeaponType.Bombs,
                 expend=Expend.All,
-                carpet_length=carpet_length,
+                carpet_length=avg_spacing,
                 altitude=waypoint.alt,
             )
         else:
@@ -80,12 +78,34 @@ class StrikeIngressBuilder(PydcsWaypointBuilder):
             # destroyed). Skip -- as add_bombing_tasks does -- so we neither add
             # an empty attack task nor divide by zero on the units/targets ratio.
             return
+        self.add_bombing_task_per_target(waypoint, self.waypoint.targets, weapon_type)
+
+        # Register special waypoints
+        if not self._special_wpts_injected:
+            self.register_special_strike_points(self.waypoint.targets)
+            if self.flight.unit_type.dcs_unit_type == F_15ESE:
+                self.register_special_strike_points(self.flight.custom_targets, 2)
+            self._special_wpts_injected = True
+
+    def add_bombing_task_per_target(
+        self,
+        waypoint: MovingPoint,
+        targets: Sequence[Any],
+        weapon_type: WeaponType,
+    ) -> None:
+        """Add one Bombing task per target, sizing the expenditure per task.
+
+        The expend per target is scaled by the aircraft-to-target ratio so a
+        package does not dump its whole payload on the first task: with at
+        least one aircraft per target each aircraft expends everything per
+        target, and progressively less as targets outnumber aircraft.
+        """
         bomber = self.group.units[0].unit_type in [B_1B, B_52H]
-        ratio = len(self.group.units) / len(self.waypoint.targets)
-        for target in self.waypoint.targets:
+        ratio = len(self.group.units) / len(targets)
+        for target in targets:
             bombing = Bombing(target.position, weapon_type=weapon_type)
             # If there is only one target, drop all ordnance in one pass with group attack.
-            if len(self.waypoint.targets) == 1:
+            if len(targets) == 1:
                 bombing.params["expend"] = Expend.All.value
                 bombing.params["groupAttack"] = True
             elif ratio >= 1:
@@ -108,10 +128,3 @@ class StrikeIngressBuilder(PydcsWaypointBuilder):
             waypoint.tasks.append(bombing)
 
             waypoint.speed = mach(0.85, meters(waypoint.alt)).meters_per_second
-
-        # Register special waypoints
-        if not self._special_wpts_injected:
-            self.register_special_strike_points(self.waypoint.targets)
-            if self.flight.unit_type.dcs_unit_type == F_15ESE:
-                self.register_special_strike_points(self.flight.custom_targets, 2)
-            self._special_wpts_injected = True

@@ -33,27 +33,47 @@ class PackageWaypoints:
     standoff_range: Optional[Distance] = None
 
     @staticmethod
-    def doctrine_for_standoff_range(
+    def doctrine_for_weapon_range(
         doctrine: Doctrine,
-        standoff_range: Optional[Distance],
+        weapon_range: Optional[Distance],
         distance_to_target: Distance,
     ) -> Doctrine:
-        """Raise the doctrine's max ingress distance to the given stand-off range.
+        """Put the attack run where the package can actually shoot from.
 
-        Cruise/stand-off-armed flights (e.g. Tu-16s with Kh-22s) should begin their
-        attack run from a realistic launch distance instead of being dragged all the
-        way in to the doctrine ingress point. The override is capped at the
-        departure-target distance: some IpSolver strategies (the backtracking
-        fallbacks used when the primary ones find no safe IP) do not otherwise bound
-        the search area, and a 100+ nm cruise-missile range on a much shorter route
+        The ingress point is where the attack task begins, so it belongs at the range
+        the weapons are used from -- in both directions. A Tu-16 with Kh-22s has no
+        business being dragged in to the doctrine's ingress point, and a flight of
+        JDAMs has none starting its run forty-five miles out, which is where the
+        doctrine's ceiling puts every straight-in package: the IP solver takes the
+        point nearest the departure that the rules allow, and on a straight route
+        that is always the furthest one from the target.
+
+        Only what is known moves it. A weapon with no range in its data -- a dumb
+        bomb, a rocket -- leaves the doctrine alone.
+
+        Bounded above by the distance to the target: some IpSolver strategies (the
+        backtracking fallbacks used when the primary ones find no safe IP) do not
+        otherwise bound the search area, and a 200 nm missile on a much shorter route
         could send the IP far off the route or off the map.
+
+        Not bounded below, because there is no floor to raise it to. The solver looks
+        for the IP in the ring between the doctrine's minimum ingress distance and its
+        maximum, and a ring whose inner and outer radius are the same holds no points
+        at all: every strategy fails and the package cannot be planned. That is what a
+        CAS package from a base nine miles from the front line got, the distance to the
+        target being under the minimum and the ceiling clamped back up to it. A weapon
+        that cannot shoot from further out than the doctrine would send the flight
+        anyway is no reason to move the ingress point, so the doctrine keeps its own
+        ceiling in that case.
         """
-        if standoff_range is None:
+        if weapon_range is None:
             return doctrine
-        effective_max_ingress = min(standoff_range, distance_to_target)
-        if effective_max_ingress <= doctrine.max_ingress_distance:
+        wanted = min(weapon_range, distance_to_target)
+        if wanted <= doctrine.min_ingress_distance:
             return doctrine
-        return replace(doctrine, max_ingress_distance=effective_max_ingress)
+        if wanted == doctrine.max_ingress_distance:
+            return doctrine
+        return replace(doctrine, max_ingress_distance=wanted)
 
     @staticmethod
     def create(
@@ -65,7 +85,7 @@ class PackageWaypoints:
         distance_to_target = meters(
             origin.position.distance_to_point(package.target.position)
         )
-        doctrine = PackageWaypoints.doctrine_for_standoff_range(
+        doctrine = PackageWaypoints.doctrine_for_weapon_range(
             coalition.doctrine, standoff_range, distance_to_target
         )
 

@@ -148,6 +148,18 @@ def squadron_pilots(squadron_id: str, side: str = "red") -> dict:
     return service.squadron_pilots(side, squadron_id)
 
 
+@router.get(
+    "/squadrons/{squadron_id}/pilots/{pilot_name}/record",
+    operation_id="ai_get_pilot_record",
+)
+def pilot_record(squadron_id: str, pilot_name: str, side: str = "red") -> dict:
+    """Everything the campaign remembers about one pilot: every kill with its turn and
+    weapon, what he has survived, how he died and who did it, everything that has moved
+    his morale, and what he thinks of the men around him. The roster carries the counts;
+    this is what they are made of."""
+    return service.pilot_record(side, squadron_id, pilot_name)
+
+
 @router.get("/flights/{flight_id}/crew", operation_id="ai_get_flight_crew")
 def flight_crew(flight_id: str, side: str = "red") -> dict:
     """Who is in each seat of a flight, and which of the squadron's pilots are free."""
@@ -170,6 +182,16 @@ def answer_leave_request(body: schemas.LeaveRequestAnswer) -> schemas.OpResult:
     steadier; refusing, or ignoring him, costs him morale."""
     return service.answer_leave_request(
         body.side, body.squadron_id, body.pilot_name, body.grant, body.turns
+    )
+
+
+@router.post("/pilots/leave/set", operation_id="ai_set_pilot_leave")
+def set_pilot_leave(body: schemas.PilotLeaveRequest) -> schemas.PilotLeaveResult:
+    """Rest a pilot who never asked for leave, or call one back early -- the Air Wing's
+    leave button, which the player can press on anybody. turns=0 is open-ended; he stays
+    out until you call him back, and calling him back early costs him morale."""
+    return service.set_pilot_leave(
+        body.side, body.squadron_id, body.pilot_name, body.on_leave, body.turns
     )
 
 

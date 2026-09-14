@@ -19,7 +19,7 @@ class _Squadron:
     def __init__(self, pilots: list[Pilot]) -> None:
         self.available_pilots = list(pilots)
 
-    def claim_available_pilot(self) -> Pilot | None:
+    def claim_available_pilot(self, alongside: Any = ()) -> Pilot | None:
         return self.available_pilots.pop() if self.available_pilots else None
 
     def claim_pilot(self, pilot: Pilot) -> None:

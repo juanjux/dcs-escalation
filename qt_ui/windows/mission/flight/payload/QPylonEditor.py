@@ -4,13 +4,14 @@ from typing import Optional
 
 from PySide6.QtWidgets import QComboBox, QWidget, QHBoxLayout, QPushButton
 from PySide6.QtGui import QIcon
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 
 from game import Game
 from game.ato.flight import Flight
 from game.ato.flightmember import FlightMember
 from game.ato.loadouts import Loadout
 from game.data.weapons import Pylon, Weapon
+from qt_ui.widgets.searchablecombo import SearchableComboBox
 from .QWeaponSettingsDialog import QWeaponSettingsDialog
 
 
@@ -30,8 +31,10 @@ class QPylonEditor(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
 
-        # Create combobox for weapon selection
-        self.weapon_combo = QComboBox()
+        # Create combobox for weapon selection. Searchable: a Hornet pylon takes
+        # most of the American inventory, and finding the TALD among sixty rocket
+        # pods is scrolling rather than choosing.
+        self.weapon_combo = SearchableComboBox(placeholder="Type to find a weapon…")
         current = self.flight_member.loadout.pylons.get(self.pylon.number)
 
         self.weapon_combo.addItem("None", None)
@@ -89,6 +92,10 @@ class QPylonEditor(QWidget):
                 f"Updated settings for pylon {self.pylon.number}: {settings_dict}"
             )
 
+    #: Emitted after a store is put on this pylon or taken off it. The fuel figure
+    #: has to follow: a drop tank is a third of what a strike loadout carries.
+    pylon_changed = Signal()
+
     def on_pylon_change(self) -> None:
         selected: Optional[Weapon] = self.weapon_combo.currentData()
         self.flight_member.loadout.pylons[self.pylon.number] = selected
@@ -103,6 +110,7 @@ class QPylonEditor(QWidget):
             logging.debug(f"Pylon {self.pylon.number} emptied")
         else:
             logging.debug(f"Pylon {self.pylon.number} changed to {selected.name}")
+        self.pylon_changed.emit()
 
     def weapon_from_loadout(self, loadout: Loadout) -> Optional[Weapon]:
         weapon = loadout.pylons.get(self.pylon.number)

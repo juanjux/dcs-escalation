@@ -39,6 +39,11 @@
             "defaultValue": true
         },
         {
+            "nameInUI": "Fighters monitoring a contact without committing to it",
+            "mnemonic": "monitoring",
+            "defaultValue": false
+        },
+        {
             "nameInUI": "Our flights launching on a target",
             "mnemonic": "engaging",
             "defaultValue": true
@@ -47,6 +52,16 @@
             "nameInUI": "Defending against an incoming missile",
             "mnemonic": "defending",
             "defaultValue": true
+        },
+        {
+            "nameInUI": "Said before a kill of ours (empty for none)",
+            "mnemonic": "goodnews",
+            "defaultValue": "YEAH!"
+        },
+        {
+            "nameInUI": "Said before a loss of ours (empty for none)",
+            "mnemonic": "badnews",
+            "defaultValue": "OH NO!"
         },
         {
             "nameInUI": "Seconds each message stays on screen",

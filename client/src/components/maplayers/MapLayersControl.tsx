@@ -24,7 +24,9 @@ import ControlPointsLayer from "../controlpointslayer";
 import {
   CullingExclusionLayer,
 } from "../cullingexclusionzones/CullingExclusionZones";
-import FlightPlansLayer from "../flightplanslayer";
+import FlightPlansLayer, {
+  SelectedFlightPlanLayer,
+} from "../flightplanslayer";
 import FrontLinesLayer from "../frontlineslayer";
 import Iadsnetworklayer from "../iadsnetworklayer";
 import NavMeshLayer from "../navmesh/NavMeshLayer";
@@ -65,7 +67,6 @@ type LayerId =
   | "alliedSamDetection"
   | "alliedIads"
   | "emitterHighlight"
-  | "flightSelected"
   | "flightBlue"
   | "flightRed"
   | "blueThreatFull"
@@ -127,10 +128,6 @@ const OVERLAYS: Record<LayerId, { label: string; node: ReactNode }> = {
   emitterHighlight: { label: "Highlight radar emitter on hover", node: null },
   blueDestroyed: { label: "Blue: destroyed (non-repairable)", node: null },
   redDestroyed: { label: "Red: destroyed (non-repairable)", node: null },
-  flightSelected: {
-    label: "Selected flight plan",
-    node: <FlightPlansLayer selectedOnly />,
-  },
   flightBlue: { label: "All blue flight plans", node: <FlightPlansLayer blue={true} /> },
   flightRed: { label: "All red flight plans", node: <FlightPlansLayer blue={false} /> },
   blueThreatFull: {
@@ -235,7 +232,6 @@ const GROUPS: GroupDef[] = [
       { id: "alliedSamDetection" },
       { id: "alliedIads" },
       { id: "emitterHighlight" },
-      { id: "flightSelected" },
       { id: "flightBlue" },
       { id: "flightRed" },
     ],
@@ -521,6 +517,8 @@ export default function MapLayersControl() {
   return (
     <>
       <BasemapLayer key={baseName} name={baseName} />
+      {/* Outside the toggles on purpose: see SelectedFlightPlanLayer. */}
+      <SelectedFlightPlanLayer />
       {ALL_IDS.map((id) =>
         visible[id] ? <Fragment key={id}>{OVERLAYS[id].node}</Fragment> : null
       )}

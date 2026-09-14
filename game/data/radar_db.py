@@ -24,6 +24,7 @@ from dcs.ships import (
 from dcs.vehicles import AirDefence
 
 from pydcs_extensions import highdigitsams as hds
+from pydcs_extensions import iranmilitaryassetspack as imap
 from pydcs_extensions import vietnamwarvessels as vwv
 from pydcs_extensions import chinesemilitaryassetspack as cmap
 from pydcs_extensions import iranmilitaryassetspack as imap

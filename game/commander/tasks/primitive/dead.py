@@ -63,5 +63,7 @@ class PlanDead(PackagePlanningTask[IadsGroundObject]):
         self.propose_common_escorts()
         if self.target.has_live_radar_sam:
             self.propose_flight(FlightType.SEAD, 2, EscortType.Sead)
-        if self.target.control_point.coalition.game.settings.autoplan_tankers_for_dead:
+        if (
+            self.target.control_point.coalition.game.settings.plan_refuelling_when_needed
+        ):
             self.propose_flight(FlightType.REFUELING, 1, EscortType.Refuel)

@@ -1,10 +1,10 @@
 """Every shipped preset must name units and layouts that actually exist.
 
 ForceGroup._process_path only *logs* an unknown unit or layout and carries on, so a
-preset that names something Retribution does not know loses it in silence: the site
+preset that names something Escalation does not know loses it in silence: the site
 generates short, or not at all, and nothing tells you. That is the same shape as the
 bug where a mod dropped a unit family the presets still asked for — DCS discarded the
-units, Retribution kept believing the site was alive, and DEAD packages against it could
+units, Escalation kept believing the site was alive, and DEAD packages against it could
 never finish. This test refuses to let a preset ship in that state.
 """
 

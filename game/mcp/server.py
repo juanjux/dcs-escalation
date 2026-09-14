@@ -16,9 +16,9 @@ from mcp.server.transport_security import TransportSecuritySettings
 from game.agent import service
 
 mcp = FastMCP(
-    "DCS Retribution OPFOR AI",
+    "DCS Escalation OPFOR AI",
     instructions=(
-        "Plan the enemy (red/OPFOR) turn of a DCS Retribution campaign. Call "
+        "Plan the enemy (red/OPFOR) turn of a DCS Escalation campaign. Call "
         "`start` then `howtoplay` once, then on each 'your turn': read "
         "turn_context/get_packages, create_packages / buy / stances. The toolbar "
         "robot lights up on its own with every call — nothing to toggle on/off."
@@ -121,6 +121,15 @@ def squadron_pilots(squadron_id: str, side: str = "red") -> dict:
 
 
 @_tool()
+def pilot_record(squadron_id: str, pilot_name: str, side: str = "red") -> dict:
+    """Everything the campaign remembers about one pilot: every kill with its turn and
+    weapon, what he has survived, how he died and who did it, his whole morale log, and
+    what he thinks of the men around him. squadron_pilots carries the counts; this is
+    what they are made of. Names come from squadron_pilots."""
+    return service.pilot_record(side, squadron_id, pilot_name)
+
+
+@_tool()
 def flight_crew(flight_id: str, side: str = "red") -> dict:
     """Who is in each seat of a flight, and which of the squadron's pilots are still free.
     Seat numbers are what set_flight_crew expects."""
@@ -151,6 +160,24 @@ def answer_leave_request(
     morale."""
     return service.answer_leave_request(
         side, squadron_id, pilot_name, grant, turns
+    ).model_dump()
+
+
+@_tool()
+def set_pilot_leave(
+    squadron_id: str,
+    pilot_name: str,
+    on_leave: bool = True,
+    turns: int = 0,
+    side: str = "red",
+) -> dict:
+    """Rest a pilot who never asked for leave, or call one back early -- the Air Wing's
+    leave button, which the player can press on anybody. answer_leave_request only
+    reaches a man who put his hand up, and the ones worth resting often do not. turns=0
+    is open-ended: he stays out until you call him back. Calling him back early costs him
+    morale; leave that ran out on its own does not."""
+    return service.set_pilot_leave(
+        side, squadron_id, pilot_name, on_leave, turns
     ).model_dump()
 
 

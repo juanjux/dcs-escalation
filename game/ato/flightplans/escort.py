@@ -42,14 +42,35 @@ class EscortFlightPlan(FormationAttackFlightPlan):
 
 
 class Builder(FormationAttackBuilder[EscortFlightPlan, FormationAttackLayout]):
+    @property
+    def escorted_flight(self) -> Optional[Flight]:
+        """The flight this escort is protecting, or None if there is nobody to protect.
+
+        A package names its primary flight by mission-type priority and the escort
+        types sit at the bottom of that list, so a package that holds nothing but
+        escorts -- the first flight added to a new package, or one whose strikers were
+        all cancelled -- elects an escort as its own primary. Reading that flight's
+        plan while its plan is the one being built re-enters this builder, which is an
+        unbounded recursion rather than a plan. An escort with nobody but itself (or
+        another escort, which resolves back the same way) to escort protects nothing
+        in particular, so it flies the package's ordinary geometry instead.
+        """
+        primary = self.package.primary_flight
+        if primary is None or primary is self.flight:
+            return None
+        if primary.flight_type.is_escort_type:
+            return None
+        return primary
+
     def layout(self) -> FormationAttackLayout:
         non_formation_escort = False
+        escorted = self.escorted_flight
         if self.package.waypoints_need_regeneration():
             self.package.waypoints = PackageWaypoints.create(
                 self.package, self.coalition, dump_debug_info=False
             )
-            if self.package.primary_flight:
-                departure = self.package.primary_flight.flight_plan.layout.departure
+            if escorted:
+                departure = escorted.flight_plan.layout.departure
                 self.package.waypoints.join = departure.position.lerp(
                     self.package.target.position, 0.2
                 )
@@ -78,13 +99,12 @@ class Builder(FormationAttackBuilder[EscortFlightPlan, FormationAttackLayout]):
         split = builder.split(self._get_split())
 
         is_helo = builder.flight.is_helo
-        pf = self.package.primary_flight
 
         # When escorting a flight that flies a racetrack orbit (AWACS/tanker), hold
         # on that racetrack so the escort actually co-locates with and protects it.
         # Otherwise the hold defaults to the package's target-relative geometry, which
         # can land 70-80 NM away from where the protected flight actually orbits.
-        racetrack_hold = self._racetrack_hold_point(pf)
+        racetrack_hold = self._racetrack_hold_point(escorted)
         if racetrack_hold is not None:
             initial = builder.escort_hold(racetrack_hold)
         else:
@@ -92,8 +112,11 @@ class Builder(FormationAttackBuilder[EscortFlightPlan, FormationAttackLayout]):
                 target.position if is_helo else self.package.waypoints.initial,
             )
 
-        if pf and pf.flight_type in [FlightType.AIR_ASSAULT, FlightType.TRANSPORT]:
-            layout = pf.flight_plan.layout
+        if escorted and escorted.flight_type in [
+            FlightType.AIR_ASSAULT,
+            FlightType.TRANSPORT,
+        ]:
+            layout = escorted.flight_plan.layout
             assert isinstance(layout, AirAssaultLayout) or isinstance(
                 layout, AirliftLayout
             )

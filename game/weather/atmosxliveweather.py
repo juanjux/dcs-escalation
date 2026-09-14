@@ -9,7 +9,7 @@ clock -- and we take only ``vdata``.
 
 Nothing here is allowed to stop a mission being generated. Every failure (no CLI, no
 network, an ICAO with no observation, a malformed file) logs and returns, leaving the
-weather Retribution had already generated.
+weather Escalation had already generated.
 """
 
 from __future__ import annotations
@@ -341,6 +341,19 @@ def rank_stations(
 # --- fetching and applying -------------------------------------------------------
 
 
+def _no_console() -> dict[str, Any]:
+    """Keep Windows from opening a console for the CLI.
+
+    It is a console program, so Windows gives it a console of its own -- a black
+    window that pops up over whatever the player is doing and goes again. Redirecting
+    the pipes does not stop that; only the flag does. The weather is fetched once per
+    station tried, so a theater whose nearest airfields have no report flashes several
+    in a row.
+    """
+    flag = getattr(subprocess, "CREATE_NO_WINDOW", None)
+    return {"creationflags": flag} if flag is not None else {}
+
+
 def fetch_preset(cli: Path, icao: str, timeout: int = 60) -> Optional[dict[str, Any]]:
     """Run the CLI's read-only metar command and parse what it saves.
 
@@ -353,7 +366,11 @@ def fetch_preset(cli: Path, icao: str, timeout: int = 60) -> Optional[dict[str, 
         command = [str(cli), "metar", icao, "--save", str(out)]
         try:
             result = subprocess.run(
-                command, capture_output=True, text=True, timeout=timeout
+                command,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                **_no_console(),
             )
         except (OSError, subprocess.SubprocessError) as exc:
             raise LiveWeatherUnavailable(f"{CLI_NAME} could not be run: {exc}") from exc
@@ -510,7 +527,7 @@ def fetch_observation(
     """The current observation for this campaign's terrain, or None with a reason logged.
 
     Every way this can fail returns None: the campaign must still be playable with the
-    weather Retribution generates when ATMOS-X is absent, the network is down, or the
+    weather Escalation generates when ATMOS-X is absent, the network is down, or the
     station reported nothing.
     """
     from game.settings.settings import CloudPresetPack
@@ -585,7 +602,7 @@ def fetch_observation(
 class LiveWeather(GameWeather):
     """A real observation, in the shape the rest of the game already understands.
 
-    Retribution decides a turn's weather when the turn begins, and the turn display,
+    Escalation decides a turn's weather when the turn begins, and the turn display,
     the kneeboards, the active-runway choice and the carrier's course into wind all read
     that decision -- so the observation has to *be* the turn's weather, not something
     grafted onto the .miz at the end. What the model cannot hold (visibility distance,

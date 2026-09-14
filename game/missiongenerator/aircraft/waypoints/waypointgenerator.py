@@ -15,6 +15,7 @@ from dcs.unitgroup import FlyingGroup
 
 from game.ato import Flight, FlightWaypoint, FlightType
 from game.ato.flightstate import InFlight, WaitingForStart
+from game.ato.flightplans.formation import FormationLayout
 from game.ato.flightwaypointtype import FlightWaypointType
 from game.ato.starttype import StartType
 from game.missiongenerator.aircraft.waypoints.cargostop import CargoStopBuilder
@@ -222,6 +223,19 @@ class WaypointGenerator:
             FlightWaypointType.TARGET_POINT: TargetBuilder,
         }
         builder = builders.get(waypoint.waypoint_type, DefaultWaypointBuilder)
+
+        # A lone AI ship's join and split are labelled NAV -- there is no formation to
+        # form -- but they are still where the package meets and parts, and what hangs
+        # off them is package business: the escort task, the flag that releases the
+        # escorts, jamming, the unlimited-fuel toggle. The layout knows which waypoint
+        # is which whatever it is called, so ask it rather than the label.
+        layout = self.flight.flight_plan.layout
+        if isinstance(layout, FormationLayout):
+            if waypoint is layout.join:
+                builder = JoinPointBuilder
+            elif waypoint is layout.split:
+                builder = SplitPointBuilder
+
         return builder(
             waypoint,
             self.group,

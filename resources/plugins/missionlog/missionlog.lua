@@ -19,10 +19,13 @@ MISSION_LOG_DEFAULTS = {
     crashes = true,
     flightstatus = false,
     intercepts = true,
+    monitoring = true,
     defending = true,
     engaging = true,
     duration = 20,
     maxmessages = 12,
+    goodnews = "YEAH!",
+    badnews = "OH NO!",
 }
 
 local function option(name)
@@ -38,6 +41,22 @@ local function option(name)
 end
 
 local DURATION = tonumber(option("duration")) or MISSION_LOG_DEFAULTS.duration
+
+-- A kill and a loss are the two lines you want to find again in a column that
+-- scrolls, and by the time you look they have gone past. A word in front of each
+-- is what the eye catches; the campaign chooses the words, and an empty one turns
+-- the whole thing off without another switch to find.
+local function cheer(good, text)
+    local word = option(good and "goodnews" or "badnews")
+    if word == nil then
+        return text
+    end
+    word = tostring(word):gsub("^%s+", ""):gsub("%s+$", "")
+    if word == "" then
+        return text
+    end
+    return word .. " " .. text
+end
 
 local logger = mist and mist.Logger:new("MissionLog", "info") or nil
 
@@ -189,12 +208,15 @@ local function describe_bare(unit)
     return aircraft, false
 end
 
-local function describe(unit)
+-- Both sides fly the same airframes in some campaigns, where "the Su-27" says
+-- nothing about whose it is. Anything belonging to the other coalition is named as
+-- theirs -- and only then: a blue-on-blue is not an enemy.
+local function describe(unit, enemy)
     local text, named = describe_bare(unit)
     if named then
-        return text
+        return enemy and ("enemy " .. text) or text
     end
-    return "the " .. text
+    return (enemy and "the enemy " or "the ") .. text
 end
 
 -- The same information describe() renders, but kept apart: the chronicle needs
@@ -249,20 +271,21 @@ end
 -- flight: describing it unit by unit turns one event into a wall of nine
 -- identical lines, all at the same range, differing only in which enemy
 -- wingman was named.
-local function describe_flight(group)
+local function describe_flight(group, enemy)
+    local herd = enemy and "an enemy flight" or "a flight"
     local leader, size
     if not pcall(function() leader = group:getUnit(1) end) or leader == nil then
-        return "a flight"
+        return herd
     end
     if not pcall(function() size = group:getSize() end) or size == nil then
         size = 1
     end
     if size <= 1 then
-        return describe(leader)
+        return describe(leader, enemy)
     end
     local name
     if not pcall(function() name = leader:getName() end) or name == nil then
-        return "a flight"
+        return herd
     end
     name = tostring(name)
     local aircraft = fields_of(name)[4]
@@ -271,9 +294,9 @@ local function describe_flight(group)
     end
     local pilot = pilot_of(leader, name)
     if pilot then
-        return string.format("a flight of %d %s led by %s", size, aircraft or "aircraft", pilot)
+        return string.format("%s of %d %s led by %s", herd, size, aircraft or "aircraft", pilot)
     end
-    return string.format("a flight of %d %s", size, aircraft or "aircraft")
+    return string.format("%s of %d %s", herd, size, aircraft or "aircraft")
 end
 
 local function side_of(unit)
@@ -284,7 +307,19 @@ local function side_of(unit)
     return nil
 end
 
+-- DCS numbers Weapon.Category from zero just like Unit.Category, so a missile's
+-- desc category is 1 -- the same value as HELICOPTER, which had every missile in
+-- the air reported as an aircraft. getCategory has changed meaning between
+-- builds, so probe for the launcher instead: only a weapon has one.
+local function is_weapon(object)
+    local launcher
+    return pcall(function() launcher = object.getLauncher end) and launcher ~= nil
+end
+
 local function is_aircraft(unit)
+    if is_weapon(unit) then
+        return false
+    end
     local category
     if not pcall(function() category = unit:getDesc().category end) then
         return false
@@ -431,12 +466,16 @@ local function queue_ground(e)
     if e.category == "groundkills" then
         forget_damage(e.target_id)
     end
+    -- Whose the target was is part of the key: a friendly T-72 and an enemy
+    -- one killed in the same window are not "3 enemy T-72".
     local key = table.concat(
-        {tostring(e.side), e.category, e.actor, e.verb, e.target, e.weapon}, "\30")
+        {tostring(e.side), e.category, e.actor, e.verb, e.target,
+         e.weapon, tostring(e.enemy == true)}, "\30")
     local bucket = pending_ground[key]
     if bucket == nil then
         bucket = {side = e.side, category = e.category, actor = e.actor,
                   verb = e.verb, target = e.target, weapon = e.weapon,
+                  enemy = e.enemy == true,
                   scenery = e.scenery == true, actor_type = e.actor_type,
                   actor_pilot = e.actor_pilot, weapon_name = e.weapon_name,
                   seen = {}, count = 0}
@@ -457,9 +496,10 @@ local function flush_ground()
             what = string.format("%s in the %s",
                 bucket.count > 1 and "several objects" or "an object", bucket.target)
         elseif bucket.count > 1 then
-            what = string.format("%d %s", bucket.count, bucket.target)
+            what = string.format("%d %s%s", bucket.count,
+                bucket.enemy and "enemy " or "", bucket.target)
         else
-            what = "the " .. bucket.target
+            what = (bucket.enemy and "the enemy " or "the ") .. bucket.target
         end
         -- Recorded here, not at queue time: the count is the fact worth
         -- keeping, and it is only known once the window closes.
@@ -467,8 +507,14 @@ local function flush_ground()
                 actor_type = bucket.actor_type, actor_pilot = bucket.actor_pilot,
                 target_type = bucket.target, count = bucket.count,
                 scenery = bucket.scenery, weapon = bucket.weapon_name})
-        announce(bucket.side, bucket.category, string.format(
-            "%s %s %s%s", bucket.actor, bucket.verb, what, bucket.weapon))
+        local line = string.format(
+            "%s %s %s%s", bucket.actor, bucket.verb, what, bucket.weapon)
+        if bucket.category == "groundkills" then
+            -- Ours only when what died was theirs: blue blowing up blue is not a
+            -- moment for a cheer.
+            line = cheer(bucket.enemy, line)
+        end
+        announce(bucket.side, bucket.category, line)
         pending_ground[key] = nil
     end
 end
@@ -484,6 +530,9 @@ end
 
 -- Text, dedup id, and whether this is scenery, for one ground target. Returns
 -- nil for anything not worth a line.
+--
+-- The name is bare here; whether it belongs to the enemy is decided by the
+-- caller, which is the only place that knows who did the shooting.
 local function ground_target(unit)
     if is_scenery(unit) then
         local objective = scenery_objective(unit)
@@ -510,7 +559,7 @@ function handler:onEvent(event)
     if id == e.S_EVENT_SHOT and event.weapon then
         local target
         if pcall(function() target = event.weapon:getTarget() end) and target ~= nil
-                and is_aircraft(target) then
+                and (is_aircraft(target) or is_weapon(target)) then
             local victim = side_of(target)
             local shooter = side_of(event.initiator)
             local key = engagement_key(event.initiator, target)
@@ -525,15 +574,23 @@ function handler:onEvent(event)
                 -- of news to each: your wingman is shooting, or something is
                 -- shooting at you. Reporting only the second left a player
                 -- watching his own flights fire at nothing.
-                if victim ~= nil then
+                -- A missile neither defends itself nor survives, so a shot
+                -- at one is news only to the side taking it.
+                if victim ~= nil and not is_weapon(target) then
                     record({kind = "defending", side = victim,
                             actor_type = target_type, actor_pilot = target_pilot,
                             target_type = shooter_type, target_pilot = shooter_pilot,
                             weapon = weapon_name(event)})
+                    local hostile = shooter ~= nil and shooter ~= victim
+                    local incoming = weapon_name(event)
+                    if hostile then
+                        incoming = "an enemy " .. (incoming or "missile")
+                    else
+                        incoming = incoming or "a missile"
+                    end
                     announce(victim, "defending", string.format(
                         "%s is defending against %s from %s", describe(target),
-                        weapon_name(event) or "a missile",
-                        describe(event.initiator)))
+                        incoming, describe(event.initiator, hostile)))
                 end
                 if shooter ~= nil then
                     record({kind = "engaging", side = shooter,
@@ -542,7 +599,8 @@ function handler:onEvent(event)
                             weapon = weapon_name(event)})
                     announce(shooter, "engaging", string.format(
                         "%s is engaging %s%s", describe(event.initiator),
-                        describe(target), weapon_suffix(event)))
+                        describe(target, victim ~= nil and victim ~= shooter),
+                        weapon_suffix(event)))
                 end
             end
         end
@@ -550,6 +608,10 @@ function handler:onEvent(event)
     end
 
     if id == e.S_EVENT_KILL and event.initiator and event.target then
+        -- Downing a missile is neither an air kill nor a ground target.
+        if is_weapon(event.target) then
+            return
+        end
         local shooter, victim = side_of(event.initiator), side_of(event.target)
         local killer_text = describe(event.initiator)
         local victim_text = describe(event.target)
@@ -561,20 +623,27 @@ function handler:onEvent(event)
                     actor_type = killer_type, actor_pilot = killer_pilot,
                     target_type = victim_type, target_pilot = victim_pilot,
                     weapon = weapon_name(event)})
+            local hostile = shooter ~= nil and victim ~= nil and shooter ~= victim
             if shooter then
-                announce(shooter, "airkills",
-                    with_weapon(string.format("%s shot down %s", killer_text, victim_text), event))
+                announce(shooter, "airkills", cheer(true, with_weapon(string.format(
+                    "%s SHOT DOWN %s", killer_text,
+                    describe(event.target, hostile)), event)))
             end
             if victim then
-                announce(victim, "losses",
-                    with_weapon(string.format("%s was shot down by %s", victim_text, killer_text), event))
+                announce(victim, "losses", cheer(false, with_weapon(string.format(
+                    "%s was SHOT DOWN by %s", victim_text,
+                    describe(event.initiator, hostile)), event)))
             end
         elseif shooter then
             local text, target_id, scenery = ground_target(event.target)
             if text ~= nil then
                 local kind, pilot = unit_fields(event.initiator)
+                local target_side = side_of(event.target)
+                local hostile_ground = shooter ~= nil and target_side ~= nil
+                    and shooter ~= target_side
                 queue_ground({side = shooter, category = "groundkills",
-                    actor = killer_text, verb = "destroyed", target = text,
+                    enemy = hostile_ground,
+                    actor = killer_text, verb = "DESTROYED", target = text,
                     weapon = weapon_suffix(event), weapon_name = weapon_name(event),
                     target_id = target_id, scenery = scenery,
                     actor_type = kind, actor_pilot = pilot})
@@ -588,11 +657,15 @@ function handler:onEvent(event)
         -- behind a bare kill event comes from.
         remember_weapon(event)
         local shooter = side_of(event.initiator)
-        if shooter and not is_aircraft(event.target) then
+        if shooter and not is_aircraft(event.target)
+                and not is_weapon(event.target) then
             local text, target_id, scenery = ground_target(event.target)
             if text ~= nil then
                 local kind, pilot = unit_fields(event.initiator)
+                local damaged_side = side_of(event.target)
                 queue_ground({side = shooter, category = "damage",
+                    enemy = shooter ~= nil and damaged_side ~= nil
+                        and shooter ~= damaged_side,
                     actor = describe(event.initiator), verb = "hit", target = text,
                     weapon = weapon_suffix(event), weapon_name = weapon_name(event),
                     target_id = target_id, scenery = scenery,
@@ -608,7 +681,7 @@ function handler:onEvent(event)
             local kind, pilot = unit_fields(event.initiator)
             record({kind = "ejection", side = side,
                     actor_type = kind, actor_pilot = pilot})
-            announce(side, "losses", string.format("%s ejected", describe(event.initiator)))
+            announce(side, "losses", string.format("%s EJECTED", describe(event.initiator)))
         end
         return
     end
@@ -622,7 +695,8 @@ function handler:onEvent(event)
             local kind, pilot = unit_fields(event.initiator)
             record({kind = "crash", side = side,
                     actor_type = kind, actor_pilot = pilot})
-            announce(side, "crashes", string.format("%s crashed", describe(event.initiator)))
+            announce(side, "crashes",
+                cheer(false, string.format("%s CRASHED", describe(event.initiator))))
         end
         return
     end
@@ -753,27 +827,31 @@ local function report_contacts(hunter_group, targets, source)
                 announced_contacts[key] = true
                 local hunter_type, hunter_pilot = unit_fields(leader)
                 local bandit_type, bandit_pilot = unit_fields(target_leader)
-                record({kind = "intercept", side = side,
-                        actor_type = hunter_type, actor_pilot = hunter_pilot,
-                        target_type = bandit_type, target_pilot = bandit_pilot,
-                        range = math.floor(range), source = source})
                 -- Only say "intercept" when one is plausible. A BARCAP handed a
                 -- contact by datalink eighty miles away does not leave its
                 -- racetrack -- knowing is not acting, and claiming otherwise
                 -- had the log announcing interceptions that never happened.
-                local verb = range <= INTERCEPT_COMMIT_M
-                    and "is moving to intercept" or "monitors"
-                announce(side, "intercepts", string.format(
-                    "%s %s %s at %.0f nm, %s",
-                    describe_flight(hunter_group), verb, describe_flight(group),
-                    range / 1852, source))
+                -- The watching kind is most of the traffic, so it gets its own
+                -- switch rather than sharing one with the committing kind.
+                local committing = range <= INTERCEPT_COMMIT_M
+                local verb = committing and "is moving to intercept" or "monitors"
+                record({kind = committing and "intercept" or "monitoring",
+                        side = side,
+                        actor_type = hunter_type, actor_pilot = hunter_pilot,
+                        target_type = bandit_type, target_pilot = bandit_pilot,
+                        range = math.floor(range), source = source})
+                announce(side, committing and "intercepts" or "monitoring",
+                    string.format(
+                        "%s %s %s at %.0f nm, %s",
+                        describe_flight(hunter_group), verb,
+                        describe_flight(group, true), range / 1852, source))
             end
         end
     end
 end
 
 local function poll_intercepts()
-    if not option("intercepts") then
+    if not option("intercepts") and not option("monitoring") then
         return
     end
     for _, side in pairs({coalition.side.BLUE, coalition.side.RED}) do

@@ -31,6 +31,10 @@ def _user_data_path() -> Path:
 
 USER_PATH = _user_data_path()
 
+#: Where his DCS paths, his theme and his server port already are. The file keeps
+#: the name it was written under -- like the folder above it, which the rename
+#: left alone -- because a renamed one is a first-start dialog on a machine that
+#: has been set up for a year.
 PREFERENCES_PATH = USER_PATH / "retribution_preferences.json"
 
 
@@ -45,7 +49,7 @@ def init():
 
     if PREFERENCES_PATH.exists():
         try:
-            logging.debug("Loading Retribution preferences from %s", PREFERENCES_PATH)
+            logging.debug("Loading Escalation preferences from %s", PREFERENCES_PATH)
             with PREFERENCES_PATH.open() as prefs:
                 pref_data = json.load(prefs)
             __dcs_saved_game_directory = pref_data["saved_game_dir"]

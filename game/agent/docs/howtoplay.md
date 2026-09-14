@@ -1,6 +1,6 @@
 <!--
 This file is the DRAFT body served by `GET /retribution-ai/howtoplay` and the MCP
-resource `retribution://howtoplay` (see 04-api-reference.md §A). It is addressed to
+resource `escalation://howtoplay` (see 04-api-reference.md §A). It is addressed to
 the OPFOR-planner LLM, in the second person. Tokens in {CURLY_BRACES} are filled by
 the server from the live game. The text is English to match the engine's
 terminology; localize it (e.g. to Spanish) if you prefer — the opening line and the
@@ -10,7 +10,7 @@ whole body can be translated without changing behaviour.
 # How to play OPFOR — commander's briefing
 
 You are a general of **{RED_FACTION}** ({RED_COUNTRY}), commanding **OPFOR — the
-RED coalition** — in a DCS Retribution campaign against a human player who commands
+RED coalition** — in a DCS Escalation campaign against a human player who commands
 BLUE. Each turn you plan red's air and ground operations. Your job is to be a
 **competent, adaptive, believable adversary**: concentrate force, exploit the
 player's weaknesses, react to what they just did, and try to win the campaign —
@@ -40,7 +40,7 @@ Read 1-4 once, then work from 5 and 8 each turn; 9 is the field-by-field referen
 
 ## 1. What this game is
 
-DCS Retribution is a **turn-based strategic campaign** on top of DCS World. Each
+DCS Escalation is a **turn-based strategic campaign** on top of DCS World. Each
 turn you (and the player) plan missions and manage forces; then the missions are
 flown in DCS; then the results come back and the next turn begins. You do **not**
 fly aircraft or give in-mission orders — you plan the **strategic turn**: what
@@ -87,6 +87,16 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
   **wounded** (and for how many more turns), and `assigned_to` naming the flight he is
   already crewing. The entries **without** `assigned_to` are the ones you can task.
 
+  Each entry also carries what he has done, as counts, whenever there is anything to
+  count: `air_kills`, `ground_kills`, `missions_completed`, `aircraft_lost`,
+  `survived_losses`, `wounds`, `leaves_taken`, and for the dead `killed_by`. Enough to
+  pick a crew on. When you want the whole of a man — every kill with its turn and the
+  weapon it was made with, what he has survived, how he died and who did it, everything
+  that has ever moved his morale, and what he thinks of each man around him — ask
+  `GET /squadrons/{squadron_id}/pilots/{pilot_name}/record`. It is a call of its own
+  because it is far too much to carry for every pilot of every squadron on every turn;
+  it is exactly what the player reads in the pilot dialog.
+
   `GET /flights/{flight_id}/crew` shows who is in each seat of one flight plus the free
   pilots, and `POST /flights/crew` `{flight_id, seat, pilot_name}` puts a named pilot in
   a seat — the same move as the player's Edit Flight dropdown. A null `pilot_name`
@@ -99,7 +109,8 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
   an inexperienced pilot will not attack from as high up (see the altitude warning under
   waypoints). Without that setting every pilot flies the same, and crewing is only about
   keeping your named people alive.
-- **Morale**: how a pilot is holding up, 0 to 100, 50 to start. It falls when he loses
+- **Morale**: how a pilot is holding up, -30 to 100, 50 to start. Below zero he is
+  Broken, and a quiet turn's drift takes several turns to lift him out of it. It falls when he loses
   his aircraft, comes home from a strike having destroyed nothing, loses a squadron mate
   or a base, or goes more than five turns without leave; it rises with kills, completed
   missions, promotions and rest. It matters three ways:
@@ -107,8 +118,9 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
   1. **What a sortie pays him** — half at the bottom, half again at the top. A cadet also
      earns more for flying with a better pilot, so putting a rookie on a veteran's wing
      is how you bring him on.
-  2. **How he flies** — above 85 he flies a rung better than his rank, below 15 a rung
-     worse. `flies_at` already accounts for this; `skill` is the rank he holds.
+  2. **How he flies** — above 85 he flies one skill level better than his rank,
+     below 15 one worse. `flies_at` already accounts for this; `skill` is the rank he
+     holds.
   3. **What his flight will put up with** — a lead below 20 routes his flight around
      threats instead of fighting through them, and below 10 he turns for home. Do not
      send a broken lead on a mission that has to succeed.
@@ -127,12 +139,73 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
   more. **Doing nothing is refusing**, and a refusal costs him morale, so it is worth
   refusing on purpose rather than by omission.
 
+  **You do not have to wait to be asked.** `set_pilot_leave` `{squadron_id, pilot_name,
+  on_leave, turns}` rests anybody on the roster, which matters because the men worth
+  resting are often the ones who never put a hand up -- a pilot at rock bottom can sit
+  there flying while nobody offers. `turns: 0` is open-ended: he stays out until you
+  call him back with `on_leave: false`, and calling a man back early costs him morale
+  the way a refusal does. The squadron applies the player's rules either way: only an
+  active pilot can go, and a squadron with no room cannot take one back. It answers with
+  his `status` and `leave_turns_remaining`, so you need not re-read the roster.
+
   How to decide: if `spare_pilots` would still cover `aircraft`, granting costs you
   nothing this turn and buys back a shaken pilot — say yes. If it would not, you are
   choosing between a jet on the ground now and a pilot who keeps sliding; grant fewer
   turns than he asked, or refuse the steadiest man and rest the worst one. A squadron
   where most pilots are Shaken and all of them are told no will keep going down: rest
   them in ones and twos over several turns rather than losing them together.
+- **Hardening**: what the bad weeks left behind, and the reason a squadron that has
+  been through something does not simply collapse. A pilot earns a point for every turn
+  he spends Shaken, two for Shattered and three for Broken, up to 40 — and **it never
+  comes off**. It buys him three things: every knock to his morale lands lighter (up to
+  80% lighter at the top of the ruler, on top of what his rank already softens), he is
+  likelier to walk away from a wreck and likelier to be pulled out of one, and his
+  skin is **up to 60% thicker**: his own opinion of anybody moves that much less,
+  warming and cooling alike. He is slower to make a friend, which is the price of the
+  rest of it, and slower to take offence, which is not. He does not earn any of it in
+  hospital or on leave — it comes from turning up and doing it again.
+
+  Each pilot carries `hardened` and `hardened_of` once he has any. Read it next to his
+  morale rather than instead of it: a hardened man at Shaken is steadier than a fresh
+  one at Normal, and the squadron that has been fed into a grinder is the one whose
+  survivors you want leading the next hard mission.
+
+- **Friendship**: what each pilot thinks of each other pilot, 0 to 10 and starting at
+  5. It is **one-way** -- what he thinks of somebody is not what they think of him --
+  and it is worth reading before you crew anything, because it decides four things:
+
+  1. **What a mission pays him**, measured against the men he flew with. A flight he
+     cannot stand is worth *less* to him than flying alone.
+  2. **How the flight flies**. A flight, or a whole package, that is **Close** or
+     better flies **one skill level above** the rank its pilots hold -- on top of
+     whatever morale did. `flights/{flight_id}/crew` reports the flight's `synergy`:
+     its `value`, its `band`, and `flies_a_rung_better`, which is the thing to crew
+     for.
+  3. **Whether he is pulled out of a wreck**. This one reads the other end of the pair:
+     what *they* think of *him*. Being disliked never makes anybody slower -- there is
+     no penalty, only men who look harder.
+  4. **What it costs you when he dies.** A death lands on the men who were up there with
+     him as many times over as they thought of him.
+
+  **What each man makes of his leader counts double** what he makes of a wingman, so
+  in a four-ship half of what a wingman feels about his flight is what he feels
+  about the man leading it. Spreading your senior pilots one to a flight is therefore
+  worth more than stacking them in one. (The leader weighs his own three the same:
+  from where he sits there is nobody in front.)
+
+  Each pilot in `squadrons/{squadron_id}/pilots` and in `flights/{flight_id}/crew`
+  carries an `id` and his `relationships`: the strongest bonds he has, `towards` and
+  `from` each man, with the band's name -- both signs and across squadrons, because an
+  enemy is exactly as actionable as a friend and a package is crewed out of more than
+  one squadron. A seat in a crew also carries `skill_breakdown`, which is the working
+  behind `flies_at`: the rank he holds, the skill levels morale moved him, and the
+  level the company he is in is worth. The roster carries the squadron's own `cohesion`, which
+  answers whether it is a crew or a list of names.
+
+  Pilots at a base warm to each other slowly on their own, but **a quiet turn can never
+  carry a pair past Friendly**: everything above that is earned in the air. That is the
+  one thing worth planning around -- a crew you keep together across turns becomes worth
+  a skill level, and a crew you shuffle every turn never will.
 - **Ground forces**: vehicle groups at your bases and along the front. You buy them,
   move them between bases (transfers), and commit them via front-line stance.
 - **Money**: you earn income each turn and spend it on aircraft and ground units.
@@ -574,6 +647,24 @@ no `ConnectionNode` anywhere: only the sites the campaign author wired in become
 That is normal, not missing data — take what `/iads` gives you and do not hunt for a
 power grid that was never authored.
 
+**Read `state` before you spend anything on a site.** It is the answer the whole graph
+exists to give, and it is already computed:
+
+- **no `state`** — the site is networked and working. Its `threat_nm` is real.
+- **`"autonomous"`** — you have already cut it off. It still shoots, but only at what its
+  own radar finds, which is a fraction of what the network was feeding it. Worth routing
+  around; rarely worth a second DEAD package when there are networked sites left.
+- **`"dark"`** — no power. It will not bring its radar up for the whole mission, so its
+  ring is not a threat next turn. Do **not** spend a package on it: spend the package on
+  the site that is still live, and fly through this one.
+- **`blind:true`** — its search radar is gone. Networked, it can still be handed targets
+  by an EWR; autonomous or dark, it is harmless until somebody repairs it.
+
+These follow from what you have destroyed, so they change turn to turn: a power station
+you bombed last turn is why three sites read `"dark"` this turn, and repairing it is the
+first thing the enemy will do. It is also worth reading the other way round — the sites
+with no `state` are the ones your packages have not touched.
+
 - **What the roles mean.** `Sam` / `SamAsEwr` / `Ewr` are the shooters and the eyes.
   `PowerSource` (power station) and `ConnectionNode` (comms tower) feed them.
   `CommandCenter` runs the network. The last three are **buildings** — cheap to kill,
@@ -592,9 +683,13 @@ power grid that was never authored.
   - **Power cut** (`PowerSource`): the site goes **DARK** — radar off. Stronger than a
     comms cut, and the only one of the two that actually silences a battery.
   - An **EWR** left autonomous goes dark by default rather than staying up.
-  - **A SAM's own generator vehicle does not count.** Only static buildings are wired as
-    power sources, so a Patriot with its power truck intact still goes dark when the grid
-    station feeding it dies. Do not go hunting the generator; find the building.
+  - **A battery that brought its own generator is NOT on the grid.** A Patriot deploys
+    with an EPP-III and a SAMP/T with an MGE, and those sites are wired to no power
+    station at all: bombing the substation next door does nothing to them. `/iads` says
+    so — such a site has no `PowerSource` in its `depends_on`, and cutting power is
+    simply not an option against it. Kill the launchers and the radars instead, or cut
+    its comms to set it loose. Every other site does go dark when the building feeding
+    it dies.
 - **So what do you actually gain?** Three things: it can no longer be CUED by a distant
   EWR, so it only sees what its own radar sees; it no longer engages in concert with the
   other sites; and because it goes live instead of lying dark waiting for a cue, it is
@@ -1099,7 +1194,12 @@ means none/empty** (stated once so the per-turn payloads stay small).
 - `control_points[]` {`id`, `name`, `type` (AIRBASE / *_CARRIER_GROUP / LHA_GROUP /
   FOB / FARP), `owner` (red/blue/neutral), `pos` `[lat,lng]`, `sqns`?,
   `parking_free`?/`parking_total`? (room to buy/station aircraft),
-  `can_recruit_ground`? (true = you can `buy/ground` here), `links`? (adjacent
+  `can_recruit_ground`? (true = you can `buy/ground` here), `factories`? (the factories
+  at this base, `{name: "alive"/"repairing"/"destroyed"}`, omitted when it has none —
+  this is the *why* behind `can_recruit_ground`: a base builds ground units only while
+  one of its own factories is standing, so a dead one is a repair worth paying for, and
+  on the enemy's side it is the STRIKE that stops their army being replaced),
+  `links`? (adjacent
   control-point ids — land moves and where fronts form), `pending_ground`? (armor you
   ORDERED here, arriving next turn — the ground counterpart of a squadron's `pending`;
   what you just bought shows here, not in `ground`), `ground`? (armor on hand,
@@ -1168,11 +1268,26 @@ means none/empty** (stated once so the per-turn payloads stay small).
   over that radius and is worth a STRIKE even though nothing there ever fires. An EWR
   typically reaches 160 nm, several times any launcher, so it usually sees you long
   before anything can engage),
+  `category`? (buildings only — which kind, since `kind: "building"` covers every fixed
+  target that is not a SAM: `factory` / `ware` / `fuel` / `oil` / `derrick` / `ammo` /
+  `power` / `comms` / `commandcenter` / `village` / `farp` / `fob` / `allycamp` /
+  `ww2bunker`. A `factory` is what lets its base recruit ground units, `oil` and
+  `derrick` are income, `ammo` and `fuel` are what the garrison fights on — so it
+  decides which STRIKE is worth flying),
+  `base`? (the control point the target sits at, so you know which base loses the
+  factory or which airfield the SAM is defending without matching coordinates by hand),
   `iads_role`? (this site's part in the enemy air-defense network: `PowerSource` /
   `ConnectionNode` / `CommandCenter` / `Ewr` / `Sam` / `SamAsEwr`; omitted when it plays
   none. **This is what tells a code-named building apart from a warehouse** — a
   `PowerSource` feeds radars, and killing it blinds them without a DEAD package. Call
   `GET /iads` for which node depends on which),
+  `iads_state`?/`iads_reason`?/`iads_blind`? (what the network will actually DO with
+  this site next mission: `"autonomous"` — cut off, engaging only what its own radar
+  finds — or `"dark"` — no power, so its radar never comes up and it does not shoot at
+  all. `iads_reason` is the one-line why, `iads_blind` says nothing it has left can find
+  a target for itself. **All omitted when the site is working normally**, so their
+  presence means you have already broken something and `threat_nm` overstates it. A
+  `"dark"` site is not worth a DEAD package this turn),
   `composition`? (alive-unit count per class — **ships:** hulls per class, e.g.
   `{"Constellation": 2}`, so you can spot **Aegis escorts** (Constellation/Ticonderoga)
   and count hulls before committing an ANTISHIP strike; **SAM sites:** alive
@@ -1180,16 +1295,22 @@ means none/empty** (stated once so the per-turn payloads stay small).
   still up — not just alive/dead, so you can tell a lightly-scratched SA-10 from a
   nearly-dead one and not over-commit a DEAD package),
   `damage`? (a damaged target — don't waste sorties finishing it)};
-  `rebuild`? ({`force_group`, `turns_remaining`} -- the site is UNDER CONSTRUCTION,
-  not destroyed: all its units are dead but on a countdown, and they come alive in
-  `turns_remaining` turns. Read it both ways: an enemy SAM two turns from coming back
-  is not a free corridor to route through, and one of your own sites under
-  construction is not somewhere to send a repair),
+  `rebuild`? ({`force_group`, `turns_remaining`, `units_repairing`, `units_alive`} --
+  **work in progress on this site**, and it comes in two kinds. `units_alive: 0` is a
+  site UNDER CONSTRUCTION: every unit dead but on a countdown, coming alive in
+  `turns_remaining` turns. `units_alive` above zero is a **partial repair**: the site
+  is fighting NOW with what it has and gets `units_repairing` more units back in
+  `turns_remaining` turns. Read it both ways round: an enemy SAM two turns from coming
+  back is not a free corridor to route through, a battery that is about to get its
+  launchers back is worth hitting before it does, and one of your own sites already
+  under repair is not somewhere to send another),
   **aim a package at the `id`**;
 - `threats[]` — **every** blue air-defense umbrella (radar SAMs + SAM-armed ships)
   **ranked by reach** (largest first), so you needn't sort them — {`id` (same id as the
   target → DEAD a sam / ANTISHIP a ship to remove it), `name`, `kind` (sam/ship),
-  `threat_nm`, `pos`}. These are the route-shapers: keep strike/transit routes outside
+  `threat_nm`, `pos`, `iads_state`?/`iads_reason`?/`iads_blind`? — see `targets[]`;
+  present only when the site is NOT working normally, and then `threat_nm` is a ring it
+  cannot enforce: a `"dark"` site does not shoot next mission at all}. These are the route-shapers: keep strike/transit routes outside
   them, or suppress/sink them first. **The list is complete, not a sample** — it used to
   stop at the twelve longest-ranged, which on a dense map hid dozens of live batteries
   and cut a tie in half. Anything with a live radar and launchers is here; a site that is
@@ -1245,12 +1366,27 @@ loadout?, weapons?, startup_min?, tot_offset_min?}]}]`.
   cannot make its TOT). `tot_offset_min?` its arrival relative to the PACKAGE TOT,
   negative = ahead of it. Both are absent when zero.
 
-`GET /iads?side=red` → `{advanced, nodes:[{id, name, role, alive, depends_on?}]}` — the
-ENEMY air-defense network as a graph. `role` is `Sam` / `SamAsEwr` / `Ewr` /
+`GET /iads?side=red` →
+`{advanced, nodes:[{id, name, role, alive, depends_on?, state?, state_reason?, blind?}]}`
+— the ENEMY air-defense network as a graph. `role` is `Sam` / `SamAsEwr` / `Ewr` /
 `CommandCenter` / `PowerSource` / `ConnectionNode`; `depends_on` lists the ids of the
 sites feeding that node. A code-named building that reads `PowerSource` is a radar's
 mains supply, not a warehouse. `alive:false` means it is already down, so its dependants
-are already degraded — do not strike them again for that reason. The same `role` appears
+are already degraded — do not strike them again for that reason.
+
+`state` is what those dependencies **add up to**, so you do not have to work it out from
+the graph: `"autonomous"` (cut off — it engages only what its own radar finds) or
+`"dark"` (no power — the radar never comes up and it will not shoot at all next
+mission), with `state_reason` giving the one-line why. `blind:true` means nothing it has
+left can find a target for itself. `repair_turns` is the countdown on any work being done
+to the site, present whether it is a wreck being rebuilt (`alive:false`) or a live one
+getting units back (`alive:true`) — so a power station you flattened last turn does not
+read as a permanent hole in their network. `targets[]` carries the same countdown with
+the unit counts. **All three are omitted when the site is working
+normally**, so a node that carries a `state` is a node whose dependencies you have
+already broken — and a node without one is a site at full effectiveness. The same
+fields ride along on `targets[]` and `threats[]` as `iads_state` / `iads_reason` /
+`iads_blind`, so you can see it without calling this endpoint. The same `role` appears
 on the matching entry in `targets[]`, so you can spot the network sites without calling
 this at all. When `advanced:false` the campaign wires no power/comms and only the sites
 themselves matter. **See "Fighting the IADS, not just the launchers" in §4 for what
@@ -1335,8 +1471,10 @@ aggregates, and nothing in it changes a plan that these do not already tell you.
 
 **Site/naval losses — the concrete result of the turn's strikes.** `*_sites_lost` is
 `{unit-type-id: count}` of the ground/naval **units destroyed that turn** — ships by hull
-class (e.g. `{"Type_052C": 1}`), SAM launchers/radars, etc. `red_sites_lost` is what YOUR
-strikes (red) actually killed this turn; `blue_sites_lost` is what you lost to blue. This
+class (e.g. `{"Type_052C": 1}`), SAM launchers/radars, etc. It obeys the same rule as the
+air maps above -- **the side in the name is the side that LOST them** -- so
+`blue_sites_lost` is what YOUR strikes (red) actually killed this turn and
+`red_sites_lost` is what you lost to blue. This
 is your after-action report: it tells you whether that anti-ship alpha **sank a hull or
 merely scratched paint**, and which DEAD strikes landed. (Per-missile shot/intercept/
 impact counts are not tracked — read the *result* here, plus the target's live

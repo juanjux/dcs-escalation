@@ -50,6 +50,8 @@ from game.ato.flighttype import FlightType
 from game.ato.flightwaypointtype import FlightWaypointType
 from game.dcs.aircrafttype import AircraftType
 from game.settings import Settings
+from game.squadrons import friendship
+from game.squadrons import hardening
 from game.squadrons import morale as morale_rules
 from game.squadrons.experience import turns_phrase
 from game.purchaseadapter import AircraftPurchaseAdapter, TransactionError
@@ -60,6 +62,12 @@ from game.theater import ConflictTheater, ControlPoint, ParkingType
 from game.squadrons.pilot import PilotStatus
 from qt_ui.delegates import painter_context
 from game.squadrons.morale import RANK_LEVELS
+from qt_ui.widgets.pilotrow import (
+    MORALE_COLOURS,
+    affinity_tint,
+    MORALE_LABEL_OVERRIDE,
+    MORALE_LABEL_OVERRIDE_SELECTED,
+)
 from qt_ui.rankstars import (
     STAR_EMPTY,
     STAR_EMPTY_DIMMED,
@@ -72,8 +80,10 @@ from qt_ui.rankstars import (
 from qt_ui.errorreporter import report_errors
 from qt_ui.models import AtoModel, SquadronModel
 from qt_ui.simcontroller import SimController
-from qt_ui.uiconstants import AIRCRAFT_ICONS
+from qt_ui.uiconstants import app_settings, AIRCRAFT_ICONS
+from qt_ui.dialogs import open_once
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
+from qt_ui.windows.pilot import PilotDialog
 from qt_ui.widgets.combos.QSquadronLiverySelector import SquadronLiverySelector
 from qt_ui.widgets.combos.primarytaskselector import PrimaryTaskSelector
 
@@ -110,20 +120,8 @@ ON_LEAVE = "#8FC3F0"
 ON_LEAVE_SELECTED = "#BEDCF6"
 ON_LEAVE_DETAIL = "#6E93B0"
 
-#: The morale ramp, cold to hot, matching the states in :mod:`game.squadrons.morale`.
-#: Normal is deliberately grey: a squadron that is holding up should read as quiet, and
-#: colour should mean something is unusual.
-MORALE_COLOURS = {
-    "Triumphant": "#8FC3F0",
-    "Confident": "#86C39A",
-    "Normal": "#8E9DAA",
-    "Shaken": "#E0A86B",
-    "Shattered": "#D97B4F",
-    "Broken": "#D9645E",
-}
-#: The label recedes further than the dot for a pilot nobody needs to think about.
-MORALE_LABEL_OVERRIDE = {"Normal": "#B7C6D2"}
-MORALE_LABEL_OVERRIDE_SELECTED = {"Normal": "#E4EDF4"}
+#: The morale ramp lives with the row painter now, so the roster here and the pilot
+#: selector in the flight dialog cannot drift apart -- they draw the same row.
 
 FATE_CHIPS = {
     PilotStatus.Dead: ("KIA", "#3B2523", "#D9645E"),
@@ -216,6 +214,10 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
     def __init__(self, squadron_model: SquadronModel) -> None:
         super().__init__()
         self.squadron_model = squadron_model
+        #: The pilot the list is being read from the point of view of, when there is
+        #: one. The rows below him are washed with what *he* thinks of them -- his own
+        #: direction, because the question a roster answers is who he would fly with.
+        self.anchor: Optional[Pilot] = None
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
         return QSize(0, PILOT_ROW_HEIGHT)
@@ -233,6 +235,9 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
             painter.translate(rect.topLeft())
             width = rect.width()
 
+            tint = self._affinity_tint(pilot)
+            if tint is not None:
+                painter.fillRect(0, 0, width, PILOT_ROW_HEIGHT, tint)
             if selected:
                 painter.fillRect(0, 0, width, PILOT_ROW_HEIGHT, QColor(ROW_SELECTED))
                 painter.fillRect(0, 0, 3, PILOT_ROW_HEIGHT, QColor(BAR_SELECTED))
@@ -244,6 +249,22 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
             self._paint_identity(painter, pilot, selected)
             self._paint_notes(painter, pilot, width)
             self._paint_state(painter, pilot, width, selected)
+
+    def _affinity_tint(self, pilot: Pilot) -> Optional[QColor]:
+        """What the man the list is read from makes of this one, as a wash.
+
+        Nothing for the man himself, nothing when nobody is picked out, and nothing
+        for a pilot he has no opinion about -- only what is news gets painted.
+        """
+        anchor = self.anchor
+        if anchor is None or anchor is pilot:
+            return None
+        squadron = self.squadron_model.squadron
+        if not getattr(squadron, "friendship_in_play", False):
+            return None
+        return affinity_tint(
+            friendship.feeling(anchor, pilot), settings=squadron.settings
+        )
 
     # --- who he is ----------------------------------------------------------
 
@@ -357,6 +378,14 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
         if self.morale_shown_for(pilot):
             state = morale_rules.morale_state(pilot.morale, self.settings)
             lines.append(f"Morale: {state.name}")
+        if pilot.hardened and hardening.in_play(self.settings):
+            # It never comes off, so a high figure on a man whose morale is fine is a
+            # man who has already been through it and come out the other side.
+            relief = round(hardening.morale_relief(pilot.hardened, self.settings) * 100)
+            lines.append(
+                f"Hardened: {pilot.hardened} of {hardening.ceiling(self.settings)}"
+                f" — knocks land {relief}% lighter"
+            )
         status, _, detail, _ = self._status_of(pilot, False)
         lines.append(f"{status} {detail}".strip())
         note = self.note_for(pilot)
@@ -541,12 +570,41 @@ class PilotList(QListView):
             QItemSelectionModel.SelectionFlag.Select,
         )
 
+        if not fallen:
+            # Picking a man out washes the rest of the list with what he thinks of
+            # them, so a squadron's friendships can be read one pilot at a time.
+            self.selectionModel().currentChanged.connect(self._follow_selection)
+            self.selectionModel().selectionChanged.connect(
+                lambda *_: self._follow_selection(
+                    self.selectionModel().currentIndex(), QModelIndex()
+                )
+            )
+
+            # The list opens with the first man current, and that happened before
+            # the connections above, so nothing would have told the delegate.
+            self._follow_selection(self.selectionModel().currentIndex(), QModelIndex())
+
         # The rows light up under the cursor, which needs the view to follow it.
         self.setMouseTracking(True)
         self.setUniformItemSizes(True)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
         if fallen:
             self.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        else:
+            # Sending nine men on leave one at a time, each with its own dialog asking
+            # how long, is the kind of thing a squadron has every turn.
+            self.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+
+    def _follow_selection(self, current: QModelIndex, _previous: QModelIndex) -> None:
+        delegate = self.itemDelegate()
+        if not isinstance(delegate, PilotDelegate):
+            return
+        anchor = None
+        if current.isValid() and self.selectionModel().hasSelection():
+            anchor = self.squadron_model.pilot_at_index(current)
+        if anchor is not delegate.anchor:
+            delegate.anchor = anchor
+            self.viewport().update()
 
 
 class AutoAssignedTaskControls(QVBoxLayout):
@@ -778,6 +836,18 @@ INVENTORY_TILES = (
     ("INITIAL", "initial_aircraft", "#8E9DAA"),
 )
 
+#: The same treatment for the men: the ceiling, who is on the books, then the three
+#: reasons a pilot is not flying, and what is left. Available is the only one you act
+#: on, so it is the only one in green.
+ROSTER_TILES = (
+    ("MAX", "max", "#8E9DAA"),
+    ("CURRENT", "current", "#F2F7FA"),
+    ("ON LEAVE", "on_leave", "#B7C6D2"),
+    ("WOUNDED", "wounded", "#E0A86B"),
+    ("BROKEN", "broken", "#C08A72"),
+    ("AVAILABLE", "available", "#7FCF7F"),
+)
+
 
 def _section_label(text: str) -> QLabel:
     label = QLabel(text.upper())
@@ -851,6 +921,10 @@ class SquadronDialog(QDialog):
         self.inventory_tiles: dict[str, QLabel] = {}
         left_column.addLayout(self._build_inventory_tiles())
 
+        left_column.addWidget(_section_label("Pilots roster"))
+        self.roster_tiles: dict[str, QLabel] = {}
+        left_column.addLayout(self._build_roster_tiles())
+
         # Buying aircraft is only meaningful for the player's own squadrons.
         if self.squadron.player.is_blue:
             self.purchase_adapter: AircraftPurchaseAdapter = AircraftPurchaseAdapter(
@@ -918,10 +992,16 @@ class SquadronDialog(QDialog):
         self.pilot_list.selectionModel().selectionChanged.connect(
             self.on_selection_changed
         )
+        self.pilot_list.doubleClicked.connect(
+            partial(self.open_pilot, self.squadron_model)
+        )
         right_column.addWidget(self.pilot_list, stretch=3)
 
         right_column.addWidget(_section_label("KIA & discharged"))
         self.dead_pilot_list = PilotList(self.dead_squadron_model, fallen=True)
+        self.dead_pilot_list.doubleClicked.connect(
+            partial(self.open_pilot, self.dead_squadron_model)
+        )
         right_column.addWidget(self.dead_pilot_list, stretch=1)
 
         # Under the roster, not under the aircraft: these all act on a pilot.
@@ -938,7 +1018,7 @@ class SquadronDialog(QDialog):
 
     @staticmethod
     def _qsettings() -> QSettings:
-        return QSettings("DCS Retribution", "Qt UI")
+        return app_settings()
 
     def _restore_geometry(self) -> None:
         saved = self._qsettings().value(self.GEOMETRY_KEY)
@@ -1016,12 +1096,47 @@ class SquadronDialog(QDialog):
 
     def _build_inventory_tiles(self) -> QHBoxLayout:
         """Five figures instead of four lines of prose: they are read, not parsed."""
+        return self._build_tiles(
+            INVENTORY_TILES,
+            {a: str(getattr(self.squadron, a)) for _, a, _ in INVENTORY_TILES},
+            self.inventory_tiles,
+        )
+
+    def _build_roster_tiles(self) -> QHBoxLayout:
+        """The roster in the same shape as the aircraft, and read the same way."""
+        return self._build_tiles(
+            ROSTER_TILES, self._roster_figures(), self.roster_tiles
+        )
+
+    def _roster_figures(self) -> dict[str, str]:
+        """Who is on the books, and why each of them is not flying.
+
+        MAX is a dash when the campaign runs no pilot limit: there is a ceiling in the
+        settings, but nothing enforces it, and printing it would say otherwise.
+        """
+        squadron = self.squadron
+        pilots = squadron.living_pilots
+        return {
+            "max": str(squadron.pilot_limit) if squadron.pilot_limits_enabled else "—",
+            "current": str(len(pilots)),
+            "on_leave": str(sum(1 for pilot in pilots if pilot.on_leave)),
+            "wounded": str(sum(1 for pilot in pilots if pilot.wounded)),
+            "broken": str(len(squadron.refusing_pilots)),
+            "available": str(len(squadron.fit_for_duty)),
+        }
+
+    def _build_tiles(
+        self,
+        specs: tuple[tuple[str, str, str], ...],
+        figures: dict[str, str],
+        store: dict[str, QLabel],
+    ) -> QHBoxLayout:
         row = QHBoxLayout()
         row.setSpacing(6)
-        for label, attribute, colour in INVENTORY_TILES:
+        for label, attribute, colour in specs:
             tile = QVBoxLayout()
             tile.setSpacing(0)
-            value = QLabel(str(getattr(self.squadron, attribute)))
+            value = QLabel(figures[attribute])
             value.setAlignment(Qt.AlignmentFlag.AlignCenter)
             value.setStyleSheet(
                 f"font-family: Consolas, monospace; font-size: 20px;"
@@ -1038,7 +1153,7 @@ class SquadronDialog(QDialog):
             holder.setFixedHeight(64)
             holder.setStyleSheet(TILE_STYLE)
             row.addWidget(holder)
-            self.inventory_tiles[attribute] = value
+            store[attribute] = value
         return row
 
     def _build_roster_header(self) -> QHBoxLayout:
@@ -1049,20 +1164,30 @@ class SquadronDialog(QDialog):
         self.roster_summary.setStyleSheet("font-size: 12px; color: #8E9DAA;")
         row.addWidget(self.roster_summary)
         row.addStretch()
+        # A double click is the only way into a man's record, and nothing else on the
+        # window would tell anybody that.
+        opens = QLabel("double-click a pilot for his record")
+        opens.setStyleSheet("font-size: 11px; color: #4F6070;")
+        row.addWidget(opens)
+
         self._refresh_roster_summary()
         return row
 
     def _refresh_roster_summary(self) -> None:
-        pilots = self.squadron.living_pilots
-        wounded = sum(1 for p in pilots if p.wounded)
-        on_leave = sum(1 for p in pilots if p.on_leave)
-        available = len(pilots) - wounded - on_leave
-        parts = [f"<b>{len(pilots)}</b>", f"{available} available"]
-        if wounded:
-            parts.append(f"{wounded} wounded")
-        if on_leave:
-            parts.append(f"{on_leave} on leave")
-        self.roster_summary.setText(" · ".join(parts))
+        """How full the squadron is, in one figure pair.
+
+        What each of them is doing used to be spelled out here; the roster tiles on the
+        left say it in a form you read rather than parse, so this is left with the one
+        thing they do not answer at a glance -- how much room there is.
+        """
+        figures = self._roster_figures()
+        self.roster_summary.setText(
+            f"<b>{figures['current']}/{figures['max']}</b>"
+            if self.squadron.pilot_limits_enabled
+            else f"<b>{figures['current']}</b>"
+        )
+        for attribute, tile in getattr(self, "roster_tiles", {}).items():
+            tile.setText(figures[attribute])
 
     @staticmethod
     def _build_column_headers() -> QWidget:
@@ -1167,19 +1292,41 @@ class SquadronDialog(QDialog):
         self._parking_warning = dialog
         dialog.show()
 
+    def open_pilot(self, model: SquadronModel, index: QModelIndex) -> None:
+        """His own dialog, on a double click. The roll of the fallen opens too: a
+        dead man's record is most of what there is to read about him."""
+        if not index.isValid():
+            return
+        pilot = model.pilot_at_index(index)
+        dialog = open_once(
+            f"pilot:{pilot.id}",
+            lambda: PilotDialog(pilot, self.squadron.coalition.game, self),
+        )
+        if isinstance(dialog, PilotDialog):
+            dialog.pilot_changed.connect(self._pilot_changed)
+
+    def _pilot_changed(self) -> None:
+        """A cheat moved a man between the two lists, or renamed him in both."""
+        for model in (self.squadron_model, self.dead_squadron_model):
+            model.beginResetModel()
+            model.endResetModel()
+        self._refresh_roster_summary()
+        self.reset_button_states(self.pilot_list.currentIndex())
+
     def _open_overflow_squadron(self, href: str) -> None:
         squadron = self._overflow_squadrons.get(href)
         if squadron is None:
             return
-        dialog = SquadronDialog(
-            self.ato_model,
-            SquadronModel(squadron),
-            self.theater,
-            self.sim_controller,
-            self,
+        open_once(
+            f"squadron:{squadron.id}",
+            lambda: SquadronDialog(
+                self.ato_model,
+                SquadronModel(squadron),
+                self.theater,
+                self.sim_controller,
+                self,
+            ),
         )
-        self._child_dialogs.append(dialog)
-        dialog.show()
 
     @property
     def squadron(self) -> Squadron:
@@ -1332,21 +1479,51 @@ class SquadronDialog(QDialog):
             "Convert to AI" if pilot.player else "Convert to player"
         )
 
+    def selected_pilots(self) -> list[Pilot]:
+        """Every pilot under the selection, resolved before anything changes.
+
+        The model resets after each pilot it touches, so rows have to become men first
+        or the second one acted on is the wrong man.
+        """
+        rows = {
+            index.row() for index in self.pilot_list.selectionModel().selectedIndexes()
+        }
+        current = self.pilot_list.currentIndex()
+        if not rows and current.isValid():
+            rows = {current.row()}
+        pilots = []
+        for row in sorted(rows):
+            index = self.squadron_model.index(row, 0, QModelIndex())
+            if index.isValid():
+                pilots.append(self.squadron_model.pilot_at_index(index))
+        return pilots
+
     def toggle_leave(self) -> None:
-        """Grant leave for a length, or call a man back and pay for it."""
+        """Grant leave for a length, or call men back and pay for it.
+
+        The button follows the pilot under the cursor, and acts on everyone selected
+        who is in the same state as him: a mixed selection sends the ones who are here
+        away, or calls the ones who are away back, but never both at once.
+        """
         index = self.pilot_list.currentIndex()
         if not index.isValid():
             logging.error("Cannot toggle on leave state: no pilot is selected")
             return
-        pilot = self.squadron_model.pilot_at_index(index)
+        current = self.squadron_model.pilot_at_index(index)
+        pilots = [
+            pilot
+            for pilot in self.selected_pilots()
+            if pilot.on_leave == current.on_leave
+        ] or [current]
         turns = 0
-        if not pilot.on_leave:
+        if not current.on_leave:
             # For how long, rather than until you remember him: leave granted here now
             # runs down on its own like a wound.
+            who = pilots[0].name if len(pilots) == 1 else f"{len(pilots)} pilots"
             turns, ok = QInputDialog.getInt(
                 self,
                 "Send on leave",
-                f"How many turns of leave for {pilot.name}?",
+                f"How many turns of leave for {who}?",
                 morale_rules.DEFAULT_LEAVE_TURNS,
                 1,
                 morale_rules.MAX_LEAVE_TURNS,
@@ -1354,7 +1531,10 @@ class SquadronDialog(QDialog):
             if not ok:
                 return
         with report_errors("Could not change leave", self):
-            self.squadron_model.toggle_leave_state(index, turns)
+            for pilot in pilots:
+                # Room runs out as they go: a squadron at its ceiling cannot have
+                # everyone back at once, and the rest stay where they are.
+                self.squadron_model.toggle_leave_state_of(pilot, turns)
         self._refresh_roster_summary()
         self.reset_button_states(self.pilot_list.currentIndex())
 
@@ -1376,25 +1556,41 @@ class SquadronDialog(QDialog):
         )
 
     def discharge_pilot(self) -> None:
-        """Throw a pilot out. Asked about first: there is no getting him back."""
-        index = self.pilot_list.currentIndex()
-        if not index.isValid():
+        """Throw pilots out. Asked about first: there is no getting them back."""
+        pilots = self.selected_pilots()
+        if not pilots:
             logging.error("Cannot discharge: no pilot is selected")
             return
-        pilot = self.squadron_model.pilot_at_index(index)
-        rank = self.squadron.pilot_rank(pilot)
-        addressed = pilot.name if rank is None else f"{rank.abbreviation} {pilot.name}"
+        if len(pilots) == 1:
+            rank = self.squadron.pilot_rank(pilots[0])
+            addressed = (
+                pilots[0].name
+                if rank is None
+                else f"{rank.abbreviation} {pilots[0].name}"
+            )
+            question = (
+                f"Discharge {addressed} from {self.squadron}? "
+                "He leaves the squadron for good."
+            )
+        else:
+            # Named, not counted: discharging the wrong man is not undoable, and a
+            # number is not something you can check.
+            named = "\n".join(f"  {pilot.name}" for pilot in pilots)
+            question = (
+                f"Discharge {len(pilots)} pilots from {self.squadron}?\n\n{named}"
+                "\n\nThey leave the squadron for good."
+            )
         answer = QMessageBox.question(
             self,
-            "Discharge pilot",
-            f"Discharge {addressed} from {self.squadron}? "
-            "He leaves the squadron for good.",
+            "Discharge pilot" if len(pilots) == 1 else "Discharge pilots",
+            question,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
         if answer != QMessageBox.StandardButton.Yes:
             return
-        self.squadron_model.discharge_pilot(index)
+        for pilot in pilots:
+            self.squadron_model.discharge(pilot)
         self.dead_squadron_model.beginResetModel()
         self.dead_squadron_model.endResetModel()
         self._refresh_roster_summary()

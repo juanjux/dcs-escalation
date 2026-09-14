@@ -29,7 +29,7 @@ def _build_version_string() -> str:
     return "-".join(components)
 
 
-#: Current version of Retribution.
+#: Current version of Escalation.
 VERSION = _build_version_string()
 
 #: The latest version of the campaign format. Increment this version whenever all

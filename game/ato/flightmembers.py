@@ -67,7 +67,13 @@ class FlightMembers(IFlightRoster):
         if self.flight.squadron.aircraft.variant_id == "F-15I Ra'am":
             loadout.pylons[16] = Weapon.with_clsid("{IDF_MODS_PROJECT_F-15I_Raam_Dome}")
         for _ in range(new_size - self.max_size):
-            member = FlightMember(self.flight.squadron.claim_available_pilot(), loadout)
+            # Read again each time round: each new seat is filled knowing who the last
+            # one went to, which is what makes a crew grow together rather than four
+            # men being taken off the top of the list at once.
+            seated = [m.pilot for m in self.members if m.pilot is not None]
+            member = FlightMember(
+                self.flight.squadron.claim_available_pilot(seated), loadout
+            )
             member.use_custom_loadout = loadout.is_custom
             self.members.append(member)
 

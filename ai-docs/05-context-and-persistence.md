@@ -60,7 +60,7 @@ Freeform text the human types in a box in the Settings window ("play aggressivel
 ## AI intel level — reuse the real visibility setting, don't invent one
 
 `turn_context` always returns full **OPFOR (red)** detail. How much **OWNFOR
-(blue)** detail it returns must come from the **existing** Retribution setting, not
+(blue)** detail it returns must come from the **existing** Escalation setting, not
 a made-up flag:
 
 - **`Settings.map_coalition_visibility`** (`game/settings/settings.py:170`), type
@@ -83,7 +83,7 @@ Because that setting is player-centric, the OPFOR-AI design has two sane options
    `map_coalition_visibility`, for players who want to decouple AI difficulty from
    their own map mode. Only add this if option 1 proves too coarse.
 
-**"What red can detect"** must be sourced from Retribution's existing detection
+**"What red can detect"** must be sourced from Escalation's existing detection
 model — red's threat/detection zones and IADS/EWR coverage
 (`game.threat_zone_for`, the IADS network) plus what the **debrief** revealed (what
 blue actually flew last mission) — **not** by handing over blue's raw state. Build

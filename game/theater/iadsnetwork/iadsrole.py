@@ -2,8 +2,16 @@ from __future__ import annotations
 
 from enum import Enum
 
+from typing import Any
+
 from game.data.groups import GroupTask
-from game.utils import Distance
+from game.utils import Distance, meters, nautical_miles
+
+#: What the two reach when Escalation works a network out by distance rather than
+#: reading it from the campaign. Plugin options, so a theatre whose infrastructure is
+#: further apart than this can say so.
+DEFAULT_COMMS_RANGE_NM = 15.0
+DEFAULT_POWER_RANGE_NM = 35.0
 
 
 class IadsRole(Enum):
@@ -65,13 +73,22 @@ class IadsRole(Enum):
             return cls.COMMAND_CENTER
         return cls.NO_BEHAVIOR
 
-    @property
-    def connection_range(self) -> Distance:
+    def connection_range(self, settings: Any = None) -> Distance:
+        """How far this piece of infrastructure feeds, by distance.
+
+        Only consulted when the network is computed rather than read from the
+        campaign: a designer who wires an IADS by hand says what is connected to
+        what, and no range is applied to it.
+        """
         if self == IadsRole.CONNECTION_NODE:
-            return Distance(27780)  # 15nm
-        elif self == IadsRole.POWER_SOURCE:
-            return Distance(64820)  # 35nm
-        return Distance(0)
+            return nautical_miles(
+                _range_option(settings, "commsRangeNm", DEFAULT_COMMS_RANGE_NM)
+            )
+        if self == IadsRole.POWER_SOURCE:
+            return nautical_miles(
+                _range_option(settings, "powerRangeNm", DEFAULT_POWER_RANGE_NM)
+            )
+        return meters(0)
 
     @property
     def participate(self) -> bool:
@@ -88,3 +105,14 @@ class IadsRole(Enum):
             IadsRole.POWER_SOURCE,
             IadsRole.CONNECTION_NODE,
         ]
+
+
+def _range_option(settings: Any, mnemonic: str, default: float) -> float:
+    """The plugin option, or the default for a settings object that never had it."""
+    if settings is None:
+        return default
+    value = settings.plugin_option_or(f"skynetiads.{mnemonic}", default)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default

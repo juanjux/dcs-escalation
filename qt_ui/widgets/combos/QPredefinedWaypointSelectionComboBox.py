@@ -9,10 +9,10 @@ from game.missiongenerator.frontlineconflictdescription import (
 from game.theater.player import Player
 from game.theater.controlpoint import ControlPointType
 from game.utils import Distance
-from qt_ui.widgets.combos.QFilteredComboBox import QFilteredComboBox
+from qt_ui.widgets.searchablecombo import SearchableComboBox
 
 
-class QPredefinedWaypointSelectionComboBox(QFilteredComboBox):
+class QPredefinedWaypointSelectionComboBox(SearchableComboBox):
     def __init__(
         self,
         game: Game,
@@ -24,7 +24,7 @@ class QPredefinedWaypointSelectionComboBox(QFilteredComboBox):
         include_enemy=True,
         include_friendly=True,
     ):
-        super(QPredefinedWaypointSelectionComboBox, self).__init__(parent)
+        super().__init__(parent, placeholder="Type to find a waypoint…")
         self.game = game
         self.include_targets = include_targets
         self.include_airbases = include_airbases

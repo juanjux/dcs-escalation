@@ -3,18 +3,19 @@ import logging
 from PySide6.QtWidgets import QComboBox
 
 from game.squadrons import Squadron
+from qt_ui.widgets.searchablecombo import SearchableComboBox
 
 LIVERY_SET_TEXT = "Use livery-set from squadron's yaml"
 
 
-class SquadronLiverySelector(QComboBox):
+class SquadronLiverySelector(SearchableComboBox):
     """
     A combo box for selecting a squadron's livery.
     The combo box will automatically be populated with all available liveries.
     """
 
     def __init__(self, squadron: Squadron, update_squadron: bool = True) -> None:
-        super().__init__()
+        super().__init__(placeholder="Type to find a livery…")
         self.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
 
         self.squadron = squadron

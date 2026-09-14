@@ -1,0 +1,61 @@
+/* The selected waypoint, lit up: the same pin with a glow, so the one under the menu
+   is the one you are about to rename, move or delete. */
+.wp-marker-selected {
+  filter: drop-shadow(0 0 5px #ffff00) drop-shadow(0 0 2px #ffff00);
+}
+
+/* The target pin, red. Leaflet ships one marker image, so this is the blue one turned
+   round the colour wheel rather than a second file to keep in step with it. The
+   saturation and the darkening are what make it a red rather than the salmon a bare
+   hue rotation gives: CSS hue-rotate is a matrix approximation, not a true rotation. */
+.wp-marker-target {
+  filter: hue-rotate(140deg) saturate(5) brightness(0.7);
+}
+
+/* Selected and a target: both, in one filter, because a second rule would replace the
+   first rather than add to it. */
+.wp-marker-target.wp-marker-selected {
+  filter: hue-rotate(140deg) saturate(5) brightness(0.7)
+    drop-shadow(0 0 5px #ffff00) drop-shadow(0 0 2px #ffff00);
+}
+
+/* The waypoint tooltip: smaller than Leaflet's default, because at the zoom where it
+   turns permanent there is one of these on every waypoint of every selected flight. */
+.wp-tip {
+  font-size: 9.5px;
+  line-height: 1.2;
+  padding: 1px 4px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+/* Leaflet draws a little arrow sized for its own tooltip; at this size it is bigger
+   than the box it points out of. */
+.wp-tip.leaflet-tooltip-left::before,
+.wp-tip.leaflet-tooltip-right::before,
+.wp-tip.leaflet-tooltip-top::before,
+.wp-tip.leaflet-tooltip-bottom::before {
+  border-width: 4px;
+}
+
+/* The distance on a leg. Sits beside the line rather than on it, so the line stays
+   readable underneath. */
+.leg-distance {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: Consolas, monospace;
+  color: #f2f7fa;
+  background: #14202bd0;
+  border: 1px solid #3a4b5c;
+  border-radius: 2px;
+  padding: 0 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  width: max-content;
+}
+
+.leg-distance.to-target {
+  color: #ffd7d7;
+  border-color: #8e3030;
+  background: #2a1010d0;
+}

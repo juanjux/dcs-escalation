@@ -25,7 +25,7 @@ body:
       label: Affected versions
       multiple: true
       description: >
-        Select all DCS Retribution versions in which you have observed this bug.
+        Select all DCS Escalation versions in which you have observed this bug.
         You do not need to test all of them, but the information is useful if
         you have it.
 
@@ -102,8 +102,8 @@ body:
     attributes:
       label: Log file
       description: >
-        Attach the Retribution log file. The log file is located at
-        `<Retribution install directory>/logs/retribution.log`.
+        Attach the Escalation log file. The log file is located at
+        `<Escalation install directory>/logs/escalation.log`.
 
 
         You can attach files to the bug by dragging and dropping the file

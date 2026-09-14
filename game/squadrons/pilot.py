@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import unique, Enum
-from typing import Any
+from typing import Any, Optional
+from uuid import UUID, uuid4
 
 from faker import Faker
 
 from dcs.unit import Skill
 
+from game.squadrons import hardening
 from game.squadrons.morale import (
     MORALE_HISTORY_LIMIT,
     SORTIE_HISTORY_LIMIT,
@@ -18,9 +20,56 @@ from game.squadrons.morale import (
     apply as apply_morale,
 )
 
+#: What a pilot's kill log holds at most. Capped exactly as the morale log is: a
+#: campaign can run long enough for a good pilot to pass a hundred, the dialog shows
+#: the recent ones under a class, and a save should not carry every shot of a year.
+KILL_HISTORY_LIMIT = 150
+
+
+@dataclass(frozen=True)
+class Kill:
+    """One thing destroyed: what it was, when, and with what.
+
+    The counts in :attr:`PilotRecord.air_kills` are the summary; this is what a row
+    opens into. Kept as a list because the interesting part is the detail -- a Tor
+    killed with a HARM reads differently from one killed with a bomb.
+    """
+
+    what: str
+    #: "Air defence", "Armour", "Structures"... What the dialog groups ground kills
+    #: by. Empty for an air kill, which is grouped by the aircraft's own name.
+    kill_class: str = ""
+    turn: int = 0
+    weapon: str = ""
+    air: bool = False
+
+
+@dataclass(frozen=True)
+class KilledBy:
+    """Who ended it, with what, and when.
+
+    Kept in pieces rather than as the sentence the debriefing prints, because the
+    pilot dialog lays them out and a sentence would have to be taken apart again.
+    """
+
+    pilot_name: str = ""
+    squadron: str = ""
+    aircraft: str = ""
+    weapon: str = ""
+    friendly_fire: bool = False
+    turn: int = 0
+
 
 @dataclass
 class PilotRecord:
+    """Everything a campaign remembers about what one pilot did.
+
+    Every field defaults, and :meth:`__setstate__` fills in the ones a save written
+    before them does not carry. A dataclass keeps a plain default as a class
+    attribute, so those read through even without the setdefault; the mutable ones
+    need a factory and so genuinely need it.
+    """
+
     missions_flown: int = field(default=0)
 
     #: What the pilot has earned in the air, which is what decides his rank. A plain
@@ -29,10 +78,109 @@ class PilotRecord:
     #: raising.
     xp: int = field(default=0)
 
+    #: Sorties he came home from. Not the same as flown: the difference is how often
+    #: he was shot down, which is the more interesting of the two numbers.
+    missions_completed: int = field(default=0)
+
+    #: What he has shot down, by aircraft type, and what he has destroyed on the
+    #: ground, by what it was. Grouped rather than listed: a campaign can run to
+    #: hundreds of kills and the dialog asks for counts.
+    air_kills: dict[str, int] = field(default_factory=dict)
+    ground_kills: dict[str, int] = field(default_factory=dict)
+
+    #: How many aircraft he has lost, and how many of those he walked or was carried
+    #: away from. DCS reports no ejection of its own, so the first is every loss and
+    #: the second is every loss he was alive after.
+    aircraft_lost: int = field(default=0)
+    survived_losses: int = field(default=0)
+
+    #: Wounds taken and the turns they cost him, and the last one on its own: "one
+    #: wound, three turns" and "wounded last on turn nine" are different questions.
+    wounds: int = field(default=0)
+    turns_in_hospital: int = field(default=0)
+    last_wound_turn: int = field(default=0)
+    last_wound_turns: int = field(default=0)
+
+    #: Leave granted, and the turns of it. Open-ended leave is granted with no length
+    #: at all, so the count is the honest figure and the turns are what is known.
+    leaves_taken: int = field(default=0)
+    leave_turns_total: int = field(default=0)
+
+    #: Set once, when it is over.
+    killed_by: Optional[KilledBy] = field(default=None)
+
+    #: Every kill, most recent last, capped. The counts above are what is read at a
+    #: glance; this is what one of them opens into.
+    kills: list[Kill] = field(default_factory=list)
+
     def __setstate__(self, state: dict[str, Any]) -> None:
-        # Belt and braces for the same case: older saves carry no xp at all.
-        state.setdefault("xp", 0)
+        for name, default in (
+            ("xp", 0),
+            ("missions_completed", 0),
+            ("aircraft_lost", 0),
+            ("survived_losses", 0),
+            ("wounds", 0),
+            ("turns_in_hospital", 0),
+            ("last_wound_turn", 0),
+            ("last_wound_turns", 0),
+            ("leaves_taken", 0),
+            ("leave_turns_total", 0),
+            ("killed_by", None),
+        ):
+            state.setdefault(name, default)
+        for name in ("air_kills", "ground_kills"):
+            state.setdefault(name, {})
+        state.setdefault("kills", [])
         self.__dict__.update(state)
+
+    def note_kill(
+        self,
+        air: bool,
+        what: str,
+        kill_class: str = "",
+        turn: int = 0,
+        weapon: str = "",
+    ) -> None:
+        """One more of these: counted, and written down.
+
+        The count is what the dialog reads at a glance and is never trimmed. The
+        entry is what a row opens into, and the oldest go when there are too many:
+        the last hundred and fifty is the story, and the first of four hundred is
+        not.
+        """
+        if not what:
+            return
+        tally = self.air_kills if air else self.ground_kills
+        tally[what] = tally.get(what, 0) + 1
+
+        self.kills.append(Kill(what, kill_class, turn, weapon, air))
+        if len(self.kills) > KILL_HISTORY_LIMIT:
+            del self.kills[: len(self.kills) - KILL_HISTORY_LIMIT]
+
+    def kills_of(self, what: str) -> list[Kill]:
+        """The individual kills behind one row of the summary."""
+        return [kill for kill in self.kills if kill.what == what]
+
+    def kills_in(self, kill_class: str) -> list[Kill]:
+        """The individual kills behind one ground class."""
+        return [kill for kill in self.kills if kill.kill_class == kill_class]
+
+    def ground_kills_by_class(self) -> dict[str, int]:
+        """How many of each class, which is how the dialog groups the ground ones."""
+        counts: dict[str, int] = {}
+        for kill in self.kills:
+            if kill.air or not kill.kill_class:
+                continue
+            counts[kill.kill_class] = counts.get(kill.kill_class, 0) + 1
+        return counts
+
+    @property
+    def total_air_kills(self) -> int:
+        return sum(self.air_kills.values())
+
+    @property
+    def total_ground_kills(self) -> int:
+        return sum(self.ground_kills.values())
 
 
 @unique
@@ -70,6 +218,12 @@ class Pilot:
     #: save written before morale existed reads from the class.
     morale: int = field(default=MORALE_START)
 
+    #: What the bad weeks left behind, 0 upwards and never down. Earned a point or
+    #: three per turn spent Shaken or worse, and read by everything that decides how
+    #: hard the next one lands. A plain default, so a pilot from a save written before
+    #: it reads 0 from the class.
+    hardened: int = field(default=0)
+
     #: Turns of leave left, counted exactly like a wound.
     leave_turns: int = field(default=0)
 
@@ -103,7 +257,26 @@ class Pilot:
     #: been worked lately is what decides whether he asks for a rest.
     sorties_by_turn: list[int] = field(default_factory=list)
 
+    #: Who he is, for the things that have to survive a save. Everything inside one
+    #: pass keys on id(pilot) and should go on doing so; this exists because a
+    #: friendship outlives the process.
+    #:
+    #: compare=False is not optional. Pilot is an eq=True dataclass with no __eq__ of
+    #: its own, so a comparing field would quietly turn value-equality into
+    #: identity-equality everywhere -- and Squadron.claim_pilot exists precisely
+    #: because value-equality bites. repr=False because the repr is interpolated into
+    #: that method's error message and is long enough already.
+    id: UUID = field(init=False, default_factory=uuid4, compare=False, repr=False)
+
+    #: What he thinks of the other pilots, by their id, 0 to 10 and starting at 5.
+    #: Directional: this is his opinion of them, not theirs of him. An edge that lands
+    #: back exactly on Neutral is deleted, so a man who has met nobody carries nothing.
+    friendships: dict[UUID, float] = field(
+        init=False, default_factory=dict, compare=False, repr=False
+    )
+
     def __setstate__(self, state: dict[str, Any]) -> None:
+        state.setdefault("hardened", 0)
         state.setdefault("wounded_turns", 0)
         state.setdefault("wounded_on_turn", -1)
         state.setdefault("morale", MORALE_START)
@@ -116,6 +289,12 @@ class Pilot:
         state.setdefault("morale_last_turn", MORALE_START)
         state.setdefault("morale_log", [])
         state.setdefault("sorties_by_turn", [])
+        state.setdefault("friendships", {})
+        if "id" not in state:
+            # A plain if rather than setdefault: a default_factory field has no class
+            # attribute to fall back on, and setdefault would build a UUID on every
+            # unpickle only to throw it away.
+            state["id"] = uuid4()
         self.__dict__.update(state)
 
     @property
@@ -184,7 +363,13 @@ class Pilot:
         if not self.has_morale:
             return 0
         before = self.morale
-        self.morale = apply_morale(before, event, skill, settings)
+        self.morale = apply_morale(
+            before,
+            event,
+            skill,
+            settings,
+            relief=hardening.morale_relief(self.hardened, settings),
+        )
         return self.note_morale_change(before, event.reason, turn)
 
     def note_morale_change(self, before: int, reason: str, turn: int = -1) -> int:
@@ -216,6 +401,8 @@ class Pilot:
         self.status = PilotStatus.OnLeave
         self.leave_turns = turns
         self.leave_on_turn = turn
+        self.record.leaves_taken += 1
+        self.record.leave_turns_total += turns
         self.wants_leave = False
         self.leave_turns_requested = 0
 

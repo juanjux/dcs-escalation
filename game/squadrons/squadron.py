@@ -19,6 +19,8 @@ from game.theater import ParkingType
 from game.theater.player import Player
 from .pilot import Pilot, PilotStatus
 from game.dcs.skills import CADET_SKILL, SKILL_LADDER, skill_for_experience
+from game.squadrons import friendship
+from game.squadrons import hardening
 from game.squadrons import morale as morale_rules
 from game.squadrons.morale import TURNS_BEFORE_LEAVE_IS_MISSED, shifted_skill
 
@@ -74,6 +76,12 @@ class Squadron:
         init=False, hash=False, compare=False, default=None
     )
 
+    #: This squadron's own pilot ceiling, or None to follow the campaign setting.
+    #: Defaulted, so a save written before it existed reads as "follow the setting".
+    pilot_limit_override: Optional[int] = field(
+        init=False, hash=False, compare=False, default=None
+    )
+
     owned_aircraft: int = field(init=False, hash=False, compare=False, default=0)
     untasked_aircraft: int = field(init=False, hash=False, compare=False, default=0)
     pending_deliveries: int = field(init=False, hash=False, compare=False, default=0)
@@ -87,6 +95,14 @@ class Squadron:
 
     use_livery_set: bool = False  # if livery-set should be used when present
 
+    #: How well the squadron gets on with itself, worked out once a turn. It is O(n^2)
+    #: in a roster of twenty or thirty, which is nothing once and wasteful on every
+    #: repaint of the Air Wing list. Defaulted, so a squadron out of a save written
+    #: before friendship existed reads "not worked out yet" rather than raising.
+    _cohesion: Optional[float] = field(
+        init=False, hash=False, compare=False, repr=False, default=None
+    )
+
     def __setstate__(self, state: dict[str, Any]) -> None:
         if "id" not in state:
             state["id"] = uuid4()
@@ -98,6 +114,10 @@ class Squadron:
             state["initial_aircraft"] = state.get("owned_aircraft", 0)
         if "destroyed_aircraft" not in state:
             state["destroyed_aircraft"] = 0
+        if "pilot_limit_override" not in state:
+            # A campaign started before squadrons could carry their own ceiling keeps
+            # following the campaign setting, which is what it was doing anyway.
+            state["pilot_limit_override"] = None
         if "purchased_aircraft" not in state:
             state["purchased_aircraft"] = 0
         self.__dict__.update(state)
@@ -181,16 +201,107 @@ class Squadron:
             self.settings, "morale_enabled", True
         )
 
-    def mission_skill(self, pilot: Pilot) -> Skill:
-        """The rung he will actually fly at, once his state of mind is counted.
+    @property
+    def cohesion(self) -> Optional[float]:
+        """How well the squadron gets on with itself, on the 0-to-10 ruler.
+
+        Every directed pair among the living, averaged: the question the pilot picker
+        asks about one crew, asked about the whole roster. It is what answers "which of
+        my squadrons is a crew and which is a list of names".
+
+        None while friendship is off, because then there is nothing to say.
+        """
+        if not self.friendship_in_play:
+            return None
+        if self._cohesion is None:
+            self._cohesion = friendship.synergy(self.living_pilots)
+        return self._cohesion
+
+    @property
+    def friendship_in_play(self) -> bool:
+        """Friendship rides on Live Pilots and can be switched off on its own.
+
+        Switched off nothing reads the graph and nothing writes to it: no drift pass,
+        no tint in the picker, and every effect falls back to what it was in Tier III.
+        """
+        return friendship.in_play(self.settings)
+
+    def mission_skill(self, pilot: Pilot, flight: Optional[Flight] = None) -> Skill:
+        """The rung he will actually fly at, once how he is and who he is with count.
 
         Kept apart from :meth:`pilot_skill` on purpose. Rank is derived from that one,
         so shifting it for morale would demote a Major to Captain on a bad week and
         promote him back on a good one. Only the mission file reads this.
+
+        Without a flight it answers about the man alone, which is what the squadron
+        list and the planner want; with one it can see the formation he is in.
         """
-        if not self.morale_in_play or not pilot.has_morale:
-            return self.pilot_skill(pilot)
-        return shifted_skill(self.pilot_skill(pilot), pilot.morale, self.settings)
+        skill = self.pilot_skill(pilot)
+        if self.morale_in_play and pilot.has_morale:
+            skill = shifted_skill(skill, pilot.morale, self.settings)
+        return self._with_synergy(skill, flight)
+
+    def _with_synergy(self, skill: Skill, flight: Optional[Flight]) -> Skill:
+        """A rung for a formation that gets on.
+
+        The flight or the package, whichever reaches Close first -- one rung, never
+        two, however it was earned. It sits on top of whatever morale did, and that is
+        as far as this goes: two steps is a bigger lie than the engine should be told
+        about a cadet.
+        """
+        if flight is None or not self.friendship_in_play:
+            return skill
+        crews = [list(flight.roster.iter_pilots())]
+        package = getattr(flight, "package", None)
+        if package is not None:
+            crews.append(
+                [
+                    member
+                    for other in package.flights
+                    for member in other.roster.iter_pilots()
+                ]
+            )
+        for crew in crews:
+            value = self.formation_synergy(crew)
+            if value is not None and friendship.flies_a_rung_better(
+                value, self.settings
+            ):
+                return morale_rules.bumped_skill(skill, 1)
+        return skill
+
+    def formation_synergy(self, crew: Sequence[Optional[Pilot]]) -> Optional[float]:
+        """How well a formation gets on, with its leader weighted heaviest.
+
+        The figure :meth:`mission_skill` reads to decide whether they fly a rung above
+        their rank, and the one the planner is shown so it can crew for it. None while
+        friendship is off, or for a formation too small to have an opinion.
+        """
+        members = [member for member in crew if member is not None]
+        if not self.friendship_in_play or len(members) < 2:
+            return None
+        return friendship.synergy(members, self.leader_of(members), self.settings)
+
+    def leader_of(self, crew: Sequence[Optional[Pilot]]) -> Optional[Pilot]:
+        """The senior man in a formation, whose own relationships weigh heaviest.
+
+        Ranked rather than seated: spreading senior pilots one to a flight is supposed
+        to be worth more than stacking them in one, and that is only true if the man in
+        front is the one the formation is measured through. A package reaches across
+        squadrons and a pilot does not carry his own, so everyone here is read against
+        this squadron's ladder -- near enough to pick a leader by.
+        """
+        best: Optional[Pilot] = None
+        best_rung = -1
+        for pilot in crew:
+            if pilot is None:
+                continue
+            try:
+                rung = SKILL_LADDER.index(self.pilot_skill(pilot))
+            except ValueError:
+                rung = 0
+            if rung > best_rung:
+                best, best_rung = pilot, rung
+        return best
 
     def pilot_rank(self, pilot: Pilot) -> Optional[Rank]:
         """The rank the pilot holds, or None while Live Pilots is switched off.
@@ -259,25 +370,37 @@ class Squadron:
         self._recruit_pilots(1)
         return self.available_pilots.pop()
 
-    def claim_available_pilot(self) -> Optional[Pilot]:
+    def claim_available_pilot(self, alongside: Sequence[Pilot] = ()) -> Optional[Pilot]:
+        """Take a man off the list for a seat.
+
+        ``alongside`` is who he would be flying with, and it only ever orders the men
+        who already matched the player's preference about players and AI -- that still
+        decides who is eligible. Greedy rather than optimal: the first seat has nobody
+        to get on with, so the crew grows around whoever was at the top of the list.
+        Trying to group them is what was asked for, not building the best crew that
+        could be made out of the squadron.
+        """
         if not self.available_pilots:
             return self.claim_new_pilot_if_allowed()
 
         # For opfor, so player/AI option is irrelevant.
         if self.player != Player.BLUE:
-            return self.available_pilots.pop()
+            return self._take(
+                self._pick(self.available_pilots, alongside, self.available_pilots[-1])
+            )
 
         preference = self.settings.auto_ato_behavior
 
         # No preference, so the first pilot is fine.
         if preference is AutoAtoBehavior.Default:
-            return self.available_pilots.pop()
+            return self._take(
+                self._pick(self.available_pilots, alongside, self.available_pilots[-1])
+            )
 
         prefer_players = preference is AutoAtoBehavior.Prefer
-        for pilot in self.available_pilots:
-            if pilot.player == prefer_players:
-                self.available_pilots.remove(pilot)
-                return pilot
+        matching = [p for p in self.available_pilots if p.player == prefer_players]
+        if matching:
+            return self._take(self._pick(matching, alongside, matching[0]))
 
         # No pilot was found that matched the user's preference.
         #
@@ -289,6 +412,38 @@ class Squadron:
         if not prefer_players:
             return self.claim_new_pilot_if_allowed()
         return self.available_pilots.pop()
+
+    def _pick(
+        self, candidates: Sequence[Pilot], alongside: Sequence[Pilot], default: Pilot
+    ) -> Pilot:
+        """Who takes this seat: the senior man if it is the first -- seat zero is the
+        flight lead -- otherwise whoever the crew already seated gets on with best.
+
+        ``default`` wins every tie, so crewing is unchanged with Live Pilots off.
+        """
+        if len(candidates) < 2:
+            return default
+        if not alongside:
+            senior = min(candidates, key=self.rank_order)
+            if self.rank_order(senior) < self.rank_order(default):
+                return senior
+            return default
+        if not self.friendship_in_play:
+            return default
+        best = max(
+            candidates, key=lambda pilot: friendship.group_affinity(pilot, alongside)
+        )
+        if friendship.group_affinity(best, alongside) <= friendship.FRIENDSHIP_START:
+            return default
+        return best
+
+    def _take(self, pilot: Pilot) -> Pilot:
+        """Off the list by identity, for the reason :meth:`claim_pilot` explains."""
+        for index, candidate in enumerate(self.available_pilots):
+            if candidate is pilot:
+                del self.available_pilots[index]
+                break
+        return pilot
 
     def claim_pilot(self, pilot: Pilot) -> None:
         """Take this man off the list -- this man, not one who looks like him.
@@ -345,6 +500,9 @@ class Squadron:
         self.initial_aircraft = self.owned_aircraft
 
     def end_turn(self) -> None:
+        # Everything below moves somebody, and the drift moves everybody: worked out
+        # again the next time the Air Wing asks.
+        self._cohesion = None
         if self.destination is not None:
             self.relocate_to(self.destination)
         self.tend_the_wounded()
@@ -360,6 +518,9 @@ class Squadron:
         """
         if not self.morale_in_play:
             return
+        # Taken before anybody is moved: who is away at the same time as him must not
+        # depend on where he happens to sit in the roster.
+        away = [pilot for pilot in self.current_roster if pilot.on_leave]
         for pilot in list(self.current_roster):
             if not pilot.alive:
                 continue
@@ -371,7 +532,10 @@ class Squadron:
 
             if pilot.on_leave:
                 pilot.move_morale(
-                    morale_rules.ON_LEAVE, self.pilot_skill(pilot), self.settings, turn
+                    self._leave_event(pilot, away),
+                    self.pilot_skill(pilot),
+                    self.settings,
+                    turn,
                 )
                 # Served whether or not morale is his: leave the player granted
                 # himself still has to run out, or he never comes back.
@@ -387,6 +551,10 @@ class Squadron:
             # merely low, so asking afterwards would read the wrong number.
             was_at_rock_bottom = was <= morale_rules.REFUSES_TO_FLY_AT
 
+            # And a turn spent down there leaves something behind, on the same
+            # reading of the same figure.
+            hardening.harden(pilot, was, self.settings)
+
             pilot.turns_since_leave += 1
             if pilot.turns_since_leave > TURNS_BEFORE_LEAVE_IS_MISSED:
                 # The same cost every turn from the sixth on, not a compounding one.
@@ -397,18 +565,14 @@ class Squadron:
                     turn,
                 )
             before_drift = pilot.morale
-            pilot.morale = morale_rules.clamp(
-                pilot.morale + morale_rules.drift(pilot.morale)
-            )
+            pilot.morale = morale_rules.clamp(pilot.morale + self._drift_for(pilot))
             pilot.note_morale_change(before_drift, "time passing", turn)
 
             if was_at_rock_bottom:
                 pilot.turns_at_zero += 1
                 # A roll, not a countdown: every turn a man is left at the bottom is a
                 # turn he might not come back from, and rank is what holds him there.
-                if random.random() < morale_rules.desertion_chance(
-                    self.pilot_skill(pilot)
-                ):
+                if random.random() < self._desertion_chance(pilot):
                     logging.info(
                         f"{pilot.name} has deserted {self} after "
                         f"{pilot.turns_at_zero} turns at rock bottom"
@@ -437,6 +601,75 @@ class Squadron:
                 pilot.leave_turns_requested = morale_rules.requested_leave_turns(
                     pilot.morale
                 )
+
+    def _leave_event(
+        self, pilot: Pilot, away: Sequence[Pilot]
+    ) -> morale_rules.MoraleEvent:
+        """A turn of leave, and what the company of the others away with him is worth.
+
+        Worked out again every turn, which is the whole character of it: three men who
+        go together and come back on different turns each lose the bonus as the others
+        return, so the last week alone is worth an ordinary week. Nobody's leave is
+        lengthened or shortened by it -- only what the company does for him while it
+        lasts.
+        """
+        event = morale_rules.ON_LEAVE
+        if not self.friendship_in_play:
+            return event
+        others = [other for other in away if other is not pilot]
+        if not others:
+            return event
+        return event.scaled_by(
+            friendship.leave_multiplier(
+                friendship.mean_towards(pilot, others), self.settings
+            ),
+            self.settings,
+        )
+
+    def _drift_for(self, pilot: Pilot) -> int:
+        """His step back towards the middle, and what the company does to it.
+
+        A man who is struggling comes home faster for each close friend in the
+        squadron; a man who is flying high comes down faster for each one who cannot
+        stand him. Only ever faster, and never past the middle: the drift has somewhere
+        to be, and friendship decides how quickly he gets there rather than where it
+        ends.
+        """
+        step = morale_rules.drift(pilot.morale, self.settings)
+        if not step or not self.friendship_in_play:
+            return step
+        if pilot.morale < morale_rules.MORALE_START:
+            company = sum(
+                1
+                for other in self.living_pilots
+                if other is not pilot
+                and friendship.is_close(friendship.feeling(pilot, other), self.settings)
+            )
+        else:
+            company = sum(
+                1
+                for other in self.living_pilots
+                if other is not pilot
+                and friendship.is_hostile(
+                    friendship.feeling(other, pilot), self.settings
+                )
+            )
+        distance = abs(pilot.morale - morale_rules.MORALE_START)
+        moved = round(step * friendship.drift_help(company, self.settings))
+        return max(-distance, min(distance, moved))
+
+    def _desertion_chance(self, pilot: Pilot) -> float:
+        """How likely he is to walk away this turn.
+
+        Rank is what held him in his seat until now. The man in the next bunk is the
+        better half of the story.
+        """
+        chance = morale_rules.desertion_chance(self.pilot_skill(pilot))
+        if not self.friendship_in_play:
+            return chance
+        return chance * friendship.desertion_modifier(
+            friendship.mean_towards(pilot, self.living_pilots), self.settings
+        )
 
     def spare_pilots(self, excluding: Optional[Pilot] = None) -> int:
         """Who would still be available if this man were let go.
@@ -483,6 +716,18 @@ class Squadron:
                 self.coalition.game.turn,
             )
 
+    def unfilled_pilot_slots(self) -> int:
+        """How many more men this squadron could hold, or 0 with limits off.
+
+        The campaign setting is a ceiling, and changing it mid-campaign does nothing
+        on its own -- nobody is recruited into the room it just made, and nobody is
+        removed when it shrinks. This is the number the player needs to see to know
+        that, and to act on it.
+        """
+        if not self.pilot_limits_enabled:
+            return 0
+        return max(0, self._number_of_unfilled_pilot_slots)
+
     def discharge(self, pilot: Pilot) -> None:
         """Throw a pilot out. He leaves the roster and joins the roll below it."""
         pilot.discharge()
@@ -494,6 +739,34 @@ class Squadron:
         turn = self.coalition.game.turn
         for pilot in self.wounded_pilots:
             pilot.serve_a_turn_wounded(turn)
+            if not pilot.wounded:
+                self._note_recovery(pilot, turn)
+
+    def _note_recovery(self, pilot: Pilot, turn: int) -> None:
+        """He walked out of the hospital, and the squadron got him back.
+
+        The mirror of the wound, weighted the same way: the men who took his being
+        carried out hardest are the ones who are gladdest to see him. The flight he was
+        hurt in is long gone by now -- the ATO is cleared between turns -- so this is
+        the squadron's, which is who carried the loss of him in the first place.
+        """
+        if not self.morale_in_play:
+            return
+        for mate in self.living_pilots:
+            if mate is pilot or not mate.has_morale:
+                continue
+            times = 1
+            if self.friendship_in_play:
+                times = friendship.grief_times(
+                    1, friendship.feeling(mate, pilot), self.settings
+                )
+            for _ in range(times):
+                mate.move_morale(
+                    morale_rules.SQUADRON_RECOVERED,
+                    self.pilot_skill(mate),
+                    self.settings,
+                    turn,
+                )
 
     def replenish_lost_pilots(self) -> None:
         if self.pilot_limits_enabled and self.replenish_count > 0:
@@ -586,6 +859,15 @@ class Squadron:
 
     @property
     def pilot_limit(self) -> int:
+        """How many pilots this squadron may hold.
+
+        The campaign setting is the default for every squadron; a squadron may carry
+        its own figure instead. There was a setting for the limit and nowhere to set a
+        squadron's own, so a wing of sixteen-man squadrons could not have one small
+        training unit or one oversized front-line outfit.
+        """
+        if self.pilot_limit_override is not None:
+            return self.pilot_limit_override
         return self.settings.squadron_pilot_limit
 
     @property
@@ -650,6 +932,29 @@ class Squadron:
     @property
     def number_of_available_pilots(self) -> int:
         return len(self.available_pilots)
+
+    @property
+    def refusing_pilots(self) -> list[Pilot]:
+        """The men at rock bottom, who will not take a seat however free it is."""
+        if not self.morale_in_play:
+            return []
+        return [p for p in self.living_pilots if p.refuses_to_fly]
+
+    @property
+    def fit_for_duty(self) -> list[Pilot]:
+        """Who could be given a seat if one were free.
+
+        Not the same question as :attr:`available_pilots`, which is the untasked pool
+        and so shrinks as you plan. This is what the counts the player reads mean: on
+        the books, not hurt, not away, and willing. The three displays that answer it
+        each subtracted their own idea of who was out, and the one that forgot the
+        refusers said a squadron had seven men for four seats.
+        """
+        return [
+            pilot
+            for pilot in self.living_pilots
+            if not pilot.wounded and not pilot.on_leave and not pilot.refuses_to_fly
+        ]
 
     def can_provide_pilots(self, count: int) -> bool:
         return not self.pilot_limits_enabled or self.number_of_available_pilots >= count

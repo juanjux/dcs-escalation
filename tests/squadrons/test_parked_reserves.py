@@ -25,6 +25,10 @@ class _Squadron:
     def pilot_skill(self, pilot: Pilot) -> Any:
         return CADET_SKILL
 
+    def leader_of(self, crew: Any) -> Any:
+        """Everybody here holds the same rank, so it is the first man in the list."""
+        return next((pilot for pilot in crew if pilot is not None), None)
+
     def pilot_rank(self, pilot: Pilot) -> Any:
         return None
 

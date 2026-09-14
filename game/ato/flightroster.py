@@ -40,12 +40,9 @@ class FlightRoster(IFlightRoster):
             )
             self.pilots = self.pilots[:new_size]
             return
-        self.pilots.extend(
-            [
-                self.squadron.claim_available_pilot()
-                for _ in range(new_size - self.max_size)
-            ]
-        )
+        for _ in range(new_size - self.max_size):
+            seated = [pilot for pilot in self.pilots if pilot is not None]
+            self.pilots.append(self.squadron.claim_available_pilot(seated))
 
     def set_pilot(self, index: int, pilot: Optional[Pilot]) -> None:
         if pilot is not None:

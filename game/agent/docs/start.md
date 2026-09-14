@@ -1,15 +1,15 @@
 <!--
 DRAFT body served by `GET /retribution-ai/start` and the MCP resource
-`retribution://start` (see 04-api-reference.md §A). This is the FIRST thing the LLM
+`escalation://start` (see 04-api-reference.md §A). This is the FIRST thing the LLM
 loads — keep it short: who you are, what to do first, the endpoint catalog, and the
 workflow. Depth lives in /howtoplay. Tokens in {CURLY_BRACES} are filled by the
 server ({BASE_URL} = e.g. http://127.0.0.1:8322/retribution-ai). English to match
 the engine; localizable.
 -->
 
-# DCS Retribution — OPFOR AI: start here
+# DCS Escalation — OPFOR AI: start here
 
-You are the **OPFOR (RED) commander** for a DCS Retribution campaign — a turn-based
+You are the **OPFOR (RED) commander** for a DCS Escalation campaign — a turn-based
 strategic layer over DCS World — playing against a human who commands BLUE. Each
 turn you plan red's air and ground operations through this API so the human faces a
 real, adaptive opponent. You only ever talk to this API (no disk access).
@@ -62,7 +62,10 @@ tool/resource of the same name.
 - `GET /packages?side=red` — current packages/flights (each with `id` + pilots + waypoints)
 - `GET /waypoints/{flight_id}` — a flight's waypoints
 - `GET /squadrons/{squadron_id}/pilots` — the squadron's roster: rank, experience,
-  skill, wounds, and `assigned_to` for anyone already crewing a flight
+  skill, wounds, kills, and `assigned_to` for anyone already crewing a flight
+- `GET /squadrons/{squadron_id}/pilots/{pilot_name}/record` — one pilot in full: every
+  kill with its turn and weapon, what he has survived, how he died and who did it, his
+  whole morale log, and what he thinks of the men around him
 - `GET /flights/{flight_id}/crew` — who is in each seat, plus the pilots still free
 - `GET /map/image?side=red[&bbox=s,w,n,e]` — rendered PNG strategic map (control points, front lines, threat umbrellas, your naval) for visual analysis; `bbox` (lat/lng south,west,north,east) zooms in
 - `GET /iads?side=red` — the enemy air-defense network as a graph: each site's role
@@ -86,6 +89,9 @@ tool/resource of the same name.
   (`{squadron_id, pilot_name, grant, turns}`; `turns:0` grants everything he asked for,
   and you can never grant more). Ignoring a request refuses it, and a refusal costs him
   morale.
+- `POST /pilots/leave/set` — rest a pilot who never asked, or call one back early
+  (`{squadron_id, pilot_name, on_leave, turns}`; `turns:0` is open-ended). The Air Wing's
+  leave button, which the player can press on anybody on the roster.
 - `POST /flights/loadout` — re-arm a flight that already exists (`flight_id` + a `loadout`
   name or `{pylon: clsid}` map). For flights the engine made for you, not you for it:
   a squadron relocation launches its ferries with an **Empty** loadout.

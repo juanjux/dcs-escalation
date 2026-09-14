@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 from collections import defaultdict
 from typing import Iterator, Optional, Sequence, TYPE_CHECKING, Any
+from uuid import UUID
 
 from game.ato.closestairfields import ObjectiveDistanceCache
 from game.dcs.aircrafttype import AircraftType
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
     from game.game import Game
     from game.theater.player import Player
     from ..ato.flighttype import FlightType
+    from .pilot import Pilot
     from .squadron import Squadron
 
 
@@ -160,6 +162,20 @@ class AirWing:
 
     def iter_squadrons(self) -> Iterator[Squadron]:
         return itertools.chain.from_iterable(self.squadrons.values())
+
+    def pilot_index(self) -> dict[UUID, tuple[Squadron, Pilot]]:
+        """Every pilot in the wing by id, for turning a friendship into a man.
+
+        Built on the spot rather than kept: the roster changes whenever anybody is
+        recruited, killed, transferred or thrown out, and an index that has gone stale
+        answers with a man who is not there any more. A wing is a few hundred pilots,
+        so building one is cheaper than keeping one honest.
+        """
+        index: dict[UUID, tuple[Squadron, Pilot]] = {}
+        for squadron in self.iter_squadrons():
+            for pilot in squadron.current_roster:
+                index[pilot.id] = (squadron, pilot)
+        return index
 
     def squadron_at_index(self, index: int) -> Squadron:
         return list(self.iter_squadrons())[index]

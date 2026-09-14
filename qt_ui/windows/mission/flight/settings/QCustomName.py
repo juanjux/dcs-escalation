@@ -1,21 +1,23 @@
 from typing import Optional
 
-from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QLineEdit, QLabel, QMessageBox
+from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QMessageBox, QWidget
 
 from game.ato.flight import Flight
 
 
-class QFlightCustomName(QGroupBox):
+class QFlightCustomName(QWidget):
+    """Just the field. Its caption is on the card."""
+
     def __init__(self, flight: Flight):
-        super(QFlightCustomName, self).__init__()
+        super().__init__()
 
         self.flight = flight
 
         self.layout = QHBoxLayout()
-        self.custom_name_label = QLabel(f"Custom Name:")
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.custom_name_input = QLineEdit(flight.custom_name)
+        self.custom_name_input.setPlaceholderText("Leave empty for the generated name")
         self.custom_name_input.textChanged.connect(self.on_change)
-        self.layout.addWidget(self.custom_name_label)
         self.layout.addWidget(self.custom_name_input)
         self.setLayout(self.layout)
 

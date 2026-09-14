@@ -7,6 +7,7 @@ from typing import Dict, Iterable, Optional, Set, TYPE_CHECKING
 
 from game.ato.airtaaskingorder import AirTaskingOrder
 from game.ato.closestairfields import ObjectiveDistanceCache
+from game.ato.flightplans.refuelneed import package_needs_tanker
 from game.ato.flighttype import FlightType
 from game.ato.package import Package
 from game.commander.missionproposals import EscortType, ProposedFlight, ProposedMission
@@ -38,6 +39,7 @@ class PackageFulfiller:
         self.coalition = coalition
         self.theater = theater
         self.flight_db = flight_db
+        self.settings = settings
         self.player_missions_asap = settings.auto_ato_player_missions_asap
         self.default_start_type = settings.default_start_type
 
@@ -140,6 +142,12 @@ class PackageFulfiller:
                 list(flight.flight_plan.escorted_waypoints())
             ):
                 threats[EscortType.Sead] = True
+        # Refuel was never set here, so the tanker every DEAD/OCA/Strike task
+        # proposed was pruned before it could be planned and the three settings
+        # that asked for it did nothing at all. A tanker is needed when something in
+        # the package cannot make its plan on what it takes off with.
+        if package_needs_tanker(builder.package, self.settings):
+            threats[EscortType.Refuel] = True
         return threats
 
     def can_plan_escort(self, type: EscortType) -> bool:
@@ -238,6 +246,15 @@ class PackageFulfiller:
                         self.plan_flight(
                             mission, escort, builder, missing_types, purchase_multiplier
                         )
+
+            # A tanker is a convenience, not a requirement: the package flies without
+            # one, its flights just have less margin. Leaving REFUELING in here scrubs
+            # the whole Strike/OCA/DEAD package -- main flights included -- the moment
+            # the wing's one or two tanker airframes are already tasked, which is most
+            # of the turn. It could not happen before, because the tanker escort was
+            # never attempted at all. plan_flight has already filed the purchase
+            # request, so the wing still buys one for next turn.
+            missing_types.discard(FlightType.REFUELING)
 
             # Check again for unavailable aircraft. If the escort was required and
             # none were found, scrub the mission.

@@ -1,5 +1,5 @@
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
@@ -15,6 +15,11 @@ from game.utils import meters, mps
 from game.weather.atmosxliveweather import LiveWeather
 from game.weather.conditions import Conditions
 from qt_ui import uiconstants as CONST
+
+#: The METAR refresh button. Big enough to be an easy target between planning and
+#: take-off, with the icon inset so the button reads as a button and not as a glyph.
+BUTTON_PX = 44
+ICON_PX = 24
 
 
 def forecast_summary(conditions: Conditions) -> tuple[str, str, str, str]:
@@ -161,17 +166,15 @@ class QWeatherWidget(QGroupBox):
     def makeRefreshButton(self) -> None:
         """A button to fetch the observation again, hidden unless that means anything."""
         self.refresh_button = QToolButton()
-        self.refresh_button.setText("⟳")
+        # A drawn icon rather than U+27F3: the glyph fell back to whatever font had
+        # it, which rendered at the wrong weight and sat off the button's centre.
+        self.refresh_button.setIcon(QIcon(CONST.ICONS["Reload"]))
+        self.refresh_button.setIconSize(QSize(ICON_PX, ICON_PX))
         self.refresh_button.setToolTip(
             "Fetch the current METAR again and use it for this turn."
         )
         self.refresh_button.setAutoRaise(True)
-        # The glyph renders at the panel's small label size otherwise, which is far
-        # too fiddly a target for a button you press between planning and take-off.
-        font = self.refresh_button.font()
-        font.setPointSize(20)
-        self.refresh_button.setFont(font)
-        self.refresh_button.setFixedSize(QSize(40, 40))
+        self.refresh_button.setFixedSize(QSize(BUTTON_PX, BUTTON_PX))
         self.refresh_button.clicked.connect(self.refresh_requested.emit)
         self.refresh_button.hide()
         self.layout.addWidget(

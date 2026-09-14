@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import typing
 from datetime import timedelta
+from itertools import chain
 from typing import TYPE_CHECKING, Any
 
 from dcs.countries import countries_by_name
@@ -16,7 +17,7 @@ from game.data.doctrine import MODERN_DOCTRINE, COLDWAR_DOCTRINE, WWII_DOCTRINE
 from game.squadrons import morale
 from game.theater import ParkingType, SeasonalConditions, Airfield
 from game.theater.player import Player
-from game.theater.theatergroundobject import ShipGroundObject
+from game.theater.theatergroundobject import ShipGroundObject, TheaterGroundObject
 
 if TYPE_CHECKING:
     from game import Game
@@ -47,17 +48,28 @@ class Migrator:
         self._reconcile_available_pilots()
         self._clear_leave_requests_from_the_wounded()
         self._restate_the_morale_numbers()
+        self._collapse_the_tanker_options()
         self._update_weather()
         self._update_tgos()
+        self._restore_pruned_iads_nodes()
+        self._relabel_formation_waypoints()
         try_set_attr(self.game.settings, "motorpool_enabled", True)
         try_set_attr(self.game.settings, "motorpool_spawn_cap", 10)
         self._ensure_motorpool_tgos()
+        self._register_new_tgos()
         self._reload_terrain()
         self._update_theater()
         self._update_campaign_name()
 
         # TODO: remove in due time as this is supposedly fixed
         self.game.settings.nevatim_parking_fix = False
+
+        from game.missiongenerator.motorpoolpopulator import MotorpoolPopulator
+
+        # Re-home only. Upstream #960 made the motorpool groups ephemeral on purpose:
+        # they are filled at mission generation (and on demand by the serializer), not
+        # written into the save, so populating here would persist them.
+        MotorpoolPopulator(self.game)._rehome_motorpools()
 
     def _update_doctrine(self) -> None:
         doctrines = [
@@ -174,7 +186,7 @@ class Migrator:
     def _restate_the_morale_numbers(self) -> None:
         """Move a campaign in progress onto the re-weighed morale figures.
 
-        The fifteen event sizes are settings, and settings ride inside the save, so a
+        The event sizes are settings, and settings ride inside the save, so a
         campaign started before they were re-weighed would keep playing by the old ones
         for ever. Only the ones still sitting on the previous default are moved: a
         figure the player set himself is his.
@@ -190,6 +202,30 @@ class Migrator:
             moved.append(f"{event.key} {held} -> {event.default}")
         if moved:
             logging.info("Morale event sizes brought up to date: %s", "; ".join(moved))
+
+    #: The three per-task tanker options this replaced.
+    TANKER_OPTIONS = (
+        "autoplan_tankers_for_strike",
+        "autoplan_tankers_for_oca",
+        "autoplan_tankers_for_dead",
+    )
+
+    def _collapse_the_tanker_options(self) -> None:
+        """One option where there were three, honouring a campaign that said no.
+
+        The three never did anything -- the fulfiller pruned the tanker they asked
+        for -- but a player who turned them all off said what he wanted, so the one
+        that replaces them starts off for him. Any of them still on reads as
+        "tankers, yes", which is the new option's default anyway.
+        """
+        settings = self.game.settings
+        held = [getattr(settings, name, None) for name in self.TANKER_OPTIONS]
+        for name in self.TANKER_OPTIONS:
+            if hasattr(settings, name):
+                delattr(settings, name)
+        if held and all(value is False for value in held):
+            settings.plan_refuelling_when_needed = False
+            logging.info("Tanker auto-planning was off in all three tasks; kept off")
 
     def _clear_leave_requests_from_the_wounded(self) -> None:
         """A pilot cannot be asking for leave from a hospital bed.
@@ -320,21 +356,53 @@ class Migrator:
                     try_set_attr(sdef, "radio_presets", {})
 
     def _update_transfers(self) -> None:
+        # Track transfers across all coalitions to detect the same object in
+        # more than one coalition's containers.
+        global_seen: set[int] = set()
         for coalition in self.game.coalitions:
-            transfers = coalition.transfers
-            for transfer in transfers.pending_transfers:
-                self._normalize_transfer_player(transfer)
-            for convoy in transfers.convoys:
-                for transfer in convoy.transfers:
-                    self._normalize_transfer_player(transfer)
-            for cargo_ship in transfers.cargo_ships:
-                for transfer in cargo_ship.transfers:
-                    self._normalize_transfer_player(transfer)
+            self._normalize_transfers_for_coalition(coalition, global_seen)
+
+    def _normalize_transfers_for_coalition(
+        self, coalition: Any, global_seen: set[int]
+    ) -> None:
+        """Normalize transfer player ownership for a coalition's transfers.
+
+        Traverses the pending list plus convoy/cargo aliases, deduplicating
+        transfer objects by identity. Missing and legacy-boolean owners are set
+        from the containing coalition. An existing enum owner that conflicts
+        with its sole container, or the same transfer reachable from more than
+        one coalition, fails with a diagnostic.
+        """
+        transfers = coalition.transfers
+        aliased = chain.from_iterable(c.transfers for c in transfers.convoys)
+        shipped = chain.from_iterable(c.transfers for c in transfers.cargo_ships)
+        seen: set[int] = set()
+        all_transfers: list[Any] = []
+        for transfer in chain(transfers.pending_transfers, aliased, shipped):
+            if id(transfer) not in seen:
+                seen.add(id(transfer))
+                all_transfers.append(transfer)
+
+        for transfer in all_transfers:
+            if id(transfer) in global_seen:
+                raise RuntimeError(
+                    f"Transfer {transfer} is reachable from more than one coalition"
+                )
+            global_seen.add(id(transfer))
+
+        for transfer in all_transfers:
+            self._normalize_single_transfer_player(transfer, coalition)
 
     @staticmethod
-    def _normalize_transfer_player(transfer: Any) -> None:
-        if hasattr(transfer, "player") and isinstance(transfer.player, bool):
-            transfer.player = Player.BLUE if transfer.player else Player.RED
+    def _normalize_single_transfer_player(transfer: Any, coalition: Any) -> None:
+        owner = getattr(transfer, "player", None)
+        if owner is None or isinstance(owner, bool):
+            transfer.player = coalition.player
+        elif owner != coalition.player:
+            raise RuntimeError(
+                f"Transfer {transfer} has owner {owner} but is in the "
+                f"{coalition.player} coalition"
+            )
 
     @typing.no_type_check
     def _update_factions(self) -> None:
@@ -400,6 +468,44 @@ class Migrator:
             if isinstance(go, ShipGroundObject):
                 try_set_attr(go, "target_position", None)
 
+    def _restore_pruned_iads_nodes(self) -> None:
+        """Put back the IADS nodes a destroyed site used to be dropped from.
+
+        A site with nothing alive was taken out of the network altogether, and its
+        links went off the map with it -- so in a campaign that has been fought in, the
+        breaks you most want to see are the ones that are missing. The code no longer
+        prunes, but the damage is already in the save: the nodes and their connection
+        ids are gone, and nothing recreates them.
+
+        So the network is rebuilt once, from the campaign's own configuration and the
+        objectives as they stand, which is exactly what happens when a campaign starts.
+        Once is enough -- it cannot be pruned again -- and the flag says it has been
+        done, so a save that has already been through here keeps the network it has.
+        """
+        network = self.game.theater.iads_network
+        if getattr(network, "keeps_destroyed_nodes", False):
+            return
+        network.keeps_destroyed_nodes = True
+        before = len(network.nodes)
+        network.nodes = []
+        network.ground_objects = {}
+        network.initialize_network(iter(self.game.theater.ground_objects))
+        logging.info(
+            "IADS network rebuilt to restore pruned nodes: "
+            f"{before} -> {len(network.nodes)} nodes"
+        )
+
+    def _relabel_formation_waypoints(self) -> None:
+        """Join and split are the package's, not the flight's.
+
+        A flight that is the whole package has nobody to meet, so those two waypoints
+        read as nav points now. Flight plans are saved with the game, so the ones
+        already built carry the old names until they are rebuilt.
+        """
+        for coalition in (self.game.blue, self.game.red):
+            for package in coalition.ato.packages:
+                package.label_formation_waypoints()
+
     def _ensure_motorpool_tgos(self) -> None:
         from game.data.groups import GroupTask
         from game.naming import namegen
@@ -408,25 +514,80 @@ class Migrator:
 
         if not self.game.settings.motorpool_enabled:
             return
-        for cp in self.game.theater.controlpoints:
-            locations = getattr(cp.preset_locations, "motorpools", [])
-            if not locations:
-                continue
-            if any(isinstance(go, MotorpoolGroundObject) for go in cp.ground_objects):
-                continue
-            for location in locations:
+        control_points = self.game.theater.controlpoints
+        from game.missiongenerator.motorpoolpopulator import motorpool_identity
+
+        authored = {
+            motorpool_identity(location.original_name, location)
+            for cp in control_points
+            for location in getattr(cp.preset_locations, "motorpools", [])
+        }
+        existing: dict[tuple[str, float, float, float], MotorpoolGroundObject] = {}
+        identity: tuple[str, float, float, float]
+        for cp in control_points:
+            for tgo in cp.ground_objects:
+                if not isinstance(tgo, MotorpoolGroundObject):
+                    continue
+                identity = (
+                    tgo.original_name,
+                    tgo.position.x,
+                    tgo.position.y,
+                    tgo.heading.degrees,
+                )
+                if identity in authored:
+                    existing.setdefault(identity, tgo)
+
+        # Remove stale and duplicate persisted references before ensuring every
+        # current authored marker has exactly one surviving TGO.
+        seen: set[MotorpoolGroundObject] = set()
+        for cp in control_points:
+            retained: list[TheaterGroundObject] = []
+            for tgo in cp.connected_objectives:
+                if not isinstance(tgo, MotorpoolGroundObject):
+                    retained.append(tgo)
+                    continue
+                identity = (
+                    tgo.original_name,
+                    tgo.position.x,
+                    tgo.position.y,
+                    tgo.heading.degrees,
+                )
+                if existing.get(identity) is tgo and tgo not in seen:
+                    retained.append(tgo)
+                    seen.add(tgo)
+            cp.connected_objectives[:] = retained
+
+        for cp in control_points:
+            for location in getattr(cp.preset_locations, "motorpools", []):
+                identity = motorpool_identity(location.original_name, location)
+                if identity in existing:
+                    continue
                 name = namegen.random_objective_name()
                 warn_if_motorpool_inside_capture_zone(name, location, cp)
-                cp.connected_objectives.append(
-                    MotorpoolGroundObject(
-                        # Codename like every other TGO; the "motorpool" category
-                        # label already says what it is.
-                        name,
-                        location,
-                        cp,
-                        GroupTask.MOTORPOOL,
-                    )
+                tgo = MotorpoolGroundObject(
+                    # Codename like every other TGO; the "motorpool" category
+                    # label already says what it is.
+                    name,
+                    location,
+                    cp,
+                    GroupTask.MOTORPOOL,
                 )
+                cp.connected_objectives.append(tgo)
+                existing[identity] = tgo
+
+    def _register_new_tgos(self) -> None:
+        """Put every objective in the lookup the map and the API read.
+
+        db.tgos is filled once, at turn 0, so an objective added to a campaign already
+        under way -- a motorpool the step above just created, anything a later
+        migration adds -- was never in it. Clicking one asked the server for a UUID it
+        did not know and the info window never opened. Last of the migration steps, so
+        it catches whatever the others made.
+        """
+        for cp in self.game.theater.controlpoints:
+            for tgo in cp.connected_objectives:
+                if tgo.id not in self.game.db.tgos.objects:
+                    self.game.db.tgos.add(tgo.id, tgo)
 
     def _reload_terrain(self) -> None:
         t = self.game.theater.terrain

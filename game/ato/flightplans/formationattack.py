@@ -11,7 +11,10 @@ from dcs import Point
 
 from game.flightplan import HoldZoneGeometry
 from game.theater import MissionTarget, TheaterGroundObject
+from game.theater import MissionTarget
+from game.theater.theatergroundobject import MotorpoolGroundObject
 from game.utils import nautical_miles, Speed, feet
+from .refuelneed import needs_refuelling
 from .flightplan import FlightPlan
 from .formation import FormationFlightPlan, FormationLayout
 from .ibuilder import IBuilder
@@ -32,6 +35,31 @@ class FormationAttackFlightPlan(FormationFlightPlan, ABC):
             self.layout.join,
             self.layout.split,
         } | set(self.layout.targets)
+
+    def can_delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
+        """One of several target points can go; the last one cannot.
+
+        A strike spreads itself over one waypoint per target, and dropping one of them
+        is the player saying he does not want that building. Dropping the only one
+        leaves an attack with nothing to attack, which is the degrade-to-custom path.
+        """
+        if self._is_one_of_several_targets(waypoint):
+            return True
+        return super().can_delete_waypoint(waypoint)
+
+    def delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
+        if self._is_one_of_several_targets(waypoint):
+            self.layout.targets = [
+                target for target in self.layout.targets if target is not waypoint
+            ]
+            return True
+        return super().delete_waypoint(waypoint)
+
+    def _is_one_of_several_targets(self, waypoint: FlightWaypoint) -> bool:
+        # By identity: FlightWaypoint compares by value, and two target points on
+        # identical buildings are equal without being the same waypoint.
+        targets = self.layout.targets
+        return len(targets) > 1 and any(waypoint is target for target in targets)
 
     def speed_between_waypoints(self, a: FlightWaypoint, b: FlightWaypoint) -> Speed:
         # FlightWaypoint is only comparable by identity, so adding
@@ -177,7 +205,37 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
         assert self.package.waypoints is not None
         builder = WaypointBuilder(self.flight, targets)
 
-        target_waypoints = self._target_waypoints(builder, targets)
+        target_waypoints: list[FlightWaypoint] = []
+        # Mission spec: STRIKE against a motorpool keeps one player-facing
+        # waypoint per parked unit, while motorpool BAI and ARMED_RECON use one
+        # target-area waypoint. Non-motorpool behavior remains per target.
+        is_motorpool = isinstance(self.package.target, MotorpoolGroundObject)
+        if targets and (
+            not is_motorpool or self.flight.flight_type == FlightType.STRIKE
+        ):
+            for target in targets:
+                target_waypoints.append(
+                    self.target_waypoint(self.flight, builder, target)
+                )
+        elif self.flight.flight_type == FlightType.BAI and isinstance(
+            self.package.target, MotorpoolGroundObject
+        ):
+            # Mission spec: motorpool BAI gets one waypoint for the motorpool
+            # total, named the way every other BAI flight names its target
+            # waypoint ("ATTACK ..."), not a strike-style area name.
+            target_waypoints.append(
+                builder.bai_group(
+                    StrikeTarget(self.package.target.name, self.package.target)
+                )
+            )
+        else:
+            # Targetless missions and motorpool BAI/ARMED_RECON retain the
+            # single target-area waypoint.
+            target_waypoints.append(
+                self.target_area_waypoint(
+                    self.flight, self.flight.package.target, builder
+                )
+            )
 
         hold = None
         if not self.flight.is_helo:
@@ -259,11 +317,23 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
         ]
 
     def _build_refuel(self, builder: WaypointBuilder) -> Optional[FlightWaypoint]:
-        refuel: Optional[FlightWaypoint] = None
-        can_plan = self.flight.coalition.air_wing.can_auto_plan(FlightType.REFUELING)
-        if not self.flight.is_helo and can_plan and self.package.waypoints:
-            refuel = builder.refuel(self.package.waypoints.refuel)
-        return refuel
+        # It used to be enough that the flight was not a helicopter and the faction
+        # owned a tanker: every strike, escort and sweep got a refuelling waypoint,
+        # whether it could fly the plan twice over or not.
+        if not self.package.waypoints:
+            return None
+        settings = self.flight.coalition.game.settings
+        # The bands the rest of this layout is about to be built at, so the estimate
+        # is charged at the altitudes the flight will really be flown at.
+        if not needs_refuelling(
+            self.flight,
+            self.package,
+            settings,
+            builder.get_cruise_altitude,
+            builder.get_combat_altitude,
+        ):
+            return None
+        return builder.refuel(self.package.waypoints.refuel)
 
     @property
     def primary_flight_is_air_assault(self) -> bool:

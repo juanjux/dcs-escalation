@@ -264,6 +264,16 @@ class Flight(
     def position(self) -> Point:
         return self.state.estimate_position()
 
+    def label_formation_waypoints(self) -> None:
+        """Name this flight's join and split for the size of its package.
+
+        A plan that has not been built needs nothing: it will read the package when it
+        is built.
+        """
+        existing = self._flight_plan_builder.existing_flight_plan
+        if existing is not None:
+            existing.label_formation_waypoints()
+
     def resize(self, new_size: int) -> None:
         self.squadron.claim_inventory(new_size - self.count)
         self.roster.resize(new_size)
@@ -377,6 +387,16 @@ class Flight(
                 results.kill_pilot(self, pilot)
 
     def recreate_flight_plan(self, dump_debug_info: bool = False) -> None:
+        self._flight_plan_builder.regenerate(dump_debug_info)
+
+    def refresh_flight_plan(self, dump_debug_info: bool = False) -> None:
+        """Rebuild the flight plan from current world state.
+
+        Unlike :meth:`recreate_flight_plan`, manual timing is preserved.
+        Mission generation uses this for motorpool-target packages, whose
+        ephemeral groups are rendered only at mission generation time, after
+        the plan was first built against empty groups.
+        """
         self._flight_plan_builder.regenerate(dump_debug_info)
 
     @staticmethod

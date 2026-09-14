@@ -20,6 +20,7 @@ from game.theater import Player
 if TYPE_CHECKING:
     from game import Game
     from game.sim import GameUpdateEvents
+    from game.theater import ControlPoint
 
 
 class GameUpdateEventsJs(BaseModel):
@@ -43,6 +44,8 @@ class GameUpdateEventsJs(BaseModel):
     deleted_iads: set[UUID]
     updated_supply_routes: list[SupplyRouteJs]
     reset_on_map_center: LeafletPoint | None
+    fly_to: LeafletPoint | None
+    fly_to_zoom: int | None
     game_unloaded: bool
     new_turn: bool
 
@@ -61,6 +64,23 @@ class GameUpdateEventsJs(BaseModel):
         updated_supply_routes = []
         updated_front_lines = []
         if game is not None:
+            from game.missiongenerator.motorpoolpopulator import MotorpoolPopulator
+            from game.theater.theatergroundobject import MotorpoolGroundObject
+
+            affected_control_points: list[ControlPoint] = []
+            for tgo in events.updated_tgos:
+                if not isinstance(tgo, MotorpoolGroundObject):
+                    continue
+                if not any(
+                    existing is tgo.control_point
+                    for existing in affected_control_points
+                ):
+                    affected_control_points.append(tgo.control_point)
+            if affected_control_points:
+                MotorpoolPopulator(game).populate_control_points(
+                    affected_control_points
+                )
+
             new_combats = [
                 FrozenCombatJs.for_combat(c, game.theater) for c in events.new_combats
             ]
@@ -110,7 +130,10 @@ class GameUpdateEventsJs(BaseModel):
             deselected_flight=events.deselected_flight,
             updated_front_lines=updated_front_lines,
             deleted_front_lines=events.deleted_front_lines,
-            updated_tgos=[TgoJs.for_tgo(tgo) for tgo in events.updated_tgos],
+            updated_tgos=[
+                TgoJs.for_tgo(tgo)
+                for tgo in sorted(events.updated_tgos, key=lambda tgo: tgo.id)
+            ],
             updated_control_points=[
                 ControlPointJs.for_control_point(cp)
                 for cp in events.updated_control_points
@@ -119,6 +142,8 @@ class GameUpdateEventsJs(BaseModel):
             deleted_iads=events.deleted_iads_connections,
             updated_supply_routes=updated_supply_routes,
             reset_on_map_center=events.reset_on_map_center,
+            fly_to=events.fly_to,
+            fly_to_zoom=events.fly_to_zoom,
             game_unloaded=events.game_unloaded,
             new_turn=events.new_turn,
         )

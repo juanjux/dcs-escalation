@@ -261,8 +261,10 @@ class FlotGenerator:
         )
 
         # Add JTAC
-        if self.game.blue.faction.has_jtac and not suppress_legacy_jtac(
-            LuaPluginManager.plugins()
+        if (
+            self.game.settings.use_jtac
+            and self.game.blue.faction.has_jtac
+            and not suppress_legacy_jtac(LuaPluginManager.plugins())
         ):
             freq = self.radio_registry.alloc_uhf()
             # If the option fc3LaserCode is enabled, force all JTAC
@@ -339,7 +341,7 @@ class FlotGenerator:
 
     @staticmethod
     def _tic_managed_role(role: CombatGroupRole) -> bool:
-        """Roles handed over to the TIC script. Artillery keeps Retribution's
+        """Roles handed over to the TIC script. Artillery keeps Escalation's
         fire-mission tasking; SHORAD/AAA keep vanilla air-defense AI."""
         return role in (
             CombatGroupRole.TANK,

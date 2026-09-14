@@ -15,7 +15,7 @@ from game.navmesh import NavMesh
 from game.orderedset import OrderedSet
 from game.procurement import AircraftProcurementRequest, ProcurementAi
 from game.profiling import MultiEventTracer, logged_duration
-from game.squadrons import AirWing
+from game.squadrons import AirWing, friendship
 from game.theater.bullseye import Bullseye
 from game.theater.player import Player
 from game.theater.transitnetwork import TransitNetwork, TransitNetworkBuilder
@@ -175,13 +175,20 @@ class Coalition:
             )
         return restored
 
-    def end_turn(self) -> None:
+    def end_turn(self, events: GameUpdateEvents) -> None:
         """Processes coalition-specific turn finalization.
 
         For more information on turn finalization in general, see the documentation for
         `Game.finish_turn`.
         """
         self.air_wing.end_turn()
+
+        # After the air wing rather than before it: a squadron that moved this turn has
+        # to meet its new neighbours, and this turn's recruits have to start meeting
+        # anybody. Here rather than in Squadron.end_turn because the drift crosses
+        # squadrons at a base, and per-squadron would roll every crossing pair twice.
+        friendship.tend_friendships(self.air_wing, self.game.settings)
+
         self.budget += Income(self.game, self.player).total
 
         # Need to recompute before transfers and deliveries to account for captures.
@@ -193,7 +200,7 @@ class Coalition:
         # one hop ahead. ControlPoint.process_turn handles unit deliveries. The
         # coalition-specific turn-end happens before the theater-wide turn-end, so this
         # is handled correctly.
-        self.transfers.perform_transfers()
+        self.transfers.perform_transfers(events)
 
     def preinit_turn_0(self, squadrons_start_full: bool) -> None:
         """Runs final Coalition initialization.
@@ -202,7 +209,7 @@ class Coalition:
         """
         self.air_wing.populate_for_turn_0(squadrons_start_full)
 
-    def initialize_turn(self, is_turn_0: bool) -> None:
+    def initialize_turn(self, is_turn_0: bool, events: GameUpdateEvents) -> None:
         """Processes coalition-specific turn initialization.
 
         For more information on turn initialization in general, see the documentation
@@ -219,7 +226,7 @@ class Coalition:
         with logged_duration("Procurement of airlift assets"):
             self.transfers.order_airlift_assets()
         with logged_duration("Transport planning"):
-            self.transfers.plan_transports(self.game.conditions.start_time)
+            self.transfers.plan_transports(self.game.conditions.start_time, events)
 
         # When the LLM commands OPFOR, leave red's air plan empty for it to author
         # via the API. The scripted commander still runs as a fallback at Take Off if

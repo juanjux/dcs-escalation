@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, TYPE_CHECKING, TypeGuard, TypeVar
 
@@ -21,17 +21,34 @@ class PatrollingLayout(StandardLayout):
     patrol_start: FlightWaypoint
     patrol_end: FlightWaypoint
 
+    #: Set only when the fuel estimate says the patrol cannot fly its laps on what it
+    #: takes off with. It lives here rather than on TARCAP alone because a BARCAP is
+    #: the flight that orbits longest, so it is the one most likely to want a tanker.
+    #:
+    #: Defaulted, and read through the class attribute on a save that predates it, so
+    #: an in-progress campaign unpickles without a migrator. Keyword-only so a subclass
+    #: (CAS has an ingress point) can still add fields of its own without a default.
+    refuel: FlightWaypoint | None = field(default=None, kw_only=True)
+
     def iter_waypoints(self) -> Iterator[FlightWaypoint]:
         yield self.departure
         yield from self.nav_to
         yield self.patrol_start
         yield self.patrol_end
+        if self.refuel is not None:
+            yield self.refuel
         yield from self.nav_from
         yield self.arrival
         if self.divert is not None:
             yield self.divert
         yield self.bullseye
         yield from self.custom_waypoints
+
+    def delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
+        if waypoint == self.refuel:
+            self.refuel = None
+            return True
+        return super().delete_waypoint(waypoint)
 
 
 LayoutT = TypeVar("LayoutT", bound=PatrollingLayout)

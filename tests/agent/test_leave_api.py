@@ -186,3 +186,82 @@ def test_nobody_asking_is_an_empty_list_and_not_an_error() -> None:
 
     assert views.build_leave_requests(game, "red") == []
     assert morale_rules.MAX_LEAVE_TURNS >= 1  # the cap the endpoint honours
+
+
+def _content(squadron: Any, name: str, morale: int) -> Pilot:
+    """A pilot who is NOT asking for anything."""
+    pilot = Pilot(name)
+    pilot.morale = morale
+    squadron.current_roster.append(pilot)
+    squadron.available_pilots.append(pilot)
+    return pilot
+
+
+def test_a_pilot_who_never_asked_can_still_be_rested() -> None:
+    """The men worth resting are often the ones who do not put a hand up."""
+    squadron = _squadron("Lucky Tang", aircraft=4)
+    game = _game(squadron)
+    pilot = _content(squadron, "Aksenov", morale=5)
+
+    result = planner.set_pilot_leave(game, "red", "Lucky Tang", "Aksenov", turns=2)
+
+    assert result.ok
+    assert pilot.on_leave
+    assert pilot.leave_turns == 2
+    assert result.status == "On leave"
+    assert result.leave_turns_remaining == 2
+    assert pilot not in squadron.available_pilots, "he is off the roster now"
+
+
+def test_leave_with_no_length_is_open_ended() -> None:
+    """What the Air Wing button grants: out until he is called back."""
+    squadron = _squadron("Lucky Tang", aircraft=4)
+    game = _game(squadron)
+    pilot = _content(squadron, "Aksenov", morale=5)
+
+    result = planner.set_pilot_leave(game, "red", "Lucky Tang", "Aksenov")
+
+    assert result.ok
+    assert pilot.on_leave
+    assert result.leave_turns_remaining == 0
+
+
+def test_calling_him_back_costs_him_morale() -> None:
+    squadron = _squadron("Lucky Tang", aircraft=4)
+    game = _game(squadron)
+    pilot = _content(squadron, "Aksenov", morale=50)
+    planner.set_pilot_leave(game, "red", "Lucky Tang", "Aksenov", turns=3)
+    before = pilot.morale
+
+    result = planner.set_pilot_leave(
+        game, "red", "Lucky Tang", "Aksenov", on_leave=False
+    )
+
+    assert result.ok
+    assert not pilot.on_leave
+    assert result.status == "Active"
+    assert pilot.morale < before, "being fetched back early is not free"
+
+
+def test_only_an_active_pilot_can_be_sent_on_leave() -> None:
+    """The squadron's own rule, the same one the Air Wing button obeys."""
+    squadron = _squadron("Lucky Tang", aircraft=4)
+    game = _game(squadron)
+    pilot = _content(squadron, "Aksenov", morale=5)
+    pilot.kill()
+
+    result = planner.set_pilot_leave(game, "red", "Lucky Tang", "Aksenov", turns=2)
+
+    assert not result.ok
+    assert "active" in (result.error or "").lower()
+
+
+def test_a_stranger_is_not_on_the_roster() -> None:
+    squadron = _squadron("Lucky Tang", aircraft=4)
+    game = _game(squadron)
+    _content(squadron, "Aksenov", morale=5)
+
+    result = planner.set_pilot_leave(game, "red", "Lucky Tang", "Nobody", turns=1)
+
+    assert not result.ok
+    assert "nobody called Nobody" in (result.error or "")

@@ -40,8 +40,11 @@ class RaceTrackBuilder(PydcsWaypointBuilder):
 
         # Start Defensive Jamming for all flights
         settings = self.flight.coalition.game.settings
-        ai_jammer = settings.plugin_option("ewrj.ai_jammer_enabled")
-        if settings.plugins.get("ewrj") and ai_jammer:
+        # Read behind the plugin check, not before it: the EW jamming plugin is
+        # gone, so the option does not exist and asking for it raised.
+        if settings.plugins.get("ewrj") and settings.plugin_option_or(
+            "ewrj.ai_jammer_enabled", False
+        ):
             self.defensive_jamming(waypoint, "start")
             self.offensive_jamming(waypoint, "start")
 

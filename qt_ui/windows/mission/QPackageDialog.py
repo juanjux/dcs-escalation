@@ -129,6 +129,7 @@ class QPackageDialog(QDialog):
         self.layout.addWidget(self.package_context)
 
         self.package_view = QFlightList(self.game_model, self.package_model)
+        self.package_view.flight_deleted.connect(self.on_flight_deleted)
         self.package_view.selectionModel().selectionChanged.connect(
             self.on_selection_changed
         )
@@ -249,6 +250,14 @@ class QPackageDialog(QDialog):
             logging.error(f"Cannot delete flight when no flight is selected.")
             return
         self.package_model.cancel_or_abort_flight(flight)
+        self.on_flight_deleted()
+
+    def on_flight_deleted(self) -> None:
+        """What follows a cancelled flight, however it was cancelled.
+
+        The Delete key goes straight to the list, so this is the shared tail: an empty
+        package is offered its auto-create button again.
+        """
         if len(list(self.package_model.flights)) == 0:
             self.auto_create_button.setDisabled(False)
         # noinspection PyUnresolvedReferences

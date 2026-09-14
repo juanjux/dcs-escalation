@@ -17,7 +17,7 @@ body:
       label: Affected versions
       multiple: true
       description: >
-        Select all DCS Retribution versions in which you have observed this bug.
+        Select all DCS Escalation versions in which you have observed this bug.
         You do not need to test all of them, but the information is useful if
         you have it.
 
@@ -60,8 +60,8 @@ body:
         Other useful files to include are:
 
 
-        The Retribution log file. The log file is located at
-        `<Retribution install directory>/logs/retribution.log`. The log often
+        The Escalation log file. The log file is located at
+        `<Escalation install directory>/logs/escalation.log`. The log often
         includes data about non-fatal errors that could be the root cause of the
         problem.
 
@@ -72,7 +72,7 @@ body:
 
 
         The `state.json` file for the most recently completed turn, located at
-        `<Retribution install directory>/state.json`. This file is essential for
+        `<Escalation install directory>/state.json`. This file is essential for
         investigating any issues with end-of-turn results processing.
 
 

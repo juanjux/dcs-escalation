@@ -22,6 +22,11 @@ from game.commander.packagefulfiller import PackageFulfiller
 from game.profiling import MultiEventTracer
 
 from game.agent import schemas, views
+from game.dcs.skills import SKILL_LADDER
+from game.squadrons import friendship
+from game.sim.missionresultsprocessor import killer_sentence
+from game.squadrons import hardening
+from game.squadrons import morale as morale_rules
 
 if TYPE_CHECKING:
     from game import Game
@@ -260,7 +265,10 @@ def earliest_tot_duration(package) -> tuple[timedelta, str] | None:
     where = ""
     for flight in package.flights:
         try:
-            need = flight.flight_plan.minimum_duration_from_start_to_tot()
+            need = (
+                flight.flight_plan.minimum_duration_from_start_to_tot()
+                - flight.flight_plan.tot_offset
+            )
         except Exception:
             continue
         if worst is None or need > worst:
@@ -609,22 +617,33 @@ def create_packages(
                     )
                     continue
                 coalition.ato.add_package(package)
-                _apply_loadouts(package, keep)
-                _apply_tot_offsets(package, keep)
-                _apply_remain(package, keep)
-                _apply_tot(package, spec, now)
-                if spec.rationale:
-                    package.custom_name = spec.rationale
-                index = len(coalition.ato.packages) - 1
-                results.append(
-                    schemas.CreateResult(
+                try:
+                    _apply_loadouts(package, keep)
+                    _apply_tot_offsets(package, keep)
+                    _apply_remain(package, keep)
+                    _apply_tot(package, spec, now)
+                    if spec.rationale:
+                        package.custom_name = spec.rationale
+                    index = len(coalition.ato.packages) - 1
+                    result = schemas.CreateResult(
                         ok=True,
                         target=target_name,
                         package=views.build_package(index, package),
                         dropped=dropped or None,
                         idle_flyable_remaining=views.idle_flyable_total(game, side),
                     )
-                )
+                except Exception:
+                    # plan_mission has already claimed the aircraft and the pilots, and
+                    # the package is in the ATO by now, so reporting the error without
+                    # this left the caller a package it had been told did not exist:
+                    # no TOT, no rationale, the crews unavailable to try again.
+                    # remove_package hands both back, the same way evaluate_package
+                    # rolls back its dry run. Building the answer is inside the same
+                    # guard so that "an error came back" always means "nothing was
+                    # added", whichever step failed.
+                    coalition.ato.remove_package(package)
+                    raise
+                results.append(result)
             except Exception as exc:  # report, don't abort the whole batch
                 results.append(
                     schemas.CreateResult(ok=False, target=target_name, error=str(exc))
@@ -688,7 +707,7 @@ def evaluate_package(
                 package=view,
                 tot_minutes_into_mission=tot_min,
                 mission_window_min=window,
-                within_window=(tot_min is not None and tot_min <= window),
+                within_window=_within_window(tot_min, window),
             )
         finally:
             coalition.ato.remove_package(package)
@@ -857,6 +876,15 @@ def set_flight_loadout(
         return schemas.OpResult(ok=False, error=str(exc))
 
 
+def _within_window(tot_minutes: int | None, window: int) -> bool:
+    """A TOT lands in the mission window only if it is inside BOTH ends of it.
+
+    Testing the late end alone read a package timed before the mission starts -- which
+    comes out as a large negative number of minutes -- as comfortably early.
+    """
+    return tot_minutes is not None and 0 <= tot_minutes <= window
+
+
 def validate_plan(game: Game, side: str) -> schemas.ValidateResult:
     """Health-check the whole committed plan (no changes): every package's TOT vs the
     mission window and whether any flight is uncrewed (not enough pilots)."""
@@ -869,7 +897,7 @@ def validate_plan(game: Game, side: str) -> schemas.ValidateResult:
         view = views.build_package(i, pkg)
         tot = pkg.time_over_target
         tot_min = round((tot - now).total_seconds() / 60) if tot else None
-        within = tot_min is not None and tot_min <= window
+        within = _within_window(tot_min, window)
         uncrewed = sum((f.uncrewed or 0) for f in view.flights)
         if not view.flights:
             issues.append(f"#{i} {view.target}: no flights (empty package)")
@@ -879,7 +907,10 @@ def validate_plan(game: Game, side: str) -> schemas.ValidateResult:
             )
         if tot_min is not None and not within:
             issues.append(
-                f"#{i} {view.target}: TOT {tot_min} min is past the {window}-min window"
+                f"#{i} {view.target}: TOT is {abs(tot_min)} min BEFORE the mission starts"
+                if tot_min < 0
+                else f"#{i} {view.target}: TOT {tot_min} min is past the"
+                f" {window}-min window"
             )
         shortfall = tot_shortfall(pkg, now, tot)
         earliest = shortfall[0] if shortfall else None
@@ -1435,7 +1466,9 @@ def transfer_ground(
                 f"{origin.name} has no {unit_name!r} to move (it has: {have})"
             )
         qty = max(1, min(quantity, armor[unit]))
-        order = TransferOrder(origin, dest, {unit: qty}, request_airflift=by_air)
+        order = TransferOrder(
+            origin, dest, {unit: qty}, coalition.player, request_airflift=by_air
+        )
         # Validate the route BEFORE new_transfer — new_transfer debits the origin base
         # up front, so an unreachable destination would otherwise lose the units.
         if not order.is_completable(coalition.transfers.network_for(origin)):
@@ -1642,7 +1675,216 @@ def package_of(game: Game, side: str, flight):
     return None
 
 
-def _pilot_view(squadron: Any, pilot: Any) -> dict[str, Any]:
+#: How many bonds a pilot's view carries. Enough to crew around, and short of a dump
+#: of everybody he has ever shared a base with.
+RELATIONSHIP_LIMIT = 12
+
+
+def _rungs_between(before: Any, after: Any) -> int:
+    try:
+        return SKILL_LADDER.index(after) - SKILL_LADDER.index(before)
+    except ValueError:
+        return 0
+
+
+def _relationship_views(
+    pilot: Any, index: dict[Any, Any], settings: Any = None
+) -> list[dict[str, Any]]:
+    """Every bond worth mentioning, in both directions and across squadrons.
+
+    Both signs, because a man he cannot stand is exactly as actionable as a friend --
+    what you do about either is not put them in the same flight. And across squadrons,
+    because a package is crewed out of more than one of them.
+    """
+    others = set(pilot.friendships)
+    for other_id, (_, other) in index.items():
+        if other_id != pilot.id and pilot.id in other.friendships:
+            others.add(other_id)
+
+    bonds: list[tuple[float, dict[str, Any]]] = []
+    for other_id in others:
+        found = index.get(other_id)
+        if found is None:
+            continue  # dead, thrown out, or transferred out of the wing
+        other_squadron, other = found
+        towards = friendship.feeling(pilot, other)
+        from_him = friendship.feeling(other, pilot)
+        strength = max(
+            abs(friendship.points(towards)), abs(friendship.points(from_him))
+        )
+        if not strength:
+            continue
+        bonds.append(
+            (
+                strength,
+                {
+                    "id": str(other.id),
+                    "name": other.name,
+                    "squadron": str(other_squadron),
+                    "band": friendship.band_name(towards, settings),
+                    "towards": round(towards, 1),
+                    "from": round(from_him, 1),
+                },
+            )
+        )
+    bonds.sort(key=lambda item: (-item[0], item[1]["name"]))
+    return [view for _, view in bonds[:RELATIONSHIP_LIMIT]]
+
+
+def _skill_breakdown(squadron: Any, pilot: Any, flight: Any) -> dict[str, Any]:
+    """What made the rung he will fly at: his rank, his week and his company.
+
+    The answer is already in ``flies_at``; this is the working, so a crew worth keeping
+    together can be told from one that is merely senior.
+    """
+    morale_shift = 0
+    if getattr(squadron, "morale_in_play", False) and pilot.has_morale:
+        morale_shift = morale_rules.skill_shift(pilot.morale, squadron.settings)
+    return {
+        "rank": squadron.pilot_skill(pilot).value,
+        "morale": morale_shift,
+        "friendship": _rungs_between(
+            squadron.mission_skill(pilot), squadron.mission_skill(pilot, flight)
+        ),
+    }
+
+
+def _wing_index(squadron: Any) -> dict[Any, Any]:
+    """The whole wing by pilot id, or nothing when there is no friendship to resolve."""
+    if not getattr(squadron, "friendship_in_play", False):
+        return {}
+    coalition = getattr(squadron, "coalition", None)
+    air_wing = getattr(coalition, "air_wing", None)
+    return air_wing.pilot_index() if air_wing is not None else {}
+
+
+def _record_figures(record: Any) -> dict[str, Any]:
+    """The pilot's record as counts, leaving out whatever has not happened to him."""
+    figures: dict[str, Any] = {}
+    for name, value in (
+        ("missions_completed", record.missions_completed),
+        ("air_kills", record.total_air_kills),
+        ("ground_kills", record.total_ground_kills),
+        ("aircraft_lost", record.aircraft_lost),
+        ("survived_losses", record.survived_losses),
+        ("wounds", record.wounds),
+        ("leaves_taken", record.leaves_taken),
+    ):
+        if value:
+            figures[name] = value
+    if record.killed_by is not None:
+        figures["killed_by"] = killer_sentence(record.killed_by) or "unknown"
+        if record.killed_by.turn:
+            figures["killed_on_turn"] = record.killed_by.turn
+    return figures
+
+
+def pilot_record(
+    game: Game, side: str, squadron_id: str, pilot_name: str
+) -> dict[str, Any]:
+    """Everything the campaign remembers about one man.
+
+    The roster gives figures; this is what they are made of -- every kill with the
+    turn and the weapon, what he has survived, how he died and who did it, everything
+    that has moved his morale, and what he thinks of the men around him. It is the
+    pilot dialog, in other words, and it is a call of its own because it is far too
+    much to carry for every pilot of every squadron on every turn.
+    """
+    for coalition in (game.blue, game.red):
+        if (coalition.player.name.lower() == "blue") != (side.lower() == "blue"):
+            continue
+        for squadron in coalition.air_wing.iter_squadrons():
+            if str(squadron.id) != squadron_id and squadron.name != squadron_id:
+                continue
+            for pilot in squadron.current_roster:
+                if pilot.name != pilot_name and str(pilot.id) != pilot_name:
+                    continue
+                return _pilot_record_view(squadron, pilot)
+            known = ", ".join(sorted(p.name for p in squadron.current_roster))
+            raise ValueError(f"{squadron} has no {pilot_name} (roster: {known})")
+    raise ValueError(f"No squadron {squadron_id} on {side}")
+
+
+def _pilot_record_view(squadron: Any, pilot: Any) -> dict[str, Any]:
+    """The dossier itself, built on top of the roster's own view of him."""
+    record = pilot.record
+    view = _pilot_view(squadron, pilot)
+    view["squadron"] = str(squadron)
+    view["aircraft"] = str(squadron.aircraft)
+    view["base"] = squadron.location.name
+
+    view["kills"] = {
+        "air_by_type": dict(record.air_kills),
+        "ground_by_type": dict(record.ground_kills),
+        "ground_by_class": record.ground_kills_by_class(),
+        # Each one, most recent last, capped at what the record keeps.
+        "log": [
+            {
+                "what": kill.what,
+                "turn": kill.turn,
+                "weapon": kill.weapon,
+                "air": kill.air,
+                "class": kill.kill_class,
+            }
+            for kill in record.kills
+        ],
+    }
+
+    survival: dict[str, Any] = {
+        "missions_flown": record.missions_flown,
+        "missions_completed": record.missions_completed,
+        "aircraft_lost": record.aircraft_lost,
+        "survived_losses": record.survived_losses,
+        "wounds": record.wounds,
+        "turns_in_hospital": record.turns_in_hospital,
+        "leaves_taken": record.leaves_taken,
+        "leave_turns_total": record.leave_turns_total,
+    }
+    if record.last_wound_turn:
+        survival["last_wound_turn"] = record.last_wound_turn
+        survival["last_wound_turns"] = record.last_wound_turns
+    view["survival"] = survival
+
+    if record.killed_by is not None:
+        killed = record.killed_by
+        view["killed_by_detail"] = {
+            "pilot": killed.pilot_name,
+            "squadron": killed.squadron,
+            "aircraft": killed.aircraft,
+            "weapon": killed.weapon,
+            "friendly_fire": killed.friendly_fire,
+            "turn": killed.turn,
+        }
+
+    if pilot.has_morale and getattr(squadron, "morale_in_play", False):
+        view["morale_state"] = morale_rules.morale_state(
+            pilot.morale, squadron.settings
+        ).name
+        view["morale_last_turn"] = pilot.morale_last_turn
+        view["morale_log"] = [
+            {
+                "turn": entry.turn,
+                "amount": entry.amount,
+                "reason": entry.reason,
+                "morale_after": entry.morale_after,
+            }
+            for entry in pilot.morale_log
+        ]
+    elif pilot.player:
+        view["morale_note"] = (
+            "The player's own pilot has no morale: he is never grounded, sent on"
+            " leave or made to desert by it."
+        )
+
+    view["turns_since_leave"] = pilot.turns_since_leave
+    if pilot.wants_leave:
+        view["leave_turns_requested"] = pilot.leave_turns_requested
+    return view
+
+
+def _pilot_view(
+    squadron: Any, pilot: Any, index: Any = None, flight: Any = None
+) -> dict[str, Any]:
     """One pilot as the Air Wing shows him."""
     rank = squadron.pilot_rank(pilot)
     view: dict[str, Any] = {
@@ -1659,6 +1901,10 @@ def _pilot_view(squadron: Any, pilot: Any) -> dict[str, Any]:
         view["wounded_turns_remaining"] = pilot.wounded_turns
     if pilot.player:
         view["player"] = True
+    # What he has done and been through, as figures. Only what is not zero: this is
+    # built for every pilot of every squadron on every turn, and a roster of thirty
+    # men carrying eight zeroes each is a page of nothing.
+    view.update(_record_figures(pilot.record))
 
     settings = getattr(squadron, "settings", None)
     if settings is not None and getattr(settings, "morale_enabled", True):
@@ -1669,6 +1915,26 @@ def _pilot_view(squadron: Any, pilot: Any) -> dict[str, Any]:
             view["asking_for_leave"] = True
         if pilot.on_leave and pilot.leave_turns:
             view["leave_turns_remaining"] = pilot.leave_turns
+        if pilot.hardened and hardening.in_play(settings):
+            # What the bad weeks left behind. It never comes off, so a high figure on a
+            # man whose morale is fine is a man who has already been through it.
+            view["hardened"] = pilot.hardened
+            view["hardened_of"] = hardening.ceiling(settings)
+
+    if getattr(squadron, "friendship_in_play", False):
+        # The id, because two men of the same name are two men, and a relationship has
+        # to be able to name one of them.
+        view["id"] = str(pilot.id)
+        bonds = _relationship_views(
+            pilot,
+            _wing_index(squadron) if index is None else index,
+            getattr(squadron, "settings", None),
+        )
+        if bonds:
+            view["relationships"] = bonds
+        if flight is not None:
+            view["flies_at"] = squadron.mission_skill(pilot, flight).value
+            view["skill_breakdown"] = _skill_breakdown(squadron, pilot, flight)
     return view
 
 
@@ -1732,6 +1998,81 @@ def answer_leave_request(
     return schemas.OpResult(ok=False, error=f"no squadron with id {squadron_id!r}")
 
 
+def set_pilot_leave(
+    game: Game,
+    side: str,
+    squadron_id: str,
+    pilot_name: str,
+    on_leave: bool = True,
+    turns: int = 0,
+) -> schemas.PilotLeaveResult:
+    """Rest a pilot who never asked, or call one back early -- the Air Wing leave button.
+
+    ``answer_leave_request`` only reaches a man who put his hand up, and the ones worth
+    resting are often the ones who do not: a pilot at rock bottom can sit there flying
+    while nobody offers. The player can press this on anybody on the roster, so this
+    does too, with the squadron applying the same rules -- only an active pilot can go,
+    and a squadron with no room cannot take one back.
+
+    ``turns`` of zero is open-ended leave: he stays out until he is called back. Any
+    other number runs down on its own like a wound. Calling him back early costs him
+    morale; leave that ran out on its own does not.
+    """
+    from game.squadrons.morale import MAX_LEAVE_TURNS
+
+    for coalition in (game.blue, game.red):
+        if (coalition.player.name.lower() == "blue") != (side.lower() == "blue"):
+            continue
+        for squadron in coalition.air_wing.iter_squadrons():
+            if str(squadron.id) != squadron_id and squadron.name != squadron_id:
+                continue
+            roster = {p.name: p for p in squadron.current_roster}
+            pilot = roster.get(pilot_name)
+            if pilot is None:
+                return schemas.PilotLeaveResult(
+                    ok=False, error=f"{squadron} has nobody called {pilot_name}"
+                )
+            try:
+                if on_leave:
+                    squadron.send_on_leave(
+                        pilot, max(0, min(turns, MAX_LEAVE_TURNS)), game.turn
+                    )
+                else:
+                    squadron.cancel_leave(pilot)
+            except RuntimeError as exc:
+                return schemas.PilotLeaveResult(
+                    ok=False,
+                    error=str(exc),
+                    status=pilot.status.value,
+                    leave_turns_remaining=pilot.leave_turns,
+                )
+            if pilot.on_leave:
+                spell = (
+                    f"for {pilot.leave_turns} more turn(s)"
+                    if pilot.leave_turns
+                    else "open-ended, until you call him back"
+                )
+                detail = (
+                    f"{pilot_name} is on leave {spell}; {squadron} has "
+                    f"{squadron.spare_pilots()} pilots left for "
+                    f"{squadron.owned_aircraft} aircraft"
+                )
+            else:
+                detail = (
+                    f"{pilot_name} is back on {squadron}'s roster; being called back "
+                    "early cost him morale"
+                )
+            return schemas.PilotLeaveResult(
+                ok=True,
+                detail=detail,
+                status=pilot.status.value,
+                leave_turns_remaining=pilot.leave_turns,
+            )
+    return schemas.PilotLeaveResult(
+        ok=False, error=f"no squadron with id {squadron_id!r}"
+    )
+
+
 def _reconcile_pool(game: Game, side: str) -> None:
     """Cross-check the squadron pools before answering anything about crews.
 
@@ -1776,19 +2117,31 @@ def squadron_pilots(game: Game, side: str, squadron_id: str) -> dict[str, Any]:
                                 f"{flight.package.target.name}"
                             )
             pilots = []
+            index = _wing_index(squadron)
             for pilot in squadron.current_roster:
-                view = _pilot_view(squadron, pilot)
+                view = _pilot_view(squadron, pilot, index)
                 if id(pilot) in flying:
                     view["assigned_to"] = flying[id(pilot)]
                 pilots.append(view)
             # Senior first, the same order the Air Wing lists them in.
             pilots.sort(key=lambda v: (-v.get("xp", 0), v["name"]))
-            return {
+            roster: dict[str, Any] = {
                 "squadron": str(squadron),
                 "aircraft": str(squadron.aircraft),
                 "base": squadron.location.name,
                 "pilots": pilots,
             }
+            cohesion = (
+                squadron.cohesion
+                if getattr(squadron, "friendship_in_play", False)
+                else None
+            )
+            if cohesion is not None:
+                roster["cohesion"] = {
+                    "value": round(cohesion, 1),
+                    "band": friendship.band_name(cohesion, squadron.settings),
+                }
+            return roster
     return {"error": f"no squadron {squadron_id!r} on {side}"}
 
 
@@ -1803,22 +2156,37 @@ def flight_crew(game: Game, side: str, flight_id: str) -> dict[str, Any]:
     if flight is None:
         return {"error": f"no flight with id {flight_id!r}"}
     squadron = flight.squadron
+    index = _wing_index(squadron)
     seats = []
     for idx, pilot in enumerate(flight.roster.iter_pilots()):
         seat: dict[str, Any] = {"seat": idx}
         if pilot is None:
             seat["empty"] = True
         else:
-            seat.update(_pilot_view(squadron, pilot))
+            seat.update(_pilot_view(squadron, pilot, index, flight))
         seats.append(seat)
-    available = [_pilot_view(squadron, p) for p in squadron.available_pilots]
+    available = [_pilot_view(squadron, p, index) for p in squadron.available_pilots]
     available.sort(key=lambda v: (-v.get("xp", 0), v["name"]))
-    return {
+    crew: dict[str, Any] = {
         "flight_id": str(flight.id),
         "squadron": str(squadron),
         "seats": seats,
         "available": available,
     }
+    synergy = None
+    if getattr(squadron, "friendship_in_play", False):
+        synergy = squadron.formation_synergy(list(flight.roster.iter_pilots()))
+    if synergy is not None:
+        # A planner that can see the number can crew for it, which is the point of
+        # having it.
+        crew["synergy"] = {
+            "value": round(synergy, 1),
+            "band": friendship.band_name(synergy, squadron.settings),
+            "flies_a_rung_better": friendship.flies_a_rung_better(
+                synergy, squadron.settings
+            ),
+        }
+    return crew
 
 
 def set_flight_crew(

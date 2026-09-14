@@ -54,7 +54,7 @@ def test_settling_never_overshoots_the_middle(morale: int) -> None:
 
 def test_even_the_bottom_settles_back() -> None:
     """He climbs out like anyone else; a hard turn is what puts him back."""
-    assert morale_rules.drift(0) == morale_rules.DRIFT_PER_TURN
+    assert morale_rules.drift(morale_rules.MORALE_MIN) == morale_rules.DRIFT_PER_TURN
 
 
 def test_rank_softens_the_knocks_and_not_the_good_news() -> None:
@@ -73,9 +73,44 @@ def test_a_knock_always_costs_something() -> None:
     assert morale_rules.apply(50, morale_rules.NO_LEAVE, Skill.Excellent) < 50
 
 
-@pytest.mark.parametrize("morale", [-40, 0, 50, 100, 160])
+@pytest.mark.parametrize("morale", [-40, -30, 0, 50, 100, 160])
 def test_it_never_leaves_its_range(morale: int) -> None:
-    assert 0 <= morale_rules.clamp(morale) <= 100
+    """Against the constants, not against 0: the floor moved below zero on purpose."""
+    assert (
+        morale_rules.MORALE_MIN <= morale_rules.clamp(morale) <= morale_rules.MORALE_MAX
+    )
+
+
+def test_rock_bottom_is_below_zero() -> None:
+    """A floor of zero let one quiet turn of drift lift a man straight out of Broken."""
+    assert morale_rules.MORALE_MIN < 0
+    assert morale_rules.morale_state(morale_rules.MORALE_MIN).name == "Broken"
+
+
+def test_being_broken_outlasts_a_single_quiet_turn() -> None:
+    """The whole point of the negative range: he has to earn his way back up."""
+    morale = morale_rules.MORALE_MIN
+    turns = 0
+    while morale_rules.morale_state(morale).name == "Broken":
+        morale = morale_rules.clamp(morale + morale_rules.drift(morale))
+        turns += 1
+        assert turns < 50, "he never climbs out"
+    assert turns > 1, "one turn of drift was enough, which is the bug"
+
+
+def test_the_campaign_sets_how_fast_he_settles() -> None:
+    settings = Settings()
+    settings.morale_drift_per_turn = 1
+    assert morale_rules.drift(0, settings) == 1
+    settings.morale_drift_per_turn = 20
+    assert morale_rules.drift(0, settings) == 20
+
+
+def test_a_drift_of_zero_makes_a_bad_turn_stick() -> None:
+    settings = Settings()
+    settings.morale_drift_per_turn = 0
+    for morale in (morale_rules.MORALE_MIN, 0, 20, 80, 100):
+        assert morale_rules.drift(morale, settings) == 0
 
 
 # --- what a sortie is worth -------------------------------------------------

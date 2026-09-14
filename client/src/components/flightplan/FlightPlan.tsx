@@ -1,12 +1,17 @@
-import { Flight } from "../../api/liberationApi";
+import { Flight, Waypoint } from "../../api/liberationApi";
 import {
   useGetCommitBoundaryForFlightQuery,
+  useInsertWaypointMutation,
+  useDeleteWaypointMutation,
+  useOpenTgoInfoDialogMutation,
   useSelectFlightMutation,
 } from "../../api/liberationApi";
 import WaypointMarker from "../waypointmarker";
-import { Polyline as LPolyline } from "leaflet";
-import { ReactElement, useEffect, useRef } from "react";
-import { Polyline, Tooltip } from "react-leaflet";
+import { WaypointDialog, WaypointMenu, WaypointTarget } from "../waypointmenu";
+import { LegDistance, TargetRuns } from "./legs";
+import { LineUtil, Polyline as LPolyline, LeafletMouseEvent } from "leaflet";
+import { ReactElement, useEffect, useRef, useState } from "react";
+import { Polyline, Tooltip, useMap } from "react-leaflet";
 
 const BLUE_PATH = "#0084ff";
 const RED_PATH = "#c85050";
@@ -51,12 +56,21 @@ function FlightTooltip({ flight }: { flight: Flight }) {
   );
 }
 
-function FlightPlanPath(props: FlightPlanProps) {
+interface PathProps extends FlightPlanProps {
+  onError: (message: string) => void;
+}
+
+function FlightPlanPath(props: PathProps) {
   const color = pathColor(props);
   const waypoints = props.flight.waypoints;
   const [selectFlight] = useSelectFlightMutation();
+  const [insertWaypoint] = useInsertWaypointMutation();
+  const map = useMap();
 
   const polylineRef = useRef<LPolyline | null>(null);
+  // Only while the pointer is on it: the run goes back to the flight's own colour on
+  // the way out, unless the click landed and the flight is the selected one now.
+  const [hovered, setHovered] = useState(false);
 
   // Flight paths should be drawn under everything else. There seems to be an
   // issue where `interactive: false` doesn't do as its told (there's nuance,
@@ -73,7 +87,7 @@ function FlightPlanPath(props: FlightPlanProps) {
   // behind everything than was added before them. Anything added after always
   // goes on top.
   useEffect(() => {
-    if (props.selected) {
+    if (props.selected || hovered) {
       polylineRef.current?.bringToFront();
     } else {
       polylineRef.current?.bringToBack();
@@ -83,9 +97,8 @@ function FlightPlanPath(props: FlightPlanProps) {
   if (waypoints == null) {
     return <></>;
   }
-  const points = waypoints
-    .filter((waypoint) => waypoint.include_in_path)
-    .map((waypoint) => waypoint.position);
+  const drawn = waypoints.filter((waypoint) => waypoint.include_in_path);
+  const points = drawn.map((waypoint) => waypoint.position);
 
   // Only blue flight plans are interactive: hovering highlights the route in
   // yellow and clicking selects the owning package (and flight) in the Qt
@@ -99,18 +112,80 @@ function FlightPlanPath(props: FlightPlanProps) {
   const visible = (
     <Polyline
       positions={points}
-      pathOptions={{ color: color, interactive: false }}
+      pathOptions={{
+        color: hovered ? SELECTED_PATH : color,
+        interactive: false,
+      }}
       ref={polylineRef}
     />
   );
 
+  // Pointing at a plan lights it up: the route yellow and its runs in to the target
+  // red, which is what they are for the flight being worked on. Clicking selects the
+  // flight and its package in the sidebar. The route and the runs share this -- they
+  // are one plan, and a run is often the leg nearest what you are looking at.
+  //
+  // The colour is part of the render rather than something a handler paints on: a
+  // painted style lasts exactly until the next render, which re-applies the colour the
+  // render says the line has. That is why the yellow used to last a single frame -- the
+  // handler set it and the re-render this state change causes took it straight back off.
+  const highlight = {
+    mouseover: () => setHovered(true),
+    mouseout: () => setHovered(false),
+  };
+
+  // Every flight drawn on the map shows what it is going in against, not only the one
+  // being worked on: that is how you see at a glance which targets already have
+  // somebody on them. The run to the target is red for the selected flight, where it
+  // is the thing you are looking at, and the flight's own colour in the crowd.
+  const runs = (
+    <TargetRuns
+      waypoints={waypoints}
+      drawn={drawn}
+      color={props.selected || hovered ? undefined : color}
+      labelled={props.selected}
+      handlers={
+        interactive
+          ? {
+              ...highlight,
+              // No alt-click: a nav point cannot be drawn into a run. The route takes
+              // those, and this is the one leg that is not part of it.
+              click: () => {
+                selectFlight({ flightId: props.flight.id });
+              },
+            }
+          : undefined
+      }
+      tooltip={
+        interactive ? <FlightTooltip flight={props.flight} /> : undefined
+      }
+    />
+  );
+
   if (!interactive) {
-    return visible;
+    return (
+      <>
+        {visible}
+        {runs}
+      </>
+    );
   }
 
   return (
     <>
       {visible}
+      {runs}
+      {props.selected && (
+        <>
+          {drawn.slice(0, -1).map((waypoint, index) => (
+            <LegDistance
+              key={`leg-${waypoint.index}`}
+              from={waypoint.position}
+              to={drawn[index + 1].position}
+            />
+          ))}
+        </>
+      )}
       <Polyline
         positions={points}
         pathOptions={{
@@ -120,18 +195,32 @@ function FlightPlanPath(props: FlightPlanProps) {
           interactive: true,
         }}
         eventHandlers={{
-          mouseover: () => {
-            polylineRef.current?.setStyle({ color: SELECTED_PATH });
-            polylineRef.current?.bringToFront();
-          },
-          mouseout: () => {
-            if (!props.selected) {
-              polylineRef.current?.setStyle({ color: color });
-              polylineRef.current?.bringToBack();
+          ...highlight,
+          click: async (event: LeafletMouseEvent) => {
+            if (!event.originalEvent.altKey) {
+              selectFlight({ flightId: props.flight.id });
+              return;
             }
-          },
-          click: () => {
-            selectFlight({ flightId: props.flight.id });
+            // Alt-click on the route draws a new nav point into it, where the
+            // pointer is, on the leg the pointer is over. Without this the only way
+            // to bend a route around something was to add a waypoint in the flight
+            // editor and then drag it across the map.
+            const after = legUnderPointer(map, drawn, event);
+            if (after == null) {
+              return;
+            }
+            try {
+              await insertWaypoint({
+                flightId: props.flight.id,
+                waypointIdx: after,
+                waypointInsert: {
+                  before: false,
+                  position: { lat: event.latlng.lat, lng: event.latlng.lng },
+                },
+              }).unwrap();
+            } catch (error) {
+              props.onError(refusalFrom(error));
+            }
           },
         }}
       >
@@ -141,7 +230,14 @@ function FlightPlanPath(props: FlightPlanProps) {
   );
 }
 
-const WaypointMarkers = (props: FlightPlanProps) => {
+interface MarkersProps extends FlightPlanProps {
+  selectedWaypoint: number | null;
+  onSelect: (index: number | null) => void;
+  onOpen: (target: WaypointTarget) => void;
+  onMenu: (target: WaypointTarget) => void;
+}
+
+const WaypointMarkers = (props: MarkersProps) => {
   if (!props.selected || props.flight.waypoints == null) {
     return <></>;
   }
@@ -155,6 +251,14 @@ const WaypointMarkers = (props: FlightPlanProps) => {
           number={idx}
           waypoint={p}
           flight={props.flight}
+          selected={props.selectedWaypoint === p.index}
+          onSelect={() => props.onSelect(p.index)}
+          onOpen={(at) =>
+            props.onOpen({ flight: props.flight, waypoint: p, at })
+          }
+          onMenu={(at) =>
+            props.onMenu({ flight: props.flight, waypoint: p, at })
+          }
         />,
       );
     }
@@ -206,15 +310,170 @@ function CommitBoundaryIfSelected(props: CommitBoundaryProps) {
   return <CommitBoundary {...props} />;
 }
 
+/** What came back from the server when it refused, in the words it refused with. */
+function refusalFrom(error: unknown): string {
+  const detail = (error as { data?: { detail?: string } })?.data?.detail;
+  return typeof detail === "string" ? detail : "The server refused that.";
+}
+
+/**
+ * Where a new nav point goes for an alt-click at this spot, or null if the route has
+ * no leg to put one in.
+ *
+ * The answer is an index in the full route, not in the drawn one: a leg can span
+ * waypoints that are not drawn -- the targets between an ingress and a split -- and
+ * the new point belongs after the last of them, so the attack run is left alone and
+ * it is the leg you can see that bends.
+ */
+export function legUnderPointer(
+  map: ReturnType<typeof useMap>,
+  drawn: Waypoint[],
+  event: LeafletMouseEvent,
+): number | null {
+  if (drawn.length < 2) {
+    return null;
+  }
+  // In screen space, so "nearest" means nearest to look at rather than nearest in
+  // degrees, which near the poles is not the same thing.
+  const pointer = map.latLngToLayerPoint(event.latlng);
+  let best: number | null = null;
+  let bestDistance = Infinity;
+  for (let i = 0; i < drawn.length - 1; i++) {
+    const from = map.latLngToLayerPoint(drawn[i].position);
+    const to = map.latLngToLayerPoint(drawn[i + 1].position);
+    const distance = LineUtil.pointToSegmentDistance(pointer, from, to);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = drawn[i + 1].index - 1;
+    }
+  }
+  return best;
+}
+
 export default function FlightPlan(props: FlightPlanProps) {
+  const [selectedWaypoint, setSelectedWaypoint] = useState<number | null>(null);
+  const [menu, setMenu] = useState<WaypointTarget | null>(null);
+  const [dialog, setDialog] = useState<{
+    target: WaypointTarget;
+    renaming: boolean;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteWaypoint] = useDeleteWaypointMutation();
+  const [openTgoInfo] = useOpenTgoInfoDialogMutation();
+
+  // Delete removes the selected waypoint, the same key that removes it in the
+  // flight editor's list, in the package list and in the flights list. Asked first,
+  // because there is no undo, and refused out loud when the plan will not give it up.
+  useEffect(() => {
+    if (!props.selected || selectedWaypoint == null) {
+      return;
+    }
+    const onKey = async (event: KeyboardEvent) => {
+      if (event.key !== "Delete" || menu != null || dialog != null) {
+        return;
+      }
+      const target = document.activeElement;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      const waypoint = props.flight.waypoints?.find(
+        (w) => w.index === selectedWaypoint,
+      );
+      if (waypoint == null) {
+        return;
+      }
+      if (!waypoint.can_delete) {
+        setError(
+          `${waypoint.name} is part of this flight's plan. It can be removed from ` +
+            "the flight's waypoint tab, which can rebuild the plan around it.",
+        );
+        return;
+      }
+      if (!window.confirm(`Delete ${waypoint.name}?`)) {
+        return;
+      }
+      setSelectedWaypoint(null);
+      try {
+        await deleteWaypoint({
+          flightId: props.flight.id,
+          waypointIdx: waypoint.index,
+        }).unwrap();
+      } catch (e) {
+        setError(refusalFrom(e));
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [
+    props.selected,
+    props.flight,
+    selectedWaypoint,
+    menu,
+    dialog,
+    deleteWaypoint,
+  ]);
+
   return (
     <>
-      <FlightPlanPath {...props} />
-      <WaypointMarkers {...props} />
+      <FlightPlanPath {...props} onError={setError} />
+      <WaypointMarkers
+        {...props}
+        selectedWaypoint={selectedWaypoint}
+        onSelect={setSelectedWaypoint}
+        onOpen={(target) => setDialog({ target: target, renaming: false })}
+        onMenu={setMenu}
+      />
       <CommitBoundaryIfSelected
         flightId={props.flight.id}
         selected={props.selected}
       />
+      {menu && (
+        <WaypointMenu
+          target={menu}
+          onOpenTarget={() => {
+            if (menu.waypoint.target_id) {
+              openTgoInfo({ tgoId: menu.waypoint.target_id });
+            }
+            setMenu(null);
+          }}
+          onOpenDialog={() => {
+            setDialog({ target: menu, renaming: false });
+            setMenu(null);
+          }}
+          onRename={() => {
+            setDialog({ target: menu, renaming: true });
+            setMenu(null);
+          }}
+          onClose={() => setMenu(null)}
+          onError={setError}
+        />
+      )}
+      {dialog && (
+        <WaypointDialog
+          target={dialog.target}
+          renaming={dialog.renaming}
+          onClose={() => setDialog(null)}
+          onError={setError}
+        />
+      )}
+      {error && (
+        <WaypointError message={error} onClose={() => setError(null)} />
+      )}
     </>
+  );
+}
+
+function WaypointError(props: { message: string; onClose: () => void }) {
+  useEffect(() => {
+    const id = setTimeout(props.onClose, 6000);
+    return () => clearTimeout(id);
+  });
+  return (
+    <div className="wp-toast" onClick={props.onClose}>
+      {props.message}
+    </div>
   );
 }

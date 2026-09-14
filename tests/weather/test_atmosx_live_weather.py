@@ -440,3 +440,18 @@ def test_the_reason_reaches_the_caller_that_asked(
     reason = module.refresh_live_weather(SimpleNamespace(theater=None, settings=None))
     assert reason is not None
     assert "No METAR data available for UGKS." in reason
+
+
+def test_the_cli_is_run_without_a_console_window() -> None:
+    """It is a console program, so Windows gives it a black window of its own over
+    whatever the player is doing. Redirecting the pipes does not stop that."""
+    import subprocess
+
+    from game.weather.atmosxliveweather import _no_console
+
+    flags = _no_console()
+    if hasattr(subprocess, "CREATE_NO_WINDOW"):
+        assert flags == {"creationflags": subprocess.CREATE_NO_WINDOW}
+    else:
+        # Nothing to hide anywhere else, and nothing to pass either.
+        assert flags == {}

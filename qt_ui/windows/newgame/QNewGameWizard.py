@@ -5,7 +5,6 @@ import logging
 from PySide6 import QtGui, QtWidgets
 
 from game.campaignloader.campaign import Campaign
-from game.dcs.aircrafttype import AircraftType
 from game.theater.start_generator import GameGenerator, GeneratorSettings, ModSettings
 from qt_ui.windows.AirWingConfigurationDialog import AirWingConfigurationDialog
 from qt_ui.windows.newgame.WizardPages.QFactionSelection import FactionSelection
@@ -170,11 +169,6 @@ class NewGameWizard(QtWidgets.QWizard):
         AirWingConfigurationDialog(
             self.generatedGame, generator.generator_settings.squadrons_start_full, self
         ).exec_()
-
-        g = self.generatedGame
-        herc = AircraftType.named("C-130J-30 Super Hercules")
-        if herc in g.blue.air_wing.squadrons or herc in g.red.air_wing.squadrons:
-            g.settings.set_plugin_option("herculescargo", True)
 
         self.generatedGame.begin_turn_0(
             squadrons_start_full=generator_settings.squadrons_start_full

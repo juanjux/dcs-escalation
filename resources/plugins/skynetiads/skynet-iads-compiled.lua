@@ -3516,7 +3516,13 @@ end
 
 function SkynetIADSAbstractRadarElement:goAutonomous()
 	self.isAutonomous = true
-	if self.autonomousBehaviour == SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK then
+	-- DCS Retribution: an element with no power stays dark whatever its autonomous
+	-- behaviour says. Going autonomous means it lost its network, not that it grew a
+	-- generator: with AUTONOMOUS_STATE_DCS_AI this called goLive() unconditionally, so
+	-- bombing a site's comms node switched it back ON even though its power station was
+	-- rubble -- and bombing both left it fighting as if nothing had happened.
+	if self.autonomousBehaviour == SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK
+			or self:hasWorkingPowerSource() == false then
 		self:goDark()
 	else
 		self:goLive()

@@ -9,19 +9,22 @@ from typing import Dict, Optional, Union, Any
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
+    QCheckBox,
     QGridLayout,
-    QGroupBox,
+    QHBoxLayout,
+    QInputDialog,
     QLabel,
+    QMessageBox,
+    QPushButton,
     QSizePolicy,
     QVBoxLayout,
-    QPushButton,
-    QInputDialog,
-    QMessageBox,
     QWidget,
 )
 from dcs import lua
 
 from game import Game
+from qt_ui.widgets.cards import make_transparent
+from qt_ui.widgets.controls import mono
 from game.ato.flight import Flight
 from game.ato.flightmember import FlightMember
 from game.data.weapons import Pylon
@@ -55,48 +58,122 @@ def _atomic_write_text(path: Path, text: str) -> None:
         raise
 
 
-class QLoadoutEditor(QGroupBox):
+class QLoadoutEditor(QWidget):
+    """The pylons, and the switch that decides whether you may touch them.
+
+    A checkable group box before, which meant the switch was the section's title and
+    the section's title was a switch. It is a plain card now with the checkbox in its
+    own header row, so the caption above can name the section and the switch can look
+    like a switch.
+    """
+
     saved = Signal(str)
+    #: Any pylon on any member changed.
+    pylons_changed = Signal()
+    #: Kept for the checkable-group-box API this used to have.
+    toggled = Signal(bool)
 
     def __init__(self, flight: Flight, flight_member: FlightMember, game: Game) -> None:
-        super().__init__("Use custom loadout")
+        super().__init__()
         self.flight = flight
         self.flight_member = flight_member
         self.game = game
-        self.setCheckable(True)
-        self.setChecked(flight_member.loadout.is_custom)
 
-        vbox = QVBoxLayout(self)
-        layout = QGridLayout(self)
+        vbox = QVBoxLayout()
+        vbox.setContentsMargins(0, 0, 0, 0)
+        vbox.setSpacing(0)
+
+        self.custom_check = QCheckBox("Custom loadout")
+        self.custom_check.setToolTip(
+            "Off, the flight carries the selected preset. On, you choose each pylon."
+        )
+        self.custom_check.setChecked(flight_member.loadout.is_custom)
+        self.custom_check.toggled.connect(self.toggled)
+        self.custom_check.setStyleSheet(
+            "font-size: 12px; background: transparent; border: none;"
+        )
+        header = QHBoxLayout()
+        header.setContentsMargins(14, 6, 14, 6)
+        header.addWidget(self.custom_check)
+        header.addStretch()
+        header_holder = QWidget()
+        make_transparent(header_holder)
+        header_holder.setLayout(header)
+        vbox.addWidget(header_holder)
+
+        layout = QGridLayout()
+        layout.setContentsMargins(14, 0, 14, 0)
+        layout.setHorizontalSpacing(10)
+        layout.setVerticalSpacing(2)
 
         for i, pylon in enumerate(Pylon.iter_pylons(self.flight.unit_type)):
-            label = QLabel(f"<b>{pylon.number}</b>")
+            label = QLabel(str(pylon.number))
+            label.setFont(mono(12))
+            label.setFixedWidth(18)
+            label.setStyleSheet(
+                "color: #8E9DAA; background: transparent; border: none;"
+            )
             label.setSizePolicy(
                 QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             )
             layout.addWidget(label, i, 0)
-            layout.addWidget(QPylonEditor(game, flight, flight_member, pylon), i, 1)
+            editor = QPylonEditor(game, flight, flight_member, pylon)
+            editor.setFixedHeight(30)
+            editor.pylon_changed.connect(self.pylons_changed)
+            layout.addWidget(editor, i, 1)
 
         vbox.addLayout(layout)
 
-        layout = QGridLayout(self)
-        save_btn = QPushButton("Save Payload")
-        save_btn.setProperty("style", "btn-danger")
-        save_btn.setMaximumWidth(250)
-        save_btn.clicked.connect(self._save_payload)
-        layout.addWidget(save_btn, 0, 0)
+        footer = QHBoxLayout()
+        footer.setContentsMargins(14, 8, 14, 4)
+        footer.setSpacing(8)
+        hint = QLabel("Turn on Custom loadout to edit pylons")
+        hint.setStyleSheet(
+            "font-size: 11px; color: #7C8B99; background: transparent; border: none;"
+        )
+        footer.addWidget(hint)
+        footer.addStretch()
 
-        purge_btn = QPushButton("Create Backup")
-        purge_btn.setProperty("style", "btn-success")
-        purge_btn.setMaximumWidth(250)
-        purge_btn.clicked.connect(self._backup_payloads)
-        layout.addWidget(purge_btn, 0, 1)
-        vbox.addLayout(layout)
+        self.purge_btn = QPushButton("Create backup")
+        self.purge_btn.setProperty("style", "btn-success")
+        self.purge_btn.setMaximumWidth(140)
+        self.purge_btn.clicked.connect(self._backup_payloads)
+        footer.addWidget(self.purge_btn)
 
+        self.save_btn = QPushButton("Save payload")
+        self.save_btn.setProperty("style", "btn-danger")
+        self.save_btn.setMaximumWidth(140)
+        self.save_btn.clicked.connect(self._save_payload)
+        footer.addWidget(self.save_btn)
+
+        footer_holder = QWidget()
+        make_transparent(footer_holder)
+        footer_holder.setLayout(footer)
+        vbox.addWidget(footer_holder)
+
+        self.hint = hint
         self.setLayout(vbox)
+
+        self.custom_check.toggled.connect(self._sync_editable)
+        self._sync_editable(self.custom_check.isChecked())
 
         for pylon_editor in self.iter_pylon_editors():
             pylon_editor.set_from(self.flight_member.loadout)
+
+    # --- what the checkable group box used to give us -----------------------
+
+    def isChecked(self) -> bool:  # noqa: N802 (Qt naming)
+        return bool(self.custom_check.isChecked())
+
+    def setChecked(self, checked: bool) -> None:  # noqa: N802 (Qt naming)
+        self.custom_check.setChecked(checked)
+
+    def _sync_editable(self, custom: bool) -> None:
+        """Saving a payload only means anything once you have edited one."""
+        self.save_btn.setEnabled(custom)
+        self.hint.setVisible(not custom)
+        for pylon_editor in self.iter_pylon_editors():
+            pylon_editor.setEnabled(custom)
 
     def iter_pylon_editors(self) -> Iterator[QPylonEditor]:
         yield from self.findChildren(QPylonEditor)

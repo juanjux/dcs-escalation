@@ -2,7 +2,7 @@
 
 A Debriefing is built from the mission's state file and its unit map and holds the
 flights and theater objects of a mission that is over. The window built from it was the
-only place the report lived, so closing Retribution lost it. The report here is the same
+only place the report lived, so closing Escalation lost it. The report here is the same
 thing as plain data: small enough to ride in the save, and carrying nothing that belongs
 to the finished mission -- including the live game, which is hung on it for the window
 and dropped again on the way out.

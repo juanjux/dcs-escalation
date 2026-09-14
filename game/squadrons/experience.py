@@ -27,7 +27,7 @@ XP_MISSION_COMPLETE = 500
 #: A vehicle: a tank, a SAM launcher, a convoy truck, a front line gun.
 XP_GROUND_KILL = 200
 
-#: A hull. Flat, because 91 of the 110 ships shipped with Retribution are priced at zero
+#: A hull. Flat, because 91 of the 110 ships shipped with Escalation are priced at zero
 #: -- a Ticonderoga is worth nothing to `unit_type.price`, so value would score it as
 #: nothing. Pricing the fleet properly is a separate job.
 XP_SHIP_KILL = 300

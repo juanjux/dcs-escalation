@@ -23,51 +23,120 @@ ground_forces:
 
 advanced_iads: true # Campaign has connection_nodes / power_sources / command_centers
 iads_config:
+# Red ran as three islands -- WEST (CM-A/PW-A), CENTRAL (CM-A2/CM-B/PW-B) and EAST
+# (CM-C/CM-B2/PW-C) shared no node, so the map drew separate networks a few miles
+# apart. Comms are cross-linked, and the power is a single grid: every site draws
+# from all three stations, because a military grid is built to lose nodes. A
+# dependency list is an OR, so nothing goes dark until all three stations are down --
+# and when the last one does, the whole network goes at once. Every site is inside
+# the 35 nm power range of every station, and every comms link inside 15 nm.
 #COMMAND
   - COMMAND:
     - CM-C
     - CM-B2
+    - CM-B
+    - CM-A2
+    - PW-A
+    - PW-B
     - PW-C
 #WEST IADS
   - EWR-A:
     - CM-A
+    - CM-A2
     - PW-A
+    - PW-B
+    - PW-C
   - SAM-A:
     - CM-A
+    - CM-A2
     - PW-A
+    - PW-B
+    - PW-C
 #CENTRAL IADS
   - EWR-B:
     - CM-A2
+    - CM-B2
+    - PW-A
     - PW-B
+    - PW-C
   - SAM-A2:
     - CM-A2
+    - CM-A
+    - PW-A
     - PW-B
+    - PW-C
   - SAM-B:
     - CM-B
+    - CM-B2
+    - PW-A
     - PW-B
+    - PW-C
 #EAST IADS
   - EWR-C:
     - CM-C
+    - PW-A
+    - PW-B
     - PW-C
   - SAM-C1:
     - CM-B2
+    - PW-A
+    - PW-B
     - PW-C
   - SAM-C2:
     - CM-B2
+    - CM-B
+    - PW-A
+    - PW-B
     - PW-C
   - SAM-C3:
     - CM-C
+    - PW-A
+    - PW-B
     - PW-C
-  - NATO SAM-1
-  - NATO SAM-2
-  - NATO NELLIS 1
-  - NATO NELLIS 2
-  - NATO NELLIS 3
-  - NATO NELLIS 4
+#NATO IADS
+# Blue had no IADS at all beyond the bunker: no early-warning radar, no comms, no
+# power. Skynet keeps a SAM in the network only while a live parent radar covers it,
+# so without an EWR every blue site went autonomous whatever else it had. Two radars
+# (Creech and Nellis), three relay towers and two power stations, placed so that the
+# coverage overlaps -- CM-1 and CM-2 share NELLIS 1, CM-2 and CM-3 share NELLIS 2 and
+# 3 -- which makes blue one network rather than three islands the way red was. Its
+# grid is meshed as far as the 35 nm range allows: only NELLIS 1 sits inside both
+# stations, Creech and Nellis being 37-48 nm apart.
+  - NATO EWR-1:
+    - NATO CM-1
+    - NATO PW-1
+  - NATO EWR-2:
+    - NATO CM-2
+    - NATO CM-3
+    - NATO PW-2
+  - NATO SAM-1:
+    - NATO CM-1
+    - NATO PW-1
+  - NATO SAM-2:
+    - NATO CM-1
+    - NATO PW-1
+  - NATO NELLIS 1:
+    - NATO CM-1
+    - NATO CM-2
+    - NATO PW-1
+    - NATO PW-2
+  - NATO NELLIS 2:
+    - NATO CM-2
+    - NATO CM-3
+    - NATO PW-2
+  - NATO NELLIS 3:
+    - NATO CM-2
+    - NATO CM-3
+    - NATO PW-2
+  - NATO NELLIS 4:
+    - NATO CM-3
+    - NATO PW-2
 # Command centres only reach Skynet as KEYS -- as a dependency of a site
 # they are never handed to the plugin, and an empty command centre list
 # reads as working command, so the bunker could not be bombed at all.
-  - NATO COMMAND
+  - NATO COMMAND:
+    - NATO CM-1
+    - NATO PW-1
 squadrons:
 # Nellis AFB
   4:

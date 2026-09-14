@@ -98,7 +98,7 @@ class LuaGenerator:
         if not rows:
             return
 
-        preamble = "RETRIBUTION_SCENERY_ZONES = {\n" + "\n".join(rows) + "\n}\n"
+        preamble = "ESCALATION_SCENERY_ZONES = {\n" + "\n".join(rows) + "\n}\n"
         trigger = TriggerStart(comment="Building objectives (positions)")
         trigger.add_action(DoScript(String(preamble)))
         self.mission.triggerrules.triggers.append(trigger)
@@ -108,7 +108,7 @@ class LuaGenerator:
         """Hand the Mission Log the name of the pilot behind every unit.
 
         A DCS event names a unit "STAG BARCAP|2|14|F-15C Eagle| Pilot #2". The
-        aircraft is in there, but the pilot is not: only Retribution knows who
+        aircraft is in there, but the pilot is not: only Escalation knows who
         was rostered into that seat. This is that mapping, and it is seeded only
         when the plugin that reads it is switched on -- an unused table of a few
         hundred names in every mission is pure weight.
@@ -138,7 +138,7 @@ class LuaGenerator:
         if not rows:
             return
 
-        preamble = "RETRIBUTION_PILOTS = {\n" + "\n".join(rows) + "\n}\n"
+        preamble = "ESCALATION_PILOTS = {\n" + "\n".join(rows) + "\n}\n"
         trigger = TriggerStart(comment="Mission Log (pilot roster)")
         trigger.add_action(DoScript(String(preamble)))
         self.mission.triggerrules.triggers.append(trigger)
@@ -185,7 +185,7 @@ class LuaGenerator:
             )
             return
         preamble = textwrap.dedent("""\
-            -- Pre-seed TIC (GLSCO) configuration from Retribution plugin
+            -- Pre-seed TIC (GLSCO) configuration from Escalation plugin
             -- options. TIC respects values that exist before it loads.
             -- AutoInitialize/AutoStart are disabled because tic_414_init.lua
             -- (loaded right after the main script) installs the 414th's
@@ -419,7 +419,7 @@ class LuaGenerator:
         # carries no gpsJamming node at all and the plugin no-ops.
         populate_gps_jamming_lua(lua_data, self.game, self.mission_data)
 
-        trigger = TriggerStart(comment="Set DCS Retribution data")
+        trigger = TriggerStart(comment="Set DCS Escalation data")
         trigger.add_action(DoScript(String(lua_data.create_operations_lua())))
         self.mission.triggerrules.triggers.append(trigger)
 

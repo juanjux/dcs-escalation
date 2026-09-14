@@ -33,10 +33,10 @@ from game.server.dependencies import QtCallbacks, QtContext
 from game.theater import ControlPoint, MissionTarget, TheaterGroundObject
 from game.theater.controlpoint import motorpools_inside_capture_zone
 from qt_ui import liberation_install
-from qt_ui.dialogs import Dialog
+from qt_ui.dialogs import Dialog, open_once
 from qt_ui.models import GameModel
 from qt_ui.simcontroller import SimController
-from qt_ui.uiconstants import URLS
+from qt_ui.uiconstants import app_settings, URLS
 from qt_ui.uiflags import UiFlags
 from qt_ui.uncaughtexceptionhandler import UncaughtExceptionHandler
 from qt_ui.widgets.QTopPanel import QTopPanel
@@ -54,7 +54,11 @@ from qt_ui.windows.notes.QNotesWindow import QNotesWindow
 from qt_ui.windows.preferences.QLiberationPreferencesWindow import (
     QLiberationPreferencesWindow,
 )
+from game.search.index import GameIndex
+from qt_ui.windows.palette import CommandPalette
 from qt_ui.windows.settings.QSettingsWindow import QSettingsWindow
+from game.squadrons.pilot import Pilot
+from qt_ui.windows.pilot import PilotDialog
 from qt_ui.windows.stats.QStatsWindow import QStatsWindow
 
 
@@ -74,6 +78,13 @@ class QLiberationWindow(QMainWindow):
         self.sim_controller.sim_update.connect(EventStream.put_nowait)
         self.game_model = GameModel(game, self.sim_controller)
         GameContext.set_model(self.game_model)
+
+        # What the command palette searches. Built the first time it is asked for and
+        # again when the campaign or the turn changes, never per keystroke.
+        self.search_index = GameIndex()
+        self._palette: Optional[CommandPalette] = None
+        #: Dialogs the palette opened. Held, or Qt collects them as they are shown.
+        self.palette_child_dialogs: list[QWidget] = []
         self.new_package_signal.connect(
             lambda target: Dialog.open_new_package_dialog(target, self)
         )
@@ -129,6 +140,8 @@ class QLiberationWindow(QMainWindow):
                 game = self.migrate_game(game, last_save_file)
                 self.onGameGenerated(game)
                 self.updateWindowTitle(last_save_file if game else None)
+                if game is not None:
+                    persistency.remember_saved_state(game)
             else:
                 logging.info("No existing save game")
         else:
@@ -183,7 +196,13 @@ class QLiberationWindow(QMainWindow):
         self.saveAsAction.triggered.connect(self.saveGameAs)
         self.saveAsAction.setShortcut("CTRL+A")
 
-        self.showAboutDialogAction = QAction("&About DCS Retribution", self)
+        # In the menu as well as on the shortcut: a palette nobody knows about is a
+        # palette nobody uses, and the menu is where a player looks for what exists.
+        self.commandPaletteAction = QAction("&Command Palette", self)
+        self.commandPaletteAction.setShortcut("CTRL+P")
+        self.commandPaletteAction.triggered.connect(self.open_command_palette)
+
+        self.showAboutDialogAction = QAction("&About DCS Escalation", self)
         self.showAboutDialogAction.setIcon(QIcon.fromTheme("help-about"))
         self.showAboutDialogAction.triggered.connect(self.showAboutDialog)
 
@@ -306,6 +325,8 @@ class QLiberationWindow(QMainWindow):
         self.menu = self.menu_bar
 
         file_menu = self.menu.addMenu("&File")
+        file_menu.addAction(self.commandPaletteAction)
+        file_menu.addSeparator()
         file_menu.addAction(self.newGameAction)
         file_menu.addAction(self.openAction)
         file_menu.addSeparator()
@@ -383,6 +404,8 @@ class QLiberationWindow(QMainWindow):
             GameUpdateSignal.get_instance().game_loaded.emit(game)
 
             self.updateWindowTitle(file[0])
+            if game is not None:
+                persistency.remember_saved_state(game)
 
     def migrate_game(self, game, path):
         if game:
@@ -437,11 +460,11 @@ class QLiberationWindow(QMainWindow):
 
     def updateWindowTitle(self, save_path: Optional[str] = None) -> None:
         """
-        Window title format: DCS Retribution - vX.X.X - campaign_name - file_name
+        Window title format: DCS Escalation - vX.X.X - campaign_name - file_name
         Campaign name is shown if a game is loaded and has a campaign_name.
         File name is appended only if save_path is provided.
         """
-        window_title = f"DCS Retribution - v{VERSION}"
+        window_title = f"DCS Escalation - v{VERSION}"
 
         if self.game and self.game.campaign_name:
             window_title += f" - {self.game.campaign_name}"
@@ -519,7 +542,7 @@ class QLiberationWindow(QMainWindow):
                 self,
                 "Could not load save game",
                 "The save game you have loaded is incompatible with this "
-                "version of DCS Retribution.\n"
+                "version of DCS Escalation.\n"
                 "\n"
                 f"{traceback.format_exc()}",
                 QMessageBox.StandardButton.Ok,
@@ -594,15 +617,21 @@ class QLiberationWindow(QMainWindow):
             "StillClock1",
         ]
         text = (
-            "<h3>DCS Retribution " + VERSION + "</h3>" + "<b>Source code : </b>"
-            "<a href='https://github.com/dcs-retribution/dcs-retribution' style='color:white'>"
-            "https://github.com/dcs-retribution/dcs-retribution </a>"
+            "<h3>DCS Escalation " + VERSION + "</h3>" + "<b>Source code : </b>"
+            "<a href='https://github.com/juanjux/dcs-escalation' style='color:white'>"
+            "https://github.com/juanjux/dcs-escalation </a>"
             + "<h4>Authors</h4>"
-            + "<p>DCS Retribution is an (independent) fork of DCS Liberation, "
+            + "<p>DCS Escalation is a personal fork of <b>DCS Retribution</b> by "
+            "<b>juanjux</b>, carrying features and fixes that are not in Retribution "
+            "itself.</p>"
+            "<p>DCS Retribution is an (independent) fork of DCS Liberation, "
             "which was originally developed by <b>shdwp</b>. "
             "DCS Liberation 2.0 is a partial rewrite based on this work by <b>Khopa</b>. "
             "DCS Retribution was forked during development of "
-            "DCS Liberation v6.0.0 in 2022 by <b>Raffson</> & <b>MetalStormGhost</>."
+            "DCS Liberation v6.0.0 in 2022 by <b>Raffson</> & <b>MetalStormGhost</>, "
+            "and lives at "
+            "<a href='https://github.com/dcs-retribution/dcs-retribution' style='color:white'>"
+            "github.com/dcs-retribution/dcs-retribution</a>."
             "<h4>Contributors</h4>"
             + ", ".join(contributors)
             + "<h4>Special Thanks  :</h4>"
@@ -621,7 +650,7 @@ class QLiberationWindow(QMainWindow):
             "[https://www.facebook.com/AndriyDankovych]</a>"
         )
         about = QMessageBox()
-        about.setWindowTitle("About DCS Retribution")
+        about.setWindowTitle("About DCS Escalation")
         about.setIcon(QMessageBox.Icon.Information)
         about.setText(text)
         logging.info(about.textFormat())
@@ -633,6 +662,11 @@ class QLiberationWindow(QMainWindow):
 
     def showSettingsDialog(self) -> None:
         self.dialog = QSettingsWindow(self.game)
+        # Re-sync transfer visibility when settings are successfully applied so
+        # RED rows appear/disappear as enable_enemy_buy_sell changes.
+        self.dialog.settings_applied.connect(
+            self.game_model.transfer_model.sync_game_and_visibility
+        )
         self.dialog.show()
 
     def showStatsDialog(self):
@@ -703,6 +737,13 @@ class QLiberationWindow(QMainWindow):
     def open_tgo_info_dialog(self, tgo: TheaterGroundObject) -> None:
         QGroundObjectMenu(self, tgo, tgo.control_point, self.game_model).show()
 
+    def open_command_palette(self) -> None:
+        """One box that finds a setting, a base, an objective, a squadron, a pilot,
+        a flight or any command in the menus."""
+        if self._palette is None:
+            self._palette = CommandPalette(self)
+        self._palette.open_over(self)
+
     def open_control_point_info_dialog(self, cp: ControlPoint) -> None:
         self._cp_dialog = QBaseMenu2(None, cp, self.game_model)
         self._cp_dialog.show()
@@ -710,8 +751,21 @@ class QLiberationWindow(QMainWindow):
     def on_select_flight(self, flight: Flight) -> None:
         self.ato_panel.select_flight_on_map(flight)
 
+    def open_pilot_dialog(self, pilot: Pilot) -> None:
+        """One man's record, for anything holding a pilot and no squadron.
+
+        The roster opens its own on a double click; this is the way in for anything
+        that has found him some other way.
+        """
+        if self.game is None:
+            return
+        game = self.game
+        self._pilot_dialog = open_once(
+            f"pilot:{pilot.id}", lambda: PilotDialog(pilot, game, self)
+        )
+
     def _qsettings(self) -> QSettings:
-        return QSettings("DCS Retribution", "Qt UI")
+        return app_settings()
 
     def _restore_window_geometry(self) -> None:
         settings = self._qsettings()
@@ -724,9 +778,15 @@ class QLiberationWindow(QMainWindow):
         settings.setValue("windowState", self.saveState())
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        # Nothing to lose, nothing to ask: the campaign is exactly what its own save
+        # file already holds, or there is no campaign open at all.
+        if not persistency.has_unsaved_changes(self.game):
+            self._shut_down(event)
+            return
+
         result = QMessageBox.question(
             self,
-            "Quit Retribution?",
+            "Quit Escalation?",
             "Would you like to save before quitting?",
             QMessageBox.StandardButton.Yes
             | QMessageBox.StandardButton.No
@@ -736,11 +796,14 @@ class QLiberationWindow(QMainWindow):
         if result in [QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No]:
             if result == QMessageBox.StandardButton.Yes:
                 self.saveGame()
-            self._save_window_geometry()
-            super().closeEvent(event)
-            self.dialog = None
-            self.debriefing = None
-            for window in QApplication.topLevelWidgets():
-                window.close()
+            self._shut_down(event)
         else:
             event.ignore()
+
+    def _shut_down(self, event: QCloseEvent) -> None:
+        self._save_window_geometry()
+        super().closeEvent(event)
+        self.dialog = None
+        self.debriefing = None
+        for window in QApplication.topLevelWidgets():
+            window.close()

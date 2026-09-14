@@ -166,3 +166,31 @@ def test_motorpool_losses_by_type_counts_per_side() -> None:
 
     assert debriefing.motorpool_losses_by_type(Player.BLUE) == {t90: 2, bmp: 1}
     assert debriefing.motorpool_losses_by_type(Player.RED) == {bmp: 1}
+
+
+def test_ground_object_losses_belong_to_the_side_in_the_name() -> None:
+    """The rule the LLM's debrief documents: red_sites_lost is what RED lost, not what
+    red killed. The howtoplay text said the opposite of the code for both sides."""
+
+    def _lost(type_id: str) -> Any:
+        return SimpleNamespace(
+            theater_unit=SimpleNamespace(type=SimpleNamespace(id=type_id))
+        )
+
+    debriefing = _sample_debriefing()
+    debriefing.ground_losses = GroundLosses(
+        player_ground_objects=[
+            _lost("Patriot ln"),
+            _lost("Patriot ln"),
+            _lost("Hawk sr"),
+        ],
+        enemy_ground_objects=[_lost("S-300PS 5P85C ln")],
+    )
+
+    assert debriefing.ground_object_losses_by_type(Player.BLUE) == {
+        "Patriot ln": 2,
+        "Hawk sr": 1,
+    }
+    assert debriefing.ground_object_losses_by_type(Player.RED) == {
+        "S-300PS 5P85C ln": 1
+    }

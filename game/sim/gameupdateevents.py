@@ -40,6 +40,11 @@ class GameUpdateEvents:
     deleted_iads_connections: set[UUID] = field(default_factory=set)
     updated_supply_routes: bool = False
     reset_on_map_center: LatLng | None = None
+    #: Somewhere the player asked to be shown, rather than somewhere the campaign
+    #: has moved to, and how close to look at it. The map keeps its own zoom when
+    #: there is none.
+    fly_to: LatLng | None = None
+    fly_to_zoom: int | None = None
     game_unloaded: bool = False
     new_turn: bool = False
     shutting_down: bool = False
@@ -126,6 +131,22 @@ class GameUpdateEvents:
         self.updated_tgos.add(tgo)
         return self
 
+    def update_motorpools_at(self, *control_points: ControlPoint) -> GameUpdateEvents:
+        """Adds every authored motorpool TGO at the given control points.
+
+        Event serialization reconciles the affected control points immediately
+        before building TGO payloads. Because :attr:`updated_tgos` is a set, a
+        motorpool refreshed by multiple operations in one batch is deduplicated
+        to a single refresh.
+        """
+        from game.theater.theatergroundobject import MotorpoolGroundObject
+
+        for control_point in control_points:
+            for tgo in getattr(control_point, "ground_objects", []):
+                if isinstance(tgo, MotorpoolGroundObject):
+                    self.updated_tgos.add(tgo)
+        return self
+
     def update_control_point(self, control_point: ControlPoint) -> GameUpdateEvents:
         self.updated_control_points.add(control_point)
         return self
@@ -151,6 +172,12 @@ class GameUpdateEvents:
                 game.theater.terrain.map_view_default.position.latlng()
             )
             self.game_unloaded = False
+        return self
+
+    def look_at(self, latlng: LatLng, zoom: int | None = None) -> GameUpdateEvents:
+        """Point the map at this, wherever it was looking, and how close."""
+        self.fly_to = latlng
+        self.fly_to_zoom = zoom
         return self
 
     def begin_new_turn(self) -> GameUpdateEvents:
