@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Closing only asks whether to save when there is something to save: the campaign is fingerprinted as a save would write it, so quitting after a save, or after a look around that changed nothing, just quits.
 * **[UI]** The dashed run in to a target answers the pointer like the rest of the route: hovering lights the flight plan up, clicking selects the flight and its package.
 * **[Map]** The factory, warehouse and fuel depot icons are drawn a fifth larger, letters and all: the frame had the room and the stock symbol was not using it.
 * **[Map]** A factory, a warehouse and a fuel depot are three icons now instead of one lettered STOR: the factory keeps the shed with chimneys and reads FTRY, the warehouse is a crate reading WARE, and the fuel depot a drum reading FUEL.
