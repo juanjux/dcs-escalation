@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
+from collections.abc import Iterator
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime
 from typing import Dict, Optional, TYPE_CHECKING
@@ -21,6 +23,12 @@ if TYPE_CHECKING:
     from dcs.mapping import Point
 
     from game.theater import ControlPoint, MissionTarget
+
+
+#: The packages whose escort window is being worked out at this moment, by identity.
+#: Not a field on the package: it is about a call in flight, and a field would be
+#: written into the save as though it were part of the campaign.
+_ESCORT_WINDOWS_BEING_WORKED_OUT: set[int] = set()
 
 
 class Package(RadioFrequencyContainer):
@@ -97,10 +105,42 @@ class Package(RadioFrequencyContainer):
             return None
         return min(speeds)
 
+    @contextmanager
+    def _working_out_the_escort_window(self) -> Iterator[bool]:
+        """False when this package is already in the middle of working it out.
+
+        The window is asked of every flight, and a flight answers with a time that can
+        be derived from the window itself -- an escort takes its own from the flight it
+        protects, and a patrol being protected takes its own from the window. Asked in
+        that order the question has no answer, and what it used to do about that was
+        recurse until the stack ran out, which killed the request it was answering: the
+        map draws itself from one of those, so an escort on a patrol emptied it.
+
+        Nobody is a better answer than nothing at all. A flight that finds the window
+        being worked out already falls back to its own timing, which is what it would
+        have used if the package had no escorts.
+        """
+        key = id(self)
+        if key in _ESCORT_WINDOWS_BEING_WORKED_OUT:
+            yield False
+            return
+        _ESCORT_WINDOWS_BEING_WORKED_OUT.add(key)
+        try:
+            yield True
+        finally:
+            _ESCORT_WINDOWS_BEING_WORKED_OUT.discard(key)
+
     # TODO: Should depend on the type of escort.
     # SEAD might be able to leave before CAP.
     @property
     def escort_start_time(self) -> datetime | None:
+        with self._working_out_the_escort_window() as ours:
+            if not ours:
+                return None
+            return self._escort_start_time
+
+    @property
+    def _escort_start_time(self) -> datetime | None:
         times = []
         for flight in self.flights:
             waypoint = flight.flight_plan.request_escort_at()
@@ -120,6 +160,13 @@ class Package(RadioFrequencyContainer):
 
     @property
     def escort_end_time(self) -> datetime | None:
+        with self._working_out_the_escort_window() as ours:
+            if not ours:
+                return None
+            return self._escort_end_time
+
+    @property
+    def _escort_end_time(self) -> datetime | None:
         times = []
         for flight in self.flights:
             waypoint = flight.flight_plan.dismiss_escort_at()
