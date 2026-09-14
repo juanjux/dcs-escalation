@@ -244,15 +244,25 @@ def move(pilot: Pilot, other: Pilot, amount: float) -> float:
     return after - before
 
 
-def drift_step(same_squadron: bool, current: float, settings: Any = None) -> float:
+def drift_step(
+    same_squadron: bool,
+    current: float,
+    settings: Any = None,
+    returned: Optional[float] = None,
+) -> float:
     """One turn of ordinary acquaintance, in one direction.
 
     Warmer, cooler or neither, on the odds the campaign sets. A rise stops at the top of
     Friendly: the bands that pay for synergy and for being looked for are earned in the
     air, not by sharing a ramp for long enough. A fall has no such floor -- losing touch
     with somebody needs nothing but time.
+
+    ``returned`` is what the other man thinks of him, which makes the warming roll
+    likelier when the other man thinks more of him than he does in return. Being liked
+    is noticed, and the two halves of a pair tend to meet in the middle.
     """
     up, down = drift_odds(same_squadron, settings)
+    up = min(100.0, up + reciprocity_bonus(current, returned, settings))
     roll = random.random() * 100
     step = drift_step_size(settings)
     ceiling = drift_ceiling(settings)
@@ -273,6 +283,11 @@ DRIFT_SAME_SQUADRON_UP = 35
 DRIFT_SAME_SQUADRON_DOWN = 20
 DRIFT_SAME_BASE_UP = 22
 DRIFT_SAME_BASE_DOWN = 10
+
+#: Added to the warming chance for each point the other man's opinion is above his
+#: own. A pair four points apart rolls twenty percentage points likelier to close, on
+#: top of the ordinary odds; the cooling roll is left alone.
+RECIPROCITY_PER_POINT = 5.0
 
 #: How far one turn of drift moves a pair. A tenth of the scale, so this is the
 #: fastest-moving number in the feature.
@@ -384,6 +399,26 @@ def drift_odds(same_squadron: bool, settings: Any = None) -> tuple[float, float]
     return (
         float(_setting(settings, "friendship_drift_base_up", DRIFT_SAME_BASE_UP)),
         float(_setting(settings, "friendship_drift_base_down", DRIFT_SAME_BASE_DOWN)),
+    )
+
+
+def reciprocity_bonus(
+    current: float, returned: Optional[float], settings: Any = None
+) -> float:
+    """How many points of warming chance the other man's opinion is worth.
+
+    Only when his is the higher of the two, and only to the warming roll: being liked
+    more than you like back is a reason to come round, and no reason at all to cool off
+    faster. Each point of difference on the 0 to 10 scale is worth the campaign's
+    per-point figure.
+    """
+    if returned is None:
+        return 0.0
+    gap = returned - current
+    if gap <= 0:
+        return 0.0
+    return gap * float(
+        _setting(settings, "friendship_reciprocity_per_point", RECIPROCITY_PER_POINT)
     )
 
 
@@ -569,7 +604,10 @@ def tend_friendships(air_wing: AirWing, settings: Any = None) -> None:
                 if other is pilot:
                     continue
                 step = drift_step(
-                    other_squadron is squadron, feeling(pilot, other), settings
+                    other_squadron is squadron,
+                    feeling(pilot, other),
+                    settings,
+                    returned=feeling(other, pilot),
                 )
                 # A man who has watched enough people go down feels less of any of
                 # it, warming and cooling alike.
