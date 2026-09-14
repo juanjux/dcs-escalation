@@ -36,25 +36,32 @@ function svgFor(tgo: TgoModel): string {
 }
 
 describe("the three kinds of store", () => {
-  it("letters a factory FTRY and leaves it the shed with chimneys", () => {
+  it("letters a factory FTRY and keeps the shed with chimneys", () => {
     const svg = svgFor(store("factory"));
     expect(svg).toContain(">FTRY</text>");
     expect(svg).not.toContain(">STOR</text>");
-    // The stock icon: the chimneys are already the right picture for a factory.
-    expect(svg).toContain("m 104,75");
+    // The stock shape, drawn larger: two chimneys over a shed.
+    expect(svg).toContain("M105,70 H111 V86 H122 V70 H128 V86 H136 V130 H64");
+    expect(svg).not.toContain("m 104,75");
+  });
+
+  it("draws the letters large enough to read on the map", () => {
+    // milsymbol sizes them for the stock four letters and leaves the frame half
+    // empty; these are four letters too, with the same room to fill.
+    expect(svgFor(store("ware"))).toContain('font-size="28"');
   });
 
   it("letters a warehouse WARE and draws it a crate", () => {
     const svg = svgFor(store("ware"));
     expect(svg).toContain(">WARE</text>");
-    expect(svg).toContain("M74,80 h52 v44 h-52 z");
+    expect(svg).toContain("M64,78 h72 v52 h-72 z");
     expect(svg).not.toContain("m 104,75");
   });
 
   it("letters a fuel depot FUEL and draws it a drum", () => {
     const svg = svgFor(store("fuel"));
     expect(svg).toContain(">FUEL</text>");
-    expect(svg).toContain("a20,9 0 0,1 40,0");
+    expect(svg).toContain("a27,10 0 0,1 54,0");
     expect(svg).not.toContain("m 104,75");
   });
 
