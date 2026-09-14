@@ -8,8 +8,9 @@ everyday loop is a pull and a launch, and dist_full_fork only has to be rebuilt 
 a release.
 
 The one thing that still has to be built is the React map, and only when the client
-sources have actually changed -- so this looks at what the pull brought in and runs
-`npm run build` (about a minute) only then. Same for requirements.txt.
+sources have actually changed -- so this compares the built map against them and runs
+`npm run build` (about a minute) only when it is behind. Same for requirements.txt,
+which is compared against what the pull brought in.
 
 Usage:
   .\run_from_source.ps1                # pull if it is safe to, build if needed, run
@@ -60,33 +61,42 @@ if (-not $NoPull) {
 }
 $after = (git rev-parse HEAD).Trim()
 
-# --- 2) Build only what the pull actually touched ---------------------------------
-if ($before -ne $after) {
-    $changed = git diff --name-only $before $after
-
-    if ($changed | Where-Object { $_ -like 'client/src/*' -or $_ -eq 'client/package.json' }) {
-        Say 'The map changed -- npm run build (about a minute)...'
-        Push-Location (Join-Path $repo 'client')
-        npm run build
-        $ok = $LASTEXITCODE -eq 0
-        Pop-Location
-        if (-not $ok) { Die 'The client build failed.' }
+# --- 2) Build the map whenever it is behind its sources ---------------------------
+# Not "whenever this run's pull touched it": a pull done by hand beforehand, a branch
+# switched, an edit made here -- all leave the built map stale with nothing for this
+# script to notice, and the app then runs new Python against an old map for days. The
+# question is only ever whether the build is older than what it was built from.
+function Test-MapStale {
+    $built = Join-Path $repo 'client\build\index.html'
+    if (-not (Test-Path $built)) { return $true }
+    $when = (Get-Item $built).LastWriteTimeUtc
+    $sources = @(Get-ChildItem (Join-Path $repo 'client\src') -Recurse -File -ErrorAction SilentlyContinue)
+    foreach ($name in 'package.json', 'package-lock.json') {
+        $path = Join-Path $repo "client\$name"
+        if (Test-Path $path) { $sources += Get-Item $path }
     }
-
-    if ($changed -contains 'requirements.txt') {
-        Say 'requirements.txt changed -- pip install...'
-        & (Join-Path $venv 'python.exe') -m pip install -q -r requirements.txt
-        if ($LASTEXITCODE -ne 0) { Die 'pip install failed.' }
+    foreach ($source in $sources) {
+        if ($source.LastWriteTimeUtc -gt $when) { return $true }
     }
+    return $false
 }
 
-if (-not (Test-Path (Join-Path $repo 'client\build\index.html'))) {
-    Say 'No built map in the tree -- npm run build (about a minute)...'
+if (Test-MapStale) {
+    Say 'The built map is behind its sources -- npm run build (about a minute)...'
     Push-Location (Join-Path $repo 'client')
     npm run build
     $ok = $LASTEXITCODE -eq 0
     Pop-Location
     if (-not $ok) { Die 'The client build failed.' }
+}
+
+if ($before -ne $after) {
+    $changed = git diff --name-only $before $after
+    if ($changed -contains 'requirements.txt') {
+        Say 'requirements.txt changed -- pip install...'
+        & (Join-Path $venv 'python.exe') -m pip install -q -r requirements.txt
+        if ($LASTEXITCODE -ne 0) { Die 'pip install failed.' }
+    }
 }
 
 # --- 3) Run it --------------------------------------------------------------------
