@@ -70,16 +70,56 @@ function relabelAsGps(svg: string): string {
     .replace(/>EW<\/text>/, ">GPS</text>");
 }
 
+// APP-6(D) has one symbol for a store of anything, so a factory, a warehouse and a
+// fuel depot are the same picture on the map, lettered STOR. Which of the three it is
+// happens to be the useful part: a factory is what lets a base recruit ground units,
+// and the other two are each worth a different sortie.
+//
+// milsymbol draws the store as one <path> and the letters as one <text>, so both can
+// be swapped for something that says which it is. The factory keeps the stock icon --
+// a shed with two chimneys is already a factory -- and only loses the wrong letters.
+const STORE_BUILDING = /d="m 104,75[^"]*"/;
+
+const STORE_ICONS: Record<string, { label: string; glyph?: string }> = {
+  factory: { label: "FTRY" },
+  ware: { label: "WARE", glyph: "M74,80 h52 v44 h-52 z M74,92 h52" },
+  fuel: {
+    label: "FUEL",
+    glyph:
+      "M80,86 a20,9 0 0,1 40,0 v32 a20,9 0 0,1 -40,0 z M80,86 a20,9 0 0,0 40,0",
+  },
+};
+
+export function isStore(tgo: TgoModel): boolean {
+  return tgo.category in STORE_ICONS;
+}
+
+function relabelStore(svg: string, category: string): string {
+  const icon = STORE_ICONS[category];
+  if (icon === undefined) {
+    return svg;
+  }
+  let out = svg.replace(/>STOR<\/text>/, `>${icon.label}</text>`);
+  if (icon.glyph !== undefined) {
+    out = out.replace(STORE_BUILDING, `d="${icon.glyph}"`);
+  }
+  return out;
+}
+
 export function iconForTgo(tgo: TgoModel) {
   const symbol = new ms.Symbol(tgo.sidc, { size: 24 });
   const iconAnchor = new Point(symbol.getAnchor().x, symbol.getAnchor().y);
   const repairing = isRepairing(tgo);
   const jammer = isJammer(tgo);
+  const store = isStore(tgo);
   const iadsColor = iadsBarColor(tgo);
-  if (!repairing && !jammer && !iadsColor) {
+  if (!repairing && !jammer && !store && !iadsColor) {
     return new Icon({ iconUrl: symbol.toDataURL(), iconAnchor });
   }
   let svg = symbol.asSVG();
+  if (store) {
+    svg = relabelStore(svg, tgo.category);
+  }
   if (repairing) {
     svg = svg.split(MILSYMBOL_DAMAGED_YELLOW).join(REPAIRING_ORANGE);
   }

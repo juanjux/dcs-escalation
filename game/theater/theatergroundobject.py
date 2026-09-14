@@ -421,7 +421,11 @@ class BuildingGroundObject(TheaterGroundObject):
         elif self.category == "derrick":
             entity = LandInstallationEntity.PETROLEUM_FACILITY
         elif self.category == "factory":
-            entity = LandInstallationEntity.MAINTENANCE_FACILITY
+            # A shed with two chimneys, which is what this symbol draws, is a better
+            # picture of a factory than the wrench APP-6 keeps for a maintenance depot.
+            # The map letters it FTRY, so it is not confused with the other stores that
+            # share the symbol.
+            entity = LandInstallationEntity.WAREHOUSE_STORAGE_FACILITY
         elif self.category == "farp":
             entity = LandInstallationEntity.HELICOPTER_LANDING_SITE
         elif self.category == "fuel":
