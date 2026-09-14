@@ -116,3 +116,38 @@ it("draws nothing for a flight with no target waypoint", () => {
 
   expect(mockPolyline).not.toHaveBeenCalled();
 });
+
+it("gives the run a wide invisible twin to catch the mouse", () => {
+  const click = jest.fn();
+  render(
+    <TargetRuns
+      waypoints={waypoints}
+      drawn={[ingress]}
+      color="#0084ff"
+      handlers={{ click }}
+    />,
+  );
+
+  // One drawn run and one grab overlay per target.
+  expect(mockPolyline).toHaveBeenCalledTimes(4);
+  const grabs = mockPolyline.mock.calls
+    .map((call) => call[0])
+    .filter((props) => props.pathOptions.weight === 16);
+  expect(grabs.length).toBe(2);
+  for (const grab of grabs) {
+    expect(grab.pathOptions.opacity).toBe(0);
+    expect(grab.pathOptions.interactive).toBe(true);
+    expect(grab.eventHandlers.click).toBe(click);
+  }
+});
+
+it("draws no twin for a plan nothing can be done with", () => {
+  render(
+    <TargetRuns waypoints={waypoints} drawn={[ingress]} color="#c85050" />,
+  );
+
+  expect(mockPolyline).toHaveBeenCalledTimes(2);
+  for (const call of mockPolyline.mock.calls) {
+    expect(call[0].pathOptions.interactive).toBe(false);
+  }
+});

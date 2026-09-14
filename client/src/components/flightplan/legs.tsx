@@ -1,5 +1,11 @@
 import { Waypoint } from "../../api/liberationApi";
-import { DivIcon, LatLng, LatLngLiteral, latLng } from "leaflet";
+import {
+  DivIcon,
+  LatLng,
+  LatLngLiteral,
+  LeafletEventHandlerFnMap,
+  latLng,
+} from "leaflet";
 import { ReactElement } from "react";
 import { Marker, Polyline, useMap, useMapEvent } from "react-leaflet";
 import { useReducer } from "react";
@@ -104,6 +110,14 @@ export function TargetRuns(props: {
   color?: string;
   /** How long each run is. Worth saying for the flight being worked on, and only it. */
   labelled?: boolean;
+  /**
+   * What to do with the mouse on a run, if anything. The run is part of the plan and
+   * reads as part of it, so it answers the pointer like the rest of the route: it is
+   * the leg nearest the target, and the one most likely to be pointed at.
+   */
+  handlers?: LeafletEventHandlerFnMap;
+  /** Shown while the pointer is on a run, as on the route itself. */
+  tooltip?: ReactElement;
 }): ReactElement {
   const runs: ReactElement[] = [];
   for (const target of props.waypoints.filter((w) => w.is_target)) {
@@ -123,6 +137,20 @@ export function TargetRuns(props: {
         }}
       />,
     );
+    if (props.handlers !== undefined) {
+      // A wide, invisible twin catches the mouse, so a two-pixel dashed line is as
+      // easy to hit as the route -- the same trick the route itself uses.
+      runs.push(
+        <Polyline
+          key={`run-grab-${target.index}`}
+          positions={[from.position, target.position]}
+          pathOptions={{ weight: 16, opacity: 0, interactive: true }}
+          eventHandlers={props.handlers}
+        >
+          {props.tooltip}
+        </Polyline>,
+      );
+    }
     if (props.labelled) {
       runs.push(
         <LegDistance
