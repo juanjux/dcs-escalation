@@ -14,7 +14,7 @@ description:
   fighting to the west, a USN battle group is dispatched from the east coast of
   the US to clear the Chinese forces from the continent and crush their carrier
   group.</p>
-version: "10.8"
+version: "10.9"
 recommended_player_faction: US Navy 2005
 recommended_enemy_faction: China 2010
 miz: gran_polvorin.miz
@@ -41,7 +41,8 @@ ground_forces:
 # does not take command with it.
 #
 # The islands are their own network: Mount Pleasant is 750 km from the mainland and no
-# tower reaches that far.
+# tower reaches that far. The two AAA sites there are point defence and are not part of
+# it; either can be bought up to a SAM.
 iads_config:
 
 # RED -- command
@@ -116,15 +117,6 @@ iads_config:
         - Blue Power Mount Pleasant
         - Blue IADS Command Center Mount Pleasant
     - Blue EWR Fitzroy:
-        - Blue Comms Fitzroy
-        - Blue Comms Mount Pleasant
-        - Blue Power Mount Pleasant
-        - Blue IADS Command Center Mount Pleasant
-    - Blue SAM LR Mount Pleasant:
-        - Blue Comms Mount Pleasant
-        - Blue Power Mount Pleasant
-        - Blue IADS Command Center Mount Pleasant
-    - Blue SAM MR Fitzroy:
         - Blue Comms Fitzroy
         - Blue Comms Mount Pleasant
         - Blue Power Mount Pleasant
