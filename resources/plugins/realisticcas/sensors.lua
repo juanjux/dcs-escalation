@@ -51,9 +51,25 @@ do
     return math.max(p.visualRange, p.irRange, p.eoRange, p.rbmRange, p.gmtiRange)
   end
 
+  -- Chance per completed search/retry, not per frame or per vehicle in a group.
+  -- Gameplay tuning, NOT measured detection probabilities. Radar has no generic
+  -- low-altitude bonus: its cone, depression, LOS and motion gates still apply.
+  function M.discoveryChance(mode,distance,reach,agl,p)
+    local proximity=math.max(0,math.min(1,1-distance/reach))
+    if mode=="gmti" then return 0.75+0.23*proximity end
+    if mode=="rbm" then return 0.50+0.45*proximity end
+    local base=mode=="visual" and 0.10 or 0.20
+    local chance=base+0.70*proximity
+    if p.category=="air" then
+      local ceiling=mode=="visual" and p.visualMaxAGL or p.opticalMaxAGL
+      chance=chance*(1-0.60*math.min(1,agl/ceiling))
+    end
+    return chance
+  end
+
   -- Environment comes from the mission adapter/exporter. Unknown values never
   -- silently mean sunny desert; return an explicit failure for missing inputs.
-  function M.assess(o, t, e, p)
+  function M.assess(o, t, e, p, probabilistic)
     if not o or not t or o.side==t.side or (o.side~=1 and o.side~=2) or
       (t.side~=1 and t.side~=2) then return nil,"coalition" end
     if not vec(o.point) or not vec(t.point) or not bounded(o.agl,0,100000) then return nil,"geometry" end
@@ -74,9 +90,15 @@ do
     local cover=terrain[e.cover]
     local weather=0.2+0.8*e.weather
     local light=0.04+0.96*e.light
-    local mode,reach
+    local mode,reach,chance
     local function choose(name,r)
-      if r>0 and distance<=r and (not reach or r>reach) then mode,reach=name,r end
+      if r>0 and distance<=r then
+        local candidate=M.discoveryChance(name,distance,r,o.agl,p)
+        if not reach or (probabilistic and candidate>chance) or
+          (not probabilistic and r>reach) then
+          mode,reach,chance=name,r,candidate
+        end
+      end
     end
     if azimuth<=p.visualHalfAngle then
       if o.agl<=p.visualMaxAGL then
@@ -107,7 +129,7 @@ do
     if not mode then return nil,"sensor envelope" end
     -- LOS deliberately lives outside this pure model and is checked only AFTER
     -- these cheap filters, once for the winning candidate channel.
-    return {mode=mode,distance=distance,range=reach}
+    return {mode=mode,distance=distance,range=reach,chance=chance}
   end
 
   -- Cheap daily illumination from exported sunrise/sunset (seconds of local day).

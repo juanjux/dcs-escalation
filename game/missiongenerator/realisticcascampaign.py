@@ -103,6 +103,9 @@ def prepare_campaign(
         "Experimental: legacy JTAC generation suppressed; runtime-created units need adapters"
     )
     acquisition = options.get("acquisitionSeconds", 20)
+    probabilistic = options.get("probabilisticDetection", True)
+    if type(probabilistic) is not bool:
+        raise ValueError("Realistic CAS: probabilistic detection must be boolean")
     ttl = options.get("contactSeconds", 600)
     if type(ttl) is not int or not 30 <= ttl <= 3600:
         raise ValueError("Realistic CAS: contact duration must be 30..3600 seconds")
@@ -114,6 +117,7 @@ def prepare_campaign(
         "registry": registry,
         "environment": environment,
         "acquisitionSeconds": acquisition,
+        "probabilisticDetection": probabilistic,
         "ttl": ttl,
         "debug": debug,
         "interval": 0.25,

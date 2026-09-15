@@ -40,6 +40,7 @@ do
       observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,
       traceDecisions=c.traceDecisions==true,
       acquisitionSeconds=c.acquisitionSeconds,
+      probabilisticDetection=c.probabilisticDetection,
       acquisitionMaxGap=c.acquisitionMaxGap,
       environment=c.environment,
       readTarget=function(name)
@@ -95,7 +96,8 @@ do
           "|losBudgetHits="..d.losBudgetHits.."|workBudgetHits="..d.workBudgetHits..
           "|culledObservers="..d.culledObservers.."|cullChecks="..d.cullChecks)
         log("SEARCH_STATS","pending="..d.pendingAcquisitions.."|started="..d.acquisitionStarts..
-          "|completed="..d.acquisitionCompletions.."|resets="..d.acquisitionResets)
+          "|completed="..d.acquisitionCompletions.."|resets="..d.acquisitionResets..
+          "|rolls="..d.detectionRolls.."|passes="..d.detectionPasses.."|misses="..d.detectionMisses)
       end
       return now+interval
     end,nil,timer.getTime()+interval)

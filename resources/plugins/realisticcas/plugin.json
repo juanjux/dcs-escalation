@@ -5,11 +5,17 @@
     "specificOptions": [
         {
             "nameInUI": "Search time for a new group (seconds)",
-            "descriptionInUI": "Observation time needed to discover one previously unknown enemy group (default: 20 seconds). An observer searches one new group at a time and must keep obtaining valid observations within sensor range, field of view and terrain line of sight. Losing contact resets the search. This is a deterministic search delay, not a percentage chance. Firing reveals a group immediately without this delay.",
+            "descriptionInUI": "Observation time needed before trying to discover one previously unknown enemy group (default: 20 seconds). An observer searches one new group at a time and must keep obtaining valid observations within sensor range, field of view and terrain line of sight. Losing contact resets the search. With detection rolls enabled, completing this delay allows the first roll, not guaranteed discovery; failed attempts retry no faster than every 5 simulated seconds. With rolls disabled, discovery follows the search delay. Firing always reveals a group immediately, without a delay or roll.",
             "mnemonic": "acquisitionSeconds",
             "defaultValue": 20,
             "minimumValue": 1,
             "maximumValue": 600
+        },
+        {
+            "nameInUI": "Probabilistic detection (distance, altitude and sensors)",
+            "descriptionInUI": "After the search delay, roll to discover an unknown group instead of revealing it automatically. Enabled by default when Realistic CAS is used. Closer targets are easier; lower aircraft have better visual/EO/IR chances if terrain line of sight is clear. Ground radar has much higher chances and GMTI helps further against moving targets, but still requires an eligible aircraft, role, active radar, search cone and line of sight. No generic low-altitude bonus for radar. One roll per observer and focused group per scan, no faster than every 5 simulated seconds; extra vehicles do not give extra rolls. Known contacts refresh without rolls. A firing group is ALWAYS revealed immediately, without a roll. Disable to compare with the original deterministic search. These are gameplay approximations, not measured sensor performance.",
+            "mnemonic": "probabilisticDetection",
+            "defaultValue": true
         },
         {
             "nameInUI": "Contact lifetime after last observation or shot (seconds)",

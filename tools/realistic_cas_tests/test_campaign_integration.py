@@ -60,6 +60,7 @@ class CampaignIntegrationTests(unittest.TestCase):
         units_before = [u.dict() for u in self.air.units]
         config = prepare_campaign(self.g, [self.p])
         self.assertEqual(config["ttl"], 600)
+        self.assertIs(config["probabilisticDetection"], True)
         self.assertEqual(config["environment"]["defaultCover"], "grassland")
         # Actual existing suntime-based campaign calculator, not a fake sunrise.
         sunrise = config["environment"]["solarDays"][0]["sunrise"]
@@ -118,9 +119,12 @@ class CampaignIntegrationTests(unittest.TestCase):
                 option.set_value(1)
             if option.identifier == "realisticcas.contactSeconds":
                 option.set_value(123)
+            if option.identifier == "realisticcas.probabilisticDetection":
+                option.set_value(False)
         config = prepare_campaign(self.g, [self.p])
         self.assertEqual(config["environment"]["defaultCover"], "desert")
         self.assertEqual(config["ttl"], 123)
+        self.assertIs(config["probabilisticDetection"], False)
         for option in self.p.options:
             if option.identifier == "realisticcas.acquisitionSeconds":
                 option.set_value(0)

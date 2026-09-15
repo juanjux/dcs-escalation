@@ -63,6 +63,11 @@ def render_startup(config: Mapping[str, Any]) -> str | None:
         raise ValueError("Campaign acquisition time must be explicit and positive")
     if not isinstance(config.get("environment"), Mapping):
         raise ValueError("Explicit Realistic CAS environment required")
+    if (
+        "probabilisticDetection" in config
+        and type(config["probabilisticDetection"]) is not bool
+    ):
+        raise ValueError("Realistic CAS probabilistic detection must be boolean")
     return (
         "do local ok, instance, why = pcall(RealisticCAS.startMission, "
         + lua_literal(config)
