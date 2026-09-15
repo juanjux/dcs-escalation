@@ -58,10 +58,19 @@ class PluginSettings:
 
 class LuaPluginOption(PluginSettings):
     def __init__(
-        self, identifier: str, name: str, min: Any, max: Any, value: Any
+        self,
+        identifier: str,
+        name: str,
+        min: Any,
+        max: Any,
+        value: Any,
+        description: str = "",
+        choices: Optional[List[tuple[str, Any]]] = None,
     ) -> None:
         super().__init__(identifier, value)
         self.name = name
+        self.description = description
+        self.choices = choices or []
         if type(value) == int or type(value) == float:
             self.min, self.max = min, max
         else:
@@ -98,6 +107,11 @@ class LuaPluginDefinition:
                     min=option.get("minimumValue", 0),
                     max=option.get("maximumValue", 10000),
                     value=option.get("defaultValue"),
+                    description=option.get("descriptionInUI", ""),
+                    choices=[
+                        (choice["label"], choice["value"])
+                        for choice in option.get("choices", [])
+                    ],
                 )
             )
 

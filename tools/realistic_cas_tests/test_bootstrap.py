@@ -43,6 +43,24 @@ class BootstrapTests(unittest.TestCase):
         assert(not RealisticCAS.mission and #pending==0)
         """)
 
+    def test_shot_and_gunfire_always_reveal_without_a_roll(self):
+        self.check("""
+        cfg.probabilisticDetection=true
+        local draws=0
+        math.random=function()draws=draws+1;return 0.999 end
+        for _,event in ipairs({world.event.S_EVENT_SHOT,world.event.S_EVENT_SHOOTING_START}) do
+          local m=assert(RealisticCAS.startMission(cfg))
+          run(60);assert(red.hidden) -- every sensor roll fails
+          local before=draws
+          emit(event,red)
+          assert(not red.hidden and m.fog.service:isRevealed(1,2))
+          assert(draws==before) -- no roll or acquisition delay for firing
+          run(10);assert(draws==before) -- known contacts refresh without rolls
+          assert(m:stop());run(3)
+        end
+        assert(draws>0) -- proves the option reached the running detector
+        """)
+
     def test_sam_overlap_and_bad_environment_rejected_before_hide(self):
         self.check("""
         local before=#commands
@@ -111,6 +129,9 @@ class BootstrapTests(unittest.TestCase):
         for seconds in (0, -1, True, float("nan"), 601):
             with self.assertRaises(ValueError):
                 EXPORT.render_startup({**cfg, "acquisitionSeconds": seconds})
+        for bad in (1, "true", None):
+            with self.assertRaises(ValueError):
+                EXPORT.render_startup({**cfg, "probabilisticDetection": bad})
 
     def test_each_lua_and_declared_bundle_compile(self):
         sources = [

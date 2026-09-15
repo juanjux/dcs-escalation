@@ -60,6 +60,7 @@ class CampaignIntegrationTests(unittest.TestCase):
         units_before = [u.dict() for u in self.air.units]
         config = prepare_campaign(self.g, [self.p])
         self.assertEqual(config["ttl"], 600)
+        self.assertIs(config["probabilisticDetection"], True)
         self.assertEqual(config["environment"]["defaultCover"], "grassland")
         # Actual existing suntime-based campaign calculator, not a fake sunrise.
         sunrise = config["environment"]["solarDays"][0]["sunrise"]
@@ -118,9 +119,12 @@ class CampaignIntegrationTests(unittest.TestCase):
                 option.set_value(1)
             if option.identifier == "realisticcas.contactSeconds":
                 option.set_value(123)
+            if option.identifier == "realisticcas.probabilisticDetection":
+                option.set_value(False)
         config = prepare_campaign(self.g, [self.p])
         self.assertEqual(config["environment"]["defaultCover"], "desert")
         self.assertEqual(config["ttl"], 123)
+        self.assertIs(config["probabilisticDetection"], False)
         for option in self.p.options:
             if option.identifier == "realisticcas.acquisitionSeconds":
                 option.set_value(0)
@@ -137,6 +141,50 @@ class CampaignIntegrationTests(unittest.TestCase):
                 inject_campaign(self.g, config)
         self.assertEqual(len(self.m.triggerrules.triggers), 0)
         self.assertEqual(self.g.plugin_scripts, [])
+
+    def test_probability_defaults_match_manifest_python_and_lua(self):
+        from game.missiongenerator.realisticcasluadata import PROBABILITY_DEFAULTS
+
+        from test_sensors import CORE, SOURCES
+
+        defaults = {
+            o.identifier.removeprefix("realisticcas."): o.get_value
+            for o in self.p.options
+        }
+        rt = LuaRuntime()
+        rt.execute(CORE)
+        for source in SOURCES:
+            rt.execute(source)
+        lua_defaults = dict(rt.eval("RealisticCAS.Sensors.probabilityConfig()"))
+        self.assertEqual(lua_defaults, PROBABILITY_DEFAULTS)
+        for name, value in PROBABILITY_DEFAULTS.items():
+            self.assertEqual(defaults[name], value)
+        self.assertEqual(
+            prepare_campaign(self.g, [self.p])["probability"], lua_defaults
+        )
+
+    def test_changed_probability_options_reach_export_and_bad_pairs_fail(self):
+        options = {
+            o.identifier.removeprefix("realisticcas."): o for o in self.p.options
+        }
+        options["retrySeconds"].set_value(17)
+        options["radarFarPercent"].set_value(70)
+        options["radarNearPercent"].set_value(99)
+        options["visualMaxAGL"].set_value(2100)
+        config = prepare_campaign(self.g, [self.p])
+        self.assertEqual(config["probability"]["retrySeconds"], 17)
+        self.assertEqual(config["probability"]["radarFarPercent"], 70)
+        self.assertEqual(config["probability"]["radarNearPercent"], 99)
+        self.assertEqual(config["probability"]["visualMaxAGL"], 2100)
+        from game.missiongenerator.realisticcasluadata import render_startup
+
+        rt = LuaRuntime()
+        rt.execute("RealisticCAS={startMission=function(c) captured=c;return {} end}")
+        rt.execute(render_startup(config))
+        self.assertEqual(dict(rt.globals().captured.probability), config["probability"])
+        options["radarFarPercent"].set_value(100)
+        with self.assertRaisesRegex(ValueError, "far chance"):
+            prepare_campaign(self.g, [self.p])
 
     def test_generated_miz_contains_ordered_files_and_typed_startup(self):
         config = prepare_campaign(self.g, [self.p])

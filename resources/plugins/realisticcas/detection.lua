@@ -26,6 +26,13 @@ do
     local maxGap=o.acquisitionMaxGap or math.max(60,revisit*2)
     assert(S.finite(maxGap) and maxGap>=revisit and maxGap<=3600,"invalid acquisition observation gap")
     if acquisition>0 then assert(type(o.isRevealed)=="function","contact visibility callback required") end
+    assert(o.probabilisticDetection==nil or type(o.probabilisticDetection)=="boolean",
+      "invalid probabilistic detection option")
+    local probabilistic=o.probabilisticDetection==true
+    local probability=S.probabilityConfig(o.probability)
+    assert(not probabilistic or acquisition>0,"detection rolls require positive search time")
+    local random=o.random or math.random
+    assert(type(random)=="function","random callback must be a function")
     local targets, observers, cells, membership={},{},{},{}
     local targetIds,observerIds={},{}
     -- Coarser coalition occupancy rejects empty sectors before fine-cell scans.
@@ -37,7 +44,8 @@ do
     local stats={targetReads=0,observerReads=0,candidates=0,los=0,reveals=0,errors=0,work=0,sweeps=0,
       rejectedEnvelope=0,blockedLOS=0,acquisitionStarts=0,acquisitionCompletions=0,
       acquisitionResets=0,pendingAcquisitions=0,maxSweepGap=0,overdueVisits=0,
-      losBudgetHits=0,workBudgetHits=0,pendingJobs=0,culledObservers=0,cullChecks=0}
+      losBudgetHits=0,workBudgetHits=0,pendingJobs=0,culledObservers=0,cullChecks=0,
+      detectionRolls=0,detectionPasses=0,detectionMisses=0}
     local api={}
     local function log(kind,detail)
       if o.log then pcall(o.log,kind,detail) end
@@ -93,6 +101,28 @@ do
       end
       if f.progress<acquisition then return false end
       return true
+    end
+    local function discovered(v,target,observer,result,now)
+      if not acquired(v,target,now) then return false end
+      if not probabilistic then return true end
+      local f=v.focus
+      -- One roll for the focused GROUP per sweep and at least retrySeconds
+      -- apart. Extra members, extra ticks and delayed work grant no extra rolls.
+      if f.rollSweep==v.sweep or (f.lastRoll and now-f.lastRoll<probability.retrySeconds) then return false end
+      f.rollSweep=v.sweep;f.lastRoll=now
+      stats.detectionRolls=stats.detectionRolls+1
+      local ok,roll=pcall(random)
+      if not ok or not S.finite(roll) or roll<0 or roll>=1 then
+        stats.errors=stats.errors+1;log("ERROR","invalid detection random sample")
+        return false
+      end
+      local pass=roll<result.chance
+      if pass then stats.detectionPasses=stats.detectionPasses+1
+      else stats.detectionMisses=stats.detectionMisses+1 end
+      log("DETECTION_ROLL",string.format(
+        "%s -> %s|mode=%s|distance=%.1f|range=%.1f|agl=%.1f|chance=%.4f|roll=%.4f|pass=%s",
+        v.id,f.group,result.mode,result.distance,result.range,observer.agl,result.chance,roll,tostring(pass)))
+      return pass
     end
     local function key(x,z) return x..":"..z end
     local function unlink(id)
@@ -223,7 +253,7 @@ do
                   local target=call("readTarget",id)
                   if target and target.side~=observer.side and S.vector(target.point) then
                     local env=call("environment",observer,target,now)
-                    local result,reason=S.assess(observer,target,env,job.observer.profile)
+                    local result,reason=S.assess(observer,target,env,job.observer.profile,probabilistic,probability)
                     if result then
                       local v=job.observer
                       local known=acquisition>0 and call("isRevealed",target,observer)==true
@@ -237,7 +267,7 @@ do
                       losUsed=losUsed+1
                       if call("lineOfSight",observer.point,target.point)==true then
                         trace("LOS_CLEAR",observer,id,target,result.mode.."|distance="..result.distance)
-                        if (known or acquired(v,target,now)) and call("reveal",target,observer,result)==true then
+                        if (known or discovered(v,target,observer,result,now)) and call("reveal",target,observer,result)==true then
                           if acquisition>0 and not known then
                             stats.acquisitionCompletions=stats.acquisitionCompletions+1
                             stats.pendingAcquisitions=stats.pendingAcquisitions-1

@@ -10,11 +10,13 @@ set -- with its description underneath. The options open in their own dialog, so
 page stays a list you can read down.
 """
 
+from html import escape
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import QLocale, Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QFrame,
     QDoubleSpinBox,
@@ -67,13 +69,32 @@ class PluginOptionsBox(QGroupBox):
             row += 1
 
         for option in plugin.options:
+            # Rich text wraps long help; escape plugin text rather than treating
+            # sensor comparisons or other markup as HTML.
+            tooltip = (
+                f"<qt>{escape(option.description)}</qt>" if option.description else ""
+            )
             label = QLabel(option.name)
+            label.setToolTip(tooltip)
             label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             layout.addWidget(label, row, 0)
             self.labels[option.identifier] = label
 
             val = option.get_value
-            if isinstance(val, bool):
+            if option.choices:
+                combo = QComboBox()
+                for name, value in option.choices:
+                    combo.addItem(name, value)
+                # Saved values remain typed IDs, not translated labels/indices.
+                combo.setCurrentIndex(combo.findData(val))
+                combo.currentIndexChanged.connect(
+                    lambda index, control=combo, opt=option: (
+                        opt.set_value(control.itemData(index)) if index >= 0 else None
+                    )
+                )
+                layout.addWidget(combo, row, 1)
+                self.widgets[option.identifier] = combo
+            elif isinstance(val, bool):
                 checkbox = QCheckBox()
                 checkbox.setChecked(val)
                 checkbox.toggled.connect(option.set_value)
@@ -102,13 +123,21 @@ class PluginOptionsBox(QGroupBox):
                 layout.addWidget(field, row, 1)
                 self.widgets[option.identifier] = field
 
+            widget = self.widgets.get(option.identifier)
+            if widget is not None:
+                widget.setToolTip(tooltip)
+
             row += 1
 
     def update_from_settings(self, settings: Settings) -> None:
         for identifier in self.widgets:
             value = settings.plugin_option(identifier)
             w = self.widgets[identifier]
-            if isinstance(w, QCheckBox):
+            if isinstance(w, QComboBox):
+                blocked = w.blockSignals(True)
+                w.setCurrentIndex(w.findData(value))
+                w.blockSignals(blocked)
+            elif isinstance(w, QCheckBox):
                 w.setChecked(value)
             elif isinstance(w, (QDoubleSpinBox, QSpinBox)):
                 w.setValue(value)

@@ -30,6 +30,9 @@ do
     local environment=RealisticCAS.newEnvironment(c.environment)
     assert(RealisticCAS.Sensors.finite(c.acquisitionSeconds) and c.acquisitionSeconds>0
       and c.acquisitionSeconds<=600,'campaign acquisition time must be explicit and positive')
+    assert(c.probabilisticDetection==nil or type(c.probabilisticDetection)=='boolean',
+      'invalid probabilistic detection option')
+    local probability=RealisticCAS.Sensors.probabilityConfig(c.probability)
     local function log(kind,msg)
       env.info('REALISTIC_CAS_MISSION|'..kind..'|t='..timer.getTime()..'|'..tostring(msg))
     end
@@ -58,6 +61,8 @@ do
         debug=c.debug,expiryBudget=c.expiryBudget}))
       api.detectors=RealisticCAS.startDetection(api.fog,{targets=r.targets,observers=r.observers,
         environment=environment,acquisitionSeconds=c.acquisitionSeconds,
+        probabilisticDetection=c.probabilisticDetection,
+        probability=probability,
         acquisitionMaxGap=c.acquisitionMaxGap,interval=c.interval,revisit=c.revisit,
         targetBudget=c.targetBudget,workBudget=c.workBudget,cellSize=c.cellSize,
         observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,
@@ -65,9 +70,10 @@ do
       world.addEventHandler(handler)
       api.active=true
       for _,warning in ipairs(r.warnings)do log('WARNING',warning)end
+      for name,value in pairs(probability) do log('CONFIG',name..'='..value) end
       log('START','managedGroups='..#r.groups..'|targetUnits='..#r.targets..
         '|observers='..#r.observers..'|knownSAMGroups='..#r.knownAirDefenseGroups..
-        '|acquisitionSeconds='..c.acquisitionSeconds)
+        '|acquisitionSeconds='..c.acquisitionSeconds..'|probabilisticDetection='..tostring(c.probabilisticDetection==true))
     end)
     if not ok then
       log('ERROR','startup: '..tostring(err))

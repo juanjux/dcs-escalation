@@ -23,6 +23,7 @@ class CampaignScaleTests(unittest.TestCase):
           visualTransmission=1,irTransmission=1}
         local engine=RealisticCAS.newDetection({clock=function()return now end,
           acquisitionSeconds=20,revisit=5,targetBudget=64,workBudget=1024,
+          probabilisticDetection=true,random=function()return 0 end,
           observerBudget=64,observerQuantum=128,losBudget=64,
           readObserver=function(id)return observers[id]end,
           readTarget=function(id)return targets[id]end,
@@ -53,6 +54,7 @@ class CampaignScaleTests(unittest.TestCase):
         end
         local d=engine:getDiagnostics()
         assert(d.acquisitionCompletions==729,tostring(d.acquisitionCompletions))
+        assert(d.detectionRolls==729 and d.detectionPasses==729)
         assert(d.acquisitionResets==0,tostring(d.acquisitionResets))
         assert(d.maxSweepGap<60,tostring(d.maxSweepGap))
         assert(d.overdueVisits==0)

@@ -5,27 +5,141 @@
     "specificOptions": [
         {
             "nameInUI": "Search time for a new group (seconds)",
+            "descriptionInUI": "Observation time needed before trying to discover one previously unknown enemy group (default: 20 seconds). An observer searches one new group at a time and must keep obtaining valid observations within sensor range, field of view and terrain line of sight. Losing contact resets the search. With detection rolls enabled, completing this delay allows the first roll, not guaranteed discovery; failed attempts retry at the configured minimum interval (default: 5 simulated seconds). With rolls disabled, discovery follows the search delay. Firing always reveals a group immediately, without a delay or roll.",
             "mnemonic": "acquisitionSeconds",
             "defaultValue": 20,
             "minimumValue": 1,
             "maximumValue": 600
         },
         {
+            "nameInUI": "Probabilistic detection (distance, altitude and sensors)",
+            "descriptionInUI": "After the search delay, roll to discover an unknown group instead of revealing it automatically. Enabled by default when Realistic CAS is used. Closer targets are easier; lower aircraft have better visual/EO/IR chances if terrain line of sight is clear. Ground radar has much higher chances and GMTI helps further against moving targets, but still requires an eligible aircraft, role, active radar, search cone and line of sight. No generic low-altitude bonus for radar. One roll per observer and focused group per scan, at the configured minimum interval (default: 5 simulated seconds); extra vehicles do not give extra rolls. Known contacts refresh without rolls. A firing group is ALWAYS revealed immediately, without a roll. Disable to compare with the original deterministic search. These are gameplay approximations, not measured sensor performance.",
+            "mnemonic": "probabilisticDetection",
+            "defaultValue": true
+        },
+        {
+            "nameInUI": "Visual chance at maximum range (%)",
+            "descriptionInUI": "Visual discovery chance per roll at the edge of the effective sensor range, before the airborne altitude penalty.",
+            "mnemonic": "visualFarPercent",
+            "defaultValue": 10,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "Visual chance at zero distance (%)",
+            "descriptionInUI": "Visual chance per roll at zero distance, before the airborne altitude penalty. Interpolates linearly to the maximum-range chance. Must be at least the maximum-range chance.",
+            "mnemonic": "visualNearPercent",
+            "defaultValue": 80,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "EO/IR chance at maximum range (%)",
+            "descriptionInUI": "EO/IR discovery chance per roll at the edge of effective optical range, before the airborne altitude penalty.",
+            "mnemonic": "opticalFarPercent",
+            "defaultValue": 20,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "EO/IR chance at zero distance (%)",
+            "descriptionInUI": "EO/IR chance per roll at zero distance, before the airborne altitude penalty. Interpolates linearly to the maximum-range chance. Must be at least the maximum-range chance.",
+            "mnemonic": "opticalNearPercent",
+            "defaultValue": 90,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "Ground radar chance at maximum range (%)",
+            "descriptionInUI": "RBM ground radar discovery chance per roll at the edge of its effective range. Requires active radar, an eligible role, search cone and terrain LOS. No altitude penalty.",
+            "mnemonic": "radarFarPercent",
+            "defaultValue": 50,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "Ground radar chance at zero distance (%)",
+            "descriptionInUI": "RBM chance per roll at zero distance. Interpolates linearly to the maximum-range chance. Must be at least the maximum-range chance. Radar geometry and LOS are still required.",
+            "mnemonic": "radarNearPercent",
+            "defaultValue": 95,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "GMTI chance at maximum range (%)",
+            "descriptionInUI": "Moving-target radar chance per roll at the edge of effective range. The target must have sufficient ground speed and radial motion, and radar/LOS gates must pass.",
+            "mnemonic": "gmtiFarPercent",
+            "defaultValue": 75,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "GMTI chance at zero distance (%)",
+            "descriptionInUI": "Moving-target radar chance per roll at zero distance. Interpolates linearly to the maximum-range chance. Must be at least the maximum-range chance. No altitude penalty.",
+            "mnemonic": "gmtiNearPercent",
+            "defaultValue": 98,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "Maximum airborne visual/EO/IR altitude penalty (%)",
+            "descriptionInUI": "Relative reduction of visual/EO/IR chance at the channel's maximum observation height. Scales linearly from no reduction at ground level to this reduction at the height limit. 60 means multiply by 0.40 at the limit, not subtract 60 percentage points. 0 disables this penalty. Does not affect ground observers or radar.",
+            "mnemonic": "airAltitudePenaltyPercent",
+            "defaultValue": 60,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "Minimum time between detection rolls (seconds)",
+            "descriptionInUI": "Minimum simulated time between attempts by one observer for its focused group after the initial search. Default 5 seconds. Scanning can delay a roll further; no catch-up attempts are banked. Firing and known-contact refresh bypass rolls.",
+            "mnemonic": "retrySeconds",
+            "defaultValue": 5,
+            "minimumValue": 5,
+            "maximumValue": 300
+        },
+        {
+            "nameInUI": "Maximum airborne visual observation height (m AGL)",
+            "descriptionInUI": "Above this height, unaided visual observation is unavailable. At this height the full airborne altitude penalty applies. Default 3500 metres above local ground. Applies even with rolls disabled; radar is unaffected.",
+            "mnemonic": "visualMaxAGL",
+            "defaultValue": 3500,
+            "minimumValue": 100,
+            "maximumValue": 10000
+        },
+        {
+            "nameInUI": "Maximum airborne EO/IR observation height (m AGL)",
+            "descriptionInUI": "Above this height, EO/IR observation is unavailable. At this height the full airborne altitude penalty applies. Default 6500 metres above local ground. Applies even with rolls disabled; radar is unaffected.",
+            "mnemonic": "opticalMaxAGL",
+            "defaultValue": 6500,
+            "minimumValue": 100,
+            "maximumValue": 10000
+        },
+        {
             "nameInUI": "Contact lifetime after last observation or shot (seconds)",
+            "descriptionInUI": "How long a revealed enemy group stays known after its last valid observation or shot (default: 600 seconds / 10 minutes). Further observations or firing refresh the timer. When it expires, the group becomes hidden from enemy AI again and must be rediscovered. Discovery is shared by the opposing coalition and reveals the whole group, not just one vehicle. Fixed map SAM sites remain known. This does not hide F10 icons or freeze a moving contact at its last position.",
             "mnemonic": "contactSeconds",
             "defaultValue": 600,
             "minimumValue": 30,
             "maximumValue": 3600
         },
         {
-            "nameInUI": "Approximate cover: 0=theater, 1=desert, 2=grassland, 3=tundra, 4=forest, 5=city",
+            "nameInUI": "Approximate terrain cover",
+            "descriptionInUI": "Selects ONE approximate cover profile for the entire mission, not the actual terrain under each vehicle. Automatic chooses by map: desert for Nevada, Iraq, Syria, Persian Gulf, Sinai and Afghanistan; grassland for Caucasus, Normandy, The Channel, Germany and Falklands; tundra for Kola; forest for Marianas. Choose Desert, Grassland, Tundra, Forest or City to override this. Desert permits the longest observation ranges; grassland, tundra, forest and city progressively shorten them. EO/IR and ground radar respond differently. This is not automatic forest/city detection; terrain line of sight is checked separately. For an unsupported map, select a manual profile.",
             "mnemonic": "terrainProfile",
+            "choices": [
+                {"label": "Automatic (by map)", "value": 0},
+                {"label": "Desert", "value": 1},
+                {"label": "Grassland", "value": 2},
+                {"label": "Tundra", "value": 3},
+                {"label": "Forest", "value": 4},
+                {"label": "City", "value": 5}
+            ],
             "defaultValue": 0,
             "minimumValue": 0,
             "maximumValue": 5
         },
         {
             "nameInUI": "Detailed detection and contact logging (large dcs.log)",
+            "descriptionInUI": "Write detailed Realistic CAS search, detection, line-of-sight and contact diagnostics to dcs.log for troubleshooting. Can produce a very large log and add overhead in busy missions. Leave off for normal play; errors and scheduler-overload warnings are still reported. Does not change detection rules or add F10 markers.",
             "mnemonic": "debug",
             "defaultValue": false
         }

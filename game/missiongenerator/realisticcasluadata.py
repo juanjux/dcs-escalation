@@ -43,6 +43,46 @@ SCRIPT_ORDER = (
 )
 
 
+PROBABILITY_DEFAULTS = {
+    "visualFarPercent": 10,
+    "visualNearPercent": 80,
+    "opticalFarPercent": 20,
+    "opticalNearPercent": 90,
+    "radarFarPercent": 50,
+    "radarNearPercent": 95,
+    "gmtiFarPercent": 75,
+    "gmtiNearPercent": 98,
+    "airAltitudePenaltyPercent": 60,
+    "retrySeconds": 5,
+    "visualMaxAGL": 3500,
+    "opticalMaxAGL": 6500,
+}
+
+
+def probability_config(options: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate tunable gameplay values before exporting or hiding anything."""
+    result = {}
+    for name, default in PROBABILITY_DEFAULTS.items():
+        value = options.get(name, default)
+        low, high = 0, 100
+        if name == "retrySeconds":
+            low, high = 5, 300
+        elif name in ("visualMaxAGL", "opticalMaxAGL"):
+            low, high = 100, 10000
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(value)
+            or not low <= value <= high
+        ):
+            raise ValueError(f"Realistic CAS: {name} must be {low}..{high}")
+        result[name] = value
+    for mode in ("visual", "optical", "radar", "gmti"):
+        if result[f"{mode}FarPercent"] > result[f"{mode}NearPercent"]:
+            raise ValueError(f"Realistic CAS: {mode} far chance exceeds near chance")
+    return result
+
+
 def render_startup(config: Mapping[str, Any]) -> str | None:
     """Render the final action after SCRIPT_ORDER, without mutating the mission.
 
@@ -63,6 +103,15 @@ def render_startup(config: Mapping[str, Any]) -> str | None:
         raise ValueError("Campaign acquisition time must be explicit and positive")
     if not isinstance(config.get("environment"), Mapping):
         raise ValueError("Explicit Realistic CAS environment required")
+    if (
+        "probabilisticDetection" in config
+        and type(config["probabilisticDetection"]) is not bool
+    ):
+        raise ValueError("Realistic CAS probabilistic detection must be boolean")
+    if "probability" in config:
+        if not isinstance(config["probability"], Mapping):
+            raise ValueError("Realistic CAS probability configuration must be a map")
+        probability_config(config["probability"])
     return (
         "do local ok, instance, why = pcall(RealisticCAS.startMission, "
         + lua_literal(config)
