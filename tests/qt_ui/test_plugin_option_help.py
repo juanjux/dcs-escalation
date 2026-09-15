@@ -71,6 +71,42 @@ def test_option_help_and_editing(
         box.close()
 
 
+def test_cover_combo_preserves_saved_ids_and_refresh_does_not_write(
+    qt_app: Any,
+) -> None:
+    from PySide6.QtWidgets import QComboBox
+
+    from game.settings import Settings
+    from qt_ui.windows.settings.plugins import PluginOptionsBox
+
+    plugin = LuaPlugin.from_json(
+        "realisticcas", ROOT / "resources/plugins/realisticcas/plugin.json"
+    )
+    assert plugin is not None
+    plugin.set_settings(Settings())
+    option = next(
+        o for o in plugin.options if o.identifier == "realisticcas.terrainProfile"
+    )
+    option.set_value(4)  # Existing campaign's numeric value, before creating UI.
+    box = PluginOptionsBox(plugin)
+    try:
+        widget = box.widgets[option.identifier]
+        assert isinstance(widget, QComboBox)
+        assert widget.currentText() == "Forest"
+        assert widget.currentData() == 4
+        assert [widget.itemData(i) for i in range(widget.count())] == list(range(6))
+        widget.setCurrentIndex(widget.findData(1))
+        assert option.get_value == 1 and type(option.get_value) is int
+        option.set_value(5)
+        box.update_from_settings(option.settings)
+        assert widget.currentText() == "City" and option.get_value == 5
+        option.set_value(99)  # Invalid old value must not silently become desert.
+        box.update_from_settings(option.settings)
+        assert widget.currentIndex() == -1 and option.get_value == 99
+    finally:
+        box.close()
+
+
 def test_all_realistic_cas_options_have_help(qt_app: Any) -> None:
     from qt_ui.windows.settings.plugins import PluginOptionsBox
 

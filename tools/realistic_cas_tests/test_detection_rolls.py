@@ -8,11 +8,12 @@ FIXTURE = """
 now=0;known=false;draw=0.999;draws=0;losOK=true;found=0;logs={}
 obs={side=2,point={x=0,y=2,z=0},forward={x=1,y=0,z=0},agl=2,role='CAS'}
 units={}
-function buildRolls(members,enabled)
+function buildRolls(members,enabled,tuning)
   now=0;known=false;draws=0;found=0;units={}
   local engine=RealisticCAS.newDetection({
     clock=function()return now end,acquisitionSeconds=20,revisit=5,
     probabilisticDetection=enabled,targetBudget=64,workBudget=1024,losBudget=64,
+    probability=tuning,
     random=function()draws=draws+1;return draw end,
     log=function(k,v)logs[#logs+1]={k,v}end,
     readObserver=function()return obs end,
@@ -151,6 +152,40 @@ class DetectionRollTests(unittest.TestCase):
         local engine=buildRolls(10,false)
         for i=0,20 do tick(engine,i) end
         assert(found>0 and draws==0 and engine:getDiagnostics().detectionRolls==0)
+        """)
+
+    def test_custom_chances_penalty_and_retry_interval_are_used(self):
+        self.check("""
+        local engine=buildRolls(1,true,{visualFarPercent=0,visualNearPercent=0,retrySeconds=15})
+        draw=0
+        for i=0,40 do tick(engine,i) end
+        assert(draws==2 and found==0) -- attempts only at 20 and 35
+        engine:stop()
+        engine=buildRolls(1,true,{visualFarPercent=100,visualNearPercent=100})
+        draw=0.999
+        for i=0,20 do tick(engine,i) end
+        assert(found==1)
+        local c=S.probabilityConfig({visualFarPercent=50,visualNearPercent=50,
+          airAltitudePenaltyPercent=0,visualMaxAGL=800,opticalMaxAGL=1500})
+        local p=S.profile('A-10C_2','air',{targetingPod=true},c)
+        assert(p.visualMaxAGL==800 and p.opticalMaxAGL==1500)
+        assert(S.discoveryChance('visual',9000,10000,800,p,c)==0.5)
+        c.airAltitudePenaltyPercent=100
+        assert(S.discoveryChance('visual',1000,10000,800,p,c)==0)
+        local ground=S.profile('truck','ground',nil,c)
+        assert(ground.visualMaxAGL==100 and ground.opticalMaxAGL==100)
+        """)
+
+    def test_invalid_tuning_is_rejected_before_scheduling(self):
+        self.check("""
+        for _,bad in ipairs({
+          {visualFarPercent=81,visualNearPercent=80},{radarNearPercent=101},
+          {airAltitudePenaltyPercent=-1},{retrySeconds=0},{visualMaxAGL=0},
+          {gmtiFarPercent='high'},{opticalNearPercent=0/0}
+        }) do
+          assert(not pcall(S.probabilityConfig,bad))
+          assert(not pcall(buildRolls,1,true,bad))
+        end
         """)
 
     def test_invalid_random_samples_fail_closed_without_retry_storm(self):

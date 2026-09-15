@@ -23,17 +23,42 @@ do
   local function vec(p) return type(p)=="table" and finite(p.x) and finite(p.y) and finite(p.z) end
   M.finite, M.vector = finite, vec
 
-  function M.profile(typeName, category, equipment)
+  function M.probabilityConfig(options)
+    local input=options or {}
+    assert(type(input)=="table","probability configuration must be a table")
+    local defaults={visualFarPercent=10,visualNearPercent=80,
+      opticalFarPercent=20,opticalNearPercent=90,radarFarPercent=50,radarNearPercent=95,
+      gmtiFarPercent=75,gmtiNearPercent=98,airAltitudePenaltyPercent=60,
+      retrySeconds=5,visualMaxAGL=3500,opticalMaxAGL=6500}
+    local c={}
+    for name,value in pairs(defaults) do
+      if input[name]~=nil then value=input[name] end
+      local low,high=0,100
+      if name=="retrySeconds" then low,high=5,300 end
+      if name=="visualMaxAGL" or name=="opticalMaxAGL" then low,high=100,10000 end
+      assert(bounded(value,low,high),"invalid probability setting: "..name)
+      c[name]=value
+    end
+    for _,mode in ipairs({"visual","optical","radar","gmti"}) do
+      assert(c[mode.."FarPercent"]<=c[mode.."NearPercent"],mode.." far chance exceeds near chance")
+    end
+    return c
+  end
+  local defaultProbability=M.probabilityConfig()
+
+  function M.profile(typeName, category, equipment, probability)
     assert(category=="air" or category=="ground", "unsupported observer category")
     local e = equipment or {}
     local c = integral[typeName] or {}
     local air = category=="air"
+    local tuning=probability or defaultProbability
     local function capability(key)
       if e[key]~=nil then assert(type(e[key])=="boolean", "capability must be boolean");return e[key] end
       return c[key]==true
     end
     local p = {category=category, visualRange=air and 9260 or 3000,
-      visualMaxAGL=air and 3500 or 100, opticalMaxAGL=air and 6500 or 100,
+      visualMaxAGL=air and tuning.visualMaxAGL or 100,
+      opticalMaxAGL=air and tuning.opticalMaxAGL or 100,
       irRange=capability("ir") and (air and 12000 or 4500) or 0,
       eoRange=capability("eo") and (air and 12000 or 4000) or 0,
       rbmRange=air and capability("rbm") and 12000 or 0,
@@ -54,22 +79,23 @@ do
   -- Chance per completed search/retry, not per frame or per vehicle in a group.
   -- Gameplay tuning, NOT measured detection probabilities. Radar has no generic
   -- low-altitude bonus: its cone, depression, LOS and motion gates still apply.
-  function M.discoveryChance(mode,distance,reach,agl,p)
+  function M.discoveryChance(mode,distance,reach,agl,p,probability)
+    local c=probability or defaultProbability
     local proximity=math.max(0,math.min(1,1-distance/reach))
-    if mode=="gmti" then return 0.75+0.23*proximity end
-    if mode=="rbm" then return 0.50+0.45*proximity end
-    local base=mode=="visual" and 0.10 or 0.20
-    local chance=base+0.70*proximity
-    if p.category=="air" then
+    local key=mode=="gmti" and "gmti" or mode=="rbm" and "radar" or
+      mode=="visual" and "visual" or "optical"
+    local far,near=c[key.."FarPercent"]/100,c[key.."NearPercent"]/100
+    local chance=far+(near-far)*proximity
+    if p.category=="air" and mode~="rbm" and mode~="gmti" then
       local ceiling=mode=="visual" and p.visualMaxAGL or p.opticalMaxAGL
-      chance=chance*(1-0.60*math.min(1,agl/ceiling))
+      chance=chance*(1-c.airAltitudePenaltyPercent/100*math.min(1,agl/ceiling))
     end
     return chance
   end
 
   -- Environment comes from the mission adapter/exporter. Unknown values never
   -- silently mean sunny desert; return an explicit failure for missing inputs.
-  function M.assess(o, t, e, p, probabilistic)
+  function M.assess(o, t, e, p, probabilistic, probability)
     if not o or not t or o.side==t.side or (o.side~=1 and o.side~=2) or
       (t.side~=1 and t.side~=2) then return nil,"coalition" end
     if not vec(o.point) or not vec(t.point) or not bounded(o.agl,0,100000) then return nil,"geometry" end
@@ -93,7 +119,7 @@ do
     local mode,reach,chance
     local function choose(name,r)
       if r>0 and distance<=r then
-        local candidate=M.discoveryChance(name,distance,r,o.agl,p)
+        local candidate=M.discoveryChance(name,distance,r,o.agl,p,probability)
         if not reach or (probabilistic and candidate>chance) or
           (not probabilistic and r>reach) then
           mode,reach,chance=name,r,candidate

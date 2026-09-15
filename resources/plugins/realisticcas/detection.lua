@@ -29,6 +29,7 @@ do
     assert(o.probabilisticDetection==nil or type(o.probabilisticDetection)=="boolean",
       "invalid probabilistic detection option")
     local probabilistic=o.probabilisticDetection==true
+    local probability=S.probabilityConfig(o.probability)
     assert(not probabilistic or acquisition>0,"detection rolls require positive search time")
     local random=o.random or math.random
     assert(type(random)=="function","random callback must be a function")
@@ -105,9 +106,9 @@ do
       if not acquired(v,target,now) then return false end
       if not probabilistic then return true end
       local f=v.focus
-      -- One roll for the focused GROUP per sweep and at least revisit seconds
+      -- One roll for the focused GROUP per sweep and at least retrySeconds
       -- apart. Extra members, extra ticks and delayed work grant no extra rolls.
-      if f.rollSweep==v.sweep or (f.lastRoll and now-f.lastRoll<revisit) then return false end
+      if f.rollSweep==v.sweep or (f.lastRoll and now-f.lastRoll<probability.retrySeconds) then return false end
       f.rollSweep=v.sweep;f.lastRoll=now
       stats.detectionRolls=stats.detectionRolls+1
       local ok,roll=pcall(random)
@@ -252,7 +253,7 @@ do
                   local target=call("readTarget",id)
                   if target and target.side~=observer.side and S.vector(target.point) then
                     local env=call("environment",observer,target,now)
-                    local result,reason=S.assess(observer,target,env,job.observer.profile,probabilistic)
+                    local result,reason=S.assess(observer,target,env,job.observer.profile,probabilistic,probability)
                     if result then
                       local v=job.observer
                       local known=acquisition>0 and call("isRevealed",target,observer)==true

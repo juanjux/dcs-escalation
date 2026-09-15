@@ -16,6 +16,7 @@ from typing import Dict, List, Optional
 from PySide6.QtCore import QLocale, Qt, QTimer
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QFrame,
     QDoubleSpinBox,
@@ -80,7 +81,20 @@ class PluginOptionsBox(QGroupBox):
             self.labels[option.identifier] = label
 
             val = option.get_value
-            if isinstance(val, bool):
+            if option.choices:
+                combo = QComboBox()
+                for name, value in option.choices:
+                    combo.addItem(name, value)
+                # Saved values remain typed IDs, not translated labels/indices.
+                combo.setCurrentIndex(combo.findData(val))
+                combo.currentIndexChanged.connect(
+                    lambda index, control=combo, opt=option: (
+                        opt.set_value(control.itemData(index)) if index >= 0 else None
+                    )
+                )
+                layout.addWidget(combo, row, 1)
+                self.widgets[option.identifier] = combo
+            elif isinstance(val, bool):
                 checkbox = QCheckBox()
                 checkbox.setChecked(val)
                 checkbox.toggled.connect(option.set_value)
@@ -119,7 +133,11 @@ class PluginOptionsBox(QGroupBox):
         for identifier in self.widgets:
             value = settings.plugin_option(identifier)
             w = self.widgets[identifier]
-            if isinstance(w, QCheckBox):
+            if isinstance(w, QComboBox):
+                blocked = w.blockSignals(True)
+                w.setCurrentIndex(w.findData(value))
+                w.blockSignals(blocked)
+            elif isinstance(w, QCheckBox):
                 w.setChecked(value)
             elif isinstance(w, (QDoubleSpinBox, QSpinBox)):
                 w.setValue(value)

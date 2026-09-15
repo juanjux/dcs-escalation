@@ -6,6 +6,7 @@ do
     assert(fog and fog.active and not fog.stopping,"active visibility owner required")
     assert(not fog.detectors,"detectors already attached")
     local c=config or {}
+    local probability=S.probabilityConfig(c.probability)
     assert(type(c.observers)=="table" and type(c.targets)=="table","explicit observer/target lists required")
     assert(type(c.environment)=="function","environment provider required")
     local observers,targets={},{}
@@ -19,7 +20,7 @@ do
     for _,v in ipairs(c.observers) do
       assert(type(v.name)=="string" and v.name~="" and not observers[v.name],"invalid/duplicate observer")
       assert(type(v.typeName)=="string","observer aircraft/vehicle type required")
-      local p=S.profile(v.typeName,v.category,v.equipment)
+      local p=S.profile(v.typeName,v.category,v.equipment,probability)
       observers[v.name]={typeName=v.typeName,category=v.category,role=v.role,profile=p,
         allowPlayer=v.allowPlayer==true}
     end
@@ -41,6 +42,7 @@ do
       traceDecisions=c.traceDecisions==true,
       acquisitionSeconds=c.acquisitionSeconds,
       probabilisticDetection=c.probabilisticDetection,
+      probability=probability,
       acquisitionMaxGap=c.acquisitionMaxGap,
       environment=c.environment,
       readTarget=function(name)

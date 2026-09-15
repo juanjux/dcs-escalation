@@ -47,15 +47,17 @@ Hover an option's label or control for its explanation.
   the search. Completing the delay does not guarantee discovery with rolls enabled.
 - **Probabilistic detection** is on by default when this plugin is used. A failed
   roll retains the search and retries on a later valid scan, no faster than every
-  five simulated seconds. Turn it off to restore deterministic discovery after
-  the search delay. Firing always reveals immediately, **without any roll**.
+  the configured retry interval (five simulated seconds by default). Turn it off
+  to restore deterministic discovery after the search delay. Firing always reveals
+  immediately, **without any roll**.
 - **Contact lifetime** starts again after an observation or shot. It is how long
   the whole group stays revealed, not the time needed to find it.
-- **Cover 0 (automatic by map)** chooses one homogeneous approximation:
+- **Cover: Automatic (by map)** chooses one homogeneous approximation:
   desert for Nevada, Iraq, Syria, Persian Gulf, Sinai and Afghanistan; grassland
   for Caucasus, Normandy, The Channel, Germany and Falklands; tundra for Kola;
   forest for Marianas. It does not sample forests, cities or vegetation at each
-  target. Values 1–5 force desert, grassland, tundra, forest or city everywhere;
+  target. The drop-down also offers Desert, Grassland, Tundra, Forest and City;
+  their saved numeric IDs remain 0–5 for compatibility. Manual profiles apply everywhere;
   unsupported maps require a manual choice. Terrain LOS remains a separate check.
 - **Debug** adds verbose detection/contact diagnostics to `dcs.log`, not F10
   markers. Errors and scheduler-overload warnings are logged even when it is off.
@@ -92,7 +94,7 @@ Hover an option's label or control for its explanation.
 All existing range, orientation, role, equipment, radar-on, weather and terrain-LOS
 gates still apply. A random roll never overrides a failed gate. For each eligible
 sensor channel, let `q = 1 - slant_distance / effective_range` (0 at the edge,
-1 at zero distance). Current per-attempt gameplay probabilities are:
+1 at zero distance). Default per-attempt gameplay probabilities are:
 
 | Channel | Chance before optical altitude factor |
 | --- | --- |
@@ -101,7 +103,11 @@ sensor channel, let `q = 1 - slant_distance / effective_range` (0 at the edge,
 | Ground radar (RBM) | 0.50 + 0.45q |
 | Moving-target radar (GMTI) | 0.75 + 0.23q |
 
-For airborne visual/EO/IR only, multiply by
+Both endpoints for every channel are editable percentages in the plugin options.
+Chance interpolates linearly from the far endpoint to the near endpoint; the
+near chance must be at least the far chance. Percentages can be 0–100.
+
+For airborne visual/EO/IR only, by default multiply by
 `1 - 0.60 * min(1, AGL / channel_altitude_ceiling)`.
 Slant distance already includes vertical separation; the extra AGL factor models
 the difficulty of identifying small ground targets from altitude. Lower is better
@@ -110,7 +116,7 @@ this altitude factor. GMTI still needs target ground speed and radial motion.
 The best eligible channel supplies one probability, not independent sensor rolls.
 These numbers are **tuning starting points, not real sensor specifications**.
 
-One observer makes at most one roll for its focused group per scan and per revisit
+One observer makes at most one roll for its focused group per scan and per retry
 interval, regardless of member count. The first valid member supplies the sample.
 Already shared contacts refresh without rolls; shots bypass both search and rolls.
 Missed scans do not accumulate catch-up rolls. This uses simulated time rather
@@ -120,8 +126,18 @@ With debug enabled, `DETECTION_ROLL` logs observer/group, channel, distance, ran
 AGL, chance, draw and result; `SEARCH_STATS` includes roll/pass/miss counts.
 
 The earlier in-engine acceptance predates these rolls; the probability curves
-need campaign tuning. Standalone callers opt in with `probabilisticDetection=true`
+need campaign tuning. The altitude penalty (default 60%) and airborne observation
+ceilings (visual 3,500 m AGL; EO/IR 6,500 m AGL) are also options. The ceiling both
+limits observation and defines where the full altitude penalty applies; ceiling
+changes therefore also affect deterministic mode. Ground and radar are unaffected.
+The configurable retry interval defaults to 5 seconds (range 5–300); a scan may
+delay an attempt further. Settings are checked before generation and Lua startup,
+and the exported values are logged as `CONFIG` entries.
+
+Standalone callers opt in with `probabilisticDetection=true`
 and a positive `acquisitionSeconds`; omitted keeps their existing behavior.
+The optional `probability` table accepts the option names from `plugin.json`
+(percentages, seconds and metres, not fractions); omitted fields keep defaults.
 
 ## Standalone mission usage (after loading both Lua files)
 
