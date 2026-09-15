@@ -156,6 +156,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** A pilot on leave could not be called back while his squadron was at full strength, which it usually is: he holds his own place the whole time he is away, so coming back takes nobody else's.
 * **[FIX]** An escort put on a TARCAP emptied the map: the escort and the patrol each took their timing from the other, and nothing survived the recursion.
 * **[FIX]** A flight plan lit up yellow under the pointer for a single frame and went out: the colour was painted on by a handler, and the next render put the line's own colour straight back.
 * **[FIX]** A target nearer than the doctrine's minimum ingress distance could not be planned at all -- *No solutions found for waypoint* -- because the window the IP is looked for in closed to nothing.

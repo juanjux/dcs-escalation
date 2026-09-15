@@ -105,3 +105,54 @@ def test_the_dead_do_not_hold_places_open_for_ever() -> None:
     squadron = _fill(_squadron(limit=16), Active=10, Dead=30)
 
     assert squadron.replenish_count == 4
+
+
+# --- coming back from leave -----------------------------------------------------
+#
+# The place a man on leave holds is his own. Asking for a free one before letting him
+# back refused every recall in a squadron at full strength -- two aircraft on the ramp,
+# one pilot fit to fly, and the man resting next door could not be called in.
+
+
+def _squadron_with_a_man_on_leave(limit: int = 16) -> tuple[Any, Pilot]:
+    squadron = _fill(_squadron(limit=limit), Active=limit - 1)
+    squadron.available_pilots = list(squadron.current_roster)
+    resting = _man(squadron, PilotStatus.Active)
+    squadron.send_on_leave(resting, turns=3, turn=6)
+    return squadron, resting
+
+
+def test_a_squadron_at_its_limit_can_still_call_a_man_back() -> None:
+    squadron, resting = _squadron_with_a_man_on_leave()
+    assert not squadron.has_unfilled_pilot_slots
+
+    squadron.cancel_leave(resting)
+
+    assert not resting.on_leave
+    assert resting in squadron.available_pilots
+
+
+def test_calling_him_back_does_not_grow_the_squadron() -> None:
+    squadron, resting = _squadron_with_a_man_on_leave()
+    before = len(squadron.living_pilots)
+
+    squadron.cancel_leave(resting)
+
+    assert len(squadron.living_pilots) == before
+    assert squadron.living_pilots.count(resting) == 1
+
+
+def test_his_place_is_not_free_while_he_is_away() -> None:
+    """Which is what makes the recall safe: nobody can have taken it."""
+    squadron, _ = _squadron_with_a_man_on_leave()
+
+    assert squadron._number_of_unfilled_pilot_slots == 0
+    assert squadron.replenish_count == 0
+
+
+def test_only_a_man_on_leave_can_have_it_cancelled() -> None:
+    squadron = _fill(_squadron(), Active=3)
+    squadron.available_pilots = list(squadron.current_roster)
+
+    with pytest.raises(RuntimeError):
+        squadron.cancel_leave(squadron.current_roster[0])
