@@ -137,7 +137,9 @@ Still to come:
   time. Ground units also spot enemies, and revealing one vehicle reveals its group.
   Fixed map SAM sites stay known; frontline SAMs participate in the fog. F10 and
   weapon accuracy are unchanged. Enable **Realistic CAS (experimental)** in Mission
-  Plugins; **TIC, CTLD and Moose Autolase must be disabled**, and legacy generated
+  Plugins; **TIC and Moose Autolase must be disabled**. CTLD logistics can remain
+  enabled with **JTAC autolase targets** off; runtime-created units are not yet
+  registered in the fog. Legacy generated
   JTACs are temporarily omitted. Campaign-scale tuning and replacement JTACs remain
   pending. [Plugin details](resources/plugins/realisticcas/README.md).
   ([#195](https://github.com/juanjux/dcs-escalation/pull/195))

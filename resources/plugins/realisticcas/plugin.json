@@ -1,6 +1,6 @@
 {
     "nameInUI": "Realistic CAS (experimental)",
-    "descriptionInUI": "Gradual ground-target discovery for both sides. Firing reveals a group immediately; visual/EO/IR/ground radar observations reveal nearby groups. Fixed map SAM sites are exempt, frontline SAMs are not. No F10 changes. Temporarily omits generated legacy JTACs; disable CTLD, TIC and Moose Autolase before generation. Dynamic-unit and JTAC adapters are pending. Terrain and cloud cover are approximations; campaign-scale validation is pending. Off by default.",
+    "descriptionInUI": "Gradual ground-target discovery for both sides. Firing reveals a group immediately; visual/EO/IR/ground radar observations reveal nearby groups. Fixed map SAM sites are exempt, frontline SAMs are not. No F10 changes. Temporarily omits generated legacy JTACs. CTLD logistics may stay enabled with 'JTAC autolase targets' off; disable TIC and Moose Autolase. Combined Arms JTAC slots are unrelated. Runtime-created units are not yet registered in the fog. Terrain and cloud cover are approximations; campaign-scale validation is pending. Off by default.",
     "defaultValue": false,
     "specificOptions": [
         {
@@ -98,18 +98,20 @@
             "maximumValue": 300
         },
         {
-            "nameInUI": "Maximum airborne visual observation height (m AGL)",
-            "descriptionInUI": "Above this height, unaided visual observation is unavailable. At this height the full airborne altitude penalty applies. Default 3500 metres above local ground. Applies even with rolls disabled; radar is unaffected.",
+            "nameInUI": "Maximum airborne visual observation height (ft AGL)",
+            "descriptionInUI": "Above this height, unaided visual observation is unavailable. At this height the full airborne altitude penalty applies. Default about 11483 feet above local ground. Displayed and edited in feet; saved settings and Lua use metres, preserving existing heights. Applies even with rolls disabled; radar is unaffected.",
             "mnemonic": "visualMaxAGL",
+            "displayUnit": "ft",
             "defaultValue": 3500,
             "minimumValue": 100,
             "maximumValue": 10000
         },
         {
-            "nameInUI": "Maximum airborne EO/IR observation height (m AGL)",
-            "descriptionInUI": "Above this height, EO/IR observation is unavailable. At this height the full airborne altitude penalty applies. Default 6500 metres above local ground. Applies even with rolls disabled; radar is unaffected.",
+            "nameInUI": "Maximum airborne EO/IR observation height (ft AGL)",
+            "descriptionInUI": "Above this height, EO/IR observation is unavailable. At this height the full airborne altitude penalty applies. Default 23000 feet above local ground. Displayed and edited in feet; saved settings and Lua use metres, preserving existing heights. This is a tunable search-model limit, not a guaranteed identification altitude: slant range, weather, cover, line of sight and discovery rolls still apply. Applies even with rolls disabled; radar is unaffected.",
             "mnemonic": "opticalMaxAGL",
-            "defaultValue": 6500,
+            "displayUnit": "ft",
+            "defaultValue": 7010.4,
             "minimumValue": 100,
             "maximumValue": 10000
         },

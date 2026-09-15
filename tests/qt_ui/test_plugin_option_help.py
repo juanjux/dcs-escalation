@@ -107,6 +107,56 @@ def test_cover_combo_preserves_saved_ids_and_refresh_does_not_write(
         box.close()
 
 
+@pytest.mark.parametrize(
+    ("mnemonic", "default_metres", "default_feet"),
+    [("visualMaxAGL", 3500, 11483), ("opticalMaxAGL", 7010.4, 23000)],
+)
+def test_height_controls_use_feet_but_preserve_metres(
+    qt_app: Any, mnemonic: str, default_metres: float, default_feet: int
+) -> None:
+    from PySide6.QtWidgets import QDoubleSpinBox
+
+    from game.settings import Settings
+    from qt_ui.windows.settings.plugins import PluginOptionsBox
+
+    plugin = LuaPlugin.from_json(
+        "realisticcas", ROOT / "resources/plugins/realisticcas/plugin.json"
+    )
+    assert plugin is not None
+    plugin.set_settings(Settings())
+    option = next(
+        o for o in plugin.options if o.identifier == f"realisticcas.{mnemonic}"
+    )
+    box = PluginOptionsBox(plugin)
+    try:
+        widget = box.widgets[option.identifier]
+        assert isinstance(widget, QDoubleSpinBox)
+        assert widget.suffix() == " ft"
+        assert widget.value() == default_feet
+        assert option.get_value == default_metres
+        option.set_value(6500)
+        box.update_from_settings(option.settings)
+        assert widget.value() == 21325
+        assert option.get_value == 6500  # No rounding on refresh.
+        widget.setValue(23000)
+        assert option.get_value == pytest.approx(7010.4)
+        for bound in (widget.minimum(), widget.maximum()):
+            widget.setValue(bound)
+            assert option.min <= option.get_value <= option.max
+    finally:
+        box.close()
+    # Loading an old integer-valued save also uses the feet control.
+    option.set_value(6500)
+    reopened = PluginOptionsBox(plugin)
+    try:
+        assert option.get_value == 6500
+        control = reopened.widgets[option.identifier]
+        assert isinstance(control, QDoubleSpinBox)
+        assert control.value() == 21325
+    finally:
+        reopened.close()
+
+
 def test_all_realistic_cas_options_have_help(qt_app: Any) -> None:
     from qt_ui.windows.settings.plugins import PluginOptionsBox
 

@@ -15,9 +15,14 @@ TIC/CTLD/MOOSE ownership adapters and replacement JTACs remain pending.
 - Select **Realistic CAS (experimental)** in Mission Plugins. Initial options:
   search20s, detection rolls on, contact lifetime600s, approximate theater cover,
   debug off. The plugin itself remains off by default.
-- Disable **TIC, CTLD and Moose Autolase**. Generation rejects these combinations
-  explicitly; CTLD also creates dynamic units, not only JTACs. Merely disabling
-  its autolase option does not provide the missing dynamic-unit adapter.
+- Disable **TIC and Moose Autolase**. TIC has a separate visibility/clone conflict.
+  **CTLD logistics may stay enabled**: turn off its **JTAC autolase targets**
+  option. This also prevents autolase from deployed troops/vehicles, not just
+  generated JTACs. Smoke and laser-code settings do nothing with autolase off.
+  Runtime-created CTLD units are not yet registered as fog targets/observers;
+  this remains a documented limitation, not a generation blocker.
+- Combined Arms **Number of JTAC controllers** is a human slot count, not an AI
+  autolase switch; zero is fine but is not required by this compatibility check.
 - Generated legacy JTACs are omitted while Realistic CAS is enabled, as agreed
   for this first version. This does not change `faction.has_jtac` or remove
   frontline metadata. Turning the plugin off restores the original generator path.
@@ -127,7 +132,7 @@ AGL, chance, draw and result; `SEARCH_STATS` includes roll/pass/miss counts.
 
 The earlier in-engine acceptance predates these rolls; the probability curves
 need campaign tuning. The altitude penalty (default 60%) and airborne observation
-ceilings (visual 3,500 m AGL; EO/IR 6,500 m AGL) are also options. The ceiling both
+ceilings (visual about 11,483 ft AGL; EO/IR 23,000 ft AGL) are also options. The ceiling both
 limits observation and defines where the full altitude penalty applies; ceiling
 changes therefore also affect deterministic mode. Ground and radar are unaffected.
 The configurable retry interval defaults to 5 seconds (range 5–300); a scan may
@@ -227,12 +232,29 @@ Starting ranges (metres; adjustable model constants, not hardware specifications
 
 Only declared capabilities enable their channel. Visual/EO use light, cover,
 weather, visibility and cloud transmission; IR uses its separate attenuation and
-is useful at night. Airborne visual height cap is 3500m AGL, optics 6500m AGL.
+is useful at night. Airborne visual height cap is about 11,483 ft AGL, optics
+23,000 ft AGL. Both height controls display and accept feet. Saved settings and
+Lua retain metres (3500 and 7010.4 respectively), preserving existing overrides
+without changing their physical height or rounding them on opening the UI.
 These are tunable initial approximations. Radar requires CAS/BAI/Armed Recon and
 the native getRadar on flag, within a 120-degree horizontal forward cone and at
 most 80-degree depression. This approximates search, **not actual radar mode or
 pod direction**. GMTI requires >=2m/s target ground speed and >=1m/s radial speed.
 AWACS/EWR receive no ground-radar power just because they have an air-search radar.
+
+The optical ceiling is a conservative, shared search-model approximation, not a
+published specification for every pod or integrated sensor. The
+[USAF describes tank identification from 30,000 feet with targeting pods](https://www.barksdale.af.mil/News/Article/320706/let-the-bombs-hit-the-floor/)
+in a discussion of LITENING II and Sniper; it does not specify AGL altitude,
+viewing geometry or which imaging channel was used for that example.
+[Raytheon's ATFLIR release](https://raytheon.mediaroom.com/index.php?item=70&s=43)
+reports laser effectiveness above 50,000 feet, not a universal IR vehicle
+discovery threshold. The chosen 23,000 ft default is a gameplay setting, not a
+hardware limit inferred from those sources; they do not calibrate the discovery
+probabilities. The unchanged 12000m optical
+**slant** search range still applies: greater height leaves less horizontal
+reach. Weather, cover, LOS and search/roll requirements still apply. Finding an
+unknown vehicle is not equivalent to identifying an already cued target.
 
 Terrain LOS is checked last and blocks every channel. Cover is a 250m grid with a
 bounded 4096-cell cache over at most 128 configured circular zones. Illumination
@@ -323,8 +345,8 @@ visibility if sensor startup fails. `RealisticCAS.mission:stop()` and the native
 mission-end event stop detectors and restore visibility. A failed restoration
 keeps the recovery handle for a later retry; it is not silently reported as success.
 Lua integration tests cover these paths using DCS doubles, not native engine
-acceptance. The experimental campaign hook explicitly restricts unsupported
-JTAC/TIC/CTLD combinations; it is not the complete planned feature.
+acceptance. The experimental campaign hook rejects active CTLD autolase, Moose
+Autolase and TIC, not CTLD logistics; it is not the complete planned feature.
 In-engine controls 35–37 additionally passed night/IR, controlled cloud
 transmission, and RBM/GMTI with live DCS radar-on/target velocities. These validate
 the model/bridge, not native radar-mode telemetry or physical cloud calibration.

@@ -66,11 +66,16 @@ class LuaPluginOption(PluginSettings):
         value: Any,
         description: str = "",
         choices: Optional[List[tuple[str, Any]]] = None,
+        display_unit: str = "",
     ) -> None:
         super().__init__(identifier, value)
         self.name = name
         self.description = description
         self.choices = choices or []
+        # Presentation only: saved settings and Lua values stay in metres.
+        if display_unit not in ("", "ft"):
+            raise ValueError(f"Unsupported plugin display unit: {display_unit}")
+        self.display_unit = display_unit
         if type(value) == int or type(value) == float:
             self.min, self.max = min, max
         else:
@@ -112,6 +117,7 @@ class LuaPluginDefinition:
                         (choice["label"], choice["value"])
                         for choice in option.get("choices", [])
                     ],
+                    display_unit=option.get("displayUnit", ""),
                 )
             )
 

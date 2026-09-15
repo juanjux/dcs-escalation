@@ -24,6 +24,7 @@ Here's a quick rundown of the file's components :
   - `nameInUI` : the title of the option as it will appear in the plugins specific options user interface.
   - `descriptionInUI` : *optional*. Help text shown as a tooltip on both the option label and its control. Omit it for no tooltip; it is not a saved setting or Lua variable.
   - `choices` : *optional*. A list of `{"label": "Display name", "value": 0}` entries renders a drop-down instead of a spin box/text field. The typed value is saved and exported to Lua, not the label or list index. Keep values stable for existing saves.
+  - `displayUnit` : *optional*. Set to `"ft"` for numeric heights stored in metres. The UI displays/edits whole feet with a unit suffix; defaults, bounds, saved settings and Lua remain in metres. Opening or refreshing the UI does not round or rewrite saved values.
   - `mnemonic` : the short, technical name of the option. It's the name of the LUA variable passed to the configuration script, and the name of the option in the application's settings 
   - `defaultValue` : the selection value of the option, when first installed ; if true, option is selected. A boolean renders a checkbox; an int or float renders a spin box.
   - `minimumValue` / `maximumValue` : *optional*, numeric options only. The spin-box bounds (default 0 and 10000 if omitted).
