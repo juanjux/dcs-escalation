@@ -1,12 +1,11 @@
-"""What the turn cost, and what it bought.
+"""The debriefing window.
 
-A fixed summary strip answers "how did it go" before anything is scrolled; the sections
-below it are the evidence, in the order they matter. Pilots come first: matériel is
-replaceable with money and a pilot record is not, and it is the only section that
-carries decisions into the two dialogs this window chains on the way out.
+A fixed summary strip at the top, with the detail sections below it. Pilots come first:
+aircraft can be replaced with money and a pilot record cannot, and it is the only section
+that carries decisions into the dialogs this window chains on the way out.
 
-The palette and the vocabulary -- five stars for a rank, a coloured dot for morale --
-are the Air Wing's, so the two read as one program.
+The palette and the vocabulary (stars for a rank, a coloured dot for morale) are the Air
+Wing's.
 """
 
 from typing import Any, Optional
@@ -133,11 +132,11 @@ def _caption(text: str, hint: str = "") -> QWidget:
 
 
 def aircrew_reported(debriefing: DebriefingReport, records: list) -> list:
-    """The aircrew this campaign is willing to tell you about.
+    """Whether this campaign reports what happened to the aircrew.
 
-    Losing THEIR aircraft is observable and always reported. What became of the men
-    inside them is not, so it is off by default: a campaign that wants the whole
-    picture turns it on in Live Pilots.
+    The loss of an aircraft is always reported. What happened to the pilot inside it is
+    not observable, so it is off by default.
+
     """
     if getattr(debriefing.game.settings, "live_pilots_debrief_enemy", False):
         return list(records)
@@ -283,11 +282,11 @@ class GroupHeader(QWidget):
 
 
 class PilotRow(QWidget):
-    """One pilot, in three columns: who he is, what happened, and what it left him.
+    """One pilot in three columns: identity, what happened, and the result.
 
-    The middle column changes meaning by group -- who shot him down, the rank he came
-    out with, the state he ended in -- which is why the row is painted rather than
-    assembled out of labels.
+    The middle column changes meaning by group: who shot him down, the rank he came out
+    with, or the state he ended in.
+
     """
 
     def __init__(self, name: str, rank: str, level: int, aircraft: str, squadron: str):
@@ -742,10 +741,11 @@ class QDebriefingWindow(QDialog):
         return column
 
     def _pilots_section(self, debriefing: DebriefingReport) -> Optional[QVBoxLayout]:
-        """Who did not come back, who was hurt, and who came out of it better.
+        """The aircrew section: who was lost, who was wounded, and who gained.
 
         Omitted entirely when nothing happened to the aircrew, and so is any group
-        inside it: an empty heading says less than no heading.
+        inside it.
+
         """
         outcomes = debriefing.pilot_outcomes
         if outcomes.empty:

@@ -28,11 +28,11 @@ KILL_HISTORY_LIMIT = 150
 
 @dataclass(frozen=True)
 class Kill:
-    """One thing destroyed: what it was, when, and with what.
+    """One destroyed unit: what it was, when, and with what.
 
-    The counts in :attr:`PilotRecord.air_kills` are the summary; this is what a row
-    opens into. Kept as a list because the interesting part is the detail -- a Tor
-    killed with a HARM reads differently from one killed with a bomb.
+    The counts in :attr:`PilotRecord.air_kills` are the summary; this is the detail
+    behind a row.
+
     """
 
     what: str
@@ -46,10 +46,11 @@ class Kill:
 
 @dataclass(frozen=True)
 class KilledBy:
-    """Who ended it, with what, and when.
+    """Who killed this pilot, with what, and when.
 
-    Kept in pieces rather than as the sentence the debriefing prints, because the
-    pilot dialog lays them out and a sentence would have to be taken apart again.
+    Kept as fields rather than as the debriefing's sentence because the pilot dialog
+    lays them out separately.
+
     """
 
     pilot_name: str = ""
@@ -62,12 +63,11 @@ class KilledBy:
 
 @dataclass
 class PilotRecord:
-    """Everything a campaign remembers about what one pilot did.
+    """What the campaign remembers about one pilot's record.
 
-    Every field defaults, and :meth:`__setstate__` fills in the ones a save written
-    before them does not carry. A dataclass keeps a plain default as a class
-    attribute, so those read through even without the setdefault; the mutable ones
-    need a factory and so genuinely need it.
+    Every field has a default, and :meth:`__setstate__` fills in those a save written
+    before them does not carry.
+
     """
 
     missions_flown: int = field(default=0)
@@ -141,12 +141,10 @@ class PilotRecord:
         turn: int = 0,
         weapon: str = "",
     ) -> None:
-        """One more of these: counted, and written down.
+        """Count this kill and append it to the log.
 
-        The count is what the dialog reads at a glance and is never trimmed. The
-        entry is what a row opens into, and the oldest go when there are too many:
-        the last hundred and fifty is the story, and the first of four hundred is
-        not.
+        The count is never trimmed. The log is capped, and the oldest entries go first.
+
         """
         if not what:
             return
@@ -311,12 +309,11 @@ class Pilot:
 
     @property
     def has_morale(self) -> bool:
-        """Whether the morale rules are about this man at all.
+        """Whether the morale rules apply to this pilot.
 
-        They are not about the player. He decides for himself whether he is up to a
-        sortie, so a figure moved behind his back can only get in the way: it cannot
-        ground him, hand him a week off or make him walk away, and the debriefing
-        telling him how he feels about his own turn reads as a joke.
+        They do not apply to the player's own pilot: morale cannot ground him, send him
+        on leave or make him desert, so the figure would have no effect.
+
         """
         return not self.player
 
@@ -355,10 +352,11 @@ class Pilot:
         settings: Any = None,
         turn: int = -1,
     ) -> int:
-        """Apply one event to him and remember it. Returns how far he moved.
+        """Apply one morale event and record it. Returns the distance moved.
 
-        Every morale change goes through here so that nothing can move a pilot without
-        it being written down -- the log is what the pilot dialog reads back.
+        Every morale change goes through here, so the log the pilot dialog reads is
+        complete.
+
         """
         if not self.has_morale:
             return 0
@@ -390,11 +388,11 @@ class Pilot:
         return moved
 
     def send_on_leave(self, turns: int = 0, turn: int = -1) -> None:
-        """Grant leave, for ``turns`` of them or open-ended when that is zero.
+        """Grant leave: ``turns`` of it, or open-ended when that is zero.
 
-        Open-ended is how leave has always worked and how the Air Wing button still
-        grants it: he stays out until the player fetches him. A granted request carries
-        a length, and then it runs down on its own like a wound.
+        Open-ended leave lasts until the player recalls him, which is what the Air Wing
+        button grants. A granted request carries a length and runs down on its own.
+
         """
         if self.status is not PilotStatus.Active:
             raise RuntimeError("Only active pilots may be sent on leave")
@@ -433,11 +431,12 @@ class Pilot:
         self.leave_turns_requested = 0
 
     def serve_a_turn_wounded(self, turn: int) -> None:
-        """One turn of the wound served. The last one puts him back on the roster.
+        """Serve one turn of the wound. The last one returns him to the roster.
 
-        Not the turn he was hurt in. Wounds are dealt while a turn is being closed and
-        the squadron serves them at that same close, so counting it would have him back
-        a turn early -- the debriefing said four turns and the Air Wing showed three.
+        Not counted for the turn he was wounded in: wounds are dealt while the turn is
+        closing and served at that same close, so counting it would return him a turn
+        early.
+
         """
         if turn == self.wounded_on_turn:
             return
