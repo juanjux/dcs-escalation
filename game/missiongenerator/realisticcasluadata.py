@@ -55,7 +55,7 @@ PROBABILITY_DEFAULTS = {
     "airAltitudePenaltyPercent": 60,
     "retrySeconds": 5,
     "visualMaxAGL": 3500,
-    "opticalMaxAGL": 10000,
+    "opticalMaxAGL": 7010.4,  # 23,000 ft; saved/Lua heights remain metres.
 }
 
 

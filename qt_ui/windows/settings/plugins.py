@@ -11,6 +11,7 @@ page stays a list you can read down.
 """
 
 from html import escape
+from math import ceil, floor
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import QLocale, Qt, QTimer
@@ -52,6 +53,7 @@ class PluginOptionsBox(QGroupBox):
         self.setLayout(layout)
 
         self.widgets: Dict[str, QWidget] = {}
+        self.options = {option.identifier: option for option in plugin.options}
         #: Kept so a search can point at the option it sent you here for.
         self.labels: Dict[str, QLabel] = {}
 
@@ -102,16 +104,30 @@ class PluginOptionsBox(QGroupBox):
                 self.widgets[option.identifier] = checkbox
             elif isinstance(val, (float, int)):
                 spinbox: QWidget
-                if isinstance(val, float):
+                if option.display_unit == "ft":
+                    spinbox = QDoubleSpinBox()
+                    spinbox.setDecimals(0)
+                    spinbox.setSingleStep(100)
+                    spinbox.setSuffix(" ft")
+                    spinbox.setLocale(QLocale.Language.English)
+                    spinbox.setRange(
+                        ceil(option.min / 0.3048), floor(option.max / 0.3048)
+                    )
+                    spinbox.setValue(val / 0.3048)
+                    spinbox.valueChanged.connect(
+                        lambda feet, opt=option: opt.set_value(feet * 0.3048)
+                    )
+                elif isinstance(val, float):
                     spinbox = QDoubleSpinBox()
                     spinbox.setSingleStep(0.01)
                     spinbox.setLocale(QLocale.Language.English)
                 else:
                     spinbox = QSpinBox()
-                spinbox.setMinimum(option.min)
-                spinbox.setMaximum(option.max)
-                spinbox.setValue(val)
-                spinbox.valueChanged.connect(option.set_value)
+                if option.display_unit != "ft":
+                    spinbox.setMinimum(option.min)
+                    spinbox.setMaximum(option.max)
+                    spinbox.setValue(val)
+                    spinbox.valueChanged.connect(option.set_value)
                 layout.addWidget(spinbox, row, 1)
                 self.widgets[option.identifier] = spinbox
             elif isinstance(val, str):
@@ -140,7 +156,14 @@ class PluginOptionsBox(QGroupBox):
             elif isinstance(w, QCheckBox):
                 w.setChecked(value)
             elif isinstance(w, (QDoubleSpinBox, QSpinBox)):
-                w.setValue(value)
+                # Refreshing must not write a rounded display value into a save.
+                blocked = w.blockSignals(True)
+                w.setValue(
+                    value / 0.3048
+                    if self.options[identifier].display_unit == "ft"
+                    else value
+                )
+                w.blockSignals(blocked)
             elif isinstance(w, QLineEdit):
                 w.setText("" if value is None else str(value))
 

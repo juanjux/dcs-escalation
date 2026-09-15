@@ -33,16 +33,31 @@ def validate_compatibility(plugins: Any) -> None:
     plugins = list(plugins)
     if not enabled(plugins):
         return
-    incompatible = sorted(
-        p.identifier
-        for p in plugins
-        if p.enabled and p.identifier in {"tic", "ctld", "MooseAutolase"}
-    )
+    incompatible = []
+    for plugin in plugins:
+        if not plugin.enabled:
+            continue
+        if plugin.identifier == "ctld":
+            autolase = next(
+                (
+                    option.get_value
+                    for option in getattr(plugin, "options", [])
+                    if option.identifier == "ctld.autolase"
+                ),
+                True,  # Matches the manifest default for older definitions.
+            )
+            if autolase is not False:
+                incompatible.append("ctld: turn off 'JTAC autolase targets'")
+        elif plugin.identifier == "tic":
+            incompatible.append("tic: disable the plugin (visibility/clone conflict)")
+        elif plugin.identifier == "MooseAutolase":
+            incompatible.append("MooseAutolase: disable the autolase plugin")
     if incompatible:
         raise RealisticCASConfigurationError(
-            "Realistic CAS experimental: disable these plugins before generating: "
-            + ", ".join(incompatible)
-            + ". Their JTAC/dynamic-unit visibility adapters are not implemented yet."
+            "Realistic CAS experimental: "
+            + "; ".join(sorted(incompatible))
+            + ". CTLD logistics may remain enabled with autolase off. "
+            "Combined Arms JTAC controller slots do not enable AI autolase."
         )
 
 

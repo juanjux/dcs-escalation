@@ -75,21 +75,21 @@ class SensorModelTests(unittest.TestCase):
     def test_high_altitude_ir_observation_keeps_other_sensor_gates(self):
         self.check("""
         p=S.profile('A-10C_2','air',{targetingPod=true})
-        assert(p.opticalMaxAGL==10000)
+        assert(p.opticalMaxAGL==7010.4)
         -- Isolate IR even in daylight; radar is absent on this profile.
         p.eoRange=0
         for _,light in ipairs({0,1}) do
           e.light=light
-          for _,height in ipairs({4572,9144,10000}) do
+          for _,height in ipairs({4572,6705.6,7010.4}) do
             o.agl=height;o.point.y=height
             local r=S.assess(o,t,e,p,true)
             assert(r and r.mode=='ir' and r.chance>0 and r.chance<1)
           end
         end
         -- Still inside slant range, but just above the configured ceiling.
-        o.agl=10001;o.point.y=10001
+        o.agl=7011.4;o.point.y=7011.4
         assert(not S.assess(o,t,e,p))
-        o.agl=9144;o.point.y=9144
+        o.agl=6705.6;o.point.y=6705.6
         e.irTransmission=0.1;assert(not S.assess(o,t,e,p))
         e.irTransmission=1;t.point.x=10000
         assert(not S.assess(o,t,e,p)) -- Slant distance exceeds 12 km.

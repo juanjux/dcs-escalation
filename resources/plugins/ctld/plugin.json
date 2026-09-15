@@ -35,6 +35,7 @@
         },
         {
             "nameInUI": "JTAC autolase targets",
+            "descriptionInUI": "Automatically find and lase ground targets with CTLD JTACs, including deployed troops and vehicles. Disable for Realistic CAS; CTLD logistics can stay enabled. Smoke and laser-code options only apply while autolase is enabled. Unrelated to Combined Arms JTAC controller slots.",
             "mnemonic": "autolase",
             "defaultValue": true
         },

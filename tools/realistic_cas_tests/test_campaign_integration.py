@@ -80,6 +80,58 @@ class CampaignIntegrationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "legacy JTAC"):
             prepare_campaign(self.g, [self.p])
 
+    def test_ctld_logistics_allowed_with_autolase_off_regardless_of_human_slots(self):
+        ctld = LuaPlugin.from_json("ctld", ROOT / "resources/plugins/ctld/plugin.json")
+        assert ctld is not None
+        ctld.set_value(True)
+        options = {o.identifier: o for o in ctld.options}
+        with self.assertRaisesRegex(
+            RealisticCASConfigurationError, "JTAC autolase targets"
+        ):
+            validate_compatibility([self.p, ctld])
+        options["ctld.autolase"].set_value(False)
+        # Smoke is subordinate to autolase; logistics and human seats are not JTAC AI.
+        for smoke in (False, True):
+            options["ctld.jtacsmoke"].set_value(smoke)
+            for slots in (0, 3):
+                self.game.settings = NS(jtac_count=slots, use_jtac=False)
+                validate_compatibility([self.p, ctld])
+                self.assertIsNotNone(prepare_campaign(self.g, [self.p, ctld]))
+        options["ctld.autolase"].set_value(True)
+        ctld.set_value(False)
+        validate_compatibility([self.p, ctld])
+
+    def test_ctld_autolase_off_blocks_dynamic_and_timer_entry_points(self):
+        source = (ROOT / "resources/plugins/ctld/CTLD.lua").read_text()
+        lua = LuaRuntime()
+        lua.compile(source)  # The shipped script, not just the extracted function.
+        start = source.index("function ctld.JTACAutoLase(")
+        end = source.index("function ctld.JTACAutoLaseStop(", start)
+        lua.execute("""
+            calls=0
+            ctld={
+              p=tostring,
+              logDebug=function()
+                calls=calls+1
+                error('reached native autolase body')
+              end
+            }
+        """)
+        lua.execute(source[start:end])
+        lua.execute("""
+            dcsRetribution={plugins={ctld={autolase=false}}}
+            -- Initial JTACs, dropped troops, crates and the timer use this entry.
+            for _,name in ipairs({'initial','troops','crate','timer'}) do
+              assert(pcall(ctld.JTACAutoLase,name,1688))
+            end
+            assert(calls==0)
+            dcsRetribution.plugins.ctld.autolase=true
+            assert(not pcall(ctld.JTACAutoLase,'enabled',1688) and calls==1)
+            -- Standalone CTLD, without campaign options, retains its behaviour.
+            dcsRetribution=nil
+            assert(not pcall(ctld.JTACAutoLase,'standalone',1688) and calls==2)
+        """)
+
     def test_actual_pydcs_sinai_and_falklands_names(self):
         from dcs.terrain import Sinai, Falklands
 
