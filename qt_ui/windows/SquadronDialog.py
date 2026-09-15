@@ -167,10 +167,11 @@ def _font(
 
 
 class PilotRowPainter:
-    """What both delegates share: a squadron, and the manners of the palette.
+    """What both delegates share: the squadron and the palette.
 
-    Deliberately without an ``__init__``: Qt's own constructor walks the MRO, so a
-    second one here would be called with no arguments. Each delegate sets the model.
+    Deliberately without an ``__init__``: Qt's constructor walks the MRO, so a second
+    one here would be called with no arguments. Each delegate sets the model itself.
+
     """
 
     squadron_model: SquadronModel
@@ -205,10 +206,10 @@ class PilotRowPainter:
 
 
 class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
-    """One living pilot in three zones: who he is, what he needs, how he is.
+    """One living pilot in three zones: identity, pending actions, and state.
 
-    The right edge is always "how is this pilot", so it can be scanned down the list
-    rather than read row by row.
+    The state is always on the right edge so the column can be scanned.
+
     """
 
     def __init__(self, squadron_model: SquadronModel) -> None:
@@ -251,10 +252,11 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
             self._paint_state(painter, pilot, width, selected)
 
     def _affinity_tint(self, pilot: Pilot) -> Optional[QColor]:
-        """What the man the list is read from makes of this one, as a wash.
+        """Background wash showing what the selected pilot thinks of this one.
 
-        Nothing for the man himself, nothing when nobody is picked out, and nothing
-        for a pilot he has no opinion about -- only what is news gets painted.
+        Nothing for the selected pilot himself, nothing when none is selected, and
+        nothing for a pair at Neutral.
+
         """
         anchor = self.anchor
         if anchor is None or anchor is pilot:
@@ -361,10 +363,11 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
         option: QStyleOptionViewItem,
         index: QModelIndex,
     ) -> bool:
-        """The whole row in words, for whatever the row had to shorten.
+        """The whole row as text, for the tooltip.
 
-        A painted row has no text for Qt to offer as a tooltip, so it is built here --
-        which also means the rank name and the warning survive being elided.
+        A painted row has no text for Qt to offer, so it is built here, which also keeps
+        the rank name and the warning readable when the row elides them.
+
         """
         if event.type() != QEvent.Type.ToolTip or not index.isValid():
             return super().helpEvent(event, view, option, index)
@@ -395,10 +398,11 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
         return True
 
     def note_for(self, pilot: Pilot) -> Optional[tuple[str, str]]:
-        """Anything the player could act on, never what the game has already decided.
+        """Anything the player can act on, as opposed to state he cannot change.
 
-        A wound is a state and lives under morale; a request for leave is a question
-        addressed to the player, and belongs here.
+        A wound is state and belongs under morale; a leave request is a question for the
+        player and belongs here.
+
         """
         if not self.morale_shown_for(pilot):
             return None
@@ -477,10 +481,10 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
 
 
 class FallenPilotDelegate(QStyledItemDelegate, PilotRowPainter):
-    """A memorial and a record, not a working list: one line, and dim on purpose.
+    """The list of dead pilots: one line each, dimmed, and without morale.
 
-    It must not compete with the roster above it, and morale is dropped from these rows
-    because it no longer means anything.
+    Dimmed so it does not compete with the roster above it.
+
     """
 
     def __init__(self, squadron_model: SquadronModel) -> None:
@@ -608,12 +612,12 @@ class PilotList(QListView):
 
 
 class AutoAssignedTaskControls(QVBoxLayout):
-    """The mission types this squadron will be given without being asked.
+    """The mission types this squadron is given automatically.
 
-    Seventeen of them stacked one per line ran the panel to some 560 px; three columns
-    bring it to about 150, which is what lets the rest of the form fit beside the
-    roster. All and None are here because setting sixteen of seventeen by hand is a
-    chore nobody should have to do twice.
+    Laid out in three columns: seventeen rows one per line ran the panel to about 560
+    px, which left no room for the form beside the roster. All and None are provided
+    because setting sixteen of seventeen by hand is tedious.
+
     """
 
     COLUMNS = 3
@@ -1034,8 +1038,9 @@ class SquadronDialog(QDialog):
     def _build_header(self) -> QHBoxLayout:
         """Identity on the left, context on the right, two lines each.
 
-        The aircraft is the title because that is what a squadron is; the name and its
-        nickname sit under it, and where it flies from reads on the right.
+        The aircraft is the title, with the name and nickname under it and the base on
+        the right.
+
         """
         squadron = self.squadron
         row = QHBoxLayout()
@@ -1111,8 +1116,9 @@ class SquadronDialog(QDialog):
     def _roster_figures(self) -> dict[str, str]:
         """Who is on the books, and why each of them is not flying.
 
-        MAX is a dash when the campaign runs no pilot limit: there is a ceiling in the
-        settings, but nothing enforces it, and printing it would say otherwise.
+        MAX reads as a dash when the campaign runs no pilot limit: the setting exists
+        but nothing enforces it.
+
         """
         squadron = self.squadron
         pilots = squadron.living_pilots
@@ -1174,11 +1180,11 @@ class SquadronDialog(QDialog):
         return row
 
     def _refresh_roster_summary(self) -> None:
-        """How full the squadron is, in one figure pair.
+        """How full the squadron is, as one pair of figures.
 
-        What each of them is doing used to be spelled out here; the roster tiles on the
-        left say it in a form you read rather than parse, so this is left with the one
-        thing they do not answer at a glance -- how much room there is.
+        What each pilot is doing is shown by the roster tiles on the left, so this is
+        left with the one thing they do not answer: how much room there is.
+
         """
         figures = self._roster_figures()
         self.roster_summary.setText(
@@ -1480,10 +1486,11 @@ class SquadronDialog(QDialog):
         )
 
     def selected_pilots(self) -> list[Pilot]:
-        """Every pilot under the selection, resolved before anything changes.
+        """Every pilot under the selection, resolved before anything is changed.
 
-        The model resets after each pilot it touches, so rows have to become men first
-        or the second one acted on is the wrong man.
+        The model resets after each pilot it touches, so the rows have to be resolved to
+        pilots first or the second one acted on is the wrong pilot.
+
         """
         rows = {
             index.row() for index in self.pilot_list.selectionModel().selectedIndexes()
@@ -1499,11 +1506,12 @@ class SquadronDialog(QDialog):
         return pilots
 
     def toggle_leave(self) -> None:
-        """Grant leave for a length, or call men back and pay for it.
+        """Grant leave for a length, or recall pilots and pay the morale cost.
 
-        The button follows the pilot under the cursor, and acts on everyone selected
-        who is in the same state as him: a mixed selection sends the ones who are here
-        away, or calls the ones who are away back, but never both at once.
+        The button follows the pilot under the cursor and acts on everyone selected who
+        is in the same state as him, so a mixed selection is never sent both ways at
+        once.
+
         """
         index = self.pilot_list.currentIndex()
         if not index.isValid():

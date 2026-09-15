@@ -186,10 +186,10 @@ class Migrator:
     def _restate_the_morale_numbers(self) -> None:
         """Move a campaign in progress onto the re-weighed morale figures.
 
-        The event sizes are settings, and settings ride inside the save, so a
-        campaign started before they were re-weighed would keep playing by the old ones
-        for ever. Only the ones still sitting on the previous default are moved: a
-        figure the player set himself is his.
+        Event sizes are settings and settings live in the save, so a campaign started
+        before the re-weighing would keep the old ones. Only values still sitting on a
+        previous default are moved; anything the player set himself is left alone.
+
         """
         settings = self.game.settings
         moved = []
@@ -211,12 +211,11 @@ class Migrator:
     )
 
     def _collapse_the_tanker_options(self) -> None:
-        """One option where there were three, honouring a campaign that said no.
+        """Replace the three per-task tanker options with the single one.
 
-        The three never did anything -- the fulfiller pruned the tanker they asked
-        for -- but a player who turned them all off said what he wanted, so the one
-        that replaces them starts off for him. Any of them still on reads as
-        "tankers, yes", which is the new option's default anyway.
+        The three never had any effect, but a player who turned them all off said what
+        he wanted, so the replacement starts off for him.
+
         """
         settings = self.game.settings
         held = [getattr(settings, name, None) for name in self.TANKER_OPTIONS]
@@ -228,11 +227,11 @@ class Migrator:
             logging.info("Tanker auto-planning was off in all three tasks; kept off")
 
     def _clear_leave_requests_from_the_wounded(self) -> None:
-        """A pilot cannot be asking for leave from a hospital bed.
+        """Clear the leave request of a wounded pilot.
 
-        Being wounded clears the request now, and the turn's housekeeping will not let a
-        wounded man ask -- but saves made before both still carry the flag, and it showed
-        as "Requests leave" on the row of a man who was plainly out of action.
+        Being wounded clears the request now and the turn's housekeeping will not let a
+        wounded pilot ask, but saves made before both still carry the flag.
+
         """
         for coalition in (self.game.blue, self.game.red):
             for squadron in coalition.air_wing.iter_squadrons():
@@ -246,23 +245,12 @@ class Migrator:
                         pilot.leave_turns_requested = 0
 
     def _reconcile_available_pilots(self) -> None:
-        """The pool of pilots on offer, made to agree with the roster and the ATO.
+        """Make the pool of available pilots agree with the roster and the ATO.
 
-        It is a stored list, rebuilt from the roster only between turns, so anything
-        that moved a man during one used to leave it wrong in one of two ways.
+        The pool is a stored list rebuilt from the roster only between turns, so
+        anything that moved a pilot during one could leave it holding too many or too
+        few.
 
-        Too many: clearing a roster handed its crew back without letting go of them, so
-        a pilot sat in a flight and in the pool at once -- the Edit Flight dropdown
-        listed him twice and the next flight could claim him again, and the same man
-        flew two missions in one turn.
-
-        Too few: sending a man on leave did not take him out of the pool and bringing
-        him back did not return him, so every claim after that spent somebody else's
-        place. A squadron rested down to four pilots ended the turn offering none of
-        them, and the two who were fit to fly could not be picked for anything.
-
-        The pool is simply what it should be: active, not refusing to fly, not already
-        in a cockpit. Order is preserved for the ones that were already right.
         """
         for coalition in (self.game.blue, self.game.red):
             assigned = {
@@ -471,16 +459,9 @@ class Migrator:
     def _restore_pruned_iads_nodes(self) -> None:
         """Put back the IADS nodes a destroyed site used to be dropped from.
 
-        A site with nothing alive was taken out of the network altogether, and its
-        links went off the map with it -- so in a campaign that has been fought in, the
-        breaks you most want to see are the ones that are missing. The code no longer
-        prunes, but the damage is already in the save: the nodes and their connection
-        ids are gone, and nothing recreates them.
+        A site with nothing alive was removed from the network and its links went off
+        the map with it, which hid exactly the breaks worth seeing.
 
-        So the network is rebuilt once, from the campaign's own configuration and the
-        objectives as they stand, which is exactly what happens when a campaign starts.
-        Once is enough -- it cannot be pruned again -- and the flag says it has been
-        done, so a save that has already been through here keeps the network it has.
         """
         network = self.game.theater.iads_network
         if getattr(network, "keeps_destroyed_nodes", False):
@@ -496,11 +477,12 @@ class Migrator:
         )
 
     def _relabel_formation_waypoints(self) -> None:
-        """Join and split are the package's, not the flight's.
+        """Rename join and split on flights that are their whole package.
 
-        A flight that is the whole package has nobody to meet, so those two waypoints
-        read as nav points now. Flight plans are saved with the game, so the ones
-        already built carry the old names until they are rebuilt.
+        Such a flight has nobody to meet, so those waypoints read as nav points now.
+        Flight plans are saved with the game, so existing ones keep the old names until
+        they are rebuilt.
+
         """
         for coalition in (self.game.blue, self.game.red):
             for package in coalition.ato.packages:
@@ -576,13 +558,11 @@ class Migrator:
                 existing[identity] = tgo
 
     def _register_new_tgos(self) -> None:
-        """Put every objective in the lookup the map and the API read.
+        """Put every objective into the lookup the map and the API read.
 
         db.tgos is filled once, at turn 0, so an objective added to a campaign already
-        under way -- a motorpool the step above just created, anything a later
-        migration adds -- was never in it. Clicking one asked the server for a UUID it
-        did not know and the info window never opened. Last of the migration steps, so
-        it catches whatever the others made.
+        under way was never in it and could not be opened from the map.
+
         """
         for cp in self.game.theater.controlpoints:
             for tgo in cp.connected_objectives:

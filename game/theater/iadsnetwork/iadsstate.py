@@ -1,25 +1,7 @@
 """What Skynet will do with each site, worked out before the mission runs.
 
-The state a site ends up in -- part of the network, on its own, or switched off -- is
-decided inside DCS and never comes back out. It is not guesswork, though: Skynet reaches
-it from things Escalation already knows, so the same answer can be reached here.
-
-The rules below are lifted from the plugin, function by function:
-
-* ``goLive`` refuses outright unless ``hasWorkingPowerSource()``, so a site with no
-  power is dark whatever else is true of it.
-* ``genericCheckOneObjectIsAlive`` starts at ``#objects == 0``, so a site with no power
-  or comms dependency at all counts as having both. That is why a battery with its own
-  generator is left without a power dependency rather than given a dead one.
-* ``setToCorrectAutonomousState`` keeps a SAM in the network only while its own comms
-  are up, the coalition still has a usable command centre, and at least one parent radar
-  that covers it is itself alive, powered and connected.
-* ``buildRadarCoverage`` makes that parent relationship by range: an early-warning radar
-  is the parent of every SAM inside its detection range.
-
-What cannot be known from here is written down rather than guessed at: ammunition, HARM
-silence, and anything that happens once the mission is running. This is the state the
-site will be in when the mission starts.
+Skynet decides a site's state inside DCS and never reports it back, but it decides it
+from things Escalation already knows, so the same answer can be reached here.
 """
 
 from __future__ import annotations
@@ -77,11 +59,11 @@ class IadsStatus:
 
     @property
     def notable(self) -> bool:
-        """Worth saying out loud.
+        """Whether the state is worth reporting.
 
-        Destroyed is not: every reader of this already knows a site is gone, from the
-        health bar on the map or from `alive` over the API, and repeating it would put
-        a line on most of the wrecks in a campaign that has been fought in.
+        Destroyed is not: the health bar and the API already say so, and repeating it
+        would put a line on most of the wrecks in a long campaign.
+
         """
         if self.state is IadsState.DESTROYED:
             return False
@@ -91,9 +73,9 @@ class IadsStatus:
 def _own_generator(group: IadsGroundGroup) -> Optional[str]:
     """The name of the generator this site deploys with, if it still has one.
 
-    The name and not just the fact of it: a battery running on its own power is a
-    battery with one truck worth bombing, and saying which truck is the difference
-    between knowing that and guessing.
+    The name rather than a flag, because a battery running on its own power has one
+    truck worth bombing and the name says which.
+
     """
     for unit in group.units:
         if (
@@ -108,11 +90,10 @@ def _own_generator(group: IadsGroundGroup) -> Optional[str]:
 def _detection_range(group: IadsGroundGroup) -> float:
     """Metres this site can see for itself.
 
-    Asked of the range rather than of a list of radar classes, because the classes
-    answer the wrong question: a HAWK whose AN/MPQ-50 is rubble still has an MPQ-46
-    with 90 km on it, and a NASAMS that has lost its MPQ-64 has launchers and a
-    command post and sees nothing. TheaterUnit.detection_range is already zero for a
-    wreck, so this counts only what is standing.
+    Asked of the range rather than of a list of radar classes: a HAWK that has lost its
+    AN/MPQ-50 still has an MPQ-46 with 90 km, and a NASAMS that has lost its MPQ-64 sees
+    nothing despite having launchers and a command post.
+
     """
     return max((unit.detection_range.meters for unit in group.units), default=0.0)
 

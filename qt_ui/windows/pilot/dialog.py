@@ -1,11 +1,11 @@
-"""One pilot, in two columns: what he has done, and how he is.
+"""The pilot dialog: what he has done on the left, how he is on the right.
 
-The record only grows; the state moves every turn. Keeping them apart is what makes a
-dead man's dialog the same dialog with the right column frozen and a red card added at
-the top left, rather than a second layout to keep in step with the first.
+The record only grows; the state changes every turn. Keeping them in separate columns is
+what lets a dead pilot use the same layout with the right column frozen and a card added
+at the top left.
 
-It is built from the pilot and the game, and finds his squadron itself, so anything
-holding a pilot can open it -- the roster, and in time the command palette.
+Built from the pilot and the game, and finds his squadron itself, so anything holding a
+pilot can open it.
 """
 
 from __future__ import annotations

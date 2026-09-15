@@ -97,10 +97,11 @@ def _font(size: int, weight: QFont.Weight = QFont.Weight.Normal) -> QFont:
 
 
 def morale_word(pilot: Pilot, squadron: Any) -> Optional[str]:
-    """The state's name, or None when this pilot has no morale to show.
+    """The morale band's name, or None when the pilot has none.
 
-    The player has none on purpose: he knows how his own week went. Neither has anyone
-    when the campaign has morale switched off.
+    The player's own pilot has no morale, and neither has anyone when the campaign has
+    morale switched off.
+
     """
     if squadron is None or not getattr(squadron, "morale_in_play", False):
         return None
@@ -113,11 +114,11 @@ def morale_word(pilot: Pilot, squadron: Any) -> Optional[str]:
 def affinity_tint(
     affinity: Optional[float], selected: bool = False, settings: Any = None
 ) -> Optional[QColor]:
-    """The wash behind a man whose company would change the flight.
+    """Background wash for a pilot whose presence would change the flight.
 
-    None for a pair nobody needs to think about, which is what Neutral is: only what is
-    news gets painted. Blended by alpha rather than by hue so the band's own colour
-    still means what it means in every other list.
+    None at Neutral. Blended by alpha rather than by hue so the band keeps the colour it
+    has everywhere else.
+
     """
     if affinity is None:
         return None
@@ -303,11 +304,12 @@ class PilotItemDelegate(QStyledItemDelegate):
 
 
 class PaintedPilotCombo(QComboBox):
-    """A combo that draws its closed state with the same painter as its popup.
+    """A combo box that draws its closed state with the same painter as its popup.
 
-    Qt draws a combo's current item as plain text, which is why the roster and the
-    selector could never look alike. Overriding the paint puts the frame and the arrow
-    through the style as usual and then draws the row into the space that is left.
+    Qt draws the current item as plain text, so without this the roster and the selector
+    cannot look alike. The frame and arrow still go through the style; the row is drawn
+    into what is left.
+
     """
 
     def __init__(

@@ -1,12 +1,10 @@
-"""Who he is, and the three figures a player would brag about.
+"""The pilot dialog's header: name, rank, status and the three headline figures.
 
-The name is the only large text. Beside it the rung he stands on and one chip saying
-where he is -- active, wounded, on leave, killed, gone -- in the same six words the
-roster uses, so the list and the dialog can never disagree about a pilot.
+The name is the only large text. Beside it are the rank and one chip giving his status
+-- active, wounded, on leave, killed, discharged -- in the same words the roster uses.
 
-The figures are missions, kills and experience, and experience carries a bar to the
-next rank because rank is derived from it and this is the only place in the program
-where that relationship is visible.
+The figures are missions, kills and experience. Experience carries a bar towards the
+next rank, which is the only place the relationship between the two is visible.
 """
 
 from __future__ import annotations

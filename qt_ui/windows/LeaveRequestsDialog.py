@@ -1,12 +1,7 @@
-"""The pilots who have asked for a rest, and your answer.
+"""The leave requests dialog.
 
-Shown once at the end of a turn, after the debriefing, when anybody asked. A pilot asks
-more often the worse he is holding up, but a contented one asks now and then too. Saying
-yes costs you the man for the turns you grant; saying no costs him morale.
-
-Clicking a row picks a man out, and the rest of the list colours itself by what they
-make of him -- because leave is worth more taken in company, and the point of seeing it
-here is to send friends off together rather than one at a time.
+Shown once at the end of a turn, after the debriefing, when any pilot has asked. Granting
+leave costs the pilot for the turns granted; refusing costs him morale.
 """
 
 from __future__ import annotations
@@ -204,12 +199,12 @@ class LeaveRequestsDialog(QDialog):
         ) and bool(self.requests)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        """A click anywhere on a row picks that row.
+        """A click anywhere on a row selects that row.
 
-        The cells are labels, which do not take mouse events, so the press arrives at
-        the body they sit in and the row is worked out from where it landed. The
-        check box and the spinner take their own clicks, which is what should happen:
-        answering a request is not the same act as looking at one.
+        The cells are labels and do not take mouse events, so the press arrives at the
+        body they sit in and the row is worked out from where it landed. The check box
+        and the spinner take their own clicks.
+
         """
         if watched is self.body and event.type() == QEvent.Type.MouseButtonPress:
             assert isinstance(event, QMouseEvent)
@@ -255,9 +250,10 @@ class LeaveRequestsDialog(QDialog):
     def _explanation(self, chosen: _Row, other: _Row) -> str:
         """What the colour means, and whether it is worth anything here.
 
-        The bonus for leave taken in company is a squadron's, so a man from another
-        squadron can be the best friend he has and it will still buy nothing -- which
-        is exactly the kind of thing a colour on its own would let you get wrong.
+        The bonus for leave taken in company applies within a squadron, so a close
+        friend from another squadron buys nothing -- which the colour alone would not
+        say.
+
         """
         value = friendship.group_affinity(other.pilot, [chosen.pilot])
         band = friendship.band_name(value, self.game.settings)

@@ -161,11 +161,12 @@ class MissionResultsProcessor:
         self._dead_this_turn: dict[str, list[Any]] = {}
 
     def _note_morale(self, pilot: Any, event: Any, times: int = 1) -> None:
-        """Remember that something happened to a pilot; it is applied at the end.
+        """Record that something happened to a pilot; it is applied at the end.
 
-        Collected rather than applied on the spot because the experience multiplier
-        reads the morale he *flew* the sortie with, not the morale the sortie left him
+        Collected rather than applied immediately because the experience multiplier
+        reads the morale the pilot flew the sortie with, not the morale it left him
         with.
+
         """
         if times > 0:
             self._morale_events.setdefault(id(pilot), []).extend([event] * times)
@@ -183,11 +184,11 @@ class MissionResultsProcessor:
         self._friendship_gains[key] = (pilot, other, total)
 
     def _note_friendly_fire(self, mourner: Any, shooter: Any, amount: float) -> None:
-        """What one man who saw it makes of the man who did it.
+        """The friendship penalty one witness applies to the pilot responsible.
 
-        The worst of the applicable penalties rather than their sum: somebody who is
-        both in the shooter's flight and in the victim's squadron does not think twice
-        as badly of him for being in the room twice.
+        The worst applicable penalty rather than their sum, so being both in the
+        shooter's flight and in the victim's squadron is not counted twice.
+
         """
         if mourner is shooter or not amount:
             return
@@ -201,10 +202,11 @@ class MissionResultsProcessor:
         self._friendship_penalties[key] = (mourner, shooter, worst)
 
     def _commit_friendship(self) -> None:
-        """Spend the turn's tally, once everything that reads it has read it.
+        """Apply the turn's collected friendship changes.
 
-        Gains are capped per pair: three flights a turn with the same four men must not
-        be a shortcut past bands that are meant to take a campaign to reach.
+        Gains are capped per pair, so repeated sorties with the same crew cannot reach
+        in one turn a band meant to take a campaign.
+
         """
         settings = self.game.settings
         if friendship.in_play(settings):
@@ -422,12 +424,11 @@ class MissionResultsProcessor:
     def commit_air_assault_remain(self, debriefing: Debriefing) -> None:
         """Resolve helo air-assault flights flagged to remain at the objective.
 
-        A "remain" flight is committed forward and never flies home, so its origin
-        loses the whole flight -- no matter how the sim classified each airframe (kill,
-        crash, or landed-and-abandoned). If we hold the objective once captures are
-        resolved, the airframes that made it redeploy there (a free forward ferry);
-        otherwise every one is written off. Must run after commit_captures so base
-        ownership is final.
+        A remain flight is committed forward and never flies home, so its origin loses
+        the whole flight however the sim classified each airframe. Holding the objective
+        after captures are resolved turns those aircraft into a parked reserve at the
+        captured base instead.
+
         """
         for coalition in self.game.coalitions:
             for package in coalition.ato.packages:
@@ -518,13 +519,12 @@ class MissionResultsProcessor:
         coalition.air_wing.add_squadron(squadron)
 
     def _resolve_pilot_fate(self, loss: Any, debriefing: Debriefing) -> None:
-        """Kill the pilot, or let his rank save him, or let the medics reach him.
+        """Decide whether the pilot dies, is saved by rank, or is saved by the medics.
 
-        Two rolls, in that order. The first is bought with rank and needs both Live
-        Pilots and the rank survival switch; the second is flat and needs only Live
-        Pilots, so a wound can still spare a pilot in a campaign that does not want
-        rank deciding who lives. Neither switched on means losing the aircraft loses
-        the pilot, exactly as before.
+        Two rolls in that order. The first needs Live Pilots and the rank survival
+        setting; the second needs only Live Pilots, so a wound can still spare a pilot
+        in a campaign that does not want the rank roll.
+
         """
         settings = self.game.settings
         pilot = loss.pilot
@@ -652,10 +652,11 @@ class MissionResultsProcessor:
     def _note_flight_morale(
         self, flight: Any, casualty: Any, event: Any, turns: int = 1
     ) -> None:
-        """The men who were up there with him take it harder than the rest.
+        """Apply the death to the pilots who were in his flight.
 
-        Only the flight, not the package: the four who were on his wing saw it, and the
-        strike twenty miles away heard about it later like everybody else.
+        The flight only, not the package: the rest of the package was not there to see
+        it.
+
         """
         if not getattr(self.game.settings, "morale_enabled", True):
             return
@@ -666,12 +667,10 @@ class MissionResultsProcessor:
             self._note_morale(mate, event, base * self._grief_times(mate, casualty))
 
     def _grief_times(self, mourner: Any, casualty: Any) -> int:
-        """How many times what happened to one man lands on another.
+        """How many times a death is applied to one survivor.
 
-        By what the mourner thought of him, which is the effect that makes friendship
-        cost something -- without it the whole of it is upside. Never below once: a man
-        he could not stand going down in front of him is still a man going down in
-        front of him.
+        Scaled by what the survivor thought of him, and never below once.
+
         """
         settings = self.game.settings
         if not friendship.in_play(settings):
@@ -708,16 +707,13 @@ class MissionResultsProcessor:
         victim_is_blue: bool,
         turn: int = 0,
     ) -> Optional[KilledBy]:
-        """Who did it, with what, and from which side, in pieces.
+        """Who made the kill, with what, and on which side.
 
         DCS credits exactly one initiator per kill and has no notion of an assist, so
         this is whoever landed the killing blow. In order of preference: the roster
-        pilot behind the killing aircraft, the human's own name, the airframe or
-        vehicle type. No detail at all is a crash, which nobody is credited with.
+        pilot flying the killing aircraft, the human player's name, then the airframe or
+        vehicle type.
 
-        In pieces rather than as the sentence below, so a pilot's record can keep the
-        weapon as a weapon. The sentence is built from these, so the debriefing line
-        and the record can never say different things.
         """
         if not detail:
             return None
@@ -781,11 +777,11 @@ class MissionResultsProcessor:
 
     @staticmethod
     def _victim_kind(victim: Any) -> Victim:
-        """What was destroyed: what sort of thing it was, and what it was called.
+        """What was destroyed: its class and its name.
 
-        One walk rather than two. The XP table and the pilot's tally were each going
-        to ask the same questions of the same object in the same order, and two
-        copies of that walk would disagree the first time either was touched.
+        One walk over the object rather than two, so the XP table and the pilot's tally
+        cannot disagree about it.
+
         """
         if victim is None:
             return Victim(NOTHING)
@@ -835,12 +831,12 @@ class MissionResultsProcessor:
         )
 
     def _kill_xp(self, victim: Any) -> int:
-        """What destroying this was worth.
+        """The experience destroying this was worth.
 
-        Proportionality comes from the pieces: a refinery is four platforms, each with
-        its own death, so two of them is half a refinery. DCS reports no damage
-        magnitude anywhere, so nothing divides an element any finer -- hurting one
-        without destroying it is paid as an assist instead, at XP_DAMAGE_SHARE.
+        Proportionality comes from the pieces: a refinery is several platforms with a
+        death each, so destroying two of them pays for two. DCS reports no damage
+        magnitude, so nothing is divided any finer.
+
         """
         victim_kind = self._victim_kind(victim)
         if victim_kind.kind == AIR:
@@ -858,12 +854,11 @@ class MissionResultsProcessor:
     def _credited_events(
         self, details: Any, debriefing: Debriefing, note_friendly_fire: bool = False
     ) -> Iterator[tuple[Pilot, str, Any, Any, str]]:
-        """(pilot, target name, target, the killer's flight, the weapon) for every
-        credited record.
+        """(pilot, target name, target, the killer's flight, the weapon) per credited record.
 
-        Shared by kills and hits, which the plugin writes in the same shape. Anything
-        that cannot be resolved to a roster pilot is dropped, as is anything he did to
-        his own side.
+        Shared by kills and hits, which the plugin writes in the same shape. Records
+        that cannot be resolved to a roster pilot are dropped, as is friendly fire.
+
         """
         for detail in details:
             if not isinstance(detail, dict):
@@ -893,10 +888,11 @@ class MissionResultsProcessor:
     def _experience_from_kills(
         self, debriefing: Debriefing
     ) -> tuple[dict[int, int], set[tuple[int, str]]]:
-        """What each pilot earned for what he destroyed, keyed by pilot identity.
+        """Experience earned per pilot, keyed by pilot identity.
 
         Also returns the (pilot, target) pairs it paid for, so the damage pass does not
-        pay a second time for the hit that finished the job.
+        pay again for the hit that finished the job.
+
         """
         earned: dict[int, int] = {}
         credited: set[tuple[int, str]] = set()
@@ -931,12 +927,12 @@ class MissionResultsProcessor:
 
     @staticmethod
     def _was_the_assigned_target(victim: Any, flight: Any) -> bool:
-        """Whether this is what the package was sent for.
+        """Whether this target is what the package was sent for.
 
-        Anything else is a target of opportunity, which is worth something to a pilot
-        even when it is worth little to the campaign. The engine cannot tell us whose
-        idea it was -- his, or an order the player gave on the F10 map -- so both read
-        the same here.
+        Anything else counts as a target of opportunity, which is worth less. The engine
+        cannot distinguish a pilot's own initiative from an order given on the F10 map,
+        so both read the same here.
+
         """
         target = getattr(getattr(flight, "package", None), "target", None)
         if target is None:
@@ -952,12 +948,11 @@ class MissionResultsProcessor:
     def _experience_from_damage(
         self, debriefing: Debriefing, credited: set[tuple[int, str]]
     ) -> dict[int, int]:
-        """A share of the kill for hurting something without finishing it.
+        """A share of the kill for damaging something without destroying it.
 
-        This is a real assist rather than a guess: DCS names the shooter on every hit,
-        and the plugin records the first one each aircraft lands on each target, so a
-        pilot is paid once for the destroyer he left burning however long he worked on
-        it. The pilot credited with the kill is skipped -- that kill already paid him.
+        DCS names the shooter on every hit and the plugin records the first one each
+        aircraft lands on each target, so a pilot is paid once per target he damaged.
+
         """
         earned: dict[int, int] = {}
         for pilot, target, victim, _flight, _weapon in self._credited_events(
@@ -1081,12 +1076,11 @@ class MissionResultsProcessor:
                     )
 
     def _note_flying_together(self, package: Any, flight: Any, pilot: Any) -> None:
-        """Who he flew with today, in his own direction only.
+        """Apply the sortie's friendship gain for this pilot, in his own direction only.
 
-        Only his own half of each pair. The other half is moved when that man's own
-        turn through the loop comes round, which is the only way a directed edge is
-        touched exactly once: moving both ends from here would pay for the sortie while
-        processing him and pay for it again while processing the other man.
+        The opposite direction is moved when that pilot's own turn through the loop
+        comes round, so each directed pair is touched exactly once.
+
         """
         settings = self.game.settings
         if not friendship.in_play(settings):
@@ -1104,11 +1098,10 @@ class MissionResultsProcessor:
                     self._note_friendship(pilot, other, rest_of_package)
 
     def _note_friendly_fire_event(self, killer: Any, victim: Any) -> None:
-        """What everybody makes of a man who destroyed one of ours.
+        """Apply the friendly-fire penalty to what the witnesses think of the pilot.
 
-        It lands on what they think of *him*, which is the whole reason friendship has
-        a direction: his own flight because they watched it happen, and the victim's
-        squadron because they will hear about it for the rest of the campaign.
+        His own flight, who saw it, and the victim's squadron, who hear about it.
+
         """
         settings = self.game.settings
         if not friendship.in_play(settings):
@@ -1130,16 +1123,12 @@ class MissionResultsProcessor:
             self._note_friendly_fire(mourner, shooter, air_squadron)
 
     def _xp_multiplier(self, flight: Any, squadron: Any, pilot: Any) -> float:
-        """What this sortie was worth to this man, and to nobody else in the flight.
+        """The experience multiplier for this pilot's sortie.
 
-        Three things move it: how he is holding up, who he had to learn from, and what
-        he makes of the men he flew with. Only the best pilot in the formation teaches,
-        and only the ones below him learn -- he gets nothing out of it himself.
+        Three things move it: his morale, the best pilot in the formation (who teaches
+        the ones below him and gains nothing himself), and what he thinks of the crew he
+        flew with.
 
-        The company he flew in is signed: a formation he cannot stand is worth less
-        than flying alone, which is the point of it. So the floor goes on the total and
-        never on a term -- experience does not go backwards, which is a Tier I rule and
-        still holds.
         """
         settings = self.game.settings
         if not settings.live_pilots_enabled:

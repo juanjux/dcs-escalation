@@ -1,12 +1,11 @@
-"""What he has done: the kills, what he has survived, and how it ended.
+"""The pilot dialog's record column: kills, what he survived, and how he died.
 
-Kills are grouped the way a pilot would tell it -- air by what he shot down, ground by
-the sort of thing it was -- and every row opens in place to the individual kills, so
-the detail is one click away and there is no second dialog.
+Kills are grouped by what was destroyed for ground targets and by what shot it down for
+air targets. Each row opens in place to the individual kills rather than to a second
+dialog.
 
-The counts are the tallies, which are never trimmed. The rows a tally opens into come
-from the kill log, which is capped, so a long campaign is shown as "and n earlier"
-rather than quietly losing them.
+The counts come from the tallies, which are never trimmed; the rows they open into come
+from the kill log, which is capped, so the remainder is shown as "and n earlier".
 """
 
 from __future__ import annotations
@@ -107,11 +106,11 @@ def _detail_of(kills: Sequence[Kill]) -> str:
 
 
 def _grouped(kills: Sequence[Kill], key: str) -> list[KillGroup]:
-    """The kills under one row, gathered by unit type or by weapon.
+    """The kills under one row, grouped by unit type or by weapon.
 
-    A ground row opens into what he destroyed, because the row is the class of thing.
-    An air row opens into what he did it with, because the row is already the type --
-    and then the detail is only when, or the weapon would be named twice.
+    A ground row groups by what was destroyed, since the row itself is the class. An air
+    row groups by the weapon used.
+
     """
     buckets: dict[str, list[Kill]] = {}
     for kill in kills:
