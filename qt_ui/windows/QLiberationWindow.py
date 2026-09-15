@@ -644,10 +644,6 @@ class QLiberationWindow(QMainWindow):
             'Contains information from <a href="https://osmdata.openstreetmap.de/" style="color: #ffffff">OpenStreetMap © OpenStreetMap contributors</a>, which is made available here under the <a href="https://opendatacommons.org/licenses/odbl/1-0/" style="color: #ffffff">Open Database License (ODbL)</a>.<br />'
             '<a href="https://download.geofabrik.de/index.html/" style="color: #ffffff">OpenStreetMap Data Extracts from Geofabrik</a><br />'
             '<a href="https://www.earthdata.nasa.gov/" style="color: #ffffff">NASA EarthData</a><br />'
-            + "<h4>Splash Screen  :</h4>"
-            + "Artwork by Andriy Dankovych (CC BY-SA)"
-            " <a href='https://www.facebook.com/AndriyDankovych' style='color:white'>"
-            "[https://www.facebook.com/AndriyDankovych]</a>"
         )
         about = QMessageBox()
         about.setWindowTitle("About DCS Escalation")

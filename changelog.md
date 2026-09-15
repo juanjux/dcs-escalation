@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** The window title says v1.0.0, which is the fork's own version: it was still counting from the Retribution release it forked at. The About box drops the credit for the old splash screen, which is no longer the one it ships.
 * **[Mission Plugins]** Realistic CAS allows CTLD logistics with JTAC autolase disabled. The autolase option now also gates deployed JTACs; Combined Arms controller slots are unrelated. Runtime-created units remain outside the fog registry.
 * **[Mission Plugins]** Realistic CAS observation-height controls now use feet AGL, with a 23,000 ft EO/IR default. Existing saved heights retain their physical value; storage and Lua remain in metres.
 * **[Mission Plugins]** Realistic CAS probability endpoints, optical altitude penalty/limits and retry interval are editable options. Terrain cover uses a named drop-down while preserving saved numeric values.
