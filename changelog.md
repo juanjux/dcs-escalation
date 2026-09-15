@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Campaigns]** Gran Polvorin has an air defence network: its SAM sites and EWRs are wired to comms towers, power stations and two command centres, the islands get a network of their own, and it gains vehicle depots and two more GPS jamming sites. NEW game required.
 * **[Mission Plugins]** Realistic CAS allows CTLD logistics with JTAC autolase disabled. The autolase option now also gates deployed JTACs; Combined Arms controller slots are unrelated. Runtime-created units remain outside the fog registry.
 * **[Mission Plugins]** Realistic CAS observation-height controls now use feet AGL, with a 23,000 ft EO/IR default. Existing saved heights retain their physical value; storage and Lua remain in metres.
 * **[Mission Plugins]** Realistic CAS probability endpoints, optical altitude penalty/limits and retry interval are editable options. Terrain cover uses a named drop-down while preserving saved numeric values.
