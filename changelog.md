@@ -156,6 +156,8 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+
+* **[UI]** Cancelling Save As or failing to save no longer closes the campaign after choosing to save on exit. Failed saves show an error and preserve the previous save path. Save/close decisions are logged for troubleshooting.
 * **[FIX]** A pilot on leave could not be called back while his squadron was at full strength, which it usually is: he holds his own place the whole time he is away, so coming back takes nobody else's.
 * **[FIX]** An escort put on a TARCAP emptied the map: the escort and the patrol each took their timing from the other, and nothing survived the recursion.
 * **[FIX]** A flight plan lit up yellow under the pointer for a single frame and went out: the colour was painted on by a handler, and the next render put the line's own colour straight back.

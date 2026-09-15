@@ -686,7 +686,7 @@ class Squadron:
             and not pilot.wants_leave
         )
 
-    def pilots_asking_for_leave(self) -> list[Pilot]:        
+    def pilots_asking_for_leave(self) -> list[Pilot]:
         asking = [
             pilot
             for pilot in self.current_roster
