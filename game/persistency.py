@@ -521,11 +521,19 @@ def has_unsaved_changes(game: Optional[Game]) -> bool:
     the evening's campaign.
     """
     if game is None:
+        logging.debug("Unsaved check: no campaign loaded")
         return False
     if _saved_signature is None:
+        logging.debug("Unsaved check: no saved fingerprint")
         return True
     try:
-        if game_signature(game) == _saved_signature:
+        current_signature = game_signature(game)
+        logging.debug(
+            "Unsaved check: saved=%s current=%s",
+            _saved_signature,
+            current_signature,
+        )
+        if current_signature == _saved_signature:
             return False
     except Exception:
         logging.exception("Could not tell whether the campaign has been modified")
@@ -576,6 +584,12 @@ def remember_saved_state(game: Game) -> None:
     try:
         settle(game)
         _saved_signature = game_signature(game)
+        logging.debug(
+            "Remembered saved campaign: game=%s path=%s fingerprint=%s",
+            id(game),
+            getattr(game, "savepath", None),
+            _saved_signature,
+        )
     except Exception:
         logging.exception("Could not fingerprint the saved campaign")
         _saved_signature = None
