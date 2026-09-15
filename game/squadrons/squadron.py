@@ -446,8 +446,7 @@ class Squadron:
         return pilot
 
     def claim_pilot(self, pilot: Pilot) -> None:
-        """Take this man off the list -- this man, not one who looks like him.
-
+        """
         Pilot is a dataclass, so two men with the same name and record compare equal
         and ``list.remove`` takes whichever comes first. leaves_the_pool has always
         compared by identity for that reason; these three did not, so claiming a copy
@@ -605,8 +604,7 @@ class Squadron:
     def _leave_event(
         self, pilot: Pilot, away: Sequence[Pilot]
     ) -> morale_rules.MoraleEvent:
-        """A turn of leave, and what the company of the others away with him is worth.
-
+        """
         Worked out again every turn, which is the whole character of it: three men who
         go together and come back on different turns each lose the bonus as the others
         return, so the last week alone is worth an ordinary week. Nobody's leave is
@@ -688,8 +686,7 @@ class Squadron:
             and not pilot.wants_leave
         )
 
-    def pilots_asking_for_leave(self) -> list[Pilot]:
-        """Everyone on the books waiting to be told yes or no, worst off first."""
+    def pilots_asking_for_leave(self) -> list[Pilot]:        
         asking = [
             pilot
             for pilot in self.current_roster
