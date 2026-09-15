@@ -22,6 +22,7 @@ Here's a quick rundown of the file's components :
 - `defaultValue` : the selection value of the plugin, when first installed ; if true, plugin is selected.
 - `specificOptions` : a list of specific plugin options
   - `nameInUI` : the title of the option as it will appear in the plugins specific options user interface.
+  - `descriptionInUI` : *optional*. Help text shown as a tooltip on both the option label and its control. Omit it for no tooltip; it is not a saved setting or Lua variable.
   - `mnemonic` : the short, technical name of the option. It's the name of the LUA variable passed to the configuration script, and the name of the option in the application's settings 
   - `defaultValue` : the selection value of the option, when first installed ; if true, option is selected. A boolean renders a checkbox; an int or float renders a spin box.
   - `minimumValue` / `maximumValue` : *optional*, numeric options only. The spin-box bounds (default 0 and 10000 if omitted).

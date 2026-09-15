@@ -10,6 +10,7 @@ set -- with its description underneath. The options open in their own dialog, so
 page stays a list you can read down.
 """
 
+from html import escape
 from typing import Dict, List, Optional
 
 from PySide6.QtCore import QLocale, Qt, QTimer
@@ -67,7 +68,13 @@ class PluginOptionsBox(QGroupBox):
             row += 1
 
         for option in plugin.options:
+            # Rich text wraps long help; escape plugin text rather than treating
+            # sensor comparisons or other markup as HTML.
+            tooltip = (
+                f"<qt>{escape(option.description)}</qt>" if option.description else ""
+            )
             label = QLabel(option.name)
+            label.setToolTip(tooltip)
             label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             layout.addWidget(label, row, 0)
             self.labels[option.identifier] = label
@@ -101,6 +108,10 @@ class PluginOptionsBox(QGroupBox):
                 field.textChanged.connect(option.set_value)
                 layout.addWidget(field, row, 1)
                 self.widgets[option.identifier] = field
+
+            widget = self.widgets.get(option.identifier)
+            if widget is not None:
+                widget.setToolTip(tooltip)
 
             row += 1
 

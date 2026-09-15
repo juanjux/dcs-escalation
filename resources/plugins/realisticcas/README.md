@@ -37,6 +37,28 @@ TIC/CTLD/MOOSE ownership adapters and replacement JTACs remain pending.
 
 ## Contract
 
+### Option help
+
+Hover an option's label or control for its explanation.
+
+- **Search time** is observation time for one unknown group, not a detection
+  percentage. Currently discovery is deterministic once repeated valid sensor
+  and terrain-LOS observations satisfy this delay. An observer searches one new
+  group at a time; a lost observation resets the search. Range, altitude, cover,
+  light and weather constrain eligibility rather than adding random rolls.
+- **Contact lifetime** starts again after an observation or shot. It is how long
+  the whole group stays revealed, not the time needed to find it.
+- **Cover 0 (automatic by map)** chooses one homogeneous approximation:
+  desert for Nevada, Iraq, Syria, Persian Gulf, Sinai and Afghanistan; grassland
+  for Caucasus, Normandy, The Channel, Germany and Falklands; tundra for Kola;
+  forest for Marianas. It does not sample forests, cities or vegetation at each
+  target. Values 1–5 force desert, grassland, tundra, forest or city everywhere;
+  unsupported maps require a manual choice. Terrain LOS remains a separate check.
+- **Debug** adds verbose detection/contact diagnostics to `dcs.log`, not F10
+  markers. Errors and scheduler-overload warnings are logged even when it is off.
+
+### Visibility rules
+
 - Effective visibility unit: a DCS ground GROUP. Revealing one member exposes its
   whole group. Native per-unit SetInvisible affected the whole group in engine tests.
 - Blue/red symmetric, neutral groups excluded. Own-side observations cannot reveal

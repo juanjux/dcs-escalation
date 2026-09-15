@@ -5,6 +5,7 @@
     "specificOptions": [
         {
             "nameInUI": "Search time for a new group (seconds)",
+            "descriptionInUI": "Observation time needed to discover one previously unknown enemy group (default: 20 seconds). An observer searches one new group at a time and must keep obtaining valid observations within sensor range, field of view and terrain line of sight. Losing contact resets the search. This is a deterministic search delay, not a percentage chance. Firing reveals a group immediately without this delay.",
             "mnemonic": "acquisitionSeconds",
             "defaultValue": 20,
             "minimumValue": 1,
@@ -12,13 +13,15 @@
         },
         {
             "nameInUI": "Contact lifetime after last observation or shot (seconds)",
+            "descriptionInUI": "How long a revealed enemy group stays known after its last valid observation or shot (default: 600 seconds / 10 minutes). Further observations or firing refresh the timer. When it expires, the group becomes hidden from enemy AI again and must be rediscovered. Discovery is shared by the opposing coalition and reveals the whole group, not just one vehicle. Fixed map SAM sites remain known. This does not hide F10 icons or freeze a moving contact at its last position.",
             "mnemonic": "contactSeconds",
             "defaultValue": 600,
             "minimumValue": 30,
             "maximumValue": 3600
         },
         {
-            "nameInUI": "Approximate cover: 0=theater, 1=desert, 2=grassland, 3=tundra, 4=forest, 5=city",
+            "nameInUI": "Approximate terrain cover (0 = automatic by map)",
+            "descriptionInUI": "Selects ONE approximate cover profile for the entire mission, not the actual terrain under each vehicle. 0 chooses by map: desert for Nevada, Iraq, Syria, Persian Gulf, Sinai and Afghanistan; grassland for Caucasus, Normandy, The Channel, Germany and Falklands; tundra for Kola; forest for Marianas. Overrides: 1 = desert, 2 = grassland, 3 = tundra, 4 = forest, 5 = city. Desert permits the longest observation ranges; grassland, tundra, forest and city progressively shorten them. EO/IR and ground radar respond differently. This is not automatic forest/city detection; terrain line of sight is checked separately. For an unsupported map, select 1-5.",
             "mnemonic": "terrainProfile",
             "defaultValue": 0,
             "minimumValue": 0,
@@ -26,6 +29,7 @@
         },
         {
             "nameInUI": "Detailed detection and contact logging (large dcs.log)",
+            "descriptionInUI": "Write detailed Realistic CAS search, detection, line-of-sight and contact diagnostics to dcs.log for troubleshooting. Can produce a very large log and add overhead in busy missions. Leave off for normal play; errors and scheduler-overload warnings are still reported. Does not change detection rules or add F10 markers.",
             "mnemonic": "debug",
             "defaultValue": false
         }
