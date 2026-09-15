@@ -1,18 +1,16 @@
-"""What a pilot thinks of the man next to him.
+"""Per-pair friendship between pilots.
 
-Friendship runs 0 to 10 and starts at 5: morale's shape on a shorter ruler. It is
-**directional** -- what A feels about B is not what B feels about A -- which is not
-decoration. The two effects that read it read opposite ends: a pilot flies better with
-men *he* likes, and is pulled out of a wreck by men who like *him*.
+The value runs 0 to 10 and starts at 5. It is directional: what A feels about B is
+stored separately from what B feels about A, and the two effects read opposite
+directions -- a pilot's skill bonus uses his own opinion of the formation, while the
+chance of being rescued uses what the others think of him.
 
-It moves two ways. Slowly, every turn, with everyone at his base: the squadron he sees
-daily warms faster than the squadron across the ramp. And in the air, where a shared
-sortie is worth more than a month of drift -- which is deliberate, because the bands
-that pay for anything are the ones the drift alone cannot reach.
+It changes in two ways: a small per-turn drift between everyone at the same base (a
+higher chance within a squadron than across the ramp), and larger gains for flying a
+sortie together. The drift alone cannot reach the bands that grant bonuses.
 
-The numbers below are defaults. Each carries the settings key that overrides it, exactly
-as :mod:`game.squadrons.morale` does, so a campaign can be re-weighed without editing
-code.
+The constants below are defaults; each names the settings key that overrides it, as in
+:mod:`game.squadrons.morale`.
 """
 
 from __future__ import annotations
@@ -31,10 +29,8 @@ if TYPE_CHECKING:
     from game.squadrons.squadron import Squadron
     from game.theater import ControlPoint
 
-#: The ends of the ruler, and the middle a pair starts on. A campaign that has not put
-#: two men in the same aircraft has no opinion about how they get on, which is what 5
-#: means -- and it is what a pilot from a save written before friendship reads for
-#: everybody.
+#: Bounds of the scale and the value an unrecorded pair is treated as having. Saves
+#: written before friendship existed read as 5 for every pair.
 FRIENDSHIP_MIN = 0.0
 FRIENDSHIP_MAX = 10.0
 FRIENDSHIP_START = 5.0
@@ -42,12 +38,11 @@ FRIENDSHIP_START = 5.0
 
 @dataclass(frozen=True)
 class FriendshipBand:
-    """One level of the ladder, and what a squadron commander would call it.
+    """One band of the scale.
 
-    ``floor`` is the bottom of the level, taken inclusively. ``colour`` is what the
-    lists paint it; Neutral has none, because nothing is drawn for two pilots nobody
-    needs to think about. ``key`` is the setting that moves the floor -- Bad blood has
-    none, because it is the bottom of the scale.
+    ``floor`` is the inclusive bottom of the band. ``colour`` is what the lists paint
+    it, and is None for Neutral, which is not painted. ``key`` is the setting that moves
+    the floor, and is None for the bottom band.
     """
 
     floor: float
@@ -97,10 +92,9 @@ def clamp(value: float) -> float:
 
 
 def points(value: float) -> float:
-    """The distance from Neutral, which is what every effect is priced in.
+    """The value as a distance from Neutral: 0..10 becomes -5..+5.
 
-    0 to 10 becomes -5 to +5, so "per point of friendship" means the same thing
-    wherever it is written down.
+    Every effect is priced per point on this scale.
     """
     return value - FRIENDSHIP_START
 
@@ -149,13 +143,11 @@ def mean_towards(
     leader: Optional[Pilot] = None,
     settings: Any = None,
 ) -> float:
-    """What he thinks of them, averaged. Neutral when there is nobody.
+    """Mean of what ``pilot`` thinks of ``others``. Neutral if the list is empty.
 
-    With a leader named, the spoke that touches him is worth
-    :data:`LEADER_SPOKE_WEIGHT` of each of the others: a formation is the man in front
-    and the men who follow him, and in a four-ship that puts half of what each wingman
-    feels about the formation on the one man leading it. Asked about the leader
-    himself, it is the plain mean -- from where he sits there is nobody in front.
+    With a leader given, the pair that includes him is weighted
+    :data:`LEADER_SPOKE_WEIGHT` times the others. Asked about the leader himself the
+    weighting does not apply and this is the plain mean.
     """
     weight = leader_spoke_weight(settings)
     total = 0.0
@@ -175,10 +167,9 @@ def mean_from(
     leader: Optional[Pilot] = None,
     settings: Any = None,
 ) -> float:
-    """What they think of him, averaged. The half that decides who looks for him.
+    """Mean of what ``others`` think of ``pilot``, weighted as :func:`mean_towards`.
 
-    Weighted the same way: the man running the formation counts for more than the
-    wingman, which is as true of who organises a search as of anything else.
+    This is the direction the rescue chance reads.
     """
     weight = leader_spoke_weight(settings)
     total = 0.0
@@ -193,10 +184,10 @@ def mean_from(
 
 
 def group_affinity(pilot: Pilot, others: Iterable[Pilot]) -> float:
-    """How well he and they would get on: both directions, averaged.
+    """Mean of both directions between ``pilot`` and ``others``.
 
-    What the pilot picker paints, because the question there is about the group rather
-    than about one man's opinion of it.
+    Used by the pilot selector, where the question is about the pair rather than about
+    one direction of it.
     """
     group = [other for other in others if other is not pilot]
     if not group:
@@ -207,13 +198,10 @@ def group_affinity(pilot: Pilot, others: Iterable[Pilot]) -> float:
 def synergy(
     pilots: Sequence[Pilot], leader: Optional[Pilot] = None, settings: Any = None
 ) -> float:
-    """How well a whole formation gets on, as the men in it experience it.
+    """The formation's figure: the mean of each pilot's weighted mean of the others.
 
-    Each man's own weighted mean of the others -- the one in front counting double --
-    and the formation's figure is the mean of those. Pricing it that way is what makes
-    spreading senior pilots one to a flight worth more than stacking them in one: four
-    flights with a leader their crews would follow beats one flight of veterans and
-    three of strangers.
+    Weighting the leader's pairs higher makes one good leader per flight worth more
+    than several in the same flight.
     """
     crew = [pilot for pilot in pilots if pilot is not None]
     if len(crew) < 2:
@@ -226,10 +214,10 @@ def synergy(
 
 
 def move(pilot: Pilot, other: Pilot, amount: float) -> float:
-    """Move one direction of one pair. Returns how far it actually went.
+    """Move one direction of one pair and return the distance actually moved.
 
-    Only ``pilot``'s own opinion: the other half is somebody else's to move, and moving
-    both from one place is how a shared sortie ends up paid twice.
+    Only ``pilot``'s opinion of ``other``; the opposite direction is moved by its own
+    call, so that a shared sortie is not credited twice.
     """
     if pilot is other or not amount:
         return 0.0
@@ -250,16 +238,13 @@ def drift_step(
     settings: Any = None,
     returned: Optional[float] = None,
 ) -> float:
-    """One turn of ordinary acquaintance, in one direction.
+    """One turn of drift in one direction: up, down or unchanged, on the campaign's odds.
 
-    Warmer, cooler or neither, on the odds the campaign sets. A rise stops at the top of
-    Friendly: the bands that pay for synergy and for being looked for are earned in the
-    air, not by sharing a ramp for long enough. A fall has no such floor -- losing touch
-    with somebody needs nothing but time.
+    A rise stops at :func:`drift_ceiling`, so the bands that grant bonuses can only be
+    reached by flying together. A fall is not floored.
 
-    ``returned`` is what the other man thinks of him, which makes the warming roll
-    likelier when the other man thinks more of him than he does in return. Being liked
-    is noticed, and the two halves of a pair tend to meet in the middle.
+    ``returned`` is the opposite direction's value. Where it is higher, the warming
+    chance is raised by :func:`reciprocity_bonus`.
     """
     up, down = drift_odds(same_squadron, settings)
     up = min(100.0, up + reciprocity_bonus(current, returned, settings))
@@ -356,11 +341,9 @@ def _setting(settings: Any, key: str, default: Any) -> Any:
 
 
 def in_play(settings: Any) -> bool:
-    """Whether any of this is switched on.
-
-    Friendship rides on Live Pilots and can be refused on its own. Refused, nothing
-    reads the graph and nothing writes to it, which is the only way to hand back the
-    whole cost of it -- the turn-end pass included.
+    """Whether friendship is enabled. Requires Live Pilots, and can be turned off on its
+    own, in which case nothing reads or writes the graph and the turn-end pass is
+    skipped.
     """
     return bool(_setting(settings, "live_pilots_enabled", True)) and bool(
         _setting(settings, "friendship_enabled", True)
@@ -405,12 +388,12 @@ def drift_odds(same_squadron: bool, settings: Any = None) -> tuple[float, float]
 def reciprocity_bonus(
     current: float, returned: Optional[float], settings: Any = None
 ) -> float:
-    """How many points of warming chance the other man's opinion is worth.
+    """Percentage points added to the warming chance for the difference between the two
+    directions of a pair.
 
-    Only when his is the higher of the two, and only to the warming roll: being liked
-    more than you like back is a reason to come round, and no reason at all to cool off
-    faster. Each point of difference on the 0 to 10 scale is worth the campaign's
-    per-point figure.
+    Only when ``returned`` is the higher of the two, and only to the warming roll; the
+    cooling roll is unaffected. Each point of difference on the 0 to 10 scale is worth
+    the campaign's per-point figure.
     """
     if returned is None:
         return 0.0
@@ -461,33 +444,23 @@ def friendly_fire_penalties(settings: Any = None) -> tuple[float, float, float]:
 
 
 def xp_bonus(mean: float, settings: Any = None) -> float:
-    """What the company he flew in adds to his multiplier.
+    """Signed experience multiplier bonus for the formation: negative below Neutral.
 
-    Signed: a formation he cannot stand is worth less than flying alone, and that is the
-    point of it. The multiplier itself is floored by the caller -- experience never goes
-    backwards.
+    The caller floors the resulting multiplier, so experience never decreases.
     """
     per = float(_setting(settings, "friendship_xp_per_point", XP_PER_POINT))
     return round(points(mean)) * per
 
 
 def survival_bonus(mean: float, settings: Any = None) -> float:
-    """How much harder they look for a man they like.
-
-    Positive only. Being disliked does not make anybody slower to reach a burning
-    cockpit; they are pilots, not murderers.
-    """
+    """Bonus to the rescue chance from what the others think of him. Never negative."""
     per = _percent(settings, "friendship_survival_per_point", SURVIVAL_PER_POINT)
     cap = _percent(settings, "friendship_survival_cap", SURVIVAL_CAP)
     return min(cap, max(0.0, points(mean)) * per)
 
 
 def desertion_modifier(mean: float, settings: Any = None) -> float:
-    """What is left of his chance of walking away, as a fraction of it.
-
-    Rank is what held him there until now. The man in the next bunk is the better half
-    of the story.
-    """
+    """Multiplier applied to the desertion chance, from the friendships he has."""
     per = _percent(settings, "friendship_desertion_per_point", DESERTION_PER_POINT)
     cap = _percent(settings, "friendship_desertion_cap", DESERTION_CAP)
     return 1.0 - min(cap, max(0.0, points(mean)) * per)
@@ -513,11 +486,9 @@ def drift_help(friends: int, settings: Any = None) -> float:
 
 
 def grief_times(times: int, value: float, settings: Any = None) -> int:
-    """How many times a death lands on the man who was flying beside him.
+    """How many times the death event is applied to a survivor, as a whole number.
 
-    A whole number, because the event is repeated rather than scaled -- and never below
-    one. An enemy mourns once: a man he hated dying in front of him is still a man dying
-    in front of him.
+    The event is repeated rather than scaled, and the result is never below one.
     """
     per = float(_setting(settings, "friendship_grief_per_point", GRIEF_PER_POINT))
     cap = float(_setting(settings, "friendship_grief_cap", GRIEF_CAP))
@@ -538,10 +509,10 @@ def flies_a_rung_better(value: float, settings: Any = None) -> bool:
 
 
 def trim(pilot: Pilot, settings: Any = None) -> None:
-    """Keep only the opinions he holds most strongly.
+    """Keep only the entries furthest from Neutral, capped at :data:`MAX_FRIENDSHIPS`.
 
-    A campaign fought over a hundred turns would otherwise have every survivor carrying
-    an entry for every man he ever shared a base with, alive or dead.
+    Without it a long campaign leaves every pilot holding an entry for everyone he ever
+    shared a base with.
     """
     limit = int(_setting(settings, "friendship_limit", FRIENDSHIP_LIMIT))
     if len(pilot.friendships) <= limit:
@@ -565,12 +536,10 @@ def prune(pilot: Pilot, living: set[UUID]) -> None:
 def pilots_by_base(
     air_wing: AirWing,
 ) -> dict[ControlPoint, list[tuple[Squadron, Pilot]]]:
-    """Everybody living at each base, each with the squadron he belongs to.
+    """Living pilots grouped by base, each paired with the squadron he belongs to.
 
-    One bucketing pass over the wing rather than a property on ControlPoint: asking a
-    base for its squadrons is itself a scan of every squadron in the wing, so a call
-    per base would be quadratic -- and the drift wants the squadron beside the pilot
-    anyway, to know which of the two tables a pair rolls on.
+    One pass over the wing rather than a per-base lookup, which would be quadratic. The
+    squadron is carried because the drift needs it to pick which odds table applies.
     """
     bases: dict[ControlPoint, list[tuple[Squadron, Pilot]]] = defaultdict(list)
     for squadron in air_wing.iter_squadrons():
@@ -581,17 +550,14 @@ def pilots_by_base(
 
 
 def tend_friendships(air_wing: AirWing, settings: Any = None) -> None:
-    """One turn of ordinary acquaintance across a whole wing.
+    """One turn of drift across the whole wing.
 
-    Every pair of pilots at a base rolls twice, once in each direction, each with its
-    own roll: one roll shared between the two halves would move them in lockstep and
-    the direction would be decoration.
+    Every pair of pilots at a base rolls twice, once per direction and with its own
+    roll, so the two directions can move differently.
 
-    Who is at the base is taken literally. The wounded and the men on leave are
-    included -- a man in the infirmary is still somebody they see -- and so is the
-    player's own pilot, which is the one place this differs from
-    :meth:`Squadron.tend_morale`. He has no morale, because a figure moved behind his
-    back could only get in his way, but he does have friends.
+    The wounded, the pilots on leave and the player's own pilot are all included, which
+    is where this differs from :meth:`Squadron.tend_morale`: the player's pilot has no
+    morale but does have friendships.
     """
     if not in_play(settings):
         return
@@ -627,12 +593,7 @@ def tend_friendships(air_wing: AirWing, settings: Any = None) -> None:
 
 
 def living_ids(air_wing: AirWing) -> set[UUID]:
-    """Everyone in the wing a friendship can still be about.
-
-    The pool as well as the roster: a man waiting to be called up has been nobody's
-    friend yet, but he will be, and forgetting him a turn before he arrives would be
-    a strange thing for the pass to do.
-    """
+    """Ids of every living pilot in the wing, from the pool as well as the rosters."""
     living: set[UUID] = set()
     for squadron in air_wing.iter_squadrons():
         living.update(pilot.id for pilot in squadron.current_roster if pilot.alive)

@@ -1,12 +1,11 @@
-"""The pieces the pilot dialog is drawn from: chips, stars, thin bars and rows.
+"""The widgets the pilot dialog is built from: chips, stars, bars and rows.
 
-The dialog is four cards of rows and nothing else, so the rows are the vocabulary.
-Each is a fixed-height widget with a bottom line, and a card is a stack of them with
-the last line taken off -- which is why the stack is a class rather than a function:
-opening a disclosure changes which row is last.
+The dialog is four cards of rows. Each row is a fixed-height widget with a bottom line,
+and a card is a stack of rows with the last line removed -- which is why the stack is a
+class rather than a function: opening a disclosure changes which row is last.
 
-The palette is the Air Wing's, imported rather than copied, so the crew room and the
-dialog you reach from it cannot drift apart.
+The palette is imported from the Air Wing rather than copied, so the two cannot drift
+apart.
 """
 
 from __future__ import annotations
@@ -128,12 +127,11 @@ def label(
 
 
 class Elided(QLabel):
-    """A label that shortens its text rather than being clipped by its neighbours.
+    """A label that elides its text rather than being clipped by its neighbours.
 
-    A long name in the header used to be painted over by the stars beside it: a plain
-    QLabel asks for the width of its text, and when a row cannot give it that much it
-    is cut off mid-letter with no ellipsis to say so. This gives the room up and says
-    so instead.
+    A plain QLabel asks for the width of its full text, so a long name in the header was
+    painted over by the stars beside it.
+
     """
 
     def __init__(

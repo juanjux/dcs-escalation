@@ -1,13 +1,12 @@
-"""How a pilot is holding up, and what that is worth.
+"""Pilot morale.
 
-Morale runs 0 to 100 and starts at 50. It moves with what the campaign does to a man --
-losing his aircraft, watching his squadron die, going a long time without leave -- and it
-moves back with what goes well. Everything it reads is already in the debriefing; nothing
-here needs the mission to report anything new.
+The value runs 0 to 100 and starts at 50. Events from the debriefing move it down (losing
+an aircraft, squadron losses, a long spell without leave) or up (completed missions,
+kills). Nothing here needs the mission to report anything the debriefing does not already
+carry.
 
-The numbers below are the defaults. Each one has a settings key beside it so a campaign
-can be tuned without editing code, exactly as :mod:`game.squadrons.experience` does for
-the survival odds.
+The constants below are defaults; each names the settings key that overrides it, as in
+:mod:`game.squadrons.friendship`.
 """
 
 from __future__ import annotations
@@ -24,33 +23,30 @@ from game.dcs.skills import SKILL_LADDER
 if TYPE_CHECKING:
     from game.settings import Settings
 
-#: Rock bottom is below zero so that being Broken lasts. At a floor of zero one quiet
-#: turn of drift lifted a man straight back out of the band, whatever had put him
-#: there, and Broken could not describe more than a single turn.
+#: The floor is below zero so that Broken lasts more than one turn: at a floor of zero
+#: a single turn of drift lifts a pilot out of the band.
 MORALE_MIN = -30
 MORALE_MAX = 100
 
-#: Where a pilot starts, and where he drifts back to. A campaign that has done nothing
-#: to a man yet should not have an opinion about him.
+#: Where a pilot starts, and the value the drift returns him to.
 MORALE_START = 50
 
 
 @dataclass(frozen=True)
 class MoraleEvent:
-    """One thing that moves a pilot, and how far.
+    """One morale event and the amount it moves a pilot.
 
-    ``default`` is signed: negative for the things that wear him down. The settings key
-    holds the same sign, so a campaign that wants a harder war only has to make the
-    numbers bigger.
+    ``default`` is signed: negative for events that lower morale. The settings key holds
+    the same sign.
+
     """
 
     key: str
     default: int
     reason: str
 
-    #: What this copy of the event is worth, when it is worth something other than the
-    #: campaign's figure -- leave taken in company, say. It wins over the settings key,
-    #: because it was worked out from that figure to begin with.
+    #: Overrides the campaign's figure for this copy of the event, for callers that
+    #: have already scaled it (leave taken in company, for example).
     override: Optional[int] = None
 
     def amount(self, settings: Optional["Settings"] = None) -> int:
@@ -63,33 +59,32 @@ class MoraleEvent:
     def scaled_by(
         self, factor: float, settings: Optional["Settings"] = None
     ) -> "MoraleEvent":
-        """The same event, worth more to one man than to the next.
+        """The same event scaled for one pilot.
 
-        Whole numbers, because morale is one: a factor that rounds to nothing leaves
-        the event exactly as the campaign wrote it.
+        Rounded to a whole number, so a factor that rounds to zero leaves the event as
+        the campaign defined it.
+
         """
         return replace(self, override=round(self.amount(settings) * factor))
 
 
 # --- what wears him down ----------------------------------------------------
 
-#: He came home without the aircraft. The plugin does not report ejections, but a pilot
-#: who lost his aircraft and lived is the same man in the same parachute.
+#: The pilot survived the loss of his aircraft. The plugin does not report ejections,
+#: so this covers both.
 LOST_AIRCRAFT = MoraleEvent("morale_lost_aircraft", -15, "lost his aircraft")
 
 #: He flew a strike, a CAS or a SEAD and destroyed nothing at all.
 ACHIEVED_NOTHING = MoraleEvent("morale_achieved_nothing", -10, "came home empty")
 
-#: Per pilot of his own squadron killed, weighted by what he thought of the man:
-#: see :func:`game.squadrons.friendship.grief_times`.
+#: Per pilot of his own squadron killed, scaled by
+#: :func:`game.squadrons.friendship.grief_times`.
 SQUADRON_DEATH = MoraleEvent("morale_squadron_death", -20, "lost a squadron mate")
 
-#: On top of the above, for the men who were in the same flight and watched it happen.
-#: The squadron hears about it; the flight saw it.
+#: Applied on top of the above to the pilots in the same flight.
 FLIGHT_DEATH = MoraleEvent("morale_flight_death", -10, "watched his wingman go down")
 
-#: Per turn a squadron mate will be in hospital, up to a cap. A wound is not a death,
-#: but a man carried out for four turns is felt more than one back next week.
+#: Per turn a squadron mate will spend in hospital, up to a cap.
 SQUADRON_WOUND = MoraleEvent("morale_squadron_wound", -3, "a squadron mate was wounded")
 
 #: And again, extra, for the flight he was in.
@@ -130,9 +125,8 @@ PROMOTED = MoraleEvent("morale_promoted", 20, "promoted")
 #: Per turn of leave served.
 ON_LEAVE = MoraleEvent("morale_on_leave", 15, "on leave")
 
-#: He walked out of the hospital. The mirror of the wound: losing him for a few turns
-#: cost the squadron, and having him back pays some of it in. Never all of it -- a wound
-#: has to be worth avoiding.
+#: A squadron mate returned from hospital. The mirror of the wound event, and smaller
+#: than it, so that a wound still costs something overall.
 SQUADRON_RECOVERED = MoraleEvent(
     "morale_squadron_recovered", 4, "a man came back from the hospital"
 )
@@ -159,18 +153,17 @@ MORALE_EVENTS: tuple[MoraleEvent, ...] = (
 
 
 def wound_is_felt_for(turns: int) -> int:
-    """How many times a wound of this length is counted against a squadron.
+    """How many times a wound of this length counts against the squadron.
 
-    Every turn the medics keep him, not the first three: four turns out is four
-    times the cost, which is the point of a long wound.
+    Once per turn in hospital, so four turns out costs four times as much.
+
     """
     return max(1, turns)
 
 
-#: Every value each of these has had as a default, oldest first. Only the migrator reads
-#: it, to move a campaign already in progress onto the current figures -- and only where
-#: the save still holds one of them, so a number the player set himself is left alone.
-#: A campaign can have sat out more than one re-weighing, which is why it is a list.
+#: Every value each of these has had as a default, oldest first. Read only by the
+#: migrator, which moves a campaign onto the current figure where the save still holds
+#: one of the old defaults, leaving a value the player set himself alone.
 PREVIOUS_DEFAULTS: dict[str, tuple[int, ...]] = {
     "morale_lost_aircraft": (-15,),
     "morale_achieved_nothing": (-10, -7),
@@ -194,10 +187,8 @@ def clamp(morale: int) -> int:
     return max(MORALE_MIN, min(MORALE_MAX, morale))
 
 
-#: How far a pilot settles back towards the middle in a quiet turn, when the campaign
-#: has not said otherwise. Big enough that one very good or one very bad turn does not
-#: decide the rest of his campaign: a man knocked from 50 to 20 is back to Normal in
-#: three quiet turns, not thirty.
+#: How far a pilot drifts back towards the middle in a turn with no events. Sized so
+#: that one bad turn does not decide a campaign: 50 to 20 recovers in three turns.
 DRIFT_PER_TURN = 5
 
 
@@ -208,11 +199,11 @@ def drift_per_turn(settings: Any = None) -> int:
 
 
 def drift(morale: int, settings: Any = None) -> int:
-    """A step back towards the middle, from either side, never past it.
+    """One step back towards the middle from either side, never past it.
 
-    Applied once a turn before anything else. Rock bottom is not exempt -- he climbs
-    out of it like anyone else -- but the events of a hard turn can put him straight
-    back, and every turn he is there is another roll of :func:`desertion_chance`.
+    Applied once a turn before any event. It applies at the bottom of the scale as
+    well, though a hard turn can undo it immediately.
+
     """
     step = drift_per_turn(settings)
     if morale > MORALE_START:
@@ -235,10 +226,10 @@ def rank_level(skill: Skill) -> int:
 
 
 def resistance(skill: Skill) -> float:
-    """How much of a knock a pilot of this rank actually takes.
+    """The fraction of a negative event a pilot of this rank actually takes.
 
-    Rank is armour: a squadron leader has seen it before. It only softens the falls --
-    nobody is too senior to be pleased about a promotion.
+    Negative events only; gains are unaffected.
+
     """
     try:
         rung = SKILL_LADDER.index(skill)
@@ -254,14 +245,11 @@ def apply(
     settings: Any = None,
     relief: float = 0.0,
 ) -> int:
-    """Move a pilot by one event, softened if it is a knock.
+    """Apply one event to a pilot, reduced if it is negative.
 
-    Twice over: by his rank, which is armour he was given, and by ``relief`` -- what he
-    has already been through, which is armour he earned. The two multiply, because they
-    are separate reasons the same news lands lighter, and neither applies to good news.
+    Reduced twice: by rank and by ``relief`` (hardening). The two multiply, and neither
+    applies to gains. A negative event always costs at least one point.
 
-    A knock never costs nothing, however hard the man: the floor of one point is the
-    rule rather than a rounding guard.
     """
     amount = event.amount(settings)
     if amount < 0:
@@ -270,8 +258,8 @@ def apply(
     return clamp(morale + amount)
 
 
-#: The tasks a pilot can come home from having failed. A CAP that saw nobody has not
-#: failed at anything; a strike that dropped on nothing has.
+#: The tasks that can be failed. A CAP that met no enemy has not failed; a strike that
+#: destroyed nothing has.
 STRIKE_TASKS: frozenset[str] = frozenset(
     {
         "CAS",
@@ -290,9 +278,8 @@ STRIKE_TASKS: frozenset[str] = frozenset(
 
 # --- what it does -----------------------------------------------------------
 
-#: The state a pilot flies a rung above his rank in, and the one he drops a rung
-#: below it at -- and everything worse than it, so Broken is not steadier than
-#: Shattered. There is nothing to set here: they are the bands themselves.
+#: The band that flies one rung above the pilot's rank, and the band (with everything
+#: below it) that flies one rung under. Not settings: they are the bands themselves.
 SKILL_SHIFT_UP_STATE = "Triumphant"
 SKILL_SHIFT_DOWN_STATE = "Shattered"
 
@@ -320,10 +307,11 @@ def band_ceiling(name: str, settings: Any = None) -> int:
 
 
 def bumped_skill(skill: Skill, rungs: int) -> Skill:
-    """A rung up or down the ladder, clamped to its ends.
+    """One step up or down the skill ladder, clamped to its ends.
 
-    Shared by the two things that move a pilot off his rank: how he is holding up, and
-    whether the formation around him is one he gets on with.
+    Shared by the two things that move a pilot off his own rank: morale and the
+    friendship of the formation he is in.
+
     """
     if not rungs:
         return skill
@@ -341,12 +329,12 @@ def shifted_skill(skill: Skill, morale: int, settings: Any = None) -> Skill:
 
 @dataclass(frozen=True)
 class MoraleState:
-    """What a squadron commander would be told, rather than a number.
+    """One band of the morale scale.
 
-    ``floor`` is the bottom of the band, taken inclusively. ``severity`` is what the
-    player should read into it: 0 nothing, 1 worth an eye, 2 do something about it now.
-    ``key`` is the setting that moves the floor; Broken has none because it is the
-    bottom of the scale.
+    ``floor`` is the inclusive bottom of the band. ``severity`` is how the UI should
+    treat it: 0 nothing, 1 worth watching, 2 needs attention. ``key`` is the setting that
+    moves the floor, and is None for the bottom band.
+
     """
 
     floor: int
@@ -355,8 +343,8 @@ class MoraleState:
     key: Optional[str] = None
 
 
-#: The figure itself is for the pilot dialog, the ledger and the API. Everywhere the
-#: player looks he gets the name, exactly as a rank stands in for a skill level.
+#: The number is shown in the pilot dialog, the ledger and the API; everywhere else
+#: shows the band name, as a rank stands in for a skill level.
 MORALE_STATES: tuple[MoraleState, ...] = (
     MoraleState(85, "Triumphant", 0, "morale_state_triumphant"),
     MoraleState(60, "Confident", 0, "morale_state_confident"),
@@ -388,10 +376,8 @@ def morale_state(morale: int, settings: Any = None) -> MoraleState:
     return MORALE_STATES[-1]
 
 
-#: One face per band, for the lists with no room for the word -- the pilot selector
-#: above all, where every name looks alike and the man's state is the thing you are
-#: choosing on. Keyed by state NAME, so a campaign that moves a band's floor cannot
-#: end up with the wrong face on it.
+#: One face per band, for lists with no room for the word. Keyed by band name, so
+#: moving a band's floor cannot put the wrong face on it.
 STATE_EMOJI: dict[str, str] = {
     "Triumphant": "😄",
     "Confident": "🙂",
@@ -414,8 +400,8 @@ def state_named(name: str, settings: Any = None) -> MoraleState:
     raise ValueError(f"no morale state named {name}")
 
 
-#: Multiplier on everything a sortie pays. A band's number is its lower bound, taken
-#: inclusively, so a pilot sitting exactly on a boundary gets the better of the two.
+#: Multiplier on what a sortie pays. Each band's figure is its inclusive lower bound,
+#: so a pilot exactly on a boundary gets the higher band.
 XP_MULTIPLIER_BANDS: tuple[tuple[int, float], ...] = (
     (81, 1.5),  # above 80
     (60, 1.2),
@@ -438,11 +424,11 @@ LEARNING_PER_RUNG = 0.1
 
 
 def learning_bonus(own: Skill, best_in_flight: Skill) -> float:
-    """Flying with somebody better than you is worth something.
+    """Skill bonus for flying with a more experienced pilot.
 
-    Only the best man in the formation counts, and only for the ones below him: he gets
-    nothing out of it himself. A cadet on an Excellent's wing is four rungs down, so he
-    learns four rungs' worth.
+    Only the best pilot in the formation counts, and only for those below him; he gains
+    nothing himself. The bonus is the difference in rungs.
+
     """
     try:
         mine = SKILL_LADDER.index(own)
@@ -454,8 +440,8 @@ def learning_bonus(own: Skill, best_in_flight: Skill) -> float:
 
 # --- how the flight behaves -------------------------------------------------
 
-#: Below this the flight routes around what frightens it; below the second it turns for
-#: home when the threat is serious. These are group options, so they follow the lead.
+#: Below the first the flight evades threats; below the second it aborts on a serious
+#: one. Both are DCS group options, so they follow the flight lead.
 SHAKEN_BELOW = 20
 BROKEN_BELOW = 10
 
@@ -492,13 +478,11 @@ def survival_modifier(morale: int) -> float:
     return (morale - MORALE_START) / 500.0  # +/- 10 points at the extremes
 
 
-#: The turns of leave the dialog offers when a pilot has not named a number, and the
-#: most the player can ever grant at once.
+#: Default and maximum turns of leave the dialog offers.
 DEFAULT_LEAVE_TURNS = 2
 MAX_LEAVE_TURNS = 6
 
-#: How long a man asks for, by how he is holding up. Nobody asks for leave in the
-#: abstract: he asks for a morning, a day, a week. The player can then grant less.
+#: Turns of leave requested, by morale band. The player may grant fewer.
 LEAVE_ASKED_FOR: tuple[tuple[int, int, int], ...] = (
     (40, 1, 2),  # Normal and better: a couple of days
     (15, 2, 3),  # Shaken
@@ -517,18 +501,13 @@ def requested_leave_turns(morale: int, roll: Optional[float] = None) -> int:
     return DEFAULT_LEAVE_TURNS
 
 
-#: The window that counts as "lately" when deciding whether a man has had enough, and
-#: how many turns of his flying is worth keeping to work it out.
+#: How many recent turns count towards a leave request, and how many are kept.
 RECENT_SORTIE_WINDOW = 5
 SORTIE_HISTORY_LIMIT = 20
 
 
 def workload_factor(flown: int, window: int = RECENT_SORTIE_WINDOW) -> float:
-    """How hard he has been worked lately, as a multiplier on wanting a rest.
-
-    A man who has flown every turn of the last five asks far more readily than one who
-    has sat on the ground throughout -- and the one who flew twice sits between them.
-    """
+    """Multiplier on the chance of asking for leave, from how much he has flown lately."""
     if window <= 0:
         return 1.0
     return 0.6 + 0.8 * (max(0, min(window, flown)) / window)
@@ -540,11 +519,10 @@ def leave_request_chance(
     flown_recently: int = 0,
     window: int = RECENT_SORTIE_WINDOW,
 ) -> float:
-    """How likely this pilot is to ask for leave this turn, 0 to 1.
+    """Chance this pilot asks for leave this turn, 0 to 1.
 
-    Two things decide it: how he is holding up, and how hard he has been worked. Never
-    zero -- a contented, idle man still wants a week off now and then, he just does not
-    need one.
+    Decided by his morale and by how hard he has been worked. Never zero.
+
     """
     factor = max(0.25, min(2.0, 2.0 - morale / (MORALE_START * 1.0)))
     factor *= workload_factor(flown_recently, window)
@@ -552,20 +530,17 @@ def leave_request_chance(
 
 
 def worth_reporting(before: int, after: int, settings: Any = None) -> bool:
-    """Whether this movement earns a line in the debriefing.
+    """Whether this change is worth a line in the debriefing.
 
-    When it moved the pilot from one state to another, and only then. The row says
-    what he was and what he is, so a movement that leaves him where he was has
-    nothing to show -- and flying the mission moves everyone who came home, which
-    used to fill the section with rows reading "Normal -> Normal". The figures
-    themselves are in the ledger.
+    Only when it moved the pilot from one band to another; the figures themselves are in
+    the ledger. Without this the section filled with rows reading "Normal -> Normal".
+
     """
     return morale_state(before, settings).name != morale_state(after, settings).name
 
 
-#: The chance, per turn spent at rock bottom, that a pilot simply stops coming --
-#: one entry per rung of the ladder, from cadet to squadron leader. Rank is what keeps
-#: a man in his seat when nothing else does, so the veteran is the last to go.
+#: Chance per turn at the bottom of the scale that the pilot deserts, one entry per
+#: rung from cadet to squadron leader.
 DESERTION_CHANCE_BY_RUNG: tuple[float, ...] = (0.09, 0.07, 0.05, 0.03, 0.01)
 
 
@@ -591,8 +566,7 @@ class MoraleLogEntry:
     morale_after: int
 
 
-#: How many entries a pilot carries. Enough for the dialog to show a campaign's worth
-#: of a man's ups and downs without the roll of them bloating every save.
+#: How many log entries a pilot keeps: enough for the dialog, few enough for the save.
 MORALE_HISTORY_LIMIT = 60
 
 #: At or below this he will not fly at all.
