@@ -24,6 +24,7 @@ from .cruisemissileluadata import populate_cruise_missiles_lua
 from .gpsjammingluadata import populate_gps_jamming_lua
 from .navalmagazineluadata import populate_naval_magazines_lua
 from .missiondata import MissionData
+from .realisticcascampaign import prepare_campaign, inject_campaign
 
 if TYPE_CHECKING:
     from game import Game
@@ -45,6 +46,8 @@ class LuaGenerator:
         self.plugin_scripts: list[str] = []
 
     def generate(self) -> None:
+        # Same plugin-manager settings as injection; preflight before adding Lua.
+        realistic_cas = prepare_campaign(self, LuaPluginManager.plugins())
         ewrj_triggers = [
             x for x in self.mission.triggerrules.triggers if isinstance(x, TriggerStart)
         ]
@@ -53,6 +56,7 @@ class LuaGenerator:
         self.inject_plugins()
         self._seed_scenery_objectives()
         self._inject_tic_script()
+        inject_campaign(self, realistic_cas)
         for t in ewrj_triggers:
             self.mission.triggerrules.triggers.remove(t)
             self.mission.triggerrules.triggers.append(t)

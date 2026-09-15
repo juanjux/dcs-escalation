@@ -42,6 +42,11 @@ from qt_ui.widgets.QConditionsWidget import QConditionsWidget
 from qt_ui.widgets.clientslots import MaxPlayerCount
 from qt_ui.widgets.QMissionProgressPanel import MissionProgressPanel
 from game.income import Income
+from game.missiongenerator.realisticcascampaign import (
+    RealisticCASConfigurationError,
+    validate_compatibility,
+)
+from game.plugins.manager import LuaPluginManager
 from game.theater import Player
 from qt_ui.dialogs import open_once
 from qt_ui.windows.AirWingDialog import AirWingDialog
@@ -506,6 +511,12 @@ class QTopPanel(QFrame):
                 "Wait for it to finish (the OPFOR AI indicator goes idle) or "
                 "cancel it before taking off.",
             )
+            return
+
+        try:
+            validate_compatibility(LuaPluginManager.plugins())
+        except RealisticCASConfigurationError as ex:
+            QMessageBox.warning(self, "Incompatible mission plugins", str(ex))
             return
 
         # OPFOR-AI fallback: if red was left for the LLM but it never played, run the

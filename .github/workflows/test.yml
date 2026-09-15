@@ -15,7 +15,7 @@ jobs:
       - name: run tests
         run: |
           ./venv/scripts/activate
-          pytest --cov --cov-report=xml tests
+          pytest --cov --cov-report=xml tests tools/realistic_cas_tests
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3

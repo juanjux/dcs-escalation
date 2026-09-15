@@ -1,0 +1,35 @@
+{
+    "nameInUI": "Realistic CAS (experimental)",
+    "descriptionInUI": "Gradual ground-target discovery for both sides. Firing reveals a group immediately; visual/EO/IR/ground radar observations reveal nearby groups. Fixed map SAM sites are exempt, frontline SAMs are not. No F10 changes. Temporarily omits generated legacy JTACs; disable CTLD, TIC and Moose Autolase before generation. Dynamic-unit and JTAC adapters are pending. Terrain and cloud cover are approximations; campaign-scale validation is pending. Off by default.",
+    "defaultValue": false,
+    "specificOptions": [
+        {
+            "nameInUI": "Search time for a new group (seconds)",
+            "mnemonic": "acquisitionSeconds",
+            "defaultValue": 20,
+            "minimumValue": 1,
+            "maximumValue": 600
+        },
+        {
+            "nameInUI": "Contact lifetime after last observation or shot (seconds)",
+            "mnemonic": "contactSeconds",
+            "defaultValue": 600,
+            "minimumValue": 30,
+            "maximumValue": 3600
+        },
+        {
+            "nameInUI": "Approximate cover: 0=theater, 1=desert, 2=grassland, 3=tundra, 4=forest, 5=city",
+            "mnemonic": "terrainProfile",
+            "defaultValue": 0,
+            "minimumValue": 0,
+            "maximumValue": 5
+        },
+        {
+            "nameInUI": "Detailed detection and contact logging (large dcs.log)",
+            "mnemonic": "debug",
+            "defaultValue": false
+        }
+    ],
+    "scriptsWorkOrders": [],
+    "configurationWorkOrders": []
+}

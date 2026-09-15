@@ -42,6 +42,7 @@ from game.ground_forces.ai_ground_planner import (
 )
 from game.ground_forces.combat_stance import CombatStance
 from game.naming import namegen
+from game.plugins import LuaPluginManager
 from game.radio.radios import RadioRegistry
 from game.theater.controlpoint import ControlPoint, Player
 from game.unitmap import UnitMap
@@ -50,6 +51,7 @@ from .aircraft.aircraftpainter import AircraftPainterJtac
 from .frontlineconflictdescription import FrontLineConflictDescription
 from .groundforcepainter import GroundForcePainter
 from .missiondata import JtacInfo, MissionData, FrontlineUnitGroupsInfo
+from .realisticcascampaign import suppress_legacy_jtac
 from ..ato import FlightType
 
 if TYPE_CHECKING:
@@ -259,7 +261,11 @@ class FlotGenerator:
         )
 
         # Add JTAC
-        if self.game.settings.use_jtac and self.game.blue.faction.has_jtac:
+        if (
+            self.game.settings.use_jtac
+            and self.game.blue.faction.has_jtac
+            and not suppress_legacy_jtac(LuaPluginManager.plugins())
+        ):
             freq = self.radio_registry.alloc_uhf()
             # If the option fc3LaserCode is enabled, force all JTAC
             # laser codes to 1113 to allow lasing for Su-25 Frogfoots and A-10A Warthogs.
@@ -317,6 +323,8 @@ class FlotGenerator:
                 )
             )
 
+        # Keep the existing frontline metadata even when only the JTAC is omitted.
+        if self.game.blue.faction.has_jtac:
             for vehicle_group, combat_group in player_groups:
                 self.mission_data.player_frontline_groups.append(
                     FrontlineUnitGroupsInfo(
