@@ -2,10 +2,6 @@
 
 ## Features/Improvements
 * **[Campaigns]** Gran Polvorin has an air defence network: its SAM sites and EWRs are wired to comms towers, power stations and two command centres, the islands get a network of their own, and it gains vehicle depots and two more GPS jamming sites. NEW game required.
-* **[Mission Plugins]** Realistic CAS allows CTLD logistics with JTAC autolase disabled. The autolase option now also gates deployed JTACs; Combined Arms controller slots are unrelated. Runtime-created units remain outside the fog registry.
-* **[Mission Plugins]** Realistic CAS observation-height controls now use feet AGL, with a 23,000 ft EO/IR default. Existing saved heights retain their physical value; storage and Lua remain in metres.
-* **[Mission Plugins]** Realistic CAS probability endpoints, optical altitude penalty/limits and retry interval are editable options. Terrain cover uses a named drop-down while preserving saved numeric values.
-* **[Mission Plugins]** Realistic CAS adds optional detection rolls after searching: closer targets are easier, lower visual/EO/IR observers have better chances, and ground radar/GMTI are more effective. Firing still reveals immediately without a roll. All options have tooltips, including the map-wide automatic cover approximation; disable rolls to retain deterministic search.
 * **[Mission Plugins]** **Realistic CAS** adds gradual ground-target discovery for both coalitions through visual, EO/IR and ground-radar observations, with terrain LOS and approximate weather, daylight and cover effects. Firing reveals a group immediately; contacts expire after a configurable lifetime. Ground combat shares the fog, while fixed map SAM objectives remain known and frontline SAMs do not. Experimental and off by default, with bounded processing and optional diagnostic logging; F10 and weapon accuracy are unchanged. Requires TIC, CTLD autolase and Moose Autolase to be disabled and temporarily omits generated legacy JTACs. CTLD logistics can stay enabled. Campaign-scale tuning and replacement JTACs remain pending. ([#195](https://github.com/juanjux/dcs-escalation/pull/195))
 * **[Live Pilots]** A pilot who is liked more than he likes back comes round sooner: each point between the two halves of a pair adds to his chance of warming (5% a point by default, a new setting under Friendship). The cooling roll is untouched, and the pilot who is already the warmer of the two gains nothing.
 * **[Live Pilots]** Being liked is noticed: each point between the two halves of a pair adds to the warming chance of whichever of them likes the other less. 5% a point, a new setting; cooling is untouched.
@@ -157,6 +153,8 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+
+* **[UI]** Cancelling Save As or failing to save no longer closes the campaign after choosing to save on exit. Failed saves show an error and preserve the previous save path. Save/close decisions are logged for troubleshooting.
 * **[FIX]** A pilot on leave could not be called back while his squadron was at full strength, which it usually is: he holds his own place the whole time he is away, so coming back takes nobody else's.
 * **[FIX]** An escort put on a TARCAP emptied the map: the escort and the patrol each took their timing from the other, and nothing survived the recursion.
 * **[FIX]** A flight plan lit up yellow under the pointer for a single frame and went out: the colour was painted on by a handler, and the next render put the line's own colour straight back.

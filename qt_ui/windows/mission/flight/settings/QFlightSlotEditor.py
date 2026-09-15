@@ -46,10 +46,10 @@ AMBER = "#E0A86B"
 class PilotSelector(PaintedPilotCombo):
     """The seat, painted rather than written.
 
-    Qt draws a combo's current item as plain text, so the five things you pick a pilot
-    on -- rank, name, whether he is you, how he is holding up -- arrived as one line in
-    one colour, with morale reduced to an emoji. Both the closed box and the popup now
-    go through the same painter as the squadron roster.
+    Qt draws a combo's current item as plain text, which reduced rank, name, player flag
+    and morale to one line in one colour. Both the closed box and the popup use this
+    painter instead.
+
     """
 
     available_pilots_changed = Signal()
@@ -76,12 +76,11 @@ class PilotSelector(PaintedPilotCombo):
         self.rebuild()
 
     def _fit_popup_to_contents(self) -> None:
-        """The list is never narrower than its widest row, even when the box is.
+        """The popup is never narrower than its widest row, even when the box is.
 
-        A rank and a name that do not fit the closed combo are exactly what you open
-        it to read, so the popup is allowed to be wider than the widget it hangs off.
-        The width comes from the painter's own reckoning, not from the item text, which
-        is no longer what is drawn.
+        A rank and name that do not fit the closed combo are what the popup is opened to
+        read. The width comes from the painter's own measurement.
+
         """
         self.view().setMinimumWidth(
             row_width_hint(self.squadron) + self.POPUP_CHROME_PX
@@ -98,12 +97,11 @@ class PilotSelector(PaintedPilotCombo):
         ]
 
     def affinity_of(self, pilot: Optional[Pilot]) -> Optional[float]:
-        """How he and the rest of this crew would get on, both directions averaged.
+        """Mean friendship between this pilot and the rest of the crew, both directions.
 
-        Both, because the question here is whether they would get on rather than what
-        one of them thinks. Nothing for the first seat -- there is nobody to get on
-        with yet -- and nothing at all while friendship is off, so the list is
-        byte-for-byte what it always was.
+        Nothing for the first seat, which has nobody to compare against, and nothing
+        while friendship is off.
+
         """
         if pilot is None or self.squadron is None:
             return None
@@ -117,10 +115,10 @@ class PilotSelector(PaintedPilotCombo):
         return friendship.group_affinity(pilot, others)
 
     def affinity_tooltip(self, pilot: Pilot) -> Optional[str]:
-        """What the colour behind his name means, named man by man.
+        """What the wash behind his name means, pilot by pilot.
 
-        The only place the player can find out that the wash is about friendship at
-        all, so it says the word as well as the men.
+        The only place that says the wash is about friendship at all.
+
         """
         affinity = self.affinity_of(pilot)
         if affinity is None or self.squadron is None:
@@ -148,11 +146,12 @@ class PilotSelector(PaintedPilotCombo):
         )
 
     def text_for(self, pilot: Pilot) -> str:
-        """The pilot as he is addressed: his seniority, his rank, his name.
+        """The pilot as addressed: seniority, rank, name.
 
-        The same five slots the roster paints, so choosing a pilot here and reading the
+        The same fields the roster paints, so picking a pilot here and reading the
         squadron dialog are the same act. A combo draws its own text, so these are one
-        colour rather than the gold and grey of the list.
+        colour rather than the roster's gold and grey.
+
         """
         if self.squadron is None:
             return pilot.name
@@ -252,11 +251,11 @@ class PilotSelector(PaintedPilotCombo):
 
 
 class PilotControls(QWidget):
-    """One seat: its number, who is in it, and whether that is you.
+    """One seat: its number, who is in it, and whether it is the player's.
 
-    A row rather than a pair of controls in a form, so an empty seat can carry an
-    amber bar and be the one thing on the tab that draws the eye -- an unfilled slot
-    discovered at take-off is a mission flown one aircraft short.
+    A row rather than a pair of form controls, so an empty seat can carry an amber bar
+    and be the thing that draws the eye.
+
     """
 
     player_toggled = Signal()
@@ -321,14 +320,11 @@ class PilotControls(QWidget):
         return self.roster is not None and self.pilot_index < self.roster.max_size
 
     def paintEvent(self, event: object) -> None:  # noqa: N802 (Qt naming)
-        """An amber bar down the left of a seat nobody is in.
+        """An amber bar down the left of an empty seat.
 
-        A seat this flight does not have is left on whatever ground it sits on. It used
-        to get a fill of its own, but a fill can only be quiet against the one
-        background it was mixed for: on the Crew card it was four shades off the card
-        and invisible, while the Create flight dialog, which has no card, turned it
-        into a dark slab under every seat past the last one the flight has. The greyed
-        "No aircraft" box says the same thing on both.
+        A fill was used before, but a fill only looks right against the one background
+        it was mixed for, and this row appears on cards of two different shades.
+
         """
         painter = QPainter(self)
         try:
@@ -497,9 +493,9 @@ class QSquadronSelector(QDialog):
 class QFlightSlotEditor(QWidget):
     """The squadron and its seats.
 
-    A plain widget rather than a group box: the card it sits in draws the frame and
-    the caption above it, so a title inside a second border would be the same word
-    twice.
+    A plain widget rather than a group box: the card it sits in already draws the frame
+    and the caption.
+
     """
 
     flight_resized = Signal(int)
@@ -537,8 +533,9 @@ class QFlightSlotEditor(QWidget):
     def _squadron_strip(self, max_count: int) -> QWidget:
         """Whose flight this is, how many are going, and how many are left to send.
 
-        One strip above the seats rather than two rows of a form: the squadron and its
-        base are context for the roster, not two more fields to fill in.
+        One strip above the seats rather than two more form rows: the squadron and its
+        base are context for the roster, not fields to fill in.
+
         """
         squadron = self.flight.squadron
 

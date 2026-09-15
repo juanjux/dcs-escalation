@@ -1,9 +1,7 @@
-"""How he is: morale this week, hardening from everything before it, and his friends.
+"""The pilot dialog's state column: morale, hardening and relationships.
 
-Morale and hardening share one caption row because they are meant to be read as a
-pair -- the first moves every turn, the second never comes off. A pilot who is not
-active has no morale worth showing, so his column is the same column with that card
-missing and the rest frozen.
+Morale and hardening share a caption row: the first changes every turn, the second only
+ever increases. A pilot who is not active has no morale to show.
 """
 
 from __future__ import annotations
@@ -222,11 +220,10 @@ def _fraction(pilot: Pilot, ceiling: int) -> float:
 
 
 def _effects(pilot: Pilot, settings: object) -> str:
-    """The three percentages, worked out rather than written down.
+    """The three percentages hardening is worth, computed rather than stored.
 
-    A player who sees "-18 % friendship" understands why the veteran has fewer
-    friends than the new arrival. A pilot who has been through nothing yet says so
-    instead of saying "-0 %" three times.
+    A pilot with no hardening says so instead of printing "-0 %" three times.
+
     """
     relief = hardening.morale_relief(pilot.hardened, settings) * 100
     survival = hardening.survival_bonus(pilot.hardened, settings) * 100
@@ -370,10 +367,11 @@ class Friend:
 
     @property
     def strength(self) -> float:
-        """How far this pair is from where every pair starts, either way round.
+        """How far this pair is from Neutral, in either direction.
 
-        What decides whether the row is worth the space. Warm and cold both count:
-        a man he cannot stand costs the flight what a friend earns it.
+        Decides whether the row is worth showing. A dislike counts as much as a
+        friendship: it costs the flight what the other earns it.
+
         """
         return max(
             abs(self.his - friendship.FRIENDSHIP_START),
@@ -384,8 +382,8 @@ class Friend:
     def tint(self) -> str:
         """The wash the pilot lists put behind this pair, as a stylesheet colour.
 
-        The same one, so a player who has learnt the colour in the roster reads it
-        here without being told.
+        The same colour, so it means here what it means in the roster.
+
         """
         colour = affinity_tint(self.his, settings=self.settings)
         if colour is None:
@@ -428,10 +426,11 @@ def friends_of(
     wing: dict[UUID, tuple[Squadron, Pilot]],
     squadron: Squadron,
 ) -> list[Friend]:
-    """Everyone he thinks anything of, strongest first.
+    """Every pilot he has an opinion of, or who has one of him, strongest first.
 
-    Both directions are looked at: a man who thinks nothing of somebody who thinks the
-    world of him belongs on the list, because that is the interesting half.
+    Both directions are considered: a pilot who thinks nothing of somebody who thinks
+    the world of him still belongs on the list.
+
     """
     settings = squadron.settings
     seen: dict[UUID, Friend] = {}
@@ -496,11 +495,11 @@ def _known_to(pilot: Pilot, wing: dict[UUID, tuple[Squadron, Pilot]]) -> int:
 
 
 def _friend_row(friend: Friend, squadron: Squadron, alpha: float) -> Row:
-    """Who he is on the left, what the two of them think on the right.
+    """Identity on the left, the two directions of the pair on the right.
 
-    The two halves are side by side rather than the arrows sitting on the name's line,
-    because a pair of stacked bars is taller than one line of text and the digits
-    beside them were being cut in half.
+    Side by side rather than with the arrows on the name's line: a pair of stacked bars
+    is taller than one line of text, which cut the digits beside them in half.
+
     """
     row = Row(height=50, margins=(10, 4, 14, 4), spacing=10)
 
@@ -605,10 +604,11 @@ def state_column(
     squadron: Squadron,
     wing: dict[UUID, tuple[Squadron, Pilot]],
 ) -> Optional[QVBoxLayout]:
-    """Morale, hardening and relationships -- whichever of them this campaign has.
+    """Morale, hardening and relationships, whichever of them the campaign has.
 
-    Nothing at all when Live Pilots is switched off, and the dialog then gives
-    the whole width to what he did, which is all there is to say about him.
+    Nothing at all with Live Pilots off, in which case the dialog gives the whole width
+    to the pilot's record.
+
     """
     column = QVBoxLayout()
     column.setContentsMargins(0, 0, 0, 0)
@@ -670,10 +670,10 @@ def state_column(
 
 
 def _no_morale(pilot: Pilot) -> QWidget:
-    """Why there is no morale card, said plainly.
+    """Why there is no morale card.
 
-    Two men have none: the player, who decides for himself whether he is up to a
-    sortie, and one who is not coming back.
+    Two pilots have none: the player's own, and one who is dead.
+
     """
     if not pilot.alive:
         said = (
@@ -726,11 +726,11 @@ def relationships_section(
     squadron: Squadron,
     wing: dict[UUID, tuple[Squadron, Pilot]],
 ) -> Optional[QWidget]:
-    """The whole card with its heading and the line that explains the arrows.
+    """The relationships card with its heading and the line explaining the arrows.
 
-    It lives in the wider of the two columns: the names, the bands and "and back:"
-    are a sentence, and a sentence in a fixed 400 px is a sentence with its end cut
-    off -- while the cards it used to sit under are figures, which are not.
+    Placed in the wider column: the names, the bands and "and back:" form a sentence,
+    which does not fit a fixed 400 px.
+
     """
     if not squadron.friendship_in_play:
         return None

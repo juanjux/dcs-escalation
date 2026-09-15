@@ -429,18 +429,17 @@ class QLiberationWindow(QMainWindow):
             f"Make sure to include the campaign that fails to load, i.e.:\n\n{relative_path}",
         )
 
-    def saveGame(self):
-        logging.info("Saving game")
-
+    def saveGame(self) -> bool:
+        if self.game is None:
+            return False
         if self.game.savepath:
-            persistency.save_game(self.game)
-            liberation_install.setup_last_save_file(self.game.savepath)
-            liberation_install.save_config()
-        else:
-            self.saveGameAs()
+            return self._save_game_to_path(self.game.savepath)
+        return self.saveGameAs()
 
-    def saveGameAs(self):
-        if self.game is not None and self.game.savepath:
+    def saveGameAs(self) -> bool:
+        if self.game is None:
+            return False
+        if self.game.savepath:
             save_dir = self.game.savepath
         else:
             save_dir = str(persistency.save_dir())
@@ -450,13 +449,32 @@ class QLiberationWindow(QMainWindow):
             dir=save_dir,
             filter="*.retribution;;*.liberation",
         )
-        if file is not None:
-            self.game.savepath = file[0]
-            persistency.save_game(self.game)
-            liberation_install.setup_last_save_file(self.game.savepath)
-            liberation_install.save_config()
+        if not file or not file[0]:
+            logging.info("Save As cancelled")
+            return False
+        return self._save_game_to_path(file[0])
 
-            self.updateWindowTitle(file[0])
+    def _save_game_to_path(self, path: str) -> bool:
+        if self.game is None:
+            return False
+        previous_path = self.game.savepath
+        self.game.savepath = path
+        logging.info("Saving game to %s", path)
+        if not persistency.save_game(self.game):
+            self.game.savepath = previous_path
+            logging.error("Save failed; campaign remains open: %s", path)
+            QMessageBox.critical(
+                self,
+                "Could not save campaign",
+                "The campaign could not be saved. It remains open so you can "
+                "retry or use Save As to choose another location. See the log "
+                "for details.",
+            )
+            return False
+        liberation_install.setup_last_save_file(path)
+        liberation_install.save_config()
+        self.updateWindowTitle(path)
+        return True
 
     def updateWindowTitle(self, save_path: Optional[str] = None) -> None:
         """
@@ -644,10 +662,6 @@ class QLiberationWindow(QMainWindow):
             'Contains information from <a href="https://osmdata.openstreetmap.de/" style="color: #ffffff">OpenStreetMap © OpenStreetMap contributors</a>, which is made available here under the <a href="https://opendatacommons.org/licenses/odbl/1-0/" style="color: #ffffff">Open Database License (ODbL)</a>.<br />'
             '<a href="https://download.geofabrik.de/index.html/" style="color: #ffffff">OpenStreetMap Data Extracts from Geofabrik</a><br />'
             '<a href="https://www.earthdata.nasa.gov/" style="color: #ffffff">NASA EarthData</a><br />'
-            + "<h4>Splash Screen  :</h4>"
-            + "Artwork by Andriy Dankovych (CC BY-SA)"
-            " <a href='https://www.facebook.com/AndriyDankovych' style='color:white'>"
-            "[https://www.facebook.com/AndriyDankovych]</a>"
         )
         about = QMessageBox()
         about.setWindowTitle("About DCS Escalation")
@@ -778,9 +792,19 @@ class QLiberationWindow(QMainWindow):
         settings.setValue("windowState", self.saveState())
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        # A cancelled/failed save (or an exception) must not accept the close.
+        event.ignore()
+        unsaved = persistency.has_unsaved_changes(self.game)
+        logging.info(
+            "Close requested: game=%s turn=%s savepath=%s unsaved=%s",
+            id(self.game) if self.game is not None else None,
+            getattr(self.game, "turn", None),
+            getattr(self.game, "savepath", None),
+            unsaved,
+        )
         # Nothing to lose, nothing to ask: the campaign is exactly what its own save
         # file already holds, or there is no campaign open at all.
-        if not persistency.has_unsaved_changes(self.game):
+        if not unsaved:
             self._shut_down(event)
             return
 
@@ -793,9 +817,12 @@ class QLiberationWindow(QMainWindow):
             | QMessageBox.StandardButton.Cancel,
             QMessageBox.StandardButton.Cancel,
         )
+        # PySide may return an int rather than a StandardButton enum.
+        logging.info("Save-before-close answer: %s", int(result))
         if result in [QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No]:
-            if result == QMessageBox.StandardButton.Yes:
-                self.saveGame()
+            if result == QMessageBox.StandardButton.Yes and not self.saveGame():
+                logging.info("Close cancelled because saving did not complete")
+                return
             self._shut_down(event)
         else:
             event.ignore()
@@ -806,4 +833,5 @@ class QLiberationWindow(QMainWindow):
         self.dialog = None
         self.debriefing = None
         for window in QApplication.topLevelWidgets():
-            window.close()
+            if window is not self:
+                window.close()

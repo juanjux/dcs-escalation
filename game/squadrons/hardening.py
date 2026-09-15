@@ -1,23 +1,13 @@
-"""How much a pilot has already been through, and what it is worth.
+"""Pilot hardening: a permanent counter earned by serving turns at low morale.
 
-Morale is how he is this week. Hardening is what the bad weeks left behind: a point or
-three for every turn he spends Shaken or worse, and **it never comes off**. A squadron
-that has been through something is not the squadron that arrived, which is the whole
-point of it -- a run of losses used to take a whole squadron to Broken together and
-leave it there, each death landing on men who were already at the bottom.
+A pilot gains 1 to 3 points per turn spent Shaken, Shattered or Broken, and the counter
+never decreases. Points reduce the morale hit he takes from events, raise his chance of
+surviving a loss, and damp friendship changes in both directions.
 
-What it buys is not cheerfulness. He feels the knocks exactly as often; they land
-softer. He is likelier to walk away from a wreck, because he has been in one. And his
-skin is thicker in both directions: a man who has watched enough people die keeps the
-next one at arm's length, which is the price -- the rung of skill a crew that gets on
-flies at is that much further away for a squadron that has been fed into a grinder --
-and shrugs off what would have been an insult a year ago, which is not.
+Nothing is gained while wounded or on leave: only turns on duty count.
 
-None of it is earned in a hospital bed or at home on leave. He may be lower there than
-anywhere; this comes from turning up and doing it again.
-
-The numbers below are defaults. Each carries the settings key that overrides it,
-exactly as :mod:`game.squadrons.morale` and :mod:`game.squadrons.friendship` do.
+The constants below are defaults; each names the settings key that overrides it, as in
+:mod:`game.squadrons.morale` and :mod:`game.squadrons.friendship`.
 """
 
 from __future__ import annotations
@@ -29,14 +19,12 @@ from game.squadrons import morale as morale_rules
 if TYPE_CHECKING:
     from game.squadrons.pilot import Pilot
 
-#: The ends of the ruler. Nothing takes it back down: a man does not unlearn what a bad
-#: month taught him, and a quiet spell is a rest rather than an education.
+#: Bounds of the counter. It only ever increases.
 HARDENING_MIN = 0
 HARDENING_MAX = 40
 
-#: What one turn in each band leaves behind, by the state he *arrived* in. Only the
-#: bands that cost him something are in it: a good week teaches nothing about surviving
-#: a bad one.
+#: Points gained per turn, by the morale state the pilot started the turn in. States
+#: above Shaken gain nothing.
 SHAKEN = 1
 SHATTERED = 2
 BROKEN = 3
@@ -48,9 +36,9 @@ HARDENING_BY_STATE: tuple[tuple[str, str, int], ...] = (
     ("Broken", "hardening_broken", BROKEN),
 )
 
-#: What one point is worth to each effect, as percentages. Per point rather than per
-#: ruler so the arithmetic a player can do in his head is the right one: a pilot with 30
-#: points takes 30 x 2 = 60% off every morale hit.
+#: What one point is worth for each effect, as a percentage. Per point rather than per
+#: full counter so the arithmetic is simple: 30 points takes 30 x 2 = 60% off a morale
+#: hit.
 MORALE_RELIEF_PER_POINT = 2.0
 SURVIVAL_PER_POINT = 0.5
 FRIENDSHIP_DAMPING_PER_POINT = 1.5
@@ -65,11 +53,10 @@ def _percent(settings: Any, key: str, default: Any) -> float:
 
 
 def in_play(settings: Any) -> bool:
-    """Whether any of this is switched on.
+    """Whether hardening is enabled.
 
-    It rides on morale, not merely on Live Pilots: it is earned from the morale bands
-    and most of what it does is to morale. With morale off there is nothing for a man
-    to be hardened *by*.
+    Requires morale as well as Live Pilots: points are earned from the morale bands and
+    most of the effects apply to morale.
     """
     return (
         bool(_setting(settings, "live_pilots_enabled", True))
@@ -83,7 +70,7 @@ def ceiling(settings: Any = None) -> int:
 
 
 def _worth(hardened: int, settings: Any, key: str, default: float) -> float:
-    """One effect, at this many points. Never more than the whole of whatever it is."""
+    """One effect at this many points, capped at 1.0."""
     return min(1.0, max(0, hardened) * _percent(settings, key, default))
 
 
@@ -91,7 +78,7 @@ def _worth(hardened: int, settings: Any, key: str, default: float) -> float:
 
 
 def gain_for(morale: int, settings: Any = None) -> int:
-    """What a turn spent in this state is worth, and nothing for a good one."""
+    """Points for one turn spent at this morale, or 0 above the Shaken band."""
     if not in_play(settings):
         return 0
     state = morale_rules.morale_state(morale, settings).name
@@ -102,14 +89,11 @@ def gain_for(morale: int, settings: Any = None) -> int:
 
 
 def harden(pilot: Pilot, morale: int, settings: Any = None) -> int:
-    """A turn served in a bad place. Returns how far he moved, which is never down.
+    """Apply one turn of hardening and return the points gained.
 
-    ``morale`` is the figure he *arrived* with rather than the one he leaves with: the
-    turn is judged on the state he spent it in, the same way the desertion roll is.
-
-    A hospital bed and a week at home are not bad places in the sense that matters.
-    He may be as low there as anywhere -- lower, often -- but this is earned by turning
-    up and doing it again, not by feeling terrible somewhere safe.
+    ``morale`` is the value the pilot started the turn with, not the one he ends it
+    with, matching how the desertion roll is judged. A pilot who is wounded or on leave
+    gains nothing.
     """
     if pilot.wounded or pilot.on_leave:
         return 0
@@ -125,10 +109,10 @@ def harden(pilot: Pilot, morale: int, settings: Any = None) -> int:
 
 
 def morale_relief(hardened: int, settings: Any = None) -> float:
-    """How much of a knock he no longer feels, as a fraction of it.
+    """Fraction of a negative morale event the pilot does not feel.
 
-    Knocks only. Nobody is too hardened to be pleased about a promotion, which is the
-    same asymmetry rank already has in :func:`game.squadrons.morale.resistance`.
+    Negative events only; gains are unaffected, as with
+    :func:`game.squadrons.morale.resistance`.
     """
     if not in_play(settings):
         return 0.0
@@ -138,12 +122,7 @@ def morale_relief(hardened: int, settings: Any = None) -> float:
 
 
 def survival_bonus(hardened: int, settings: Any = None) -> float:
-    """What having been shot at before is worth when it happens again.
-
-    Added to the roll that gets him out of the aircraft and to the one that has the
-    medics reach him in time. He has done this before: he knows when to stop trying to
-    save the jet.
-    """
+    """Added to the ejection roll and to the roll for surviving a wound."""
     if not in_play(settings):
         return 0.0
     return _worth(
@@ -152,13 +131,7 @@ def survival_bonus(hardened: int, settings: Any = None) -> float:
 
 
 def friendship_damping(hardened: int, settings: Any = None) -> float:
-    """How much less of any of it he feels, as a fraction.
-
-    Both ways, which is the whole of what a thick skin is: a man who has watched enough
-    people go down does not get attached at the speed the new arrival does, and he does
-    not take offence at that speed either. The first half is the price of hardening;
-    the second is another thing it buys.
-    """
+    """Fraction by which friendship changes are reduced, in both directions."""
     if not in_play(settings):
         return 0.0
     return _worth(
@@ -170,12 +143,10 @@ def friendship_damping(hardened: int, settings: Any = None) -> float:
 
 
 def feels(pilot: Pilot, amount: float, settings: Any = None) -> float:
-    """How much of a movement in what he thinks of somebody actually lands on him.
+    """Apply this pilot's damping to a friendship change.
 
-    Only his own opinions: what everybody else makes of the hard old sergeant is
-    nobody's business but theirs. Both directions, though -- he is slower to warm to
-    the new arrival *and* slower to hold anything against him, because it is one skin
-    and it is thick both ways.
+    Only to changes in his own opinion of others; what they think of him is unaffected.
+    Warming and cooling are damped alike.
     """
     if not amount:
         return amount
