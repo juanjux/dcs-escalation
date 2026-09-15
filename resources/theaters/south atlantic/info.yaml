@@ -1,5 +1,6 @@
 ---
-name: Falklands
+name: South Atlantic
+pydcs_name: Falklands
 timezone: -3
 daytime:
   dawn: [6, 9]

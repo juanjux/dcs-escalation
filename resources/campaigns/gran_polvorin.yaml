@@ -1,6 +1,6 @@
 ---
-name: Falklands - Gran Polvorin
-theater: Falklands
+name: South Atlantic - Gran Polvorin
+theater: South Atlantic
 authors: Fuzzle
 description:
   <p>A naval campaign where a US carrier group must fight through Argentina and
@@ -14,7 +14,7 @@ description:
   fighting to the west, a USN battle group is dispatched from the east coast of
   the US to clear the Chinese forces from the continent and crush their carrier
   group.</p>
-version: "10.7"
+version: "10.8"
 recommended_player_faction: US Navy 2005
 recommended_enemy_faction: China 2010
 miz: gran_polvorin.miz
@@ -27,8 +27,108 @@ recommended_enemy_income_multiplier: 0.6
 # GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
 # most of its own air defences. No radar on it, so it is a STRIKE target, not
 # SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
+advanced_iads: true
+
 ground_forces:
   Ground-15: GPS Jamming Site (Red)
+  Red GPS Jammer Punta Arenas: GPS Jamming Site (Red)
+  Blue GPS Jammer Mount Pleasant: GPS Jamming Site (Blue)
+
+# One network per side. Every SAM and EWR depends on the comms tower and the power
+# station of its own area, plus a neighbour's where the two are in radio range, so
+# nothing is left fighting on its own radar. The command centres are keys because only
+# keys reach Skynet; each depends on the power station beside it, so bombing one plant
+# does not take command with it.
+#
+# The islands are their own network: Mount Pleasant is 750 km from the mainland and no
+# tower reaches that far.
+iads_config:
+
+# RED -- command
+    - Red IADS Command Center Punta Arenas:
+        - Red Power Punta Arenas
+    - Red IADS Command Center Rio Gallegos:
+        - Red Power Rio Gallegos
+
+# RED -- Tierra del Fuego
+    - Ground-1:            # S-300 at Ushuaia
+        - Red Comms Ushuaia Airport
+        - Red Power Ushuaia Airport
+        - Red IADS Command Center Punta Arenas
+    - Ground-7:            # SA-2 north-east of Ushuaia
+        - Red Comms Ushuaia
+        - Red Power Ushuaia
+        - Red IADS Command Center Punta Arenas
+    - Red EWR Ushuaia:
+        - Red Comms Ushuaia
+        - Red Power Ushuaia
+        - Red IADS Command Center Punta Arenas
+    - Ground-17:           # SA-2 at Rio Grande
+        - Red Comms Rio Grande
+        - Red Comms Ushuaia
+        - Red Power Ushuaia
+        - Red IADS Command Center Punta Arenas
+
+# RED -- Punta Arenas
+    - Ground-8:
+        - Red Comms Punta Arenas
+        - Red Power Punta Arenas
+        - Red IADS Command Center Punta Arenas
+    - Ground-11:
+        - Red Comms Punta Arenas
+        - Red Power Punta Arenas
+        - Red IADS Command Center Punta Arenas
+    - Ground-14:           # EWR on the south coast
+        - Red Comms Porvenir
+        - Red Comms Punta Arenas
+        - Red Power Punta Arenas
+        - Red IADS Command Center Punta Arenas
+        - Red IADS Command Center Rio Gallegos
+    - Ground-12:           # Tunguska
+        - Red Comms Porvenir
+        - Red Power Punta Arenas
+        - Red IADS Command Center Rio Gallegos
+    - Ground-10:
+        - Red Comms Porvenir
+        - Red Comms Rio Gallegos
+        - Red Power Punta Arenas
+        - Red Power Rio Gallegos
+        - Red IADS Command Center Rio Gallegos
+
+# RED -- Rio Gallegos
+    - Ground-9:
+        - Red Comms Rio Gallegos Airport
+        - Red Power Rio Gallegos Airport
+        - Red IADS Command Center Rio Gallegos
+    - Red EWR Rio Gallegos:
+        - Red Comms Rio Gallegos Airport
+        - Red Comms Rio Gallegos
+        - Red Power Rio Gallegos Airport
+        - Red Power Rio Gallegos
+        - Red IADS Command Center Rio Gallegos
+
+# BLUE -- the Falklands
+    - Blue IADS Command Center Mount Pleasant:
+        - Blue Power Mount Pleasant
+    - Blue EWR Mount Pleasant:
+        - Blue Comms Mount Pleasant
+        - Blue Comms Fitzroy
+        - Blue Power Mount Pleasant
+        - Blue IADS Command Center Mount Pleasant
+    - Blue EWR Fitzroy:
+        - Blue Comms Fitzroy
+        - Blue Comms Mount Pleasant
+        - Blue Power Mount Pleasant
+        - Blue IADS Command Center Mount Pleasant
+    - Blue SAM LR Mount Pleasant:
+        - Blue Comms Mount Pleasant
+        - Blue Power Mount Pleasant
+        - Blue IADS Command Center Mount Pleasant
+    - Blue SAM MR Fitzroy:
+        - Blue Comms Fitzroy
+        - Blue Comms Mount Pleasant
+        - Blue Power Mount Pleasant
+        - Blue IADS Command Center Mount Pleasant
 
 squadrons:
   #BLUFOR CVN
