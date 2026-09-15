@@ -14,6 +14,7 @@ from .formationattack import (
 )
 from .patrolling import PatrollingLayout
 from .waypointbuilder import WaypointBuilder
+from ..flightwaypoint import FlightWaypoint
 from .. import FlightType
 from ..packagewaypoints import PackageWaypoints
 from ...utils import feet
@@ -26,6 +27,25 @@ class EscortFlightPlan(FormationAttackFlightPlan):
     @staticmethod
     def builder_type() -> Type[Builder]:
         return Builder
+
+    def request_escort_at(self) -> FlightWaypoint | None:
+        """Nobody is escorting the escort.
+
+        Inherited from the formation, this said "from my join to my split", which put
+        the escort into the package's own escort window -- so the package asked its
+        escort when its escorts are dismissed. The escort answers by asking the flight
+        it is protecting, and when that flight is a patrol, the patrol answers by
+        asking the package when its escorts are dismissed. Round it went until the
+        stack ran out, taking with it whatever request had asked the question: put an
+        escort on a TARCAP and the map went blank, because the one call that draws it
+        died in the loop.
+
+        The window belongs to what is being escorted. An escort is not it.
+        """
+        return None
+
+    def dismiss_escort_at(self) -> FlightWaypoint | None:
+        return None
 
     @property
     def split_time(self) -> datetime:
