@@ -29,7 +29,7 @@ do
     local defaults={visualFarPercent=10,visualNearPercent=80,
       opticalFarPercent=20,opticalNearPercent=90,radarFarPercent=50,radarNearPercent=95,
       gmtiFarPercent=75,gmtiNearPercent=98,airAltitudePenaltyPercent=60,
-      retrySeconds=5,visualMaxAGL=3500,opticalMaxAGL=6500}
+      retrySeconds=5,visualMaxAGL=3500,opticalMaxAGL=10000}
     local c={}
     for name,value in pairs(defaults) do
       if input[name]~=nil then value=input[name] end

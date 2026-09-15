@@ -65,11 +65,39 @@ class SensorModelTests(unittest.TestCase):
         p=S.profile('A-10C_2','air',{targetingPod=true})
         assert(S.assess(o,t,e,p).mode=='ir')
         e.irTransmission=0.1;assert(not S.assess(o,t,e,p))
-        e.irTransmission=1;o.agl=7000;assert(not S.assess(o,t,e,p))
+        e.irTransmission=1;o.agl=p.opticalMaxAGL+1;assert(not S.assess(o,t,e,p))
         assert(S.profile('Su-25T','air').irRange==0)
         assert(S.profile('Ka-50_3','air').irRange==0)
         assert(S.profile('OH58D','air').irRange>0)
         assert(S.profile('MQ-9','air').irRange>0)
+        """)
+
+    def test_high_altitude_ir_observation_keeps_other_sensor_gates(self):
+        self.check("""
+        p=S.profile('A-10C_2','air',{targetingPod=true})
+        assert(p.opticalMaxAGL==10000)
+        -- Isolate IR even in daylight; radar is absent on this profile.
+        p.eoRange=0
+        for _,light in ipairs({0,1}) do
+          e.light=light
+          for _,height in ipairs({4572,9144,10000}) do
+            o.agl=height;o.point.y=height
+            local r=S.assess(o,t,e,p,true)
+            assert(r and r.mode=='ir' and r.chance>0 and r.chance<1)
+          end
+        end
+        -- Still inside slant range, but just above the configured ceiling.
+        o.agl=10001;o.point.y=10001
+        assert(not S.assess(o,t,e,p))
+        o.agl=9144;o.point.y=9144
+        e.irTransmission=0.1;assert(not S.assess(o,t,e,p))
+        e.irTransmission=1;t.point.x=10000
+        assert(not S.assess(o,t,e,p)) -- Slant distance exceeds 12 km.
+        t.point.x=5000
+        assert(not S.assess(o,t,e,S.profile('A-10C_2','air')))
+        local saved=S.profile('A-10C_2','air',{targetingPod=true},
+          S.probabilityConfig({opticalMaxAGL=6500}))
+        assert(saved.opticalMaxAGL==6500 and not S.assess(o,t,e,saved))
         """)
 
     def test_rbm_gmti_role_state_and_radial_motion(self):

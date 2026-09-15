@@ -107,9 +107,9 @@
         },
         {
             "nameInUI": "Maximum airborne EO/IR observation height (m AGL)",
-            "descriptionInUI": "Above this height, EO/IR observation is unavailable. At this height the full airborne altitude penalty applies. Default 6500 metres above local ground. Applies even with rolls disabled; radar is unaffected.",
+            "descriptionInUI": "Above this height, EO/IR observation is unavailable. At this height the full airborne altitude penalty applies. Default 10000 metres above local ground (about 32800 feet), allowing high-altitude targeting-pod observation. This is a tunable search-model limit, not a guaranteed identification altitude: slant range, weather, cover, line of sight and discovery rolls still apply. Applies even with rolls disabled; radar is unaffected. Existing saved values are preserved.",
             "mnemonic": "opticalMaxAGL",
-            "defaultValue": 6500,
+            "defaultValue": 10000,
             "minimumValue": 100,
             "maximumValue": 10000
         },

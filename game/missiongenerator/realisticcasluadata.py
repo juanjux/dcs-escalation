@@ -55,7 +55,7 @@ PROBABILITY_DEFAULTS = {
     "airAltitudePenaltyPercent": 60,
     "retrySeconds": 5,
     "visualMaxAGL": 3500,
-    "opticalMaxAGL": 6500,
+    "opticalMaxAGL": 10000,
 }
 
 
