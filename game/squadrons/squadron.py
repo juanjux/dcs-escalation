@@ -817,10 +817,14 @@ class Squadron:
         self.leaves_the_pool(pilot)
 
     def return_from_leave(self, pilot: Pilot) -> None:
-        if not self.has_unfilled_pilot_slots:
-            raise RuntimeError(
-                f"Cannot return {pilot} from leave because {self} is full"
-            )
+        """He was never off the books, so there is no place to find for him.
+
+        A man on leave holds his slot the whole time he is away -- that is what stops
+        the replenishment filling it behind his back -- so coming back adds nobody to
+        the roster. Asking for a free slot here refused the recall of every man in a
+        squadron at full strength, which is most of them: two aircraft on the ramp, one
+        pilot fit to fly, and the man resting next door could not be called in.
+        """
         pilot.return_from_leave()
         self.joins_the_pool(pilot)
 
