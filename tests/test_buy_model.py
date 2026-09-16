@@ -50,7 +50,8 @@ class _ForceGroup:
         return []
 
 
-def _battery() -> _ForceGroup:
+def _battery() -> Any:
+    """Duck-typed: the model reads a handful of attributes off a force group."""
     radar = _unit_group("radar", size=1, max_size=1)
     launchers = _unit_group("launchers", size=4, max_size=8)
     guns = _unit_group("guns", size=1, max_size=2, optional=True)
@@ -105,7 +106,7 @@ def test_a_preset_is_listed_under_what_it_is_for() -> None:
 
 def test_what_stands_there_is_read_off_the_units_parked() -> None:
     group = _battery()
-    site = SimpleNamespace(
+    site: Any = SimpleNamespace(
         units=[SimpleNamespace(type="str"), SimpleNamespace(type="ln")]
     )
 
@@ -113,10 +114,12 @@ def test_what_stands_there_is_read_off_the_units_parked() -> None:
 
 
 def test_an_emptied_site_came_from_nowhere() -> None:
-    assert here_now(SimpleNamespace(units=[]), [_battery()]) is None
+    empty: Any = SimpleNamespace(units=[])
+
+    assert here_now(empty, [_battery()]) is None
 
 
 def test_a_group_that_cannot_field_what_is_there_is_not_it() -> None:
-    site = SimpleNamespace(units=[SimpleNamespace(type="something else")])
+    site: Any = SimpleNamespace(units=[SimpleNamespace(type="something else")])
 
     assert here_now(site, [_battery()]) is None
