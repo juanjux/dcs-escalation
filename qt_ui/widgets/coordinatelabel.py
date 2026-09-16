@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -48,7 +49,7 @@ class CoordinateLabel(QWidget):
             )
         layout.addWidget(label)
 
-        copy = QPushButton("⧉" if compact else "Copy")
+        copy = QPushButton("" if compact else "Copy")
         copy.setProperty("style", "btn-small")
         copy.setToolTip("Copy these coordinates to the clipboard")
         if compact:
@@ -57,10 +58,11 @@ class CoordinateLabel(QWidget):
             # disappears into a dark card.
             copy.setFixedSize(22, 22)
             copy.setCursor(Qt.CursorShape.PointingHandCursor)
+            copy.setIcon(QIcon(_copy_icon()))
             copy.setStyleSheet(
-                "QPushButton { background: #1B2732; color: #9FADB9;"
-                " border: 1px solid #2C3A47; border-radius: 3px; font-size: 12px; }"
-                "QPushButton:hover { background: #24323F; color: #DCE9F4; }"
+                "QPushButton { background: #1B2732;"
+                " border: 1px solid #2C3A47; border-radius: 3px; }"
+                "QPushButton:hover { background: #24323F; }"
             )
         else:
             copy.setMaximumWidth(60)
@@ -71,7 +73,24 @@ class CoordinateLabel(QWidget):
 
         self.setLayout(layout)
 
-    def copy(self) -> None:
+    def copy(self) -> None:  # noqa: D401
         clipboard = QApplication.clipboard()
         if clipboard is not None:
             clipboard.setText(self.text)
+
+
+def _copy_icon(ink: str = "#9FADB9") -> QPixmap:
+    """Two overlapping sheets, drawn rather than typed.
+
+    The copy glyph is not in every font the application may be running with, and a
+    missing glyph is a blank square on a button nobody then presses.
+    """
+    icon = QPixmap(14, 14)
+    icon.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(icon)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    painter.setPen(QPen(QColor(ink), 1.2))
+    painter.drawRoundedRect(QRectF(1.5, 3.5, 7.5, 9), 1.5, 1.5)
+    painter.drawRoundedRect(QRectF(5, 1.5, 7.5, 9), 1.5, 1.5)
+    painter.end()
+    return icon

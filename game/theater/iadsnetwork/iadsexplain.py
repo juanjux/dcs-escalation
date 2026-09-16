@@ -387,6 +387,19 @@ def _feeds(tgo: TheaterGroundObject, network: IadsNetwork) -> list[IadsNetworkNo
     ]
 
 
+def _what_falls_over(tgo: TheaterGroundObject, count: int) -> str:
+    """What the sites behind this piece of infrastructure lose with it."""
+    them = "they" if count > 1 else "it"
+    roles = {
+        role for group in tgo.groups if (role := getattr(group, "iads_role", None))
+    }
+    if IadsRole.POWER_SOURCE in roles:
+        return f"bomb it and {them} go dark, unless {them} carry a generator"
+    if IadsRole.CONNECTION_NODE in roles:
+        return f"bomb it and {them} go autonomous: nothing reaches {them} any more"
+    return f"bomb it and {them} lose the network"
+
+
 def _infrastructure(
     tgo: TheaterGroundObject, fed: list[IadsNetworkNode], friendly: bool
 ) -> IadsPicture:
@@ -394,11 +407,7 @@ def _infrastructure(
     names = sorted(_name(node) for node in fed)
     if alive:
         headline = f"Holding up {len(fed)} site{'s' if len(fed) > 1 else ''}."
-        note = (
-            "they lose it if this is bombed"
-            if friendly
-            else f"kill it and {'they are' if len(fed) > 1 else 'it is'} cut off"
-        )
+        note = _what_falls_over(tgo, len(fed))
         chip_text = f"{len(fed)} SITE{'S' if len(fed) > 1 else ''}"
         tone = LinkTone.GOOD
     else:
