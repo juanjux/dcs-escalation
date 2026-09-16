@@ -17,6 +17,10 @@ if "--outlined" in sys.argv:
     SOURCES = ["04-simple-jet", "04-simple-jet-outlined"]
     LABELS = ["Original", "Con borde"]
     OUTPUT = "outlined-size-comparison.png"
+if "--flag" in sys.argv:
+    SOURCES = ["04-simple-jet-outlined", "07-ukraine-background"]
+    LABELS = ["Anterior", "Con bandera"]
+    OUTPUT = "flag-size-comparison.png"
 SIZES = [16, 24, 32, 48, 64]
 font = ImageFont.truetype("C:/Windows/Fonts/segoeui.ttf", 13)
 heading = ImageFont.truetype("C:/Windows/Fonts/segoeuib.ttf", 15)

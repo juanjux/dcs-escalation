@@ -1,8 +1,8 @@
 # DCS Escalation executable icon proposals
 
-Generated with the built-in image generation tool. The accepted dawn splash is the visual reference. The user selected `04-simple-jet-outlined.png`; see [production exports](../export_assets.py) for the executable, Qt window and browser icon outputs.
+Generated with the built-in image generation tool. The accepted dawn splash is the visual reference. The current `07-ukraine-background.png` adds a blue/yellow Ukrainian flag background to the selected outlined F-16. See [background revision](ukraine-background.md) and [production exports](../export_assets.py) for the executable, Qt window and browser icon outputs.
 
-The first three proposals below were rejected. The selected outlined fighter has verified alpha transparency and multi-resolution ICO exports; the earlier previews remain for design history.
+The first three proposals below were rejected. The current icon has an opaque flag background and multi-resolution ICO exports; the earlier transparent version and previews remain for design history.
 
 ## 01-dawn-falcon
 

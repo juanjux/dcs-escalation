@@ -11,6 +11,16 @@ ROOT = Path(__file__).resolve().parents[1]
 ICON_SIZES = {16, 20, 24, 32, 40, 48, 64, 96, 128, 256}
 
 
+def assert_flag_background(icon: Image.Image) -> None:
+    assert icon.getchannel("A").getextrema() == (255, 255)
+    # The flag fills the canvas; no transparent padding or baked checkerboard.
+    for x in (0, icon.width - 1):
+        red, green, blue, _ = icon.getpixel((x, 0))
+        assert red < 40 and 50 < green < 140 and blue > 140
+        red, green, blue, _ = icon.getpixel((x, icon.height - 1))
+        assert red > 200 and green > 170 and blue < 70
+
+
 @pytest.mark.parametrize(
     "filename,size",
     [
@@ -19,12 +29,11 @@ ICON_SIZES = {16, 20, 24, 32, 40, 48, 64, 96, 128, 256}
         ("client/public/logo512.png", 512),
     ],
 )
-def test_icon_png_dimensions_and_transparency(filename: str, size: int) -> None:
+def test_icon_png_dimensions_and_flag_background(filename: str, size: int) -> None:
     with Image.open(ROOT / filename) as icon:
         assert icon.size == (size, size)
         assert icon.mode == "RGBA"
-        assert icon.getchannel("A").getextrema() == (0, 255)
-        assert icon.getpixel((0, 0))[3] == 0
+        assert_flag_background(icon)
 
 
 @pytest.mark.parametrize(
@@ -39,7 +48,7 @@ def test_icon_contains_windows_sizes(filename: str) -> None:
             icon.load()
             frame = icon.convert("RGBA")
             assert frame.size == (size, size)
-            assert frame.convert("RGBA").getpixel((0, 0))[3] == 0
+            assert_flag_background(frame)
 
 
 def test_splash_retains_original_window_dimensions() -> None:
