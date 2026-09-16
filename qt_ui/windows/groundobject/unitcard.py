@@ -12,7 +12,7 @@ from collections import OrderedDict
 from functools import partial
 from typing import Callable, Optional, Sequence
 
-from PySide6.QtWidgets import QHBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from game.theater import TheaterGroundObject
 from game.theater.theatergroup import TheaterUnit
@@ -24,6 +24,7 @@ from qt_ui.windows.groundobject.common import (
     two_tone_button,
 )
 from qt_ui.windows.pilot.common import (
+    ACCENT,
     AIR_FAMILY,
     Elided,
     EMPTY,
@@ -32,10 +33,12 @@ from qt_ui.windows.pilot.common import (
     HEADING_BG,
     Row,
     Stack,
+    RED,
     TEXT_BASE,
     TEXT_LABEL,
     chip,
     label,
+    rich,
 )
 
 RepairCall = Callable[[TheaterUnit, int], None]
@@ -84,6 +87,26 @@ def price_of(unit: TheaterUnit) -> int:
     return unit.unit_type.price if unit.unit_type is not None else 0
 
 
+class Fold:
+    """The rows one folded row hides, and whether they are showing.
+
+    Asked of itself rather than of the rows: a widget that has not been shown yet
+    answers isVisible() with False however it was set up.
+    """
+
+    def __init__(self, rows: list[Row], marker: QLabel, open: bool) -> None:
+        self.rows = rows
+        self.marker = marker
+        self.open = open
+        self.set_open(open)
+
+    def set_open(self, open_it: bool) -> None:
+        self.open = open_it
+        for row in self.rows:
+            row.setVisible(open_it)
+        self.marker.setText("▾" if open_it else "▸")
+
+
 class UnitCard(QWidget):
     """One card per location: a heading per group, a row per unit or per fold."""
 
@@ -99,11 +122,22 @@ class UnitCard(QWidget):
         self.repair = repair
 
         self.stack = Stack()
+        #: One per fold, so the dialog can open or shut all of them at once.
+        self.folds: list[Fold] = []
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.stack)
         self.setLayout(layout)
         self._build()
+
+    @property
+    def any_open(self) -> bool:
+        return any(fold.open for fold in self.folds)
+
+    def set_all_open(self, open_them: bool) -> None:
+        for fold in self.folds:
+            fold.set_open(open_them)
+        self.stack.refresh()
 
     # ------------------------------------------------------------------ building
 
@@ -153,32 +187,24 @@ class UnitCard(QWidget):
         marker = label("▾" if hurt else "▸", 10, TEXT_LABEL)
         parent.add(marker)
         parent.add(Elided(name, 12.5, TEXT_BASE, bold=True))
-        parent.add(label(f"×{len(units)}", 11, TEXT_LABEL, monospace=True))
+        # The count is the row's whole point: it is how many units are hiding in it.
+        parent.add(label(f"×{len(units)}", 14, ACCENT, bold=True, monospace=True))
         described = describe_unit(units[0])
         if described:
             parent.add(label(described, 11, TEXT_LABEL))
         parent.stretch()
-        parent.add(
-            label(
-                f"{alive} alive · {hurt} down" if hurt else "all alive",
-                11,
-                TEXT_LABEL if hurt else GREEN,
-            )
-        )
+        parent.add(_tally(alive, hurt))
 
         children = [self._unit_row(unit, indent=40) for unit in units]
-        for child in children:
-            child.setVisible(bool(hurt))
-        marker.setText("▾" if hurt else "▸")
+        # A fold with a wreck in it opens itself: that is what the dialog is open for.
+        fold = Fold(children, marker, open=bool(hurt))
 
         def toggle() -> None:
-            opening = not children[0].isVisible()
-            for row in children:
-                row.setVisible(opening)
-            marker.setText("▾" if opening else "▸")
+            fold.set_open(not fold.open)
             self.stack.refresh()
 
         parent.clicked.connect(toggle)
+        self.folds.append(fold)
         self.stack.append(parent)
         for child in children:
             self.stack.append(child)
@@ -235,3 +261,15 @@ def repairable_units(ground_object: TheaterGroundObject) -> list[TheaterUnit]:
         for unit in ground_object.units
         if not unit.alive and unit.repairable and unit.repair_turns_remaining is None
     ]
+
+
+def _tally(alive: int, hurt: int) -> QWidget:
+    """What is left of a fold, in the two colours the card uses for it."""
+    if not hurt:
+        return label("all alive", 11.5, GREEN, bold=True)
+    return rich(
+        f"<b style='color:{GREEN}'>{alive} alive</b>"
+        f"<span style='color:{TEXT_LABEL}'> · </span>"
+        f"<b style='color:{RED}'>{hurt} down</b>",
+        11.5,
+    )

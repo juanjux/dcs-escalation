@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import math
+from functools import partial
 from typing import Optional
 
 from PySide6.QtCore import Qt
@@ -170,7 +171,11 @@ class QGroundObjectMenu(QDialog):
             self.game.settings,
             self._repair_unit if self._can_repair else None,
         )
-        caption = heading("Units", "by group · destroyed first")
+        caption = heading("Units")
+        if units.folds:
+            fold = Clickable("Collapse all" if units.any_open else "Expand all", 11)
+            fold.clicked.connect(partial(self._toggle_folds, units, fold))
+            _right_of(caption, fold)
         wrecks = repairable_units(self.ground_object) if self._can_repair else []
         if wrecks:
             price = sum(price_of(unit) for unit in wrecks)
@@ -191,11 +196,13 @@ class QGroundObjectMenu(QDialog):
 
     @staticmethod
     def _iads_card(iads: IadsPicture) -> QWidget:
-        return captioned(
-            "IADS network",
-            IadsCard(iads),
-            "what feeds this site, and what it does without it",
-        )
+        return captioned("IADS network", IadsCard(iads))
+
+    @staticmethod
+    def _toggle_folds(units: UnitCard, control: Clickable) -> None:
+        opening = not units.any_open
+        units.set_all_open(opening)
+        control.setText("Collapse all" if opening else "Expand all")
 
     def _scrollable(self, inner: QWidget) -> QWidget:
         rows = sum(len(group.units) + 1 for group in self.ground_object.groups)
@@ -246,15 +253,14 @@ class QGroundObjectMenu(QDialog):
                 self.game.theater.heading_to_conflict_from(self.ground_object.position)
                 or self.ground_object.heading
             )
-            button = QPushButton(f"Face the front  {front.degrees:03d}°")
-            button.clicked.connect(
-                lambda: (
-                    self.heading_selector.setValue(front.degrees)
-                    if self.heading_selector is not None
-                    else None
+            row.addWidget(
+                two_tone_button(
+                    "Face the front",
+                    f"{front.degrees:03d}°",
+                    TEXT_LABEL,
+                    handler=partial(self._set_heading, front),
                 )
             )
-            row.addWidget(button)
         else:
             self.heading_selector.setEnabled(False)
         row.addWidget(label("steps of 5°", 11, EMPTY))
@@ -285,7 +291,7 @@ class QGroundObjectMenu(QDialog):
             self.game.settings,
             self._repair_building if self._can_repair else None,
         )
-        caption = heading("Buildings", "destroyed first")
+        caption = heading("Buildings")
         wrecks = repairable_buildings(self.ground_object) if self._can_repair else []
         if wrecks:
             price = self.ground_object.repair_cost() * len(wrecks)
@@ -492,7 +498,7 @@ class QGroundObjectMenu(QDialog):
                 destroyed.remove(dead)
                 logging.info(f"Removed destroyed units {dead}")
 
-    def _set_heading(self, heading: Heading) -> None:
+    def _set_heading(self, heading: Heading) -> None:  # noqa: D401
         if self.heading_selector is not None:
             self.heading_selector.setValue(heading.degrees)
 
