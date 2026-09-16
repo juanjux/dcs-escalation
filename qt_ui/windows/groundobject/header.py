@@ -8,8 +8,7 @@ from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from game.theater import ControlPoint, TheaterGroundObject
 from game.theater.theatergroundobject import BuildingGroundObject
-from game.theater.iadsnetwork.iadsexplain import IadsPicture, NoNetwork
-from game.theater.iadsnetwork.iadsstate import IadsState
+from game.theater.iadsnetwork.iadsexplain import IadsPicture
 from qt_ui.widgets.cards import make_transparent
 from qt_ui.windows.groundobject.buildingcard import buildings_of, reward_for
 from qt_ui.windows.groundobject.common import (
@@ -33,14 +32,6 @@ from qt_ui.windows.pilot.common import (
 
 #: The fill behind the kind chip, per side.
 KIND_FILL = {"BLUE": "#22384A", "RED": "#3B2523", "NEUTRAL": ""}
-
-#: What the site's IADS state reads as, and in what colour.
-STATE_INK = {
-    IadsState.NETWORKED: GREEN,
-    IadsState.AUTONOMOUS: AMBER,
-    IadsState.DARK: "#8E9DAA",
-    IadsState.DESTROYED: RED,
-}
 
 
 class LocationHeader(QWidget):
@@ -99,8 +90,6 @@ class LocationHeader(QWidget):
 
         status = QHBoxLayout()
         status.setSpacing(8)
-        if iads is not None:
-            status.addWidget(self._iads_pill(iads))
         warning = self._warning(ground_object, cp)
         if warning:
             status.addWidget(label(f"▲  {warning}", 12, AMBER))
@@ -172,19 +161,6 @@ class LocationHeader(QWidget):
         if ground_object.is_factory and not cp.has_factory:
             return f"No factory standing at {cp.name} — no ground units are built here"
         return ""
-
-    @staticmethod
-    def _iads_pill(iads: IadsPicture) -> QWidget:
-        if iads.status is not None:
-            ink = STATE_INK[iads.status.state]
-        elif iads.off is NoNetwork.STANDALONE:
-            ink = EMPTY
-        elif iads.off is not None:
-            ink = TEXT_LABEL
-        else:
-            # Infrastructure: it holds other sites up rather than having a state.
-            ink = GREEN if "Destroyed" not in iads.summary else RED
-        return label(iads.summary, 12, ink)
 
     @staticmethod
     def _income(ground_object: TheaterGroundObject) -> QWidget:

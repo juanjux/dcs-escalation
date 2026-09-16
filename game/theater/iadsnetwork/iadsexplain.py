@@ -85,7 +85,12 @@ _WITHOUT_A_NETWORK = {
 @dataclass(frozen=True)
 class IadsPicture:
     status: Optional[IadsStatus]
-    links: tuple[IadsLink, ...]
+
+    #: What this site gives the network: whom it cues, directs, holds up.
+    gives: tuple[IadsLink, ...] = ()
+
+    #: What it needs from elsewhere: early warning, command, comms, power.
+    gets: tuple[IadsLink, ...] = ()
 
     #: Set when there is no network behind this site, and why.
     off: Optional[NoNetwork] = None
@@ -93,6 +98,10 @@ class IadsPicture:
     #: What to say instead of a site's own state: infrastructure has none, it just
     #: holds other things up.
     headline: Optional[str] = None
+
+    @property
+    def links(self) -> tuple[IadsLink, ...]:
+        return self.gives + self.gets
 
     @property
     def verdict(self) -> str:
@@ -130,9 +139,9 @@ def describe(
     skynetiads plugin option, for the same reason.
     """
     if not plugin_enabled:
-        return IadsPicture(None, (), NoNetwork.PLUGIN_OFF)
+        return IadsPicture(None, off=NoNetwork.PLUGIN_OFF)
     if not network.nodes:
-        return IadsPicture(None, (), NoNetwork.CAMPAIGN)
+        return IadsPicture(None, off=NoNetwork.CAMPAIGN)
 
     node = _node_for(tgo, network)
     if node is None:
@@ -141,29 +150,42 @@ def describe(
             # A comms tower or a substation is not a site with a state of its own: it
             # is what other sites are standing on.
             return _infrastructure(tgo, fed, friendly)
-        return IadsPicture(None, (), NoNetwork.STANDALONE)
+        return IadsPicture(None, off=NoNetwork.STANDALONE)
 
     status = network.state_map.status_for(tgo)
     siblings = _same_side(node, network)
     role = node.group.iads_role
-    links: list[IadsLink] = []
+    gives: list[IadsLink] = []
+    gets: list[IadsLink] = []
 
     if getattr(tgo, "carries_gps_jammer", False):
-        # Nobody cues a jammer and it reports to nobody. Power is all it wants.
-        links.extend(_power_links(node, friendly))
-        return IadsPicture(status, tuple(links))
-
-    if role is IadsRole.EWR:
-        links.append(_cues_link(node, siblings, friendly))
+        gives.append(
+            IadsLink(
+                caption="JAMMING",
+                title="Denies GPS inside its bubble",
+                note="nothing in the network is cueing it and nothing depends on it",
+                chip="ON ITS OWN",
+                tone=LinkTone.GOOD,
+            )
+        )
+    elif role is IadsRole.EWR:
+        gives.append(_cues_link(node, siblings, friendly))
+        gives.append(_command_link(node, siblings, friendly))
+    elif role is IadsRole.COMMAND_CENTER:
+        gives.append(_directs_link(node, siblings, friendly))
     else:
-        links.append(_early_warning_link(node, siblings, friendly))
+        if role is IadsRole.SAM_AS_EWR:
+            gives.append(_cues_link(node, siblings, friendly))
+        gets.append(_early_warning_link(node, siblings, friendly))
         if awacs:
-            links.append(_awacs_link(awacs))
-    if role is not IadsRole.COMMAND_CENTER:
-        # It is the command; asking who directs it would answer itself.
-        links.append(_command_link(node, siblings, friendly))
-    links.extend(_power_links(node, friendly))
-    return IadsPicture(status, tuple(links))
+            gets.append(_awacs_link(awacs))
+        gets.append(_command_link(node, siblings, friendly))
+
+    comms = _comms_link(node, friendly)
+    if comms is not None:
+        gets.append(comms)
+    gets.extend(_power_links(node, friendly))
+    return IadsPicture(status, tuple(gives), tuple(gets))
 
 
 # -------------------------------------------------------------------- the rows
@@ -247,7 +269,7 @@ def _cues_link(
         )
     return IadsLink(
         caption="CUES",
-        title=" · ".join(covered),
+        title=_some_of(covered),
         note=(
             "they go autonomous if this radar dies"
             if friendly
@@ -255,6 +277,68 @@ def _cues_link(
         ),
         chip=f"{len(covered)} SITE{'S' if len(covered) > 1 else ''}",
         tone=LinkTone.GOOD,
+    )
+
+
+def _directs_link(
+    node: IadsNetworkNode, siblings: list[IadsNetworkNode], friendly: bool
+) -> IadsLink:
+    """What a command centre is for: the sites it directs."""
+    directed = sorted(
+        _name(other)
+        for other in siblings
+        if other is not node
+        and other.group.iads_role in (IadsRole.SAM, IadsRole.SAM_AS_EWR, IadsRole.EWR)
+    )
+    if not directed:
+        return IadsLink(
+            caption="DIRECTS",
+            title="Nothing on this side",
+            note="no radar or battery of its own side is in the network",
+            chip="NOBODY",
+            tone=LinkTone.INFO,
+        )
+    return IadsLink(
+        caption="DIRECTS",
+        title=_some_of(directed),
+        note=(
+            "they go autonomous if every command centre falls"
+            if friendly
+            else "kill the last command centre and all of them go autonomous"
+        ),
+        chip=f"{len(directed)} SITE{'S' if len(directed) > 1 else ''}",
+        tone=LinkTone.GOOD,
+    )
+
+
+def _comms_link(node: IadsNetworkNode, friendly: bool) -> Optional[IadsLink]:
+    """The comms this site hangs off, when the campaign gave it any."""
+    nodes = [
+        group
+        for group in node.connections.values()
+        if group.iads_role is IadsRole.CONNECTION_NODE
+    ]
+    if not nodes:
+        return None
+    names = _some_of(sorted(group.ground_object.name for group in nodes))
+    if any(group.alive_units > 0 for group in nodes):
+        return IadsLink(
+            caption="COMMS",
+            title=names,
+            note=(
+                "the network reaches it"
+                if friendly
+                else "kill them all and it is cut off from the network"
+            ),
+            chip="UP",
+            tone=LinkTone.GOOD,
+        )
+    return IadsLink(
+        caption="COMMS",
+        title=names,
+        note="destroyed: nothing reaches this site from the network",
+        chip="CUT",
+        tone=LinkTone.BAD,
     )
 
 
@@ -422,7 +506,7 @@ def _infrastructure(
         chip=chip_text,
         tone=tone,
     )
-    return IadsPicture(None, (link,), headline=headline)
+    return IadsPicture(None, gives=(link,), headline=headline)
 
 
 # --------------------------------------------------------------------- helpers
@@ -474,6 +558,13 @@ def _why_down(node: IadsNetworkNode) -> str:
         where = f" ({' · '.join(cut)})" if cut else ""
         return f"it stands, but its comms node is destroyed{where}, so nothing reaches"
     return "it stands, but it has no power, so it is switched off"
+
+
+def _some_of(names: list[str], most: int = 4) -> str:
+    """The names, or how many there are once a list stops being readable."""
+    if len(names) <= most:
+        return " · ".join(names)
+    return f"{' · '.join(names[:most])} and {len(names) - most} more"
 
 
 def _name(node: IadsNetworkNode) -> str:
