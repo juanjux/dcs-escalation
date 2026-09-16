@@ -27,6 +27,7 @@ from game.utils import Heading
 from qt_ui.models import GameModel
 from qt_ui.uiconstants import EVENT_ICONS, ICONS
 from qt_ui.widgets.QBudgetBox import QBudgetBox
+from qt_ui.widgets.coordinatelabel import CoordinateLabel
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.groundobject.QBuildingInfo import QBuildingInfo
 from qt_ui.windows.groundobject.QGroundObjectBuyMenu import QGroundObjectBuyMenu
@@ -160,6 +161,9 @@ class QGroundObjectMenu(QDialog):
                         self.intelLayout.addWidget(repair, i, 1)
                     else:
                         self.intelLayout.addWidget(QLabel("Destroyed"), i, 1)
+                self.intelLayout.addWidget(
+                    CoordinateLabel(unit.position, self.game_model.game.settings), i, 2
+                )
                 i += 1
 
         stretch = QVBoxLayout()
@@ -187,7 +191,12 @@ class QGroundObjectMenu(QDialog):
         for static in self.ground_object.statics:
             if static not in FORTIFICATION_BUILDINGS:
                 self.buildingsLayout.addWidget(
-                    QBuildingInfo(static, self.ground_object, self.repair_building),
+                    QBuildingInfo(
+                        static,
+                        self.ground_object,
+                        self.repair_building,
+                        self.game_model.game.settings,
+                    ),
                     j / 3,
                     j % 3,
                 )

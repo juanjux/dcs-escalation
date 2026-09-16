@@ -1,5 +1,5 @@
 import os
-from typing import Callable
+from typing import Any, Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QGroupBox, QLabel, QPushButton, QVBoxLayout
 
 from game.config import REWARDS
 from game.theater import TheaterUnit
+from qt_ui.widgets.coordinatelabel import CoordinateLabel
 
 
 class QBuildingInfo(QGroupBox):
@@ -15,11 +16,13 @@ class QBuildingInfo(QGroupBox):
         building: TheaterUnit,
         ground_object,
         on_repair: Callable[[TheaterUnit, float], None],
+        settings: Any = None,
     ):
         super(QBuildingInfo, self).__init__()
         self.building = building
         self.ground_object = ground_object
         self.on_repair = on_repair
+        self.settings = settings
         self.init_ui()
 
     def init_ui(self):
@@ -47,6 +50,8 @@ class QBuildingInfo(QGroupBox):
         name_label.setProperty("style", "small")
         name_label.setWordWrap(True)
         layout.addWidget(name_label)
+
+        layout.addWidget(CoordinateLabel(self.building.position, self.settings))
 
         if self.ground_object.category in REWARDS:
             income_label_text = (

@@ -16,6 +16,7 @@ from .optiondescription import OptionDescription, SETTING_DESCRIPTION_KEY
 from .skilloption import pilot_skill_option, skill_option
 from .textoption import text_option
 from ..ato.starttype import StartType
+from game.coordinates import CoordinateFormat
 
 Views = ForcedOptions.Views
 
@@ -53,6 +54,9 @@ class DefaultPlayerLaserCode(Enum):
     DEFAULT_1688 = "Default (1688)"
     ALLOCATE_OWN = "Allocate own (unique per flight)"
 
+
+GENERAL_PAGE = "General"
+GENERAL_PAGE_SECTION = "General"
 
 DIFFICULTY_PAGE = "Difficulty"
 
@@ -108,6 +112,25 @@ def _atmosx_pack_selected(settings: Any) -> bool:
 
 @dataclass
 class Settings:
+    coordinate_format: CoordinateFormat = choices_option(
+        "Coordinate format",
+        page=GENERAL_PAGE,
+        section=GENERAL_PAGE_SECTION,
+        default=CoordinateFormat.DDM,
+        choices={
+            "Degrees, minutes, seconds (N42°03'12\" E042°03'12\")": CoordinateFormat.DMS,
+            "Degrees, minutes, seconds with decimals (N42°03'12.34\")": (
+                CoordinateFormat.DMS_DECIMAL
+            ),
+            "Degrees, decimal minutes (N42°03.200' E042°03.200')": CoordinateFormat.DDM,
+            "Decimal degrees (N42.05333° E042.05333°)": CoordinateFormat.DD,
+            "MGRS (38T MM 96228 13049)": CoordinateFormat.MGRS,
+        },
+        detail=(
+            "How coordinates are written wherever Escalation shows them: the objective"
+            " dialog and the map's coordinate picker."
+        ),
+    )
     version: Optional[str] = None
 
     # Difficulty settings

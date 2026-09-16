@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import (
     controlpoints,
+    coordinates,
     debuggeometries,
     eventstream,
     flights,
@@ -43,6 +44,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(lifespan=_lifespan)
 app.include_router(controlpoints.router)
+app.include_router(coordinates.router)
 app.include_router(debuggeometries.router)
 app.include_router(eventstream.router)
 app.include_router(flights.router)
