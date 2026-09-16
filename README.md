@@ -44,6 +44,12 @@ list is the [pull requests](https://github.com/juanjux/dcs-escalation/pulls?q=is
 
   <img src="https://raw.githubusercontent.com/juanjux/dcs-escalation/juanjux/screenshots/airwing-redesign.png" width="760">
 
+- **Coordinates anywhere on the map, in the format of choice.** A picker reads any
+  point, the objective dialog gives the coordinates of every unit and building, and both
+  copy to the clipboard. DMS, decimal minutes, decimal degrees and MGRS, set on the new
+  General settings page.
+  ([#296](https://github.com/juanjux/dcs-escalation/pull/296))
+
 ### IADS
 
 - **Custom Skynetfork**, [juanjux/Skynet-IADS](https://github.com/juanjux/Skynet-IADS): upstream 3.3.0 with its
@@ -245,6 +251,14 @@ Still to come:
   are expected to field by 2030 (so it required the Eurofighter and F35 mods, which this fork also adds support for), and both navies are built from real hulls with pinned compositions. Air defenses are about a third lighter than the original, the IADS is fully wired, and every base on a front has a motor pool holding its undeployed armor as a bombable target and Morocco has been made stronger to better balance the campaign.
   ([#98](https://github.com/juanjux/dcs-escalation/pull/98))
   
+- **South Atlantic — Gran Polvorin gets an air defence network.** The campaign shipped
+  SAM sites with no comms, no power and no command centres, so every battery fought on
+  its own radar. Both sides are now wired into one network each, with vehicle depots and
+  a GPS jamming site per side.
+  ([#290](https://github.com/juanjux/dcs-escalation/pull/290),
+  [#295](https://github.com/juanjux/dcs-escalation/pull/295))
+- **The Falklands map is called South Atlantic**, as DCS calls it.
+  ([#289](https://github.com/juanjux/dcs-escalation/pull/289))
 - **GPS jamming available in every modern campaign.** 
   ([#183](https://github.com/juanjux/dcs-escalation/pull/183))
 
