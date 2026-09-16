@@ -65,12 +65,6 @@ class ForceGroup:
     statics: list[Type[DcsUnitType]]
     tasks: list[GroupTask] = field(default_factory=list)
     layouts: list[TgoLayout] = field(default_factory=list)
-    #: When a preset group's YAML sets ``hide_on_mfd: true``, its generated
-    #: TheaterGroundObject is hidden from the F10/MFD datalink (e.g. a mobile
-    #: SAM the player must acquire visually / with a HARM rather than target off
-    #: the datalink). Explicit opt-in only -- defaults to False, matching the
-    #: runtime QGroundObjectMenu checkbox / migrator default.
-    hide_on_mfd: bool = False
     #: When a preset group's YAML sets ``never_random: true`` it is offered to the
     #: player but never rolled by the generator. ArmedForces puts every preset group
     #: a faction adopts into the pool random_group_for_task draws from, so without
@@ -155,7 +149,6 @@ class ForceGroup:
             statics=list(preset_group.statics),
             tasks=list(preset_group.tasks),
             layouts=list(preset_group.layouts),
-            hide_on_mfd=preset_group.hide_on_mfd,
             never_random=preset_group.never_random,
         )
 
@@ -296,9 +289,6 @@ class ForceGroup:
                         next(GroundUnitType.for_dcs_type(unit_type)).unit_class
                     )
         go.required_unit_classes = required_classes
-        # Forward the preset group's YAML hide_on_mfd onto the generated object
-        # so a mobile SAM marked hidden is kept off the F10/MFD datalink.
-        go.hide_on_mfd = self.hide_on_mfd
         # Generate all groups using the randomization if it defined
         for tgo_group in layout.groups:
             for unit_group in tgo_group.unit_groups:
@@ -506,7 +496,6 @@ class ForceGroup:
                 statics=statics,
                 tasks=group_tasks,
                 layouts=layouts,
-                hide_on_mfd=bool(data.get("hide_on_mfd", False)),
                 never_random=bool(data.get("never_random", False)),
             )
 

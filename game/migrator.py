@@ -449,7 +449,11 @@ class Migrator:
     def _update_tgos(self) -> None:
         for go in self.game.theater.ground_objects:
             try_set_attr(go, "task", None)
-            try_set_attr(go, "hide_on_mfd", False)
+            # A tri-state now: None means the campaign settings decide. Every
+            # old value was the default or the four preset SAMs the settings now
+            # cover, so the whole map follows them.
+            go.hide_on_mfd = None
+            try_set_attr(go, "mfd_seen_at", None)
             # Movable-ship state added after some saves were written; pickle
             # bypasses __init__, so back-fill it or finish_turn's movement pass
             # raises AttributeError on pre-feature saves.

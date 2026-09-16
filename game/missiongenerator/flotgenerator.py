@@ -1191,7 +1191,7 @@ class FlotGenerator:
             group_size=count,
             heading=heading.degrees,
         )
-        group.hidden_on_mfd = True
+        group.hidden_on_mfd = not self.game.settings.mfd_front
         if tic_managed:
             # TIC requires late-activated originals; it respawns its own
             # single-unit copies at mission start.

@@ -57,6 +57,7 @@ from game.missiongenerator.groundforcepainter import (
     NavalForcePainter,
     GroundForcePainter,
 )
+from game.mfd import shows_on_mfd
 from game.missiongenerator.missiondata import CarrierInfo, MissionData
 from game.point_with_heading import PointWithHeading
 from game.radio.RadioFrequencyContainer import RadioFrequencyContainer
@@ -369,7 +370,9 @@ class GroundObjectGenerator:
             self._register_theater_unit(unit, vehicle_group.units[-1])
         if vehicle_group is None:
             raise RuntimeError(f"Error creating VehicleGroup for {group_name}")
-        vehicle_group.hidden_on_mfd = self.ground_object.hide_on_mfd
+        vehicle_group.hidden_on_mfd = not shows_on_mfd(
+            self.ground_object, self.game.settings
+        )
         return vehicle_group
 
     def create_ship_group(
@@ -407,7 +410,9 @@ class GroundObjectGenerator:
             self._register_theater_unit(unit, ship_group.units[-1])
         if ship_group is None:
             raise RuntimeError(f"Error creating ShipGroup for {group_name}")
-        ship_group.hidden_on_mfd = self.ground_object.hide_on_mfd
+        ship_group.hidden_on_mfd = not shows_on_mfd(
+            self.ground_object, self.game.settings
+        )
         return ship_group
 
     def sail_to_destination(self, destination: Point, group: ShipGroup) -> Heading:
