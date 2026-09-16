@@ -22,8 +22,8 @@ from game.theater import (
 )
 from game.theater.iadsnetwork.iadsexplain import LinkTone
 from game.theater.theatergroundobject import (
+    AirDefenceKind,
     BuildingGroundObject,
-    EwrGroundObject,
     IadsGroundObject,
     NavalGroundObject,
 )
@@ -135,6 +135,14 @@ class Compass(QWidget):
         painter.end()
 
 
+#: Said the same way the map symbol says it, so the chip and the icon agree.
+AIR_DEFENCE_NAMES = {
+    AirDefenceKind.JAMMER: "GPS JAMMER",
+    AirDefenceKind.RADAR: "EWR",
+    AirDefenceKind.BATTERY: "SAM",
+}
+
+
 def kind_of(ground_object: TheaterGroundObject) -> str:
     """What this objective is, in the words the map uses for it."""
     if isinstance(ground_object, BuildingGroundObject):
@@ -142,11 +150,12 @@ def kind_of(ground_object: TheaterGroundObject) -> str:
     if isinstance(ground_object, NavalGroundObject):
         return "NAVAL"
     if isinstance(ground_object, IadsGroundObject):
-        if ground_object.carries_gps_jammer:
-            return "GPS JAMMER"
-        if isinstance(ground_object, EwrGroundObject):
-            return "EWR"
-        return "SAM"
+        kind = ground_object.air_defence_kind
+        if kind is AirDefenceKind.BATTERY and ground_object.task is GroupTask.AAA:
+            # Guns, not missiles. Saying SAM here would be wrong twice over on a site
+            # whose slot is already named AAA.
+            return "AAA"
+        return AIR_DEFENCE_NAMES[kind]
     return "ARMOR"
 
 
