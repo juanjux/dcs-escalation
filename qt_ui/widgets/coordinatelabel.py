@@ -53,7 +53,15 @@ class CoordinateLabel(QWidget):
         copy.setToolTip("Copy these coordinates to the clipboard")
         if compact:
             # A row has no room for a word, and the glyph is the one the map uses.
-            copy.setFixedSize(20, 20)
+            # Styled here rather than left to the app sheet, whose grey gradient
+            # disappears into a dark card.
+            copy.setFixedSize(22, 22)
+            copy.setCursor(Qt.CursorShape.PointingHandCursor)
+            copy.setStyleSheet(
+                "QPushButton { background: #1B2732; color: #9FADB9;"
+                " border: 1px solid #2C3A47; border-radius: 3px; font-size: 12px; }"
+                "QPushButton:hover { background: #24323F; color: #DCE9F4; }"
+            )
         else:
             copy.setMaximumWidth(60)
         copy.clicked.connect(self.copy)
