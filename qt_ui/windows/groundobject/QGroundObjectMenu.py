@@ -8,6 +8,7 @@ chain behind it. Buildings keep their own card until that half is redrawn.
 from __future__ import annotations
 
 import logging
+import math
 from typing import Optional
 
 from PySide6.QtCore import Qt
@@ -46,6 +47,12 @@ from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.groundobject.QBuildingInfo import QBuildingInfo
 from qt_ui.windows.groundobject.QGroundObjectBuyMenu import QGroundObjectBuyMenu
 from qt_ui.widgets.controls import button
+from qt_ui.windows.groundobject.buildingcard import (
+    BuildingCard,
+    buildings_of,
+    repairable_buildings,
+    reward_for,
+)
 from qt_ui.windows.groundobject.common import Compass, two_tone_button
 from qt_ui.windows.groundobject.header import LocationHeader
 from qt_ui.windows.groundobject.iadscard import IadsCard
@@ -54,6 +61,7 @@ from qt_ui.windows.pilot.common import (
     ACCENT,
     Clickable,
     EMPTY,
+    GREEN,
     PANEL,
     Row,
     Stack,
@@ -121,16 +129,15 @@ class QGroundObjectMenu(QDialog):
         body.setSpacing(14)
         if isinstance(self.ground_object, BuildingGroundObject):
             body.addWidget(self._buildings())
+            if iads is not None:
+                body.addWidget(self._iads_card(iads))
+            income = self._income()
+            if income is not None:
+                body.addWidget(income)
         else:
             body.addWidget(self._units())
             if iads is not None:
-                body.addWidget(
-                    captioned(
-                        "IADS network",
-                        IadsCard(iads),
-                        "what feeds this site, and what it does without it",
-                    )
-                )
+                body.addWidget(self._iads_card(iads))
             if self.cruise_missile_rows:
                 body.addWidget(self._cruise_missiles())
             body.addWidget(self._heading())
@@ -170,7 +177,7 @@ class QGroundObjectMenu(QDialog):
             shortcut = Clickable(f"Repair all destroyed · ${price}M", 11, ACCENT)
             shortcut.clicked.connect(self._repair_all)
             # After the stretch the caption ends with, so it sits on the right.
-            caption.layout().addWidget(shortcut)
+            _right_of(caption, shortcut)
 
         holder = QWidget()
         make_transparent(holder)
@@ -181,6 +188,14 @@ class QGroundObjectMenu(QDialog):
         column.addWidget(self._scrollable(units))
         holder.setLayout(column)
         return holder
+
+    @staticmethod
+    def _iads_card(iads: IadsPicture) -> QWidget:
+        return captioned(
+            "IADS network",
+            IadsCard(iads),
+            "what feeds this site, and what it does without it",
+        )
 
     def _scrollable(self, inner: QWidget) -> QWidget:
         rows = sum(len(group.units) + 1 for group in self.ground_object.groups)
@@ -264,50 +279,67 @@ class QGroundObjectMenu(QDialog):
         return captioned("On the MFD", holder)
 
     def _buildings(self) -> QWidget:
-        """The building side of a location, as it was until its own redesign."""
-        box = QGroupBox("Buildings:")
-        grid = QGridLayout()
-        index = 0
-        total_income = 0
-        received_income = 0
-        for static in self.ground_object.statics:
-            if static not in FORTIFICATION_BUILDINGS:
-                grid.addWidget(
-                    QBuildingInfo(
-                        static,
-                        self.ground_object,
-                        self._repair_building,
-                        self.game.settings,
-                    ),
-                    index // 3,
-                    index % 3,
-                )
-                index += 1
-            if self.ground_object.category in REWARDS:
-                total_income += REWARDS[self.ground_object.category]
-                if static.alive:
-                    received_income += REWARDS[self.ground_object.category]
-            else:
-                logging.warning(f"{self.ground_object.category} not in REWARDS")
-        box.setLayout(grid)
-
-        if not self.cp.captured.is_blue:
-            return box
+        assert isinstance(self.ground_object, BuildingGroundObject)
+        card = BuildingCard(
+            self.ground_object,
+            self.game.settings,
+            self._repair_building if self._can_repair else None,
+        )
+        caption = heading("Buildings", "destroyed first")
+        wrecks = repairable_buildings(self.ground_object) if self._can_repair else []
+        if wrecks:
+            price = self.ground_object.repair_cost() * len(wrecks)
+            shortcut = Clickable(f"Repair all · ${price:g}M", 11, ACCENT)
+            shortcut.clicked.connect(self._repair_all_buildings)
+            _right_of(caption, shortcut)
 
         holder = QWidget()
         make_transparent(holder)
         column = QVBoxLayout()
         column.setContentsMargins(0, 0, 0, 0)
-        column.setSpacing(14)
-        column.addWidget(box)
-        finances = QGroupBox("Finances:")
-        row = QHBoxLayout()
-        row.addWidget(QLabel(f"Available: {total_income}M"))
-        row.addWidget(QLabel(f"Receiving: {received_income}M"))
-        finances.setLayout(row)
-        column.addWidget(finances)
+        column.setSpacing(5)
+        column.addWidget(caption)
+        column.addWidget(card)
         holder.setLayout(column)
         return holder
+
+    def _income(self) -> Optional[QWidget]:  # noqa: D401
+        """The two figures the old finances box showed, and what they mean.
+
+        Plus the one a player actually asks: how long a repair takes to pay for itself.
+        """
+        if not isinstance(self.ground_object, BuildingGroundObject):
+            return None
+        reward = reward_for(self.ground_object)
+        if not reward or not self._friendly:
+            return None
+        buildings = buildings_of(self.ground_object)
+        standing = sum(1 for building in buildings if building.alive)
+        price = self.ground_object.repair_cost()
+
+        rows = [
+            ("When all standing", f"${len(buildings) * reward:g}M / turn", TEXT_BASE),
+            ("Receiving now", f"${standing * reward:g}M / turn", GREEN),
+        ]
+        if standing < len(buildings) and price > 0:
+            turns = math.ceil(price / reward)
+            rows.append(
+                (
+                    "Repair pays back in",
+                    f"{turns} turns  (${price:g}M ÷ ${reward:g}M)",
+                    TEXT_BASE,
+                )
+            )
+
+        stack = Stack()
+        for name, value, ink in rows:
+            row = Row(height=32)
+            row.add(label(name, 12, TEXT_LABEL))
+            row.stretch()
+            row.add(label(value, 12.5, ink, bold=True, monospace=True))
+            stack.append(row)
+        stack.refresh()
+        return captioned("Income", stack)
 
     def _footer(self) -> QWidget:
         holder = QWidget()
@@ -335,7 +367,7 @@ class QGroundObjectMenu(QDialog):
         )
         if self._can_trade:
             row.addWidget(button("Buy / replace…", handler=self._buy_group))
-        row.addWidget(button("Close", "primary", handler=self.close))
+        row.addWidget(button("Close", "primary", handler=self._close))
         holder.setLayout(row)
         return holder
 
@@ -404,6 +436,15 @@ class QGroundObjectMenu(QDialog):
 
     # ------------------------------------------------------------------- actions
 
+    def _repair_all_buildings(self) -> None:
+        assert isinstance(self.ground_object, BuildingGroundObject)
+        price = self.ground_object.repair_cost()
+        for building in repairable_buildings(self.ground_object):
+            if self.game.blue.budget <= price:
+                break
+            self._repair_building(building, price, refresh=False)
+        self._update_game()
+
     def _repair_all(self) -> None:
         for unit in repairable_units(self.ground_object):
             price = price_of(unit)
@@ -426,7 +467,9 @@ class QGroundObjectMenu(QDialog):
         if refresh:
             self._update_game()
 
-    def _repair_building(self, unit: TheaterUnit, price: int) -> None:
+    def _repair_building(
+        self, unit: TheaterUnit, price: float, refresh: bool = True
+    ) -> None:
         if self.game.blue.budget > price:
             self.game.blue.budget -= price
             turns = self.game.settings.building_repair_turns
@@ -437,7 +480,8 @@ class QGroundObjectMenu(QDialog):
                 unit.repair_turns_remaining = turns
                 logging.info(f"Scheduled building repair: {unit.unit_name}")
             GameUpdateSignal.get_instance().updateGame(self.game)
-        self._update_game()
+        if refresh:
+            self._update_game()
 
     def _revive(self, unit: TheaterUnit) -> None:
         unit.alive = True
@@ -456,6 +500,9 @@ class QGroundObjectMenu(QDialog):
         self.ground_object.rotate(heading)
         if self.compass is not None:
             self.compass.set_heading(heading)
+
+    def _close(self) -> None:
+        self.close()
 
     def _sell_all(self) -> None:
         self._update_total_value()
@@ -486,3 +533,10 @@ class QGroundObjectMenu(QDialog):
         EventStream.put_nowait(events)
         GameUpdateSignal.get_instance().updateGame(self.game)
         self._rebuild()
+
+
+def _right_of(caption: QWidget, widget: QWidget) -> None:
+    """Put a control at the right-hand end of a caption row."""
+    row = caption.layout()
+    assert row is not None
+    row.addWidget(widget)

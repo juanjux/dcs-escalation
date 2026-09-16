@@ -139,10 +139,29 @@ class Compass(QWidget):
         painter.end()
 
 
+#: The campaign's category keys, in the words a player would use for them.
+BUILDING_NAMES = {
+    "allycamp": "ALLY CAMP",
+    "ammo": "AMMO DEPOT",
+    "commandcenter": "COMMAND CENTRE",
+    "comms": "COMMS",
+    "derrick": "DERRICK",
+    "factory": "FACTORY",
+    "farp": "FARP",
+    "fuel": "FUEL DEPOT",
+    "oil": "OIL",
+    "power": "POWER STATION",
+    "village": "VILLAGE",
+    "ware": "WAREHOUSE",
+    "ww2bunker": "BUNKER",
+}
+
+
 def kind_of(ground_object: TheaterGroundObject) -> str:
     """What this objective is, in the words the map uses for it."""
     if isinstance(ground_object, BuildingGroundObject):
-        return ground_object.category.upper()
+        category = ground_object.category
+        return BUILDING_NAMES.get(category, category.upper())
     if isinstance(ground_object, NavalGroundObject):
         return "NAVAL"
     if isinstance(ground_object, IadsGroundObject):
