@@ -37,6 +37,7 @@ from game.data.building_data import FORTIFICATION_BUILDINGS
 from game.server import EventStream
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater import ControlPoint, Player, TheaterGroundObject
+from game.mfd import Band, MfdIntel, band_of, is_mobile, shows_on_mfd
 from game.theater.iadsnetwork.iadsexplain import IadsPicture, describe
 from game.theater.theatergroundobject import BuildingGroundObject
 from game.theater.theatergroup import TheaterUnit
@@ -278,16 +279,28 @@ class QGroundObjectMenu(QDialog):
         row = QHBoxLayout()
         row.setContentsMargins(14, 10, 14, 10)
         row.setSpacing(10)
+        shown = shows_on_mfd(self.ground_object, self.game.settings)
         box = QCheckBox("Shown as a threat in the cockpit")
-        box.setChecked(not self.ground_object.hide_on_mfd)
+        box.setChecked(shown)
         box.stateChanged.connect(
+            # An explicit answer for this site, which outlives a change to the
+            # campaign settings.
             lambda state: setattr(self.ground_object, "hide_on_mfd", not bool(state))
         )
         row.addWidget(box)
-        row.addWidget(label("off = hidden from the MFD, still on the map", 11, EMPTY))
+        row.addWidget(label(self._mfd_hint(shown), 11, EMPTY))
         row.addStretch()
         holder.setLayout(row)
         return captioned("On the MFD", holder)
+
+    def _mfd_hint(self, shown: bool) -> str:
+        """Why the box is where it is, since the campaign settings usually decide."""
+        if self.ground_object.hide_on_mfd is not None:
+            return "set for this site; the campaign setting does not move it"
+        band = band_of(self.ground_object).value
+        kind = "mobile" if is_mobile(self.ground_object) else "emplaced"
+        verb = "shows" if shown else "hides"
+        return f"the campaign {verb} {kind} {band} range air defence"
 
     def _buildings(self) -> QWidget:
         assert isinstance(self.ground_object, BuildingGroundObject)

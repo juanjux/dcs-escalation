@@ -17,6 +17,7 @@ from .skilloption import pilot_skill_option, skill_option
 from .textoption import text_option
 from ..ato.starttype import StartType
 from game.coordinates import CoordinateFormat
+from game.mfd import MfdIntel
 
 Views = ForcedOptions.Views
 
@@ -79,6 +80,14 @@ DOCTRINE_DISTANCES_SECTION = "Doctrine distances"
 
 
 MISSION_GENERATOR_PAGE = "Mission Generator"
+MFD_SECTION = "SAMs shown on the cockpit displays"
+
+#: The same three answers for every band of mobile air defence.
+MFD_INTEL_CHOICES = {
+    "Not shown": MfdIntel.NEVER,
+    "Shown where it is now": MfdIntel.CURRENT,
+    "Shown where it was last turn": MfdIntel.LAST_TURN,
+}
 
 LIVE_PILOTS_PAGE = "Live Pilots"
 LIVE_PILOTS_RANKS_SECTION = "Ranks"
@@ -1618,6 +1627,71 @@ class Settings:
         default=False,
     )
     # Performance culling
+    #: What the cockpit displays are allowed to show of the enemy's air defence.
+    #: DCS paints a ring for every site it is not told to hide, so without these the
+    #: whole map is on the SA page from the first mission.
+    mfd_static_long: bool = boolean_option(
+        "Emplaced long range",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=True,
+        detail=(
+            "Patriot, S-300 and the like. They do not move, so a satellite picture of "
+            "them stays true."
+        ),
+    )
+    mfd_static_medium: bool = boolean_option(
+        "Emplaced medium range",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=True,
+        detail="SA-2, SA-3, Hawk, NASAMS.",
+    )
+    mfd_static_short: bool = boolean_option(
+        "Emplaced short range",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=False,
+        detail="Rapier, gun emplacements and anything else that reaches under 7 nm.",
+    )
+    mfd_mobile_long: MfdIntel = choices_option(
+        "Mobile long range",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=MfdIntel.LAST_TURN,
+        choices=MFD_INTEL_CHOICES,
+        detail=(
+            "A system that shoots from where it drives. Last turn shows it where it "
+            "was when the turn began, and not at all once it has moved."
+        ),
+    )
+    mfd_mobile_medium: MfdIntel = choices_option(
+        "Mobile medium range",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=MfdIntel.LAST_TURN,
+        choices=MFD_INTEL_CHOICES,
+        detail="SA-6, SA-11, SA-17, Buk M3.",
+    )
+    mfd_mobile_short: MfdIntel = choices_option(
+        "Mobile short range",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=MfdIntel.NEVER,
+        choices=MFD_INTEL_CHOICES,
+        detail="Tor, Osa, Tunguska, Avenger, Shilka, MANPADS.",
+    )
+    mfd_front: bool = boolean_option(
+        "Front line",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=False,
+        detail=(
+            "The air defence travelling with the ground forces at the front, which "
+            "moves with them."
+        ),
+    )
+
     perf_culling: bool = boolean_option(
         "Culling of distant units enabled",
         page=MISSION_GENERATOR_PAGE,

@@ -25,6 +25,7 @@ from dcs.vehicles import AirDefence
 from game.ato.closestairfields import ObjectiveDistanceCache
 from game.dcs.skills import experience_for_skill
 from game.ground_forces.ai_ground_planner import GroundPlanner
+from game.mfd import remember_positions
 from game.models.game_stats import GameStats
 from game.plugins import LuaPluginManager
 from game.utils import Distance
@@ -487,6 +488,14 @@ class Game:
         # zero, and the transports already on the road are named from the last one.
         naming.namegen = self.name_generator
         self._resume_transport_names()
+        # A campaign that has never had a turn pass still has a picture of itself:
+        # what is standing when it starts is what a satellite would have found.
+        remember_positions(
+            tgo
+            for cp in self.theater.controlpoints
+            for tgo in cp.connected_objectives
+            if getattr(tgo, "mfd_seen_at", None) is None
+        )
         LuaPluginManager.load_settings(self.settings)
         ObjectiveDistanceCache.set_theater(self.theater)
         self.compute_unculled_zones(GameUpdateEvents())
@@ -644,6 +653,13 @@ class Game:
         logging.info("Pass turn")
         with logged_duration("Turn finalization"):
             self.finish_turn(events, no_action)
+            # What a satellite would have found as the new turn begins. A site put
+            # up or moved later in the turn is not in the picture.
+            remember_positions(
+                tgo
+                for cp in self.theater.controlpoints
+                for tgo in cp.connected_objectives
+            )
 
         with logged_duration("Turn initialization"):
             self.initialize_turn(events)

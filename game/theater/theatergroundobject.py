@@ -134,7 +134,7 @@ class TheaterGroundObject(MissionTarget, SidcDescribable, ABC):
         control_point: ControlPoint,
         sea_object: bool,
         task: Optional[GroupTask],
-        hide_on_mfd: bool = False,
+        hide_on_mfd: Optional[bool] = None,
     ) -> None:
         super().__init__(name, location)
         self.id = uuid.uuid4()
@@ -146,7 +146,13 @@ class TheaterGroundObject(MissionTarget, SidcDescribable, ABC):
         self.original_name = location.original_name
         self._threat_poly: ThreatPoly | None = None
         self.task = task
+        #: The player's own answer for this site, or None to follow the campaign
+        #: settings. A site nobody has touched moves with them.
         self.hide_on_mfd = hide_on_mfd
+
+        #: Where this site was when the turn began, for the settings that only show
+        #: what a picture taken then would have found.
+        self.mfd_seen_at: Optional[Point] = None
         self.required_unit_classes: set[UnitClass] = set()
 
     def __getstate__(self) -> dict[str, Any]:
