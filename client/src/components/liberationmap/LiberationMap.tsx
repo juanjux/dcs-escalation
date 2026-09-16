@@ -1,6 +1,7 @@
 import { selectMapCenter, selectMapZoom } from "../../api/mapSlice";
 import { useAppSelector } from "../../app/hooks";
 import MapLayersControl from "../maplayers/MapLayersControl";
+import CoordinatePicker from "../coordinatepicker";
 import MapSearch from "../mapsearch";
 import LeafletRuler from "../ruler/Ruler";
 import "./LiberationMap.css";
@@ -28,6 +29,7 @@ export default function LiberationMap() {
       <LeafletRuler />
       <MapLayersControl />
       <MapSearch />
+      <CoordinatePicker />
     </MapContainer>
   );
 }
