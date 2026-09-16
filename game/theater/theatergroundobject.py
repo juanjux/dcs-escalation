@@ -25,6 +25,8 @@ from game.sidc import (
 from game.theater.presetlocation import PresetLocation
 from .missiontarget import MissionTarget
 from .player import Player
+from enum import Enum
+
 from ..data.groups import GroupTask
 from ..utils import Distance, Heading, meters, nautical_miles
 
@@ -661,6 +663,42 @@ LAUNCHER_CLASSES = frozenset(
 )
 
 
+#: What counts as having something to look with, for a site with nothing that shoots.
+RADAR_CLASSES = frozenset(
+    {
+        UnitClass.EARLY_WARNING_RADAR,
+        UnitClass.SEARCH_RADAR,
+        UnitClass.SEARCH_TRACK_RADAR,
+        UnitClass.SPECIALIZED_RADAR,
+        UnitClass.TRACK_RADAR,
+    }
+)
+
+#: The slots a campaign puts a missile battery or a gun in.
+AIR_DEFENCE_TASKS = frozenset(
+    {
+        GroupTask.AAA,
+        GroupTask.LORAD,
+        GroupTask.MERAD,
+        GroupTask.POINT_DEFENSE,
+        GroupTask.SHORAD,
+    }
+)
+
+
+class AirDefenceKind(Enum):
+    """The three things an air-defence site can be, whatever it was created as."""
+
+    #: Denies GPS. Has no radar and cues nobody.
+    JAMMER = "jammer"
+
+    #: Shoots: a missile battery or a gun.
+    BATTERY = "battery"
+
+    #: Looks: an early-warning or search radar.
+    RADAR = "radar"
+
+
 class IadsGroundObject(TheaterGroundObject, ABC):
     def __init__(
         self,
@@ -693,26 +731,55 @@ class IadsGroundObject(TheaterGroundObject, ABC):
         )
 
     @property
-    def symbol_set_and_entity(self) -> tuple[SymbolSet, Entity]:
-        """Read the symbol off the site, not off the class it was created as.
+    def air_defence_kind(self) -> AirDefenceKind:
+        """What this site is, read off what is parked there.
 
         A radar site, a missile battery and a jamming site are interchangeable on the
-        map now -- you can buy any of the three where any one of them stands -- so the
-        class the campaign happened to create no longer says what is parked there. A
-        jammer wins over everything (it is the thing worth telling apart), a launcher
-        beats a bare radar, and a site with neither is a radar.
+        map -- any of the three can be bought where any one of them stands -- so the
+        class the campaign created the site as does not answer the question. A jammer
+        wins over everything (it is the thing worth telling apart), then a launcher,
+        then a radar.
+
+        An emptied site has nothing to read: a captured or disbanded one keeps no
+        units at all. What is left is the slot the campaign gave it, which is what it
+        will be again the moment something is bought there.
         """
+        if self.carries_gps_jammer:
+            return AirDefenceKind.JAMMER
+
         shoots = False
+        sees = False
         for group in self.groups:
             for unit in group.units:
                 unit_type = unit.unit_type
                 if unit_type is not None and getattr(unit_type, "gps_jamming", None):
                     continue
-                if getattr(unit_type, "unit_class", None) in LAUNCHER_CLASSES:
+                unit_class = getattr(unit_type, "unit_class", None)
+                if unit_class in LAUNCHER_CLASSES:
                     shoots = True
-        if self.carries_gps_jammer:
-            return SymbolSet.LAND_UNIT, LandUnitEntity.ELECTRONIC_WARFARE_JAMMING
+                elif unit_class in RADAR_CLASSES:
+                    sees = True
         if shoots:
+            return AirDefenceKind.BATTERY
+        if sees:
+            return AirDefenceKind.RADAR
+
+        if self.task is GroupTask.EARLY_WARNING_RADAR:
+            return AirDefenceKind.RADAR
+        if self.task in AIR_DEFENCE_TASKS:
+            return AirDefenceKind.BATTERY
+        return (
+            AirDefenceKind.RADAR
+            if isinstance(self, EwrGroundObject)
+            else AirDefenceKind.BATTERY
+        )
+
+    @property
+    def symbol_set_and_entity(self) -> tuple[SymbolSet, Entity]:
+        kind = self.air_defence_kind
+        if kind is AirDefenceKind.JAMMER:
+            return SymbolSet.LAND_UNIT, LandUnitEntity.ELECTRONIC_WARFARE_JAMMING
+        if kind is AirDefenceKind.BATTERY:
             return SymbolSet.LAND_UNIT, LandUnitEntity.AIR_DEFENSE
         return SymbolSet.LAND_EQUIPMENT, LandEquipmentEntity.RADAR
 

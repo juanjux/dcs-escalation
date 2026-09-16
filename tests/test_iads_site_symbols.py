@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from game.data.groups import GroupTask
 from game.data.units import UnitClass
 from game.sidc import (
     Entity,
@@ -28,6 +29,7 @@ def _site(
     kind: type[IadsGroundObject],
     unit_classes: list[UnitClass],
     jamming: bool = False,
+    task: GroupTask | None = None,
 ) -> IadsGroundObject:
     site: IadsGroundObject = object.__new__(kind)
     units: list[MagicMock] = []
@@ -43,7 +45,8 @@ def _site(
         units.append(jammer)
     group = MagicMock()
     group.units = units
-    site.groups = [group]
+    site.groups = [group] if units else []
+    site.task = task
     return site
 
 
@@ -82,3 +85,26 @@ def test_the_class_it_was_created_as_does_not_decide() -> None:
         SymbolSet.LAND_EQUIPMENT,
         LandEquipmentEntity.RADAR,
     )
+
+
+def test_an_emptied_site_keeps_the_slot_it_was_given() -> None:
+    """Capturing a site clears it, and a cleared one has no units left to read."""
+    gun = _site(SamGroundObject, [], task=GroupTask.AAA)
+    radar = _site(SamGroundObject, [], task=GroupTask.EARLY_WARNING_RADAR)
+
+    assert _symbol(gun) == (SymbolSet.LAND_UNIT, LandUnitEntity.AIR_DEFENSE)
+    assert _symbol(radar) == (SymbolSet.LAND_EQUIPMENT, LandEquipmentEntity.RADAR)
+
+
+def test_an_emptied_site_without_a_slot_falls_back_to_its_class() -> None:
+    battery = _site(SamGroundObject, [], task=None)
+    radar = _site(EwrGroundObject, [], task=None)
+
+    assert _symbol(battery) == (SymbolSet.LAND_UNIT, LandUnitEntity.AIR_DEFENSE)
+    assert _symbol(radar) == (SymbolSet.LAND_EQUIPMENT, LandEquipmentEntity.RADAR)
+
+
+def test_support_trucks_alone_do_not_make_a_battery_a_radar() -> None:
+    site = _site(SamGroundObject, [UnitClass.LOGISTICS], task=GroupTask.MERAD)
+
+    assert _symbol(site) == (SymbolSet.LAND_UNIT, LandUnitEntity.AIR_DEFENSE)
