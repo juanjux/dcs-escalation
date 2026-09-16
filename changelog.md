@@ -1,7 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[UI]** Coordinates: the map has a picker that reads any point on it, the objective dialog gives the coordinates of every unit and building with a Copy button, and a new *General* settings page chooses the format (DMS, decimal minutes, decimal degrees or MGRS).
+* **[UI]** Coordinates: the map has a GPS picker that reads any point on it, the objective dialog gives the coordinates of every unit and building with a Copy button, and a new *General* settings page chooses the format (DMS, decimal minutes, decimal degrees or MGRS).
 * **[Campaigns]** Gran Polvorin has an air defence network: its SAM sites and EWRs are wired to comms towers, power stations and two command centres, the islands get a network of their own, and it gains vehicle depots and two more GPS jamming sites. NEW game required.
 * **[Mission Plugins]** **Realistic CAS** adds gradual ground-target discovery for both coalitions through visual, EO/IR and ground-radar observations, with terrain LOS and approximate weather, daylight and cover effects. Firing reveals a group immediately; contacts expire after a configurable lifetime. Ground combat shares the fog, while fixed map SAM objectives remain known and frontline SAMs do not. Experimental and off by default, with bounded processing and optional diagnostic logging; F10 and weapon accuracy are unchanged. Requires TIC, CTLD autolase and Moose Autolase to be disabled and temporarily omits generated legacy JTACs. CTLD logistics can stay enabled. Campaign-scale tuning and replacement JTACs remain pending. ([#195](https://github.com/juanjux/dcs-escalation/pull/195))
 * **[Live Pilots]** A pilot who is liked more than he likes back comes round sooner: each point between the two halves of a pair adds to his chance of warming (5% a point by default, a new setting under Friendship). The cooling roll is untouched, and the pilot who is already the warmer of the two gains nothing.
@@ -154,6 +154,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** The map's coordinate picker copied nothing: the map is loaded from a file:// page, where the browser's clipboard API is not available. Clicking the coordinates copies them too.
 
 * **[UI]** Cancelling Save As or failing to save no longer closes the campaign after choosing to save on exit. Failed saves show an error and preserve the previous save path. Save/close decisions are logged for troubleshooting.
 * **[FIX]** A pilot on leave could not be called back while his squadron was at full strength, which it usually is: he holds his own place the whole time he is away, so coming back takes nobody else's.
