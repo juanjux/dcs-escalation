@@ -25,7 +25,11 @@ class CoordinateLabel(QWidget):
     """
 
     def __init__(
-        self, position: Point, settings: Any, parent: Optional[QWidget] = None
+        self,
+        position: Point,
+        settings: Any,
+        parent: Optional[QWidget] = None,
+        compact: bool = False,
     ) -> None:
         super().__init__(parent)
         self.text = format_for(settings, position)
@@ -37,15 +41,25 @@ class CoordinateLabel(QWidget):
         label = QLabel(self.text)
         label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         label.setProperty("style", "small")
+        if compact:
+            label.setStyleSheet(
+                "font-size: 11px; color: #8E9DAA; background: transparent;"
+                " border: none;"
+            )
         layout.addWidget(label)
 
-        copy = QPushButton("Copy")
+        copy = QPushButton("⧉" if compact else "Copy")
         copy.setProperty("style", "btn-small")
         copy.setToolTip("Copy these coordinates to the clipboard")
-        copy.setMaximumWidth(60)
+        if compact:
+            # A row has no room for a word, and the glyph is the one the map uses.
+            copy.setFixedSize(20, 20)
+        else:
+            copy.setMaximumWidth(60)
         copy.clicked.connect(self.copy)
         layout.addWidget(copy)
-        layout.addStretch()
+        if not compact:
+            layout.addStretch()
 
         self.setLayout(layout)
 
