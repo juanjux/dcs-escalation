@@ -41,6 +41,11 @@
   font-weight: 600;
   margin-bottom: 6px;
   user-select: text;
+  cursor: pointer;
+}
+
+.cp-text:hover {
+  text-decoration: underline;
 }
 
 .cp-others {

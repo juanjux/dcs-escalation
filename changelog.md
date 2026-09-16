@@ -154,6 +154,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** The map's coordinate picker copied nothing: the map is loaded from a file:// page, where the browser's clipboard API is not available. Clicking the coordinates copies them too.
 
 * **[UI]** Cancelling Save As or failing to save no longer closes the campaign after choosing to save on exit. Failed saves show an error and preserve the previous save path. Save/close decisions are logged for troubleshooting.
 * **[FIX]** A pilot on leave could not be called back while his squadron was at full strength, which it usually is: he holds his own place the whole time he is away, so coming back takes nobody else's.

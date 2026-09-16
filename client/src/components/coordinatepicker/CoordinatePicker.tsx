@@ -8,6 +8,7 @@
 // The formatting is the server's, so the picker, the objective dialog and anything
 // added later say the same thing about the same spot.
 import { HTTP_URL } from "../../api/backend";
+import { copyText } from "./clipboard";
 import "./CoordinatePicker.css";
 import L, { LatLng } from "leaflet";
 import { useEffect, useRef, useState } from "react";
@@ -75,12 +76,7 @@ export default function CoordinatePicker() {
   });
 
   const copy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-    } catch (error) {
-      console.error("Could not copy to the clipboard", error);
-    }
+    setCopied(await copyText(text));
   };
 
   return (
@@ -104,7 +100,13 @@ export default function CoordinatePicker() {
         >
           <Popup autoPan={false}>
             <div className="cp-popup">
-              <div className="cp-text">{picked.text}</div>
+              <div
+                className="cp-text"
+                title="Copy"
+                onClick={() => copy(picked.text)}
+              >
+                {picked.text}
+              </div>
               <button onClick={() => copy(picked.text)}>
                 {copied ? "Copied" : "Copy"}
               </button>
