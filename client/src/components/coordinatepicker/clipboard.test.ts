@@ -1,6 +1,6 @@
 /**
- * The map is loaded from a file:// URL inside the Qt web view, where Chromium does not
- * expose navigator.clipboard at all, so the copy has to fall back to execCommand.
+ * The map is loaded from a file:// URL inside the Qt web view, where writing through
+ * navigator.clipboard is refused, so the copy has to fall back to execCommand.
  */
 import { copyText } from "./clipboard";
 

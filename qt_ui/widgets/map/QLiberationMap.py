@@ -41,6 +41,13 @@ class QLiberationMap(QWebEngineView):
             QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
         )
 
+        # The map copies coordinates to the clipboard through execCommand, which the web
+        # view blocks unless this is on. The asynchronous clipboard API is not an
+        # alternative: it is defined on a file:// page but rejects every write.
+        self.page.settings().setAttribute(
+            QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True
+        )
+
         if dev:
             url = QUrl("http://localhost:3000")
         else:
