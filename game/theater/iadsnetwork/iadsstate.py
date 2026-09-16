@@ -266,7 +266,7 @@ class IadsStateMap:
             # one thing it does want, and that was answered above.
             return IadsStatus(
                 IadsState.NETWORKED,
-                "Jamming GPS: it needs power, but no network." + mains_note,
+                "Jamming GPS: it only needs power." + mains_note,
                 False,
             )
 

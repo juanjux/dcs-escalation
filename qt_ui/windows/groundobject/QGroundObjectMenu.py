@@ -194,9 +194,14 @@ class QGroundObjectMenu(QDialog):
         holder.setLayout(column)
         return holder
 
-    @staticmethod
-    def _iads_card(iads: IadsPicture) -> QWidget:
-        return captioned("IADS network", IadsCard(iads))
+    def _iads_card(self, iads: IadsPicture) -> QWidget:
+        return captioned("IADS network", IadsCard(iads, self._open_site))
+
+    def _open_site(self, objective: TheaterGroundObject) -> None:
+        """Open the location dialog of a site this one is wired to."""
+        QGroundObjectMenu(
+            self.parentWidget(), objective, objective.control_point, self.game_model
+        ).show()
 
     @staticmethod
     def _toggle_folds(units: UnitCard, control: Clickable) -> None:

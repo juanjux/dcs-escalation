@@ -345,7 +345,7 @@ def test_a_substation_says_what_it_holds_up() -> None:
 
     assert picture.verdict == "INFRASTRUCTURE"
     assert "2 sites" in picture.summary
-    feeds = _link(picture, "FEEDS")
+    feeds = _link(picture, "POWERS")
     assert feeds.chip == "2 SITES"
     assert feeds.title == "KAKAPO · ORIOLE"
 
@@ -357,5 +357,39 @@ def test_a_destroyed_substation_says_what_it_cost() -> None:
 
     picture = describe(substation.ground_object, network)
 
-    assert _link(picture, "FEEDS").chip == "CUT"
+    assert _link(picture, "POWERS").chip == "CUT"
     assert "on its own" in picture.summary
+
+
+def test_an_antenna_connects_rather_than_feeding() -> None:
+    antenna = _group("CARACAL", IadsRole.CONNECTION_NODE)
+    sam = _group("KAKAPO", IadsRole.SAM)
+    network = _network(_node(sam, antenna))
+
+    picture = describe(antenna.ground_object, network)
+
+    link = _link(picture, "CONNECTS")
+    assert "losing comms" in link.note
+
+
+def test_a_row_carries_the_objectives_it_names() -> None:
+    """So the names in it can be opened."""
+    sam = _group("KAKAPO", IadsRole.SAM)
+    substation = _group("Creech", IadsRole.POWER_SOURCE)
+    network = _network(_node(sam, substation))
+
+    power = _link(describe(sam.ground_object, network), "POWER")
+
+    assert [place.name for place in power.places] == ["Creech"]
+    assert power.places[0].objective is substation.ground_object
+
+
+def test_a_jammer_is_not_asked_about_comms() -> None:
+    jammer = _group("SCARAB", IadsRole.EWR)
+    jammer.ground_object.carries_gps_jammer = True
+    comms = _group("CARACAL", IadsRole.CONNECTION_NODE)
+    network = _network(_node(jammer, comms))
+
+    picture = describe(jammer.ground_object, network)
+
+    assert [link.caption for link in picture.gets] == ["POWER"]
