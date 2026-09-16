@@ -7,9 +7,11 @@ from typing import Optional
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from game.theater import ControlPoint, TheaterGroundObject
+from game.theater.theatergroundobject import BuildingGroundObject
 from game.theater.iadsnetwork.iadsexplain import IadsPicture, NoNetwork
 from game.theater.iadsnetwork.iadsstate import IadsState
 from qt_ui.widgets.cards import make_transparent
+from qt_ui.windows.groundobject.buildingcard import buildings_of, reward_for
 from qt_ui.windows.groundobject.common import (
     DESTROYED_INK,
     HealthBar,
@@ -59,7 +61,12 @@ class LocationHeader(QWidget):
         row.setContentsMargins(16, 12, 16, 12)
         row.setSpacing(12)
         row.addWidget(self._identity(ground_object, cp, iads), 1)
-        row.addWidget(self._health(ground_object))
+        if isinstance(ground_object, BuildingGroundObject) and reward_for(
+            ground_object
+        ):
+            row.addWidget(self._income(ground_object))
+        else:
+            row.addWidget(self._health(ground_object))
         self.setLayout(row)
 
     def _identity(
@@ -94,6 +101,9 @@ class LocationHeader(QWidget):
         status.setSpacing(8)
         if iads is not None:
             status.addWidget(self._iads_pill(iads))
+        warning = self._warning(ground_object, cp)
+        if warning:
+            status.addWidget(label(f"▲  {warning}", 12, AMBER))
         damage = self._damage(ground_object)
         if damage:
             status.addWidget(chip(damage, RED, "#2A1A1A"))
@@ -104,6 +114,15 @@ class LocationHeader(QWidget):
 
     @staticmethod
     def _figures(ground_object: TheaterGroundObject, cp: ControlPoint) -> str:
+        if isinstance(ground_object, BuildingGroundObject):
+            buildings = buildings_of(ground_object)
+            count = len(buildings)
+            parts = [cp.name, f"{count} building{'s' if count != 1 else ''}"]
+            reward = reward_for(ground_object)
+            if reward:
+                parts.append(f"each pays ${reward:g}M / turn while standing")
+            return "  ·  ".join(parts)
+
         parts = [cp.name]
         threat = ground_object.max_threat_range()
         detection = ground_object.max_detection_range()
@@ -136,13 +155,74 @@ class LocationHeader(QWidget):
         return " · ".join(parts)
 
     @staticmethod
+    def _warning(ground_object: TheaterGroundObject, cp: ControlPoint) -> str:
+        """What the loss of these buildings costs the base they belong to."""
+        if not isinstance(ground_object, BuildingGroundObject):
+            return ""
+        if ground_object.is_ammo_depot:
+            standing = cp.active_ammo_depots_count
+            total = cp.total_ammo_depots_count
+            if standing == total:
+                return ""
+            supply = cp.front_line_capacity_with(standing)
+            return (
+                f"Ammo at {cp.name} down to {standing}/{total} — "
+                f"{supply} front-line units can be supplied"
+            )
+        if ground_object.is_factory and not cp.has_factory:
+            return f"No factory standing at {cp.name} — no ground units are built here"
+        return ""
+
+    @staticmethod
     def _iads_pill(iads: IadsPicture) -> QWidget:
-        if iads.off is not None:
-            ink = EMPTY if iads.off is NoNetwork.STANDALONE else TEXT_LABEL
-        else:
-            assert iads.status is not None
+        if iads.status is not None:
             ink = STATE_INK[iads.status.state]
+        elif iads.off is NoNetwork.STANDALONE:
+            ink = EMPTY
+        elif iads.off is not None:
+            ink = TEXT_LABEL
+        else:
+            # Infrastructure: it holds other sites up rather than having a state.
+            ink = GREEN if "Destroyed" not in iads.summary else RED
         return label(iads.summary, 12, ink)
+
+    @staticmethod
+    def _income(ground_object: TheaterGroundObject) -> QWidget:
+        """What the objective pays now against what it pays whole."""
+        buildings = buildings_of(ground_object)
+        reward = reward_for(ground_object)
+        standing = sum(1 for building in buildings if building.alive)
+        now = standing * reward
+        whole = len(buildings) * reward
+
+        holder = QWidget()
+        make_transparent(holder)
+        column = QVBoxLayout()
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(4)
+
+        column.addWidget(_right(label("INCOME", 10, TEXT_LABEL, bold=True)))
+        figure = QHBoxLayout()
+        figure.setSpacing(6)
+        figure.addStretch()
+        figure.addWidget(
+            label(
+                f"${now:g}M",
+                20,
+                GREEN if standing == len(buildings) else TEXT_PRIMARY,
+                bold=True,
+                monospace=True,
+            )
+        )
+        figure.addWidget(label(f"of ${whole:g}M", 12, TEXT_LABEL))
+        column.addLayout(figure)
+        column.addWidget(HealthBar(standing, 0, len(buildings)))
+        if now < whole:
+            column.addWidget(
+                _right(label(f"−${whole - now:g}M / turn until repaired", 11, RED))
+            )
+        holder.setLayout(column)
+        return holder
 
     @staticmethod
     def _health(ground_object: TheaterGroundObject) -> QWidget:
@@ -188,3 +268,15 @@ class LocationHeader(QWidget):
         column.addLayout(legend)
         holder.setLayout(column)
         return holder
+
+
+def _right(widget: QWidget) -> QWidget:
+    """One widget pushed to the right of its own row."""
+    holder = QWidget()
+    make_transparent(holder)
+    row = QHBoxLayout()
+    row.setContentsMargins(0, 0, 0, 0)
+    row.addStretch()
+    row.addWidget(widget)
+    holder.setLayout(row)
+    return holder

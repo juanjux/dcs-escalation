@@ -268,3 +268,30 @@ def test_an_enemy_site_reads_as_a_target_list() -> None:
     )
 
     assert "kill it" in early_warning.note
+
+
+def test_a_substation_says_what_it_holds_up() -> None:
+    """Power and comms are not sites with a state: they are what others stand on."""
+    substation = _group("Creech", IadsRole.POWER_SOURCE)
+    first = _group("KAKAPO", IadsRole.SAM)
+    second = _group("ORIOLE", IadsRole.SAM)
+    network = _network(_node(first, substation), _node(second, substation))
+
+    picture = describe(substation.ground_object, network)
+
+    assert picture.verdict == "INFRASTRUCTURE"
+    assert "2 sites" in picture.summary
+    feeds = _link(picture, "FEEDS")
+    assert feeds.chip == "2 SITES"
+    assert feeds.title == "KAKAPO · ORIOLE"
+
+
+def test_a_destroyed_substation_says_what_it_cost() -> None:
+    substation = _group("Creech", IadsRole.POWER_SOURCE, _unit(alive=False))
+    sam = _group("KAKAPO", IadsRole.SAM)
+    network = _network(_node(sam, substation))
+
+    picture = describe(substation.ground_object, network)
+
+    assert _link(picture, "FEEDS").chip == "CUT"
+    assert "on its own" in picture.summary

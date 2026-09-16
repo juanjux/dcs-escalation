@@ -90,8 +90,14 @@ class IadsPicture:
     #: Set when there is no network behind this site, and why.
     off: Optional[NoNetwork] = None
 
+    #: What to say instead of a site's own state: infrastructure has none, it just
+    #: holds other things up.
+    headline: Optional[str] = None
+
     @property
     def verdict(self) -> str:
+        if self.status is None and self.headline is not None:
+            return "INFRASTRUCTURE"
         if self.off is NoNetwork.STANDALONE:
             return "STANDALONE"
         if self.off is not None:
@@ -101,6 +107,8 @@ class IadsPicture:
 
     @property
     def summary(self) -> str:
+        if self.headline is not None:
+            return self.headline
         if self.off is not None:
             return _WITHOUT_A_NETWORK[self.off]
         assert self.status is not None
@@ -128,6 +136,11 @@ def describe(
 
     node = _node_for(tgo, network)
     if node is None:
+        fed = _feeds(tgo, network)
+        if fed:
+            # A comms tower or a substation is not a site with a state of its own: it
+            # is what other sites are standing on.
+            return _infrastructure(tgo, fed, friendly)
         return IadsPicture(None, (), NoNetwork.STANDALONE)
 
     status = network.state_map.status_for(tgo)
@@ -146,7 +159,9 @@ def describe(
         links.append(_early_warning_link(node, siblings, friendly))
         if awacs:
             links.append(_awacs_link(awacs))
-    links.append(_command_link(node, siblings, friendly))
+    if role is not IadsRole.COMMAND_CENTER:
+        # It is the command; asking who directs it would answer itself.
+        links.append(_command_link(node, siblings, friendly))
     links.extend(_power_links(node, friendly))
     return IadsPicture(status, tuple(links))
 
@@ -361,6 +376,44 @@ def _power_links(node: IadsNetworkNode, friendly: bool) -> list[IadsLink]:
             )
         )
     return links
+
+
+def _feeds(tgo: TheaterGroundObject, network: IadsNetwork) -> list[IadsNetworkNode]:
+    """The sites this piece of infrastructure is wired to."""
+    return [
+        node
+        for node in network.nodes
+        if any(group.ground_object is tgo for group in node.connections.values())
+    ]
+
+
+def _infrastructure(
+    tgo: TheaterGroundObject, fed: list[IadsNetworkNode], friendly: bool
+) -> IadsPicture:
+    alive = any(unit.alive for group in tgo.groups for unit in group.units)
+    names = sorted(_name(node) for node in fed)
+    if alive:
+        headline = f"Holding up {len(fed)} site{'s' if len(fed) > 1 else ''}."
+        note = (
+            "they lose it if this is bombed"
+            if friendly
+            else f"kill it and {'they are' if len(fed) > 1 else 'it is'} cut off"
+        )
+        chip_text = f"{len(fed)} SITE{'S' if len(fed) > 1 else ''}"
+        tone = LinkTone.GOOD
+    else:
+        headline = "Destroyed: what it held up is on its own."
+        note = "nothing reaches them through it any more"
+        chip_text = "CUT"
+        tone = LinkTone.BAD
+    link = IadsLink(
+        caption="FEEDS",
+        title=" · ".join(names),
+        note=note,
+        chip=chip_text,
+        tone=tone,
+    )
+    return IadsPicture(None, (link,), headline=headline)
 
 
 # --------------------------------------------------------------------- helpers
