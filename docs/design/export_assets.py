@@ -13,10 +13,10 @@ ICON_SIZES = (16, 20, 24, 32, 40, 48, 64, 96, 128, 256)
 
 
 def main() -> None:
-    with Image.open(DESIGN / "escalation-icons/04-simple-jet-outlined.png") as source:
+    with Image.open(DESIGN / "escalation-icons/07-ukraine-background.png") as source:
         icon = source.convert("RGBA")
-    if icon.getchannel("A").getextrema() != (0, 255):
-        raise ValueError("The approved icon must have real alpha transparency")
+    if icon.getchannel("A").getextrema() != (255, 255):
+        raise ValueError("The flag-backed icon must have a fully opaque background")
 
     for filename, size in (
         ("resources/icon.png", 256),
