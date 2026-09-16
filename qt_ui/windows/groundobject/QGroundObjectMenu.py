@@ -37,7 +37,7 @@ from game.data.building_data import FORTIFICATION_BUILDINGS
 from game.server import EventStream
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater import ControlPoint, Player, TheaterGroundObject
-from game.mfd import Band, MfdIntel, band_of, is_mobile, shows_on_mfd
+from game.mfd import band_of, is_manpads, is_mobile, shows_on_mfd
 from game.theater.iadsnetwork.iadsexplain import IadsPicture, describe
 from game.theater.theatergroundobject import BuildingGroundObject
 from game.theater.theatergroup import TheaterUnit
@@ -282,6 +282,7 @@ class QGroundObjectMenu(QDialog):
         shown = shows_on_mfd(self.ground_object, self.game.settings)
         box = QCheckBox("Shown as a threat in the cockpit")
         box.setChecked(shown)
+        box.setEnabled(not is_manpads(self.ground_object))
         box.stateChanged.connect(
             # An explicit answer for this site, which outlives a change to the
             # campaign settings.
@@ -295,6 +296,8 @@ class QGroundObjectMenu(QDialog):
 
     def _mfd_hint(self, shown: bool) -> str:
         """Why the box is where it is, since the campaign settings usually decide."""
+        if is_manpads(self.ground_object):
+            return "MANPADS are never shown, whatever the campaign asks for"
         if self.ground_object.hide_on_mfd is not None:
             return "set for this site; the campaign setting does not move it"
         band = band_of(self.ground_object).value
