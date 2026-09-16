@@ -131,7 +131,7 @@ UNIT_CLASS_DESCRIPTIONS: dict[UnitClass, str] = {
 UNIT_CLASS_NOTES: dict[UnitClass, str] = {
     UnitClass.COMMAND_POST: "directs the site",
     UnitClass.EARLY_WARNING_RADAR: "watches for the whole network",
-    UnitClass.ELECTRONIC_WARFARE: "denies GPS inside its bubble",
+    UnitClass.ELECTRONIC_WARFARE: "throws GPS-guided weapons off inside its bubble",
     UnitClass.OPTICAL_TRACKER: "aims by sight when the radar is down",
     UnitClass.POWER: "keeps the site up if the grid fails",
     UnitClass.SEARCH_LIGHT: "lights targets for the guns at night",

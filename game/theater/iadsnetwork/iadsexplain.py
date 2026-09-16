@@ -177,8 +177,8 @@ def describe(
         gives.append(
             IadsLink(
                 caption="JAMMING",
-                title="Denies GPS inside its bubble",
-                note="nothing in the network is cueing it and nothing depends on it",
+                title="GPS-guided weapons go wide inside its bubble",
+                note="the weapons only: aircraft and their navigation are unaffected",
                 chip="ON ITS OWN",
                 tone=LinkTone.GOOD,
             )

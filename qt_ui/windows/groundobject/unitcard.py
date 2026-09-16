@@ -217,10 +217,12 @@ class UnitCard(QWidget):
         described = describe_unit(unit)
         if described:
             row.add(label(described, 11, TEXT_LABEL))
+        # Before the note, and with a hash: at the end of the row the id read as the
+        # last word of the sentence beside it -- "directs the site 0789".
+        row.add(label(f"#{str(unit.id).zfill(4)}", 11, EMPTY, monospace=True))
         note = unit_note(unit)
         if note:
             row.add(label(f"· {note}", 11, EMPTY))
-        row.add(label(str(unit.id).zfill(4), 11, EMPTY, monospace=True))
         if state:
             row.add(chip(state, ink))
         row.stretch()
