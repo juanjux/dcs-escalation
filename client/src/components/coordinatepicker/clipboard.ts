@@ -1,9 +1,9 @@
-// Copy text to the clipboard from a page that is not in a secure context.
+// Copy text to the clipboard from the map.
 //
-// The map is loaded from a file:// URL inside the Qt web view, and Chromium only
-// exposes navigator.clipboard on https and localhost, so the modern API is not there
-// at all and the copy failed silently. The textarea and execCommand route is
-// deprecated but still works everywhere, and is the only one that works here.
+// The map is loaded from a file:// URL inside the Qt web view, where
+// navigator.clipboard is defined but rejects every write, so the copy goes through the
+// deprecated textarea and execCommand route. That route needs
+// JavascriptCanAccessClipboard on the page, which QLiberationMap sets.
 export async function copyText(text: string): Promise<boolean> {
   if (navigator.clipboard?.writeText) {
     try {
