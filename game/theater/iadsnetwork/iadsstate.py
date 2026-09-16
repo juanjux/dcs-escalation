@@ -70,7 +70,7 @@ class IadsStatus:
         return self.state is not IadsState.NETWORKED or self.blind
 
 
-def _own_generator(group: IadsGroundGroup) -> Optional[str]:
+def own_generator(group: IadsGroundGroup) -> Optional[str]:
     """The name of the generator this site deploys with, if it still has one.
 
     The name rather than a flag, because a battery running on its own power has one
@@ -87,7 +87,7 @@ def _own_generator(group: IadsGroundGroup) -> Optional[str]:
     return None
 
 
-def _detection_range(group: IadsGroundGroup) -> float:
+def detection_range(group: IadsGroundGroup) -> float:
     """Metres this site can see for itself.
 
     Asked of the range rather than of a list of radar classes: a HAWK that has lost its
@@ -110,6 +110,37 @@ def _goes_dark_when_autonomous(group: IadsGroundGroup) -> bool:
     return False
 
 
+def mains_are_up(node: IadsNetworkNode) -> bool:
+    """Whether the grid still reaches this site. Nothing to do with its own generator:
+    an empty list of power sources is what Skynet reads as powered."""
+    sources = [
+        group
+        for group in node.connections.values()
+        if group.iads_role is IadsRole.POWER_SOURCE
+    ]
+    return not sources or any(group.alive_units > 0 for group in sources)
+
+
+def comms_up(node: IadsNetworkNode) -> bool:
+    """Whether a connection node still stands between this site and the network."""
+    comms = [
+        group
+        for group in node.connections.values()
+        if group.iads_role is IadsRole.CONNECTION_NODE
+    ]
+    return not comms or any(group.alive_units > 0 for group in comms)
+
+
+def covers(parent: IadsNetworkNode, child: IadsNetworkNode) -> bool:
+    """Whether the parent's radar reaches the child."""
+    reach = detection_range(parent.group)
+    if reach <= 0:
+        return False
+    return reach >= parent.group.ground_object.position.distance_to_point(
+        child.group.ground_object.position
+    )
+
+
 class IadsStateMap:
     """The state of every site in one network, worked out in one pass."""
 
@@ -126,26 +157,6 @@ class IadsStateMap:
 
     # ---------------------------------------------------------------- internals
 
-    @staticmethod
-    def _mains_are_up(node: IadsNetworkNode) -> bool:
-        """Whether the grid still reaches this site. Nothing to do with its own
-        generator: an empty list of power sources is what Skynet reads as powered."""
-        sources = [
-            group
-            for group in node.connections.values()
-            if group.iads_role is IadsRole.POWER_SOURCE
-        ]
-        return not sources or any(group.alive_units > 0 for group in sources)
-
-    @staticmethod
-    def _connected(node: IadsNetworkNode) -> bool:
-        comms = [
-            group
-            for group in node.connections.values()
-            if group.iads_role is IadsRole.CONNECTION_NODE
-        ]
-        return not comms or any(group.alive_units > 0 for group in comms)
-
     def _build(self, network: IadsNetwork) -> None:
         by_side: dict[bool, list[IadsNetworkNode]] = {}
         for node in network.nodes:
@@ -155,13 +166,13 @@ class IadsStateMap:
             self._build_side(nodes)
 
     def _build_side(self, nodes: list[IadsNetworkNode]) -> None:
-        mains = {id(node): self._mains_are_up(node) for node in nodes}
-        generators = {id(node): _own_generator(node.group) for node in nodes}
+        mains = {id(node): mains_are_up(node) for node in nodes}
+        generators = {id(node): own_generator(node.group) for node in nodes}
         powered = {
             id(node): mains[id(node)] or generators[id(node)] is not None
             for node in nodes
         }
-        connected = {id(node): self._connected(node) for node in nodes}
+        connected = {id(node): comms_up(node) for node in nodes}
 
         command_centres = [
             node for node in nodes if node.group.iads_role is IadsRole.COMMAND_CENTER
@@ -222,7 +233,7 @@ class IadsStateMap:
         blind = (
             role is not IadsRole.COMMAND_CENTER
             and not jams_gps
-            and _detection_range(node.group) <= 0
+            and detection_range(node.group) <= 0
         )
 
         if not powered:
@@ -295,7 +306,7 @@ class IadsStateMap:
             covering = sorted(
                 self._name(parent)
                 for parent in parents
-                if parent is not node and self._covers(parent, node)
+                if parent is not node and covers(parent, node)
             )
             if covering:
                 return IadsStatus(
@@ -327,12 +338,3 @@ class IadsStateMap:
     @staticmethod
     def _name(node: IadsNetworkNode) -> str:
         return node.group.ground_object.name
-
-    @staticmethod
-    def _covers(parent: IadsNetworkNode, child: IadsNetworkNode) -> bool:
-        reach = _detection_range(parent.group)
-        if reach <= 0:
-            return False
-        return reach >= parent.group.ground_object.position.distance_to_point(
-            child.group.ground_object.position
-        )
