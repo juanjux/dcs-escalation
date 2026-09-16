@@ -11,9 +11,11 @@ from __future__ import annotations
 import math
 from typing import Optional
 
+from typing import Callable
+
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QSizePolicy, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QPushButton, QSizePolicy, QWidget
 
 from game.data.groups import GroupTask
 from game.theater import (
@@ -28,6 +30,7 @@ from game.theater.theatergroundobject import (
     NavalGroundObject,
 )
 from game.utils import Heading
+from qt_ui.widgets.controls import button
 from qt_ui.windows.pilot.common import (
     ACCENT,
     AMBER,
@@ -35,6 +38,7 @@ from qt_ui.windows.pilot.common import (
     GREEN,
     RED,
     TEXT_LABEL,
+    label,
 )
 
 #: The three states a site's units can be in, in the order the bar stacks them.
@@ -181,3 +185,40 @@ def kind_chip_text(ground_object: TheaterGroundObject, cp: ControlPoint) -> str:
         parts.append(reach)
     parts.append(owner_of(cp))
     return " · ".join(parts)
+
+
+def two_tone_button(
+    text: str,
+    tail: str,
+    tail_ink: str = ACCENT,
+    kind: str = "normal",
+    handler: Optional[Callable[[], None]] = None,
+) -> QPushButton:
+    """A button that carries a figure: "Repair $18M", "Face the front 312°".
+
+    The figure is what the eye is looking for, so it is not painted in the same ink as
+    the verb. A QPushButton cannot do that with its own text, so the two are labels
+    inside it, and they let the press through to the button under them.
+    """
+    widget = button("", kind, handler)
+    row = QHBoxLayout(widget)
+    row.setContentsMargins(14, 4, 14, 4)
+    row.setSpacing(7)
+    for piece, ink, bold in ((text, "", False), (tail, tail_ink, True)):
+        if not piece:
+            continue
+        drawn = label(piece, 12, ink or _button_ink(kind), bold=bold)
+        drawn.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        row.addWidget(drawn)
+    # A QPushButton sizes itself from its own text, which is empty here, so the two
+    # labels were painted into a button too narrow for them.
+    widget.setMinimumWidth(row.sizeHint().width())
+    widget.setMinimumHeight(max(widget.minimumHeight(), row.sizeHint().height()))
+    return widget
+
+
+def _button_ink(kind: str) -> str:
+    """The ink the house button paints its own text in."""
+    from qt_ui.widgets.controls import BUTTON_KINDS
+
+    return str(BUTTON_KINDS[kind][2])

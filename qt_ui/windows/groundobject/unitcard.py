@@ -9,10 +9,10 @@ for.
 from __future__ import annotations
 
 from collections import OrderedDict
+from functools import partial
 from typing import Callable, Optional, Sequence
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from game.theater import TheaterGroundObject
 from game.theater.theatergroup import TheaterUnit
@@ -21,6 +21,7 @@ from qt_ui.windows.groundobject.common import (
     ALIVE_INK,
     DESTROYED_INK,
     REPAIRING_INK,
+    two_tone_button,
 )
 from qt_ui.windows.pilot.common import (
     AIR_FAMILY,
@@ -209,14 +210,11 @@ class UnitCard(QWidget):
         if unit.repair_turns_remaining is not None:
             return None
         price = price_of(unit)
-        button = QPushButton(f"Repair  ${price}M")
-        button.setProperty("style", "btn-success")
-        button.setCursor(Qt.CursorShape.PointingHandCursor)
-        button.clicked.connect(
-            # clicked emits a checked bool first; absorb it, or it binds over the unit.
-            lambda checked=False, u=unit, p=price: self._repair(u, p)
+        return two_tone_button(
+            "Repair",
+            f"${price}M",
+            handler=partial(self._repair, unit, price),
         )
-        return button
 
     def _repair(self, unit: TheaterUnit, price: int) -> None:
         assert self.repair is not None

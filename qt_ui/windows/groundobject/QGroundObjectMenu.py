@@ -45,7 +45,8 @@ from qt_ui.widgets.cards import card, make_transparent
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.groundobject.QBuildingInfo import QBuildingInfo
 from qt_ui.windows.groundobject.QGroundObjectBuyMenu import QGroundObjectBuyMenu
-from qt_ui.windows.groundobject.common import Compass
+from qt_ui.widgets.controls import button
+from qt_ui.windows.groundobject.common import Compass, two_tone_button
 from qt_ui.windows.groundobject.header import LocationHeader
 from qt_ui.windows.groundobject.iadscard import IadsCard
 from qt_ui.windows.groundobject.unitcard import UnitCard, price_of, repairable_units
@@ -319,22 +320,22 @@ class QGroundObjectMenu(QDialog):
         row.setSpacing(10)
 
         if self._can_trade and self.total_value > 0:
-            disband = QPushButton(f"Disband  +${self.total_value}M")
-            disband.setProperty("style", "btn-danger")
-            disband.clicked.connect(self._sell_all)
-            row.addWidget(disband)
+            row.addWidget(
+                two_tone_button(
+                    "Disband",
+                    f"+${self.total_value}M",
+                    "#E8C5C5",
+                    kind="danger",
+                    handler=self._sell_all,
+                )
+            )
         row.addStretch()
         row.addWidget(
             label(f"Budget ${self.game.blue.budget:.1f}M", 12, TEXT_LABEL, bold=True)
         )
         if self._can_trade:
-            buy = QPushButton("Buy / replace…")
-            buy.clicked.connect(self._buy_group)
-            row.addWidget(buy)
-        close = QPushButton("Close")
-        close.setProperty("style", "btn-primary")
-        close.clicked.connect(self.close)
-        row.addWidget(close)
+            row.addWidget(button("Buy / replace…", handler=self._buy_group))
+        row.addWidget(button("Close", "primary", handler=self.close))
         holder.setLayout(row)
         return holder
 
@@ -446,6 +447,10 @@ class QGroundObjectMenu(QDialog):
             if point.distance_to_point(unit.position) < 15:
                 destroyed.remove(dead)
                 logging.info(f"Removed destroyed units {dead}")
+
+    def _set_heading(self, heading: Heading) -> None:
+        if self.heading_selector is not None:
+            self.heading_selector.setValue(heading.degrees)
 
     def _rotate(self, heading: Heading) -> None:
         self.ground_object.rotate(heading)
