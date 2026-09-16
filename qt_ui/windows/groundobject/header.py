@@ -192,11 +192,9 @@ class LocationHeader(QWidget):
         )
         figure.addWidget(label(f"of ${whole:g}M", 12, TEXT_LABEL))
         column.addLayout(figure)
+        # No "-$4M until repaired" line: the bar and the two figures above it already
+        # say what is missing, and a minus sign beside money reads as a cost.
         column.addWidget(HealthBar(standing, 0, len(buildings)))
-        if now < whole:
-            column.addWidget(
-                _right(label(f"−${whole - now:g}M / turn until repaired", 11, RED))
-            )
         holder.setLayout(column)
         return holder
 

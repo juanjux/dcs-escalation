@@ -40,6 +40,14 @@ class LinkTone(Enum):
 
 
 @dataclass(frozen=True)
+class Place:
+    """An objective named in a row, and the objective itself when there is one."""
+
+    name: str
+    objective: Optional[TheaterGroundObject] = None
+
+
+@dataclass(frozen=True)
 class IadsLink:
     """One row: a kind of link, what is at the other end, and how it is doing."""
 
@@ -56,6 +64,13 @@ class IadsLink:
     chip: str
 
     tone: LinkTone
+
+    #: The objectives the title names, for whoever wants to open them. Empty when the
+    #: row names no objective ("No grid link in this layout").
+    places: tuple[Place, ...] = ()
+
+    #: How many more there are than the row names, when the list is too long to read.
+    more: int = 0
 
 
 class NoNetwork(Enum):
@@ -181,9 +196,12 @@ def describe(
             gets.append(_awacs_link(awacs))
         gets.append(_command_link(node, siblings, friendly))
 
-    comms = _comms_link(node, friendly)
-    if comms is not None:
-        gets.append(comms)
+    if not getattr(tgo, "carries_gps_jammer", False):
+        # Nothing is handed to a jammer, so the comms that would hand it are not its
+        # business.
+        comms = _comms_link(node, friendly)
+        if comms is not None:
+            gets.append(comms)
     gets.extend(_power_links(node, friendly))
     return IadsPicture(status, tuple(gives), tuple(gets))
 
@@ -208,6 +226,7 @@ def _early_warning_link(
             f"{detection_range(other.group) / 1852:.0f} nm" for other in live
         )
         return IadsLink(
+            places=_places_of([other.group.ground_object for other in live]),
             caption="EARLY WARNING",
             title=" · ".join(sorted(_name(other) for other in live)),
             note=(
@@ -232,6 +251,7 @@ def _early_warning_link(
 
     nearest = covering[0]
     return IadsLink(
+        places=_places_of([other.group.ground_object for other in covering]),
         caption="EARLY WARNING",
         title=" · ".join(sorted(_name(other) for other in covering)),
         note=_why_down(nearest),
@@ -244,13 +264,15 @@ def _cues_link(
     node: IadsNetworkNode, siblings: list[IadsNetworkNode], friendly: bool
 ) -> IadsLink:
     """For a radar the row flips: whom it cues, not who cues it."""
-    covered = sorted(
-        _name(other)
+    covered_nodes = [
+        other
         for other in siblings
         if other is not node
         and other.group.iads_role in (IadsRole.SAM, IadsRole.SAM_AS_EWR)
         and covers(node, other)
-    )
+    ]
+    covered_objectives = [other.group.ground_object for other in covered_nodes]
+    covered = sorted(_name(other) for other in covered_nodes)
     if not comms_up(node):
         return IadsLink(
             caption="CUES",
@@ -268,6 +290,8 @@ def _cues_link(
             tone=LinkTone.INFO,
         )
     return IadsLink(
+        places=_places_of(covered_objectives),
+        more=max(0, len(covered_objectives) - NAMES_SHOWN),
         caption="CUES",
         title=_some_of(covered),
         note=(
@@ -284,12 +308,14 @@ def _directs_link(
     node: IadsNetworkNode, siblings: list[IadsNetworkNode], friendly: bool
 ) -> IadsLink:
     """What a command centre is for: the sites it directs."""
-    directed = sorted(
-        _name(other)
+    directed_nodes = [
+        other
         for other in siblings
         if other is not node
         and other.group.iads_role in (IadsRole.SAM, IadsRole.SAM_AS_EWR, IadsRole.EWR)
-    )
+    ]
+    directed_objectives = [other.group.ground_object for other in directed_nodes]
+    directed = sorted(_name(other) for other in directed_nodes)
     if not directed:
         return IadsLink(
             caption="DIRECTS",
@@ -299,6 +325,8 @@ def _directs_link(
             tone=LinkTone.INFO,
         )
     return IadsLink(
+        places=_places_of(directed_objectives),
+        more=max(0, len(directed_objectives) - NAMES_SHOWN),
         caption="DIRECTS",
         title=_some_of(directed),
         note=(
@@ -323,6 +351,7 @@ def _comms_link(node: IadsNetworkNode, friendly: bool) -> Optional[IadsLink]:
     names = _some_of(sorted(group.ground_object.name for group in nodes))
     if any(group.alive_units > 0 for group in nodes):
         return IadsLink(
+            places=_places_of([group.ground_object for group in nodes]),
             caption="COMMS",
             title=names,
             note=(
@@ -334,6 +363,7 @@ def _comms_link(node: IadsNetworkNode, friendly: bool) -> Optional[IadsLink]:
             tone=LinkTone.GOOD,
         )
     return IadsLink(
+        places=_places_of([group.ground_object for group in nodes]),
         caption="COMMS",
         title=names,
         note="destroyed: nothing reaches this site from the network",
@@ -418,6 +448,7 @@ def _power_links(node: IadsNetworkNode, friendly: bool) -> list[IadsLink]:
     elif mains_are_up(node):
         links.append(
             IadsLink(
+                places=_places_of([group.ground_object for group in sources]),
                 caption="POWER",
                 title=" · ".join(sorted(group.ground_object.name for group in sources)),
                 note=(
@@ -432,6 +463,7 @@ def _power_links(node: IadsNetworkNode, friendly: bool) -> list[IadsLink]:
     else:
         links.append(
             IadsLink(
+                places=_places_of([group.ground_object for group in sources]),
                 caption="POWER",
                 title=" · ".join(sorted(group.ground_object.name for group in sources)),
                 note=(
@@ -471,16 +503,30 @@ def _feeds(tgo: TheaterGroundObject, network: IadsNetwork) -> list[IadsNetworkNo
     ]
 
 
+#: What a piece of infrastructure does for the sites behind it.
+INFRASTRUCTURE_CAPTIONS = {
+    IadsRole.POWER_SOURCE: "POWERS",
+    IadsRole.CONNECTION_NODE: "CONNECTS",
+}
+
+
+def _infrastructure_role(tgo: TheaterGroundObject) -> Optional[IadsRole]:
+    for group in tgo.groups:
+        role = getattr(group, "iads_role", None)
+        if role in (IadsRole.POWER_SOURCE, IadsRole.CONNECTION_NODE):
+            assert isinstance(role, IadsRole)
+            return role
+    return None
+
+
 def _what_falls_over(tgo: TheaterGroundObject, count: int) -> str:
     """What the sites behind this piece of infrastructure lose with it."""
     them = "they" if count > 1 else "it"
-    roles = {
-        role for group in tgo.groups if (role := getattr(group, "iads_role", None))
-    }
-    if IadsRole.POWER_SOURCE in roles:
+    role = _infrastructure_role(tgo)
+    if role is IadsRole.POWER_SOURCE:
         return f"bomb it and {them} go dark, unless {them} carry a generator"
-    if IadsRole.CONNECTION_NODE in roles:
-        return f"bomb it and {them} go autonomous: nothing reaches {them} any more"
+    if role is IadsRole.CONNECTION_NODE:
+        return f"bomb it and {them} go autonomous, losing comms among {them}"
     return f"bomb it and {them} lose the network"
 
 
@@ -499,9 +545,11 @@ def _infrastructure(
         note = "nothing reaches them through it any more"
         chip_text = "CUT"
         tone = LinkTone.BAD
+    role = _infrastructure_role(tgo)
     link = IadsLink(
-        caption="FEEDS",
-        title=" · ".join(names),
+        places=_places_of([node.group.ground_object for node in fed]),
+        caption=INFRASTRUCTURE_CAPTIONS.get(role, "FEEDS") if role else "FEEDS",
+        title=_some_of(names),
         note=note,
         chip=chip_text,
         tone=tone,
@@ -560,7 +608,19 @@ def _why_down(node: IadsNetworkNode) -> str:
     return "it stands, but it has no power, so it is switched off"
 
 
-def _some_of(names: list[str], most: int = 4) -> str:
+#: How many objectives a row names before it starts counting them instead.
+NAMES_SHOWN = 4
+
+
+def _places_of(
+    objectives: Sequence[TheaterGroundObject], most: int = NAMES_SHOWN
+) -> tuple[Place, ...]:
+    """The first few objectives named in a row, in the order the title lists them."""
+    named = sorted(objectives, key=lambda tgo: str(tgo.name))
+    return tuple(Place(str(tgo.name), tgo) for tgo in named[:most])
+
+
+def _some_of(names: list[str], most: int = NAMES_SHOWN) -> str:
     """The names, or how many there are once a list stops being readable."""
     if len(names) <= most:
         return " · ".join(names)
