@@ -248,14 +248,78 @@ def test_a_radar_with_its_comms_cut_reaches_nobody() -> None:
     assert cues.chip == "REACHES NOBODY"
 
 
-def test_a_gps_jammer_is_asked_about_power_and_nothing_else() -> None:
+def test_a_gps_jammer_gives_jamming_and_asks_only_for_power() -> None:
     jammer = _group("SCARAB", IadsRole.EWR)
     jammer.ground_object.carries_gps_jammer = True
     network = _network(_node(jammer))
 
     picture = describe(jammer.ground_object, network)
 
-    assert [link.caption for link in picture.links] == ["POWER"]
+    assert [link.caption for link in picture.gives] == ["JAMMING"]
+    assert [link.caption for link in picture.gets] == ["POWER"]
+
+
+def test_a_radar_gives_what_it_cues_and_asks_for_power() -> None:
+    ewr = _group("Tonopah", IadsRole.EWR, _unit(detection=100_000))
+    sam = _group("KAKAPO", IadsRole.SAM, at=(10.0, 0.0))
+    centre = _group("Indian Springs", IadsRole.COMMAND_CENTER)
+    network = _network(_node(ewr), _node(sam), _node(centre))
+
+    picture = describe(ewr.ground_object, network)
+
+    assert [link.caption for link in picture.gives] == ["CUES", "COMMAND"]
+    assert [link.caption for link in picture.gets] == ["POWER"]
+
+
+def test_a_battery_asks_for_early_warning_command_and_power() -> None:
+    sam = _group("KAKAPO", IadsRole.SAM)
+    centre = _group("Indian Springs", IadsRole.COMMAND_CENTER)
+    network = _network(_node(sam), _node(centre))
+
+    picture = describe(sam.ground_object, network)
+
+    assert picture.gives == ()
+    assert [link.caption for link in picture.gets] == [
+        "EARLY WARNING",
+        "COMMAND",
+        "POWER",
+    ]
+
+
+def test_a_command_centre_gives_what_it_directs() -> None:
+    centre = _group("Indian Springs", IadsRole.COMMAND_CENTER)
+    first = _group("KAKAPO", IadsRole.SAM)
+    second = _group("Tonopah", IadsRole.EWR)
+    network = _network(_node(centre), _node(first), _node(second))
+
+    picture = describe(centre.ground_object, network)
+
+    directs = _link(picture, "DIRECTS")
+    assert directs.chip == "2 SITES"
+    assert directs.title == "KAKAPO · Tonopah"
+    # It is the command: nothing cues it and nothing directs it.
+    assert [link.caption for link in picture.gets] == ["POWER"]
+
+
+def test_the_comms_a_site_hangs_off_are_a_row_of_their_own() -> None:
+    sam = _group("KAKAPO", IadsRole.SAM)
+    comms = _group("Beatty", IadsRole.CONNECTION_NODE, _unit(alive=False))
+    network = _network(_node(sam, comms))
+
+    picture = describe(sam.ground_object, network)
+
+    assert _link(picture, "COMMS").chip == "CUT"
+
+
+def test_a_long_list_of_sites_is_counted_rather_than_read() -> None:
+    centre = _group("Indian Springs", IadsRole.COMMAND_CENTER)
+    sams = [_group(f"SITE {i}", IadsRole.SAM) for i in range(6)]
+    network = _network(_node(centre), *[_node(sam) for sam in sams])
+
+    directs = _link(describe(centre.ground_object, network), "DIRECTS")
+
+    assert directs.chip == "6 SITES"
+    assert "and 2 more" in directs.title
 
 
 def test_an_enemy_site_reads_as_a_target_list() -> None:

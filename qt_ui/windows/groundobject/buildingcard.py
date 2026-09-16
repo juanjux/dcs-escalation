@@ -50,7 +50,10 @@ DEAD_OPACITY = 0.45
 
 def kind_of(ground_object: TheaterGroundObject) -> str:
     """The category in the words the rest of the dialog uses."""
-    return ground_object.category.replace("_", " ")
+    from qt_ui.windows.groundobject.common import BUILDING_NAMES
+
+    category = ground_object.category
+    return BUILDING_NAMES.get(category, category).lower()
 
 
 def reward_for(ground_object: TheaterGroundObject) -> float:
