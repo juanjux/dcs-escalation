@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Clicking empty map reports the coordinates of that point; the picker has no button to switch on any more.
 * **[UI]** Coordinates: the map has a picker that reads any point on it, the objective dialog gives the coordinates of every unit and building with a Copy button, and a new *General* settings page chooses the format (DMS, decimal minutes, decimal degrees or MGRS).
 * **[Campaigns]** Gran Polvorin has an air defence network: its SAM sites and EWRs are wired to comms towers, power stations and two command centres, the islands get a network of their own, and it gains vehicle depots and two more GPS jamming sites. NEW game required.
 * **[Mission Plugins]** **Realistic CAS** adds gradual ground-target discovery for both coalitions through visual, EO/IR and ground-radar observations, with terrain LOS and approximate weather, daylight and cover effects. Firing reveals a group immediately; contacts expire after a configurable lifetime. Ground combat shares the fog, while fixed map SAM objectives remain known and frontline SAMs do not. Experimental and off by default, with bounded processing and optional diagnostic logging; F10 and weapon accuracy are unchanged. Requires TIC, CTLD autolase and Moose Autolase to be disabled and temporarily omits generated legacy JTACs. CTLD logistics can stay enabled. Campaign-scale tuning and replacement JTACs remain pending. ([#195](https://github.com/juanjux/dcs-escalation/pull/195))
