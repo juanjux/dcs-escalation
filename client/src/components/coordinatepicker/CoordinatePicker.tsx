@@ -13,8 +13,8 @@
 import { HTTP_URL } from "../../api/backend";
 import { copyText } from "./clipboard";
 import "./CoordinatePicker.css";
-import L, { LatLng } from "leaflet";
-import { useState } from "react";
+import L, { LatLng, Marker as LeafletMarker } from "leaflet";
+import { useEffect, useRef, useState } from "react";
 import { Marker, Popup, useMapEvent } from "react-leaflet";
 
 interface Picked {
@@ -39,6 +39,13 @@ export function landedOnSomething(target: EventTarget | null): boolean {
 export default function CoordinatePicker() {
   const [picked, setPicked] = useState<Picked | null>(null);
   const [copied, setCopied] = useState(false);
+  const marker = useRef<LeafletMarker | null>(null);
+
+  // A popup inside a marker is bound to it, not opened: react-leaflet only opens the
+  // ones that hang from the map. The point was just clicked, so open it.
+  useEffect(() => {
+    marker.current?.openPopup();
+  }, [picked]);
 
   useMapEvent("click", async (event) => {
     if (landedOnSomething(event.originalEvent.target)) {
@@ -67,6 +74,7 @@ export default function CoordinatePicker() {
 
   return (
     <Marker
+      ref={marker}
       position={picked.at}
       icon={CROSSHAIR}
       eventHandlers={{ popupclose: () => setPicked(null) }}
