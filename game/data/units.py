@@ -45,6 +45,22 @@ class UnitClass(Enum):
     TELAR = "TELAR"
     TRACK_RADAR = "TrackRadar"
 
+    @property
+    def description(self) -> str:
+        """What this kind of unit is, in the words a player would use.
+
+        The unit's own name says the model, not the job: "SAM Patriot ECS" and
+        "SAM Patriot LN" are the same three words to anyone who has not read the
+        manual. Empty for the classes whose name already is the description.
+        """
+        return UNIT_CLASS_DESCRIPTIONS.get(self, "")
+
+    @property
+    def note(self) -> str:
+        """What the unit does for the site around it, for the classes where losing it
+        costs more than one gun. Empty where there is nothing to add."""
+        return UNIT_CLASS_NOTES.get(self, "")
+
 
 # All UnitClasses which can have AntiAir capabilities
 ANTI_AIR_UNIT_CLASSES = [
@@ -65,3 +81,62 @@ ANTI_AIR_UNIT_CLASSES = [
     UnitClass.TELAR,
     UnitClass.TRACK_RADAR,
 ]
+
+
+#: One short phrase per class, for the unit rows of a location. Kept next to the enum
+#: so a new class either gets a description here or reads as nothing, never as a stale
+#: one from somewhere else.
+UNIT_CLASS_DESCRIPTIONS: dict[UnitClass, str] = {
+    UnitClass.AAA: "AAA",
+    UnitClass.AIRCRAFT_CARRIER: "carrier",
+    UnitClass.APC: "APC",
+    UnitClass.ARTILLERY: "artillery",
+    UnitClass.ATGM: "anti-tank missiles",
+    UnitClass.BOAT: "boat",
+    UnitClass.COMMAND_POST: "command post",
+    UnitClass.CRUISER: "cruiser",
+    UnitClass.DESTROYER: "destroyer",
+    UnitClass.EARLY_WARNING_RADAR: "early-warning radar",
+    UnitClass.ELECTRONIC_WARFARE: "jammer",
+    UnitClass.FORTIFICATION: "fortification",
+    UnitClass.FRIGATE: "frigate",
+    UnitClass.HELICOPTER: "helicopter",
+    UnitClass.HELICOPTER_CARRIER: "helicopter carrier",
+    UnitClass.IFV: "IFV",
+    UnitClass.INFANTRY: "infantry",
+    UnitClass.LANDING_SHIP: "landing ship",
+    UnitClass.LAUNCHER: "launcher",
+    UnitClass.LOGISTICS: "logistics",
+    UnitClass.MANPAD: "MANPADS",
+    UnitClass.MISSILE: "missile",
+    UnitClass.ANTISHIP_MISSILE: "anti-ship missiles",
+    UnitClass.OPTICAL_TRACKER: "optical tracker",
+    UnitClass.PLANE: "aircraft",
+    UnitClass.POWER: "power",
+    UnitClass.RECON: "recon",
+    UnitClass.SEARCH_LIGHT: "searchlight",
+    UnitClass.SEARCH_RADAR: "search radar",
+    UnitClass.SEARCH_TRACK_RADAR: "search & track radar",
+    UnitClass.SHORAD: "SHORAD",
+    UnitClass.SPECIALIZED_RADAR: "support radar",
+    UnitClass.SUBMARINE: "submarine",
+    UnitClass.TANK: "tank",
+    UnitClass.TELAR: "launcher with its own radar",
+    UnitClass.TRACK_RADAR: "tracking radar",
+}
+
+
+#: Only for the classes a site depends on, where the row is the place to say what
+#: bombing it costs. Everything else is left without a note.
+UNIT_CLASS_NOTES: dict[UnitClass, str] = {
+    UnitClass.COMMAND_POST: "directs the site",
+    UnitClass.EARLY_WARNING_RADAR: "watches for the whole network",
+    UnitClass.ELECTRONIC_WARFARE: "denies GPS inside its bubble",
+    UnitClass.OPTICAL_TRACKER: "aims by sight when the radar is down",
+    UnitClass.POWER: "keeps the site up if the grid fails",
+    UnitClass.SEARCH_LIGHT: "lights targets for the guns at night",
+    UnitClass.SEARCH_RADAR: "finds the targets",
+    UnitClass.SEARCH_TRACK_RADAR: "finds the targets and guides the missiles",
+    UnitClass.SPECIALIZED_RADAR: "part of the site's radar chain",
+    UnitClass.TRACK_RADAR: "guides the missiles onto the target",
+}
