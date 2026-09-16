@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 )
 from dcs import Point
 
+from game import Game
 from game.ato import FlightType
 from game.config import REWARDS
 from game.cruise_raids import tgo_magazines
@@ -82,7 +83,6 @@ class QGroundObjectMenu(QDialog):
         self.ground_object = ground_object
         self.cp = cp
         self.game_model = gm
-        self.game = gm.game
         self.total_value = 0
         self.cruise_missile_rows: list[tuple[str, int]] = []
         self.heading_selector: Optional[QSpinBox] = None
@@ -99,6 +99,13 @@ class QGroundObjectMenu(QDialog):
         self.column.setSpacing(0)
         self.setLayout(self.column)
         self._build()
+
+    @property
+    def game(self) -> Game:
+        """There is no location dialog without a campaign behind it."""
+        game = self.game_model.game
+        assert game is not None
+        return game
 
     # ------------------------------------------------------------------ building
 
@@ -135,6 +142,9 @@ class QGroundObjectMenu(QDialog):
         holder.setLayout(body)
         self.column.addWidget(holder, 1)
         self.column.addWidget(self._footer())
+        # Asked for after the content is in: a row of long unit names would otherwise
+        # set the width, and the names elide happily.
+        self.resize(WIDTH, self.sizeHint().height())
 
     def _rebuild(self) -> None:
         while self.column.count():
@@ -147,7 +157,11 @@ class QGroundObjectMenu(QDialog):
     # --------------------------------------------------------------------- cards
 
     def _units(self) -> QWidget:
-        units = UnitCard(self.ground_object, self.game.settings, self._repair_unit)
+        units = UnitCard(
+            self.ground_object,
+            self.game.settings,
+            self._repair_unit if self._can_repair else None,
+        )
         caption = heading("Units", "by group · destroyed first")
         wrecks = repairable_units(self.ground_object) if self._can_repair else []
         if wrecks:

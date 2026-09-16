@@ -171,7 +171,11 @@ def owner_of(control_point: ControlPoint) -> str:
 
 def kind_chip_text(ground_object: TheaterGroundObject, cp: ControlPoint) -> str:
     parts = [kind_of(ground_object)]
-    task: Optional[GroupTask] = getattr(ground_object, "task", None)
+    # A jamming site is named by what it does; the slot the campaign put it in says
+    # nothing about its reach.
+    task: Optional[GroupTask] = (
+        None if parts[0] == "GPS JAMMER" else getattr(ground_object, "task", None)
+    )
     reach = TASK_NAMES.get(task) if task is not None else None
     if reach is not None and reach != parts[0]:
         parts.append(reach)

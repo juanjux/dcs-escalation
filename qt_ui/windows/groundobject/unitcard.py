@@ -24,6 +24,7 @@ from qt_ui.windows.groundobject.common import (
 )
 from qt_ui.windows.pilot.common import (
     AIR_FAMILY,
+    Elided,
     EMPTY,
     GREEN,
     GROUND_FAMILY,
@@ -150,7 +151,7 @@ class UnitCard(QWidget):
         parent = Row(height=36, interactive=True)
         marker = label("▾" if hurt else "▸", 10, TEXT_LABEL)
         parent.add(marker)
-        parent.add(label(name, 12.5, TEXT_BASE, bold=True))
+        parent.add(Elided(name, 12.5, TEXT_BASE, bold=True))
         parent.add(label(f"×{len(units)}", 11, TEXT_LABEL, monospace=True))
         described = describe_unit(units[0])
         if described:
@@ -185,7 +186,7 @@ class UnitCard(QWidget):
         state, ink = state_of(unit)
         row = Row(height=36, margins=(indent, 0, 14, 0))
         row.add(_dot(ink))
-        row.add(label(type_name(unit), 12.5, TEXT_BASE, bold=True))
+        row.add(Elided(type_name(unit), 12.5, TEXT_BASE, bold=True))
         described = describe_unit(unit)
         if described:
             row.add(label(described, 11, TEXT_LABEL))
@@ -199,7 +200,7 @@ class UnitCard(QWidget):
         button = self._repair_button(unit)
         if button is not None:
             row.add(button)
-        row.add(CoordinateLabel(unit.position, self.settings))
+        row.add(CoordinateLabel(unit.position, self.settings, compact=True))
         return row
 
     def _repair_button(self, unit: TheaterUnit) -> Optional[QWidget]:
