@@ -104,7 +104,9 @@ class NewGameWizard(QtWidgets.QWizard):
             f104_starfighter=self.field("f104_starfighter"),
             f105_thunderchief=self.field("f105_thunderchief"),
             f106_deltadart=self.field("f106_deltadart"),
-            hercules=self.field("hercules"),
+            # The C-130J-30 Super Hercules is not offered: the mod is
+            # unsupported, here and by its own authors.
+            hercules=False,
             irondome=self.field("irondome"),
             oh_6=self.field("oh_6"),
             oh_6_vietnamassetpack=self.field("oh_6_vietnamassetpack"),
