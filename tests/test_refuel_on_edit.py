@@ -38,14 +38,43 @@ def _flight(
     helo: bool = False,
     tankers: bool = True,
     refuel_point: Any = object(),
+    tanker_flying: bool = False,
+    idle_tankers: bool = True,
 ) -> Any:
+    """A flight, and the two separate questions about tankers around it.
+
+    ``tanker_flying`` is whether one is in the air this turn; ``idle_tankers`` is
+    whether the wing has one sitting on the ground it could send. Having the
+    refuelling waypoint is a third thing again, and none of them implies another.
+    """
+    from game.ato.flighttype import FlightType
+
+    squadron = SimpleNamespace(
+        name="VS-35", untasked_aircraft=2, has_available_pilots=True
+    )
+    airborne = (
+        [SimpleNamespace(flight_type=FlightType.REFUELING, callsign="TEXACO")]
+        if tanker_flying
+        else []
+    )
     return SimpleNamespace(
         is_helo=helo,
         flight_plan=SimpleNamespace(layout=_Layout(refuel, has_slot)),
         coalition=SimpleNamespace(
-            air_wing=SimpleNamespace(can_auto_plan=lambda _task: tankers),
+            air_wing=SimpleNamespace(
+                can_auto_plan=lambda _task: tankers,
+                auto_assignable_for_task=lambda _task: (
+                    [squadron] if idle_tankers else []
+                ),
+            ),
+            ato=SimpleNamespace(packages=[SimpleNamespace(flights=airborne)]),
+            opponent=SimpleNamespace(
+                threat_zone=SimpleNamespace(
+                    threatened_by_air_defense=lambda _point: False
+                )
+            ),
         ),
-        package=SimpleNamespace(refuel_point=refuel_point),
+        package=SimpleNamespace(refuel_point=refuel_point, flights=[]),
     )
 
 
@@ -93,14 +122,44 @@ def test_a_flight_only_just_making_it_keeps_its_tanker(fuel: Any) -> None:
     comfortable before the waypoint is taken away.
     """
     fuel(9500, 10000)
-    assert refuel_verdict(_flight(refuel=object())) is RefuelVerdict.NOTHING_TO_DO
+    flight = _flight(refuel=object(), tanker_flying=True)
+    assert refuel_verdict(flight) is RefuelVerdict.NOTHING_TO_DO
 
 
 def test_a_flight_that_has_a_tanker_and_reads_short_is_left_alone(fuel: Any) -> None:
     """The estimate does not model taking fuel on, so a flight on its way to a tanker
     is expected to read short. That is not a reason to offer it a second one."""
     fuel(12000, 10000)
-    assert refuel_verdict(_flight(refuel=object())) is RefuelVerdict.NOTHING_TO_DO
+    flight = _flight(refuel=object(), tanker_flying=True)
+    assert refuel_verdict(flight) is RefuelVerdict.NOTHING_TO_DO
+
+
+def test_a_waypoint_with_nothing_flying_to_meet_it_asks_for_a_tanker(
+    fuel: Any,
+) -> None:
+    """The waypoint and the tanker are planned separately.
+
+    A turn that planned no tanker leaves the flight going to a rendezvous nobody is
+    coming to, and from the cockpit that is indistinguishable from the planner having
+    ignored the problem.
+    """
+    fuel(12000, 10000)
+    flight = _flight(refuel=object(), tanker_flying=False)
+    assert refuel_verdict(flight) is RefuelVerdict.NEEDS_A_TANKER
+
+
+def test_nothing_is_asked_when_there_is_nothing_to_send(fuel: Any) -> None:
+    """No tanker in the air and none on the ground: the question has no answer."""
+    fuel(12000, 10000)
+    flight = _flight(refuel=object(), tanker_flying=False, idle_tankers=False)
+    assert refuel_verdict(flight) is RefuelVerdict.NOTHING_TO_DO
+
+
+def test_a_comfortable_surplus_still_wins_over_the_missing_tanker(fuel: Any) -> None:
+    """Enough fuel to skip the detour beats having nobody to meet at it."""
+    fuel(8000, 10000)
+    flight = _flight(refuel=object(), tanker_flying=False)
+    assert refuel_verdict(flight) is RefuelVerdict.SHOULD_REMOVE
 
 
 def test_a_helicopter_is_never_offered_one(fuel: Any) -> None:

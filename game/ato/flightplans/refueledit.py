@@ -42,6 +42,8 @@ class RefuelVerdict(Enum):
 
     #: It is short of fuel and has nowhere to take any on.
     SHOULD_ADD = auto()
+    #: It has somewhere to take fuel on and there is nothing flying to meet it there.
+    NEEDS_A_TANKER = auto()
     #: It is carrying comfortably more than the route asks for and still has one.
     SHOULD_REMOVE = auto()
     #: Leave it alone.
@@ -63,6 +65,12 @@ def refuel_verdict(flight: Flight) -> RefuelVerdict:
         # detour has stopped being worth flying.
         if estimate.carried.pounds >= estimate.required.pounds * COMFORTABLE_MARGIN:
             return RefuelVerdict.SHOULD_REMOVE
+        # The waypoint and the tanker are planned separately, and a turn that planned
+        # no tanker leaves the flight flying to a rendezvous nobody is coming to. It
+        # reads as "it knows it is short and it did nothing about it", because from
+        # the cockpit that is exactly what happens.
+        if planned_tanker_name(flight) is None and can_offer_a_tanker(flight):
+            return RefuelVerdict.NEEDS_A_TANKER
         return RefuelVerdict.NOTHING_TO_DO
 
     if not estimate.enough:
