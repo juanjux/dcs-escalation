@@ -2,6 +2,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QHBoxLayout
 
 from qt_ui.windows.preferences.QLiberationPreferences import QLiberationPreferences
+from qt_ui.widgets.controls import style_button
 
 
 class QLiberationPreferencesWindow(QDialog):
@@ -13,7 +14,7 @@ class QLiberationPreferencesWindow(QDialog):
         self.setMinimumSize(300, 200)
         self.setWindowIcon(QIcon("./resources/icon.png"))
         self.preferences = QLiberationPreferences()
-        self.apply_button = QPushButton("Apply")
+        self.apply_button = style_button(QPushButton("Apply"), "primary")
         self.apply_button.clicked.connect(lambda: self.apply())
         self.initUI()
 

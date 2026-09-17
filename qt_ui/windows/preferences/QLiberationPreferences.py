@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from qt_ui import liberation_install, liberation_theme
+from qt_ui.widgets.controls import style_button
 from qt_ui.liberation_theme import THEMES, get_theme_index, set_theme_index
 
 
@@ -35,9 +36,9 @@ class QLiberationPreferences(QFrame):
         self.edit_dcs_install_dir.setMinimumWidth(300)
         self.edit_saved_game_dir.setMinimumWidth(300)
 
-        self.browse_saved_game = QPushButton("Browse...")
+        self.browse_saved_game = style_button(QPushButton("Browse..."))
         self.browse_saved_game.clicked.connect(self.on_browse_saved_games)
-        self.browse_install_dir = QPushButton("Browse...")
+        self.browse_install_dir = style_button(QPushButton("Browse..."))
         self.browse_install_dir.clicked.connect(self.on_browse_installation_dir)
         self.themeSelect = QComboBox()
         [self.themeSelect.addItem(y["themeName"]) for x, y in THEMES.items()]

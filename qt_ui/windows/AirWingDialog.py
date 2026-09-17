@@ -33,6 +33,7 @@ from qt_ui.widgets.squadronpanel import (
     SquadronPanel,
 )
 from qt_ui.dialogs import open_once
+from qt_ui.widgets.controls import style_button
 from qt_ui.models import AirWingModel, AtoModel, GameModel, SquadronModel
 from qt_ui.simcontroller import SimController
 from qt_ui.windows.AirWingConfigurationDialog import AirWingConfigurationDialog
@@ -261,7 +262,7 @@ class AirWingTabs(QTabWidget):
         self.addTab(AirInventoryView(game_model), "Inventory")
 
         if game_model.game.settings.enable_air_wing_adjustments:
-            pb = QPushButton("Open Air Wing Config Dialog")
+            pb = style_button(QPushButton("Open Air Wing Config Dialog"), "primary")
             pb.clicked.connect(self.open_awcd)
             pb.setMaximumWidth(300)
             layout = QHBoxLayout()

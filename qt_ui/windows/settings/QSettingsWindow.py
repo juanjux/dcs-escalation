@@ -66,6 +66,7 @@ from game.weather.cloudpresetpacks import apply_cloud_preset_pack
 from game.sim import GameUpdateEvents
 from qt_ui.widgets.QLabeledWidget import QLabeledWidget
 from qt_ui.widgets.gearbutton import gear_button
+from qt_ui.widgets.controls import style_button
 from qt_ui.widgets.spinsliders import FloatSpinSlider, TimeInputs
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.settings.plugins import PluginsPage
@@ -713,7 +714,7 @@ class AutoSettingsLayout(QGridLayout):
         field = QLineEdit()
         field.setReadOnly(True)
         h.addWidget(field, 1)
-        copy = QPushButton("Copy")
+        copy = style_button(QPushButton("Copy"))
         copy.clicked.connect(lambda: QApplication.clipboard().setText(field.text()))
         h.addWidget(copy)
         parent_layout.addLayout(h)
@@ -1328,10 +1329,10 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         self.layout.addLayout(self.right_layout, 0, 1, 5, 1)
         self.layout.setColumnStretch(1, 1)
 
-        load = QPushButton("Load Settings")
+        load = style_button(QPushButton("Load Settings"))
         load.clicked.connect(self.load_settings)
         self.layout.addWidget(load, 2, 0, 1, 1)
-        save = QPushButton("Save Settings")
+        save = style_button(QPushButton("Save Settings"))
         save.clicked.connect(self.save_settings)
         self.layout.addWidget(save, 3, 0, 1, 1)
 

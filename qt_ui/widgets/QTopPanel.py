@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 
 import qt_ui.uiconstants as CONST
 from qt_ui.liberation_theme import get_theme_icons
+from qt_ui.widgets.controls import style_button
 from game import Game, persistency
 from game.ato.flight import Flight
 from game.ato.flightstate import Uninitialized
@@ -95,33 +96,33 @@ class QTopPanel(QFrame):
             pass_turn_text = "Begin Campaign"
         self.passTurnButton = QPushButton(pass_turn_text)
         self.passTurnButton.setIcon(CONST.ICONS["PassTurn"])
-        self.passTurnButton.setProperty("style", "btn-primary")
+        style_button(self.passTurnButton, "primary")
         self.passTurnButton.clicked.connect(self.passTurn)
         if not self.game:
             self.passTurnButton.setEnabled(False)
 
         self.proceedButton = QPushButton("Take off")
         self.proceedButton.setIcon(CONST.ICONS["Proceed"])
-        self.proceedButton.setProperty("style", "start-button")
+        style_button(self.proceedButton, "primary")
         self.proceedButton.clicked.connect(self.launch_mission)
         if not self.game or self.game.turn == 0:
             self.proceedButton.setEnabled(False)
 
         self.air_wing = QPushButton("Air Wing")
         self.air_wing.setDisabled(True)
-        self.air_wing.setProperty("style", "btn-primary")
+        style_button(self.air_wing)
         self.air_wing.clicked.connect(self.open_air_wing)
 
         self.transfers = QPushButton("Transfers")
         self.transfers.setDisabled(True)
-        self.transfers.setProperty("style", "btn-primary")
+        style_button(self.transfers)
         self.transfers.clicked.connect(self.open_transfers)
 
         # The debriefing is modal and easily lost behind the main window on an alt-tab,
         # or closed before it has been read. This puts it back.
         self.debriefing = QPushButton("Debriefing")
         self.debriefing.setDisabled(True)
-        self.debriefing.setProperty("style", "btn-primary")
+        style_button(self.debriefing)
         self.debriefing.setToolTip("Show the last debriefing again")
         self.debriefing.clicked.connect(self.open_debriefing)
 
@@ -129,7 +130,7 @@ class QTopPanel(QFrame):
         # a few seconds on each API call the LLM makes (no manual on/off), and Take Off
         # is blocked while it's lit.
         self.ai_status_button = QPushButton("OPFOR AI: idle")
-        self.ai_status_button.setProperty("style", "btn-primary")
+        style_button(self.ai_status_button)
         self.ai_status_button.setToolTip("LLM OPFOR commander — click for status")
         self.ai_status_button.clicked.connect(self._show_ai_status)
         self.ai_status_button.setVisible(False)
@@ -369,7 +370,8 @@ class QTopPanel(QFrame):
             cancel_btn = box.addButton(
                 "Cancel AI turn", QMessageBox.ButtonRole.DestructiveRole
             )
-        box.addButton(QMessageBox.StandardButton.Close)
+            style_button(cancel_btn, "danger")
+        style_button(box.addButton(QMessageBox.StandardButton.Close))
         box.exec()
         if cancel_btn is not None and box.clickedButton() == cancel_btn:
             AI_SESSION.cancel()
