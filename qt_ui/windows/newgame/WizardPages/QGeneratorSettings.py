@@ -118,8 +118,6 @@ class GeneratorOptions(QtWidgets.QWizardPage):
         self.registerField("ea6b_prowler", self.ea6b_prowler)
         self.e7a_wedgetail = QtWidgets.QCheckBox()
         self.registerField("e7a_wedgetail", self.e7a_wedgetail)
-        self.hercules = QtWidgets.QCheckBox()
-        self.registerField("hercules", self.hercules)
         self.oh_6 = QtWidgets.QCheckBox()
         self.registerField("oh_6", self.oh_6)
         self.oh_6_vietnamassetpack = QtWidgets.QCheckBox()
@@ -239,7 +237,6 @@ class GeneratorOptions(QtWidgets.QWizardPage):
             ("A-4E Skyhawk (v2.3.0)", self.a4_skyhawk),
             ("A-6A Intruder (v2.7.5.01)", self.a6a_intruder),
             ("A-7E Corsair II", self.a7e_corsair2),
-            ("C-130J-30 Super Hercules (v6.8.2)", self.hercules),
             ("Cold War Assets mod (v1.2)", self.coldwarassets),
             (
                 "CurrentHill Chinese Military Assets pack (1.1.6)",
@@ -360,7 +357,6 @@ class GeneratorOptions(QtWidgets.QWizardPage):
         self.a7e_corsair2.setChecked(s.get("a7e_corsair2", False))
         self.ea6b_prowler.setChecked(s.get("ea6b_prowler", False))
         self.e7a_wedgetail.setChecked(s.get("e7a_wedgetail", False))
-        self.hercules.setChecked(s.get("hercules", False))
         self.uh_60l.setChecked(s.get("uh_60l", False))
         self.f4bc_phantom.setChecked(s.get("f4bc_phantom", False))
         self.f4e_expanded_weapons.setChecked(s.get("f4e_expanded_weapons", False))
