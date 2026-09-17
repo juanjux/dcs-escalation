@@ -44,7 +44,7 @@ def test_the_counter_refresh_puts_the_focus_back(qt_app: Any) -> None:
 
     tab.type_list = _Pane()  # type: ignore[assignment]
     tab.bases_pane = _Pane()  # type: ignore[assignment]
-    tab.window = lambda: holder  # type: ignore[assignment,method-assign]
+    tab.window = lambda: holder  # type: ignore[method-assign]
 
     AirWingConfigurationTab._refresh_counters(tab)
 
