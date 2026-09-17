@@ -41,6 +41,13 @@ class AirWing:
 
         self.__dict__.update(state)
 
+    def claim_squadron_def(self, squadron: Squadron) -> None:
+        """Mark this squadron's preset taken again, after putting the squadron back."""
+        if squadron.aircraft in self.squadron_defs:
+            for squadron_def in self.squadron_defs[squadron.aircraft]:
+                if squadron_def.name == squadron.name:
+                    squadron_def.claimed = True
+
     def unclaim_squadron_def(self, squadron: Squadron) -> None:
         if squadron.aircraft in self.squadron_defs:
             for squadron_def in self.squadron_defs[squadron.aircraft]:
