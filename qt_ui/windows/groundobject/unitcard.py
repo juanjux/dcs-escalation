@@ -14,6 +14,7 @@ from typing import Callable, Optional, Sequence
 
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
+from game.data.units import UNIT_DESCRIPTIONS, UNIT_NOTES
 from game.theater import TheaterGroundObject
 from game.theater.theatergroup import TheaterUnit
 from qt_ui.widgets.coordinatelabel import CoordinateLabel
@@ -65,15 +66,24 @@ def sort_key(unit: TheaterUnit) -> tuple[int, str]:
 
 
 def describe_unit(unit: TheaterUnit) -> str:
-    """What the unit is, rather than which model it is."""
+    """What the unit is, rather than which model it is.
+
+    By class, except for the few units their class describes badly.
+    """
     if unit.unit_type is None:
         return ""
+    override = UNIT_DESCRIPTIONS.get(unit.unit_type.dcs_id)
+    if override is not None:
+        return override
     return str(unit.unit_type.unit_class.description)
 
 
 def unit_note(unit: TheaterUnit) -> str:
     if unit.unit_type is None:
         return ""
+    override = UNIT_NOTES.get(unit.unit_type.dcs_id)
+    if override is not None:
+        return override
     return str(unit.unit_type.unit_class.note)
 
 

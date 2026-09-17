@@ -118,7 +118,7 @@ UNIT_CLASS_DESCRIPTIONS: dict[UnitClass, str] = {
     UnitClass.SEARCH_RADAR: "search radar",
     UnitClass.SEARCH_TRACK_RADAR: "search & track radar",
     UnitClass.SHORAD: "SHORAD",
-    UnitClass.SPECIALIZED_RADAR: "support radar",
+    UnitClass.SPECIALIZED_RADAR: "search radar",
     UnitClass.SUBMARINE: "submarine",
     UnitClass.TANK: "tank",
     UnitClass.TELAR: "launcher with its own radar",
@@ -137,6 +137,19 @@ UNIT_CLASS_NOTES: dict[UnitClass, str] = {
     UnitClass.SEARCH_LIGHT: "lights targets for the guns at night",
     UnitClass.SEARCH_RADAR: "finds the targets",
     UnitClass.SEARCH_TRACK_RADAR: "finds the targets and guides the missiles",
-    UnitClass.SPECIALIZED_RADAR: "part of the site's radar chain",
+    UnitClass.SPECIALIZED_RADAR: "finds the targets",
     UnitClass.TRACK_RADAR: "guides the missiles onto the target",
+}
+
+
+#: Where the class is wrong about one of its units, by DCS id. SpecializedRadar holds
+#: the acquisition radars of the S-300s, the Hawk and the Patriot, so it reads as a
+#: search radar -- except for the Patriot's antenna mast group, which carries no radar
+#: at all and relays the battery's radio traffic.
+UNIT_DESCRIPTIONS: dict[str, str] = {
+    "Patriot AMG": "comms relay",
+}
+
+UNIT_NOTES: dict[str, str] = {
+    "Patriot AMG": "carries the radio links between the site and its battery",
 }
