@@ -1,7 +1,7 @@
 ---
 name: Syria - Task Force Thunder
 theater: Syria
-authors: Sith1144
+authors: Sith1144, modified by juanjux
 description: <p>A campaign based on the campaign from Combat Mission Shock Force. US forces attempt to bisect the country by advancing towards Homs from Iraq in the east and an amphibious landing near Tartus in the west. Recommended starting budge 3000-4000M for REDFOR, 2000-5000M for BLUFOR. Cannot be inverted. NOTE; the marine landing in the west does NOT have a workshop and cannot produce new units, nor does the first enemy airfield in the area. How many resources you pour into it is up to you.</p>
 recommended_player_faction: USA 2005
 recommended_enemy_faction: Syria 2011
