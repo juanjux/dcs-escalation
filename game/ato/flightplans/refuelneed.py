@@ -15,7 +15,12 @@ import logging
 
 from typing import TYPE_CHECKING, Any
 
-from game.ato.fuelestimate import CLIMB_DISTANCE_NM, Leg, fuel_for_route
+from game.ato.fuelestimate import (
+    CLIMB_DISTANCE_NM,
+    Leg,
+    fuel_for_route,
+    releases_at_ingress,
+)
 from game.utils import Distance, meters
 
 if TYPE_CHECKING:
@@ -113,16 +118,28 @@ def planned_legs(
         Leg(climbing, cruise_ft, climb=True),
         Leg(out - climbing, cruise_ft),
         Leg(nm(waypoints.join, waypoints.ingress) * ROUTE_SLACK, cruise_ft),
-        # The run in, at the combat rate and the combat band.
-        Leg(
-            nm(waypoints.ingress, package.target.position) * ROUTE_SLACK,
-            combat_ft,
-            attack=True,
-        ),
-        Leg(on_station.nautical_miles, combat_ft),
-        Leg(nm(package.target.position, waypoints.split) * ROUTE_SLACK, combat_ft),
-        Leg(nm(waypoints.split, arrival.position) * ROUTE_SLACK, cruise_ft),
     ]
+    if releases_at_ingress(flight):
+        # The weapon flies the rest of the way in and the aeroplane turns for the
+        # split, so neither the run in nor the run out is the aeroplane's to fly.
+        legs.append(Leg(on_station.nautical_miles, combat_ft))
+        legs.append(
+            Leg(nm(waypoints.ingress, waypoints.split) * ROUTE_SLACK, cruise_ft)
+        )
+    else:
+        # The run in, at the combat rate and the combat band.
+        legs.append(
+            Leg(
+                nm(waypoints.ingress, package.target.position) * ROUTE_SLACK,
+                combat_ft,
+                attack=True,
+            )
+        )
+        legs.append(Leg(on_station.nautical_miles, combat_ft))
+        legs.append(
+            Leg(nm(package.target.position, waypoints.split) * ROUTE_SLACK, combat_ft)
+        )
+    legs.append(Leg(nm(waypoints.split, arrival.position) * ROUTE_SLACK, cruise_ft))
     return [leg for leg in legs if leg.nautical_miles > 0]
 
 
