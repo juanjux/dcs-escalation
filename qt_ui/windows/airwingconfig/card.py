@@ -181,7 +181,14 @@ class PlayerSlots(QWidget):
 
 class SquadronCard(QWidget):
     remove_squadron_signal = Signal(Squadron)
+
+    #: A number on the card changed. Nothing moved, so the list of cards must not be
+    #: rebuilt: doing that takes the card out from under the cursor mid-click.
     changed = Signal()
+
+    #: The squadron itself changed -- its base, its aircraft, its existence -- and
+    #: the panes have to be built again.
+    structure_changed = Signal()
     expanded = Signal(object)
 
     def __init__(
@@ -516,9 +523,15 @@ class SquadronCard(QWidget):
                 f"{allowed} tasks",
             ]
         else:
+            starts = (
+                f"starts with {self.squadron.max_size}"
+                if self.aircraft_present
+                else "starts empty, buy them"
+            )
             parts = [
                 self.squadron.location.name,
                 f"{self.squadron.max_size} aircraft max",
+                starts,
                 f"{allowed} tasks allowed",
             ]
         self.summary.setText(" · ".join(parts))
@@ -613,7 +626,7 @@ class SquadronCard(QWidget):
         self.parking_tracker.relocate_squadron(
             self.squadron, self.squadron.location, location
         )
-        self.changed.emit()
+        self.structure_changed.emit()
 
     def reroll_nickname(self) -> None:
         self.nickname_edit.setText(
@@ -655,7 +668,7 @@ class SquadronCard(QWidget):
         self.task_chips.replace_squadron(self.squadron)
         self.player_slots.replace_squadron(self.squadron)
         self.parking_tracker.signal_change()
-        self.changed.emit()
+        self.structure_changed.emit()
 
     def bind_data(self) -> None:
         old_state = self.blockSignals(True)
