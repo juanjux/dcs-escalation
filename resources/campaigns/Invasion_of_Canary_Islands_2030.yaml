@@ -67,7 +67,6 @@ settings:
   f100_supersabre: false
   f104_starfighter: false
   f105_thunderchief: false
-  hercules: false          # both sides fly the C-130J-30 that ships with DCS
   uh_60l: true
   eurofighter: true
   mam: true                # Spain's A400M

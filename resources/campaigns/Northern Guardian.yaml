@@ -27,7 +27,6 @@ recommended_player_income_multiplier: 0.7
 recommended_enemy_income_multiplier: 1
 version: "10.7"
 settings:
-  hercules: true
   squadron_start_full: true
   russianmilitaryassetspack: true
   usamilitaryassetspack: true
@@ -53,7 +52,7 @@ squadrons:
     - primary: Transport
       secondary: any
       aircraft:
-        - C-130J-30 Super Hercules
+        - C-130J-30
       size: 2
   #H FRG 04
   56:

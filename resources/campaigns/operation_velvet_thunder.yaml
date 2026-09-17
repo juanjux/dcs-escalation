@@ -23,7 +23,6 @@ settings:
   airbase_threat_range: 20
   a4_skyhawk: true
   f111c: true
-  hercules: true
   ov10a_bronco: true
   vietnamwarvessels: true
   squadron_start_full: true
@@ -76,7 +75,6 @@ squadrons:
     - primary: Air Assault
       secondary: any
       aircraft:
-        - C-130J-30 Super Hercules
         - C-130J-30
       size: 8
     - primary: Armed Recon

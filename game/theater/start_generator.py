@@ -94,7 +94,6 @@ class ModSettings:
     f105_thunderchief: bool = False
     f106_deltadart: bool = False
     f111c: bool = False
-    hercules: bool = False
     irondome: bool = False
     oh_6: bool = False
     oh_6_vietnamassetpack: bool = False

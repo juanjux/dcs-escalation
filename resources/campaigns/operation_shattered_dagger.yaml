@@ -23,7 +23,6 @@ recommended_enemy_money: 0
 recommended_enemy_income_multiplier: 0.0
 version: "10.9"
 settings:
-  hercules: true
   uh_60l: true
   squadron_start_full: true
 squadrons:
@@ -32,7 +31,6 @@ squadrons:
     - primary: Transport
       secondary: any
       aircraft:
-        - C-130J-30 Super Hercules
         - C-130J-30
       size: 4
     - primary: CAS

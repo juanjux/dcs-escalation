@@ -259,7 +259,7 @@ class WaypointBuilder:
             alt = self._adjust_altitude_for_clouds(alt)
 
         alt_type: AltitudeReference = "BARO"
-        if self.is_helo or self.flight.is_hercules:
+        if self.is_helo or self.flight.is_c130j:
             alt_type = "RADIO"
             alt = (
                 feet(self.flight.coalition.game.settings.heli_combat_alt_agl)

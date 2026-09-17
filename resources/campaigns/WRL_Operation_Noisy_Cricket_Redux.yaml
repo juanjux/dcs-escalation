@@ -37,7 +37,6 @@ recommended_enemy_income_multiplier: 0.4
 version: "10.7"
 settings:
   #Mods to be used
-  hercules: true
   uh_60l: true
 squadrons:
   Blue CV-1:
@@ -133,7 +132,7 @@ squadrons:
     - primary: Air Assault
       secondary: air-to-ground
       aircraft:
-        - C-130J-30 Super Hercules
+        - C-130
       size: 8
     - primary: Air Assault
       secondary: air-to-ground

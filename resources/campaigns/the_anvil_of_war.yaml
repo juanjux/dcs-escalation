@@ -25,7 +25,6 @@ settings:
   swedishmilitaryassetspack: true
   f22_raptor: true
   fa_18efg: true
-  hercules: true
   uh_60l: true
   squadron_start_full: true
 # GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
@@ -107,7 +106,6 @@ squadrons:
     - primary: Transport
       secondary: any
       aircraft:
-        - C-130J-30 Super Hercules
         - C-130J-30
       size: 1
   #Kiruna
@@ -152,7 +150,6 @@ squadrons:
     - primary: Transport
       secondary: any
       aircraft:
-        - C-130J-30 Super Hercules
         - C-130J-30
       size: 4
   #Kallax

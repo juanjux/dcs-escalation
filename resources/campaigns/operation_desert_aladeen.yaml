@@ -27,7 +27,6 @@ version: "10.9"
 settings:
   usamilitaryassetspack: true
   f22_raptor: true
-  hercules: true
   squadron_start_full: true
 squadrons:
   #Baghdad International Airport
@@ -101,7 +100,6 @@ squadrons:
     - primary: Transport
       secondary: any
       aircraft:
-        - C-130J-30 Super Hercules
         - C-130J-30
       size: 4
   #Kirkuk International Airport

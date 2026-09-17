@@ -484,6 +484,11 @@ and it is longer than this section.
 
 ## Removed from upstream
 
+- **Anubis' C-130J-30 Super Hercules mod**, unsupported here and by its own authors. It
+  was the only aircraft that could drop paratroopers, and it did it as a carpet-bombing
+  task releasing the mod's own thirty-soldier store — something the stock C-130J-30 does
+  not carry. Saves, factions and campaigns that used it read the stock C-130J-30 instead.
+
 - **Fast forward.** It never worked well enough to be worth the machinery. Take Off hands
   DCS the mission at the time it was planned for.  
   ([#176](https://github.com/juanjux/dcs-escalation/pull/176))

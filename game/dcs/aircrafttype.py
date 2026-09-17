@@ -474,6 +474,9 @@ class AircraftType(UnitType[Type[FlyingType]]):
             "F-15E Strike Eagle (AI)": "F-15E Strike Eagle",
             "[CH] Tu-95MSM": "Tu-95MS Bear-H",
             "[CH] Mi-28N AH": "Mi-28N Havoc",
+            # Anubis' C-130 mod is gone; a save that flew it reads the stock
+            # C-130J-30, which is the same airframe without the mod's stores.
+            "C-130J-30 Super Hercules": "C-130J-30",
         }
 
     @classmethod
