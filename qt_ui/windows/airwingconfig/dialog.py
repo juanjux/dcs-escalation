@@ -14,6 +14,7 @@ controls sit in an amber block so it is obvious which fields are the cheat.
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import Any, Iterable, Optional
 
 import yaml
@@ -160,6 +161,39 @@ class SquadronsPane(QWidget):
         self.empty.setVisible(not cards)
 
 
+@dataclass(frozen=True)
+class SquadronState:
+    """What this dialog writes into a squadron before anything is applied.
+
+    Max size, the pilot limit and the cheat's aircraft buttons take effect the moment
+    they are touched -- the parking counts and the base pane are drawn from them, so
+    they cannot wait for Apply. Discarding therefore has to put them back. The rest of
+    the form is only read in apply() and needs nothing.
+    """
+
+    squadron: Squadron
+    max_size: int
+    pilot_limit_override: Optional[int]
+    owned_aircraft: int
+    untasked_aircraft: int
+
+    @classmethod
+    def of(cls, squadron: Squadron) -> SquadronState:
+        return cls(
+            squadron,
+            squadron.max_size,
+            squadron.pilot_limit_override,
+            squadron.owned_aircraft,
+            squadron.untasked_aircraft,
+        )
+
+    def restore(self) -> None:
+        self.squadron.max_size = self.max_size
+        self.squadron.pilot_limit_override = self.pilot_limit_override
+        self.squadron.owned_aircraft = self.owned_aircraft
+        self.squadron.untasked_aircraft = self.untasked_aircraft
+
+
 class AirWingConfigurationTab(QWidget):
     """One coalition's wing: its types, its squadrons and its bases."""
 
@@ -195,6 +229,9 @@ class AirWingConfigurationTab(QWidget):
         self.parking_tracker = AirWingConfigParkingTracker(
             coalition.air_wing.iter_squadrons()
         )
+
+        #: The wing as the dialog found it, for Discard to put back.
+        self._at_open = self._snapshot()
 
         self.type_list = AircraftTypeList(coalition.air_wing)
         self.type_list.type_selected.connect(self.on_type_selected)
@@ -423,7 +460,20 @@ class AirWingConfigurationTab(QWidget):
                 continue
             wing.squadrons[aircraft] = [card.apply() for card in cards]
 
-    def revert(self) -> None:
+    def _snapshot(
+        self,
+    ) -> tuple[dict[AircraftType, list[Squadron]], list[SquadronState]]:
+        wing = self.coalition.air_wing
+        return (
+            {
+                aircraft: list(squadrons)
+                for aircraft, squadrons in wing.squadrons.items()
+            },
+            [SquadronState.of(squadron) for squadron in wing.iter_squadrons()],
+        )
+
+    def rebuild(self) -> None:
+        """Draw the panes again from whatever the wing holds now."""
         self.parking_tracker = AirWingConfigParkingTracker(
             self.coalition.air_wing.iter_squadrons()
         )
@@ -432,6 +482,28 @@ class AirWingConfigurationTab(QWidget):
         self.build_cards()
         self.type_list.refresh()
         self.on_changed()
+
+    def discard(self) -> None:
+        """Put the wing back the way the dialog found it.
+
+        The panes are not drawn again: discarding closes the dialog, and rebuilding
+        every card first is the pause between pressing the button and the window
+        going away.
+        """
+        wing = self.coalition.air_wing
+        squadrons, states = self._at_open
+        # A squadron added or swapped in while the dialog was open holds a preset.
+        # Hand it back, or that preset is gone for the rest of the campaign.
+        kept = {state.squadron for state in states}
+        for squadron in list(wing.iter_squadrons()):
+            if squadron not in kept:
+                wing.unclaim_squadron_def(squadron)
+        wing.squadrons = defaultdict(
+            list, {aircraft: list(group) for aircraft, group in squadrons.items()}
+        )
+        for state in states:
+            state.restore()
+            wing.claim_squadron_def(state.squadron)
 
 
 class AirWingConfigurationDialog(QDialog):
@@ -777,7 +849,7 @@ class AirWingConfigurationDialog(QDialog):
         c.air_wing.squadrons = defaultdict(list)
         config = CampaignAirWingConfig.from_campaign_data(airwing, c.game.theater)
         c.configure_default_air_wing(config)
-        tab.revert()
+        tab.rebuild()
         if c.game.turn != 0:
             from game.server import EventStream
             from game.sim.gameupdateevents import GameUpdateEvents
@@ -789,18 +861,25 @@ class AirWingConfigurationDialog(QDialog):
     # --- window ---------------------------------------------------------------
 
     def revert(self) -> None:
+        """Discard everything and leave.
+
+        The button beside this one applies and closes, so this one closes too: an
+        exit that leaves the window open reads as though nothing happened.
+        """
         result = QMessageBox.question(
             self,
             "Discard changes?",
-            "Put every squadron back the way it was?",
+            "Put every squadron back the way it was and close?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
         if result != QMessageBox.StandardButton.Yes:
             return
         for tab in self.tabs:
-            tab.revert()
-        self.refresh_totals()
+            tab.discard()
+        # QDialog's own reject: the override asks whether to keep the changes, which
+        # is the question that was just answered.
+        super().reject()
 
     def accept(self) -> None:
         for tab in self.tabs:
