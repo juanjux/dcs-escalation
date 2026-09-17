@@ -158,34 +158,56 @@ class AircraftTypeList(QListView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.item_model = QStandardItemModel(self)
         self.setModel(self.item_model)
+        #: Set while refresh() is rebuilding the rows. Emptying the model drops the
+        #: selection and filling it puts the selection back, and Qt calls each of
+        #: those a selection change: a refresh that ended on the type it started on
+        #: announced four of them.
+        self._refreshing = False
         self.selectionModel().selectionChanged.connect(self._on_selection_changed)
         self.refresh()
 
     def refresh(self, keep: Optional[AircraftType] = None) -> None:
+        """Draw the rows again, keeping the type that was selected.
+
+        Quiet while it works: every selection change here rebuilds the squadrons
+        column, and that column hides and unparents each of its cards to rebuild it,
+        which drops the keyboard focus. The size of a squadron changes these counts
+        on every press of an arrow key, so a refresh that lands back on the same type
+        was rebuilding the card the key was being pressed in.
+        """
         keep = keep or self.selected_type()
-        self.item_model.clear()
-        for aircraft in sorted(self.air_wing.squadrons, key=lambda a: a.display_name):
-            squadrons = self.air_wing.squadrons[aircraft]
-            item = QStandardItem()
-            item.setEditable(False)
-            item.setData(
-                {
-                    "aircraft": aircraft,
-                    "squadrons": len(squadrons),
-                    "aircraft_count": sum(s.max_size for s in squadrons),
-                },
-                DATA_ROLE,
-            )
-            self.item_model.appendRow(item)
-        if self.item_model.rowCount():
-            row = 0
-            if keep is not None:
-                for candidate in range(self.item_model.rowCount()):
-                    data = self.item_model.item(candidate).data(DATA_ROLE)
-                    if data and data.get("aircraft") == keep:
-                        row = candidate
-                        break
-            self.setCurrentIndex(self.item_model.index(row, 0))
+        self._refreshing = True
+        try:
+            self.item_model.clear()
+            for aircraft in sorted(
+                self.air_wing.squadrons, key=lambda a: a.display_name
+            ):
+                squadrons = self.air_wing.squadrons[aircraft]
+                item = QStandardItem()
+                item.setEditable(False)
+                item.setData(
+                    {
+                        "aircraft": aircraft,
+                        "squadrons": len(squadrons),
+                        "aircraft_count": sum(s.max_size for s in squadrons),
+                    },
+                    DATA_ROLE,
+                )
+                self.item_model.appendRow(item)
+            if self.item_model.rowCount():
+                row = 0
+                if keep is not None:
+                    for candidate in range(self.item_model.rowCount()):
+                        data = self.item_model.item(candidate).data(DATA_ROLE)
+                        if data and data.get("aircraft") == keep:
+                            row = candidate
+                            break
+                self.setCurrentIndex(self.item_model.index(row, 0))
+        finally:
+            self._refreshing = False
+        chosen = self.selected_type()
+        if chosen != keep:
+            self.type_selected.emit(chosen)
 
     def selected_type(self) -> Optional[AircraftType]:
         index = self.currentIndex()
@@ -196,6 +218,8 @@ class AircraftTypeList(QListView):
         return data.get("aircraft") if data else None
 
     def _on_selection_changed(self) -> None:
+        if self._refreshing:
+            return
         self.type_selected.emit(self.selected_type())
 
 
