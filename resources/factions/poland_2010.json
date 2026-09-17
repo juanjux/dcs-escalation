@@ -51,7 +51,8 @@
   "missiles": [],
   "preset_groups": [
     "SA-5/S-200",
-    "SA-6"
+    "SA-6",
+    "GPS Jamming Site (Blue)"
   ],
   "naval_units": [
     "FFG Oliver Hazard Perry",

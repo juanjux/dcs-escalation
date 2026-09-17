@@ -55,7 +55,8 @@
   "preset_groups": [
     "Hawk",
     "Iron Dome",
-    "Patriot"
+    "Patriot",
+    "GPS Jamming Site (Blue)"
   ],
   "naval_units": [
     "DDG Arleigh Burke IIa"

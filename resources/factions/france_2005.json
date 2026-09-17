@@ -60,7 +60,8 @@
   ],
   "preset_groups": [
     "Hawk",
-    "Roland"
+    "Roland",
+    "GPS Jamming Site (Blue)"
   ],
   "naval_units": [
     "DDG Arleigh Burke IIa",
