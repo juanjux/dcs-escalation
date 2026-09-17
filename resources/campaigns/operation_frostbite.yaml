@@ -15,7 +15,6 @@ recommended_start_date: 2016-06-06
 version: "10.7"
 settings:
   restrict_weapons_by_date: false
-  hercules: false
 squadrons:
   #Lakselv
   1:

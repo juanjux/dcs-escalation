@@ -99,9 +99,9 @@ class AirAssaultFlightPlan(FormationAttackFlightPlan, UiZoneDisplay):
 
 class Builder(FormationAttackBuilder[AirAssaultFlightPlan, AirAssaultLayout]):
     def layout(self) -> AirAssaultLayout:
-        if not self.flight.is_helo and not self.flight.is_hercules:
+        if not self.flight.is_helo and not self.flight.is_c130j:
             raise PlanningError(
-                "Air assault is only usable by helicopters and Anubis' C-130 mod"
+                "Air assault is only usable by helicopters and the C-130J-30"
             )
         assert self.package.waypoints is not None
 
@@ -110,7 +110,7 @@ class Builder(FormationAttackBuilder[AirAssaultFlightPlan, AirAssaultLayout]):
         altitude = builder.get_cruise_altitude
         altitude_is_agl = self.flight.is_helo
 
-        if self.flight.is_hercules or self.flight.departure.cptype in [
+        if self.flight.is_c130j or self.flight.departure.cptype in [
             ControlPointType.AIRCRAFT_CARRIER_GROUP,
             ControlPointType.LHA_GROUP,
             ControlPointType.OFF_MAP,
@@ -140,7 +140,7 @@ class Builder(FormationAttackBuilder[AirAssaultFlightPlan, AirAssaultLayout]):
         )
 
         assault_area = builder.assault_area(self.package.target)
-        if self.flight.is_hercules:
+        if self.flight.is_c130j:
             assault_area.only_for_player = False
             assault_area.alt = feet(1000)
 

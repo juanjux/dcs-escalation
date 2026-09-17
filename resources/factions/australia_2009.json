@@ -7,7 +7,6 @@
     "AH-1W SuperCobra",
     "C-130",
     "C-130J-30",
-    "C-130J-30 Super Hercules",
     "F/A-18C Hornet (Lot 20)",
     "EA-18G Growler",
     "F/A-18F Super Hornet",
@@ -53,9 +52,7 @@
     "EWR AN/FPS-117 Radar",
     "HEMTT C-RAM Phalanx"
   ],
-  "requirements": {
-    "C-130J-30 Super Hercules Mod by Anubis": "https://forums.eagle.ru/topic/252075-dcs-super-hercules-mod-by-anubis/"
-  },
+  "requirements": {},
   "carrier_names": [],
   "helicopter_carrier_names": [
     "HMAS Canberra",

@@ -33,7 +33,6 @@ version: "10.9"
 settings:
   fa_18efg: true
   f22_raptor: true
-  hercules: true
   squadron_start_full: true  
 # GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
 # most of its own air defences. No radar on it, so it is a STRIKE target, not
@@ -122,7 +121,6 @@ squadrons:
     - primary: Transport
       secondary: any
       aircraft:
-        - C-130J-30 Super Hercules
         - C-130J-30
       size: 4
     - primary: AEW&C
@@ -167,7 +165,6 @@ squadrons:
     - primary: Transport
       secondary: any
       aircraft:
-        - C-130J-30 Super Hercules
         - C-130J-30
       size: 2
     - primary: AEW&C

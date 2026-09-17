@@ -12,7 +12,6 @@ from dcs.planes import C_101CC, C_101EB, Su_33, FA_18C_hornet, C_130J_30
 from game.dcs.aircrafttype import AircraftType
 from game.theater import ControlPoint, MissionTarget
 from game.utils import max_optional_distance
-from pydcs_extensions.hercules.hercules import Hercules
 from .flightmembers import FlightMembers
 from .flightroster import FlightRoster
 from .flightstate import FlightState, Navigating, Uninitialized
@@ -245,10 +244,8 @@ class Flight(
         return self.unit_type.helicopter
 
     @property
-    def is_hercules(self) -> bool:
-        if self.unit_type == AircraftType.named("C-130J-30"):
-            return True
-        return self.unit_type == AircraftType.named("C-130J-30 Super Hercules")
+    def is_c130j(self) -> bool:
+        return self.unit_type == AircraftType.named("C-130J-30")
 
     @property
     def points(self) -> List[FlightWaypoint]:
@@ -312,7 +309,7 @@ class Flight(
                 self.fuel = Su_33.fuel_max * 0.8
         elif unit_type in {C_101EB, C_101CC}:
             self.fuel = unit_type.fuel_max * 0.5
-        elif unit_type in {Hercules, C_130J_30}:
+        elif unit_type is C_130J_30:
             self.fuel = unit_type.fuel_max * 0.75
 
     def any_member_has_weapon_of_type(self, weapon_type: WeaponType) -> bool:

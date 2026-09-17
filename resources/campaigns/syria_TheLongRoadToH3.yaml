@@ -173,7 +173,6 @@ squadrons:
     - primary: Transport
       secondary: any
       aircraft:
-        - C-130J-30 Super Hercules
         - C-130
       size: 8
     # Viper Warhawks

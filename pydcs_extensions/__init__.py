@@ -22,7 +22,6 @@ from .f84g import *
 from .f111c import *
 from .fa18efg import *
 from .frenchpack import *
-from .hercules import *
 from .highdigitsams import *
 from .irondome import *
 from .jas39 import *

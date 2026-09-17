@@ -131,7 +131,6 @@ squadrons:
       #USAF A-10CI
     - primary: Transport
       aircraft:
-        - C-130J-30 Super Hercules
         - C-130
       size: 8
   # Khasab / 12
