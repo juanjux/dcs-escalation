@@ -29,7 +29,9 @@
   "air_defense_units": [
     "M1097 Heavy HMMWV Avenger"
   ],
-  "preset_groups": [],
+  "preset_groups": [
+    "GPS Jamming Site (Blue)"
+  ],
   "naval_units": [],
   "missiles": [],
   "has_jtac": true,

@@ -58,7 +58,8 @@
   ],
   "preset_groups": [
     "Hawk",
-    "Roland"
+    "Roland",
+    "GPS Jamming Site (Blue)"
   ],
   "naval_units": [
     "FFG Oliver Hazard Perry",

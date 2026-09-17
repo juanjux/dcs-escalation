@@ -44,6 +44,8 @@
     "AAA ZU-23 Insurgent Closed Emplacement",
     "ZU-23 on Ural-375 Insurgent"
   ],
-  "preset_groups": [],
+  "preset_groups": [
+    "GPS Jamming Site (Red)"
+  ],
   "naval_units": []
 }

@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
 * **[Mission Generator]** The cockpit displays only show the enemy air defence the campaign settings allow.
 * **[UI]** The buy / replace dialog of a location was redrawn.
 * **[UI]** The F-16 application icon now has a blue/yellow Ukrainian flag background for better visibility at desktop and taskbar sizes.

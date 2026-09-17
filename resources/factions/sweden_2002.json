@@ -40,7 +40,8 @@
     "MANPADS Stinger"
   ],
   "preset_groups": [
-    "Hawk"
+    "Hawk",
+    "GPS Jamming Site (Blue)"
   ],
   "naval_units": [
     "FFG Oliver Hazard Perry"

@@ -36,7 +36,8 @@
   ],
   "missiles": [],
   "preset_groups": [
-    "SA-3/S-125"
+    "SA-3/S-125",
+    "GPS Jamming Site (Red)"
   ],
   "naval_units": [],
   "air_defense_units": [

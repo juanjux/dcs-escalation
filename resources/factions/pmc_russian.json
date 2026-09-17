@@ -35,7 +35,9 @@
     "SA-9 Strela",
     "SA-13 Gopher (9K35 Strela-10M3)"
   ],
-  "preset_groups": [],
+  "preset_groups": [
+    "GPS Jamming Site (Red)"
+  ],
   "naval_units": [],
   "missiles": []
 }
