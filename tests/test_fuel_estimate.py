@@ -39,7 +39,18 @@ def test_somebody_has_measured_some_aircraft() -> None:
 
 
 def test_the_guess_leans_high_against_every_measured_airframe() -> None:
-    """A wide band on purpose: the measured set itself spans 447 to 856 nm."""
+    """A wide band on purpose, and wider on the low side than it looks.
+
+    The comparison is against the figure in the aircraft's file, and those run high:
+    an F/A-18C flown in DCS at 25,000 ft carrying its own default loadout burns 17.3
+    lb a mile where its file says 22.1. A guess that matches what the aeroplane
+    really does therefore reads about 0.7 of what its file claims, which is why the
+    floor is where it is rather than nearer 1.
+
+    The Super Hornets set the floor. Their files carry the F/A-18C's figure, copied,
+    and an F/A-18F measured 9.6 lb a mile against it -- so for them the guess is the
+    better number of the two, and the bound only has to stay out of its way.
+    """
     for aircraft in _measured():
         if _airframe_class(aircraft) == "heavy":
             # The buddy tankers carry their TRANSFERABLE fuel as "internal", so a
@@ -50,7 +61,7 @@ def test_the_guess_leans_high_against_every_measured_airframe() -> None:
         assert measured is not None
         guess = assumed_consumption(aircraft)
         ratio = guess.cruise / measured.cruise
-        assert ratio > 0.7, f"{aircraft} guessed {ratio:.2f}x its measured cruise"
+        assert ratio > 0.6, f"{aircraft} guessed {ratio:.2f}x its measured cruise"
         assert ratio < 2.5, f"{aircraft} guessed {ratio:.2f}x its measured cruise"
 
 
@@ -84,12 +95,17 @@ def _internal_pounds(aircraft: AircraftType) -> float:
 
 
 def test_a_bomber_is_not_charged_a_fighters_rate_per_mile() -> None:
-    """A flat range per class read 195,000 lb of B-1B fuel as 433 lb a mile."""
+    """A flat range per class read 195,000 lb of B-1B fuel as 433 lb a mile.
+
+    A thousand miles rather than two: the bar was set before any of these had been
+    flown, and a Tu-22M3 measured 1,220 nm on its internal fuel, so a guess of two
+    thousand would have been the optimistic kind of wrong.
+    """
     for aircraft in AircraftType.iter_all():
         if aircraft.helicopter or _internal_pounds(aircraft) < 100000:
             continue
         implied = _internal_pounds(aircraft) / assumed_consumption(aircraft).cruise
-        assert implied > 2000, f"{aircraft} guessed at only {implied:.0f} nm"
+        assert implied > 1000, f"{aircraft} guessed at only {implied:.0f} nm"
 
 
 def test_the_guessed_range_grows_with_the_fuel_carried() -> None:
