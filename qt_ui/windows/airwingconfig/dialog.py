@@ -176,6 +176,14 @@ class AirWingConfigurationTab(QWidget):
         self.base_filter: Optional[ControlPoint] = None
         self.cards: dict[AircraftType, list[SquadronCard]] = defaultdict(list)
 
+        #: Gathers a burst of spinner presses into one pass over the counters. 120 ms
+        #: is under what a hand notices and over the interval an auto-repeating arrow
+        #: fires at.
+        self._counters = QTimer(self)
+        self._counters.setSingleShot(True)
+        self._counters.setInterval(120)
+        self._counters.timeout.connect(self._refresh_counters)
+
         make_transparent(self)
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
@@ -305,10 +313,11 @@ class AirWingConfigurationTab(QWidget):
             else "This coalition flies nothing of this type yet."
         )
         self.squadrons_pane.show_cards(cards, title, empty)
-        self.squadrons_pane.add_button.setText(
-            f"+ Add {aircraft.display_name} squadron…"
+        self.squadrons_pane.add_button.setText("+ Add squadron…")
+        self.squadrons_pane.add_button.setToolTip(
+            "Any aircraft this faction can field, not only " f"{aircraft.display_name}."
             if aircraft is not None
-            else "+ Add squadron…"
+            else "Any aircraft this faction can field."
         )
 
     # --- squadrons -----------------------------------------------------------
@@ -409,13 +418,6 @@ class AirWingConfigurationTab(QWidget):
             self.coalition.air_wing.iter_squadrons()
         )
         self.bases_pane.parking_tracker = self.parking_tracker
-        #: Coalesces a burst of spinner presses into a single pass over the
-        #: counters. 120 ms is below what a hand notices and above the interval an
-        #: auto-repeating arrow fires at.
-        self._counters = QTimer(self)
-        self._counters.setSingleShot(True)
-        self._counters.setInterval(120)
-        self._counters.timeout.connect(self._refresh_counters)
         self.parking_tracker.allocation_changed.connect(self.bases_pane.refresh)
         self.build_cards()
         self.type_list.refresh()

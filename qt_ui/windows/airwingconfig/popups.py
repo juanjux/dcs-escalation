@@ -83,6 +83,12 @@ class SquadronConfigPopup(QDialog):
         self.setLayout(self.column)
 
         self.column.addWidget(QLabel("Aircraft:"))
+        self.column.addWidget(
+            QLabel(
+                "<span style='color:#8E9DAA'>Every type the faction can field is "
+                "here, whether or not it already has a squadron.</span>"
+            )
+        )
         self.aircraft_type_selector = SquadronAircraftTypeSelector(
             types, selected_aircraft
         )
