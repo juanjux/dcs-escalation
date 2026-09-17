@@ -17,8 +17,10 @@ from collections import defaultdict
 from typing import Any, Iterable, Optional
 
 import yaml
+import shiboken6
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
+    QApplication,
     QDialog,
     QFileDialog,
     QHBoxLayout,
@@ -278,11 +280,19 @@ class AirWingConfigurationTab(QWidget):
         self._counters.start()
 
     def _refresh_counters(self) -> None:
+        # Rebuilding the type list moves its selection, and a selection moving takes
+        # the keyboard focus with it -- off the spinner whose arrow key is still
+        # being held. Put the focus back where the player left it.
+        dialog = self.window()
+        # The window's own answer as well as the application's: a window that is not
+        # the active one has a focus widget of its own and no application focus.
+        focused = QApplication.focusWidget() or dialog.focusWidget()
         self.type_list.refresh()
         self.bases_pane.refresh()
-        dialog = self.window()
         if isinstance(dialog, AirWingConfigurationDialog):
             dialog.refresh_totals()
+        if focused is not None and shiboken6.isValid(focused):
+            focused.setFocus(Qt.FocusReason.OtherFocusReason)
 
     # --- panes ---------------------------------------------------------------
 
