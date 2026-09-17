@@ -12,10 +12,20 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Optional
 
 from game.ato.flighttype import FlightType
+from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
 from game.data.fueltanks import loadout_fuel
 from game.dcs.aircrafttype import AircraftType, FuelConsumption
-from game.utils import KG_TO_LBS, Mass, kgs, kph, pairwise, pounds
+from game.utils import (
+    KG_TO_LBS,
+    Distance,
+    Mass,
+    kgs,
+    kph,
+    meters,
+    pairwise,
+    pounds,
+)
 
 if TYPE_CHECKING:
     from game.ato.flight import Flight
@@ -33,6 +43,80 @@ ATTACK_WAYPOINTS = frozenset(
         FlightWaypointType.TARGET_SHIP,
     }
 )
+
+
+#: How near the ingress has to sit to the weapon's range to count as being at it.
+#: The solver picks a point out of a ring rather than off a radius, so it lands about
+#: there. Both ends matter: an ingress much FURTHER out than the weapon shoots from
+#: was not placed by the weapon, and that flight really does fly in.
+STANDOFF_BAND = (0.9, 1.1)
+
+
+def releases_at_ingress(flight: Flight) -> bool:
+    """Whether this flight shoots from the ingress point instead of flying on.
+
+    The package puts its ingress at the range its weapons are fired from and records
+    that range, so when the ingress really is out at it, the run in to the target is
+    the weapon's to fly and not the aeroplane's.
+
+    Having a stand-off range is not enough on its own: a weapon that cannot shoot
+    from further out than the doctrine would send the flight anyway leaves the ingress
+    where it was, and that flight does fly to its target.
+    """
+    package = getattr(flight, "package", None)
+    waypoints = getattr(package, "waypoints", None)
+    standoff = getattr(waypoints, "standoff_range", None)
+    # A real recorded range, not merely something in the attribute: this is asked of
+    # every flight, including the stand-ins tests build.
+    if package is None or waypoints is None or not isinstance(standoff, Distance):
+        return False
+    target = getattr(package, "target", None)
+    if target is None:
+        return False
+    reach = meters(waypoints.ingress.distance_to_point(target.position))
+    low, high = STANDOFF_BAND
+    return (
+        standoff.nautical_miles * low
+        <= reach.nautical_miles
+        <= standoff.nautical_miles * high
+    )
+
+
+def _route_actually_flown(
+    waypoints: list[FlightWaypoint], flight: Flight
+) -> list[FlightWaypoint]:
+    """The waypoints the aeroplane passes over, with a stand-off run taken out.
+
+    A strike with SLAM-ERs is given an ingress a hundred and fifty miles from the
+    target and target points on top of it, because that is what the mission needs to
+    say. Charging the aeroplane for flying out there and back was most of its fuel
+    bill -- and at the combat rate on the way in -- so a four hundred mile sortie read
+    as a thousand and every flight in the campaign was judged too short of fuel to
+    reach its own target.
+    """
+    if not releases_at_ingress(flight):
+        return waypoints
+    ingress = next(
+        (
+            index
+            for index, point in enumerate(waypoints)
+            if point.waypoint_type.name.startswith("INGRESS")
+        ),
+        None,
+    )
+    if ingress is None:
+        return waypoints
+    # Everything the flight was pointed at, wherever it sits: a strike has its target
+    # points straight after the ingress, an escort has an aiming point of its own in
+    # between. What is left is the route the aeroplane flies -- ingress, then the split
+    # for a package that has one and a nav point for a flight that does not.
+    kept = waypoints[: ingress + 1] + [
+        point
+        for point in waypoints[ingress + 1 :]
+        if point.waypoint_type not in ATTACK_WAYPOINTS
+    ]
+    return kept if len(kept) != len(waypoints) else waypoints
+
 
 #: Altitude the measured cruise figures correspond to. A jet's fuel per mile falls as
 #: it climbs, and a flat rate meant that raising a flight's cruise band changed nothing.
@@ -134,6 +218,7 @@ def estimate_fuel(flight: Flight) -> Optional[FuelEstimate]:
             landing = index
     if landing is not None:
         waypoints = waypoints[: landing + 1]
+    waypoints = _route_actually_flown(waypoints, flight)
 
     # The rate is picked here rather than through the plan's own
     # fuel_consumption_between_points, which returns None for an unmeasured airframe.
