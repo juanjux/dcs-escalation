@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Aircraft]** The C-130J-30 can be tasked with Strike, BAI, OCA/Aircraft, CAS and Armed Recon, for the MOAB it carries as cargo.
 * **[UI]** The C-130J-30 Super Hercules mod is no longer offered when a campaign is created: it is unsupported here and by its own authors.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
 * **[Mission Generator]** The cockpit displays only show the enemy air defence the campaign settings allow.

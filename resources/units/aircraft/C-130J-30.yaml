@@ -27,3 +27,21 @@ altitudes:
 tasks:
   # Air Assault: 0 #TODO: Add once we have proper support for paradrops
   Transport: 140
+  # Ground attack with the MOAB, which this aeroplane carries as cargo and drops
+  # off the ramp. The module supports the bomb but none of the mod's other
+  # weapons, so these are the tasks a single very large bomb can do. Secondary and
+  # priced last: the planner never reaches for a transport, and a squadron's boxes
+  # for them start unticked.
+  Strike: 0
+  BAI: 0
+  OCA/Aircraft: 0
+  CAS: 0
+  # Named rather than left to be inferred from CAS and BAI, which would hand it to
+  # the planner with its box already ticked.
+  Armed Recon: 0
+secondary_tasks:
+  - Strike
+  - BAI
+  - OCA/Aircraft
+  - CAS
+  - Armed Recon
