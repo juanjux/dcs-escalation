@@ -16,7 +16,16 @@ from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
 from game.data.fueltanks import loadout_fuel
 from game.dcs.aircrafttype import AircraftType, FuelConsumption
-from game.utils import KG_TO_LBS, Mass, kgs, kph, meters, pairwise, pounds
+from game.utils import (
+    KG_TO_LBS,
+    Distance,
+    Mass,
+    kgs,
+    kph,
+    meters,
+    pairwise,
+    pounds,
+)
 
 if TYPE_CHECKING:
     from game.ato.flight import Flight
@@ -57,7 +66,9 @@ def releases_at_ingress(flight: Flight) -> bool:
     package = getattr(flight, "package", None)
     waypoints = getattr(package, "waypoints", None)
     standoff = getattr(waypoints, "standoff_range", None)
-    if standoff is None or package is None or waypoints is None:
+    # A real recorded range, not merely something in the attribute: this is asked of
+    # every flight, including the stand-ins tests build.
+    if package is None or waypoints is None or not isinstance(standoff, Distance):
         return False
     target = getattr(package, "target", None)
     if target is None:
