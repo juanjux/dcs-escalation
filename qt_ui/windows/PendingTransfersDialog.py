@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 
 from game.transfers import TransferOrder
 from qt_ui.delegates import TwoColumnRowDelegate
+from qt_ui.widgets.controls import style_button
 from qt_ui.models import GameModel, TransferModel
 
 
@@ -99,8 +100,7 @@ class PendingTransfersDialog(QDialog):
 
         button_layout.addStretch()
 
-        self.cancel_button = QPushButton("Cancel Transfer")
-        self.cancel_button.setProperty("style", "btn-danger")
+        self.cancel_button = style_button(QPushButton("Cancel Transfer"), "danger")
         self.cancel_button.clicked.connect(self.on_cancel_transfer)
         self.cancel_button.setEnabled(
             self.can_cancel(self.transfer_list.currentIndex())

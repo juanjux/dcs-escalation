@@ -218,14 +218,14 @@ BUTTON_KINDS = {
 }
 
 
-def button(
-    text: str,
-    kind: str = "normal",
-    handler: Optional[Callable[[], None]] = None,
-) -> QPushButton:
-    """A button in the window's own palette rather than the app's grey gradient."""
+def style_button(widget: QPushButton, kind: str = "normal") -> QPushButton:
+    """Put a button that already exists into the window's palette.
+
+    For the ones that cannot simply be built by button(): a button carrying an icon,
+    one held as an attribute and enabled from a dozen places, or one a QMessageBox
+    made itself.
+    """
     background, border, ink, hover = BUTTON_KINDS[kind]
-    widget = QPushButton(text)
     widget.setCursor(Qt.CursorShape.PointingHandCursor)
     widget.setMinimumHeight(CONTROL_HEIGHT)
     widget.setStyleSheet(
@@ -236,6 +236,16 @@ def button(
         f"QPushButton:disabled {{ background: {DISABLED_BG}; color: {DISABLED_TEXT};"
         f" border-color: {DISABLED_BORDER}; }}"
     )
+    return widget
+
+
+def button(
+    text: str,
+    kind: str = "normal",
+    handler: Optional[Callable[[], None]] = None,
+) -> QPushButton:
+    """A button in the window's own palette rather than the app's grey gradient."""
+    widget = style_button(QPushButton(text), kind)
     if handler is not None:
         on_click(widget, handler)
     return widget
