@@ -156,3 +156,43 @@ def test_a_site_nobody_touched_follows_the_campaign() -> None:
     settings.mfd_static_long = False
 
     assert not shows_on_mfd(_patriot(), settings)
+
+
+def test_manpads_are_never_shown() -> None:
+    """Not by the settings, and not by asking for them either."""
+    settings = Settings()
+    settings.mfd_mobile_short = MfdIntel.CURRENT
+    team = _site(_unit("SA-18 Igla manpad", 5.2, UnitClass.MANPAD))
+
+    assert not shows_on_mfd(team, settings)
+
+    team.hide_on_mfd = False
+    assert not shows_on_mfd(team, settings)
+
+
+def test_a_battery_with_manpads_guarding_it_is_still_a_battery() -> None:
+    settings = Settings()
+    site = _site(
+        _unit("Patriot ln", 100, UnitClass.LAUNCHER),
+        _unit("SA-18 Igla manpad", 5.2, UnitClass.MANPAD),
+    )
+
+    assert shows_on_mfd(site, settings)
+
+
+def test_the_armys_tracked_batteries_are_mobile() -> None:
+    """High Digit SAMs: the S-300V family shoots and moves; the S-300P does not."""
+    tracked = _site(_unit("S-300V 9A83 ln", 75, UnitClass.LAUNCHER))
+    trailered = _site(_unit("S-300PMU1 5P85CE ln", 150, UnitClass.LAUNCHER))
+
+    assert is_mobile(tracked)
+    assert not is_mobile(trailered)
+
+
+def test_the_new_launchers_the_mods_bring_land_in_the_right_band() -> None:
+    assert band_of(_site(_unit("S-400 51P6A ln", 250, UnitClass.LAUNCHER))) is Band.LONG
+    assert (
+        band_of(_site(_unit("SA-17 Buk M1-2 LN 9A310M1-2", 50, UnitClass.TELAR)))
+        is Band.MEDIUM
+    )
+    assert band_of(_site(_unit("Pantsir_SM", 30, UnitClass.SHORAD))) is Band.MEDIUM

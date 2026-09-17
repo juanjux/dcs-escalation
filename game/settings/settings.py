@@ -80,7 +80,7 @@ DOCTRINE_DISTANCES_SECTION = "Doctrine distances"
 
 
 MISSION_GENERATOR_PAGE = "Mission Generator"
-MFD_SECTION = "SAMs shown on the cockpit displays"
+MFD_SECTION = "Threats on the MFD"
 
 #: The same three answers for every band of mobile air defence.
 MFD_INTEL_CHOICES = {

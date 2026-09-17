@@ -96,6 +96,27 @@ MOBILE_SYSTEMS = frozenset(
         "CHAP_IRISTSLM_LN",
         # Chinese
         "HQ-7_LN_SP",
+        # High Digit SAMs: the army's tracked batteries, which are built to shoot
+        # and move, and the truck-mounted ones that set up in minutes.
+        "S-300V 9A82 ln",
+        "S-300V 9A83 ln",
+        "S-300VM 9A82ME ln",
+        "S-300VM 9A83ME ln",
+        "S-300V4 9A82M-2E ln",
+        "S-300V4 9A83M-2E ln",
+        "S-300V4 9A84M-2E ln",
+        "S-400 51P6A ln",
+        "S-400 51P6A (40N6E) ln",
+        "S-400 51P6A (9M96E2) ln",
+        "SAMPT_MLT_Blk1",
+        "SAMPT_MLT_Blk1NT",
+        "SAMPT_MLT_Blk2",
+        "SA-17 Buk M1-2 LN 9A310M1-2",
+        "Pantsir_SM",
+        # Guns on the back of a pickup.
+        "ERO_ZU23_Toyota",
+        "ERO_ZU23_Toyota_armored",
+        "ERO_ZU23_Insurgent",
         # Current Hill mods that carry their own radar
         "CHAP_PantsirS1",
         "CHAP_TorM2",
@@ -104,6 +125,10 @@ MOBILE_SYSTEMS = frozenset(
 
 #: Unit classes that are mobile whatever the type is, for the mods not named above.
 MOBILE_CLASSES = frozenset({UnitClass.TELAR, UnitClass.SHORAD, UnitClass.MANPAD})
+
+#: A man with a launcher on his shoulder. Nothing photographs him, and nothing in
+#: the cockpit has any business knowing where he is.
+MANPAD_CLASSES = frozenset({UnitClass.MANPAD, UnitClass.INFANTRY})
 
 #: Guns are short range whatever their ceiling says: a KS-19 reaches 20 km straight up
 #: and is still a gun emplacement, not a missile site.
@@ -134,6 +159,14 @@ def is_mobile(ground_object: TheaterGroundObject) -> bool:
         unit.type.id in MOBILE_SYSTEMS or _class_of(unit) in MOBILE_CLASSES
         for unit in shooters
     )
+
+
+def is_manpads(ground_object: TheaterGroundObject) -> bool:
+    """Whether the only thing that shoots here is carried on a shoulder."""
+    shooters = list(_shooters(ground_object))
+    if not shooters:
+        return False
+    return all(_class_of(unit) in MANPAD_CLASSES for unit in shooters)
 
 
 def band_of(ground_object: TheaterGroundObject) -> Band:
@@ -184,9 +217,13 @@ def campaign_shows(ground_object: TheaterGroundObject, settings: Settings) -> bo
 def shows_on_mfd(ground_object: TheaterGroundObject, settings: Settings) -> bool:
     """Whether this site is drawn on the cockpit displays.
 
-    The player's own choice for the site wins; with no choice made, the campaign
-    settings decide, so changing them moves every site that was left alone.
+    MANPADS never are, whatever anyone asks for: a team with launchers on their
+    shoulders is not something a picture finds. Otherwise the player's own choice for
+    the site wins, and with no choice made the campaign settings decide, so changing
+    them moves every site that was left alone.
     """
+    if is_manpads(ground_object):
+        return False
     chosen = getattr(ground_object, "hide_on_mfd", None)
     if chosen is not None:
         return not chosen
