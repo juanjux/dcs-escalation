@@ -85,12 +85,11 @@ class SquadronBaseSelector(QComboBox):
 class SquadronSizeSpinner(QSpinBox):
     def __init__(self, starting_size: int, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        # Disable text editing, which wouldn't work in the first place, but also
-        # obnoxiously selects the text on change (highlighting it) and leaves a flashing
-        # cursor in the middle of the element when clicked.
-        line_edit = self.lineEdit()
-        if line_edit is not None:
-            line_edit.setEnabled(False)
+        # Typed, not just stepped: a squadron of twenty-four is four presses of a
+        # key and twenty-three of an arrow. Keyboard tracking off, so the value
+        # changes once when the number is finished rather than at every digit --
+        # typing "24" used to pass through 2 and rebuild everything twice.
+        self.setKeyboardTracking(False)
         self.setMinimum(1)
         self.setValue(starting_size)
 
@@ -110,6 +109,7 @@ class PilotLimitSpinner(QSpinBox):
         self.setMaximum(200)
         self._default = squadron.settings.squadron_pilot_limit
         override = squadron.pilot_limit_override
+        self.setKeyboardTracking(False)
         self.setValue(self._default if override is None else override)
         self.setToolTip(
             "How many pilots this squadron may hold. Leave it at the campaign's own "
