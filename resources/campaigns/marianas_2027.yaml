@@ -1,7 +1,7 @@
 ---
 name: Marianas - Second Island Chain (2027)
 theater: MarianaIslands
-authors: 414th Joint Fighter Group (laydown forked from Fuzzle's Pacific Repartee)
+authors: 414th Joint Fighter Group (laydown forked from Fuzzle's Pacific Repartee), modified by juanjux
 description: <p>The modern-day China fight, on the one DCS map that needs no fiction to host it. Guam is the Second Island Chain, and Andersen AFB is the target set the PLA Rocket Force was built around.</p><p><strong>Backstory:</strong> A Taiwan-strait crisis went kinetic. In the opening hours the PLARF salvoed Guam - cratering ramps at Andersen and Won Pat and putting the carrier group on the back foot - while PLAN amphibious groups took Rota, Tinian and Saipan and pushed marines up the northern chain. Guam held. Now the coalition has to hold the ramp it has left, kill the launchers that are still ranging it, and fight its way back up the island chain to relieve the Marine detachment still holding out on Farallon de Pajaros.</p><p><strong>How this plays:</strong> the islands are not connected, so ground fronts never form - captures are made with Air Assault packages (transport helicopters off Olf Orote and the LHA, or C-130J paradrops), and the war between them is an anti-ship and long-range strike fight. Hunt the road-mobile PLARF launchers before they scoot; put the carrier's Prowlers in front of the strike packages; and remember that the enemy's fleet shoots back with cruise missiles.</p>
 version: "10.9"
 recommended_player_faction: USA 2020
