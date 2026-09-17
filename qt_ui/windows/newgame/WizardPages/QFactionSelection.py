@@ -69,6 +69,10 @@ class QFactionUnits(QScrollArea):
         # Returns a reason to refuse, or None to allow. The wizard passes nothing:
         # there is no campaign yet, so nothing can be in use.
         self.in_use = in_use
+        #: What the player has unticked, by name. The list is rebuilt from the faction
+        #: every time something is added to it, and a rebuilt tick box is ticked.
+        self._unticked: set[str] = set()
+        self.checkboxes: dict[str, QCheckBox] = {}
         self._create_checkboxes(show_jtac, show_doctrine)
         self.show_jtac = show_jtac
         self.show_doctrine = show_doctrine
@@ -89,7 +93,11 @@ class QFactionUnits(QScrollArea):
             # Always built and registered: the wizard's save path reads every entry,
             # and one left unshown reads as checked, i.e. kept.
             cb = QCheckBox(str(v))
-            cb.setCheckState(Qt.CheckState.Checked)
+            cb.setCheckState(
+                Qt.CheckState.Unchecked
+                if str(v) in self._unticked
+                else Qt.CheckState.Checked
+            )
             self.checkboxes[str(v)] = cb
             if not self.editable:
                 grid.addWidget(cb, i, 1)
@@ -115,7 +123,7 @@ class QFactionUnits(QScrollArea):
 
     def _create_checkboxes(self, show_jtac: bool, show_doctrine: bool) -> None:
         counter = 0
-        self.checkboxes: dict[str, QCheckBox] = {}
+        self.checkboxes = {}
         grid = QGridLayout()
         grid.setColumnStretch(1, 1)
         if show_doctrine:
@@ -401,6 +409,13 @@ class QFactionUnits(QScrollArea):
         self.faction_changed.emit(self.faction)
 
     def updateFaction(self, faction: Faction):
+        if faction is self.faction:
+            # Same faction, rebuilt because something was added to it: whatever was
+            # unticked stays unticked.
+            self._remember_ticks()
+        else:
+            # A different faction has different units; nothing carries over.
+            self._unticked.clear()
         self.faction = faction
         self.content = QWidget()
         self.setWidget(self.content)
@@ -408,6 +423,11 @@ class QFactionUnits(QScrollArea):
         self.update()
         if self.parent:
             self.parent.update()
+
+    def _remember_ticks(self) -> None:
+        self._unticked = {
+            name for name, cb in self.checkboxes.items() if not cb.isChecked()
+        }
 
     def updateFactionUnits(self, units: Union[set, list]):
         deletes = []
