@@ -14,10 +14,10 @@ controls sit in an amber block so it is obvious which fields are the cheat.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Optional
+from typing import Any, Iterable, Optional
 
 import yaml
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
@@ -235,7 +235,8 @@ class AirWingConfigurationTab(QWidget):
         )
         card.remove_squadron_signal.connect(self.remove_squadron)
         card.expanded.connect(self.on_card_expanded)
-        card.changed.connect(self.on_changed)
+        card.changed.connect(self.on_values_changed)
+        card.structure_changed.connect(self.on_changed)
         return card
 
     def on_card_expanded(self, opened: SquadronCard) -> None:
@@ -250,9 +251,27 @@ class AirWingConfigurationTab(QWidget):
                 card.set_open(False)
 
     def on_changed(self) -> None:
+        """A squadron was added, removed or moved: the three panes are rebuilt."""
         self.type_list.refresh()
         self.bases_pane.refresh()
         self.refresh_squadrons_pane()
+        dialog = self.window()
+        if isinstance(dialog, AirWingConfigurationDialog):
+            dialog.refresh_totals()
+
+    def on_values_changed(self) -> None:
+        """A number on a card changed: everything is where it was, so nothing moves.
+
+        Rebuilding the column here took the card out from under the cursor, which is
+        why a size spinner only answered the first press of its arrow. The counters
+        are the only thing that has to catch up, and they wait for the flurry of
+        presses to stop.
+        """
+        self._counters.start()
+
+    def _refresh_counters(self) -> None:
+        self.type_list.refresh()
+        self.bases_pane.refresh()
         dialog = self.window()
         if isinstance(dialog, AirWingConfigurationDialog):
             dialog.refresh_totals()
@@ -316,9 +335,14 @@ class AirWingConfigurationTab(QWidget):
     def add_squadron(self) -> None:
         selected = self.type_list.selected_type()
         bases = list(self.game.theater.control_points_for(self.coalition.player))
+        offered: Iterable[Any] = self.coalition.faction.all_aircrafts
+        if self.cheat:
+            # The faction is what the campaign was built with; a cheat menu is for
+            # what it was not. Anything a base here can take is on the list.
+            offered = AircraftType.iter_all()
         possible_aircrafts = {
             aircraft
-            for aircraft in self.coalition.faction.all_aircrafts
+            for aircraft in offered
             if isinstance(aircraft, AircraftType)
             and any(base.can_operate(aircraft) for base in bases)
         }
@@ -385,6 +409,13 @@ class AirWingConfigurationTab(QWidget):
             self.coalition.air_wing.iter_squadrons()
         )
         self.bases_pane.parking_tracker = self.parking_tracker
+        #: Coalesces a burst of spinner presses into a single pass over the
+        #: counters. 120 ms is below what a hand notices and above the interval an
+        #: auto-repeating arrow fires at.
+        self._counters = QTimer(self)
+        self._counters.setSingleShot(True)
+        self._counters.setInterval(120)
+        self._counters.timeout.connect(self._refresh_counters)
         self.parking_tracker.allocation_changed.connect(self.bases_pane.refresh)
         self.build_cards()
         self.type_list.refresh()
@@ -591,7 +622,7 @@ class AirWingConfigurationDialog(QDialog):
             f"#awcFooter {{ background: {HEADER}; border-top: 1px solid {LINE}; }}"
         )
         row = QHBoxLayout()
-        row.setContentsMargins(20, 0, 20, 0)
+        row.setContentsMargins(20, 10, 20, 12)
         row.setSpacing(10)
         footer.setLayout(row)
 
