@@ -404,6 +404,7 @@ def _command_link(
     live = [other for other in centres if _is_live(other)]
     if live:
         return IadsLink(
+            places=_places_of([other.group.ground_object for other in live]),
             caption=caption,
             title=" · ".join(sorted(_name(other) for other in live)),
             note=(
@@ -418,6 +419,7 @@ def _command_link(
 
     nearest = centres[0]
     return IadsLink(
+        places=_places_of([other.group.ground_object for other in centres]),
         caption=caption,
         title=" · ".join(sorted(_name(other) for other in centres)),
         note=_why_down(nearest),

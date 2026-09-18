@@ -52,6 +52,7 @@ class Migrator:
         self._update_weather()
         self._update_tgos()
         self._restore_pruned_iads_nodes()
+        self._enrol_iads_sites_the_campaign_never_named()
         self._relabel_formation_waypoints()
         try_set_attr(self.game.settings, "motorpool_enabled", True)
         try_set_attr(self.game.settings, "motorpool_spawn_cap", 10)
@@ -477,6 +478,28 @@ class Migrator:
         network.initialize_network(iter(self.game.theater.ground_objects))
         logging.info(
             "IADS network rebuilt to restore pruned nodes: "
+            f"{before} -> {len(network.nodes)} nodes"
+        )
+
+    def _enrol_iads_sites_the_campaign_never_named(self) -> None:
+        """Rebuild the network so sites outside it join.
+
+        Only the keys of a campaign's iads_config ever became nodes, so anything the
+        author did not name -- an anonymous Ground-N or Naval-N slot, a GPS jamming
+        site added to the factions later -- was outside the network with no way in.
+        Existing games carry that network pickled, so it is rebuilt once.
+
+        """
+        network = self.game.theater.iads_network
+        if getattr(network, "enrols_unnamed_sites", False):
+            return
+        network.enrols_unnamed_sites = True
+        before = len(network.nodes)
+        network.nodes = []
+        network.ground_objects = {}
+        network.initialize_network(iter(self.game.theater.ground_objects))
+        logging.info(
+            "IADS network rebuilt to enrol unnamed sites: "
             f"{before} -> {len(network.nodes)} nodes"
         )
 
