@@ -104,7 +104,7 @@ class EconomyRow:
     before: str
     damage: str
     after: str
-    income: int
+    income: float
     share: float
 
     @property
@@ -115,7 +115,7 @@ class EconomyRow:
 @dataclass(frozen=True)
 class EconomySection:
     caption: str
-    subtotal: int
+    subtotal: float
     share: float
     rows: tuple[EconomyRow, ...]
 
@@ -128,15 +128,19 @@ class EconomyTab:
 
 
 def money(value: float, signed: bool = False) -> str:
-    """``$N`` or ``+$N``, always whole.
+    """``$NM`` or ``+$NM``. The currency is millions, and the M says so.
 
-    The abstract currency has no decimals worth reading: "260.0M" spends four
-    characters saying nothing and makes a column of money harder to compare.
+    Whole millions drop the decimal, because "260.0M" spends two characters saying
+    nothing and makes a column of money harder to compare down the page. A site that
+    pays a fraction of one -- a village at 0.25 -- keeps its decimal rather than
+    rounding away to nothing.
     """
-    rounded = round(value)
-    if not signed:
-        return f"${rounded}"
-    return f"-${abs(rounded)}" if rounded < 0 else f"+${rounded}"
+    amount = round(value, 1)
+    magnitude = abs(amount)
+    body = f"{int(magnitude)}M" if amount == int(amount) else f"{magnitude:.1f}M"
+    if signed:
+        return f"{'-' if amount < 0 else '+'}${body}"
+    return f"{'-' if amount < 0 else ''}${body}"
 
 
 def base_kind(control_point: ControlPoint) -> str:
@@ -276,7 +280,7 @@ def _with_shares(groups: Sequence[ForceGroup], total: int) -> list[ForceGroup]:
 
 
 def _side(player: Player) -> str:
-    return "BLUFOR" if player.is_blue else "OPFOR"
+    return "OWNFOR" if player.is_blue else "OPFOR"
 
 
 def air_forces(
@@ -391,7 +395,7 @@ def economy(game: Game, player: Player) -> EconomyTab:
                 before=f"{kind} · " + ("runway intact" if operational else ""),
                 damage="" if operational else "runway destroyed",
                 after="",
-                income=round(control_point.income_per_turn),
+                income=control_point.income_per_turn,
                 share=_share(control_point.income_per_turn, gross),
             )
         )
@@ -407,7 +411,7 @@ def economy(game: Game, player: Player) -> EconomyTab:
                 before=f"{building.name} · " + (standing if whole else ""),
                 damage="" if whole else standing,
                 after=each,
-                income=round(building.income),
+                income=building.income,
                 share=_share(building.income, gross),
             )
         )
@@ -415,13 +419,13 @@ def economy(game: Game, player: Player) -> EconomyTab:
     sections = (
         EconomySection(
             "CONTROL POINTS",
-            round(income.from_bases),
+            income.from_bases,
             _share(income.from_bases, gross),
             tuple(control_points),
         ),
         EconomySection(
             "BUILDINGS",
-            round(income.total_buildings),
+            income.total_buildings,
             _share(income.total_buildings, gross),
             tuple(buildings),
         ),

@@ -463,10 +463,13 @@ class IntelWindow(QDialog):
 
     def toggle_all(self, tab: int) -> None:
         folded = self.fold_state(tab)
-        forces = self._forces(tab)
-        names = {group.name for group in forces.groups}
+        names = {group.name for group in self._forces(tab).groups}
+        # Asked BEFORE the set is emptied: fold_state hands back the very set being
+        # cleared, so reading it afterwards always said "nothing is folded" and the
+        # button only ever folded.
+        everything_shut = bool(names) and names <= folded
         folded.clear()
-        if names - self.fold_state(tab):
+        if not everything_shut:
             folded.update(names)
         self.redraw()
 
@@ -493,7 +496,7 @@ class IntelWindow(QDialog):
             " border-bottom: none; }"
         )
         self.side_switch.show_side(self.player)
-        self.side_name.setText("BLUFOR" if own else "OPFOR")
+        self.side_name.setText("OWNFOR" if own else "OPFOR")
         self.side_name.setStyleSheet(
             f"font-size: 15px; font-weight: 600; background: transparent;"
             f" border: none; color: {OWN_LABEL if own else ENEMY_LABEL};"

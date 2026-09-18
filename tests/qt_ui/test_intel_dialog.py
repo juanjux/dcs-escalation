@@ -74,11 +74,17 @@ def _game(*bases: Any, budget: float = 100.0) -> Any:
 BLUE = Player.BLUE
 
 
-def test_money_is_whole_and_signed_only_when_it_should_be() -> None:
-    assert data.money(260.4) == "$260"
-    assert data.money(260.4, signed=True) == "+$260"
-    assert data.money(0, signed=True) == "+$0"
-    assert data.money(-12, signed=True) == "-$12"
+def test_money_carries_the_millions_it_is_counted_in() -> None:
+    assert data.money(260) == "$260M"
+    assert data.money(260, signed=True) == "+$260M"
+    assert data.money(0, signed=True) == "+$0M"
+    assert data.money(-12, signed=True) == "-$12M"
+
+
+def test_a_fraction_of_a_million_keeps_its_decimal() -> None:
+    """A village pays 0.25, and rounding it to a whole million reads as nothing."""
+    assert data.money(0.25) == "$0.2M"
+    assert data.money(2.5, signed=True) == "+$2.5M"
 
 
 def test_a_variant_comes_off_the_display_name() -> None:
@@ -114,6 +120,8 @@ def test_a_base_with_nothing_is_left_out_but_still_counted_nowhere() -> None:
     assert tab.groups == ()
     assert tab.empty is not None
     assert "No aircraft in reserve" == tab.empty[0]
+    # The opposite of OPFOR is not BLUFOR.
+    assert tab.empty[1].startswith("OWNFOR")
 
 
 def test_base_name_orders_the_groups_and_type_name_the_rows() -> None:
@@ -197,7 +205,7 @@ def test_economy_splits_into_two_sections_with_their_share(
     assert (points.caption, points.subtotal) == ("CONTROL POINTS", 20)
     assert (buildings.caption, buildings.subtotal) == ("BUILDINGS", 40)
     assert round(buildings.share, 4) == round(40 / 60, 4)
-    assert [figure.value for figure in tab.figures] == ["+$60", "$261", "2"]
+    assert [figure.value for figure in tab.figures] == ["+$60M", "$261M", "2"]
 
 
 def test_a_half_bombed_building_says_so_in_its_own_fragment(
@@ -220,7 +228,7 @@ def test_a_half_bombed_building_says_so_in_its_own_fragment(
 
     assert row.name == "Oil platform"
     assert row.damage == "2 of 4 standing"
-    assert row.detail == "CHAMELEON · 2 of 4 standing · $10 each"
+    assert row.detail == "CHAMELEON · 2 of 4 standing · $10M each"
     assert row.income == 20
 
 
@@ -285,3 +293,25 @@ def test_the_fold_state_is_kept_per_side(qt_app: Any) -> None:
 
     window.player = Player.BLUE
     assert window.fold_state(AIR) == {"Groom Lake"}
+
+
+def test_collapse_all_expands_again(qt_app: Any) -> None:
+    """It only ever folded: the check read the set it had just emptied."""
+    from game.theater import Player
+    from qt_ui.windows.intel.dialog import AIR, IntelWindow
+
+    window = IntelWindow.__new__(IntelWindow)
+    window.folded = {}
+    window.player = Player.BLUE
+    forces = data.air_forces(
+        _game(_base("Groom Lake", {"F-16CM": 8}), _base("Nellis AFB", {"F-16CM": 2})),
+        Player.BLUE,
+    )
+    window._forces = lambda tab: forces  # type: ignore[method-assign]
+    window.redraw = lambda: None  # type: ignore[method-assign]
+
+    window.toggle_all(AIR)
+    assert window.fold_state(AIR) == {"Groom Lake", "Nellis AFB"}
+
+    window.toggle_all(AIR)
+    assert window.fold_state(AIR) == set()
