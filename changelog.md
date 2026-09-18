@@ -1,8 +1,6 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[FIX]** The OPFOR API could not buy red ground units unless the player's enemy buy/sell cheat was on, while it could buy red aircraft freely.
-* **[FIX]** The OPFOR API picked pilots by name, so two pilots of one squadron sharing a name crewed whichever came first. Every pilot endpoint takes his id, and an ambiguous name is refused with the ids to retry with.
 * **[Aircraft]** The C-130J-30 can be tasked with Strike, BAI, OCA/Aircraft, CAS and Armed Recon, for the MOAB it carries as cargo.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
@@ -12,6 +10,7 @@
 * **[UI]** The location dialog was redrawn.
 * **[UI]** Coordinates: the map has a GPS picker that reads any point on it.
 * **[FIX]** A GPS jamming site the network had switched off went on jamming: bombing the substation that feeds it took the ring off the map but left the bubble eating satellite-guided weapons in the mission.
+* **[Campaigns]** Gran Polvorin: the Ushuaia power station stands 26 nm further north, where its grid also reaches Rio Grande's SAM, AAA and GPS jamming site instead of leaving them unpowered. NEW game required.
 * **[Campaigns]** Gran Polvorin has an air defence network.
 * **[Mission Plugins]** **Realistic CAS** adds gradual ground-target discovery for both coalitions through visual, EO/IR and ground-radar observations, with terrain LOS and approximate weather, daylight and cover effects. 
 * **[Live Pilots]** A pilot who is liked more than he likes back comes round sooner: each point between the two halves of a pair adds to his chance of warming (5% a point by default, a new setting under Friendship). The cooling roll is untouched, and the pilot who is already the warmer of the two gains nothing.
@@ -166,7 +165,6 @@
 ## Fixes
 * **[FIX]** Unticking a unit in the New Game wizard survives adding another one.
 * **[FIX]** The map's coordinate picker copied nothing: the map is loaded from a file:// page, where the browser's clipboard API is not available. Clicking the coordinates copies them too.
-
 * **[UI]** Cancelling Save As or failing to save no longer closes the campaign after choosing to save on exit. Failed saves show an error and preserve the previous save path. Save/close decisions are logged for troubleshooting.
 * **[FIX]** A pilot on leave could not be called back while his squadron was at full strength, which it usually is: he holds his own place the whole time he is away, so coming back takes nobody else's.
 * **[FIX]** An escort put on a TARCAP emptied the map: the escort and the patrol each took their timing from the other, and nothing survived the recursion.
