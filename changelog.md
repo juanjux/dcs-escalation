@@ -11,6 +11,7 @@
 * **[UI]** The F-16 application icon now has a blue/yellow Ukrainian flag background for better visibility at desktop and taskbar sizes.
 * **[UI]** The location dialog was redrawn.
 * **[UI]** Coordinates: the map has a GPS picker that reads any point on it.
+* **[FIX]** A GPS jamming site the network had switched off went on jamming: bombing the substation that feeds it took the ring off the map but left the bubble eating satellite-guided weapons in the mission.
 * **[Campaigns]** Gran Polvorin has an air defence network.
 * **[Mission Plugins]** **Realistic CAS** adds gradual ground-target discovery for both coalitions through visual, EO/IR and ground-radar observations, with terrain LOS and approximate weather, daylight and cover effects. 
 * **[Live Pilots]** A pilot who is liked more than he likes back comes round sooner: each point between the two halves of a pair adds to his chance of warming (5% a point by default, a new setting under Friendship). The cooling roll is untouched, and the pilot who is already the warmer of the two gains nothing.
