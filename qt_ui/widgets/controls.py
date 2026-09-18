@@ -214,7 +214,8 @@ def on_click(button: QPushButton, handler: Callable[[], None]) -> QPushButton:
 BUTTON_KINDS = {
     "normal": (IDLE_BG, BORDER, VALUE, "#31424F"),
     "primary": ("#2B506D", "#3F6B8C", "#DCE9F4", "#34617F"),
-    "danger": ("#4A2A2A", "#6E3B3B", "#E8C5C5", "#5C3434"),
+    # The red the air wing footer already used, so every red button is one red.
+    "danger": ("#A8443F", "#BF4F49", "#FFFFFF", "#BF4F49"),
 }
 
 

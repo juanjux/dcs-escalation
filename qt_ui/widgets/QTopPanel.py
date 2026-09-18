@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 from PySide6.QtCore import Qt, QTimer, QSize
-from PySide6.QtGui import QAction, QIcon, QMovie
+from PySide6.QtGui import QAction, QColor, QIcon, QMovie, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 
 import qt_ui.uiconstants as CONST
 from qt_ui.liberation_theme import get_theme_icons
-from qt_ui.widgets.controls import style_button
+from qt_ui.widgets.controls import VALUE, style_button
 from game import Game, persistency
 from game.ato.flight import Flight
 from game.ato.flightstate import Uninitialized
@@ -56,6 +56,22 @@ from qt_ui.windows.intel import IntelWindow
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.PendingTransfersDialog import PendingTransfersDialog
 from qt_ui.windows.QWaitingForMissionResultWindow import DebriefingFileWrittenSignal
+
+
+#: Every other icon on this bar is drawn in white. The OPFOR commander is drawn in
+#: near-black, so on a dark bar it reads as a smudge; it is repainted in the button's
+#: own ink instead, which also covers the frames of its animation.
+def _tinted(pixmap: QPixmap, colour: str = VALUE) -> QPixmap:
+    if pixmap.isNull():
+        return pixmap
+    tinted = QPixmap(pixmap.size())
+    tinted.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(tinted)
+    painter.drawPixmap(0, 0, pixmap)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+    painter.fillRect(tinted.rect(), QColor(colour))
+    painter.end()
+    return tinted
 
 
 class QTopPanel(QFrame):
@@ -103,7 +119,8 @@ class QTopPanel(QFrame):
 
         self.proceedButton = QPushButton("Take off")
         self.proceedButton.setIcon(CONST.ICONS["Proceed"])
-        style_button(self.proceedButton, "primary")
+        # Red: it is the button that ends the planning and leaves for DCS.
+        style_button(self.proceedButton, "danger")
         self.proceedButton.clicked.connect(self.launch_mission)
         if not self.game or self.game.turn == 0:
             self.proceedButton.setEnabled(False)
@@ -136,7 +153,9 @@ class QTopPanel(QFrame):
         self.ai_status_button.setVisible(False)
         # Robot-general icon, with a looping "thinking" animation while the LLM plans.
         theme = get_theme_icons()
-        self._ai_idle_icon = QIcon(f"./resources/ui/misc/{theme}/opfor-commander.png")
+        self._ai_idle_icon = QIcon(
+            _tinted(QPixmap(f"./resources/ui/misc/{theme}/opfor-commander.png"))
+        )
         self.ai_status_button.setIcon(self._ai_idle_icon)
         self.ai_status_button.setIconSize(QSize(20, 20))
         self._ai_thinking_movie = QMovie(
@@ -145,7 +164,7 @@ class QTopPanel(QFrame):
         self._ai_thinking_movie.setScaledSize(QSize(20, 20))
         self._ai_thinking_movie.frameChanged.connect(
             lambda: self.ai_status_button.setIcon(
-                QIcon(self._ai_thinking_movie.currentPixmap())
+                QIcon(_tinted(self._ai_thinking_movie.currentPixmap()))
             )
         )
 
