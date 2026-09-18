@@ -124,6 +124,52 @@ def test_a_stranger_is_refused(flight: Any) -> None:
     assert "books" in (result.error or "")
 
 
+# Two men of the same name in one squadron. The name generator does it -- the OPFOR
+# agent found two 何秀梅 on the same roster -- and the API used to crew whichever came
+# first, silently. A name that picks out more than one man is now refused, and the id
+# always works.
+
+
+@pytest.fixture
+def homonyms(monkeypatch: pytest.MonkeyPatch) -> Any:
+    squadron = _Squadron([Pilot("He Xiumei"), Pilot("He Xiumei"), Pilot("Solitario")])
+    flight = SimpleNamespace(id="f1", squadron=squadron, roster=_Roster(squadron, 2))
+    monkeypatch.setattr(planner, "flight_for_side", lambda *a, **k: flight)
+    return flight
+
+
+def test_a_shared_name_is_refused_rather_than_guessed(homonyms: Any) -> None:
+    result = planner.set_flight_crew(NO_GAME, "red", "f1", 0, "He Xiumei")
+    assert not result.ok
+    assert "2 pilots are called He Xiumei" in (result.error or "")
+    assert homonyms.roster.pilot_at(0) is None
+    # The error has to carry the ids, or the caller has no way to try again.
+    for pilot in homonyms.squadron.current_roster[:2]:
+        assert str(pilot.id) in (result.error or "")
+
+
+def test_the_id_picks_the_man_out(homonyms: Any) -> None:
+    wanted = homonyms.squadron.current_roster[1]
+    result = planner.set_flight_crew(NO_GAME, "red", "f1", 0, str(wanted.id))
+    assert result.ok
+    assert homonyms.roster.pilot_at(0) is wanted
+
+
+def test_a_name_nobody_shares_still_works(homonyms: Any) -> None:
+    """Compatibility: the id is preferred, the name is not taken away."""
+    result = planner.set_flight_crew(NO_GAME, "red", "f1", 0, "Solitario")
+    assert result.ok
+    assert homonyms.roster.pilot_at(0).name == "Solitario"
+
+
+def test_the_seat_he_already_has_is_recognised_by_id(homonyms: Any) -> None:
+    wanted = homonyms.squadron.current_roster[0]
+    planner.set_flight_crew(NO_GAME, "red", "f1", 0, str(wanted.id))
+    result = planner.set_flight_crew(NO_GAME, "red", "f1", 0, str(wanted.id))
+    assert result.ok
+    assert "already has seat 0" in (result.detail or "")
+
+
 def test_every_setting_is_offered(monkeypatch: pytest.MonkeyPatch) -> None:
     """Mission durations were unreadable: the view was a hand-written subset."""
     from game.agent.views import _all_settings
