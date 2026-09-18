@@ -393,3 +393,34 @@ def test_a_jammer_is_not_asked_about_comms() -> None:
     picture = describe(jammer.ground_object, network)
 
     assert [link.caption for link in picture.gets] == ["POWER"]
+
+
+def test_the_command_centre_is_a_way_into_its_own_dialog() -> None:
+    """Every other row names its objectives as openable; this one did not."""
+    sam = _group("Creech", IadsRole.SAM)
+    centre = _group("Indian Springs", IadsRole.COMMAND_CENTER)
+    network = _network(_node(sam), _node(centre))
+
+    command = _link(describe(sam.ground_object, network), "COMMAND")
+
+    assert [place.name for place in command.places] == ["Indian Springs"]
+    assert command.places[0].objective is centre.ground_object
+
+
+def test_a_command_centre_that_is_down_can_still_be_opened() -> None:
+    sam = _group("Creech", IadsRole.SAM)
+    centre = _group("Indian Springs", IadsRole.COMMAND_CENTER, _unit(alive=False))
+    network = _network(_node(sam), _node(centre))
+
+    command = _link(describe(sam.ground_object, network), "COMMAND")
+
+    assert [place.name for place in command.places] == ["Indian Springs"]
+
+
+def test_a_network_with_no_command_centre_names_nothing() -> None:
+    sam = _group("Creech", IadsRole.SAM)
+    network = _network(_node(sam))
+
+    command = _link(describe(sam.ground_object, network), "COMMAND")
+
+    assert command.places == ()

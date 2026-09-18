@@ -163,9 +163,11 @@ class IadsNetwork:
                 raise RuntimeError("Invalid iads_config in campaign")
 
         self._state_map: Optional[IadsStateMap] = None
-        # A network built by this code keeps its destroyed sites, so the one-time
-        # repair in the migrator has nothing to do to it.
+        # A network built by this code keeps its destroyed sites, and enrols the sites
+        # the campaign never named, so the one-time repairs in the migrator have
+        # nothing to do to it.
         self.keeps_destroyed_nodes = True
+        self.enrols_unnamed_sites = True
 
     def __getstate__(self) -> dict[str, Any]:
         # Derived from the nodes, so it is rebuilt rather than carried in the save.
@@ -435,6 +437,44 @@ class IadsNetwork:
                 logging.warning(warning_msg)
                 continue
             self._add_connections_from_config(node)
+        self._enrol_sites_the_config_does_not_name()
+
+    def _enrol_sites_the_config_does_not_name(self) -> None:
+        """Bring in the sites the campaign never listed, wired by range.
+
+        Only the keys of iads_config become nodes, so a site the author did not name
+        is left out of the network entirely however much it belongs in one: it is not
+        cued, it is not directed, and bombing the power station next to it changes
+        nothing.
+
+        The author cannot name them all. A campaign pins some objectives by name and
+        leaves the rest as slots -- Ground-3, Naval-5 -- and what lands in a slot is
+        the faction's choice, made long after the campaign was written. A GPS jamming
+        site added to every faction, a SAM a faction fields that the campaign did not
+        foresee: neither can appear in a config written before either existed.
+
+        What the config does say is still honoured exactly. These are added after it,
+        and only if the config did not already name them.
+        """
+        for go in self.ground_objects.values():
+            if go.original_name in self.iads_config:
+                continue
+            if not self._belongs_in_the_network(go):
+                continue
+            node = self.node_for_tgo(go)
+            if node is None:
+                continue
+            self._make_advanced_connections_by_range(node)
+
+    @staticmethod
+    def _belongs_in_the_network(go: TheaterGroundObject) -> bool:
+        """The same test the range-built network applies."""
+        if isinstance(go, (IadsGroundObject, NavalGroundObject)):
+            return True
+        return (
+            isinstance(go, IadsBuildingGroundObject)
+            and IadsRole.for_category(go.category) is IadsRole.COMMAND_CENTER
+        )
 
     def _add_connections_from_config(self, node: IadsNetworkNode) -> None:
         """Add all connections for the given primary node based on the iads_config"""
@@ -456,11 +496,7 @@ class IadsNetwork:
     def initialize_network_from_range(self) -> None:
         """Initialize the IADS Network by range"""
         for go in self.ground_objects.values():
-            is_iads_go = isinstance(go, IadsGroundObject)
-            is_iads_sea = isinstance(go, NavalGroundObject)
-            is_iads_cc = isinstance(go, IadsBuildingGroundObject)
-            is_iads_cc &= IadsRole.for_category(go.category) == IadsRole.COMMAND_CENTER
-            if is_iads_go or is_iads_sea or is_iads_cc:
+            if self._belongs_in_the_network(go):
                 # Set as primary node
                 node = self.node_for_tgo(go)
                 if node is None:
