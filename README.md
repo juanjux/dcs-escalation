@@ -14,33 +14,18 @@ fixes that are not (yet) in it — some of them adapted from the
 
 Everything Retribution does, Escalation does. What follows is what it does on top.
 
-## How development works here
+# What is this exactly?
 
-Development happens **in this fork**. New work is opened as a
-[Pull Request against this repository](https://github.com/juanjux/dcs-escalation/pulls),
-targeting `master`, **not** against upstream — this keeps the upstream review
-queue light and makes it easy for other forks to cherry-pick whatever they want.
-Each PR describes the feature or fix it adds. Individual fixes may still be
-offered upstream case by case.
-
-## Branches
-
-| Branch | Purpose |
-| --- | --- |
-| **`dev`** | A clean mirror of upstream `dcs-retribution/dev`. Pristine, untouched — the base everything is cut from. |
-| **`master`** | The line you build. Every feature and fix lands here through a PR, after it has been tested. |
-
-When upstream `dev` gets new commits they are occasionally pulled into `master`.
-
-## Features not in upstream Retribution
-
-Each item links to the fork PR that implements it. The authoritative, up-to-date
-list is the [pull requests](https://github.com/juanjux/dcs-escalation/pulls?q=is%3Apr).
+In a nutshell, Escalation is turn based dynamic campaign generator where every turn is about 4 hours if passing time. Using a UI separate from DCS,
+you decide what packages and flights will do, what targets will be attacked, what you will 
+improve of your air defenses and money-producing buildings, et cetera. You could assign yourself as a player (or several players, for multiplayer missions) to any of the defined packages. 
+Then you would click on "take off", and it will generate a DCS mission. You would then hop into DCS, load and play that mission, and everything that happened during it would be recorded and persisted 
+for the next turn, then you would go back to Escalation UI and repeat, until either your side (OWNFOR) or the enemy one (OPFOR) wins.
 
 ### Interface
 
 - **The interface has been rebuilt.** Dialogs, lists and panels were redrawn to one
-  visual language. Nothing about how the campaign plays changed.
+  visual language.
 
   <img src="https://raw.githubusercontent.com/juanjux/dcs-escalation/juanjux/screenshots/airwing-redesign.png" width="760">
 
@@ -50,12 +35,12 @@ list is the [pull requests](https://github.com/juanjux/dcs-escalation/pulls?q=is
   General settings page.
   ([#296](https://github.com/juanjux/dcs-escalation/pull/296))
 
-### IADS
+### IADS Reworked
 
 - **Custom Skynetfork**, [juanjux/Skynet-IADS](https://github.com/juanjux/Skynet-IADS): upstream 3.3.0 with its
   HARM fixes, plus `ActMobile` and the four High Digit SAMs systems (S-400, S-300V4,
   SAMP/T, Pantsir-SM), and many, many fixes and performance improvements including (optional) culling of the network based on the
-  plannet flight packages
+  planned flight packages
 
 - **Batteries with their own generator can survive a power grid cut.** A Patriot's EPP-III or a
   SAMP/T's MGE keeps the site powered when the nearest substation is bombed until the defined
@@ -284,122 +269,7 @@ Still to come:
   (branch [`juanjux/hds_2_1_0_and_ultimate`](https://github.com/juanjux/dcs-escalation/tree/juanjux/hds_2_1_0_and_ultimate),
   upstream [#956](https://github.com/dcs-retribution/dcs-retribution/pull/956))
 
-### Fixes
-
-- **A package with an impossible TOT could hold for the whole mission.** The hold point
-  emitted its release timer without a floor, and DCS never fires a trigger scheduled for
-  a negative time. Now clamped to mission start.
-  ([#100](https://github.com/juanjux/dcs-escalation/pull/100))
-  
-- **A CAP guarding its own base could vanish the instant the mission started.** DCS runs
-  the last waypoint's tasks immediately for an air-started flight whose total route is
-  short enough, and for AI that waypoint carries the despawn script. Patrol routes are
-  lengthened away from the enemy until they reach 60 nm, so the threat-facing end and the
-  station stay put.
-  (branch [`juanjux/min-patrol-route`](https://github.com/juanjux/dcs-escalation/tree/juanjux/min-patrol-route))
-  
-- **Take Off died with "Duplicate convoy unit", stranding the campaign** — the name
-  counter reset each turn onto a convoy still in transit.
-  ([#93](https://github.com/juanjux/dcs-escalation/pull/93))
-  
-- **Some building objectives could never be recorded as destroyed.** An objective is
-  credited by a `MapObjectIsDead` trigger over its zone, and many of those zones hold
-  scenery that cannot be destroyed at all. Deaths are matched to the nearest objective by
-  position within 30 m instead, and the triggers are gone.
-  ([`b7cbd73`](https://github.com/juanjux/dcs-escalation/commit/b7cbd73df),
-  [`afff790`](https://github.com/juanjux/dcs-escalation/commit/afff790e0))
-  
-- **A Strike put every iron bomb on a single aimpoint.** The dumb-bomb task aimed at the
-  objective's centroid and sized its carpet from the mean distance to the targets rather
-  than their spread. Heavy bombers now carpet the real extent in one pass; everything
-  else re-attacks with one aimpoint per target and the load split between them.
-  ([`1209839`](https://github.com/juanjux/dcs-escalation/commit/120983924))
-  
-- **Scud and ATACMS sites cratered empty fields.** A missile site fired at the enemy
-  control point's map coordinate, displaced by up to 2500 m at random. They now aim at
-  live, immobile ground objects at the target base, with range measured to the aimpoint,
-  minimum ranges respected, and the top 15% of the envelope off limits.
-  ([#128](https://github.com/juanjux/dcs-escalation/pull/128))
-  
-- **Air-assault troops stood still instead of taking the base.** CTLD walked unloaded
-  troops to their waypoint and left them there, so one surviving vehicle blocked the
-  capture indefinitely. Dropped troops and vehicles now advance and fight on the nearest enemy
-  ground unit inside the capture radius. New CTLD plugin option, on by default.
-  ([#85](https://github.com/juanjux/dcs-escalation/pull/85))
-  
-- **Air-assault ingress no longer zig-zags.** The join leg is anchored to the package's
-  ingress point rather than the initial point.
-  ([#9](https://github.com/juanjux/dcs-escalation/pull/9), upstream
-  [#804](https://github.com/dcs-retribution/dcs-retribution/pull/804))
-  
-- **Front-line ground units never fought** — three stacked causes: defenders held position
-  waiting for the enemy's first CAS package, a negative hold duration wrapped to ~24 h,
-  and the FLOT took its alarm state from a mislabelled SAM toggle. Defenders engage from
-  minute one; the toggle is relabelled and no longer touches the FLOT.
-  ([#79](https://github.com/juanjux/dcs-escalation/pull/79))
-  
-- **Transferring an army mid-turn made it vanish from the ground war.** The ground war was
-  planned once at the start of the turn and cached, so anything moved afterwards was
-  deployed from a stale plan; and units waiting for a lift that did not exist were debited
-  on order rather than on departure. Planning happens at mission generation now, and
-  pending units are deployable, defending and counted until they actually leave.
-  ([#133](https://github.com/juanjux/dcs-escalation/pull/133))
- 
-- **The Su-25 was planned to fight from a height it will not shoot from.** No aircraft in
-  the fork declared a combat altitude, so both Frogfoots fell back to an estimate from
-  their top speed and were tasked above the altitude the AI will attack from.
-  ([#135](https://github.com/juanjux/dcs-escalation/pull/135))
-  
-- **The Su-25 flew DEAD carrying only weapons it cannot guide.** All six attack pylons
-  were laser-guided and the plain Frogfoot has no designator, so the loadout was stripped
-  and the aircraft flew unarmed. RBK-250 with PTAB-2.5M instead.
-  ([#130](https://github.com/juanjux/dcs-escalation/pull/130))
-  
-- **Su-25s flew close air support with weapons they cannot guide.** The strip that exists
-  for this checks `WeaponType.LGB`, and the whole Soviet laser family was typed
-  `UNKNOWN`. S-25L, Kh-25ML, Kh-29L and the laser KABs now match; dual GPS/laser weapons
-  are left alone, and the Su-25T gains its Klen-PS.
-  ([#125](https://github.com/juanjux/dcs-escalation/pull/125))
-  
-- **The A-6E dropped iron instead of its laser-guided bombs, always.** Its TRAM turret is
-  an internal designator and nothing declared it, so the planner swapped every GBU out at
-  every date.
-  ([`5545351`](https://github.com/juanjux/dcs-escalation/commit/55453512e))
-  
-- **Stores that no weapon file claimed slipped past their own introduction date.** The
-  A-6E's TALD MER clsids, the AN/ALQ-167 and the Hornet's fourth AIM-7P clsid read as
-  unknown stores: no weapon type for planning and no year.
-  ([`309b39c`](https://github.com/juanjux/dcs-escalation/commit/309b39c24),
-  [`06b7955`](https://github.com/juanjux/dcs-escalation/commit/06b7955e1))
-  
-- **A Patriot battery reported no threat at all.** The AN/MPQ-53 — the original Patriot
-  array — was missing from `TRACK_RADARS`, and a launcher only counts when a paired
-  tracker is alive.
-  ([#126](https://github.com/juanjux/dcs-escalation/pull/126))
-  
-- **Factions with no early-warning radar fielded a SAM's acquisition radar as one.**
-  Ukraine, Georgia, Morocco, France, Argentina, Peru and Iran were putting up a Patriot
-  STR or a Hawk SR where a national radar belonged.
-  ([#187](https://github.com/juanjux/dcs-escalation/pull/187))
-
-- **A bombed-out motorpool showed on the map as a permanent loss.** It is only a view of
-  the base's undeployed armor, so procuring ground units refills it.
-  ([`81fb0d4`](https://github.com/juanjux/dcs-escalation/commit/81fb0d4d8))
-  
-- **Escorts of an AWACS/tanker hold on the protected flight's racetrack** instead of a
-  far-away point, so they actually protect it.
-  ([#42](https://github.com/juanjux/dcs-escalation/pull/42))
-  
-- Bumped PySide6/Qt to 6.8.3, which switches acceleration to D3D11 and fixes many OpenGL
-  hangs. ([#52](https://github.com/juanjux/dcs-escalation/pull/52))
-
-- Robust payload handling — unparseable payload files are skipped; loadouts are written
-  atomically. ([#21](https://github.com/juanjux/dcs-escalation/pull/21))  
- 
-- Kneeboard waypoint numbering is correct for in-air-start flights.
-  ([#14](https://github.com/juanjux/dcs-escalation/pull/14))
-
-## From the 414Ret fork
+## Taken and adapted From the 414Ret fork
 
 These are adapted from the [**414Ret** fork](https://github.com/bradyccox/414Ret)
 (414th Joint Fighter Group), with thanks to its authors — 414Ret bundles many
