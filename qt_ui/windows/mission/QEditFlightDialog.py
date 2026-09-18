@@ -32,6 +32,7 @@ from game.sim import GameUpdateEvents
 from qt_ui.models import GameModel, PackageModel
 from qt_ui.uiconstants import EVENT_ICONS
 from qt_ui.widgets.cards import make_transparent
+from qt_ui.widgets.controls import style_button
 from qt_ui.windows.mission.flight.header import FlightHeader
 from qt_ui.windows.mission.flight.QFlightPlanner import QFlightPlanner
 
@@ -257,6 +258,10 @@ class QEditFlightDialog(QDialog):
             self._ask_about_adding()
             return
 
+        if verdict is RefuelVerdict.NEEDS_A_TANKER:
+            self._ask_about_the_tanker()
+            return
+
         result = QMessageBox.question(
             self,
             "Remove the refuelling waypoint?",
@@ -310,13 +315,14 @@ class QEditFlightDialog(QDialog):
             f"can be added on the way home. {situation}"
             "\n\nThe rest of the route is left exactly as you set it."
         )
-        with_tanker = box.addButton(
-            "Add waypoint and tanker", QMessageBox.ButtonRole.AcceptRole
+        with_tanker = style_button(
+            box.addButton("Add waypoint and tanker", QMessageBox.ButtonRole.AcceptRole),
+            "primary",
         )
-        waypoint_only = box.addButton(
-            "Add waypoint only", QMessageBox.ButtonRole.AcceptRole
+        waypoint_only = style_button(
+            box.addButton("Add waypoint only", QMessageBox.ButtonRole.AcceptRole)
         )
-        box.addButton(QMessageBox.StandardButton.Cancel)
+        style_button(box.addButton(QMessageBox.StandardButton.Cancel))
         with_tanker.setEnabled(bool(available))
         box.setDefaultButton(with_tanker if available else waypoint_only)
         box.exec()
@@ -334,6 +340,38 @@ class QEditFlightDialog(QDialog):
         if squadron is None:
             return
 
+        self._plan_the_tanker(squadron)
+
+    def _ask_about_the_tanker(self) -> None:
+        """The waypoint is already there, and nothing is flying to meet it.
+
+        The route needs no change here -- only somebody to be at the point the flight
+        is already going to.
+        """
+        available = can_offer_a_tanker(self.flight)
+        box = QMessageBox(self)
+        box.setWindowTitle("Send a tanker?")
+        box.setIcon(QMessageBox.Icon.Question)
+        box.setText(
+            "This flight is short of fuel for its route and has a refuelling waypoint "
+            "on the way home, but no tanker is flying this turn, so there will be "
+            "nothing to meet there. One can be sent to orbit at the point, which is "
+            "clear of enemy air defences."
+            "\n\nThe route is not touched either way."
+        )
+        send = style_button(
+            box.addButton("Send a tanker", QMessageBox.ButtonRole.AcceptRole),
+            "primary",
+        )
+        style_button(box.addButton(QMessageBox.StandardButton.Cancel))
+        box.setDefaultButton(send)
+        box.exec()
+        if box.clickedButton() is not send:
+            return
+
+        squadron = self._choose_tanker(available)
+        if squadron is None:
+            return
         self._plan_the_tanker(squadron)
 
     def _choose_tanker(self, available: list[Squadron]) -> Optional[Squadron]:
