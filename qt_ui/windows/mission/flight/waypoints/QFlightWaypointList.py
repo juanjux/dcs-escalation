@@ -1,4 +1,4 @@
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 
 from PySide6.QtCore import (
     QItemSelectionModel,
@@ -82,14 +82,40 @@ class AltitudeEditorDelegate(QStyledItemDelegate):
         return editor
 
 
+def patrol_laps(flight: Any, waypoint: FlightWaypoint) -> Optional[int]:
+    """How many times round the racetrack, for the waypoint that ends it.
+
+    The patrol leg is one row carrying hours of flying: the fuel model charges the
+    laps and the route total counts them, and without this the number has nowhere it
+    comes from.
+    """
+    plan = getattr(flight, "flight_plan", None)
+    layout = getattr(plan, "layout", None)
+    end = getattr(layout, "patrol_end", None)
+    start = getattr(layout, "patrol_start", None)
+    if end is None or start is None or waypoint is not end:
+        return None
+    circuit = meters(start.position.distance_to_point(end.position)).nautical_miles * 2
+    if circuit <= 0:
+        return None
+    flown = plan.fuel_burn_distance_between_points(start, end).nautical_miles
+    laps = round(flown / circuit)
+    return laps if laps > 1 else None
+
+
 def leg_distances(
     waypoints: Sequence[FlightWaypoint],
+    flight_plan: Optional[Any] = None,
 ) -> tuple[list[Optional[float]], float]:
     """Nautical miles from the previous flown waypoint, and the route total.
 
     ``None`` for a waypoint that is not part of the ground track, and for the first
-    one, which has nothing before it. Straight legs: a racetrack's laps are time
-    spent at a place, not distance along the route.
+    one, which has nothing before it.
+
+    The plan measures its own legs where it has an opinion: a patrol flies its
+    racetrack for the patrol duration rather than crossing it once, and the fuel
+    model beside this figure has always charged those laps. Reading them as a single
+    crossing put 235 nm next to a fuel bar drawn from eleven hundred.
     """
     legs: list[Optional[float]] = []
     previous: Optional[FlightWaypoint] = None
@@ -101,9 +127,14 @@ def leg_distances(
         if previous is None:
             legs.append(None)
         else:
-            leg = meters(
-                previous.position.distance_to_point(waypoint.position)
-            ).nautical_miles
+            if flight_plan is not None:
+                leg = flight_plan.fuel_burn_distance_between_points(
+                    previous, waypoint
+                ).nautical_miles
+            else:
+                leg = meters(
+                    previous.position.distance_to_point(waypoint.position)
+                ).nautical_miles
             legs.append(leg)
             total += leg
         previous = waypoint
@@ -213,7 +244,7 @@ class QFlightWaypointList(QTableView):
             self.model.setHorizontalHeaderLabels(HEADER_LABELS)
 
             waypoints = self.flight.flight_plan.waypoints
-            legs, total = leg_distances(waypoints)
+            legs, total = leg_distances(waypoints, self.flight.flight_plan)
             self._row_waypoints = []
             index = 0
             while index < len(waypoints):
@@ -270,6 +301,9 @@ class QFlightWaypointList(QTableView):
         self.model.insertRow(self.model.rowCount())
 
         name_item = QWaypointItem(waypoint, row)
+        laps = patrol_laps(flight, waypoint)
+        if laps is not None:
+            name_item.setText(f"{name_item.text().rstrip()} x{laps}")
         kind = waypoint.waypoint_type
         if kind is FlightWaypointType.BULLSEYE:
             name_item.setData(True, DotOutlineRole)
