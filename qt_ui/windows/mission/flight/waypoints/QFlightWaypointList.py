@@ -82,12 +82,13 @@ class AltitudeEditorDelegate(QStyledItemDelegate):
         return editor
 
 
-def patrol_laps(flight: Any, waypoint: FlightWaypoint) -> Optional[int]:
-    """How many times round the racetrack, for the waypoint that ends it.
+def patrol_note(flight: Any, waypoint: FlightWaypoint) -> Optional[str]:
+    """How long the racetrack is held and how many times round, for the row that ends it.
 
-    The patrol leg is one row carrying hours of flying: the fuel model charges the
-    laps and the route total counts them, and without this the number has nowhere it
-    comes from.
+    The patrol leg is one row carrying hours of flying. A lap is out and back, so the
+    laps alone do not reconcile with the length of the track on the map -- seven of
+    them over a 74 nm track is a thousand miles, not five hundred. The duration is
+    what the patrol is actually set by, and it makes the rest check out.
     """
     plan = getattr(flight, "flight_plan", None)
     layout = getattr(plan, "layout", None)
@@ -100,7 +101,14 @@ def patrol_laps(flight: Any, waypoint: FlightWaypoint) -> Optional[int]:
         return None
     flown = plan.fuel_burn_distance_between_points(start, end).nautical_miles
     laps = round(flown / circuit)
-    return laps if laps > 1 else None
+    duration = getattr(plan, "patrol_duration", None)
+    hours = duration.total_seconds() / 3600.0 if duration is not None else 0.0
+    held = f"{hours:.1f}".rstrip("0").rstrip(".") + " h" if hours else ""
+    if laps > 1 and held:
+        return f"x{laps} laps, {held}"
+    if laps > 1:
+        return f"x{laps} laps"
+    return held or None
 
 
 def leg_distances(
@@ -301,9 +309,9 @@ class QFlightWaypointList(QTableView):
         self.model.insertRow(self.model.rowCount())
 
         name_item = QWaypointItem(waypoint, row)
-        laps = patrol_laps(flight, waypoint)
-        if laps is not None:
-            name_item.setText(f"{name_item.text().rstrip()} x{laps}")
+        note = patrol_note(flight, waypoint)
+        if note is not None:
+            name_item.setText(f"{name_item.text().rstrip()} {note}")
         kind = waypoint.waypoint_type
         if kind is FlightWaypointType.BULLSEYE:
             name_item.setData(True, DotOutlineRole)

@@ -6,6 +6,7 @@ Target points and the bullseye are in the list but not on the ground track. They
 
 from __future__ import annotations
 
+from datetime import timedelta
 from unittest.mock import MagicMock
 
 from game.ato.flightwaypointtype import FlightWaypointType
@@ -73,11 +74,14 @@ def test_the_bullseye_is_not_on_the_route() -> None:
     assert round(total) == 30
 
 
-def _patrol_plan(start: MagicMock, end: MagicMock, flown_nm: float) -> MagicMock:
+def _patrol_plan(
+    start: MagicMock, end: MagicMock, flown_nm: float, hours: float = 2.0
+) -> MagicMock:
     """A plan that charges its patrol leg as the laps actually flown."""
     plan = MagicMock()
     plan.layout.patrol_start = start
     plan.layout.patrol_end = end
+    plan.patrol_duration = timedelta(hours=hours)
 
     def between(a: MagicMock, b: MagicMock) -> MagicMock:
         distance = MagicMock()
@@ -103,7 +107,7 @@ def test_the_total_counts_the_laps_the_plan_says_it_flies() -> None:
 
 
 def test_the_racetrack_says_how_many_times_round() -> None:
-    from qt_ui.windows.mission.flight.waypoints.QFlightWaypointList import patrol_laps
+    from qt_ui.windows.mission.flight.waypoints.QFlightWaypointList import patrol_note
 
     start = _waypoint(FlightWaypointType.PATROL_TRACK, 0.0)
     end = _waypoint(FlightWaypointType.PATROL, 10 * NM)
@@ -111,16 +115,17 @@ def test_the_racetrack_says_how_many_times_round() -> None:
     # A 10 nm track is a 20 nm circuit, so 140 nm of flying is seven times round.
     flight.flight_plan = _patrol_plan(start, end, flown_nm=140.0)
 
-    assert patrol_laps(flight, end) == 7
-    assert patrol_laps(flight, start) is None
+    assert patrol_note(flight, end) == "x7 laps, 2 h"
+    assert patrol_note(flight, start) is None
 
 
-def test_one_crossing_is_not_worth_saying() -> None:
+def test_one_lap_drops_the_count_but_still_says_how_long() -> None:
+    """ "x1 laps" says nothing; how long it holds still does."""
     start = _waypoint(FlightWaypointType.PATROL_TRACK, 0.0)
     end = _waypoint(FlightWaypointType.PATROL, 10 * NM)
     flight = MagicMock()
     flight.flight_plan = _patrol_plan(start, end, flown_nm=20.0)
 
-    from qt_ui.windows.mission.flight.waypoints.QFlightWaypointList import patrol_laps
+    from qt_ui.windows.mission.flight.waypoints.QFlightWaypointList import patrol_note
 
-    assert patrol_laps(flight, end) is None
+    assert patrol_note(flight, end) == "2 h"
