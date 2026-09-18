@@ -278,24 +278,54 @@ def fuel_for_route(flight: Flight, legs: Iterable[Leg]) -> FuelEstimate:
     return FuelEstimate(required=pounds(required), carried=carried_fuel(flight))
 
 
-#: Floor on the nominal still-air range of each class, for airframes the fit below
-#: reads as shorter-legged than they are.
+#: Floor on the nominal still-air range of each class, in case the fit below reads an
+#: airframe as shorter-legged than anything of its kind could be. With the measured
+#: fit these rarely bind; the old heavy floor of 4,000 nm did, and wrongly -- an E-3A
+#: measured 2,138 and a KC-135 3,171.
 NOMINAL_RANGE_NM = {
     "helicopter": 250.0,
-    "heavy": 4000.0,  # tankers, AWACS, transports: they exist to stay up
-    "propeller": 500.0,
-    "jet": 450.0,
+    "heavy": 1500.0,
+    "propeller": 400.0,
+    "jet": 350.0,
 }
 
-#: Range against internal fuel, least squares over the 8 measured airframes
-#: (5,700 to 29,000 lb, R2 = 0.75): an airframe that carries more fuel flies further
-#: on it. A flat figure per class instead had a B-1B assumed to reach the same 450 nm
-#: as a Viper, which charged its 195,000 lb at 433 lb per mile.
-RANGE_FIT_COEFFICIENT = 2.04
-RANGE_FIT_EXPONENT = 0.62
+#: Still-air range on internal fuel against how much of it there is, least squares in
+#: logs, per class.
+#:
+#: Measured rather than assumed: sixty-four airframes flown in DCS at 25,000 ft and
+#: 800 km/h -- 15,000 and 600 for what cannot hold that -- carrying the default
+#: loadout for their own task, and sampled every ten seconds for their fuel and
+#: position. The fit before this one was made over eight airframes that between them
+#: had only two distinct figures, and it was too steep in both directions: it gave a
+#: MiG-31 1,320 nm where it flies 787, a Su-24M 1,109 where it flies 363, and a
+#: Tu-160 the 5,000 nm ceiling where it flies 1,760, while an M-2000C that reaches
+#: 1,192 was given 493 and a Mirage F1 that reaches 1,033 was given 481.
+#:
+#: Over the same sixty-four the median miss falls from 37% to 25%, and the number out
+#: by more than half from nineteen to eleven. Top speed was tried as a second term --
+#: a faster airframe being a draggier one -- and added nothing (R2 0.56 either way).
+RANGE_FIT = {
+    "jet": (46.63, 0.317),
+    "heavy": (124.01, 0.246),
+    # No measurements of either: the pooled fit, with the floors above to catch it.
+    "propeller": (43.29, 0.326),
+    "helicopter": (43.29, 0.326),
+}
 
-#: The fit is an extrapolation past 29,000 lb, so it is bounded. Against the real
-#: figures it stays pessimistic up there: 3,900 nm for a B-1B that flies about 6,000.
+#: Least squares runs through the middle of the measurements, which leaves half the
+#: airframes guessed as burning LESS than they do -- a flight told it has the fuel to
+#: get home and has not. A tanker it turns out not to need costs it a detour; the
+#: other way costs the aeroplane, so the fitted range is shifted down until most of
+#: the set is on the safe side.
+#:
+#: Over the sixty-four measured, this beats what the guess did before on every count:
+#: 48 on the safe side against 42, worst optimism 2.6x against 3.7x, and the mean
+#: pessimism barely moves, 1.34x against 1.28x. Going further -- 0.7 puts 55 on the
+#: safe side -- costs a mean 1.53x, which is a tanker planned for flights that do not
+#: need one, and that is the complaint this whole estimate exists to answer.
+RANGE_SAFETY_FACTOR = 0.8
+
+#: The fit is an extrapolation past the biggest thing measured, so it is bounded.
 MAX_NOMINAL_RANGE_NM = 5000.0
 
 #: The measured set runs climb 2.0-2.4x cruise and combat 1.2-2.2x. Both at their
@@ -337,9 +367,10 @@ def _airframe_class(aircraft: AircraftType) -> str:
 def nominal_range_nm(aircraft: AircraftType) -> float:
     """How far an unmeasured airframe is assumed to reach on its internal fuel."""
     internal = aircraft.dcs_unit_type.fuel_max * KG_TO_LBS
-    fitted = RANGE_FIT_COEFFICIENT * internal**RANGE_FIT_EXPONENT if internal else 0.0
-    floor = NOMINAL_RANGE_NM[_airframe_class(aircraft)]
-    return min(MAX_NOMINAL_RANGE_NM, max(floor, fitted))
+    airframe = _airframe_class(aircraft)
+    coefficient, exponent = RANGE_FIT[airframe]
+    fitted = coefficient * internal**exponent * RANGE_SAFETY_FACTOR if internal else 0.0
+    return min(MAX_NOMINAL_RANGE_NM, max(NOMINAL_RANGE_NM[airframe], fitted))
 
 
 def assumed_consumption(aircraft: AircraftType) -> FuelConsumption:
