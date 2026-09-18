@@ -30,6 +30,7 @@ from qt_ui.widgets.QFrequencyWidget import QFrequencyWidget
 from qt_ui.widgets.ato import QFlightList
 from qt_ui.windows.QRadioFrequencyDialog import QRadioFrequencyDialog
 from qt_ui.windows.mission.QAutoCreateDialog import QAutoCreateDialog
+from qt_ui.windows.mission.refueloffer import offer_for_package
 from qt_ui.windows.mission.flight.QFlightCreator import QFlightCreator
 
 
@@ -232,7 +233,14 @@ class QPackageDialog(QDialog):
         try:
             flight.recreate_flight_plan()
             self.package_model.update_tot()
-            EventStream.put_nowait(GameUpdateEvents().new_flight(flight))
+            # The same questions the flight editor asks on the way out. A flight that
+            # is created short of fuel never goes through that editor, so without this
+            # nobody ever asks about it.
+            EventStream.put_nowait(
+                offer_for_package(
+                    self.package_model, self, GameUpdateEvents().new_flight(flight)
+                )
+            )
         except PlanningError as ex:
             self.package_model.delete_flight(flight)
             logging.exception("Could not create flight")
@@ -272,8 +280,13 @@ class QPackageDialog(QDialog):
             parent=self.window(),
         )
         if auto_create_dialog.exec_() == QDialog.DialogCode.Accepted:
+            events = GameUpdateEvents()
             for f in self.package_model.package.flights:
-                EventStream.put_nowait(GameUpdateEvents().new_flight(f))
+                events = events.new_flight(f)
+            # A whole package at once, so the questions are asked once for it: one
+            # tanker serves the package, and the moment one is agreed to the rest of
+            # its flights have nothing left to ask.
+            EventStream.put_nowait(offer_for_package(self.package_model, self, events))
             self.package_model.update_tot()
             self.package_changed.emit()
             self.auto_create_button.setDisabled(True)
