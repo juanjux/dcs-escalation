@@ -45,7 +45,7 @@ from game.persistency import airwing_dir
 from game.squadrons import Squadron
 from game.theater import ControlPoint
 from qt_ui.widgets.cards import make_transparent
-from qt_ui.widgets.controls import Segmented
+from qt_ui.widgets.controls import Segmented, style_button
 from .card import SquadronCard
 from .common import (
     ACCENT,
@@ -728,13 +728,11 @@ class AirWingConfigurationDialog(QDialog):
         self.status_label = QLabel()
         row.addWidget(self.status_label)
 
-        reset = QPushButton("Discard changes" if self.cheat else "Reset changes")
-        reset.setFixedHeight(32)
-        reset.setStyleSheet(
-            "QPushButton { background: #A8443F; color: #FFFFFF; border: none;"
-            " border-radius: 3px; padding: 0 16px; font-size: 12px; }"
-            "QPushButton:hover { background: #BF4F49; }"
+        reset = style_button(
+            QPushButton("Discard changes" if self.cheat else "Reset changes"),
+            "danger",
         )
+        reset.setFixedHeight(32)
         reset.clicked.connect(self.revert)
         row.addWidget(reset)
         row.addSpacing(16)
@@ -918,10 +916,7 @@ class AirWingConfigurationDialog(QDialog):
             + " border: none; border-radius: 3px; padding: 6px 18px;"
             " font-weight: 600;"
         )
-        discard.setStyleSheet(
-            "background: #A8443F; color: #FFFFFF; border: none; border-radius: 3px;"
-            " padding: 6px 18px;"
-        )
+        style_button(discard, "danger")
         box.setDefaultButton(keep)
         box.exec_()
         if box.clickedButton() is discard:
