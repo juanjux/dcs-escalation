@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Optional, Sequence
 
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsstate import (
+    IadsState,
     IadsStatus,
     comms_up,
     covers,
@@ -174,15 +175,7 @@ def describe(
     gets: list[IadsLink] = []
 
     if getattr(tgo, "carries_gps_jammer", False):
-        gives.append(
-            IadsLink(
-                caption="JAMMING",
-                title="GPS-guided weapons go wide inside its bubble",
-                note="the weapons only: aircraft and their navigation are unaffected",
-                chip="ON ITS OWN",
-                tone=LinkTone.GOOD,
-            )
-        )
+        gives.append(_jamming_link(status, friendly))
     elif role is IadsRole.EWR:
         gives.append(_cues_link(node, siblings, friendly))
         gives.append(_command_link(node, siblings, friendly))
@@ -207,6 +200,34 @@ def describe(
 
 
 # -------------------------------------------------------------------- the rows
+
+
+def _jamming_link(status: Optional[IadsStatus], friendly: bool) -> IadsLink:
+    """What the bubble is doing.
+
+    A jammer wants nothing from the network but power, and Skynet never brings an
+    unpowered site up, so a dark one denies nothing: the row said it was jamming
+    regardless, which was the last place the card disagreed with the mission.
+    """
+    if status is not None and status.state is IadsState.DARK:
+        return IadsLink(
+            caption="JAMMING",
+            title="Nothing is being jammed",
+            note=(
+                "its power is out, so the bubble is off until the grid is back"
+                if friendly
+                else "its power is out: satellite-guided weapons are accurate here"
+            ),
+            chip="SWITCHED OFF",
+            tone=LinkTone.BAD,
+        )
+    return IadsLink(
+        caption="JAMMING",
+        title="GPS-guided weapons go wide inside its bubble",
+        note="the weapons only: aircraft and their navigation are unaffected",
+        chip="ON ITS OWN",
+        tone=LinkTone.GOOD,
+    )
 
 
 def _early_warning_link(

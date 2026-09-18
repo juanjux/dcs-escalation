@@ -259,6 +259,23 @@ def test_a_gps_jammer_gives_jamming_and_asks_only_for_power() -> None:
     assert [link.caption for link in picture.gets] == ["POWER"]
 
 
+def test_a_jammer_with_the_power_out_says_it_is_jamming_nothing() -> None:
+    """The row used to claim the bubble was up whatever the site's state."""
+    from game.theater.iadsnetwork.iadsstate import IadsState, IadsStatus
+
+    jammer = _group("SCARAB", IadsRole.EWR)
+    jammer.ground_object.carries_gps_jammer = True
+    network = _network(_node(jammer))
+    network.state_map = SimpleNamespace(
+        status_for=lambda _tgo: IadsStatus(IadsState.DARK, "", False)
+    )
+
+    jamming = _link(describe(jammer.ground_object, network), "JAMMING")
+
+    assert jamming.chip == "SWITCHED OFF"
+    assert jamming.tone is LinkTone.BAD
+
+
 def test_a_radar_gives_what_it_cues_and_asks_for_power() -> None:
     ewr = _group("Tonopah", IadsRole.EWR, _unit(detection=100_000))
     sam = _group("KAKAPO", IadsRole.SAM, at=(10.0, 0.0))
