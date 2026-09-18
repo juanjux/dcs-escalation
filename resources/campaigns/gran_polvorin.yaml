@@ -50,7 +50,8 @@ iads_config:
     - Red IADS Command Center Rio Gallegos:
         - Red Power Rio Gallegos
 
-# RED -- Tierra del Fuego
+# RED -- Tierra del Fuego. Rio Grande has a comms tower but no power station, so the
+# Ushuaia plant stands inland between the two and its grid covers both.
     - Ground-1:            # S-300 at Ushuaia
         - Red Comms Ushuaia Airport
         - Red Power Ushuaia Airport
