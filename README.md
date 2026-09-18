@@ -359,14 +359,7 @@ and it is longer than this section.
   toolbar actions, the settings page, `FlightType.PRETENSE_CARGO` and the four `*_full`
   campaigns tuned for it.
 
-## Queued
-
-Planned, not started. Enough detail here to pick each one up cold.
-
-- **[from 414Ret] Strikes timed behind their SEAD.** Packages are scheduled independently
-  today, so nothing stops a strike entering a threat ring before the SEAD servicing it.
-
-## Halted for Now
+## Halted (or abandoned) for Now
 
 Work that was built and soak-tested but **parked** — pulled out of `master` and
 `juanjux-dev` to keep them clean, with every branch preserved here so it can be
