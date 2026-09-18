@@ -37,6 +37,26 @@ from qt_ui.models import PackageModel
 from qt_ui.widgets.controls import style_button
 
 
+def adding_message(who: str, situation: str, fresh: bool) -> str:
+    """The body of the "add a waypoint" question.
+
+    Out here so a test can read it back: it is a run of implicit string concatenation,
+    which is where an editing slip leaves a duplicated sentence that nothing notices.
+    """
+    # "No longer" is wrong for a flight that has only just been planned: it never had
+    # the fuel in the first place.
+    shortfall = (
+        "does not have the fuel for its route"
+        if fresh
+        else "no longer has the fuel for its route"
+    )
+    return (
+        f"{who} {shortfall}. A refuelling waypoint can be added on the way home. "
+        f"{situation}"
+        "\n\nThe rest of the route is left exactly as you set it."
+    )
+
+
 class RefuelOffer:
     """Asks one flight whatever its fuel calls for, and plans what is agreed to."""
 
@@ -134,19 +154,7 @@ class RefuelOffer:
         box = QMessageBox(self.parent)
         box.setWindowTitle("Add a refuelling waypoint?")
         box.setIcon(QMessageBox.Icon.Question)
-        # "No longer" is wrong for a flight that has only just been planned: it
-        # never had the fuel in the first place.
-        shortfall = (
-            "does not have the fuel for its route"
-            if fresh
-            else "no longer has the fuel for its route"
-        )
-        box.setText(
-            f"{self._who()} {shortfall}. A refuelling waypoint can be added on "
-            f"the way home. {situation}"
-            f"waypoint can be added on the way home. {situation}"
-            "\n\nThe rest of the route is left exactly as you set it."
-        )
+        box.setText(adding_message(self._who(), situation, fresh))
         with_tanker = style_button(
             box.addButton("Add waypoint and tanker", QMessageBox.ButtonRole.AcceptRole),
             "primary",

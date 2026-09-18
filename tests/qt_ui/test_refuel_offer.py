@@ -167,3 +167,15 @@ def test_a_fresh_flight_with_no_waypoint_is_left_to_the_verdict(
     _offer(flight, asked).ask(GameUpdateEvents(), fresh=True)
 
     assert asked == []
+
+
+def test_the_question_reads_once(qt_app: Any) -> None:
+    """It is built by implicit concatenation, where a slip duplicates a sentence."""
+    from qt_ui.windows.mission.refueloffer import adding_message
+
+    text = adding_message("TARSIER (AV-8B)", "A tanker can be sent with it.", True)
+    sentences = [s.strip() for s in text.replace("\n", " ").split(".") if s.strip()]
+
+    assert len(sentences) == len(set(sentences)), text
+    assert "does not have the fuel" in text
+    assert "no longer" not in text
