@@ -13,7 +13,9 @@ This module owns the *campaign* half:
 
 * which ground units jam (any unit whose definition carries a ``gps_jamming``
   block -- see :class:`game.dcs.groundunittype.GpsJammingProperties`),
-* where the live sites are and how far each reaches, and
+* where the live sites are, how far each reaches, and whether the IADS still
+  has the power on to them -- a dark site does not jam, so bombing the
+  substation beside it takes the bubble away without finding the trucks,
 * what the player is briefed about them (recon-fogged: an un-engaged jammer is
   not on the kneeboard, so finding it is worth a recon sortie).
 
@@ -142,7 +144,7 @@ def gps_jammer_sites(game: "Game") -> list[GpsJammerSite]:
     sites: list[GpsJammerSite] = []
     for cp in game.theater.controlpoints:
         for tgo in cp.ground_objects:
-            site = _site_for_tgo(tgo, cp, default_reach, default_miss)
+            site = _site_for_tgo(game, tgo, cp, default_reach, default_miss)
             if site is not None:
                 sites.append(site)
     return sites
@@ -161,7 +163,7 @@ def jamming_reach_for(game: "Game", tgo: Any) -> Optional[Distance]:
     if cp is None:
         return None
     site = _site_for_tgo(
-        tgo, cp, _campaign_default_reach(game), _campaign_default_miss(game)
+        game, tgo, cp, _campaign_default_reach(game), _campaign_default_miss(game)
     )
     return site.reach if site is not None else None
 
@@ -180,7 +182,7 @@ def briefed_jammer_areas(game: "Game", viewer: Any) -> list[GpsJammerSite]:
     default_miss = _campaign_default_miss(game)
     for cp in game.theater.controlpoints:
         for tgo in cp.ground_objects:
-            site = _site_for_tgo(tgo, cp, default_reach, default_miss)
+            site = _site_for_tgo(game, tgo, cp, default_reach, default_miss)
             if site is None or site.coalition != wanted:
                 continue
             # This fork has no recon fog, so every jammer is briefed. Kept as a
@@ -197,13 +199,39 @@ def briefed_jammer_areas(game: "Game", viewer: Any) -> list[GpsJammerSite]:
     return briefed
 
 
+def switched_off(game: "Game", tgo: Any) -> bool:
+    """Whether the IADS has this site dark, which for a jammer means no power.
+
+    A jammer wants nothing from the network but electricity, and Skynet refuses to
+    bring an unpowered site up at all, so a dark one is not jamming: bombing the
+    substation beside it is the way to take its bubble away without finding the
+    trucks. The state map already works this out for the map and the site's card;
+    this is the same answer reaching the mission.
+
+    A campaign with no network, or the plugin switched off, has no state to read and
+    the jammer runs on its trucks alone, as it did before there was a network.
+    """
+    from game.theater.iadsnetwork.iadsstate import IadsState
+
+    if not game.settings.plugin_option_or("skynetiads", True):
+        return False
+    network = getattr(game.theater, "iads_network", None)
+    if network is None or not network.nodes:
+        return False
+    status = network.state_map.status_for(tgo)
+    return status is not None and status.state is IadsState.DARK
+
+
 def _site_for_tgo(
+    game: "Game",
     tgo: Any,
     cp: "ControlPoint",
     default_reach: Distance,
     default_miss: Distance,
 ) -> Optional[GpsJammerSite]:
     """Build the site record for a TGO that carries live jammer vehicles."""
+    if switched_off(game, tgo):
+        return None
     units: list[str] = []
     # A site with several jammer types takes the LONGEST declared reach and the
     # WORST declared miss: the strongest emitter present is what the weapon
