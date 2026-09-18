@@ -22,58 +22,20 @@ improve of your air defenses and money-producing buildings, et cetera. You could
 Then you would click on "take off", and it will generate a DCS mission. You would then hop into DCS, load and play that mission, and everything that happened during it would be recorded and persisted 
 for the next turn, then you would go back to Escalation UI and repeat, until either your side (OWNFOR) or the enemy one (OPFOR) wins.
 
-### Interface
+# What does Escalation adds over it's ancestors Liberation and Retribution?
 
-- **The interface has been rebuilt.** Dialogs, lists and panels were redrawn to one
-  visual language.
+## LLM-controlled OPFOR (REST API + MCP)
+- **An external LLM (Claude, ChatGPT, etc) can play the enemy commander.** A REST API and an MCP server expose a
+  token-frugal turn context (forces, targets, threats, economy, naval, motorpools, runway
+  states, plus an optional rendered map image) and full player parity to act on it:
+  packages and flights, buying and selling, front-line stances, squadron relocation,
+  fleet movement, repairs and rebuilds. The LLM gets its own briefing at `/start` and
+  `/howtoplay`. Just copy the local URL from the button to Claude Coword, ChatGPT Codex, Grok build
+  or any other LLM that has a local interface, and start playing with it controlling OPFOR.
 
-  <img src="https://raw.githubusercontent.com/juanjux/dcs-escalation/juanjux/screenshots/airwing-redesign.png" width="760">
+## Live Pilots
 
-- **Coordinates anywhere on the map, in the format of choice.** A picker reads any
-  point, the objective dialog gives the coordinates of every unit and building, and both
-  copy to the clipboard. DMS, decimal minutes, decimal degrees and MGRS, set on the new
-  General settings page.
-  ([#296](https://github.com/juanjux/dcs-escalation/pull/296))
-
-### IADS Reworked
-
-- **Custom Skynetfork**, [juanjux/Skynet-IADS](https://github.com/juanjux/Skynet-IADS): upstream 3.3.0 with its
-  HARM fixes, plus `ActMobile` and the four High Digit SAMs systems (S-400, S-300V4,
-  SAMP/T, Pantsir-SM), and many, many fixes and performance improvements including (optional) culling of the network based on the
-  planned flight packages
-
-- **Batteries with their own generator can survive a power grid cut.** A Patriot's EPP-III or a
-  SAMP/T's MGE keeps the site powered when the nearest substation is bombed until the defined
-   generator unit itself is destroyed.
-
-- **IADS infrastructure can be rebuilt.**
-  
-- **Autonomous and dark sites are told apart from working ones.** A dark site draws no range rings
-  and its health bar color and tooltip says why, network links are coloured by state.
-  
-- **Radar, missile battery and jamming sites are interchangeable** You can buy any of these in the place of others.
-  They still have distinct icons.
-  
-- **Many fixed on campaigns that used IADS but had some errors in the topology or configuration.**
-
-### Kneeboards
-- **Friendly-packages list** plus a **package-targets map** page.
-  ([#11](https://github.com/juanjux/dcs-escalation/pull/11))
-- **DEAD/SEAD target page** — one waypoint per target with an STPT column.
-  ([#18](https://github.com/juanjux/dcs-escalation/pull/18))
-- **COMM2 presets** mirrored from COMM1 on twin-radio aircraft (plus an
-  F/A-18-family COMM1/COMM2 fix) and clearer auto-assigned **TACAN** codes.
-  ([#12](https://github.com/juanjux/dcs-escalation/pull/12),
-  [#20](https://github.com/juanjux/dcs-escalation/pull/20))
-- The **Support Info** page spans several pages when a package has many flights, instead
-  of silently pushing the AEW&C, tanker and JTAC tables off the bottom of one.
-  ([#69](https://github.com/juanjux/dcs-escalation/pull/69))
-
-
-
-### Live Pilots
-
-A squadron of people instead of a list of slots. Switched on, a pilot has a name, a
+A squadron of people instead of a list of slots with RPG-like interactions. Switched on, a pilot has a name, a
 rank and a history, and DCS shows him by name in the cockpit label rather than as
 "Pilot #2". What happens to him is remembered, and it feeds back into how he flies:
 the campaign is not only aircraft and fuel any more, it is also who is left and how
@@ -103,7 +65,7 @@ they are holding up.
   the individual ones, what he has survived, how he died and who did it, his morale
   with the log of everything that moved it, and his relationships in both directions.
   An optional cheat strip renames, promotes, heals and revives.
-
+  
 Still to come:
 
 - **Rivals.** Two pilots who cannot stand each other try to out-score one another in
@@ -118,8 +80,56 @@ Still to come:
   history and statistics, morale across the squadron, leave requests, and whatever is
   worth a warning.
 
-### Missions, AI & tasking
+  
+## Interface
 
+- **The interface has been rebuilt.** Dialogs, lists and panels were redrawn to one
+  visual language.
+
+  <img src="https://raw.githubusercontent.com/juanjux/dcs-escalation/juanjux/screenshots/airwing-redesign.png" width="760">
+
+- **Coordinates anywhere on the map, in the format of choice.** A picker reads any
+  point, the objective dialog gives the coordinates of every unit and building, and both
+  copy to the clipboard. DMS, decimal minutes, decimal degrees and MGRS, set on the new
+  General settings page.
+  ([#296](https://github.com/juanjux/dcs-escalation/pull/296))
+
+## IADS Reworked
+
+- **Custom Skynetfork**, [juanjux/Skynet-IADS](https://github.com/juanjux/Skynet-IADS): upstream 3.3.0 with its
+  HARM fixes, plus `ActMobile` and the four High Digit SAMs systems (S-400, S-300V4,
+  SAMP/T, Pantsir-SM), and many, many fixes and performance improvements including (optional) culling of the network based on the
+  planned flight packages
+
+- **Batteries with their own generator can survive a power grid cut.** A Patriot's EPP-III or a
+  SAMP/T's MGE keeps the site powered when the nearest substation is bombed until the defined
+   generator unit itself is destroyed.
+
+- **IADS infrastructure can be rebuilt.**
+  
+- **Autonomous and dark sites are told apart from working ones.** A dark site draws no range rings
+  and its health bar color and tooltip says why, network links are coloured by state.
+  
+- **Radar, missile battery and jamming sites are interchangeable** You can buy any of these in the place of others.
+  They still have distinct icons.
+  
+- **Many fixed on campaigns that used IADS but had some errors in the topology or configuration.**
+
+## Kneeboards
+- **Friendly-packages list** plus a **package-targets map** page.
+  ([#11](https://github.com/juanjux/dcs-escalation/pull/11))
+- **DEAD/SEAD target page** — one waypoint per target with an STPT column.
+  ([#18](https://github.com/juanjux/dcs-escalation/pull/18))
+- **COMM2 presets** mirrored from COMM1 on twin-radio aircraft (plus an
+  F/A-18-family COMM1/COMM2 fix) and clearer auto-assigned **TACAN** codes.
+  ([#12](https://github.com/juanjux/dcs-escalation/pull/12),
+  [#20](https://github.com/juanjux/dcs-escalation/pull/20))
+- The **Support Info** page spans several pages when a package has many flights, instead
+  of silently pushing the AEW&C, tanker and JTAC tables off the bottom of one.
+  ([#69](https://github.com/juanjux/dcs-escalation/pull/69))
+
+
+## Missions, AI & tasking
 - **Realistic CAS** — an experimental, off-by-default Mission Plugin that makes
   ground targets something to discover instead of immediately available to every
   AI attacker. Both sides search using visual, EO/IR and ground-radar observations,
@@ -134,9 +144,6 @@ Still to come:
   JTACs are temporarily omitted. Campaign-scale tuning and replacement JTACs remain
   pending. [Plugin details](resources/plugins/realisticcas/README.md).
   ([#195](https://github.com/juanjux/dcs-escalation/pull/195))
-
-- **Fix escort and sead escorts not honoring the "ahead" TOT offset setting.** 
-  ([#220](https://github.com/juanjux/dcs-escalation/pull/220))
   
 - **Automatic refuelling waypoint and tanker added only if needed.** A package's route is costed leg by leg against and estimation of fuel usage based on the plane, speed and height
   and a flight that will not make it gets a dialog about adding a refuelling waypoint after the target and optionally a tanker in the same package.
@@ -148,11 +155,6 @@ Still to come:
   side while you fly: who shot down whom and with what, which targets went down, who
   ejected, who crashed. 
   ([#120](https://github.com/juanjux/dcs-escalation/pull/120))
-
- 
-- **TARCAP gets its own on-station time**, that can be configured in the settings. Defaults to the 30 minutes it always was, and still gives way to
-  the escorted mission.
-  ([#137](https://github.com/juanjux/dcs-escalation/pull/137))
   
 - **Turn times from the sun** — the four turn slots are derived from the theater's
   latitude and the campaign date rather than one fixed window per map, so a December dawn
@@ -181,18 +183,11 @@ Still to come:
   This makes campaigns longer and harder with more planes in the air after some turns.
   ([#1](https://github.com/juanjux/dcs-escalation/pull/1))
   
-- **Realistic helicopter range** — carrier-capable transport helos (CH-53E, CH-47D/F,
-  SH-60B, UH-60A/L, UH-1H) get their real combat radius instead of the 50 nm helicopter
-  default.
-  ([#64](https://github.com/juanjux/dcs-escalation/pull/64))
-  
 - **One-way air assault ("remain at destination")** — a helicopter-only option: the helos
   land at the objective and do not return, so the assault uses their full ferry range. At
   turn end the survivors redeploy there if you capture the base, otherwise they are lost.
   ([#64](https://github.com/juanjux/dcs-escalation/pull/64))
-  
-- **Ferry flights may return fire.** ([#99](https://github.com/juanjux/dcs-escalation/pull/99))
-  
+
 - **Automated ground-object / building repair** — the HQ repairs damaged SAM sites,
   vehicle groups and buildings each turn, with tunable budgets and priorities, and the
   turn panel reports what each side finished and what is still in progress.
@@ -215,13 +210,8 @@ Still to come:
   
 - **The debriefing is kept in the save**, so it can be reopened from the Misc bar after
   the session that produced it.
-  
-- **Money cheat for both coalitions** (OWNFOR + OPFOR).
-  ([#3](https://github.com/juanjux/dcs-escalation/pull/3))
-  
-- **Air Wing cheat** — per-squadron aircraft count with free +/- controls.
 
-### Campaigns
+## Campaigns
 - **Battle for Area 51: both sides get a real IADS.** Red's west, central and east
   groups shared no node and drew as three networks a few miles apart; the comms are
   cross-linked into one and the three power stations feed a single grid, so the network
@@ -236,27 +226,17 @@ Still to come:
   are expected to field by 2030 (so it required the Eurofighter and F35 mods, which this fork also adds support for), and both navies are built from real hulls with pinned compositions. Air defenses are about a third lighter than the original, the IADS is fully wired, and every base on a front has a motor pool holding its undeployed armor as a bombable target and Morocco has been made stronger to better balance the campaign.
   ([#98](https://github.com/juanjux/dcs-escalation/pull/98))
   
-- **South Atlantic — Gran Polvorin gets an air defence network.** The campaign shipped
-  SAM sites with no comms, no power and no command centres, so every battery fought on
-  its own radar. Both sides are now wired into one network each, with vehicle depots and
+- **South Atlantic — Gran Polvorin gets an air defence network.** Both sides are now wired into one network each,
+  
+- with vehicle depots and
   a GPS jamming site per side.
   ([#290](https://github.com/juanjux/dcs-escalation/pull/290),
   [#295](https://github.com/juanjux/dcs-escalation/pull/295))
-- **The Falklands map is called South Atlantic**, as DCS calls it.
-  ([#289](https://github.com/juanjux/dcs-escalation/pull/289))
-- **GPS jamming available in every modern campaign.** 
+
+- **GPS jamming (a feature from the 414ret fork) is available in every modern campaign.** 
   ([#183](https://github.com/juanjux/dcs-escalation/pull/183))
 
-### LLM-controlled OPFOR (REST API + MCP)
-- **An external LLM (Claude, ChatGPT, etc) can play the enemy commander.** A REST API and an MCP server expose a
-  token-frugal turn context (forces, targets, threats, economy, naval, motorpools, runway
-  states, plus an optional rendered map image) and full player parity to act on it:
-  packages and flights, buying and selling, front-line stances, squadron relocation,
-  fleet movement, repairs and rebuilds. The LLM gets its own briefing at `/start` and
-  `/howtoplay`. Just copy the local URL from the button to Claude Coword, ChatGPT Codex, Grok build
-  or any other LLM that has a local interface, and start playing with it controlling OPFOR.
-
-### Modding & data
+## Modding & data
 - **F-15EX Eagle II, F-15C EG (Golden Eagle) and Eurofighter Typhoon** mod aircraft.
   ([#31](https://github.com/juanjux/dcs-escalation/pull/31),
   [#32](https://github.com/juanjux/dcs-escalation/pull/32),
@@ -288,10 +268,13 @@ and it is longer than this section.
 
 - **Troops In Contact (TIC)** — a dynamic frontline: ground forces actually fight
   along the FLOT (with ambient fire) instead of behaving as two static walls.
+  
 - **Mission Impact debrief summary** — bases captured/lost, runway damage and a
   both-sides loss overview above the casualty tables.
+  
 - **AI routes around the ground battle** — the active front line becomes a
   navmesh routing hazard, so transit flights detour around it.
+  
 - **Frontline units spread along the line** instead of stacking laterally.
 
 - **Escorts can defend themselves before the JOIN point** — an escort was generated at an
