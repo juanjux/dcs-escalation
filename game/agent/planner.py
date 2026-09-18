@@ -13,7 +13,7 @@ import contextlib
 import logging
 import math
 from datetime import datetime, timedelta
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, Iterable, TYPE_CHECKING, Union
 from uuid import UUID
 
 from game.ato.flighttype import FlightType
@@ -1142,7 +1142,9 @@ def buy_ground(
             raise ValueError(
                 f"{cp.name} can't recruit ground units (needs a factory/front nearby)"
             )
-        GroundUnitPurchaseAdapter(cp, coalition, game).buy(unit, quantity)
+        GroundUnitPurchaseAdapter(cp, coalition, game, commands_the_coalition=True).buy(
+            unit, quantity
+        )
         return schemas.OpResult(
             ok=True,
             detail=f"ordered {quantity} {unit.display_name} at {cp.name}; "
@@ -1779,6 +1781,28 @@ def _record_figures(record: Any) -> dict[str, Any]:
     return figures
 
 
+def _pilots_matching(candidates: Iterable[Any], token: str) -> list[Any]:
+    """The pilots `token` picks out, by id or by name.
+
+    An id wins outright and can only ever match one man. A name is good enough only
+    while it picks out exactly one: two pilots called the same thing are two people,
+    and the generator does hand out the same name twice, so taking the first match
+    silently crews the wrong man. Every roster view carries the id for this reason.
+    """
+    by_id = [p for p in candidates if str(p.id) == token]
+    if by_id:
+        return by_id
+    return [p for p in candidates if p.name == token]
+
+
+def _ambiguous_pilot(matches: list[Any], token: str) -> str:
+    ids = ", ".join(sorted(str(p.id) for p in matches))
+    return (
+        f"{len(matches)} pilots are called {token}; say which one by passing "
+        f"his id instead of his name: {ids}"
+    )
+
+
 def pilot_record(
     game: Game, side: str, squadron_id: str, pilot_name: str
 ) -> dict[str, Any]:
@@ -1796,10 +1820,11 @@ def pilot_record(
         for squadron in coalition.air_wing.iter_squadrons():
             if str(squadron.id) != squadron_id and squadron.name != squadron_id:
                 continue
-            for pilot in squadron.current_roster:
-                if pilot.name != pilot_name and str(pilot.id) != pilot_name:
-                    continue
-                return _pilot_record_view(squadron, pilot)
+            matches = _pilots_matching(squadron.current_roster, pilot_name)
+            if len(matches) > 1:
+                raise ValueError(_ambiguous_pilot(matches, pilot_name))
+            if matches:
+                return _pilot_record_view(squadron, matches[0])
             known = ", ".join(sorted(p.name for p in squadron.current_roster))
             raise ValueError(f"{squadron} has no {pilot_name} (roster: {known})")
     raise ValueError(f"No squadron {squadron_id} on {side}")
@@ -1961,13 +1986,18 @@ def answer_leave_request(
         for squadron in coalition.air_wing.iter_squadrons():
             if str(squadron.id) != squadron_id and squadron.name != squadron_id:
                 continue
-            asking = {p.name: p for p in squadron.pilots_asking_for_leave()}
-            pilot = asking.get(pilot_name)
+            asking = list(squadron.pilots_asking_for_leave())
+            matches = _pilots_matching(asking, pilot_name)
+            if len(matches) > 1:
+                return schemas.OpResult(
+                    ok=False, error=_ambiguous_pilot(matches, pilot_name)
+                )
+            pilot = matches[0] if matches else None
             if pilot is None:
                 return schemas.OpResult(
                     ok=False,
                     error=f"{pilot_name} is not asking {squadron} for leave"
-                    f" (asking: {', '.join(sorted(asking)) or 'nobody'})",
+                    f" (asking: {', '.join(sorted(p.name for p in asking)) or 'nobody'})",
                 )
             if not grant:
                 pilot.wants_leave = False
@@ -2026,8 +2056,12 @@ def set_pilot_leave(
         for squadron in coalition.air_wing.iter_squadrons():
             if str(squadron.id) != squadron_id and squadron.name != squadron_id:
                 continue
-            roster = {p.name: p for p in squadron.current_roster}
-            pilot = roster.get(pilot_name)
+            matches = _pilots_matching(squadron.current_roster, pilot_name)
+            if len(matches) > 1:
+                return schemas.PilotLeaveResult(
+                    ok=False, error=_ambiguous_pilot(matches, pilot_name)
+                )
+            pilot = matches[0] if matches else None
             if pilot is None:
                 return schemas.PilotLeaveResult(
                     ok=False, error=f"{squadron} has nobody called {pilot_name}"
@@ -2215,14 +2249,15 @@ def set_flight_crew(
         who = current.name if current is not None else "nobody"
         return schemas.OpResult(ok=True, detail=f"seat {seat} emptied (was {who})")
 
-    if flight.roster.pilot_at(seat) is not None and (
-        flight.roster.pilot_at(seat).name == pilot_name
-    ):
+    seated = flight.roster.pilot_at(seat)
+    if seated is not None and _pilots_matching([seated], pilot_name):
         return schemas.OpResult(ok=True, detail=f"{pilot_name} already has seat {seat}")
 
-    matches = [p for p in squadron.available_pilots if p.name == pilot_name]
+    matches = _pilots_matching(squadron.available_pilots, pilot_name)
+    if len(matches) > 1:
+        return schemas.OpResult(ok=False, error=_ambiguous_pilot(matches, pilot_name))
     if not matches:
-        known = any(p.name == pilot_name for p in squadron.current_roster)
+        known = bool(_pilots_matching(squadron.current_roster, pilot_name))
         reason = (
             "he is dead, wounded, on leave or already flying something else"
             if known

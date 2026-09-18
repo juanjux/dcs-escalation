@@ -164,13 +164,15 @@ class FlightCrewRequest(BaseModel):
     side: str = "red"
     flight_id: str
     seat: int  # 0-based, as listed by GET /flights/{id}/crew
-    pilot_name: str | None = None  # null empties the seat
+    # His name or his `id` from the roster; null empties the seat. Prefer the id:
+    # a name shared by two pilots of the squadron is refused, not guessed.
+    pilot_name: str | None = None
 
 
 class LeaveRequestAnswer(BaseModel):
     side: str = "red"
     squadron_id: str  # from turn_context.leave_requests
-    pilot_name: str
+    pilot_name: str  # his name, or his `id` from the roster (preferred)
     grant: bool
     turns: int = 0  # 0 grants everything he asked for; more than he asked is capped
 
@@ -178,7 +180,9 @@ class LeaveRequestAnswer(BaseModel):
 class PilotLeaveRequest(BaseModel):
     side: str = "red"
     squadron_id: str  # from turn_context.air_wing
-    pilot_name: str  # from squadrons/{id}/pilots -- he need NOT have asked for leave
+    # From squadrons/{id}/pilots: his name or his `id` (preferred). He need NOT
+    # have asked for leave.
+    pilot_name: str
     on_leave: bool = True  # False calls a man back early (costs him morale)
     turns: int = 0  # 0 is open-ended: he stays out until you call him back
 

@@ -103,6 +103,11 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
   empties the seat. It refuses anyone dead, wounded, on leave or already flying: a pilot
   can only be in one place.
 
+  **Every one of these takes an `id` where it says `pilot_name`**, and you should use it
+  whenever you have it: the roster gives each man an `id`, and two pilots of the same
+  squadron can share a name. A name that picks out more than one man is refused outright,
+  with their ids in the error, rather than crewing whichever came first.
+
   Worth doing when experience matters to the sortie. With the campaign's Live Pilots
   setting on, a pilot's rank *is* his DCS skill level, so putting the veterans in the
   flight that has to succeed and the cadets on the quiet BARCAP is a real decision — and

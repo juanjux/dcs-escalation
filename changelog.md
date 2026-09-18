@@ -1,6 +1,8 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[FIX]** The OPFOR API could not buy red ground units unless the player's enemy buy/sell cheat was on, while it could buy red aircraft freely.
+* **[FIX]** The OPFOR API picked pilots by name, so two pilots of one squadron sharing a name crewed whichever came first. Every pilot endpoint takes his id, and an ambiguous name is refused with the ids to retry with.
 * **[Aircraft]** The C-130J-30 can be tasked with Strike, BAI, OCA/Aircraft, CAS and Armed Recon, for the MOAB it carries as cargo.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.

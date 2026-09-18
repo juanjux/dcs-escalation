@@ -173,13 +173,22 @@ class GroundUnitPurchaseAdapter(PurchaseAdapter[GroundUnitType]):
         coalition: Coalition,
         game: Game,
         inventory_changed: Optional[Callable[[], None]] = None,
+        commands_the_coalition: bool = False,
     ) -> None:
         super().__init__(coalition)
         self.control_point = control_point
         self.game = game
         self.inventory_changed = inventory_changed
+        #: Whether the caller IS this coalition rather than the player reaching across
+        #: to it. The enemy buy/sell setting is a cheat for the player's own UI, so it
+        #: has nothing to say to red's own commander -- which is what the OPFOR agent
+        #: is. Aircraft purchases never had the guard at all, so without this the API
+        #: could buy red a squadron but not a rifle company.
+        self.commands_the_coalition = commands_the_coalition
 
     def _authorized(self) -> bool:
+        if self.commands_the_coalition:
+            return True
         owner = self.control_point.captured
         return owner.is_blue or (
             owner.is_red and self.game.settings.enable_enemy_buy_sell
