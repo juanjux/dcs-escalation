@@ -174,6 +174,12 @@ class MissionGenerator:
         output.parent.mkdir(parents=True, exist_ok=True)
         self.mission.save(output)
 
+        # The A-10's cartridge is a Lua database beside the mission rather than a
+        # .dtc, so it is written here, where the mission's own path is known.
+        from game.missiongenerator.dts import write_database
+
+        write_database(self.game, output)
+
         return self.unit_map
 
     def setup_mission_coalitions(self) -> None:

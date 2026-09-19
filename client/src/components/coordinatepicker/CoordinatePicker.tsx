@@ -11,6 +11,7 @@
 // The formatting is the server's, so the map, the objective dialog and anything added
 // later say the same thing about the same spot.
 import { HTTP_URL } from "../../api/backend";
+import SavePoint from "./SavePoint";
 import { copyText } from "./clipboard";
 import "./CoordinatePicker.css";
 import L, { LatLng, Marker as LeafletMarker } from "leaflet";
@@ -91,6 +92,7 @@ export default function CoordinatePicker() {
           <button onClick={() => copy(picked.text)}>
             {copied ? "Copied" : "Copy"}
           </button>
+          <SavePoint at={picked.at} name={picked.text} />
           <div className="cp-others">
             {Object.entries(picked.all)
               .filter(([, text]) => text !== picked.text)

@@ -113,9 +113,11 @@ class Cartridge(ABC):
 
 
 class HornetCartridge(Cartridge):
-    """F/A-18C: rings and lines live on the SA page.
+    """The Hornet family: rings and lines live on the SA page.
 
     Limits from ``FA-18C/DTC/SA``: forty threats, three FLOT lines of seven points.
+    The CJS Super Hornet mod ships the same cartridge, section for section, for the
+    E, the F and the Growler, so they are the same profile under another type name.
     """
 
     aircraft = "FA-18C_hornet"
@@ -255,11 +257,30 @@ class ViperCartridge(Cartridge):
         }
 
 
+class SuperHornetCartridge(HornetCartridge):
+    """The CJS mod's E/F/G, whose cartridge is the Hornet's with another type on it."""
+
+    def __init__(self, aircraft: str) -> None:
+        self.aircraft = aircraft
+
+
 #: One per aircraft that can be handed any of this. An airframe missing from here
-#: gets no cartridge: it is not that the campaign will not write one, it is that its
-#: module has nowhere to put a threat ring or a line.
+#: gets no cartridge, and the reason is always the module rather than the campaign.
+#: Of everything DCS ships a DTC for -- the Hornet, the Viper, the Tomcat, the
+#: Apache, the Chinook and the Fulcrum -- only the first two keep a threat ring and a
+#: map line at all: the Tomcat and the Apache carry lines but no rings, the Fulcrum
+#: and the Chinook neither. The A-10 has no .dtc of any kind; its DTS database is a
+#: Lua file beside the mission (``game/missiongenerator/dts.py``) and carries
+#: waypoints only.
 CARTRIDGES: dict[str, Cartridge] = {
-    profile.aircraft: profile for profile in (HornetCartridge(), ViperCartridge())
+    profile.aircraft: profile
+    for profile in (
+        HornetCartridge(),
+        ViperCartridge(),
+        SuperHornetCartridge("FA-18E"),
+        SuperHornetCartridge("FA-18F"),
+        SuperHornetCartridge("EA-18G"),
+    )
 }
 
 

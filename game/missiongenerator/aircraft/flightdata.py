@@ -6,6 +6,7 @@ from typing import Optional, TYPE_CHECKING
 
 from dcs.flyingunit import FlyingUnit
 
+from game.ato.savedpoints import SavedPoint
 from game.ato.starttype import StartType
 from game.callsigns import create_group_callsign_from_unit
 from game.squadrons import Squadron
@@ -75,6 +76,10 @@ class FlightData:
 
     #: How the flight starts (cold, warm, runway, or in-flight).
     start_type: StartType
+
+    #: Points the player wrote down for this aircraft from the map. They are not part
+    #: of the flight plan: they get a kneeboard page of their own.
+    saved_points: list[SavedPoint] = field(default_factory=list)
 
     callsign: str = field(init=False)
 
