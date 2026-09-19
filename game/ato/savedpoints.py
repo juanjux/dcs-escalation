@@ -65,18 +65,6 @@ class Capacity:
         return self.waypoints if kind is PointKind.WAYPOINT else self.markpoints
 
 
-#: One row per airframe, from DCS's own ``CoreMods/aircraft/<type>/DTC`` scripts.
-#: Neither module carries a markpoint -- those are made in the cockpit -- so the
-#: markpoint column is where a module that does carry one goes.
-#:
-#: Hornet: ``WYPT/WYPT_NAV.lua`` caps the navigation set at 59, and two of those are
-#: spoken for (58 is HOME, 59 the bullseye), so 57 are free.
-#: Viper: ``MPD/NAV_PTS.lua`` stops at 25 steerpoints.
-CAPACITY: dict[str, Capacity] = {
-    "FA-18C_hornet": Capacity(waypoints=57, markpoints=0),
-    "F-16C_50": Capacity(waypoints=25, markpoints=0),
-}
-
 #: An airframe nobody has measured. Its points ride on the kneeboard like everyone
 #: else's; what it will not do is claim a number it cannot keep.
 UNMEASURED = Capacity(waypoints=0, markpoints=0)
@@ -85,6 +73,23 @@ UNMEASURED = Capacity(waypoints=0, markpoints=0)
 #: kneeboard page holds about this many rows, and a list longer than a page is a list
 #: nobody reads in the air.
 PAGE_FULL = 24
+
+#: One row per airframe, from whatever DCS uses for that module: the .dtc scripts in
+#: ``CoreMods/aircraft/<type>/DTC``, or the A-10's own DTS database. None of them
+#: carries a markpoint -- those are made in the cockpit -- so the markpoint column is
+#: where a module that does carry one goes.
+#:
+#: Hornet: ``WYPT/WYPT_NAV.lua`` caps the navigation set at 59, and two of those are
+#: spoken for (58 is HOME, 59 the bullseye), so 57 are free.
+#: Viper: ``MPD/NAV_PTS.lua`` stops at 25 steerpoints.
+#: A-10C II: its DTS database is a Lua file with no stated ceiling, and the CDU holds
+#: far more than anyone writes down, so the page is what limits it.
+CAPACITY: dict[str, Capacity] = {
+    "FA-18C_hornet": Capacity(waypoints=57, markpoints=0),
+    "F-16C_50": Capacity(waypoints=25, markpoints=0),
+    "A-10C": Capacity(waypoints=PAGE_FULL, markpoints=0),
+    "A-10C_2": Capacity(waypoints=PAGE_FULL, markpoints=0),
+}
 
 
 def capacity_for(dcs_id: str) -> Capacity:

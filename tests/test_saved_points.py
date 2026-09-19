@@ -63,7 +63,7 @@ def test_a_page_is_as_many_as_anyone_reads_in_the_air() -> None:
 
 def test_an_airframe_with_no_measured_room_still_takes_them() -> None:
     """They go on the kneeboard, which is where the player reads one off."""
-    flight = _flight("A-10C_2")
+    flight = _flight("Su-25T")
 
     assert room_for(cast(Any, flight), PointKind.MARKPOINT) == PAGE_FULL
 
