@@ -25,8 +25,9 @@ describe("saving a point to an aircraft", () => {
     answerWith([
       {
         id: "1",
-        callsign: "TARSIER",
+        callsign: "SEAD",
         aircraft: "AV-8B",
+        departure: "Mount Pleasant",
         kinds: ["waypoint"],
         room: { waypoint: 3 },
       },
@@ -35,6 +36,8 @@ describe("saving a point to an aircraft", () => {
     render(<SavePoint at={AT} name="N36 W115" />);
 
     expect(await screen.findByText(/Save as waypoint/)).toBeInTheDocument();
+    // A flight with no name of its own is called after its task, never "None".
+    expect(screen.getByRole("option").textContent).toMatch(/^SEAD/);
   });
 
   it("says so when nobody is flying anything", async () => {
