@@ -19,9 +19,12 @@ Two independently-gated tiers answer that, mirroring  proven shape:
 
 * **N1, staggered release** (``naval_weapon_release_stagger``) — ships generate
   ``ReturnFire`` instead of ``WeaponFree`` and the plugin releases each group to
-  weapons-free at its own moment inside a window. ``ReturnFire`` rather than
-  ``WeaponHold`` deliberately: a holding fleet is a defenceless one, and the
-  point is to delay *initiation*, not to disarm anybody. Runtime only, no
+  weapons-free at its own moment inside a window, and immediately whatever its
+  moment once the other side fires an anti-ship missile. ``ReturnFire`` rather
+  than ``WeaponHold`` deliberately: the point is to delay *initiation*, not to
+  disarm anybody — but ``ReturnFire`` does not leave a ship able to defend
+  itself either, because shooting an incoming missile is not returning fire at
+  whoever launched it, so being shot at has to end the wait. Runtime only, no
   persisted state.
 * **N2, the magazine** (``naval_magazines``) — each naval group carries a
   persisted anti-ship missile stock (:data:`ASHM_MAGAZINE_BY_TYPE`, summed over
@@ -48,6 +51,7 @@ Symmetric: blue's Burkes are bound by exactly the same rule as red's Type 055s.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import zip_longest
 from typing import TYPE_CHECKING, Iterator, Optional
 
 if TYPE_CHECKING:
@@ -183,7 +187,7 @@ def naval_group_magazines(game: "Game") -> list[NavalGroupMagazine]:
     """
     ensure_magazines(game)
     mags = magazines(game)
-    return [
+    found = [
         NavalGroupMagazine(
             group_name=group.group_name,
             coalition="blue" if tgo.control_point.captured.is_blue else "red",
@@ -191,6 +195,32 @@ def naval_group_magazines(game: "Game") -> list[NavalGroupMagazine]:
         )
         for tgo, group in _naval_groups(game)
     ]
+    return _by_turns(found)
+
+
+def _by_turns(groups: list[NavalGroupMagazine]) -> list[NavalGroupMagazine]:
+    """The two sides alternating, because the plugin releases them in this order.
+
+    The stagger spreads the releases evenly across its window by position in this
+    list, and the list came out in objective order -- which in a campaign that
+    numbers one side's objectives before the other's is the same as sorting by
+    coalition. On Gran Polvorin that handed red every slot from two minutes to eight
+    and blue every slot from ten to fifteen: red opened fire with blue still on
+    ReturnFire, which is not a stagger, it is a head start.
+
+    Alternating gives neither side one. A side with more groups than the other keeps
+    the tail, which is unavoidable and is not a bias: it is the same fleet either way.
+    """
+    sides: dict[str, list[NavalGroupMagazine]] = {"blue": [], "red": []}
+    for group in groups:
+        sides[group.coalition].append(group)
+    ordered: list[NavalGroupMagazine] = []
+    for blue, red in zip_longest(sides["blue"], sides["red"]):
+        # Red first only because something has to be, and it is the same every turn.
+        for group in (red, blue):
+            if group is not None:
+                ordered.append(group)
+    return ordered
 
 
 def reconcile_naval_magazines(game: "Game", debriefing: "Debriefing") -> None:

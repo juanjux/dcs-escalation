@@ -273,3 +273,46 @@ def test_the_two_magazines_meter_different_things_on_shared_hulls() -> None:
     Harpoons. That is fine precisely because the WEAPON sets are disjoint."""
     shared = set(ASHM_MAGAZINE_BY_TYPE) & set(LACM_MAGAZINE_BY_TYPE)
     assert "USS_Arleigh_Burke_IIa" in shared
+
+
+def test_the_release_order_alternates_the_two_sides() -> None:
+    """The stagger spreads releases by position in this list, so a list sorted by
+    coalition is a head start rather than a stagger: on Gran Polvorin every red group
+    went weapons-free between two and eight minutes and every blue one between ten
+    and fifteen, and red opened fire with blue still on ReturnFire."""
+    from game.naval_magazines import NavalGroupMagazine, _by_turns
+
+    def group(side: str, number: int) -> NavalGroupMagazine:
+        return NavalGroupMagazine(f"{side}{number}", side, 10)
+
+    sorted_by_side = [group("red", n) for n in range(1, 7)] + [
+        group("blue", n) for n in range(1, 6)
+    ]
+
+    ordered = _by_turns(sorted_by_side)
+
+    assert [one.coalition for one in ordered] == [
+        "red",
+        "blue",
+        "red",
+        "blue",
+        "red",
+        "blue",
+        "red",
+        "blue",
+        "red",
+        "blue",
+        "red",
+    ]
+
+
+def test_one_side_alone_keeps_every_slot() -> None:
+    from game.naval_magazines import NavalGroupMagazine, _by_turns
+
+    only_red = [NavalGroupMagazine(f"red{n}", "red", 10) for n in range(3)]
+
+    assert [one.group_name for one in _by_turns(only_red)] == [
+        "red0",
+        "red1",
+        "red2",
+    ]
