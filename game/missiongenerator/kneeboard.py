@@ -33,19 +33,22 @@ from pathlib import Path
 from typing import Callable, Dict, Iterator, List, Optional, TYPE_CHECKING, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
+from dcs.mapping import Point as DcsPoint
 from dcs.mission import Mission
 from dcs.planes import F_15ESE
 from suntime import Sun, SunTimeException  # type: ignore
 from tabulate import tabulate
 
 from game.ato.flighttype import FlightType
+from game.ato.savedpoints import SavedPoint
 from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
+from game.coordinates import CoordinateFormat, format_latlng
 from game.data.alic import AlicCodes
 from game.dcs.aircrafttype import AircraftType
 from game.radio.radios import RadioFrequency
 from game.runways import RunwayData
-from game.theater import TheaterGroundObject, TheaterUnit
+from game.theater import ConflictTheater, TheaterGroundObject, TheaterUnit
 from game.theater.bullseye import Bullseye
 from game.utils import Distance, UnitSystem, meters, mps, pounds
 from game.weather.weather import Weather
@@ -1194,6 +1197,49 @@ def _abbreviated_target_name(name: str) -> str:
     return name.replace("Front line ", "Front ")
 
 
+class SavedPointsPage(KneeboardPage):
+    """The points the player wrote down for this aircraft.
+
+    Its own page rather than extra rows on the route: these are not part of the
+    flight plan and reading the route should not mean reading past them. Nothing
+    puts them in the aircraft -- the Hornet's cartridge is the only thing that could,
+    and only for waypoints -- so this is where the player reads one off and enters
+    it.
+    """
+
+    def __init__(
+        self,
+        callsign: str,
+        points: list[SavedPoint],
+        theater: ConflictTheater,
+        coordinate_format: CoordinateFormat,
+        dark_kneeboard: bool,
+    ) -> None:
+        self.callsign = callsign
+        self.points = points
+        self.theater = theater
+        self.coordinate_format = coordinate_format
+        self.dark_kneeboard = dark_kneeboard
+
+    def write(self, path: Path) -> None:
+        writer = KneeboardPageWriter(dark_theme=self.dark_kneeboard)
+        writer.title(f"{self.callsign} points")
+        rows = []
+        for number, point in enumerate(self.points, start=1):
+            at = DcsPoint(point.x, point.y, self.theater.terrain)
+            rows.append(
+                [
+                    str(number),
+                    point.kind.label,
+                    point.name,
+                    format_latlng(at.latlng(), self.coordinate_format),
+                    f"{point.altitude_ft} ft" if point.altitude_ft else "",
+                ]
+            )
+        writer.table(rows, headers=["#", "Kind", "Name", "Position", "Alt"])
+        writer.write(path)
+
+
 class AllPackagesPage(KneeboardPage):
     """Lists every friendly package with its timing, for cross-package coordination.
 
@@ -1520,6 +1566,20 @@ class KneeboardGenerator(MissionInfoGenerator):
 
         if (target_page := self.generate_task_page(flight)) is not None:
             pages.append(target_page)
+
+        # Only when the player wrote something down for this aircraft.
+        if flight.saved_points:
+            pages.append(
+                SavedPointsPage(
+                    flight.callsign,
+                    flight.saved_points,
+                    self.game.theater,
+                    getattr(
+                        self.game.settings, "coordinate_format", CoordinateFormat.DDM
+                    ),
+                    self.dark_kneeboard,
+                )
+            )
 
         # Recon overview + detail + airfield-departure pages (gated by settings).
         if self.game.settings.generate_target_recon_kneeboard:

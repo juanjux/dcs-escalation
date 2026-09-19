@@ -15,6 +15,7 @@ from dcs.unit import Skill
 from dcs.unitgroup import FlyingGroup
 
 from game.ato import Flight, FlightType
+from game.ato.savedpoints import points_of
 from game.ato.flightplans.shiprecoverytanker import RecoveryTankerFlightPlan
 from game.callsigns import callsign_for_support_unit
 from game.data.weapons import Pylon, Weapon, WeaponType
@@ -177,6 +178,7 @@ class FlightGroupConfigurator:
             custom_name=self.flight.custom_name,
             laser_codes=laser_codes,
             start_type=self.flight.start_type,
+            saved_points=list(points_of(self.flight)),
         )
 
         self.register_escort_leash()

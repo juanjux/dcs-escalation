@@ -9,6 +9,7 @@ from typing import Any, List, Optional, TYPE_CHECKING
 from dcs import Point
 from dcs.planes import C_101CC, C_101EB, Su_33, FA_18C_hornet, C_130J_30
 
+from game.ato.savedpoints import SavedPoint
 from game.dcs.aircrafttype import AircraftType
 from game.theater import ControlPoint, MissionTarget
 from game.utils import max_optional_distance
@@ -89,6 +90,11 @@ class Flight(
         # to weapon range, so a stand-off decoy/harassment run can bait SAMs from
         # outside their reach. Player/planner toggled; honored by SEAD ingress.
         self.release_at_ingress = False
+
+        # Points the player wrote down for this aircraft from the map's coordinate
+        # picker: they ride on the kneeboard, not in the flight plan. A plain default,
+        # so a save from before the feature reads an empty list.
+        self.saved_points: list[SavedPoint] = []
 
         # True for the stand-in flights that represent aircraft parked on the ramp.
         # They are given a squadron and a pilot so the debriefing code can account for
