@@ -1,10 +1,15 @@
+from __future__ import annotations
+
 from dataclasses import field, dataclass
 from enum import Enum, auto
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from game.ato.flighttype import FlightType
 from game.dcs.aircrafttype import AircraftType
 from game.theater import MissionTarget
+
+if TYPE_CHECKING:
+    from game.squadrons import Squadron
 
 
 class EscortType(Enum):
@@ -35,6 +40,14 @@ class ProposedFlight:
     escort_type: Optional[EscortType] = field(default=None)
 
     preferred_type: Optional[AircraftType] = field(default=None)
+
+    #: The one squadron this flight is to come from. ``preferred_type`` narrows the
+    #: choice to an airframe and lets the planner pick among the squadrons that fly
+    #: it; this names the squadron itself, for a caller that has already decided --
+    #: the API, where an agent asked for that squadron by id and meant it. Physical
+    #: limits still apply: a squadron out of range or out of aircraft is still
+    #: refused, it is just not quietly replaced by its sister squadron.
+    preferred_squadron: Optional["Squadron"] = field(default=None)
 
     def __str__(self) -> str:
         return f"{self.task} {self.num_aircraft} ship"

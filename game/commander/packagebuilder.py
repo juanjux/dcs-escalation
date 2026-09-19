@@ -67,6 +67,7 @@ class PackageBuilder:
             this_turn=True,
             preferred_type=plan.preferred_type,
             ignore_range=ignore_range,
+            preferred_squadron=plan.preferred_squadron,
         )
         if squadron is None:
             return False

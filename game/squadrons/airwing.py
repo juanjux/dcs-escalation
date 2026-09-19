@@ -76,7 +76,23 @@ class AirWing:
         this_turn: bool,
         preferred_type: Optional[AircraftType] = None,
         ignore_range: bool = False,
+        preferred_squadron: Optional[Squadron] = None,
     ) -> list[Squadron]:
+        # A caller that named a squadron gets that squadron or nothing. Narrowing by
+        # aircraft type is not the same thing: two squadrons flying the same airframe
+        # both pass the type filter, and the ranking then picks whichever is nearer
+        # the target -- so a request for one of them quietly spent the other's
+        # aircraft, and the flights that had been counted against it were scrubbed
+        # later for having none left.
+        if preferred_squadron is not None:
+            if preferred_squadron.player != self.player:
+                return []
+            if not preferred_squadron.can_auto_assign_mission(
+                location, task, size, heli, this_turn, ignore_range
+            ):
+                return []
+            return [preferred_squadron]
+
         airfield_cache = ObjectiveDistanceCache.get_closest_airfields(location)
         best_aircraft = AircraftType.priority_list_for_task(task)
         ordered: list[Squadron] = []
@@ -128,9 +144,17 @@ class AirWing:
         this_turn: bool,
         preferred_type: Optional[AircraftType] = None,
         ignore_range: bool = False,
+        preferred_squadron: Optional[Squadron] = None,
     ) -> Optional[Squadron]:
         for squadron in self.best_squadrons_for(
-            location, task, size, heli, this_turn, preferred_type, ignore_range
+            location,
+            task,
+            size,
+            heli,
+            this_turn,
+            preferred_type,
+            ignore_range,
+            preferred_squadron,
         ):
             return squadron
         return None
