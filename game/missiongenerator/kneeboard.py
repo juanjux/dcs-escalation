@@ -1202,9 +1202,8 @@ class SavedPointsPage(KneeboardPage):
 
     Its own page rather than extra rows on the route: these are not part of the
     flight plan and reading the route should not mean reading past them. Nothing
-    puts them in the aircraft -- the Hornet's cartridge is the only thing that could,
-    and only for waypoints -- so this is where the player reads one off and enters
-    it.
+    puts them in the aircraft yet, whatever it is, so this is where the player reads
+    one off and enters it himself.
     """
 
     def __init__(

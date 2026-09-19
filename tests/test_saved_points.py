@@ -42,9 +42,11 @@ def test_a_flight_starts_with_nothing_written_down() -> None:
     assert points_of(cast(Any, _flight())) == []
 
 
-def test_the_hornet_takes_the_waypoints_its_cartridge_holds() -> None:
-    """59 in the navigation set, two of them spoken for: HOME and the bullseye."""
+def test_each_airframe_takes_what_its_own_cartridge_holds() -> None:
+    """The Hornet's navigation set is 59 with HOME and the bullseye spoken for; the
+    Viper's steerpoints stop at 25."""
     assert capacity_for("FA-18C_hornet") == Capacity(waypoints=57, markpoints=0)
+    assert capacity_for("F-16C_50") == Capacity(waypoints=25, markpoints=0)
 
 
 def test_an_airframe_nobody_measured_claims_nothing() -> None:
@@ -52,7 +54,8 @@ def test_an_airframe_nobody_measured_claims_nothing() -> None:
 
 
 def test_a_page_is_as_many_as_anyone_reads_in_the_air() -> None:
-    """The Hornet's 57 is more than a kneeboard page, and the page is what is read."""
+    """Every airframe measured so far holds more than a page, and the page is what
+    gets read."""
     flight = _flight()
 
     assert room_for(cast(Any, flight), PointKind.WAYPOINT) == PAGE_FULL
@@ -94,8 +97,9 @@ def test_one_can_be_taken_off_again() -> None:
     assert not remove_point(cast(Any, flight), 7)
 
 
-def test_the_hornet_is_offered_waypoints_first() -> None:
-    assert kinds_for("FA-18C_hornet")[0] is PointKind.WAYPOINT
+def test_an_airframe_whose_cartridge_takes_waypoints_is_offered_those_first() -> None:
+    for aircraft in ("FA-18C_hornet", "F-16C_50"):
+        assert kinds_for(aircraft)[0] is PointKind.WAYPOINT
 
 
 def test_only_an_aircraft_somebody_is_flying_can_be_handed_one() -> None:

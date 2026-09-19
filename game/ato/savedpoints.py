@@ -8,9 +8,9 @@ plan everyone else has to fly.
 
 Two kinds, because the aircraft make the distinction: a **waypoint** is part of the
 navigation set and the aircraft flies to it, a **markpoint** is a spot marked for
-reference. How many of each an airframe holds is its own business, and the numbers
-below are read off DCS rather than remembered: a Hornet's cartridge holds 59
-waypoints, and its markpoints are made in the cockpit, not loaded.
+reference. How many of each an airframe holds is its own business -- a number per
+module, read off DCS's own data-cartridge scripts rather than remembered -- and an
+airframe nobody has measured claims none.
 
 Nothing here reaches the aircraft on its own. The points ride on the kneeboard, on a
 page of their own so the route page stays the route.
@@ -65,12 +65,16 @@ class Capacity:
         return self.waypoints if kind is PointKind.WAYPOINT else self.markpoints
 
 
-#: Read off DCS's own data-cartridge definitions in CoreMods/aircraft/<type>/DTC.
-#: The Hornet's WYPT_NAV.lua caps the navigation set at 59, and two of those are
-#: spoken for -- 58 is HOME and 59 the bullseye -- so 57 are free. Nothing in its
-#: cartridge carries a markpoint: those are made in the cockpit.
+#: One row per airframe, from DCS's own ``CoreMods/aircraft/<type>/DTC`` scripts.
+#: Neither module carries a markpoint -- those are made in the cockpit -- so the
+#: markpoint column is where a module that does carry one goes.
+#:
+#: Hornet: ``WYPT/WYPT_NAV.lua`` caps the navigation set at 59, and two of those are
+#: spoken for (58 is HOME, 59 the bullseye), so 57 are free.
+#: Viper: ``MPD/NAV_PTS.lua`` stops at 25 steerpoints.
 CAPACITY: dict[str, Capacity] = {
     "FA-18C_hornet": Capacity(waypoints=57, markpoints=0),
+    "F-16C_50": Capacity(waypoints=25, markpoints=0),
 }
 
 #: An airframe nobody has measured. Its points ride on the kneeboard like everyone
