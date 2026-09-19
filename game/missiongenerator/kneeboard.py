@@ -1204,7 +1204,14 @@ class SavedPointsPage(KneeboardPage):
     flight plan and reading the route should not mean reading past them. Nothing
     puts them in the aircraft yet, whatever it is, so this is where the player reads
     one off and enters it himself.
+
+    An aircraft holds far more of them than a page does -- an A-10's navigation
+    database runs to thousands -- so the list is paginated rather than capped: the
+    aeroplane's limit is the aeroplane's, and the kneeboard's is how many rows fit.
     """
+
+    #: How many rows fit under the title with room to read them.
+    ROWS_PER_PAGE = 22
 
     def __init__(
         self,
@@ -1213,22 +1220,61 @@ class SavedPointsPage(KneeboardPage):
         theater: ConflictTheater,
         coordinate_format: CoordinateFormat,
         dark_kneeboard: bool,
+        first_number: int = 1,
+        page: int = 1,
+        total_pages: int = 1,
     ) -> None:
         self.callsign = callsign
         self.points = points
         self.theater = theater
         self.coordinate_format = coordinate_format
         self.dark_kneeboard = dark_kneeboard
+        self.first_number = first_number
+        self.page = page
+        self.total_pages = total_pages
+
+    @classmethod
+    def paginate(
+        cls,
+        callsign: str,
+        points: list[SavedPoint],
+        theater: ConflictTheater,
+        coordinate_format: CoordinateFormat,
+        dark_kneeboard: bool,
+    ) -> List["SavedPointsPage"]:
+        """One page while they fit, as many as it takes when they do not.
+
+        A single page carries no "(1/1)", so a handful of points reads exactly as it
+        did before there was more than one page of them.
+        """
+        chunks = [
+            points[start : start + cls.ROWS_PER_PAGE]
+            for start in range(0, max(len(points), 1), cls.ROWS_PER_PAGE)
+        ]
+        return [
+            cls(
+                callsign,
+                chunk,
+                theater,
+                coordinate_format,
+                dark_kneeboard,
+                first_number=index * cls.ROWS_PER_PAGE + 1,
+                page=index + 1,
+                total_pages=len(chunks),
+            )
+            for index, chunk in enumerate(chunks)
+        ]
 
     def write(self, path: Path) -> None:
         writer = KneeboardPageWriter(dark_theme=self.dark_kneeboard)
-        writer.title(f"{self.callsign} points")
+        counted = f" ({self.page}/{self.total_pages})" if self.total_pages > 1 else ""
+        writer.title(f"{self.callsign} points{counted}")
         rows = []
-        for number, point in enumerate(self.points, start=1):
+        for offset, point in enumerate(self.points):
             at = DcsPoint(point.x, point.y, self.theater.terrain)
             rows.append(
                 [
-                    str(number),
+                    str(self.first_number + offset),
                     point.kind.label,
                     point.name,
                     format_latlng(at.latlng(), self.coordinate_format),
@@ -1568,8 +1614,8 @@ class KneeboardGenerator(MissionInfoGenerator):
 
         # Only when the player wrote something down for this aircraft.
         if flight.saved_points:
-            pages.append(
-                SavedPointsPage(
+            pages.extend(
+                SavedPointsPage.paginate(
                     flight.callsign,
                     flight.saved_points,
                     self.game.theater,

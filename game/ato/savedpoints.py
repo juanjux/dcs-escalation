@@ -65,14 +65,15 @@ class Capacity:
         return self.waypoints if kind is PointKind.WAYPOINT else self.markpoints
 
 
-#: An airframe nobody has measured. Its points ride on the kneeboard like everyone
-#: else's; what it will not do is claim a number it cannot keep.
+#: An airframe nobody has measured. It is not refused -- its points ride on the
+#: kneeboard like everyone else's -- it simply gets the fallback below rather than a
+#: number it cannot keep.
 UNMEASURED = Capacity(waypoints=0, markpoints=0)
 
-#: However many an aircraft holds, this is as many as one flight may write down. A
-#: kneeboard page holds about this many rows, and a list longer than a page is a list
-#: nobody reads in the air.
-PAGE_FULL = 24
+#: What an unmeasured airframe is allowed. Not a page: the kneeboard paginates, so
+#: this is only a guard against a list nobody could use, for an aircraft whose real
+#: ceiling nobody has looked up yet.
+UNKNOWN_CEILING = 50
 
 #: One row per airframe, from whatever DCS uses for that module: the .dtc scripts in
 #: ``CoreMods/aircraft/<type>/DTC``, or the A-10's own DTS database. None of them
@@ -82,13 +83,17 @@ PAGE_FULL = 24
 #: Hornet: ``WYPT/WYPT_NAV.lua`` caps the navigation set at 59, and two of those are
 #: spoken for (58 is HOME, 59 the bullseye), so 57 are free.
 #: Viper: ``MPD/NAV_PTS.lua`` stops at 25 steerpoints.
-#: A-10C II: its DTS database is a Lua file with no stated ceiling, and the CDU holds
-#: far more than anyone writes down, so the page is what limits it.
+#: A-10C II: its navigation computer indexes waypoints 0 to 2050
+#: (``NavigationComputer_param.lua``) and its markpoints are lettered, A to Z.
+#: Super Hornet (the CJS mod): the same cartridge the Hornet has, section for section.
 CAPACITY: dict[str, Capacity] = {
     "FA-18C_hornet": Capacity(waypoints=57, markpoints=0),
+    "FA-18E": Capacity(waypoints=57, markpoints=0),
+    "FA-18F": Capacity(waypoints=57, markpoints=0),
+    "EA-18G": Capacity(waypoints=57, markpoints=0),
     "F-16C_50": Capacity(waypoints=25, markpoints=0),
-    "A-10C": Capacity(waypoints=PAGE_FULL, markpoints=0),
-    "A-10C_2": Capacity(waypoints=PAGE_FULL, markpoints=0),
+    "A-10C": Capacity(waypoints=2050, markpoints=26),
+    "A-10C_2": Capacity(waypoints=2050, markpoints=26),
 }
 
 
@@ -119,12 +124,15 @@ def kinds_for(dcs_id: str) -> list[PointKind]:
 
 
 def room_for(flight: Flight, kind: PointKind) -> int:
-    """How many more of this kind the flight will take."""
+    """How many more of this kind the flight will take.
+
+    The aircraft's own number, not the kneeboard's: an A-10 indexes two thousand
+    waypoints and the page paginates to suit. Only an airframe nobody has measured
+    falls back to a guard figure.
+    """
     held = sum(1 for point in points_of(flight) if point.kind is kind)
     aircraft = capacity_for(flight.unit_type.dcs_unit_type.id).of(kind)
-    # The page is the tighter of the two whenever the aircraft says nothing useful.
-    ceiling = min(aircraft, PAGE_FULL) if aircraft else PAGE_FULL
-    return max(ceiling - held, 0)
+    return max((aircraft or UNKNOWN_CEILING) - held, 0)
 
 
 def add_point(flight: Flight, point: SavedPoint) -> bool:

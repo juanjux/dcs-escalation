@@ -362,3 +362,37 @@ def test_the_limits_are_the_ones_each_module_enforces() -> None:
     lines = (VIPER / "GEO_LINES.lua").read_text(encoding="utf-8")
     assert f"#data.MPD.THREAT_PTS >= {viper.max_threats}" in threats
     assert f"#data.MPD.GEO_LINES > {viper.max_line_points - 1}" in lines
+
+
+@pytest.mark.parametrize("aircraft", ["FA-18E", "FA-18F", "EA-18G"])
+def test_the_super_hornets_carry_the_hornet_s_cartridge(aircraft: str) -> None:
+    """The CJS mod ships the same sections under another type name, so they are the
+    same profile rather than three copies of it."""
+    profile = dtc.CARTRIDGES[aircraft]
+    hornet = dtc.CARTRIDGES["FA-18C_hornet"]
+
+    assert profile.sections(_threats(1), _fronts(1)) == hornet.sections(
+        _threats(1), _fronts(1)
+    )
+    assert profile.max_threats == hornet.max_threats
+
+
+MOD_DTC = Path(
+    "C:/Users/juanj/Saved Games/DCS/Mods/aircraft/"
+    "CJS Super Hornet Mod v2.4 Core Module/DTC"
+)
+
+
+@pytest.mark.skipif(
+    not MOD_DTC.is_dir(), reason="the Super Hornet mod is not installed here"
+)
+@pytest.mark.parametrize("aircraft", ["FA-18E", "FA-18F", "EA-18G"])
+def test_the_mod_really_does_keep_them_where_the_hornet_does(aircraft: str) -> None:
+    """If a mod update moved a section, the ring would go into a key nothing reads."""
+    definition = (MOD_DTC / f"{aircraft}_DTC.lua").read_text(
+        encoding="utf-8", errors="replace"
+    )
+
+    assert f'type = "{aircraft}"' in definition
+    assert "MEZ_THRTS" in definition
+    assert "FAOR_FLOT" in definition

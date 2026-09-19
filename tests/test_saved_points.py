@@ -11,7 +11,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 from game.ato.savedpoints import (
-    PAGE_FULL,
+    UNKNOWN_CEILING,
     Capacity,
     PointKind,
     SavedPoint,
@@ -47,25 +47,28 @@ def test_each_airframe_takes_what_its_own_cartridge_holds() -> None:
     Viper's steerpoints stop at 25."""
     assert capacity_for("FA-18C_hornet") == Capacity(waypoints=57, markpoints=0)
     assert capacity_for("F-16C_50") == Capacity(waypoints=25, markpoints=0)
+    # And an A-10 indexes two thousand waypoints and letters twenty-six marks.
+    assert capacity_for("A-10C_2") == Capacity(waypoints=2050, markpoints=26)
+    # The Super Hornets carry the Hornet's cartridge, section for section.
+    assert capacity_for("FA-18E") == capacity_for("FA-18C_hornet")
 
 
 def test_an_airframe_nobody_measured_claims_nothing() -> None:
     assert capacity_for("Su-25T").waypoints == 0
 
 
-def test_a_page_is_as_many_as_anyone_reads_in_the_air() -> None:
-    """Every airframe measured so far holds more than a page, and the page is what
-    gets read."""
-    flight = _flight()
-
-    assert room_for(cast(Any, flight), PointKind.WAYPOINT) == PAGE_FULL
+def test_the_room_is_the_aircraft_s_own() -> None:
+    """Not the kneeboard's: the page paginates, the aeroplane does not."""
+    assert room_for(cast(Any, _flight()), PointKind.WAYPOINT) == 57
+    assert room_for(cast(Any, _flight("A-10C_2")), PointKind.WAYPOINT) == 2050
+    assert room_for(cast(Any, _flight("A-10C_2")), PointKind.MARKPOINT) == 26
 
 
 def test_an_airframe_with_no_measured_room_still_takes_them() -> None:
     """They go on the kneeboard, which is where the player reads one off."""
     flight = _flight("Su-25T")
 
-    assert room_for(cast(Any, flight), PointKind.MARKPOINT) == PAGE_FULL
+    assert room_for(cast(Any, flight), PointKind.MARKPOINT) == UNKNOWN_CEILING
 
 
 def test_writing_one_down_uses_up_its_room() -> None:
@@ -73,17 +76,18 @@ def test_writing_one_down_uses_up_its_room() -> None:
 
     assert add_point(cast(Any, flight), _point())
 
-    assert room_for(cast(Any, flight), PointKind.WAYPOINT) == PAGE_FULL - 1
-    assert room_for(cast(Any, flight), PointKind.MARKPOINT) == PAGE_FULL
+    assert room_for(cast(Any, flight), PointKind.WAYPOINT) == 56
+    assert room_for(cast(Any, flight), PointKind.MARKPOINT) == UNKNOWN_CEILING
 
 
 def test_a_full_aircraft_refuses_another() -> None:
-    flight = _flight()
-    for _ in range(PAGE_FULL):
+    """The Viper's twenty-five steerpoints are the tightest measured ceiling."""
+    flight = _flight("F-16C_50")
+    for _ in range(25):
         assert add_point(cast(Any, flight), _point())
 
     assert not add_point(cast(Any, flight), _point())
-    assert len(points_of(cast(Any, flight))) == PAGE_FULL
+    assert len(points_of(cast(Any, flight))) == 25
 
 
 def test_one_can_be_taken_off_again() -> None:
@@ -111,3 +115,35 @@ def test_only_an_aircraft_somebody_is_flying_can_be_handed_one() -> None:
     )
 
     assert list(receivers(coalition)) == [crewed]
+
+
+def test_the_kneeboard_paginates_rather_than_capping(qt_free: None = None) -> None:
+    """An A-10 holds thousands; a page holds a couple of dozen."""
+    import os
+
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from game.missiongenerator.kneeboard import SavedPointsPage
+
+    points = [_point(name=f"P{n}") for n in range(50)]
+
+    pages = SavedPointsPage.paginate(
+        "HAWG", points, cast(Any, None), cast(Any, None), False
+    )
+
+    assert len(pages) == 3
+    assert [page.first_number for page in pages] == [1, 23, 45]
+    assert sum(len(page.points) for page in pages) == 50
+
+
+def test_one_page_of_points_is_not_numbered() -> None:
+    """A handful reads exactly as it did before there was more than one page."""
+    import os
+
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from game.missiongenerator.kneeboard import SavedPointsPage
+
+    (page,) = SavedPointsPage.paginate(
+        "HAWG", [_point()], cast(Any, None), cast(Any, None), False
+    )
+
+    assert page.total_pages == 1
