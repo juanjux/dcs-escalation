@@ -157,6 +157,14 @@ class MissionGenerator:
         ).generate()
         DrawingsGenerator(self.mission, self.game).generate()
 
+        # The cockpit's own copy of the threat rings and the front line. Not part of
+        # the mission: the player loads it from the DTC page in the rearm window.
+        if self.game.settings.dtc_cartridge:
+            from game.missiongenerator.dtc import write_cartridges
+            from game.persistency import data_cartridge_dir
+
+            write_cartridges(self.game, data_cartridge_dir())
+
         self.setup_combined_arms()
 
         self.notify_info_generators()

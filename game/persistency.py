@@ -412,6 +412,11 @@ def airwing_dir() -> Path:
     return _create_dir_if_needed(base_path() / "Retribution" / "AirWing")
 
 
+def data_cartridge_dir() -> Path:
+    """Where DCS looks for .dtc files: one flat folder, not per campaign."""
+    return _create_dir_if_needed(base_path() / "DTC")
+
+
 def kneeboards_dir() -> Path:
     return _create_dir_if_needed(base_path() / "Retribution" / "Kneeboards")
 

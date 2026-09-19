@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mission Generator]** The Hornet's SA page gets its threat rings and its front line. They come from the aircraft's data cartridge rather than from the mission, so Escalation writes a .dtc file per player airframe, carrying the enemy air defence the MFD settings allow and the fronts; load it from the DTC page of the rearm window. New setting under MFD, on by default.
 * **[Aircraft]** The C-130J-30 can be tasked with Strike, BAI, OCA/Aircraft, CAS and Armed Recon, for the MOAB it carries as cargo.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
