@@ -5,6 +5,7 @@
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
 * **[Mission Generator]** The cockpit displays only show the enemy air defence the campaign settings allow.
+* **[FIX]** Opening a campaign and closing it without touching anything asked whether to save: the map fills each base's motorpool the first time it draws one, which happens after the fingerprint is taken.
 * **[UI]** The intelligence dialog was redrawn: the side is a switch that colours the whole window instead of an "Enemy Info" checkbox, each tab opens with three figures, bases fold and can be sorted and filtered, the economy tab leads with what a building is rather than its codename, and the totals are pinned below the scroll.
 * **[UI]** The buy / replace dialog of a location was redrawn.
 * **[UI]** The F-16 application icon now has a blue/yellow Ukrainian flag background for better visibility at desktop and taskbar sizes.
