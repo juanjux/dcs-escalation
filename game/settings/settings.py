@@ -1681,6 +1681,18 @@ class Settings:
         choices=MFD_INTEL_CHOICES,
         detail="Tor, Osa, Tunguska, Avenger, Shilka, MANPADS.",
     )
+    #: The SA page draws its threat rings and its front line from the aircraft's data
+    #: cartridge, not from the mission, so the campaign writes one.
+    dtc_cartridge: bool = boolean_option(
+        "Write a data cartridge",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=True,
+        detail=(
+            "A .dtc file per player airframe, carrying the threat rings above and the "
+            "front line. Load it from the DTC page of the rearm window in the cockpit."
+        ),
+    )
     mfd_front: bool = boolean_option(
         "Front line",
         page=MISSION_GENERATOR_PAGE,
