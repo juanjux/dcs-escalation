@@ -86,6 +86,23 @@ def _preferred_aircraft(game: Game, side: str, squadron_id: str | None):
     return _resolve_squadron(game, side, squadron_id).aircraft
 
 
+def _preferred_squadron(game: Game, side: str, squadron_id: str | None):
+    """The squadron itself, when one was named.
+
+    The aircraft type alone was never enough: two squadrons flying the same airframe
+    both pass that filter and the planner takes whichever is nearer the target, so a
+    package asked for one of them and spent the other's aircraft -- and the flights
+    already counted against that other squadron were scrubbed later for having none
+    left. An id is an answer, not a hint."""
+    if not squadron_id:
+        return None
+    try:
+        return _resolve_squadron(game, side, squadron_id)
+    except Exception:
+        # A bad id is reported by the pre-check; nothing is pinned here.
+        return None
+
+
 def _free_aircraft_for(game: Game, side: str, flight_spec) -> int:
     """Most untasked aircraft a single squadron has free for this flight — the pinned
     squadron if `squadron_id` is set, else the best among squadrons capable of the task.
@@ -591,6 +608,9 @@ def create_packages(
                         _clamped_count(game, side, f),
                         _escort_type(f.escort),
                         preferred_type=_preferred_aircraft(game, side, f.squadron_id),
+                        preferred_squadron=_preferred_squadron(
+                            game, side, f.squadron_id
+                        ),
                     )
                     for f in keep
                 ]
@@ -670,6 +690,7 @@ def evaluate_package(
                 _clamped_count(game, side, f),
                 _escort_type(f.escort),
                 preferred_type=_preferred_aircraft(game, side, f.squadron_id),
+                preferred_squadron=_preferred_squadron(game, side, f.squadron_id),
             )
             for f in spec.flights
         ]

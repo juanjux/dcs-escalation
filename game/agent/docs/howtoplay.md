@@ -1489,8 +1489,12 @@ Write bodies:
 - `POST /packages` `{side, packages:[{target_id, flights:[{task, count, escort?,
   squadron_id?, loadout?, remain?}], rationale, ignore_range?, tot_minutes?}]}` — `ignore_range:true` plans even
   when the target is past the auto-planner's range limit. Per-flight you may FORCE the
-  airframe with `squadron_id` (from `turn_context.air_wing`) — even one the auto-planner
-  wouldn't pick, exactly like the human tasking it by hand — and set the `loadout`: either
+  SQUADRON with `squadron_id` (from `turn_context.air_wing`) — that exact squadron, not
+  merely its airframe, so two squadrons flying the same jet stay distinct and the one you
+  counted aircraft against is the one that spends them — even one the auto-planner
+  wouldn't pick, exactly like the human tasking it by hand. It still has to be able to
+  fly the mission: out of range or out of aircraft is refused rather than substituted.
+  You may also set the `loadout`: either
   a name (from `/aircraft/loadouts`) or a custom `{pylon: clsid}` map (build it from
   `/aircraft/pylons`, check it with `/payload/validate`). The created flights come back
   with their `loadout` name + `weapons` ({pylon: clsid}) so you can verify what they carry.
