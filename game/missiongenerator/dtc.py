@@ -92,13 +92,28 @@ class HornetCartridge(Cartridge):
     def sections(self, fronts: Sequence[Front]) -> dict[str, Any]:
         return {
             "SA": {
+                # Every key the module's own skeleton declares, not only the ones
+                # filled. A cartridge that draws the rings carries a complete section;
+                # one that names three keys out of eleven is a shape the loader has
+                # never been handed, and the SA page is not the place to find out.
+                # Everything untouched is written empty, or at the NONE its own list
+                # starts on -- CAP is 10, corridors 8, the rest 4, ED's numbers.
+                "CAP_PTS": [],
+                "CORRIDORS": [],
+                "MEZ_THRTS": [],
+                "SETTINGS": {},
+                "Default_CAP_Point": 10,
+                "Default_CORRIDORS_Point": 8,
+                "Default_FAOR_Line": NONE,
+                "Default_MEZ_THRTS_Level": NONE,
                 # The whole point. Off, the page is blank; on, it is the pre-2.9.29
-                # behaviour back, filtered by hiddenOnMFD as it always was.
+                # behaviour back, filtered by hiddenOnMFD as it always was. The
+                # Super Hornet mod defaults to it already, and loads the Hornet's own
+                # SA scripts to do it, so the E, the F and the G behave as the C does.
                 #
-                # Default_MEZ_THRTS_Level is deliberately not written: the cartridge
-                # this was measured against leaves it at DCS's own 4 -- NONE -- and
-                # draws the rings anyway, because a mirrored ring never goes through
-                # that list.
+                # The level above stays at NONE on purpose: the cartridge this was
+                # measured against leaves it there and draws the rings anyway,
+                # because a mirrored ring never goes through that list.
                 "mirror_MEZ_THRTS": True,
                 "FAOR_FLOT": {
                     "FAOR": [],
@@ -268,9 +283,16 @@ def player_aircraft(game: Game) -> set[str]:
     return types & set(CARTRIDGES)
 
 
-def cartridges_for(game: Game) -> dict[str, dict[str, Any]]:
-    """Every cartridge this turn wants, keyed by the airframe it is for."""
-    name = f"Escalation {game.campaign_name or 'campaign'}"[:48]
+def cartridges_for(game: Game, name: Optional[str] = None) -> dict[str, dict[str, Any]]:
+    """Every cartridge this turn wants, keyed by the airframe it is for.
+
+    ``name`` is what the cartridge calls itself. The one inside the mission is named
+    for the mission, which is what a cartridge that works carries; the copy in the
+    DTC folder is named for the campaign, which is what makes it findable in a list.
+    (The ``terrain`` field is not checked at all -- the working example says Nevada
+    inside a Caucasus mission.)
+    """
+    name = name or f"Escalation {game.campaign_name or 'campaign'}"[:48]
     return {
         aircraft: cartridge(game, Player.BLUE, aircraft, name)
         for aircraft in sorted(player_aircraft(game))
@@ -304,7 +326,7 @@ def write_into_mission(game: Game, mission: Path) -> list[str]:
     which of the two rules DCS actually follows is not written down anywhere and a
     spare entry costs a few kilobytes.
     """
-    cartridges = cartridges_for(game)
+    cartridges = cartridges_for(game, name=mission.stem)
     if not cartridges:
         return []
     busiest = busiest_airframe(game)
