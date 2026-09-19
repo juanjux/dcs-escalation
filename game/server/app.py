@@ -16,6 +16,7 @@ from . import (
     mapzones,
     navmesh,
     qt,
+    savedpoints,
     supplyroutes,
     tgos,
     waypoints,
@@ -53,6 +54,7 @@ app.include_router(game.router)
 app.include_router(mapzones.router)
 app.include_router(navmesh.router)
 app.include_router(qt.router)
+app.include_router(savedpoints.router)
 app.include_router(supplyroutes.router)
 app.include_router(tgos.router)
 app.include_router(waypoints.router)
