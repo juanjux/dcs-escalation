@@ -12,10 +12,13 @@
 -- the opening minute. Worse, a mission is a fresh spawn: without bookkeeping the fleet reloads
 -- for free every single turn.
 --
--- N1 -- STAGGERED RELEASE. The generator spawns ships ReturnFire (never WeaponHold: a holding
--- fleet is a defenceless fleet, and the point is to delay INITIATION, not to disarm anybody).
--- Each group is released to weapons-free at its own moment inside [releaseMinS, releaseMaxS], so
--- the exchange develops across the mission instead of detonating at once.
+-- N1 -- STAGGERED RELEASE. The generator spawns ships ReturnFire (never WeaponHold: the point
+-- is to delay INITIATION, not to disarm anybody). Each group is released to weapons-free at its
+-- own moment inside [releaseMinS, releaseMaxS], so the exchange develops across the mission
+-- instead of detonating at once -- AND at once, whatever its moment, as soon as the other side
+-- fires an anti-ship missile. ReturnFire was taken to leave a ship able to defend itself and it
+-- does not: shooting an incoming missile is not returning fire at whoever launched it, so a
+-- fleet inside its window sat and took YJ-62s with full SM-2 racks.
 --
 -- N2 -- THE MAGAZINE. Each group's emitted `remaining` is this mission's hard anti-ship
 -- expenditure cap. Every S_EVENT_SHOT whose weapon type matches the anti-ship pattern list
@@ -81,6 +84,7 @@ local remaining = {} -- group name -> anti-ship missiles left this mission
 local groupSide = {} -- group name -> coalition.side
 local groupOrder = {} -- ordered group names, for the release stagger
 local fired = {} -- group name -> its naval_magazines_state entry
+local held = {} -- group name -> true while it is still on ReturnFire
 
 local function sideOf(name)
     if name == "red" then
@@ -94,6 +98,7 @@ for _, m in ipairs(data.magazines or {}) do
         remaining[m.group] = tonumber(m.remaining) or 0
         groupSide[m.group] = sideOf(m.coalition)
         groupOrder[#groupOrder + 1] = m.group
+        held[m.group] = true
     end
 end
 
@@ -144,17 +149,44 @@ local function recordFired(groupName, count)
     dirty_state = true
 end
 
--- N1: release one group to weapons-free. A group whose magazine is already dry is deliberately
--- left at ReturnFire -- there is nothing to release it for.
+-- N1: release one group to weapons-free at its scheduled moment. A group whose magazine is
+-- already dry is deliberately left at ReturnFire -- there is nothing to release it for, and
+-- being shot at releases it anyway (releaseSideUnderFire, below).
 local function releaseGroup(groupName)
+    if held[groupName] == false then
+        return nil -- already weapons-free, by the stagger or by being shot at
+    end
     if METERED and (remaining[groupName] or 0) <= 0 then
         env.info(string.format(
             "NAVALMAGAZINES|: %s stays ReturnFire at release (magazine dry)", groupName))
         return nil
     end
+    held[groupName] = false
     setRoe(groupName, ROE_WEAPON_FREE)
     env.info(string.format("NAVALMAGAZINES|: %s released weapons-free", groupName))
     return nil
+end
+
+-- Being shot at ends the wait. ReturnFire was chosen over WeaponHold on the grounds that a
+-- holding fleet is a defenceless one -- but a ship on ReturnFire does not engage an incoming
+-- anti-ship missile either, because shooting the missile is not returning fire at whoever
+-- launched it. So a fleet still inside its stagger window, or one held winchester, sat and
+-- took YJ-62s with a full SM-2 magazine.
+--
+-- The stagger exists to delay who INITIATES. Once the other side has initiated, nobody on this
+-- one is initiating anything, so every held group of the side under fire goes weapons-free at
+-- once -- including a winchester group: it has no missiles left to waste and every reason to
+-- defend itself. Its magazine is already at zero, and chargeShot floors there, so the campaign
+-- bookkeeping cannot go negative whatever it fires.
+local function releaseSideUnderFire(shooterSide)
+    for _, name in ipairs(groupOrder) do
+        if held[name] ~= false and groupSide[name] ~= shooterSide then
+            held[name] = false
+            setRoe(name, ROE_WEAPON_FREE)
+            env.info(string.format(
+                "NAVALMAGAZINES|: %s released weapons-free -- under anti-ship fire", name))
+        end
+    end
 end
 
 -- Spread the releases evenly across the window rather than rolling each independently, so a
@@ -180,6 +212,7 @@ local function chargeShot(groupName)
     end
     remaining[groupName] = left
     if left <= 0 then
+        held[groupName] = true
         setRoe(groupName, ROE_RETURN_FIRE)
         env.info(string.format("NAVALMAGAZINES|: %s WINCHESTER anti-ship", groupName))
         if ANNOUNCE then
@@ -193,7 +226,7 @@ end
 local handler = {}
 
 function handler:onEvent(event)
-    if not (METERED and event and event.id == world.event.S_EVENT_SHOT) then
+    if not (event and event.id == world.event.S_EVENT_SHOT) then
         return
     end
     local ok, err = pcall(function()
@@ -204,9 +237,12 @@ function handler:onEvent(event)
         if not isAntiShipWeapon(weapon:getTypeName()) then
             return
         end
-        local grp = initiator:getGroup()
-        if grp then
-            chargeShot(grp:getName())
+        releaseSideUnderFire(initiator:getCoalition())
+        if METERED then
+            local grp = initiator:getGroup()
+            if grp then
+                chargeShot(grp:getName())
+            end
         end
     end)
     if not ok then
@@ -215,14 +251,19 @@ function handler:onEvent(event)
 end
 
 local ok, err = pcall(function()
-    if METERED then
+    -- Wanted by both tiers now: metering charges the shot, the stagger watches for the
+    -- first anti-ship launch so the side on the receiving end can defend itself.
+    if METERED or STAGGER then
         world.addEventHandler(handler)
+    end
+    if METERED then
         -- A group that starts the mission dry never gets to open fire with missiles it does not
         -- have. With the stagger on it is simply never released; without it, the generator left
         -- every ship weapons-free, so pull the dry ones back now.
         if not STAGGER then
             for _, name in ipairs(groupOrder) do
                 if (remaining[name] or 0) <= 0 then
+                    held[name] = true
                     setRoe(name, ROE_RETURN_FIRE)
                 end
             end
