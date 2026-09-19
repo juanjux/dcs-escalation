@@ -1,14 +1,17 @@
 """What goes in an aircraft's data cartridge.
 
-The threat rings and the front line do not come from the mission at all -- they come
-from the .dtc file the DTC page loads -- so what the campaign writes into that file is
-the whole feature. These read its contents before it is written, and check the shapes,
-the names and the limits against DCS's own files whenever DCS is installed.
+DCS 2.9.29 moved the Hornet's SA-page threat rings behind the cartridge: with none
+loaded the page is blank however the units are flagged. What brings them back is one
+switch -- mirror the mission's own threats -- measured on probe missions where a site
+flagged ``hiddenOnMFD`` stayed off the page while its neighbours showed. These read
+the file's contents before it is written, and check the shapes and the limits against
+DCS's own files whenever DCS is installed.
 """
 
 from __future__ import annotations
 
-import re
+import json
+import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -17,61 +20,20 @@ import pytest
 
 from game.missiongenerator import dtc
 from game.theater import Player
-from game.theater.theatergroundobject import SamGroundObject
-from game.utils import nautical_miles
 
 
-class _Site(SamGroundObject):
-    """An air-defence objective, built without running its constructor.
-
-    A subclass rather than a stand-in because the cartridge asks what kind of
-    objective this is, and ``is_dead`` is a property the real one computes.
-    """
-
-    def __init__(self, name: str, groups: list[Any], dead: bool = False) -> None:
-        self.name = name
-        self.groups = groups
-        self.position = cast(Any, SimpleNamespace(x=1000.0, y=2000.0))
-        self._dead = dead
-
-    @property
-    def is_dead(self) -> bool:
-        return self._dead
-
-
-def _group(reach_nm: float, *unit_ids: str) -> Any:
-    units = [
-        SimpleNamespace(alive=True, unit_type=SimpleNamespace(dcs_id=unit_id))
-        for unit_id in unit_ids
-    ]
-    return SimpleNamespace(
-        units=units, max_threat_range=lambda: nautical_miles(reach_nm)
-    )
-
-
-def _sam(name: str, reach_nm: float, *unit_ids: str) -> Any:
-    return _Site(name, [_group(reach_nm, *unit_ids)])
-
-
-def _game(*sites: Any) -> Any:
-    control_point = SimpleNamespace(captured=Player.RED, ground_objects=list(sites))
+def _game(*, fronts: int = 0) -> Any:
+    names = [SimpleNamespace(name=f"Front {n}") for n in range(1, fronts + 1)]
     return SimpleNamespace(
         theater=SimpleNamespace(
-            controlpoints=[control_point],
+            controlpoints=[],
             terrain=SimpleNamespace(name="Falklands"),
-            conflicts=lambda: iter(()),
+            conflicts=lambda: iter(names),
         ),
         settings=SimpleNamespace(),
         campaign_name="A Campaign",
         blue=SimpleNamespace(ato=SimpleNamespace(packages=[])),
     )
-
-
-def _threats(count: int) -> list[dtc.Threat]:
-    return [
-        dtc.Threat(f"SITE{n}", "SAM SA-2 'Guideline'", "2", float(n), 0.0, 0.0)
-        for n in range(1, count + 1)
-    ]
 
 
 def _fronts(count: int) -> list[dtc.Front]:
@@ -80,133 +42,60 @@ def _fronts(count: int) -> list[dtc.Front]:
     ]
 
 
-@pytest.fixture
-def always_shown(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(dtc, "shows_on_mfd", lambda _tgo, _settings: True)
-
-
-# ------------------------------------------------------- what the campaign knows
-
-
-def test_a_site_is_named_by_the_group_that_does_the_shooting(
-    always_shown: None,
-) -> None:
-    """An S-300 with a Strela parked beside it is not a Strela."""
-    site = _Site(
-        "BELUGA", [_group(64.8, "S-300PS 40B6M tr"), _group(2.5, "Strela-10M3")]
-    )
-
-    threat = dtc.threats_for(_game(site), Player.BLUE)[0]
-
-    assert threat.kind == "SAM SA-10 'Grumble'"
-    assert threat.text == "10"
-    assert threat.radius_nm == pytest.approx(64.8)
-
-
-def test_a_system_dcs_has_no_entry_for_still_gets_its_ring(always_shown: None) -> None:
-    """An HQ-9 is not on DCS's list, and mislabelling it is worse than Custom."""
-    site = _Site("BELUGA", [_group(64.8, "HQ-9_SR_SJ_202"), _group(2.5, "Strela-10M3")])
-
-    threat = dtc.threats_for(_game(site), Player.BLUE)[0]
-
-    assert threat.kind == dtc.CUSTOM
-    assert threat.radius_nm == pytest.approx(64.8)
-
-
-def test_what_the_displays_may_not_show_is_not_in_the_cartridge(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """One question, asked once: the ring and the unit symbol agree."""
-    monkeypatch.setattr(dtc, "shows_on_mfd", lambda tgo, _settings: tgo.name != "HIDE")
-    shown = _sam("SHOWN", 27, "SNR_75V")
-    hidden = _sam("HIDE", 27, "SNR_75V")
-
-    threats = dtc.threats_for(_game(shown, hidden), Player.BLUE)
-
-    assert [threat.name for threat in threats] == ["SHOWN"]
-
-
-def test_a_dead_site_is_not_a_threat(always_shown: None) -> None:
-    site = _Site("WRECK", [_group(27, "SNR_75V")], dead=True)
-
-    assert dtc.threats_for(_game(site), Player.BLUE) == []
-
-
-def test_the_biggest_threats_come_first(always_shown: None) -> None:
-    """Whatever an aircraft cannot carry should be the AAA nobody plans around."""
-    sites = [_sam(f"SITE{n:02}", n, "SNR_75V") for n in (5, 40, 20)]
-
-    threats = dtc.threats_for(_game(*sites), Player.BLUE)
-
-    assert [threat.radius_nm for threat in threats] == [40, 20, 5]
-
-
-def test_each_front_becomes_the_points_that_draw_it(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from game.utils import Heading
-
-    class Bounds:
-        left_position = SimpleNamespace(
-            x=0.0,
-            y=0.0,
-            point_from_heading=lambda _h, _d: SimpleNamespace(x=10.0, y=0.0),
+def _crewed(game: Any, *seats: tuple[str, int]) -> None:
+    game.blue.ato.packages = [
+        SimpleNamespace(
+            flights=[
+                SimpleNamespace(
+                    client_count=count,
+                    unit_type=SimpleNamespace(
+                        dcs_unit_type=SimpleNamespace(id=aircraft)
+                    ),
+                )
+                for aircraft, count in seats
+            ]
         )
-        heading_from_left_to_right = Heading.from_degrees(90)
-        length = 1000.0
-
-    monkeypatch.setattr(
-        dtc.FrontLineConflictDescription,
-        "frontline_bounds",
-        staticmethod(lambda _front, _theater: Bounds()),
-    )
-    theater = SimpleNamespace(
-        conflicts=lambda: iter([SimpleNamespace(name="Alpha to Bravo")])
-    )
-
-    fronts = dtc.fronts_of(cast(Any, theater))
-
-    assert len(fronts) == 1
-    assert fronts[0].name == "Alpha to Bravo"
-    assert fronts[0].points == ((0.0, 0.0), (10.0, 0.0))
+    ]
 
 
-# --------------------------------------------------- what each aircraft will take
+# ----------------------------------------------------------------- the one switch
 
 
-def test_each_aircraft_keeps_it_somewhere_of_its_own() -> None:
-    """The Hornet's is on the SA page, the Viper's on the MPD."""
-    threats, fronts = _threats(1), _fronts(1)
+def test_the_rings_are_mirrored_rather_than_drawn() -> None:
+    """Listing them by hand works and looks wrong -- plain white rings instead of
+    DCS's yellow dashed ones -- and needs every threat mapped to a name DCS knows."""
+    hornet = dtc.HornetCartridge().sections([])
+    viper = dtc.ViperCartridge().sections([])
 
-    assert set(dtc.HornetCartridge().sections(threats, fronts)) == {"SA"}
-    assert set(dtc.ViperCartridge().sections(threats, fronts)) == {"MPD"}
-
-
-def test_the_hornet_writes_its_radius_in_miles() -> None:
-    written = dtc.HornetCartridge().sections(_threats(1), [])
-    threat = written["SA"]["MEZ_THRTS"][0]
-
-    assert threat["threat_ring_radius"] == 1.0
-    assert threat["threat_type"] == "SAM SA-2 'Guideline'"
-    assert threat["id"] == "MEZ_THRTS_1"
+    assert hornet["SA"]["mirror_MEZ_THRTS"] is True
+    assert viper["MPD"]["mirror_THREAT_PTS"] is True
+    # And nothing lists them, so nothing here can name a threat wrongly.
+    assert "MEZ_THRTS" not in hornet["SA"]
+    assert "THREAT_PTS" not in viper["MPD"]
 
 
-def test_the_viper_writes_its_radius_in_metres_and_names_its_own_entry() -> None:
-    """Each module asks for what it asks for, and the Viper wants a list index."""
-    written = dtc.ViperCartridge().sections(_threats(1), [])
-    threat = written["MPD"]["THREAT_PTS"][0]
+def test_the_fronts_are_written_because_no_mirror_invents_them() -> None:
+    flot = dtc.HornetCartridge().sections(_fronts(1))["SA"]["FAOR_FLOT"]["FLOT"]
 
-    assert threat["radius"] == 1852
-    assert threat["threatName"] == "SAM SA-2 'Guideline'"
-    assert threat["def_num"] == dtc.VIPER_THREAT_DEFS["SAM SA-2 'Guideline'"][0]
-    assert threat["ring"] is True
-    assert threat["id"] == "THREAT_PTS56"
+    assert len(flot) == 1
+    assert flot[0]["id"] == "FLOT_1"
+    assert [point["id"] for point in flot[0]["points"]] == [
+        "FLOT_1_PT_1",
+        "FLOT_1_PT_2",
+    ]
+
+
+def test_the_page_is_told_which_line_to_show() -> None:
+    """DCS spells 4 as NONE and starts there, so a cartridge that says nothing about
+    it carries a line nobody is ever shown."""
+    assert dtc.HornetCartridge().sections(_fronts(1))["SA"]["Default_FLOT_Line"] == 1
+    # Nothing to draw, so nothing is selected rather than an empty line.
+    assert dtc.HornetCartridge().sections([])["SA"]["Default_FLOT_Line"] == dtc.NONE
 
 
 def test_the_viper_flags_each_line_point_rather_than_nesting_it() -> None:
     """Its twenty-five points are shared between four lines, not split among them."""
-    written = dtc.ViperCartridge().sections([], _fronts(2))
-    points = written["MPD"]["GEO_LINES"]
+    points = dtc.ViperCartridge().sections(_fronts(2))["MPD"]["GEO_LINES"]
 
     assert len(points) == 4
     assert [point["L1"] for point in points] == [True, True, False, False]
@@ -219,14 +108,20 @@ def test_the_viper_flags_each_line_point_rather_than_nesting_it() -> None:
     ]
 
 
-def test_an_aircraft_carries_as_much_as_it_can_and_says_what_it_dropped() -> None:
-    viper = dtc.ViperCartridge()
+def test_each_aircraft_keeps_it_somewhere_of_its_own() -> None:
+    assert set(dtc.HornetCartridge().sections([])) == {"SA"}
+    assert set(dtc.ViperCartridge().sections([])) == {"MPD"}
 
-    threats, fronts = dtc._trim(viper, _threats(30), _fronts(9))
 
-    assert len(threats) == viper.max_threats
-    # Four lines is the ceiling, and four two-point lines fit inside twenty-five.
-    assert len(fronts) == viper.max_lines
+@pytest.mark.parametrize("aircraft", ["FA-18E", "FA-18F", "EA-18G"])
+def test_the_super_hornets_carry_the_hornet_s_cartridge(aircraft: str) -> None:
+    """The CJS mod ships the same sections under another type name, so they are the
+    same profile rather than three copies of it."""
+    profile = dtc.CARTRIDGES[aircraft]
+    hornet = dtc.CARTRIDGES["FA-18C_hornet"]
+
+    assert profile.sections(_fronts(1)) == hornet.sections(_fronts(1))
+    assert profile.max_lines == hornet.max_lines
 
 
 def test_a_long_front_stops_the_next_one_rather_than_overflowing() -> None:
@@ -234,17 +129,16 @@ def test_a_long_front_stops_the_next_one_rather_than_overflowing() -> None:
         max_lines = 3
         max_line_points = 3
 
-    fronts = dtc._trim(Narrow(), [], _fronts(3))[1]
-
-    assert [front.name for front in fronts] == ["Front 1"]
+    assert [front.name for front in dtc._trim(Narrow(), _fronts(3))] == ["Front 1"]
 
 
-def test_only_the_sections_its_profile_fills_are_written(always_shown: None) -> None:
+# ------------------------------------------------------------------ the whole file
+
+
+def test_only_the_sections_its_profile_fills_are_written() -> None:
     """A partial cartridge is valid -- DCS ships its own defaults as one section --
     so nothing here invents radio presets or countermeasure programmes."""
-    built = dtc.cartridge(
-        _game(_sam("HIPPO", 23, "SNR_75V")), Player.BLUE, "F-16C_50", "Escalation"
-    )
+    built = dtc.cartridge(_game(), Player.BLUE, "F-16C_50", "Escalation")
 
     assert built["type"] == "F-16C_50"
     data = cast(dict[str, Any], built["data"])
@@ -254,61 +148,60 @@ def test_only_the_sections_its_profile_fills_are_written(always_shown: None) -> 
 
 def test_only_crewed_flights_in_an_aircraft_with_a_profile_get_one() -> None:
     game = _game()
-    game.blue.ato.packages = [
-        SimpleNamespace(
-            flights=[
-                SimpleNamespace(
-                    client_count=1,
-                    unit_type=SimpleNamespace(
-                        dcs_unit_type=SimpleNamespace(id="FA-18C_hornet")
-                    ),
-                ),
-                SimpleNamespace(
-                    client_count=0,
-                    unit_type=SimpleNamespace(
-                        dcs_unit_type=SimpleNamespace(id="F-16C_50")
-                    ),
-                ),
-                # Its module has nowhere to put a ring, so it gets no cartridge.
-                SimpleNamespace(
-                    client_count=2,
-                    unit_type=SimpleNamespace(
-                        dcs_unit_type=SimpleNamespace(id="A-10C_2")
-                    ),
-                ),
-            ]
-        )
-    ]
+    _crewed(
+        game,
+        ("FA-18C_hornet", 1),
+        ("F-16C_50", 0),
+        # Its module has nowhere to put a ring or a line, so it gets no cartridge.
+        ("A-10C_2", 2),
+    )
 
     assert dtc.player_aircraft(game) == {"FA-18C_hornet"}
 
 
-def test_a_cartridge_is_written_per_airframe(
-    always_shown: None, tmp_path: Path
-) -> None:
-    game = _game(_sam("HIPPO", 23, "SNR_75V"))
-    game.blue.ato.packages = [
-        SimpleNamespace(
-            flights=[
-                SimpleNamespace(
-                    client_count=1,
-                    unit_type=SimpleNamespace(
-                        dcs_unit_type=SimpleNamespace(id=aircraft)
-                    ),
-                )
-                for aircraft in ("FA-18C_hornet", "F-16C_50")
-            ]
-        )
+def test_the_mission_carries_its_own_cartridges(tmp_path: Path) -> None:
+    """A cartridge the player has to go and load is an errand, not a feature."""
+    mission = tmp_path / "retribution_nextturn.miz"
+    with zipfile.ZipFile(mission, "w") as archive:
+        archive.writestr("mission", "-- a mission")
+    game = _game()
+    _crewed(game, ("FA-18C_hornet", 2), ("F-16C_50", 1))
+
+    written = dtc.write_into_mission(game, mission)
+
+    assert written == [
+        "DTC/retribution_nextturn F-16C_50.dtc",
+        "DTC/retribution_nextturn FA-18C_hornet.dtc",
+        "DTC/retribution_nextturn.dtc",
     ]
+    with zipfile.ZipFile(mission) as archive:
+        assert "mission" in archive.namelist()
+        card = json.loads(archive.read("DTC/retribution_nextturn.dtc").decode("utf-8"))
+    # The mission's own name goes to whoever has the most seats in it.
+    assert card["type"] == "FA-18C_hornet"
+
+
+def test_nothing_to_carry_leaves_the_mission_alone(tmp_path: Path) -> None:
+    mission = tmp_path / "retribution_nextturn.miz"
+    with zipfile.ZipFile(mission, "w") as archive:
+        archive.writestr("mission", "-- a mission")
+
+    assert dtc.write_into_mission(_game(), mission) == []
+
+    with zipfile.ZipFile(mission) as archive:
+        assert archive.namelist() == ["mission"]
+
+
+def test_a_copy_goes_where_it_can_be_loaded_by_hand(tmp_path: Path) -> None:
+    game = _game()
+    _crewed(game, ("FA-18C_hornet", 1))
 
     written = dtc.write_cartridges(game, tmp_path)
 
     assert [path.name for path in written] == [
-        "Escalation A Campaign F-16C_50.dtc",
-        "Escalation A Campaign FA-18C_hornet.dtc",
+        "Escalation A Campaign FA-18C_hornet.dtc"
     ]
-    assert "THREAT_PTS" in written[0].read_text(encoding="utf-8")
-    assert "MEZ_THRTS" in written[1].read_text(encoding="utf-8")
+    assert "mirror_MEZ_THRTS" in written[0].read_text(encoding="utf-8")
 
 
 # ------------------------------------------------- against DCS's own files
@@ -320,61 +213,34 @@ VIPER = DCS / "F-16C/DTC/MPD"
 installed = pytest.mark.skipif(not DCS.is_dir(), reason="DCS is not installed here")
 
 
-def _named(path: Path) -> set[str]:
-    return set(re.findall(r'name\s*=\s*"([^"]+)"', path.read_text(encoding="utf-8")))
-
-
-@installed
-def test_every_name_used_is_one_both_aircraft_know() -> None:
-    """A name a module does not have is an entry it drops without a word."""
-    used = {name for name, _text in dtc.THREAT_BY_UNIT.values()}
-
-    assert used <= _named(HORNET / "MEZ_THRTS_defs.lua")
-    assert used <= _named(VIPER / "THREAT_PTS_defs.lua")
-
-
-@installed
-def test_the_vipers_own_numbering_is_its_own() -> None:
-    """The index and the ceiling are ED's; a drifted copy silently mislabels a ring."""
-    text = (VIPER / "THREAT_PTS_defs.lua").read_text(encoding="utf-8")
-    theirs = {
-        name: (int(number), int(altitude))
-        for number, name, altitude in re.findall(
-            r'\[(\d+)\]\s*=\s*\{name\s*=\s*"([^"]+)"[^}]*?altitude\s*=\s*(\d+)', text
-        )
-    }
-
-    for name, ours in dtc.VIPER_THREAT_DEFS.items():
-        assert theirs[name] == ours, name
-
-
 @installed
 def test_the_limits_are_the_ones_each_module_enforces() -> None:
     hornet = dtc.HornetCartridge()
-    mez = (HORNET / "MEZ_THRTS.lua").read_text(encoding="utf-8")
     flot = (HORNET / "FAOR_FLOT.lua").read_text(encoding="utf-8")
-    assert f"MAX_MEZ_THRTS    = {hornet.max_threats}" in mez
     assert f"MAX_FLOT_LINES  = {hornet.max_lines}" in flot
     assert f"MAX_LINE_POINTS = {hornet.max_line_points}" in flot
 
     viper = dtc.ViperCartridge()
-    threats = (VIPER / "THREAT_PTS.lua").read_text(encoding="utf-8")
     lines = (VIPER / "GEO_LINES.lua").read_text(encoding="utf-8")
-    assert f"#data.MPD.THREAT_PTS >= {viper.max_threats}" in threats
     assert f"#data.MPD.GEO_LINES > {viper.max_line_points - 1}" in lines
 
 
-@pytest.mark.parametrize("aircraft", ["FA-18E", "FA-18F", "EA-18G"])
-def test_the_super_hornets_carry_the_hornet_s_cartridge(aircraft: str) -> None:
-    """The CJS mod ships the same sections under another type name, so they are the
-    same profile rather than three copies of it."""
-    profile = dtc.CARTRIDGES[aircraft]
-    hornet = dtc.CARTRIDGES["FA-18C_hornet"]
+@installed
+def test_none_really_is_what_dcs_calls_four_and_where_it_starts() -> None:
+    flot = (HORNET / "FAOR_FLOT.lua").read_text(encoding="utf-8")
 
-    assert profile.sections(_threats(1), _fronts(1)) == hornet.sections(
-        _threats(1), _fronts(1)
-    )
-    assert profile.max_threats == hornet.max_threats
+    assert f'{{text = "NONE", id = {dtc.NONE}}}' in flot
+    assert f'"coLSA_FLOT_Default_FLOT_Line", "selectItem", {dtc.NONE}' in flot
+
+
+@installed
+def test_the_mirror_is_a_switch_the_module_really_reads() -> None:
+    """If it were not, the cartridge would be a file DCS ignores."""
+    threats = (HORNET / "MEZ_THRTS.lua").read_text(encoding="utf-8")
+    viper = (VIPER.parent / "F-16C_50_DTC.lua").read_text(encoding="utf-8")
+
+    assert "data.SA.mirror_MEZ_THRTS" in threats
+    assert "mirror_THREAT_PTS" in viper
 
 
 MOD_DTC = Path(
@@ -388,7 +254,8 @@ MOD_DTC = Path(
 )
 @pytest.mark.parametrize("aircraft", ["FA-18E", "FA-18F", "EA-18G"])
 def test_the_mod_really_does_keep_them_where_the_hornet_does(aircraft: str) -> None:
-    """If a mod update moved a section, the ring would go into a key nothing reads."""
+    """If a mod update moved a section, the cartridge would write into a key nothing
+    reads."""
     definition = (MOD_DTC / f"{aircraft}_DTC.lua").read_text(
         encoding="utf-8", errors="replace"
     )

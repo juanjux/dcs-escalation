@@ -34,12 +34,16 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
     (async () => {
       try {
         const response = await fetch(`${HTTP_URL}saved-points/`);
-        const body: Receiver[] = await response.json();
+        // Whatever comes back, this is a popup on the map: an error page, an older
+        // server that has never heard of this, anything that is not a list of
+        // aircraft leaves the control quiet rather than throwing inside a render.
+        const body: unknown = response.ok ? await response.json() : null;
+        const list: Receiver[] = Array.isArray(body) ? body : [];
         if (dropped) {
           return;
         }
-        setReceivers(body);
-        setChosen(body.length > 0 ? body[0].id : "");
+        setReceivers(list);
+        setChosen(list.length > 0 ? list[0].id : "");
       } catch (error) {
         console.error("Could not list the player's aircraft", error);
         setReceivers([]);
@@ -73,12 +77,20 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
           lng: props.at.lng,
         }),
       });
+      const body: unknown = await response.json().catch(() => null);
       if (!response.ok) {
-        const body = await response.json();
-        setSaid(body.detail ?? "Could not save it");
+        const detail =
+          body && typeof body === "object" && "detail" in body
+            ? String((body as { detail: unknown }).detail)
+            : "Could not save it";
+        setSaid(detail);
         return;
       }
-      const updated: Receiver = await response.json();
+      const updated = body as Receiver | null;
+      if (!updated || typeof updated.id !== "string") {
+        setSaid("Saved");
+        return;
+      }
       setReceivers(
         receivers.map((one) => (one.id === updated.id ? updated : one)),
       );
