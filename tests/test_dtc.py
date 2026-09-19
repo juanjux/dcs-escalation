@@ -69,8 +69,8 @@ def test_the_rings_are_mirrored_rather_than_drawn() -> None:
 
     assert hornet["SA"]["mirror_MEZ_THRTS"] is True
     assert viper["MPD"]["mirror_THREAT_PTS"] is True
-    # And nothing lists them, so nothing here can name a threat wrongly.
-    assert "MEZ_THRTS" not in hornet["SA"]
+    # And the list stays empty, so nothing here can name a threat wrongly.
+    assert hornet["SA"]["MEZ_THRTS"] == []
     assert "THREAT_PTS" not in viper["MPD"]
 
 
@@ -263,3 +263,58 @@ def test_the_mod_really_does_keep_them_where_the_hornet_does(aircraft: str) -> N
     assert f'type = "{aircraft}"' in definition
     assert "MEZ_THRTS" in definition
     assert "FAOR_FLOT" in definition
+
+
+def test_the_sa_section_is_written_whole() -> None:
+    """A cartridge that draws the rings carries a complete section; one that names
+    three keys out of eleven is a shape the loader has never been handed."""
+    sa = dtc.HornetCartridge().sections(_fronts(1))["SA"]
+
+    assert set(sa) == {
+        "CAP_PTS",
+        "CORRIDORS",
+        "MEZ_THRTS",
+        "SETTINGS",
+        "FAOR_FLOT",
+        "Default_CAP_Point",
+        "Default_CORRIDORS_Point",
+        "Default_FAOR_Line",
+        "Default_FLOT_Line",
+        "Default_MEZ_THRTS_Level",
+        "mirror_MEZ_THRTS",
+    }
+
+
+def test_the_one_in_the_mission_is_named_after_the_mission(tmp_path: Path) -> None:
+    """Which is what a cartridge that works carries. The copy for the DTC page keeps
+    the campaign's name, because that is the list it has to be findable in."""
+    mission = tmp_path / "retribution_nextturn.miz"
+    with zipfile.ZipFile(mission, "w") as archive:
+        archive.writestr("mission", "-- a mission")
+    game = _game()
+    _crewed(game, ("FA-18C_hornet", 1))
+
+    dtc.write_into_mission(game, mission)
+    with zipfile.ZipFile(mission) as archive:
+        inside = json.loads(
+            archive.read("DTC/retribution_nextturn.dtc").decode("utf-8")
+        )
+
+    assert inside["name"] == "retribution_nextturn"
+    assert inside["data"]["name"] == "retribution_nextturn"
+    assert dtc.write_cartridges(game, tmp_path)[0].name.startswith("Escalation")
+
+
+@installed
+def test_every_key_the_module_declares_is_one_we_write() -> None:
+    """Read off the module's own data skeleton, so a DCS update that adds a key to
+    the SA section fails here rather than in the cockpit."""
+    import re
+
+    skeleton = (HORNET.parent / "FA-18C_hornet_DTC.lua").read_text(encoding="utf-8")
+    body = skeleton[skeleton.index("SA = {") : skeleton.index("WYPT = {")]
+    theirs = set(re.findall(r"(\w+)\s*=", body)) - {"SA"}
+
+    ours = set(dtc.HornetCartridge().sections([])["SA"])
+
+    assert theirs <= ours, sorted(theirs - ours)
