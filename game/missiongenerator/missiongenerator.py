@@ -171,6 +171,14 @@ class MissionGenerator:
 
         namegen.reset_numbers()
         self.generate_warehouses()
+
+        # Each aircraft has to name the cartridge it takes, and that has to be in the
+        # mission before it is written.
+        if self.game.settings.dtc_cartridge:
+            from game.missiongenerator.dtc import bind_to_units
+
+            bind_to_units(self.mission, output.stem)
+
         output.parent.mkdir(parents=True, exist_ok=True)
         self.mission.save(output)
 
