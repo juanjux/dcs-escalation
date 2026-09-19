@@ -98,8 +98,13 @@ def search(query: str, settings: Any = None, limit: int = 40) -> list[SettingHit
         detail = fold(description.detail or "")
         subsection = description.subsection
         folded_key = fold(key)
+        # What it can be set to counts as well: "fog of war" is a value of Visibility
+        # settings and appears nowhere in its label or its explanation, so a player
+        # who remembers only what he chose could not find the row at all.
+        choices = getattr(description, "choices", None)
+        values = fold(" ".join(choices)) if choices else ""
 
-        total = score_all(tokens, label, detail, folded_key)
+        total = score_all(tokens, label, detail, folded_key, values)
         if not total:
             continue
         # A short label matching is a better answer than a long one saying the same
