@@ -2,6 +2,7 @@
 
 ## Features/Improvements
 * **[FIX]** A fleet waiting for its turn in the weapons-release stagger could not defend itself: ReturnFire does not engage an incoming anti-ship missile, so ships took hits with full SAM racks. Being shot at now releases the whole side at once, and the release order alternates the two sides instead of following the campaign's objective numbering, which on some campaigns gave one side a ten-minute head start.
+* **[FIX]** The settings search looked at what an option is called but not at what it can be set to, so searching "fog of war" found every fog option and not the map visibility row that has it as a value.
 * **[Aircraft]** The C-130J-30 can be tasked with Strike, BAI, OCA/Aircraft, CAS and Armed Recon, for the MOAB it carries as cargo.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.

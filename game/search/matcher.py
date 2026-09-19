@@ -23,6 +23,11 @@ import unicodedata
 SCORE_LABEL_WORD_START = 100
 SCORE_LABEL = 60
 SCORE_DETAIL = 20
+#: What an option's own values are worth. Below its explanation, because a setting is
+#: usually looked for by what it is called -- but a player often remembers only what
+#: he chose: "fog of war" is a value of Visibility settings and appears nowhere in
+#: its label or its detail, so without this it cannot be found by name at all.
+SCORE_VALUE = 18
 SCORE_KEY = 15
 SCORE_SUBSEQUENCE = 8
 
@@ -66,9 +71,12 @@ def is_subsequence(needle: str, haystack: str) -> bool:
     return False
 
 
-def score_one(token: str, label: str, detail: str = "", key: str = "") -> int:
+def score_one(
+    token: str, label: str, detail: str = "", key: str = "", values: str = ""
+) -> int:
     """What one token is worth against one item, or 0 if it is not there.
 
+    ``values`` is what an option can be set to, for the settings that are a choice.
     Everything passed in is already folded: this is the hot path, and folding the
     same label again for every keystroke is what made it hot.
     """
@@ -77,6 +85,8 @@ def score_one(token: str, label: str, detail: str = "", key: str = "") -> int:
         return SCORE_LABEL_WORD_START if starts else SCORE_LABEL
     if detail and token in detail:
         return SCORE_DETAIL
+    if values and token in values:
+        return SCORE_VALUE
     # Only when it is plainly a key that is being typed. Otherwise an ordinary word
     # matches every item whose key happens to contain it: "rank" found all ten rank
     # name boxes through live_pilots_rank_good_short and the like, which is the
@@ -88,7 +98,13 @@ def score_one(token: str, label: str, detail: str = "", key: str = "") -> int:
     return 0
 
 
-def score_all(tokens: list[str], label: str, detail: str = "", key: str = "") -> int:
+def score_all(
+    tokens: list[str],
+    label: str,
+    detail: str = "",
+    key: str = "",
+    values: str = "",
+) -> int:
     """What every token together is worth, or 0 if any of them is missing.
 
     The words are an AND: "frontline width" should not answer with everything about
@@ -96,7 +112,7 @@ def score_all(tokens: list[str], label: str, detail: str = "", key: str = "") ->
     """
     total = 0
     for token in tokens:
-        worth = score_one(token, label, detail, key)
+        worth = score_one(token, label, detail, key, values)
         if not worth:
             return 0
         total += worth
