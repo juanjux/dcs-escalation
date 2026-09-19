@@ -24,9 +24,15 @@ written out. Each module keeps both somewhere different, under its own limits, s
 each is a :class:`Cartridge` of its own.
 
 The file is JSON and a partial one is valid -- DCS ships its own defaults as files
-with a single section. It goes two places: into a ``DTC`` folder inside the .miz,
-where the aircraft finds it without the player going to the DTC page for it, and into
-``Saved Games/DCS/DTC``, where he can load it by hand.
+with a single section. It goes two places: into a ``DTC`` folder inside the .miz, and
+into ``Saved Games/DCS/DTC`` where it can be loaded by hand.
+
+Putting it in the .miz only puts it on the shelf. **Each aircraft has to name the one
+it takes**, in a ``DTC`` table of its own -- ``{AutoLoad, Cartridges:[{name,
+default}]}`` -- which is what the mission editor writes when a cartridge is added to a
+unit, and what a probe mission that draws the rings carries. Without it the file sits
+in the mission and nothing reads it, which is exactly what happened: a complete,
+correctly named cartridge in a mission that drew no rings at all.
 """
 
 from __future__ import annotations
@@ -313,6 +319,63 @@ def busiest_airframe(game: Game) -> Optional[str]:
     if not seats:
         return None
     return max(sorted(seats), key=lambda aircraft: seats[aircraft])
+
+
+#: What a unit carries to say which cartridge is its own. pydcs does not serialise
+#: this, so ``bind_to_units`` patches the one method that writes a flying unit out.
+CARTRIDGE_ON_UNIT = "escalation_dtc_cartridge"
+
+
+def teach_to_write_cartridges(unit_class: Any) -> None:
+    """Make a unit class write its cartridge out, once.
+
+    pydcs has never heard of the field, and the mission is generated over and over in
+    one session, so the wrap is idempotent: a second call finds its own mark and
+    leaves the class alone rather than nesting another layer on it.
+    """
+    if getattr(unit_class.dict, "writes_cartridges", False):
+        return
+    original = unit_class.dict
+
+    def dict_with_cartridge(self: Any) -> Any:
+        written = original(self)
+        name = getattr(self, CARTRIDGE_ON_UNIT, None)
+        if name:
+            written["DTC"] = {
+                "AutoLoad": True,
+                "Cartridges": [{"name": name, "default": True}],
+            }
+        return written
+
+    dict_with_cartridge.writes_cartridges = True  # type: ignore[attr-defined]
+    unit_class.dict = dict_with_cartridge
+
+
+def bind_to_units(mission: Any, name: str) -> int:
+    """Give every aircraft that can take a cartridge the name of its own.
+
+    A cartridge in the .miz is only on the shelf; the mission editor writes a ``DTC``
+    table onto each unit naming the one it takes, and without it nothing is read. The
+    ``dict`` method of a flying unit is where that has to appear, and pydcs has never
+    heard of the field, so it is wrapped once -- a unit told which cartridge is its
+    own writes it out, every other unit is untouched.
+    """
+    from dcs.flyingunit import FlyingUnit
+
+    teach_to_write_cartridges(FlyingUnit)
+
+    bound = 0
+    for coalition in mission.coalition.values():
+        for country in coalition.countries.values():
+            for group in list(country.plane_group) + list(country.helicopter_group):
+                for unit in group.units:
+                    if not unit.is_human():
+                        continue
+                    if unit.type not in CARTRIDGES:
+                        continue
+                    setattr(unit, CARTRIDGE_ON_UNIT, name)
+                    bound += 1
+    return bound
 
 
 def write_into_mission(game: Game, mission: Path) -> list[str]:

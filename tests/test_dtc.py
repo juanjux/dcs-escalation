@@ -318,3 +318,86 @@ def test_every_key_the_module_declares_is_one_we_write() -> None:
     ours = set(dtc.HornetCartridge().sections([])["SA"])
 
     assert theirs <= ours, sorted(theirs - ours)
+
+
+# ------------------------------------------------ naming the cartridge on the unit
+
+
+class _Unit:
+    """A flying unit, as much of one as the binder touches."""
+
+    def __init__(self, unit_type: str, human: bool = True) -> None:
+        self.type = unit_type
+        self.human = human
+        self.written: dict[str, Any] = {}
+
+    def is_human(self) -> bool:
+        return self.human
+
+    def dict(self) -> dict[str, Any]:
+        return dict(self.written)
+
+
+def _mission(*units: Any) -> Any:
+    country = SimpleNamespace(
+        plane_group=[SimpleNamespace(units=list(units))], helicopter_group=[]
+    )
+    return SimpleNamespace(
+        coalition={"blue": SimpleNamespace(countries={"USA": country})}
+    )
+
+
+def test_only_a_crewed_aircraft_that_takes_one_is_bound() -> None:
+    """A cartridge in the .miz is only on the shelf: the unit has to name it, which
+    is what the mission editor writes and what a probe that draws the rings carries."""
+    hornet = _Unit("FA-18C_hornet")
+    ai = _Unit("FA-18C_hornet", human=False)
+    hog = _Unit("A-10C_2")
+
+    bound = dtc.bind_to_units(_mission(hornet, ai, hog), "retribution_nextturn")
+
+    assert bound == 1
+    assert getattr(hornet, dtc.CARTRIDGE_ON_UNIT) == "retribution_nextturn"
+    assert not hasattr(ai, dtc.CARTRIDGE_ON_UNIT)
+    assert not hasattr(hog, dtc.CARTRIDGE_ON_UNIT)
+
+
+def test_a_bound_unit_writes_the_table_dcs_reads() -> None:
+    """Key for key, the shape SAMRING_03's Hornet carries."""
+
+    class Unit:
+        def dict(self) -> dict[str, Any]:
+            return {"type": "FA-18C_hornet"}
+
+    dtc.teach_to_write_cartridges(Unit)
+    unit = Unit()
+    setattr(unit, dtc.CARTRIDGE_ON_UNIT, "retribution_nextturn")
+
+    assert unit.dict()["DTC"] == {
+        "AutoLoad": True,
+        "Cartridges": [{"name": "retribution_nextturn", "default": True}],
+    }
+
+
+def test_a_unit_that_was_never_bound_writes_nothing_extra() -> None:
+    class Unit:
+        def dict(self) -> dict[str, Any]:
+            return {"type": "MiG-29A"}
+
+    dtc.teach_to_write_cartridges(Unit)
+
+    assert "DTC" not in Unit().dict()
+
+
+def test_teaching_twice_does_not_wrap_twice() -> None:
+    """The mission is generated over and over in one session."""
+
+    class Unit:
+        def dict(self) -> dict[str, Any]:
+            return {}
+
+    dtc.teach_to_write_cartridges(Unit)
+    once = Unit.dict
+    dtc.teach_to_write_cartridges(Unit)
+
+    assert Unit.dict is once
