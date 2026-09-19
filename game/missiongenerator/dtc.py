@@ -1,35 +1,32 @@
 """The data cartridge the player loads in the cockpit.
 
 An aircraft's displays draw two things the campaign already knows: a ring round every
-threat it has been told about, and the forward line of own troops.
+air-defence site it has been told about, and the forward line of own troops.
 
-Until DCS 2.9.29 the rings came from the mission: a unit not flagged ``hiddenOnMFD``
-appeared on the Hornet's SA page, statically, with no radar or datalink involved --
-ED said so when the feature shipped. 2.9.29 moved it behind the **data transfer
-cartridge**, and a mission with no cartridge loaded now draws nothing at all, however
-its units are flagged. That is the regression the forums reported, and it is why a
-campaign that wants rings has to write a cartridge.
+Until DCS 2.9.29 the rings came straight from the mission -- a unit not flagged
+``hiddenOnMFD`` appeared on the Hornet's SA page, statically, with no radar or
+datalink involved, as ED said when the feature shipped. 2.9.29 moved it behind the
+**data transfer cartridge**, and a Hornet with no cartridge loaded now draws nothing
+at all however its units are flagged. (The Viper never lost it.) That is what the
+forums reported as the SA page losing its threats, and it is why a campaign that
+wants rings has to write a cartridge.
+
+What the cartridge says is one word: **mirror**. With ``mirror_MEZ_THRTS`` on, the
+aircraft derives the rings from the mission exactly as it used to, ``hiddenOnMFD`` and
+all -- measured on probe missions: a site flagged hidden stays off the page while its
+neighbours show. So the campaign's existing MFD settings go on deciding which sites
+the player may see, and the rings are DCS's own yellow dashed ones rather than circles
+we drew. Listing them by hand also works, and looks wrong: they come out as plain
+white rings, and every threat name has to be mapped to one DCS knows or it is dropped.
+
+The fronts are the other half, and no mirror can invent those: the FLOT lines are
+written out. Each module keeps both somewhere different, under its own limits, so
+each is a :class:`Cartridge` of its own.
 
 The file is JSON and a partial one is valid -- DCS ships its own defaults as files
-with a single section -- so this writes only what it fills. It goes two places: into
-a ``DTC`` folder inside the .miz, where the aircraft finds it without the player
-going to the DTC page for it, and into ``Saved Games/DCS/DTC``, where he can load it
-by hand.
-
-A cartridge can also MIRROR the mission's threats rather than list them, which is
-what makes the old behaviour come back. This lists them instead: the list is already
-filtered by the campaign's own MFD settings, and it has a ring for a system DCS's
-threat database has never heard of -- an HQ-9, a mod -- which a mirror would lose.
-
-Every module keeps that data somewhere different, under its own limits, so each is a
-:class:`Cartridge` of its own. The campaign works out the threats and the fronts once;
-a cartridge says where they go in its aircraft and how many it will take. The shapes,
-the names and the limits are all read off DCS's own ``CoreMods/aircraft/<type>/DTC``,
-and a test checks them against those files whenever DCS is installed.
-
-Which threats go in is the same question the cockpit displays already answer, so the
-same settings decide: a site the campaign will not show is not one the cartridge names
-either.
+with a single section. It goes two places: into a ``DTC`` folder inside the .miz,
+where the aircraft finds it without the player going to the DTC page for it, and into
+``Saved Games/DCS/DTC``, where he can load it by hand.
 """
 
 from __future__ import annotations
@@ -42,59 +39,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Sequence
 
-from game.mfd import shows_on_mfd
 from game.missiongenerator.frontlineconflictdescription import (
     FrontLineConflictDescription,
 )
 from game.theater import Player
-from game.theater.theatergroundobject import IadsGroundObject, NavalGroundObject
 
 if TYPE_CHECKING:
     from game import Game
-    from game.theater import ConflictTheater, TheaterGroundObject
+    from game.theater import ConflictTheater
 
-#: What the displays call each system, keyed by the DCS unit that identifies the site.
-#: The names have to be exactly the ones in the module's own threat list -- the Hornet
-#: and the Viper ship the same one -- and a site made of anything else is written as a
-#: Custom ring, which is drawn just the same.
-THREAT_BY_UNIT: dict[str, tuple[str, str]] = {
-    "SNR_75V": ("SAM SA-2 'Guideline'", "2"),
-    "snr s-125 tr": ("SAM SA-3 'Goa'", "3"),
-    "Kub 1S91 str": ("SAM SA-6 'Gainful'", "6"),
-    "Osa 9A33 ln": ("SAM SA-8 'Gecko'", "8"),
-    "Strela-1 9P31": ("SAM SA-9 'Gaskin'", "9"),
-    "S-300PS 40B6M tr": ("SAM SA-10 'Grumble'", "10"),
-    "S-300PS 64H6E sr": ("SAM SA-10 'Grumble'", "10"),
-    "SA-11 Buk SR 9S18M1": ("SAM SA-11 'Gadfly'", "11"),
-    "Strela-10M3": ("SAM SA-13 'Gopher'", "13"),
-    "Tor 9A331": ("SAM SA-15 'Gauntlet'", "15"),
-    "2S6 Tunguska": ("SAM SA-19 'Grison'", "19"),
-    "HQ-7_STR_SP": ("SAM HQ-7", "7"),
-    "Patriot str": ("SAM Patriot", "P"),
-    "Hawk tr": ("SAM Hawk", "HK"),
-    "NASAMS_Radar_MPQ64F1": ("SAM NASAMS", "NS"),
-    "Roland Radar": ("SAM Roland", "RO"),
-    "rapier_fsa_blindfire_radar": ("SAM Rapier", "RP"),
-    "Gepard": ("SPAAA Gepard", "A"),
-    "Vulcan": ("SPAAA Vulcan", "A"),
-    "ZSU-23-4 Shilka": ("SPAAA ZSU-23-4", "A"),
-    "ZSU_57_2": ("SPAAA ZSU-57-2", "A"),
-    "SON_9": ("AAA SON-9 - Fire Can", "FC"),
-}
-
-CUSTOM = "Custom"
-
-
-@dataclass(frozen=True)
-class Threat:
-    """One ring, in the campaign's own terms rather than any aircraft's."""
-
-    name: str
-    kind: str
-    text: str
-    radius_nm: float
-    x: float
-    y: float
+#: What DCS's own lists spell NONE. The FLOT line starts there, so a cartridge that
+#: says nothing about it carries a line nobody is shown.
+NONE = 4
 
 
 @dataclass(frozen=True)
@@ -111,59 +67,39 @@ class Cartridge(ABC):
     #: The DCS unit type this is the cartridge for.
     aircraft: str
 
-    #: How many the module itself allows. Read off its DTC scripts, not decided here.
-    max_threats: int
+    #: How many lines the module itself allows, and of how many points. Read off its
+    #: DTC scripts, not decided here.
     max_lines: int
     max_line_points: int
 
     @abstractmethod
-    def sections(
-        self, threats: Sequence[Threat], fronts: Sequence[Front]
-    ) -> dict[str, Any]:
+    def sections(self, fronts: Sequence[Front]) -> dict[str, Any]:
         """The part of the cartridge's ``data`` tree this aircraft fills."""
 
 
 class HornetCartridge(Cartridge):
-    """F/A-18C: rings and lines live on the SA page.
+    """The Hornet family: the SA page.
 
-    Limits from ``FA-18C/DTC/SA``: forty threats, three FLOT lines of seven points.
+    Limits from ``FA-18C/DTC/SA``: three FLOT lines of seven points. The CJS Super
+    Hornet mod ships the same cartridge, section for section, for the E, the F and
+    the Growler, so they are the same profile under another type name.
     """
 
     aircraft = "FA-18C_hornet"
-    max_threats = 40
     max_lines = 3
     max_line_points = 7
 
-    def sections(
-        self, threats: Sequence[Threat], fronts: Sequence[Front]
-    ) -> dict[str, Any]:
+    def sections(self, fronts: Sequence[Front]) -> dict[str, Any]:
         return {
             "SA": {
-                # Off: the list below is the campaign's own, filtered by the MFD
-                # settings, and it has a ring for a system DCS's threat database has
-                # never heard of. Mirroring would hand the page back to DCS and lose
-                # both. Written rather than left out because a cartridge that says
-                # nothing about the mirror leaves it wherever the last one put it.
-                "mirror_MEZ_THRTS": False,
-                # Which level of threat the page starts on, and which line. DCS's own
-                # default for both is 4, which its lists spell NONE: a cartridge that
-                # says nothing here carries a list nobody is shown. Every threat this
-                # writes is level 1, and the first line is the busiest front.
-                "Default_MEZ_THRTS_Level": 1,
-                "Default_FLOT_Line": 1 if fronts else 4,
-                "MEZ_THRTS": [
-                    {
-                        "id": f"MEZ_THRTS_{number}",
-                        "num": number,
-                        "x": threat.x,
-                        "y": threat.y,
-                        "text": threat.text,
-                        "threat_type": threat.kind,
-                        "threat_ring_radius": round(threat.radius_nm, 1),
-                        "threat_level": 1,
-                    }
-                    for number, threat in enumerate(threats, start=1)
-                ],
+                # The whole point. Off, the page is blank; on, it is the pre-2.9.29
+                # behaviour back, filtered by hiddenOnMFD as it always was.
+                #
+                # Default_MEZ_THRTS_Level is deliberately not written: the cartridge
+                # this was measured against leaves it at DCS's own 4 -- NONE -- and
+                # draws the rings anyway, because a mirrored ring never goes through
+                # that list.
+                "mirror_MEZ_THRTS": True,
                 "FAOR_FLOT": {
                     "FAOR": [],
                     "FLOT": [
@@ -183,54 +119,27 @@ class HornetCartridge(Cartridge):
                         for number, front in enumerate(fronts, start=1)
                     ],
                 },
+                # The lines do go through a list, so this one has to be said.
+                "Default_FLOT_Line": 1 if fronts else NONE,
             }
         }
 
 
-#: The Viper names a threat by its place in its own list as well as by name, and
-#: carries a ceiling for it. Both are ED's, from ``F-16C/DTC/MPD/THREAT_PTS_defs.lua``.
-VIPER_THREAT_DEFS: dict[str, tuple[int, int]] = {
-    CUSTOM: (1, 9144),
-    "AAA SON-9 - Fire Can": (2, 14000),
-    "SAM Hawk": (6, 20000),
-    "SAM HQ-7": (7, 5500),
-    "SAM NASAMS": (9, 17000),
-    "SAM Patriot": (10, 160000),
-    "SAM Rapier": (11, 4000),
-    "SAM Roland": (12, 6000),
-    "SAM SA-2 'Guideline'": (13, 25000),
-    "SAM SA-3 'Goa'": (14, 20000),
-    "SAM SA-6 'Gainful'": (16, 14000),
-    "SAM SA-8 'Gecko'": (17, 5000),
-    "SAM SA-9 'Gaskin'": (18, 5000),
-    "SAM SA-10 'Grumble'": (19, 27000),
-    "SAM SA-11 'Gadfly'": (20, 22000),
-    "SAM SA-13 'Gopher'": (21, 3500),
-    "SAM SA-15 'Gauntlet'": (22, 8000),
-    "SAM SA-19 'Grison'": (24, 3500),
-    "SPAAA Gepard": (26, 3000),
-    "SPAAA Vulcan": (27, 5000),
-    "SPAAA ZSU-23-4": (28, 2500),
-    "SPAAA ZSU-57-2": (29, 7000),
-}
-
-
 class ViperCartridge(Cartridge):
-    """F-16C: rings and lines live on the MPD.
+    """F-16C: the MPD.
 
-    Limits from ``F-16C/DTC/MPD``: fifteen threat points, and twenty-five line points
-    shared between four lines rather than a fixed number per line -- which is why the
-    points carry a flag saying which line they belong to instead of nesting.
+    Its rings never stopped working, so mirroring them only keeps the page as it
+    already is. The lines are what this is really for. Limits from
+    ``F-16C/DTC/MPD``: twenty-five line points shared between four lines rather than
+    a fixed number per line -- which is why the points carry a flag saying which line
+    they belong to instead of nesting.
     """
 
     aircraft = "F-16C_50"
-    max_threats = 15
     max_lines = 4
     max_line_points = 25
 
-    def sections(
-        self, threats: Sequence[Threat], fronts: Sequence[Front]
-    ) -> dict[str, Any]:
+    def sections(self, fronts: Sequence[Front]) -> dict[str, Any]:
         points: list[dict[str, Any]] = []
         for line, front in enumerate(fronts, start=1):
             for point in front.points:
@@ -251,95 +160,39 @@ class ViperCartridge(Cartridge):
                 )
         return {
             "MPD": {
-                "mirror_THREAT_PTS": False,
+                "mirror_THREAT_PTS": True,
                 "mirror_GEO_LINES": False,
-                "THREAT_PTS": [
-                    {
-                        "number": number,
-                        "id": f"THREAT_PTS{55 + number}",
-                        "x": threat.x,
-                        "y": threat.y,
-                        "threatName": threat.kind,
-                        # Metres here, where the Hornet's is in miles. Each module
-                        # asks for what it asks for.
-                        "radius": round(threat.radius_nm * 1852),
-                        "alt": VIPER_THREAT_DEFS.get(
-                            threat.kind, VIPER_THREAT_DEFS[CUSTOM]
-                        )[1],
-                        "elev": 0,
-                        "text": threat.text,
-                        "ring": True,
-                        "def_num": VIPER_THREAT_DEFS.get(
-                            threat.kind, VIPER_THREAT_DEFS[CUSTOM]
-                        )[0],
-                    }
-                    for number, threat in enumerate(threats, start=1)
-                ],
                 "GEO_LINES": points,
             }
         }
 
 
+class SuperHornetCartridge(HornetCartridge):
+    """The CJS mod's E/F/G, whose cartridge is the Hornet's with another type on it."""
+
+    def __init__(self, aircraft: str) -> None:
+        self.aircraft = aircraft
+
+
 #: One per aircraft that can be handed any of this. An airframe missing from here
-#: gets no cartridge: it is not that the campaign will not write one, it is that its
-#: module has nowhere to put a threat ring or a line.
+#: gets no cartridge, and the reason is always the module rather than the campaign.
+#: Of everything that has a DTC -- the Hornet, the Viper, the Tomcat, the Apache, the
+#: Chinook, the full-cockpit Fulcrum, and the CJS Super Hornets -- only the Hornet
+#: family and the Viper keep a threat ring and a map line at all: the Tomcat and the
+#: Apache carry lines but no rings, the Fulcrum and the Chinook neither. The A-10 has
+#: no .dtc of any kind; its DTS database is a Lua file beside the mission
+#: (``game/missiongenerator/dts.py``) and carries waypoints only. The JF-17's
+#: cartridge is Deka's own, loaded from the special options tab, not one of these.
 CARTRIDGES: dict[str, Cartridge] = {
-    profile.aircraft: profile for profile in (HornetCartridge(), ViperCartridge())
+    profile.aircraft: profile
+    for profile in (
+        HornetCartridge(),
+        ViperCartridge(),
+        SuperHornetCartridge("FA-18E"),
+        SuperHornetCartridge("FA-18F"),
+        SuperHornetCartridge("EA-18G"),
+    )
 }
-
-
-def _identify(tgo: TheaterGroundObject) -> tuple[str, str]:
-    """What to call this site, from the units still alive in it.
-
-    Only a group that does most of the shooting may name it. An S-300 battery with a
-    Strela parked beside it went on the page as a Strela, which is the one thing the
-    ring's radius says it is not; and a system DCS has no entry for -- an HQ-9, a mod
-    -- is better drawn as a Custom ring at its measured radius than under a wrong
-    name.
-    """
-    reach = max((g.max_threat_range().meters for g in tgo.groups), default=0.0)
-    groups = [g for g in tgo.groups if g.max_threat_range().meters >= reach * 0.8]
-    groups.sort(key=lambda g: -g.max_threat_range().meters)
-    for group in groups:
-        for unit in group.units:
-            if not unit.alive or unit.unit_type is None:
-                continue
-            known = THREAT_BY_UNIT.get(unit.unit_type.dcs_id)
-            if known is not None:
-                return known
-    label = "SH" if isinstance(tgo, NavalGroundObject) else tgo.name[:2].upper()
-    return CUSTOM, label
-
-
-def threats_for(game: Game, player: Player) -> list[Threat]:
-    """The enemy air defence the campaign is willing to put on the displays.
-
-    ``shows_on_mfd`` is the same question the mission asks before it decides whether
-    to hide a site's units, so the ring and the symbol agree: turn a band off in the
-    settings and it leaves both. Biggest first, because a cartridge holds a limited
-    number and what should fall off the end is the AAA nobody plans around.
-    """
-    found: list[Threat] = []
-    for control_point in game.theater.controlpoints:
-        if control_point.captured == player:
-            continue
-        for tgo in control_point.ground_objects:
-            if not isinstance(tgo, (IadsGroundObject, NavalGroundObject)):
-                continue
-            if tgo.is_dead or not shows_on_mfd(tgo, game.settings):
-                continue
-            radius = max(
-                (group.max_threat_range().nautical_miles for group in tgo.groups),
-                default=0.0,
-            )
-            if radius <= 0:
-                continue
-            kind, text = _identify(tgo)
-            found.append(
-                Threat(tgo.name, kind, text, radius, tgo.position.x, tgo.position.y)
-            )
-    found.sort(key=lambda threat: (-threat.radius_nm, threat.name))
-    return found
 
 
 def fronts_of(theater: ConflictTheater) -> list[Front]:
@@ -371,35 +224,21 @@ def fronts_of(theater: ConflictTheater) -> list[Front]:
     return [front for _length, front in found]
 
 
-def _trim(
-    profile: Cartridge, threats: Sequence[Threat], fronts: Sequence[Front]
-) -> tuple[list[Threat], list[Front]]:
-    """As much of it as this aircraft will take, and a word about the rest."""
-    if len(threats) > profile.max_threats:
-        logging.info(
-            "DTC %s: %d threats, carrying the %d largest",
-            profile.aircraft,
-            len(threats),
-            profile.max_threats,
-        )
-    kept_threats = list(threats[: profile.max_threats])
-
-    kept_fronts: list[Front] = []
+def _trim(profile: Cartridge, fronts: Sequence[Front]) -> list[Front]:
+    """As many fronts as this aircraft will take, and a word about the rest."""
+    kept: list[Front] = []
     points = 0
     for front in fronts[: profile.max_lines]:
         if points + len(front.points) > profile.max_line_points:
             logging.info("DTC %s: no room left for %s", profile.aircraft, front.name)
             break
-        kept_fronts.append(front)
+        kept.append(front)
         points += len(front.points)
-    if len(kept_fronts) < len(fronts):
+    if len(kept) < len(fronts):
         logging.info(
-            "DTC %s: %d fronts, carrying %d",
-            profile.aircraft,
-            len(fronts),
-            len(kept_fronts),
+            "DTC %s: %d fronts, carrying %d", profile.aircraft, len(fronts), len(kept)
         )
-    return kept_threats, kept_fronts
+    return kept
 
 
 def cartridge(game: Game, player: Player, aircraft: str, name: str) -> dict[str, Any]:
@@ -410,13 +249,12 @@ def cartridge(game: Game, player: Player, aircraft: str, name: str) -> dict[str,
     RWR.
     """
     profile = CARTRIDGES[aircraft]
-    threats, fronts = _trim(profile, threats_for(game, player), fronts_of(game.theater))
     data: dict[str, Any] = {
         "name": name,
         "type": aircraft,
         "terrain": game.theater.terrain.name,
     }
-    data.update(profile.sections(threats, fronts))
+    data.update(profile.sections(_trim(profile, fronts_of(game.theater))))
     return {"name": name, "type": aircraft, "data": data}
 
 
@@ -458,12 +296,8 @@ def busiest_airframe(game: Game) -> Optional[str]:
 def write_into_mission(game: Game, mission: Path) -> list[str]:
     """Put the cartridges inside the .miz, where the aircraft finds them itself.
 
-    DCS 2.9.29 moved the SA page's threat display behind a cartridge: a mission with
-    nothing loaded draws no rings at all, however its units are flagged. A cartridge
-    carried in the mission is loaded without the player going to the DTC page for it,
-    which is the difference between a feature and an errand.
-
-    The entry goes in a ``DTC`` folder inside the .miz and nothing in the mission Lua
+    A cartridge the player has to go and load is an errand rather than a feature. The
+    entry goes in a ``DTC`` folder inside the .miz and nothing in the mission Lua
     points at it. One is named for the mission itself, which is the shape a working
     example uses, and it is given to whichever airframe has the most seats in it this
     turn; the rest are named for their aircraft beside it. Belt and braces, because
@@ -493,21 +327,18 @@ def write_into_mission(game: Game, mission: Path) -> list[str]:
 
 
 def write_cartridges(game: Game, into: Path) -> list[Path]:
-    """A cartridge per player airframe, replacing last turn's.
+    """A copy per player airframe in the DTC folder, replacing last turn's.
 
-    Named for the campaign rather than the turn: the DTC page lists what is in the
-    folder, and a new file per turn would leave a list of dead ones to scroll past.
+    The mission carries its own; this is the one the player can load by hand, named
+    for the campaign rather than the turn so the DTC page does not fill with dead
+    ones.
     """
     written = []
     into.mkdir(parents=True, exist_ok=True)
-    for aircraft in sorted(player_aircraft(game)):
-        name = f"Escalation {game.campaign_name or 'campaign'}"[:48]
-        path = into / f"{name} {aircraft}.dtc"
+    for aircraft, card in cartridges_for(game).items():
+        path = into / f"{card['name']} {aircraft}.dtc"
         try:
-            path.write_text(
-                json.dumps(cartridge(game, Player.BLUE, aircraft, name), indent=1),
-                encoding="utf-8",
-            )
+            path.write_text(json.dumps(card, indent=1), encoding="utf-8")
         except OSError:
             logging.exception("Could not write the data cartridge %s", path)
             continue
