@@ -2,7 +2,7 @@
 
 ## Features/Improvements
 * **[UI]** Any point the map's coordinate picker reads can be saved to one of the player's own aircraft, as a waypoint or a markpoint, and the aircraft says how many more of each it will take. They get a kneeboard page of their own, apart from the route.
-* **[Mission Generator]** The Hornet's SA page gets its threat rings and its front line. They come from the aircraft's data cartridge rather than from the mission, so Escalation writes a .dtc file per player airframe, carrying the enemy air defence the MFD settings allow and the fronts; load it from the DTC page of the rearm window. New setting under MFD, on by default.
+* **[Mission Generator]** The cockpit displays get their threat rings and their front line. They come from the aircraft's data cartridge rather than from the mission, so Escalation writes a .dtc file per player airframe that can carry them -- the Hornet on its SA page, the Viper on its MPD -- with the enemy air defence the MFD settings allow and the fronts; load it from the DTC page of the rearm window. New setting under MFD, on by default.
 * **[Aircraft]** The C-130J-30 can be tasked with Strike, BAI, OCA/Aircraft, CAS and Armed Recon, for the MOAB it carries as cargo.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
