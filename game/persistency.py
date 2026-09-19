@@ -572,6 +572,7 @@ def settle(game: Game) -> None:
     Cheap: about fifty milliseconds over a full ATO, and none of it is work the map was
     not about to do.
     """
+    from game.missiongenerator.motorpoolpopulator import MotorpoolPopulator
     from game.server.flights.models import FlightJs
 
     for coalition in (game.blue, game.red):
@@ -581,6 +582,15 @@ def settle(game: Game) -> None:
                     FlightJs.for_flight(flight, with_waypoints=True)
                 except Exception:
                     logging.exception("Could not settle %s", flight)
+
+    # The undeployed armour a base keeps is not written into the save: the map fills
+    # each motorpool the first time it draws one, so a campaign that had only been
+    # looked at was already different from its own save file and closing it asked
+    # whether to save. Filled here instead, before the fingerprint is taken.
+    try:
+        MotorpoolPopulator(game).populate_control_points(game.theater.controlpoints)
+    except Exception:
+        logging.exception("Could not settle the motorpools")
 
 
 def remember_saved_state(game: Game) -> None:

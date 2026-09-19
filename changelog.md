@@ -2,12 +2,10 @@
 
 ## Features/Improvements
 * **[UI]** Any point the map's coordinate picker reads can be saved to one of the player's own aircraft, as a waypoint or a markpoint, and the aircraft says how many more of each it will take. They get a kneeboard page of their own, apart from the route, paginated when there are more than a page of them, and an A-10's go into its DTS database beside the mission, so LOAD ALL on the CDU puts them in the aeroplane.
-* **[Mission Generator]** The Hornet's SA page gets its threat rings back, and every cockpit that can draw one gets the front line. DCS 2.9.29 moved the rings behind the aircraft's data cartridge, so a mission with none loaded draws nothing however its units are flagged; Escalation writes one per player airframe that can carry it -- the Hornet family, the Super Hornets and the Viper -- telling it to mirror the mission's own threats, which the MFD settings already filter. It rides inside the mission, so nothing has to be loaded by hand, and a copy goes to Saved Games/DCS/DTC anyway. New setting under MFD, on by default.
 * **[Aircraft]** The C-130J-30 can be tasked with Strike, BAI, OCA/Aircraft, CAS and Armed Recon, for the MOAB it carries as cargo.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
 * **[Mission Generator]** The cockpit displays only show the enemy air defence the campaign settings allow.
-* **[UI]** The intelligence dialog was redrawn: the side is a switch that colours the whole window instead of an "Enemy Info" checkbox, each tab opens with three figures, bases fold and can be sorted and filtered, the economy tab leads with what a building is rather than its codename, and the totals are pinned below the scroll.
 * **[UI]** The buy / replace dialog of a location was redrawn.
 * **[UI]** The F-16 application icon now has a blue/yellow Ukrainian flag background for better visibility at desktop and taskbar sizes.
 * **[UI]** The location dialog was redrawn.
@@ -17,7 +15,6 @@
 * **[Campaigns]** Gran Polvorin: the Ushuaia power station stands 26 nm further north, where its grid also reaches Rio Grande's SAM, AAA and GPS jamming site instead of leaving them unpowered. NEW game required.
 * **[Campaigns]** Gran Polvorin has an air defence network.
 * **[Mission Plugins]** **Realistic CAS** adds gradual ground-target discovery for both coalitions through visual, EO/IR and ground-radar observations, with terrain LOS and approximate weather, daylight and cover effects. 
-* **[Live Pilots]** A pilot who is liked more than he likes back comes round sooner: each point between the two halves of a pair adds to his chance of warming (5% a point by default, a new setting under Friendship). The cooling roll is untouched, and the pilot who is already the warmer of the two gains nothing.
 * **[Live Pilots]** Being liked is noticed: each point between the two halves of a pair adds to the warming chance of whichever of them likes the other less. 5% a point, a new setting; cooling is untouched.
 * **[UI]** The dashed run in to a target answers the pointer like the rest of the route: hovering lights the plan up -- the route yellow and its runs red -- and clicking selects the flight and its package.
 * **[UI]** Closing only asks whether to save when there is something to save: the campaign is settled and fingerprinted as a save would write it, so quitting after a save, or after a look around that changed nothing, just quits.
