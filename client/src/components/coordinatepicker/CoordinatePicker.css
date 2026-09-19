@@ -41,3 +41,34 @@
   opacity: 1;
   text-decoration: underline;
 }
+
+.cp-save {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.cp-save select {
+  width: 100%;
+  font: inherit;
+  margin-bottom: 4px;
+}
+
+.cp-save-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.cp-save-buttons button {
+  flex: 1;
+}
+
+.cp-save-none,
+.cp-save-said {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.cp-save-said {
+  margin-top: 4px;
+}

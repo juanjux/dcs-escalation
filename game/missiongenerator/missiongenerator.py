@@ -174,8 +174,14 @@ class MissionGenerator:
         output.parent.mkdir(parents=True, exist_ok=True)
         self.mission.save(output)
 
-        # The cartridges go inside the .miz, so the aircraft finds them without the
-        # player going to the DTC page for them.
+        # The A-10's cartridge is a Lua database beside the mission rather than a
+        # .dtc, so it is written here, where the mission's own path is known.
+        from game.missiongenerator.dts import write_database
+
+        write_database(self.game, output)
+
+        # The rest go inside the .miz, so the aircraft finds them without the player
+        # going to the DTC page for them.
         if self.game.settings.dtc_cartridge:
             from game.missiongenerator.dtc import write_into_mission
 

@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Any point the map's coordinate picker reads can be saved to one of the player's own aircraft, as a waypoint or a markpoint, and the aircraft says how many more of each it will take. They get a kneeboard page of their own, apart from the route, paginated when there are more than a page of them, and an A-10's go into its DTS database beside the mission, so LOAD ALL on the CDU puts them in the aeroplane.
 * **[Aircraft]** The C-130J-30 can be tasked with Strike, BAI, OCA/Aircraft, CAS and Armed Recon, for the MOAB it carries as cargo.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
