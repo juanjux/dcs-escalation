@@ -429,3 +429,26 @@ def test_the_mirror_is_said_rather_than_left_where_it_was() -> None:
 
     assert hornet["SA"]["mirror_MEZ_THRTS"] is False
     assert viper["MPD"]["mirror_THREAT_PTS"] is False
+
+
+def test_the_page_is_told_which_level_and_which_line_to_show() -> None:
+    """DCS spells 4 as NONE and defaults both to it, so a cartridge that says
+    nothing about them carries a list nobody is ever shown."""
+    with_fronts = dtc.HornetCartridge().sections(_threats(1), _fronts(1))["SA"]
+    without = dtc.HornetCartridge().sections(_threats(1), [])["SA"]
+
+    assert with_fronts["Default_MEZ_THRTS_Level"] == 1
+    assert with_fronts["Default_FLOT_Line"] == 1
+    # No front to draw, so nothing is selected rather than an empty line.
+    assert without["Default_FLOT_Line"] == 4
+
+
+@installed
+def test_none_really_is_what_dcs_calls_four() -> None:
+    lists = (HORNET / "MEZ_THRTS.lua").read_text(encoding="utf-8")
+    flot = (HORNET / "FAOR_FLOT.lua").read_text(encoding="utf-8")
+
+    assert '{text = "NONE",\tid = 4}' in lists
+    assert '{text = "NONE", id = 4}' in flot
+    # And both start there, which is the trap.
+    assert '"selectItem", 4) -- Default to NONE' in lists

@@ -145,6 +145,12 @@ class HornetCartridge(Cartridge):
                 # both. Written rather than left out because a cartridge that says
                 # nothing about the mirror leaves it wherever the last one put it.
                 "mirror_MEZ_THRTS": False,
+                # Which level of threat the page starts on, and which line. DCS's own
+                # default for both is 4, which its lists spell NONE: a cartridge that
+                # says nothing here carries a list nobody is shown. Every threat this
+                # writes is level 1, and the first line is the busiest front.
+                "Default_MEZ_THRTS_Level": 1,
+                "Default_FLOT_Line": 1 if fronts else 4,
                 "MEZ_THRTS": [
                     {
                         "id": f"MEZ_THRTS_{number}",
