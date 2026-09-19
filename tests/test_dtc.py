@@ -8,6 +8,7 @@ the names and the limits against DCS's own files whenever DCS is installed.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 from types import SimpleNamespace
@@ -362,3 +363,69 @@ def test_the_limits_are_the_ones_each_module_enforces() -> None:
     lines = (VIPER / "GEO_LINES.lua").read_text(encoding="utf-8")
     assert f"#data.MPD.THREAT_PTS >= {viper.max_threats}" in threats
     assert f"#data.MPD.GEO_LINES > {viper.max_line_points - 1}" in lines
+
+
+def _crewed(game: Any, *seats: tuple[str, int]) -> None:
+    game.blue.ato.packages = [
+        SimpleNamespace(
+            flights=[
+                SimpleNamespace(
+                    client_count=count,
+                    unit_type=SimpleNamespace(
+                        dcs_unit_type=SimpleNamespace(id=aircraft)
+                    ),
+                )
+                for aircraft, count in seats
+            ]
+        )
+    ]
+
+
+def test_the_mission_carries_its_own_cartridges(
+    always_shown: None, tmp_path: Path
+) -> None:
+    """DCS 2.9.29 draws no rings at all without one, and a cartridge the player has
+    to go and load is an errand rather than a feature."""
+    import zipfile
+
+    mission = tmp_path / "retribution_nextturn.miz"
+    with zipfile.ZipFile(mission, "w") as archive:
+        archive.writestr("mission", "-- a mission")
+    game = _game(_sam("HIPPO", 23, "SNR_75V"))
+    _crewed(game, ("FA-18C_hornet", 2), ("F-16C_50", 1))
+
+    written = dtc.write_into_mission(game, mission)
+
+    assert written == [
+        "DTC/retribution_nextturn F-16C_50.dtc",
+        "DTC/retribution_nextturn FA-18C_hornet.dtc",
+        "DTC/retribution_nextturn.dtc",
+    ]
+    with zipfile.ZipFile(mission) as archive:
+        assert "mission" in archive.namelist()
+        card = json.loads(archive.read("DTC/retribution_nextturn.dtc").decode("utf-8"))
+    # The mission's own name goes to whoever has the most seats in it.
+    assert card["type"] == "FA-18C_hornet"
+
+
+def test_nothing_to_carry_leaves_the_mission_alone(tmp_path: Path) -> None:
+    import zipfile
+
+    mission = tmp_path / "retribution_nextturn.miz"
+    with zipfile.ZipFile(mission, "w") as archive:
+        archive.writestr("mission", "-- a mission")
+
+    assert dtc.write_into_mission(_game(), mission) == []
+
+    with zipfile.ZipFile(mission) as archive:
+        assert archive.namelist() == ["mission"]
+
+
+def test_the_mirror_is_said_rather_than_left_where_it_was() -> None:
+    """A cartridge silent about the mirror leaves it wherever the last one put it,
+    and mirroring hands the page back to DCS -- which has no ring for an HQ-9."""
+    hornet = dtc.HornetCartridge().sections([], [])
+    viper = dtc.ViperCartridge().sections([], [])
+
+    assert hornet["SA"]["mirror_MEZ_THRTS"] is False
+    assert viper["MPD"]["mirror_THREAT_PTS"] is False

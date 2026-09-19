@@ -1,15 +1,25 @@
 """The data cartridge the player loads in the cockpit.
 
 An aircraft's displays draw two things the campaign already knows: a ring round every
-threat it has been told about, and the forward line of own troops. Neither comes from
-the mission. ``hiddenOnMFD`` can take a contact off a display but it cannot put one
-on, so with nothing detected there is nothing to hide and the page stays empty. What
-puts them there is the **data transfer cartridge**: the .dtc file the DTC page of the
-rearm window loads.
+threat it has been told about, and the forward line of own troops.
 
-The file is JSON, it lives in ``Saved Games/DCS/DTC``, and a partial one is valid --
-DCS ships its own defaults as files with a single section -- so this writes only what
-it fills.
+Until DCS 2.9.29 the rings came from the mission: a unit not flagged ``hiddenOnMFD``
+appeared on the Hornet's SA page, statically, with no radar or datalink involved --
+ED said so when the feature shipped. 2.9.29 moved it behind the **data transfer
+cartridge**, and a mission with no cartridge loaded now draws nothing at all, however
+its units are flagged. That is the regression the forums reported, and it is why a
+campaign that wants rings has to write a cartridge.
+
+The file is JSON and a partial one is valid -- DCS ships its own defaults as files
+with a single section -- so this writes only what it fills. It goes two places: into
+a ``DTC`` folder inside the .miz, where the aircraft finds it without the player
+going to the DTC page for it, and into ``Saved Games/DCS/DTC``, where he can load it
+by hand.
+
+A cartridge can also MIRROR the mission's threats rather than list them, which is
+what makes the old behaviour come back. This lists them instead: the list is already
+filtered by the campaign's own MFD settings, and it has a ring for a system DCS's
+threat database has never heard of -- an HQ-9, a mod -- which a mirror would lose.
 
 Every module keeps that data somewhere different, under its own limits, so each is a
 :class:`Cartridge` of its own. The campaign works out the threats and the fronts once;
@@ -26,10 +36,11 @@ from __future__ import annotations
 
 import json
 import logging
+import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 from game.mfd import shows_on_mfd
 from game.missiongenerator.frontlineconflictdescription import (
@@ -128,6 +139,12 @@ class HornetCartridge(Cartridge):
     ) -> dict[str, Any]:
         return {
             "SA": {
+                # Off: the list below is the campaign's own, filtered by the MFD
+                # settings, and it has a ring for a system DCS's threat database has
+                # never heard of. Mirroring would hand the page back to DCS and lose
+                # both. Written rather than left out because a cartridge that says
+                # nothing about the mirror leaves it wherever the last one put it.
+                "mirror_MEZ_THRTS": False,
                 "MEZ_THRTS": [
                     {
                         "id": f"MEZ_THRTS_{number}",
@@ -228,6 +245,8 @@ class ViperCartridge(Cartridge):
                 )
         return {
             "MPD": {
+                "mirror_THREAT_PTS": False,
+                "mirror_GEO_LINES": False,
                 "THREAT_PTS": [
                     {
                         "number": number,
@@ -403,6 +422,68 @@ def player_aircraft(game: Game) -> set[str]:
             if flight.client_count > 0:
                 types.add(flight.unit_type.dcs_unit_type.id)
     return types & set(CARTRIDGES)
+
+
+def cartridges_for(game: Game) -> dict[str, dict[str, Any]]:
+    """Every cartridge this turn wants, keyed by the airframe it is for."""
+    name = f"Escalation {game.campaign_name or 'campaign'}"[:48]
+    return {
+        aircraft: cartridge(game, Player.BLUE, aircraft, name)
+        for aircraft in sorted(player_aircraft(game))
+    }
+
+
+def busiest_airframe(game: Game) -> Optional[str]:
+    """The one the most seats are in this turn, for the cartridge that gets the
+    mission's own name."""
+    seats: dict[str, int] = {}
+    for package in game.blue.ato.packages:
+        for flight in package.flights:
+            if flight.client_count <= 0:
+                continue
+            aircraft = flight.unit_type.dcs_unit_type.id
+            if aircraft in CARTRIDGES:
+                seats[aircraft] = seats.get(aircraft, 0) + flight.client_count
+    if not seats:
+        return None
+    return max(sorted(seats), key=lambda aircraft: seats[aircraft])
+
+
+def write_into_mission(game: Game, mission: Path) -> list[str]:
+    """Put the cartridges inside the .miz, where the aircraft finds them itself.
+
+    DCS 2.9.29 moved the SA page's threat display behind a cartridge: a mission with
+    nothing loaded draws no rings at all, however its units are flagged. A cartridge
+    carried in the mission is loaded without the player going to the DTC page for it,
+    which is the difference between a feature and an errand.
+
+    The entry goes in a ``DTC`` folder inside the .miz and nothing in the mission Lua
+    points at it. One is named for the mission itself, which is the shape a working
+    example uses, and it is given to whichever airframe has the most seats in it this
+    turn; the rest are named for their aircraft beside it. Belt and braces, because
+    which of the two rules DCS actually follows is not written down anywhere and a
+    spare entry costs a few kilobytes.
+    """
+    cartridges = cartridges_for(game)
+    if not cartridges:
+        return []
+    busiest = busiest_airframe(game)
+    entries: dict[str, dict[str, Any]] = {
+        f"DTC/{mission.stem} {aircraft}.dtc": card
+        for aircraft, card in cartridges.items()
+    }
+    if busiest is not None:
+        entries[f"DTC/{mission.stem}.dtc"] = cartridges[busiest]
+
+    try:
+        with zipfile.ZipFile(mission, "a", zipfile.ZIP_DEFLATED) as archive:
+            for path, card in entries.items():
+                archive.writestr(path, json.dumps(card, indent=1))
+    except OSError:
+        logging.exception("Could not put the cartridges in %s", mission)
+        return []
+    logging.info("Put %d cartridge(s) in %s", len(entries), mission.name)
+    return sorted(entries)
 
 
 def write_cartridges(game: Game, into: Path) -> list[Path]:

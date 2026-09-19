@@ -1,7 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[Mission Generator]** The cockpit displays get their threat rings and their front line. They come from the aircraft's data cartridge rather than from the mission, so Escalation writes a .dtc file per player airframe that can carry them -- the Hornet on its SA page, the Viper on its MPD -- with the enemy air defence the MFD settings allow and the fronts; load it from the DTC page of the rearm window. New setting under MFD, on by default.
+* **[Mission Generator]** The cockpit displays get their threat rings and their front line back. DCS 2.9.29 moved them behind the aircraft's data cartridge, so a mission with none loaded draws nothing however its units are flagged; Escalation writes one per player airframe that can carry them -- the Hornet family on the SA page, the Viper on its MPD -- with the enemy air defence the MFD settings allow and the fronts. It rides inside the mission, so the aircraft finds it without a trip to the DTC page, and a copy goes to Saved Games/DCS/DTC to load by hand. New setting under MFD, on by default.
 * **[Aircraft]** The C-130J-30 can be tasked with Strike, BAI, OCA/Aircraft, CAS and Armed Recon, for the MOAB it carries as cargo.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.

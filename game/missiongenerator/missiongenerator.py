@@ -174,6 +174,13 @@ class MissionGenerator:
         output.parent.mkdir(parents=True, exist_ok=True)
         self.mission.save(output)
 
+        # The cartridges go inside the .miz, so the aircraft finds them without the
+        # player going to the DTC page for them.
+        if self.game.settings.dtc_cartridge:
+            from game.missiongenerator.dtc import write_into_mission
+
+            write_into_mission(self.game, output)
+
         return self.unit_map
 
     def setup_mission_coalitions(self) -> None:
