@@ -132,3 +132,31 @@ def test_the_hit_is_what_the_dialog_needs_to_navigate() -> None:
     assert isinstance(hit, SettingHit)
     assert hit.page in list(Settings.pages())
     assert hit.section in list(Settings.sections(hit.page))
+
+
+def test_a_setting_is_found_by_what_it_can_be_set_to() -> None:
+    """Fog of war is a value of the map visibility option and appears nowhere in its
+    label or its explanation, so nobody who remembered only the choice could find
+    the row."""
+    found = [hit.key for hit in search("fog of war")]
+
+    assert "map_coalition_visibility" in found
+
+
+def test_what_a_setting_is_called_still_beats_what_it_can_be_set_to() -> None:
+    labelled, valued = "", ""
+    for key, description in Settings.all_fields():
+        choices = getattr(description, "choices", None)
+        if not choices:
+            continue
+        for choice in choices:
+            word = choice.split()[0].lower()
+            if len(word) < 5 or word in description.text.lower():
+                continue
+            hits = search(word)
+            if len(hits) < 2:
+                continue
+            labelled, valued = hits[0].label, hits[-1].label
+            assert hits[0].score >= hits[-1].score
+            return
+    assert labelled == valued == "", "the premise: a value that is not in its label"
