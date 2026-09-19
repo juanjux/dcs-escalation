@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 from functools import partial
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter, QPixmap
@@ -169,7 +169,14 @@ class BuildingCard(QWidget):
         button = self._repair_button(building)
         if button is not None:
             row.add(button)
-        row.add(CoordinateLabel(building.position, self.settings, compact=True))
+        row.add(
+            CoordinateLabel(
+                building.position,
+                self.settings,
+                compact=True,
+                game=_game_of(self.ground_object),
+            )
+        )
         return row
 
     @staticmethod
@@ -207,3 +214,17 @@ class BuildingCard(QWidget):
             f"${price:g}M",
             handler=partial(self.repair, building, price),
         )
+
+
+def _game_of(ground_object: Any) -> Any:
+    """The campaign this objective belongs to, for the coordinate menu.
+
+    Reached through the objective rather than passed in: the card is built from a
+    handful of call sites that have one and no game, and a coordinate row that can
+    write a point down needs to know which flights the player is in.
+    """
+    return getattr(
+        getattr(getattr(ground_object, "control_point", None), "coalition", None),
+        "game",
+        None,
+    )
