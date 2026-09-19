@@ -20,6 +20,13 @@ class Theater:
 
     def __init__(self) -> None:
         self.landmap = "the map, which no save carries"
+        #: Settling fills every base's motorpool, which needs somewhere to look.
+        self.controlpoints: list[object] = []
+
+
+class MotorpoolSettings:
+    motorpool_spawn_cap = 10
+    motorpool_enabled = True
 
 
 class Ato:
@@ -43,6 +50,7 @@ class Campaign:
         self.theater = Theater()
         self.blue = Coalition()
         self.red = Coalition()
+        self.settings = MotorpoolSettings()
         self.turn = 1
         self.budget = 1000
 
@@ -136,3 +144,32 @@ def test_the_campaign_is_settled_before_it_is_fingerprinted(monkeypatch: Any) ->
     persistency.remember_saved_state(campaign)  # type: ignore[arg-type]
 
     assert settled == [campaign]
+
+
+def test_settling_fills_the_motorpools_the_map_would_have_filled() -> None:
+    """A base's undeployed armour is not in the save; the map puts it there.
+
+    Before this, loading a campaign and only looking at it left it different from its
+    own save file, so closing asked whether to save something nobody had touched.
+    """
+    from game import persistency as under_test
+
+    filled: list[object] = []
+
+    class Populator:
+        def __init__(self, game: Any) -> None:
+            self.game = game
+
+        def populate_control_points(self, control_points: Any) -> None:
+            filled.append(control_points)
+
+    import game.missiongenerator.motorpoolpopulator as motorpool
+
+    original = motorpool.MotorpoolPopulator
+    motorpool.MotorpoolPopulator = Populator  # type: ignore[assignment,misc]
+    try:
+        under_test.settle(Campaign())  # type: ignore[arg-type]
+    finally:
+        motorpool.MotorpoolPopulator = original  # type: ignore[misc]
+
+    assert filled == [[]]
