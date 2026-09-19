@@ -38,8 +38,13 @@ class ReceiverJs(BaseModel):
     """One aircraft the player is flying, and what it will still take."""
 
     id: UUID
+    #: What to call this flight in a list. A flight has no callsign until the mission
+    #: is generated -- what the rest of the app shows is the name the player gave it,
+    #: and most flights have none -- so an unnamed one is called after its task.
     callsign: str
     aircraft: str
+    #: Where it leaves from, to tell two flights of the same task and jet apart.
+    departure: str
     #: The kinds this airframe is offered, in the order it wants them.
     kinds: list[str]
     #: How many more of each kind it has room for, keyed by kind.
@@ -70,8 +75,9 @@ def _describe(game: Game, flight: object) -> ReceiverJs:
     chosen = getattr(game.settings, "coordinate_format", None)
     return ReceiverJs(
         id=flight.id,
-        callsign=str(flight.callsign),
+        callsign=flight.custom_name or str(flight.flight_type.value),
         aircraft=flight.unit_type.display_name,
+        departure=flight.departure.name,
         kinds=[kind.value for kind in kinds_for(aircraft)],
         room={kind.value: room_for(flight, kind) for kind in PointKind},
         points=[

@@ -15,6 +15,7 @@ interface Receiver {
   id: string;
   callsign: string;
   aircraft: string;
+  departure: string;
   kinds: string[];
   room: Record<string, number>;
 }
@@ -105,7 +106,11 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
     <div className="cp-save">
       <select value={receiver.id} onChange={(e) => setChosen(e.target.value)}>
         {receivers.map((one) => (
-          <option key={one.id} value={one.id}>
+          <option
+            key={one.id}
+            value={one.id}
+            title={`${one.callsign} · ${one.aircraft} · from ${one.departure}`}
+          >
             {one.callsign} · {one.aircraft}
           </option>
         ))}
