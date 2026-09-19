@@ -10,6 +10,7 @@
 * **[UI]** The F-16 application icon now has a blue/yellow Ukrainian flag background for better visibility at desktop and taskbar sizes.
 * **[UI]** The location dialog was redrawn.
 * **[UI]** Coordinates: the map has a GPS picker that reads any point on it.
+* **[FIX]** The JAMMING row of a jamming site's card said the bubble was up even when the site was dark.
 * **[FIX]** A GPS jamming site the network had switched off went on jamming: bombing the substation that feeds it took the ring off the map but left the bubble eating satellite-guided weapons in the mission.
 * **[Campaigns]** Gran Polvorin: the Ushuaia power station stands 26 nm further north, where its grid also reaches Rio Grande's SAM, AAA and GPS jamming site instead of leaving them unpowered. NEW game required.
 * **[Campaigns]** Gran Polvorin has an air defence network.
