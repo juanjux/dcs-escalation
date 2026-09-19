@@ -172,12 +172,12 @@ def test_the_mission_carries_its_own_cartridges(tmp_path: Path) -> None:
     assert written == [
         "DTC/retribution_nextturn F-16C_50.dtc",
         "DTC/retribution_nextturn FA-18C_hornet.dtc",
-        "DTC/retribution_nextturn.dtc",
     ]
     with zipfile.ZipFile(mission) as archive:
         assert "mission" in archive.namelist()
-        card = json.loads(archive.read("DTC/retribution_nextturn.dtc").decode("utf-8"))
-    # The mission's own name goes to whoever has the most seats in it.
+        card = json.loads(
+            archive.read("DTC/retribution_nextturn FA-18C_hornet.dtc").decode("utf-8")
+        )
     assert card["type"] == "FA-18C_hornet"
 
 
@@ -285,23 +285,27 @@ def test_the_sa_section_is_written_whole() -> None:
     }
 
 
-def test_the_one_in_the_mission_is_named_after_the_mission(tmp_path: Path) -> None:
-    """Which is what a cartridge that works carries. The copy for the DTC page keeps
-    the campaign's name, because that is the list it has to be findable in."""
+def test_a_cartridge_answers_to_exactly_one_name(tmp_path: Path) -> None:
+    """File name, the name inside it, and the name the unit asks for: one string.
+    Two cartridges answering to the same name is a coin toss nobody wrote down."""
     mission = tmp_path / "retribution_nextturn.miz"
     with zipfile.ZipFile(mission, "w") as archive:
         archive.writestr("mission", "-- a mission")
     game = _game()
     _crewed(game, ("FA-18C_hornet", 1))
 
-    dtc.write_into_mission(game, mission)
+    written = dtc.write_into_mission(game, mission)
     with zipfile.ZipFile(mission) as archive:
-        inside = json.loads(
-            archive.read("DTC/retribution_nextturn.dtc").decode("utf-8")
-        )
+        inside = json.loads(archive.read(written[0]).decode("utf-8"))
 
-    assert inside["name"] == "retribution_nextturn"
-    assert inside["data"]["name"] == "retribution_nextturn"
+    wanted = "retribution_nextturn FA-18C_hornet"
+    assert written == [f"DTC/{wanted}.dtc"]
+    assert inside["name"] == wanted
+    assert inside["data"]["name"] == wanted
+    # And it is the name a Hornet of that mission is sent looking for.
+    assert dtc.cartridge_name("retribution_nextturn", "FA-18C_hornet") == wanted
+    # The copy for the DTC page keeps the campaign's name: that is the list it has to
+    # be findable in.
     assert dtc.write_cartridges(game, tmp_path)[0].name.startswith("Escalation")
 
 
@@ -357,7 +361,8 @@ def test_only_a_crewed_aircraft_that_takes_one_is_bound() -> None:
     bound = dtc.bind_to_units(_mission(hornet, ai, hog), "retribution_nextturn")
 
     assert bound == 1
-    assert getattr(hornet, dtc.CARTRIDGE_ON_UNIT) == "retribution_nextturn"
+    hornets = "retribution_nextturn FA-18C_hornet"
+    assert getattr(hornet, dtc.CARTRIDGE_ON_UNIT) == hornets
     assert not hasattr(ai, dtc.CARTRIDGE_ON_UNIT)
     assert not hasattr(hog, dtc.CARTRIDGE_ON_UNIT)
 
