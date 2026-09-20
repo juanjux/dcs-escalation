@@ -50,6 +50,23 @@ def test_only_satellite_guided_weapons_are_degraded() -> None:
         assert not any(never in p for p in patterns), f"{never} is not GPS-guided"
 
 
+def test_a_weapon_somebody_flies_is_left_alone() -> None:
+    """The exclusion is a pilot in the loop, human or AI. The SLAM family's terminal
+    leg is TV flown onto the target by whoever launched it; degrading the navigation
+    of a weapon being steered by hand punishes the wrong thing."""
+    patterns = [p.upper() for p in GPS_GUIDED_WEAPON_PATTERNS]
+    for never in ("AGM-84E", "AGM-84H", "SLAM"):
+        assert not any(never in p for p in patterns), f"{never} is flown by its pilot"
+
+
+def test_an_automatic_terminal_seeker_is_no_excuse() -> None:
+    """A seeker that comes up on its own has to find the target by itself, and a
+    weapon already tens of miles off track is unlikely to have anything in its field
+    of view. The KD-20 is the case: BeiDou midcourse, automatic IIR terminal leg, and
+    an AI bomber carrying it."""
+    assert "KD_20" in GPS_GUIDED_WEAPON_PATTERNS
+
+
 def test_the_declared_jammers_carry_a_bubble() -> None:
     """The two DCS GPS spoofer vehicles are what the fork ships as jammers."""
     from game.dcs.groundunittype import GroundUnitType

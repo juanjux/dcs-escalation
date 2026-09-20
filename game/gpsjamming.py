@@ -53,11 +53,17 @@ if TYPE_CHECKING:
 #: it only becomes a laser weapon when someone is lasing, which the runtime
 #: cannot see. ``KAB-500S``/``KAB-1500S`` are the GLONASS Russian equivalents, so
 #: red eats its own medicine wherever blue fields a jammer.
-#: The SLAM/SLAM-ER family is deliberately ABSENT. Its GPS/INS leg is only the
-#: midcourse: the imaging seeker can be brought up far outside a jammer's reach --
-#: bubbles are around 15 nm -- so by the time the weapon is over denied ground it is
-#: already looking at the target and no longer navigating by satellite. Degrading it
-#: would punish a weapon that, flown properly, does not depend on GPS where it counts.
+#:
+#: **What earns an exclusion is a pilot in the loop**, human or AI. The SLAM/SLAM-ER
+#: family is deliberately ABSENT for that reason: its terminal leg is TV flown onto
+#: the target by whoever launched it, and degrading the navigation of a weapon
+#: somebody is steering by hand punishes the wrong thing.
+#:
+#: A terminal seeker that comes up on its own is NOT an exclusion. It has to find the
+#: target by itself, and a weapon already tens of miles off track is unlikely to have
+#: anything in its field of view when it looks -- which is the intended outcome, not
+#: a side effect. ``KD_20`` is here on that reading: BeiDou flies the midcourse, the
+#: IIR terminal leg is automatic, and nobody is flying it.
 GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
     "GBU-31",  # JDAM, 2000 lb
     "GBU-32",  # JDAM, 1000 lb
@@ -75,6 +81,7 @@ GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
     "KAB-500S",
     "KAB_1500S",
     "KAB-1500S",
+    "KD_20",  # BeiDou midcourse, automatic IIR terminal leg, AI-carried
 )
 
 #: The reach a jammer gets when its unit definition names none.
@@ -83,9 +90,12 @@ GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
 #: denied release area. A weapon aimed at anything inside the bubble flies
 #: through the bubble whatever range it was released from, so standing off does
 #: not help a covered target -- the radius is simply the size of the target set
-#: that loses satellite guidance. At 27-30 nm one site denied a large share of a
-#: medium map; 15 nm denies a target cluster, so a campaign can field two or
-#: three on distinct clusters and most of the theatre stays GPS-usable.
+#: that loses satellite guidance.
+#:
+#: This is only the fallback for a jammer whose unit definition names no reach. What
+#: a campaign actually gets is the ``defaultReachNm`` plugin option, which ships at
+#: 30 nm; 15 nm here denies a target cluster, so nothing silently grows a bubble it
+#: was never given.
 DEFAULT_REACH = nautical_miles(15)
 
 #: How far off the aimpoint a fully-jammed weapon lands when the unit definition
