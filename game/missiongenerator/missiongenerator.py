@@ -177,7 +177,7 @@ class MissionGenerator:
         if self.game.settings.dtc_cartridge:
             from game.missiongenerator.dtc import bind_to_units
 
-            bind_to_units(self.mission, output.stem)
+            bind_to_units(self.mission_data, output.stem)
 
         output.parent.mkdir(parents=True, exist_ok=True)
         self.mission.save(output)
@@ -193,7 +193,7 @@ class MissionGenerator:
         if self.game.settings.dtc_cartridge:
             from game.missiongenerator.dtc import write_into_mission
 
-            write_into_mission(self.game, output)
+            write_into_mission(self.game, self.mission_data, output)
 
         return self.unit_map
 
