@@ -1,7 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[UI]** New window, *My aircraft*: what the player is flying this turn and the points saved for each one.
+* **[UI]** New window, *My aircraft*: what the player is flying this turn and the points saved for each one, which can also be typed or pasted in by hand.
 * **[Mission Plugins]** GPS jamming also covers the SDB, the CALCM, JASSM, GMLRS, GLSDB, ATACMS and the Shahed-136. Cruise missiles with a terrain database of their own, such as the Tomahawk, and anti-ship missiles stay out.
 * **[Aircraft]** The CJS tanker Super Hornets get a data cartridge like the E and the F.
 * **[Mission Generator]** Saved waypoints are written into the aircraft, after the flight plan and outside its route sequence.
@@ -166,6 +166,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** Saving a point no longer offers a kind the aircraft cannot be given.
 * **[FIX]** GPS jamming degraded nothing: its weapon list was spelled with hyphens (`GBU-31`) and DCS names weapons with underscores (`GBU_31`).
 * **[FIX]** The Harpoon's stand-off range was 67 nm, the real missile's; DCS flies it 97.
 * **[FIX]** A site added to a campaign in progress now joins its IADS network.

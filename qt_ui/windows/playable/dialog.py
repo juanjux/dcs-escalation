@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListView,
     QMenu,
     QPushButton,
@@ -33,7 +34,7 @@ from PySide6.QtWidgets import (
 
 from game.ato.savedpoints import PointKind, remove_point
 from qt_ui.widgets.cards import CAPTION, CARD_BG, CARD_BORDER, card
-from qt_ui.widgets.controls import mono, style_button
+from qt_ui.widgets.controls import mono, style_button, styled_input
 from qt_ui.windows.playable import model as data
 from qt_ui.windows.playable.rows import (
     AircraftDelegate,
@@ -153,6 +154,99 @@ class Headline(QWidget):
             self.figures.addSpacing(28)
 
 
+class NewPoint(QDialog):
+    """A position typed in, or pasted from wherever the player read it.
+
+    Any of the formats the campaign writes is accepted, and which one it is comes
+    from the shape of what was typed: what is on the clipboard did not necessarily
+    come from this campaign. Nothing is saved until it reads as a position, and the
+    line under the field says what it read.
+    """
+
+    def __init__(self, aircraft: data.Aircraft, parent: Optional[QWidget]) -> None:
+        super().__init__(parent)
+        self.aircraft = aircraft
+        self.latlng: Any = None
+        self.setWindowTitle("Add a point")
+        self.setMinimumWidth(420)
+        self.setStyleSheet("QDialog { background: #202B36; }")
+
+        self.position = styled_input(QLineEdit())
+        self.position.setPlaceholderText("S53°47.220' W067°44.890'")
+        self.name = styled_input(QLineEdit())
+        self.name.setMaxLength(data.NAME_LENGTH)
+        self.name.setPlaceholderText("Optional")
+        self.read = _label("", f"font-size: 11px; color: {QUIET_INK};")
+        self.save = style_button(QPushButton("Save"), "primary")
+        self.save.setEnabled(False)
+        cancel = style_button(QPushButton("Cancel"), "normal")
+
+        form = QVBoxLayout()
+        form.setContentsMargins(16, 16, 16, 12)
+        form.setSpacing(6)
+        form.addWidget(
+            _label("Position", f"font-size: 11px; font-weight: bold; color: {CAPTION};")
+        )
+        form.addWidget(self.position)
+        form.addWidget(self.read)
+        form.addSpacing(6)
+        form.addWidget(
+            _label("Name", f"font-size: 11px; font-weight: bold; color: {CAPTION};")
+        )
+        form.addWidget(self.name)
+        form.addSpacing(10)
+        buttons = QHBoxLayout()
+        buttons.addStretch()
+        buttons.addWidget(cancel)
+        buttons.addWidget(self.save)
+        form.addLayout(buttons)
+        self.setLayout(form)
+
+        self.position.textChanged.connect(self._reread)
+        self.position.returnPressed.connect(
+            lambda: self.save.isEnabled() and self.accept()
+        )
+        self.name.returnPressed.connect(lambda: self.save.isEnabled() and self.accept())
+        self.save.clicked.connect(self.accept)
+        cancel.clicked.connect(self.reject)
+        self._paste_what_is_on_the_clipboard()
+
+    def _paste_what_is_on_the_clipboard(self) -> None:
+        """A position on the clipboard is almost certainly what the button was for."""
+        clipboard = QApplication.clipboard()
+        text = clipboard.text() if clipboard is not None else ""
+        from game.coordinates import parse_latlng
+
+        if text and parse_latlng(text) is not None:
+            self.position.setText(text.strip())
+        self.position.selectAll()
+
+    def _reread(self) -> None:
+        from game.coordinates import CoordinateFormat, format_latlng, parse_latlng
+
+        text = self.position.text().strip()
+        self.latlng = parse_latlng(text) if text else None
+        self.save.setEnabled(self.latlng is not None)
+        if not text:
+            self.read.setText("Degrees, decimal minutes, seconds or MGRS")
+            colour = QUIET_INK
+        elif self.latlng is None:
+            self.read.setText("Not a position this can read")
+            colour = DANGER_TEXT
+        else:
+            self.read.setText(
+                "Read as "
+                + format_latlng(self.latlng, CoordinateFormat.DD)
+                + "  ·  "
+                + format_latlng(self.latlng, CoordinateFormat.MGRS)
+            )
+            colour = QUIET_INK
+        self.read.setStyleSheet(
+            f"font-size: 11px; color: {colour};"
+            " background: transparent; border: none;"
+        )
+
+
 class PlayableAircraftDialog(QDialog):
     """The window. Non-modal, so showing a point on the map does not close it."""
 
@@ -161,7 +255,7 @@ class PlayableAircraftDialog(QDialog):
         self.game_model = game_model
         self.clipboard = data.Clipboard()
         self.setWindowTitle("Playable aircraft")
-        self.setMinimumSize(920, 600)
+        self.setMinimumSize(1120, 640)
         self.setWindowFlag(Qt.WindowType.Tool, True)
         self.setStyleSheet(f"QDialog {{ background: #202B36; }}")
 
@@ -170,6 +264,8 @@ class PlayableAircraftDialog(QDialog):
         self.aircraft_view = self._aircraft_list()
         self.points_model = PointsModel()
         self.points_view = self._points_list()
+        self.add = style_button(QPushButton("Add"), "normal")
+        self.add.setToolTip("Type or paste a position")
         self.copy_all = style_button(QPushButton("Copy all"), "normal")
         self.paste = style_button(QPushButton("Paste"), "normal")
         self.status = _label("", f"font-size: 11px; color: {QUIET_INK};")
@@ -221,7 +317,7 @@ class PlayableAircraftDialog(QDialog):
 
     def _build(self) -> None:
         left, _ = _captioned("Aircraft", self.aircraft_view)
-        left.setMinimumWidth(400)
+        left.setMinimumWidth(460)
 
         toolbar = QWidget()
         toolbar.setFixedHeight(40)
@@ -229,6 +325,7 @@ class PlayableAircraftDialog(QDialog):
         bar = QHBoxLayout()
         bar.setContentsMargins(10, 0, 10, 0)
         bar.setSpacing(8)
+        bar.addWidget(self.add)
         bar.addWidget(self.copy_all)
         bar.addWidget(self.paste)
         bar.addWidget(self.status)
@@ -270,8 +367,8 @@ class PlayableAircraftDialog(QDialog):
         layout.addWidget(body, 1)
         layout.addWidget(
             _label(
-                "Points are written from the map — right-click a unit or any spot."
-                " This window edits them, it does not create them.",
+                "GPS Points can also be added from the map by clicking on any unit"
+                " or empty spot.",
                 f"font-size: 11px; color: {FAINT_INK}; padding: 6px 12px 10px;",
             )
         )
@@ -281,12 +378,13 @@ class PlayableAircraftDialog(QDialog):
         self.aircraft_view.selectionModel().currentChanged.connect(
             lambda *_: self.show_points()
         )
+        self.add.clicked.connect(self.add_by_hand)
         self.copy_all.clicked.connect(self.copy_everything)
         self.paste.clicked.connect(self.paste_everything)
         self.points_view.customContextMenuRequested.connect(self.point_menu_at)
-        self.points_view.doubleClicked.connect(lambda index: self.show_on_map(index))
+        self.points_view.doubleClicked.connect(self.rename_at)
         for key, handler in (
-            ("Return", lambda: self.show_on_map(self.points_view.currentIndex())),
+            ("Return", self.show_current_on_map),
             ("Ctrl+C", self.copy_coordinates),
             ("F2", self.rename_current),
             ("Del", self.delete_current),
@@ -385,6 +483,33 @@ class PlayableAircraftDialog(QDialog):
 
     # ---------------------------------------------------------------- actions
 
+    def add_by_hand(self) -> None:
+        """A point the player has as a number rather than as a spot on the map."""
+        one = self.selected
+        game = self.game
+        if one is None or game is None:
+            return
+        asked = NewPoint(one, self)
+        if asked.exec() != QDialog.DialogCode.Accepted or asked.latlng is None:
+            return
+        from dcs.mapping import Point
+
+        from game.ato.savedpoints import SavedPoint, add_point, kinds_for
+
+        kinds = kinds_for(one.dcs_id)
+        where = Point.from_latlng(asked.latlng, game.theater.terrain)
+        add_point(
+            one.flight,
+            SavedPoint(
+                kind=kinds[0] if kinds else PointKind.WAYPOINT,
+                name=asked.name.text().strip() or "Point",
+                x=where.x,
+                y=where.y,
+            ),
+        )
+        self.show_points()
+        self.aircraft_model.layoutChanged.emit()
+
     def copy_everything(self) -> None:
         one = self.selected
         if one is None:
@@ -421,18 +546,36 @@ class PlayableAircraftDialog(QDialog):
         EventStream.put_nowait(GameUpdateEvents().look_at(where.latlng(), POINT_ZOOM))
 
     def copy_coordinates(self) -> None:
+        """To Windows, and to the window's own clipboard.
+
+        Copying one point and finding Paste still greyed out is the control saying it
+        did nothing. One point is a copy of one point.
+        """
         row = self.current_point()
-        if row is None:
+        one = self.selected
+        if row is None or one is None:
             return
         clipboard = QApplication.clipboard()
         if clipboard is not None:
             clipboard.setText(self.points_model.coordinates_of(row.point))
+        self.clipboard.take_one(row.point, one.title)
+        self._restate()
 
     def rename_current(self) -> None:
-        index = self.points_view.currentIndex()
+        self.rename_at(self.points_view.currentIndex())
+
+    def rename_at(self, index: QModelIndex) -> None:
         row = self.points_model.at(index)
         if row is not None and not row.is_header:
+            self.points_view.setCurrentIndex(index)
             self.points_view.edit(index)
+
+    def show_current_on_map(self) -> None:
+        """Return shows the point -- unless an editor has it, which is where Return
+        means "I have finished typing"."""
+        if self.points_view.state() == QAbstractItemView.State.EditingState:
+            return
+        self.show_on_map(self.points_view.currentIndex())
 
     def delete_current(self) -> None:
         row = self.current_point()
@@ -485,8 +628,19 @@ class PlayableAircraftDialog(QDialog):
         if one is None or not one.assigned:
             return
         top = self.aircraft_view.visualRect(index).top()
-        if self.aircraft_delegate.link_at(index.row(), position, top):
+        link = self.aircraft_delegate.clicked_link(index.row(), position, top)
+        if link == "squadron":
+            self.open_air_wing()
+        elif link == "package":
             self.open_package(one)
+
+    def open_air_wing(self) -> None:
+        from qt_ui.dialogs import open_once
+        from qt_ui.windows.AirWingDialog import AirWingDialog
+
+        self._air_wing = open_once(
+            "air-wing", lambda: AirWingDialog(self.game_model, self.window())
+        )
 
     def _point_clicked(self, event: Any) -> None:
         position = event.position().toPoint()

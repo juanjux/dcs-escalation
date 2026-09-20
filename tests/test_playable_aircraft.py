@@ -233,3 +233,42 @@ def test_an_empty_clipboard_fits_nowhere() -> None:
 
     assert clipboard.empty is True
     assert clipboard.fits(data.Aircraft(_flight())) == 0
+
+
+# ------------------------------------------------- what the row links out to
+
+
+def test_the_package_reads_as_what_it_is_doing_to_what_and_when() -> None:
+    package = SimpleNamespace(target=SimpleNamespace(name="ECHIDNA"))
+    one = data.Aircraft(_flight(package=package))
+
+    assert one.package_summary == "SEAD ECHIDNA 09:20"
+
+
+def test_an_aircraft_between_assignments_has_no_package_to_summarise() -> None:
+    assert data.Aircraft(_flight(package=None)).package_summary == ""
+
+
+# ----------------------------------------------- copying one point, not all
+
+
+def test_copying_one_point_is_a_copy() -> None:
+    """Copying a point and finding Paste still greyed out is the control saying it
+    did nothing."""
+    source = data.Aircraft(_flight(points=[_point(name="A"), _point(name="B")]))
+    clipboard = data.Clipboard()
+
+    clipboard.take_one(source.points[1], source.title)
+
+    assert clipboard.empty is False
+    assert [point.name for point in clipboard.points] == ["B"]
+
+
+def test_the_one_copied_point_is_a_copy_too() -> None:
+    source = data.Aircraft(_flight(points=[_point(name="SMOKE")]))
+    clipboard = data.Clipboard()
+
+    clipboard.take_one(source.points[0], source.title)
+    clipboard.points[0].name = "CHANGED"
+
+    assert source.points[0].name == "SMOKE"

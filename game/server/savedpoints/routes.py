@@ -15,7 +15,6 @@ from game.ato.savedpoints import (
     add_point,
     kinds_for,
     points_of,
-    reaches_the_aircraft,
     receivers,
     remove_point,
     room_for,
@@ -46,14 +45,12 @@ class ReceiverJs(BaseModel):
     aircraft: str
     #: Where it leaves from, to tell two flights of the same task and jet apart.
     departure: str
-    #: The kinds this airframe is offered, in the order it wants them.
+    #: The kinds this airframe can be handed, in the order it wants them. A kind it
+    #: cannot be given is not in the list: the control does not offer it rather than
+    #: offering it and then explaining itself.
     kinds: list[str]
     #: How many more of each kind it has room for, keyed by kind.
     room: dict[str, int]
-    #: Whether the airframe itself carries that kind. A kind it does not carry is
-    #: still saved -- the kneeboard takes both -- so this is what to say, not what to
-    #: refuse.
-    into_aircraft: dict[str, bool]
     points: list[SavedPointJs]
 
 
@@ -85,9 +82,6 @@ def _describe(game: Game, flight: object) -> ReceiverJs:
         departure=flight.departure.name,
         kinds=[kind.value for kind in kinds_for(aircraft)],
         room={kind.value: room_for(flight, kind) for kind in PointKind},
-        into_aircraft={
-            kind.value: reaches_the_aircraft(aircraft, kind) for kind in PointKind
-        },
         points=[
             SavedPointJs(
                 kind=point.kind.value,

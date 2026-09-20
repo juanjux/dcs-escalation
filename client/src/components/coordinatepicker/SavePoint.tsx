@@ -4,13 +4,11 @@
 // one aircraft rather than into the plan everybody else flies. Only aircraft somebody
 // is actually sitting in are offered: an AI has nobody in it to read a point.
 //
-// Which kinds an airframe is offered, how many more of each it will take, and which of
-// them the airframe itself carries are the server's answer -- they come off the
-// aircraft's own limits -- so this asks rather than deciding.
-//
-// A kind the aircraft does not carry is still saved: the kneeboard takes both. It asks
-// first, because a markpoint the player expects in the cockpit and never finds there is
-// worse than one question.
+// Which kinds an airframe can be handed and how many more of each it will take are the
+// server's answer -- they come off the aircraft's own limits -- so this asks rather
+// than deciding. A kind the aircraft cannot be given is not offered at all: a button
+// that saves a markpoint and then explains that the markpoint will never reach the
+// cockpit is a question nobody should have been asked.
 import { HTTP_URL } from "../../api/backend";
 import { LatLng } from "leaflet";
 import { useEffect, useState } from "react";
@@ -22,7 +20,6 @@ interface Receiver {
   departure: string;
   kinds: string[];
   room: Record<string, number>;
-  into_aircraft: Record<string, boolean>;
 }
 
 const LABEL: Record<string, string> = {
@@ -30,25 +27,10 @@ const LABEL: Record<string, string> = {
   markpoint: "markpoint",
 };
 
-// The kind the aircraft does carry, when the one asked for is not it.
-export function insteadOf(
-  receiver: Receiver,
-  kind: string,
-): string | undefined {
-  if (receiver.into_aircraft?.[kind]) {
-    return undefined;
-  }
-  const other = kind === "markpoint" ? "waypoint" : "markpoint";
-  return receiver.into_aircraft?.[other] ? other : undefined;
-}
-
 export default function SavePoint(props: { at: LatLng; name: string }) {
   const [receivers, setReceivers] = useState<Receiver[] | null>(null);
   const [chosen, setChosen] = useState<string>("");
   const [said, setSaid] = useState<string>("");
-  const [asking, setAsking] = useState<{ kind: string; other: string } | null>(
-    null,
-  );
 
   useEffect(() => {
     let dropped = false;
@@ -136,7 +118,7 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
         ))}
       </select>
       <div className="cp-save-buttons">
-        {receiver.kinds.map((kind) => {
+        {(receiver.kinds ?? []).map((kind) => {
           const room = receiver.room[kind] ?? 0;
           return (
             <button
@@ -148,13 +130,8 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
                   : `${receiver.callsign} has no room for another`
               }
               onClick={() => {
-                const other = insteadOf(receiver, kind);
                 setSaid("");
-                if (other === undefined) {
-                  save(kind);
-                } else {
-                  setAsking({ kind: kind, other: other });
-                }
+                save(kind);
               }}
             >
               Save as {LABEL[kind] ?? kind}
@@ -162,34 +139,6 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
           );
         })}
       </div>
-      {asking !== null && (
-        <div className="cp-save-asking">
-          <div>
-            The {receiver.aircraft} cannot be given {LABEL[asking.kind]}s. As a{" "}
-            {LABEL[asking.other]} it goes into the aircraft; as a{" "}
-            {LABEL[asking.kind]} it goes on the kneeboard only.
-          </div>
-          <div className="cp-save-buttons">
-            <button
-              onClick={() => {
-                setAsking(null);
-                save(asking.other);
-              }}
-            >
-              Save as {LABEL[asking.other]}
-            </button>
-            <button
-              onClick={() => {
-                setAsking(null);
-                save(asking.kind);
-              }}
-            >
-              Save as {LABEL[asking.kind]} (kneeboard only!)
-            </button>
-            <button onClick={() => setAsking(null)}>Cancel</button>
-          </div>
-        </div>
-      )}
       {said !== "" && <div className="cp-save-said">{said}</div>}
     </div>
   );
