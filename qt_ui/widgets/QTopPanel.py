@@ -84,6 +84,7 @@ class QTopPanel(QFrame):
         # One reference each: they used to share a single `self.dialog`, so opening
         # one dropped the only reference the other had.
         self.air_wing_dialog: Optional[QDialog] = None
+        self.playable_dialog: Optional[QDialog] = None
         self.transfers_dialog: Optional[QDialog] = None
 
         # One strip instead of six group boxes. See qt_ui/widgets/commandbar.py for
@@ -130,6 +131,14 @@ class QTopPanel(QFrame):
         style_button(self.air_wing)
         self.air_wing.clicked.connect(self.open_air_wing)
 
+        self.playable = QPushButton("My aircraft")
+        self.playable.setDisabled(True)
+        style_button(self.playable)
+        self.playable.setToolTip(
+            "What the player is flying this turn, and the points saved for each one"
+        )
+        self.playable.clicked.connect(self.open_playable_aircraft)
+
         self.transfers = QPushButton("Transfers")
         self.transfers.setDisabled(True)
         style_button(self.transfers)
@@ -174,6 +183,7 @@ class QTopPanel(QFrame):
 
         self.controls = [
             self.air_wing,
+            self.playable,
             self.transfers,
             self.passTurnButton,
             self.proceedButton,
@@ -181,6 +191,7 @@ class QTopPanel(QFrame):
 
         for button in (
             self.air_wing,
+            self.playable,
             self.transfers,
             self.debriefing,
             self.ai_status_button,
@@ -217,7 +228,7 @@ class QTopPanel(QFrame):
         dialogs = QHBoxLayout()
         dialogs.setContentsMargins(0, 0, 0, 0)
         dialogs.setSpacing(8)
-        for widget in (self.air_wing, self.transfers, self.debriefing):
+        for widget in (self.air_wing, self.playable, self.transfers, self.debriefing):
             dialogs.addWidget(widget)
         dialogs.addWidget(self.ai_status_button)
         self.layout.addLayout(dialogs)
@@ -275,6 +286,7 @@ class QTopPanel(QFrame):
             return
 
         self.air_wing.setEnabled(True)
+        self.playable.setEnabled(True)
         self.transfers.setEnabled(True)
         self.refresh_debriefing_button()
 
@@ -314,6 +326,14 @@ class QTopPanel(QFrame):
     def open_air_wing(self) -> None:
         self.air_wing_dialog = open_once(
             "air-wing", lambda: AirWingDialog(self.game_model, self.window())
+        )
+
+    def open_playable_aircraft(self) -> None:
+        from qt_ui.windows.playable import PlayableAircraftDialog
+
+        self.playable_dialog = open_once(
+            "playable-aircraft",
+            lambda: PlayableAircraftDialog(self.game_model, self.window()),
         )
 
     def open_transfers(self) -> None:

@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** New window, *My aircraft*: what the player is flying this turn and the points saved for each one.
 * **[Mission Plugins]** GPS jamming also covers the SDB, the CALCM, JASSM, GMLRS, GLSDB, ATACMS and the Shahed-136. Cruise missiles with a terrain database of their own, such as the Tomahawk, and anti-ship missiles stay out.
 * **[Aircraft]** The CJS tanker Super Hornets get a data cartridge like the E and the F.
 * **[Mission Generator]** Saved waypoints are written into the aircraft, after the flight plan and outside its route sequence.
