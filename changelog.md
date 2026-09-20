@@ -3,6 +3,8 @@
 ## Features/Improvements
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
+* **[UI]** Points read from the map can be saved to a player aircraft as waypoints or markpoints, on a kneeboard page of their own.
+* **[Mission Generator]** Threat rings and the front line are written to the player aircraft's data cartridge. New setting under MFD, on by default.
 * **[Mission Generator]** The cockpit displays only show the enemy air defence the campaign settings allow.
 * **[UI]** The buy / replace dialog of a location was redrawn.
 * **[UI]** The F-16 application icon now has a blue/yellow Ukrainian flag background for better visibility at desktop and taskbar sizes.
