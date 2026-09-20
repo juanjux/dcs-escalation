@@ -10,6 +10,7 @@ from typing import Any, Optional
 
 from PySide6.QtCore import (
     QAbstractListModel,
+    QAbstractTableModel,
     QModelIndex,
     QObject,
     QPoint,
@@ -74,6 +75,8 @@ GROUP_ROW = 26
 BANNER = QSize(91, 24)
 TEXT_LEFT = 116
 MENU_BUTTON = 18
+#: How much of the name column the glyph and its margin take.
+GLYPH_WIDTH = 28
 
 
 def _font(size: int, weight: QFont.Weight = QFont.Weight.Normal) -> QFont:
@@ -405,6 +408,12 @@ class AircraftDelegate(QStyledItemDelegate):
 
 # ----------------------------------------------------------------- the points
 
+#: The columns, which the player can widen. A coordinate string is longer in some
+#: formats than in others and cutting it makes the number unreadable, so this is a
+#: table with a header rather than a list drawn to fixed positions.
+NAME, POSITION, ELEVATION, ACTIONS = range(4)
+COLUMN_NAMES = ("Point", "Position", "Elev", "")
+
 
 class PointRow:
     """One line of the points pane: a group header or a point."""
@@ -416,19 +425,22 @@ class PointRow:
         point: Optional[Any] = None,
         used: int = 0,
         maximum: int = 0,
+        number: int = 0,
     ) -> None:
         self.kind = kind
         self.index = index
         self.point = point
         self.used = used
         self.maximum = maximum
+        #: Its place among its own kind, which is what the cockpit shows.
+        self.number = number
 
     @property
     def is_header(self) -> bool:
         return self.point is None
 
 
-class PointsModel(QAbstractListModel):
+class PointsModel(QAbstractTableModel):
     """One aircraft's points, grouped by kind."""
 
     def __init__(self) -> None:
@@ -448,8 +460,10 @@ class PointsModel(QAbstractListModel):
                 self._rows.append(
                     PointRow(kind, used=len(held), maximum=aircraft.maximum(kind))
                 )
-                for index, point in held:
-                    self._rows.append(PointRow(kind, index=index, point=point))
+                for number, (index, point) in enumerate(held, start=1):
+                    self._rows.append(
+                        PointRow(kind, index=index, point=point, number=number)
+                    )
         self.endResetModel()
 
     @property
@@ -459,8 +473,14 @@ class PointsModel(QAbstractListModel):
     def coordinates_of(self, point: Any) -> str:
         return self._format(point) if self._format is not None else ""
 
+    def header_rows(self) -> list[int]:
+        return [row for row, entry in enumerate(self._rows) if entry.is_header]
+
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return 0 if parent.isValid() else len(self._rows)
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return len(COLUMN_NAMES)
 
     def at(self, index: QModelIndex) -> Optional[PointRow]:
         row = index.row()
@@ -468,39 +488,110 @@ class PointsModel(QAbstractListModel):
             return self._rows[row]
         return None
 
+    def headerData(
+        self,
+        section: int,
+        orientation: Qt.Orientation,
+        role: int = Qt.ItemDataRole.DisplayRole,
+    ) -> Any:
+        if orientation is not Qt.Orientation.Horizontal:
+            return None
+        if role == Qt.ItemDataRole.DisplayRole:
+            return COLUMN_NAMES[section]
+        return None
+
+    def _header_text(self, row: PointRow) -> str:
+        # A kind the aircraft cannot be given says so rather than reading "2 / 0".
+        count = (
+            f"{row.used} / {row.maximum}"
+            if row.maximum
+            else f"{row.used} · kneeboard only"
+        )
+        return f"{row.kind.label.upper()}S     {count}"
+
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
         row = self.at(index)
         if row is None:
             return None
+        column = index.column()
         if role == Qt.ItemDataRole.UserRole:
             return row
-        if role == Qt.ItemDataRole.DisplayRole:
-            return "" if row.is_header else row.point.name
-        if role == Qt.ItemDataRole.EditRole:
-            return "" if row.is_header else row.point.name
+
+        if row.is_header:
+            if role == Qt.ItemDataRole.DisplayRole and column == NAME:
+                return self._header_text(row)
+            if role == Qt.ItemDataRole.ForegroundRole:
+                return QColor(kind_colour(row.kind))
+            if role == Qt.ItemDataRole.FontRole:
+                font = _font(10, QFont.Weight.Bold)
+                font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1)
+                return font
+            return None
+
+        letter = "W" if row.kind is PointKind.WAYPOINT else "MK"
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
+            if column == NAME:
+                if role == Qt.ItemDataRole.EditRole:
+                    return row.point.name
+                name = row.point.name or "Unnamed — click to name"
+                return f"{letter}{row.number}   {name}"
+            if column == POSITION:
+                return self.coordinates_of(row.point)
+            if column == ELEVATION:
+                if role == Qt.ItemDataRole.EditRole:
+                    return str(row.point.altitude_ft or "")
+                return f"{row.point.altitude_ft} ft" if row.point.altitude_ft else "—"
+            return ""
+        if role == Qt.ItemDataRole.FontRole:
+            if column == NAME:
+                font = _font(13, QFont.Weight.DemiBold)
+                font.setItalic(not row.point.name)
+                return font
+            return _mono(11)
+        if role == Qt.ItemDataRole.ForegroundRole:
+            if column == NAME:
+                return QColor(TITLE_INK if row.point.name else FAINT_INK)
+            if column == ELEVATION and not row.point.altitude_ft:
+                return QColor(FAINT_INK)
+            return QColor(QUIET_INK)
+        if role == Qt.ItemDataRole.ToolTipRole and column == ELEVATION:
+            return (
+                "Above sea level, and typed in: nothing outside a running mission"
+                " tells the application how high the ground is. A weapon aimed at a"
+                " point from the wrong elevation lands short or long."
+            )
         return None
 
     def setData(
         self, index: QModelIndex, value: Any, role: int = Qt.ItemDataRole.EditRole
     ) -> bool:
         row = self.at(index)
-        if row is None or row.is_header or self._aircraft is None:
+        if row is None or row.is_header or role != Qt.ItemDataRole.EditRole:
             return False
-        name = str(value).strip()[:NAME_LENGTH]
-        if name:
-            row.point.name = name
+        if index.column() == NAME:
+            name = str(value).strip()[:NAME_LENGTH]
+            if name:
+                row.point.name = name
+                self.dataChanged.emit(index, index)
+            return True
+        if index.column() == ELEVATION:
+            text = str(value).strip().replace(",", ".")
+            try:
+                row.point.altitude_ft = max(0, round(float(text))) if text else 0
+            except ValueError:
+                return False
             self.dataChanged.emit(index, index)
-        return True
+            return True
+        return False
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlag:
         row = self.at(index)
         if row is None or row.is_header:
-            return Qt.ItemFlag.NoItemFlags
-        return (
-            Qt.ItemFlag.ItemIsEnabled
-            | Qt.ItemFlag.ItemIsSelectable
-            | Qt.ItemFlag.ItemIsEditable
-        )
+            return Qt.ItemFlag.ItemIsEnabled
+        base = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+        if index.column() in (NAME, ELEVATION):
+            return base | Qt.ItemFlag.ItemIsEditable
+        return base
 
 
 def kind_colour(kind: PointKind) -> str:
@@ -508,7 +599,11 @@ def kind_colour(kind: PointKind) -> str:
 
 
 class PointDelegate(QStyledItemDelegate):
-    """A point: its glyph, its index, its name and its coordinates."""
+    """The row's background, its glyph and its button.
+
+    The text is drawn here too, but from what the model says rather than at fixed
+    positions, so each column elides at whatever width the player has dragged it to.
+    """
 
     def __init__(self, model: PointsModel, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
@@ -525,144 +620,86 @@ class PointDelegate(QStyledItemDelegate):
         row = index.data(Qt.ItemDataRole.UserRole)
         if not isinstance(row, PointRow):
             return
-        painter.save()
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        if row.is_header:
-            self._header(painter, option.rect, row)
-        else:
-            self._point(painter, option, row)
-        painter.restore()
-
-    def _header(self, painter: QPainter, rect: QRect, row: PointRow) -> None:
-        painter.fillRect(rect, QColor(HEADER_BG))
-        font = _font(10, QFont.Weight.Bold)
-        font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1)
-        _draw(
-            painter,
-            rect.left() + 12,
-            rect.top() + 17,
-            f"{row.kind.label.upper()}S",
-            font,
-            kind_colour(row.kind),
-        )
-        # A kind the aircraft cannot be given says so rather than reading "2 / 0".
-        count = (
-            f"{row.used} / {row.maximum}"
-            if row.maximum
-            else f"{row.used} · kneeboard only"
-        )
-        counter = _mono(11)
-        width = QFontMetrics(counter).horizontalAdvance(count)
-        _draw(
-            painter,
-            rect.right() - 12 - width,
-            rect.top() + 17,
-            count,
-            counter,
-            MARKPOINT if row.maximum and row.used >= row.maximum else QUIET_INK,
-        )
-
-    def _point(
-        self, painter: QPainter, option: QStyleOptionViewItem, row: PointRow
-    ) -> None:
-        rect = option.rect
         selected = bool(option.state & QStyle.StateFlag.State_Selected)
         hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
-        painter.fillRect(
-            rect, QColor(SELECTED_BG if selected else (HOVER_BG if hovered else ROW_BG))
-        )
-        painter.setPen(QColor(DIVIDER))
-        painter.drawLine(rect.left(), rect.bottom(), rect.right(), rect.bottom())
+        painter.save()
+        if row.is_header:
+            painter.fillRect(option.rect, QColor(HEADER_BG))
+        else:
+            background = SELECTED_BG if selected else (HOVER_BG if hovered else ROW_BG)
+            painter.fillRect(option.rect, QColor(background))
+            painter.setPen(QColor(DIVIDER))
+            painter.drawLine(
+                option.rect.left(),
+                option.rect.bottom(),
+                option.rect.right(),
+                option.rect.bottom(),
+            )
+        painter.restore()
 
-        colour = kind_colour(row.kind)
-        centre = QPoint(rect.left() + 16, rect.top() + 18)
+        if row.is_header:
+            self._text(painter, option, index, indent=12)
+            return
+        if index.column() == NAME:
+            self._glyph(painter, option.rect, row)
+            self._text(painter, option, index, indent=GLYPH_WIDTH)
+        elif index.column() == ACTIONS:
+            _draw(
+                painter,
+                option.rect.right() - 12 - MENU_BUTTON,
+                option.rect.top() + 23,
+                "···",
+                _font(14),
+                FAINT_INK,
+            )
+        else:
+            self._text(painter, option, index, indent=8)
+
+    def _glyph(self, painter: QPainter, rect: QRect, row: PointRow) -> None:
+        painter.save()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        centre = QPoint(rect.left() + 14, rect.top() + 18)
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(colour))
+        painter.setBrush(QColor(kind_colour(row.kind)))
         if row.kind is PointKind.WAYPOINT:
             painter.drawEllipse(centre, 4, 4)
         else:
-            painter.save()
             painter.translate(centre)
             painter.rotate(45)
             painter.drawRect(QRect(-4, -4, 8, 8))
-            painter.restore()
-        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.restore()
 
-        letter = "W" if row.kind is PointKind.WAYPOINT else "M"
-        number = self._numbering(row)
-        _draw(
-            painter,
-            rect.left() + 30,
-            rect.top() + 22,
-            f"{letter}{number}",
-            _mono(11),
-            QUIET_INK,
+    def _text(
+        self,
+        painter: QPainter,
+        option: QStyleOptionViewItem,
+        index: QModelIndex,
+        indent: int,
+    ) -> None:
+        text = index.data(Qt.ItemDataRole.DisplayRole)
+        if not text:
+            return
+        font = index.data(Qt.ItemDataRole.FontRole) or _font(12)
+        ink = index.data(Qt.ItemDataRole.ForegroundRole) or QColor(BODY_INK)
+        room = option.rect.adjusted(indent, 0, -8, 0)
+        painter.save()
+        painter.setFont(font)
+        painter.setPen(ink)
+        painter.drawText(
+            room,
+            int(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft),
+            QFontMetrics(font).elidedText(
+                str(text), Qt.TextElideMode.ElideRight, room.width()
+            ),
         )
-
-        name = row.point.name
-        font = _font(13, QFont.Weight.DemiBold)
-        ink = TITLE_INK
-        if not name:
-            name = "Unnamed — click to name"
-            font = _font(13)
-            font.setItalic(True)
-            ink = FAINT_INK
-        # The coordinates keep their column: a long name is cut rather than running
-        # into them.
-        room = COORDINATES_LEFT - 56 - 10
-        _draw(
-            painter,
-            rect.left() + 56,
-            rect.top() + 22,
-            QFontMetrics(font).elidedText(name, Qt.TextElideMode.ElideRight, room),
-            font,
-            ink,
-        )
-
-        coordinates = self._model.coordinates_of(row.point)
-        if coordinates:
-            _draw(
-                painter,
-                rect.left() + COORDINATES_LEFT,
-                rect.top() + 22,
-                coordinates,
-                _mono(11),
-                QUIET_INK,
-            )
-        height = row.point.altitude_ft
-        _draw(
-            painter,
-            rect.left() + ELEVATION_LEFT,
-            rect.top() + 22,
-            f"{height} ft" if height else "—",
-            _mono(11),
-            QUIET_INK if height else FAINT_INK,
-        )
-
-        _draw(
-            painter,
-            rect.right() - 12 - MENU_BUTTON,
-            rect.top() + 23,
-            "···",
-            _font(14),
-            FAINT_INK,
-        )
-
-    def _numbering(self, row: PointRow) -> int:
-        """The point's place among its own kind, which is what the cockpit shows."""
-        aircraft = self._model.aircraft
-        if aircraft is None or row.index is None:
-            return 1
-        for place, (index, _point) in enumerate(aircraft.of_kind(row.kind), start=1):
-            if index == row.index:
-                return place
-        return 1
+        painter.restore()
 
     def createEditor(
         self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
     ) -> QWidget:
         editor = QLineEdit(parent)
-        editor.setMaxLength(NAME_LENGTH)
+        if index.column() == NAME:
+            editor.setMaxLength(NAME_LENGTH)
         editor.setFont(_mono(13))
         editor.setStyleSheet(
             f"QLineEdit {{ background: #0F1922; color: {TITLE_INK};"
@@ -670,13 +707,7 @@ class PointDelegate(QStyledItemDelegate):
         )
         return editor
 
-    def updateEditorGeometry(
-        self, editor: QWidget, option: QStyleOptionViewItem, index: QModelIndex
-    ) -> None:
-        rect = option.rect
-        editor.setGeometry(QRect(rect.left() + 52, rect.top() + 6, 150, 24))
-
     @staticmethod
     def on_menu_button(rect: QRect, point: QPoint) -> bool:
-        """Whether this point of the row is on its ··· button."""
+        """Whether this point of the row is on its button."""
         return point.x() >= rect.right() - 12 - MENU_BUTTON - 6

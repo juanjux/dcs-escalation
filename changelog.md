@@ -166,6 +166,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** The saved-points list cut the coordinates; it is a table with columns the player can widen.
 * **[FIX]** The kneeboard numbered a saved point 1; the aircraft numbers it after the flight plan.
 * **[FIX]** Saving a point no longer offers a kind the aircraft cannot be given.
 * **[FIX]** GPS jamming degraded nothing: its weapon list was spelled with hyphens (`GBU-31`) and DCS names weapons with underscores (`GBU_31`).
