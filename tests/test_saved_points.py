@@ -17,6 +17,7 @@ from game.ato.savedpoints import (
     SavedPoint,
     add_point,
     capacity_for,
+    instead_of,
     kinds_for,
     points_of,
     receivers,
@@ -147,3 +148,25 @@ def test_one_page_of_points_is_not_numbered() -> None:
     )
 
     assert page.total_pages == 1
+
+
+# ------------------------------------- the kind an aircraft cannot actually be given
+
+
+def test_a_hornet_is_offered_a_waypoint_in_place_of_a_markpoint() -> None:
+    """Its data cartridge has no markpoint section -- they are made in the cockpit --
+    and the point is worth having in the aircraft as something."""
+    assert instead_of("FA-18C_hornet", PointKind.MARKPOINT) is PointKind.WAYPOINT
+
+
+def test_a_kind_the_aircraft_does_carry_is_not_questioned() -> None:
+    assert instead_of("FA-18C_hornet", PointKind.WAYPOINT) is None
+    assert instead_of("A-10C_2", PointKind.MARKPOINT) is None
+    assert instead_of("A-10C_2", PointKind.WAYPOINT) is None
+
+
+def test_an_airframe_that_carries_neither_is_left_alone() -> None:
+    """Swapping one kind it cannot take for another it cannot take gains nothing, so
+    the point is written down without a question."""
+    assert instead_of("Ka-50_3", PointKind.MARKPOINT) is None
+    assert instead_of("Ka-50_3", PointKind.WAYPOINT) is None

@@ -78,12 +78,78 @@ def test_the_point_goes_into_the_flight_that_was_picked(qt_app: Any) -> None:
     flight = _flight()
     label = _label(qt_app, _game(flight))
 
-    label._save(flight, PointKind.MARKPOINT)
+    label._save(flight, PointKind.WAYPOINT)
+
+    (point,) = points_of(flight)
+    assert point.kind is PointKind.WAYPOINT
+    assert point.name == "N36 W115"
+    assert (point.x, point.y) == (1.0, 2.0)
+
+
+def _answered(monkeypatch: Any, with_kind: Any) -> list[tuple[Any, ...]]:
+    """Stand in for the question, and record what it was asked."""
+    import qt_ui.widgets.coordinatelabel as module
+
+    asked: list[tuple[Any, ...]] = []
+
+    def answer(parent: Any, aircraft: str, kind: Any, other: Any) -> Any:
+        asked.append((aircraft, kind, other))
+        return with_kind
+
+    monkeypatch.setattr(module, "ask_about_kind", answer)
+    return asked
+
+
+def test_a_markpoint_for_a_hornet_asks_first(qt_app: Any, monkeypatch: Any) -> None:
+    """Its cartridge has no markpoint section, so one saved as a markpoint reaches
+    the kneeboard and nothing else."""
+    from game.ato.savedpoints import PointKind, points_of
+
+    flight = _flight()
+    asked = _answered(monkeypatch, PointKind.WAYPOINT)
+
+    _label(qt_app, _game(flight))._save(flight, PointKind.MARKPOINT)
+
+    assert asked == [("AV-8B", PointKind.MARKPOINT, PointKind.WAYPOINT)]
+    (point,) = points_of(flight)
+    assert point.kind is PointKind.WAYPOINT
+
+
+def test_the_markpoint_can_be_kept(qt_app: Any, monkeypatch: Any) -> None:
+    from game.ato.savedpoints import PointKind, points_of
+
+    flight = _flight()
+    _answered(monkeypatch, PointKind.MARKPOINT)
+
+    _label(qt_app, _game(flight))._save(flight, PointKind.MARKPOINT)
 
     (point,) = points_of(flight)
     assert point.kind is PointKind.MARKPOINT
-    assert point.name == "N36 W115"
-    assert (point.x, point.y) == (1.0, 2.0)
+
+
+def test_saying_no_writes_nothing_down(qt_app: Any, monkeypatch: Any) -> None:
+    from game.ato.savedpoints import PointKind, points_of
+
+    flight = _flight()
+    _answered(monkeypatch, None)
+
+    _label(qt_app, _game(flight))._save(flight, PointKind.MARKPOINT)
+
+    assert points_of(flight) == []
+
+
+def test_a_kind_the_aircraft_takes_is_saved_without_a_question(
+    qt_app: Any, monkeypatch: Any
+) -> None:
+    from game.ato.savedpoints import PointKind, points_of
+
+    flight = _flight()
+    asked = _answered(monkeypatch, None)
+
+    _label(qt_app, _game(flight))._save(flight, PointKind.WAYPOINT)
+
+    assert asked == []
+    assert len(points_of(flight)) == 1
 
 
 def test_a_full_aircraft_is_greyed_rather_than_hidden(qt_app: Any) -> None:

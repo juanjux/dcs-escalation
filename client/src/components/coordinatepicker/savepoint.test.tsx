@@ -3,7 +3,7 @@
 // tests answer every fetch with the coordinates of the clicked point, this asked for
 // a list of aircraft and got that object, and `receivers.find` took the whole popup
 // down with it.
-import SavePoint from "./SavePoint";
+import SavePoint, { insteadOf } from "./SavePoint";
 import { render, screen, waitFor } from "@testing-library/react";
 import { LatLng } from "leaflet";
 
@@ -68,4 +68,39 @@ describe("saving a point to an aircraft", () => {
       expect(screen.queryByText(/Save as/)).not.toBeInTheDocument();
     });
   });
+});
+
+// ------------------- the kind the aircraft cannot actually be given
+
+function receiver(into: Record<string, boolean>): any {
+  return {
+    id: "1",
+    callsign: "TARSIER",
+    aircraft: "F/A-18C Hornet",
+    departure: "Nellis",
+    kinds: ["waypoint", "markpoint"],
+    room: { waypoint: 57, markpoint: 50 },
+    into_aircraft: into,
+  };
+}
+
+it("offers a waypoint in place of a markpoint the aircraft cannot take", () => {
+  const hornet = receiver({ waypoint: true, markpoint: false });
+  expect(insteadOf(hornet, "markpoint")).toBe("waypoint");
+});
+
+it("asks nothing about a kind the aircraft does take", () => {
+  const hog = receiver({ waypoint: true, markpoint: true });
+  expect(insteadOf(hog, "markpoint")).toBeUndefined();
+  expect(insteadOf(hog, "waypoint")).toBeUndefined();
+});
+
+it("asks nothing when neither kind reaches the aircraft", () => {
+  const unmeasured = receiver({ waypoint: false, markpoint: false });
+  expect(insteadOf(unmeasured, "markpoint")).toBeUndefined();
+});
+
+it("asks nothing when an older server never said", () => {
+  const older = receiver(undefined as any);
+  expect(insteadOf(older, "markpoint")).toBeUndefined();
 });

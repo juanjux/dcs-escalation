@@ -72,3 +72,14 @@
 .cp-save-said {
   margin-top: 4px;
 }
+
+.cp-save-asking {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(128, 128, 128, 0.35);
+  font-size: 11px;
+}
+
+.cp-save-asking .cp-save-buttons {
+  margin-top: 4px;
+}
