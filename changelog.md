@@ -164,6 +164,7 @@
 
 ## Fixes
 * **[FIX]** The Harpoon's stand-off range was 67 nm, the real missile's; DCS flies it 97.
+* **[FIX]** A site added to a campaign in progress now joins its IADS network.
 * **[FIX]** Saving a markpoint to an aircraft that cannot carry one now offers a waypoint instead.
 * **[FIX]** The map's coordinate popup no longer opens on every click of the ruler.
 * **[FIX]** The JAMMING row of a jamming site's card said the bubble was up even when the site was dark.
