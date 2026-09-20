@@ -40,7 +40,7 @@ from suntime import Sun, SunTimeException  # type: ignore
 from tabulate import tabulate
 
 from game.ato.flighttype import FlightType
-from game.ato.savedpoints import SavedPoint
+from game.ato.savedpoints import PointKind, SavedPoint
 from game.missiongenerator.dtc import steerpoint_numbers
 from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
@@ -1278,16 +1278,19 @@ class SavedPointsPage(KneeboardPage):
         rows = []
         for number, point in zip(self.numbers, self.points):
             at = DcsPoint(point.x, point.y, self.theater.terrain)
+            # The kind rides on the number rather than taking a column of its own:
+            # the page was running off the edge of the kneeboard, and "MK3" says the
+            # same thing as a column headed Kind.
+            mark = "MK" if point.kind is PointKind.MARKPOINT else ""
             rows.append(
                 [
-                    str(number),
-                    f"Extra {point.kind.label.lower()}",
+                    f"{mark}{number}",
                     point.name,
                     format_latlng(at.latlng(), self.coordinate_format),
                     f"{point.altitude_ft} ft" if point.altitude_ft else "",
                 ]
             )
-        writer.table(rows, headers=["STPT", "Kind", "Name", "Position", "Elev"])
+        writer.table(rows, headers=["STPT", "Name", "Position", "Elev"])
         writer.write(path)
 
 

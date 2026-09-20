@@ -23,12 +23,14 @@ from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
+    QHeaderView,
     QLineEdit,
     QListView,
     QMenu,
     QPushButton,
     QSizePolicy,
     QSplitter,
+    QTreeView,
     QVBoxLayout,
     QWidget,
 )
@@ -37,6 +39,7 @@ from game.ato.savedpoints import PointKind, remove_point
 from qt_ui.widgets.cards import CAPTION, CARD_BG, CARD_BORDER, card
 from qt_ui.widgets.controls import mono, style_button, styled_input
 from qt_ui.windows.playable import model as data
+from qt_ui.windows.playable import rows
 from qt_ui.windows.playable.rows import (
     AircraftDelegate,
     AircraftModel,
@@ -310,6 +313,7 @@ class PlayableAircraftDialog(QDialog):
         self.paste = style_button(QPushButton("Paste"), "normal")
         self.status = _label("", f"font-size: 11px; color: {QUIET_INK};")
         self.slots = _label("", f"font-size: 11px; color: {QUIET_INK};")
+        self.carried = _label("", f"font-size: 11px; color: {FAINT_INK};")
         self.empty = _label(
             "Pick a squadron in the Air Wing and convert a pilot to player, or set"
             " client slots on a flight in the ATO.",
@@ -338,20 +342,39 @@ class PlayableAircraftDialog(QDialog):
         view.viewport().installEventFilter(self)
         return view
 
-    def _points_list(self) -> QListView:
-        view = QListView()
+    def _points_list(self) -> QTreeView:
+        """A table with a header, because a coordinate is only readable whole.
+
+        The player drags the columns to fit whichever format the campaign writes --
+        MGRS and decimal degrees are not the same width -- and the group headers span
+        the row so the two kinds still read as groups.
+        """
+        view = QTreeView()
         view.setModel(self.points_model)
         self.point_delegate = PointDelegate(self.points_model, view)
         view.setItemDelegate(self.point_delegate)
         view.setMouseTracking(True)
+        view.setRootIsDecorated(False)
+        view.setUniformRowHeights(False)
+        view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         view.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        view.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked)
         view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         view.setStyleSheet(
-            f"QListView {{ background: {CARD_BG}; border: 1px solid {CARD_BORDER};"
+            f"QTreeView {{ background: {CARD_BG}; border: 1px solid {CARD_BORDER};"
             f" outline: none; }}"
+            f"QHeaderView::section {{ background: {HEADER_BG}; color: {QUIET_INK};"
+            f" border: none; border-bottom: 1px solid {CARD_BORDER};"
+            " padding: 4px 8px; font-size: 11px; }"
         )
+        header = view.header()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        header.setStretchLastSection(False)
+        header.resizeSection(rows.NAME, 260)
+        header.resizeSection(rows.POSITION, 240)
+        header.resizeSection(rows.ELEVATION, 80)
+        header.resizeSection(rows.ACTIONS, 44)
+        header.setSectionResizeMode(rows.ACTIONS, QHeaderView.ResizeMode.Fixed)
         view.viewport().installEventFilter(self)
         return view
 
@@ -379,6 +402,9 @@ class PlayableAircraftDialog(QDialog):
         inner.setContentsMargins(0, 0, 0, 0)
         inner.setSpacing(0)
         inner.addWidget(toolbar)
+        self.carried.setContentsMargins(12, 4, 12, 4)
+        self.carried.setWordWrap(True)
+        inner.addWidget(self.carried)
         inner.addWidget(self.points_view)
         right_inner.setLayout(inner)
 
@@ -470,8 +496,35 @@ class PlayableAircraftDialog(QDialog):
     def show_points(self) -> None:
         one = self.selected
         self.points_model.show(one, self._coordinates)
+        for row in self.points_model.header_rows():
+            self.points_view.setFirstColumnSpanned(row, QModelIndex(), True)
+        self.carried.setText(self._how_it_is_carried(one))
         self._retitle()
         self._restate()
+
+    def _how_it_is_carried(self, one: Optional[data.Aircraft]) -> str:
+        """What this airframe does with the points, said where they are edited.
+
+        Every aeroplane does something different with them and none of it is
+        guessable: a Hornet finds them on a second route sequence, an A-10 has to be
+        told to read its database, and the rest have only the kneeboard.
+        """
+        if one is None:
+            return ""
+        from game.missiongenerator.dtc import CARTRIDGES
+        from game.missiongenerator.dts import AIRCRAFT as DTS_AIRCRAFT
+
+        if one.dcs_id in CARTRIDGES:
+            return (
+                "Loaded from the data cartridge, numbered after the flight plan and"
+                " on route sequence 2 — SEQ1 is still the route."
+            )
+        if one.dcs_id in DTS_AIRCRAFT:
+            return (
+                "Written to the mission's DTS database: LOAD ALL on the CDU"
+                " (SYS → PG → DTS → DTSUPLD → ALL ORIG DATA)."
+            )
+        return "Nothing loads a point into this airframe: they go on the kneeboard."
 
     def _coordinates(self, point: Any) -> str:
         game = self.game
