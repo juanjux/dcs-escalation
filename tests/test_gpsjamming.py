@@ -41,30 +41,110 @@ def test_a_malformed_value_falls_back_rather_than_raising() -> None:
     assert props.radius_nm is None
 
 
+def _matches(type_name: str) -> bool:
+    """What the Lua does: a plain case-insensitive substring find, nothing else."""
+    low = type_name.lower()
+    return any(p.lower() in low for p in GPS_GUIDED_WEAPON_PATTERNS)
+
+
 def test_only_satellite_guided_weapons_are_degraded() -> None:
     """A Paveway that mysteriously misses is a bug report, not a feature: laser, TV,
     IR and anti-radiation weapons must never be on this list."""
-    patterns = [p.upper() for p in GPS_GUIDED_WEAPON_PATTERNS]
-    assert any("GBU-31" in p for p in patterns), "JDAM must be covered"
-    for never in ("GBU-12", "AGM-65", "AGM-88", "AGM-114", "GBU-16", "GBU-10"):
-        assert not any(never in p for p in patterns), f"{never} is not GPS-guided"
+    for never in (
+        "GBU_12",
+        "GBU_10",
+        "GBU_16",
+        "GBU_24",
+        "KAB_500Kr",
+        "KAB_1500LG",
+        "AGM_65D",
+        "AGM_88C",
+        "AGM_114K",
+        "CBU_87",
+        "CBU_99",
+    ):
+        assert not _matches(never), f"{never} is not satellite-guided"
+
+
+def test_the_patterns_are_spelled_the_way_dcs_names_weapons() -> None:
+    """``Weapon:getTypeName()`` returns the definition's ``name`` -- ``GBU_31``, with an
+    underscore -- and never the ``user_name`` the ME shows, ``GBU-31(V)1/B``. Matching on
+    the hyphenated spelling degrades nothing at all, silently."""
+    for real in (
+        "GBU_31",
+        "GBU_31_V_3B",
+        "GBU_32_V_2B",
+        "GBU_38",
+        "GBU_54_V_1B",
+        "GBU_39",
+        "AGM_154A",
+        "AGM_154B",
+        "AGM_154C",
+        "KAB_500S",
+    ):
+        assert _matches(real), f"{real} is how DCS names it and it must match"
 
 
 def test_a_weapon_somebody_flies_is_left_alone() -> None:
     """The exclusion is a pilot in the loop, human or AI. The SLAM family's terminal
     leg is TV flown onto the target by whoever launched it; degrading the navigation
     of a weapon being steered by hand punishes the wrong thing."""
-    patterns = [p.upper() for p in GPS_GUIDED_WEAPON_PATTERNS]
-    for never in ("AGM-84E", "AGM-84H", "SLAM"):
-        assert not any(never in p for p in patterns), f"{never} is flown by its pilot"
+    for never in ("AGM_84E", "AGM_84H", "SLAM_ER", "mils_cm802akg"):
+        assert not _matches(never), f"{never} is flown by its shooter"
 
 
 def test_an_automatic_terminal_seeker_is_no_excuse() -> None:
-    """A seeker that comes up on its own has to find the target by itself, and a
-    weapon already tens of miles off track is unlikely to have anything in its field
-    of view. The KD-20 is the case: BeiDou midcourse, automatic IIR terminal leg, and
-    an AI bomber carrying it."""
-    assert "KD_20" in GPS_GUIDED_WEAPON_PATTERNS
+    """A seeker that comes up on its own has to find the target by itself, and a weapon
+    already tens of miles off track is unlikely to have anything in its field of view.
+    That covers the whole autonomous cruise-missile family."""
+    for real in (
+        "KD_20",
+        "X_101",
+        "X_555",
+        "AGM_86C",
+        "CH_KEPD350",
+        "SU24MU_STORMSHADOW",
+        "B21_AGM158B_AIR",
+    ):
+        assert _matches(real), f"{real} navigates by satellite with nobody flying it"
+
+
+def test_land_attack_cruise_missiles_are_covered_whoever_launched_them() -> None:
+    """The stock Tomahawk and every CurrentHill hull that names its round after itself,
+    plus the Chinese and Russian land-attack rounds."""
+    for real in (
+        "BGM_109B",
+        "Ticonderoga_RGM_109C_III",
+        "ArleighBurkeIII_RGM_109E_V",
+        "Constellation_RGM_109E_V",
+        "Type052D_CJ10",
+        "GLCM_CJ10",
+        "Type26_SPEAR5_LACM",
+        "RBS-15 Mk4 Land",
+    ):
+        assert _matches(real), f"{real} attacks a fixed point by satellite"
+
+
+def test_anti_ship_missiles_are_never_degraded() -> None:
+    """Their target moves. Satellite guidance only refines a search basket that an
+    active radar or imaging seeker then searches for real, and the ship is not where
+    the GPS said anyway. The Visby fires both, one letter apart."""
+    for never in (
+        "RBS-15 Mk4 Ship",
+        "RBS-15 Mk4 Ship Pop-up",
+        "Type26_SPEAR5_ASHM",
+        "B21_AGM158C_AIR",  # LRASM
+        "Constellation_NSM",
+        "Type45_NSM",
+        "TYPE055_YJ18",
+        "Type052D_YJ18",
+        "CH_YJ12",
+        "DF_21D",
+        "TYPE055_YJ21",
+        "RGM_84D",
+        "P_700",
+    ):
+        assert not _matches(never), f"{never} hunts a moving ship"
 
 
 def test_the_declared_jammers_carry_a_bubble() -> None:

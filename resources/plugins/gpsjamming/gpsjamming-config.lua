@@ -37,7 +37,10 @@ local MISS_POWER_SCALE = 1.0 -- multiplier on the weapon's OWN explosive mass
 local CUE_SHOOTER = true -- one text cue to the firing flight on its first spoof
 local GRACE = 60 -- s before any weapon can be degraded
 local TRACK_STEP = 0.2 -- s: weapon-track sample step
-local MAX_TRACK = 600 -- s: give up tracking a released weapon after this
+local MAX_TRACK = 2400 -- s: give up tracking a released weapon after this
+-- 2400 s is sized off the slowest thing on the list: a cruise missile at ~250 m/s
+-- covers 600 km, more than the 250 nm a ship raid is planned to. At 600 s it covered
+-- 150 km and every long shot was dropped before it ever reached the bubble.
 local MIN_MISS_FRACTION = 0.35 -- a weapon clipping the bubble edge still misses by this much
 
 local cfg = (dcsRetribution and dcsRetribution.gpsJamming) or nil

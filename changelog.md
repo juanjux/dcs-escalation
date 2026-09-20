@@ -1,7 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[Mission Plugins]** GPS jamming degrades the KD-20 cruise missile.
+* **[Mission Plugins]** GPS jamming now covers land-attack cruise missiles (Tomahawk, CJ-10, Kh-101/555, Storm Shadow, Taurus, KD-20), guided rockets (GMLRS, GLSDB, ATACMS) and the Shahed-136. Anti-ship missiles stay out.
 * **[Mission Generator]** Saved waypoints are written into the aircraft, after the flight plan and outside its route sequence.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
@@ -164,6 +164,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** GPS jamming degraded nothing: its weapon list was spelled with hyphens (`GBU-31`) and DCS names weapons with underscores (`GBU_31`).
 * **[FIX]** Saving a markpoint to an aircraft that cannot carry one now offers a waypoint instead.
 * **[FIX]** The map's coordinate popup no longer opens on every click of the ruler.
 * **[FIX]** The JAMMING row of a jamming site's card said the bubble was up even when the site was dark.

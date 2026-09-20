@@ -38,21 +38,25 @@ if TYPE_CHECKING:
     from game.theater import ControlPoint
 
 #: DCS weapon *type name* fragments that identify a satellite-guided store.
-#: Matched as plain, case-insensitive substrings (never a Lua pattern -- weapon
-#: names carry ``-`` and ``(`` which a pattern match would read as magic
-#: ), so ``GBU-31`` catches every ``GBU-31(V)*/B`` variant at once.
 #:
-#: Curated deliberately narrowly (squadron call 2026-08-04): **GPS-guided air
-#: ordnance only**. Laser, TV, IR and anti-radiation weapons do not use GPS and
-#: must never appear here -- a Paveway that mysteriously misses is a bug report,
-#: not a feature. Ship-launched land-attack cruise missiles are
-#: deliberately absent too: they are their own flown feature and coupling them to
-#: an unflown one buys nothing.
+#: Matched as plain, case-insensitive substrings (never a Lua pattern -- weapon names
+#: carry ``-`` and ``(``, which a pattern match would read as magic), so ``GBU_31``
+#: catches every ``GBU_31_V_*B`` variant at once.
 #:
-#: ``GBU-54`` (Laser JDAM) is included because its *baseline* mode is GPS/INS --
-#: it only becomes a laser weapon when someone is lasing, which the runtime
-#: cannot see. ``KAB-500S``/``KAB-1500S`` are the GLONASS Russian equivalents, so
-#: red eats its own medicine wherever blue fields a jammer.
+#: **Spelling is the whole game here.** ``Weapon:getTypeName()`` returns the weapon
+#: definition's ``name`` field, not its ``user_name``: DCS declares ``name = "GBU_31"``
+#: with an underscore and ``user_name = _("GBU-31(V)1/B")`` with a hyphen, and only the
+#: first ever reaches this list. Mod weapons follow no such rule -- CurrentHill ships
+#: ``"YJ-62"`` and ``"RBS-15 Mk4 Land"`` verbatim -- so a family that could be spelled
+#: either way carries both. Cross-check a new entry against a script known to work on
+#: type names (Splash Damage's weapon table, :data:`game.naval_magazines.
+#: ASHM_WEAPON_PATTERNS`) rather than against what the ME calls the store.
+#:
+#: Laser, TV, IR and anti-radiation weapons must never appear here -- a Paveway that
+#: mysteriously misses is a bug report, not a feature. ``GBU_54`` (Laser JDAM) is the
+#: one exception: its *baseline* mode is GPS/INS and it only becomes a laser weapon
+#: when someone is lasing, which the runtime cannot see. The ``KAB_*S`` are the GLONASS
+#: Russian equivalents, so red eats its own medicine wherever blue fields a jammer.
 #:
 #: **What earns an exclusion is a pilot in the loop**, human or AI. The SLAM/SLAM-ER
 #: family is deliberately ABSENT for that reason: its terminal leg is TV flown onto
@@ -62,26 +66,57 @@ if TYPE_CHECKING:
 #: A terminal seeker that comes up on its own is NOT an exclusion. It has to find the
 #: target by itself, and a weapon already tens of miles off track is unlikely to have
 #: anything in its field of view when it looks -- which is the intended outcome, not
-#: a side effect. ``KD_20`` is here on that reading: BeiDou flies the midcourse, the
-#: IIR terminal leg is automatic, and nobody is flying it.
+#: a side effect. That is what puts the whole autonomous cruise-missile family here:
+#: satellite navigation flies the midcourse and an IIR or correlator seeker wakes up
+#: over the aimpoint with nobody minding it.
+#:
+#: **Anti-ship missiles stay out**, whatever navigates their midcourse. Their target
+#: moves, so satellite guidance only refines a search basket that an active radar or
+#: imaging seeker then searches for real -- and the ship is not where the GPS said in
+#: the first place. That is the line between ``RBS-15 Mk4 Land`` and its ``Ship``
+#: sisters, and between JASSM and the AGM-158C LRASM.
 GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
-    "GBU-31",  # JDAM, 2000 lb
-    "GBU-32",  # JDAM, 1000 lb
-    "GBU-38",  # JDAM, 500 lb
-    "GBU-54",  # Laser JDAM (GPS/INS baseline)
+    # Satellite-guided bombs and dispensers.
+    "GBU_31",  # JDAM, 2000 lb -- all (V) variants
+    "GBU_32",  # JDAM, 1000 lb
+    "GBU_38",  # JDAM, 500 lb
+    "GBU_39",  # SDB I -- INS/GPS
+    "GBU_54",  # Laser JDAM (GPS/INS baseline)
     "JDAM",  # any mod store that names itself plainly
-    "AGM-154",  # JSOW A/B/C
-    "JSOW",
-    "AGM-158",  # JASSM / JASSM-ER
-    "JASSM",
-    "CBU-103",  # WCMD -- inertial/GPS-corrected dispensers
-    "CBU-105",
-    "CBU-97_",  # the WCMD variant names; the plain CBU-97 is unguided
     "KAB_500S",  # GLONASS
-    "KAB-500S",
     "KAB_1500S",
-    "KAB-1500S",
-    "KD_20",  # BeiDou midcourse, automatic IIR terminal leg, AI-carried
+    "CBU_103",  # WCMD -- inertial/GPS-corrected dispensers
+    "CBU_105",
+    # Glide weapons.
+    "AGM_154",  # JSOW A/B/C
+    "JSOW",
+    # Air-launched cruise missiles. AGM-158A/B only: the C is the LRASM, which hunts
+    # ships. Both spellings of the JASSM -- CurrentHill's B-21 drops the underscore.
+    "AGM_158A",
+    "AGM_158B",
+    "AGM158B",
+    "JASSM",
+    "AGM_86",  # CALCM: GPS/INS and no terminal seeker at all
+    "X_101",  # Kh-101 -- GLONASS midcourse, automatic optical correlator
+    "X_555",  # Kh-555
+    "KD_20",  # BeiDou midcourse, automatic IIR terminal leg
+    "KEPD350",  # Taurus
+    "STORMSHADOW",  # Storm Shadow / SCALP
+    # Ship- and ground-launched land-attack cruise missiles. "_109" is deliberate: it
+    # covers the stock BGM_109B and every CurrentHill hull that names its Tomahawk
+    # after itself (Ticonderoga_RGM_109C_III, ArleighBurkeIII_RGM_109E_V, ...).
+    "_109",
+    "CJ10",  # CJ-10 / DH-10, ship and ground launchers
+    "CJ_10",
+    "3M14",  # Kalibr LAND ATTACK -- never "Kalibr", which would catch the 3M54
+    "SPEAR5_LACM",
+    "RBS-15 Mk4 Land",  # the Visby's land-attack round; its Ship sisters stay out
+    # Guided rockets and loitering munitions.
+    "GMLRS",
+    "GLSDB",
+    "ATACMS",
+    "FD280",  # PHL-16, BeiDou/INS
+    "SHAHED",  # the loitering munition the real world jams with exactly this
 )
 
 #: The reach a jammer gets when its unit definition names none.
