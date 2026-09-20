@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** A saved point gets the height of the ground under it, looked up from an open elevation model.
 * **[UI]** New window, *My aircraft*: what the player is flying this turn and the points saved for each one, which can also be typed or pasted in by hand.
 * **[Mission Plugins]** GPS jamming also covers the SDB, the CALCM, JASSM, GMLRS, GLSDB, ATACMS and the Shahed-136. Cruise missiles with a terrain database of their own, such as the Tomahawk, and anti-ship missiles stay out.
 * **[Aircraft]** The CJS tanker Super Hornets get a data cartridge like the E and the F.

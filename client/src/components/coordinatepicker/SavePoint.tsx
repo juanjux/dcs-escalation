@@ -27,13 +27,19 @@ const LABEL: Record<string, string> = {
   markpoint: "markpoint",
 };
 
-export default function SavePoint(props: { at: LatLng; name: string }) {
+export default function SavePoint(props: {
+  at: LatLng;
+  name: string;
+  elevationFt?: number;
+}) {
   const [receivers, setReceivers] = useState<Receiver[] | null>(null);
   const [chosen, setChosen] = useState<string>("");
   const [said, setSaid] = useState<string>("");
   // A weapon aimed at a saved point from the wrong elevation lands short or long,
   // which is what a JDAM or a JSOW does with a target of opportunity.
-  const [feet, setFeet] = useState<string>("");
+  const [feet, setFeet] = useState<string>(
+    props.elevationFt === undefined ? "" : String(props.elevationFt),
+  );
 
   useEffect(() => {
     let dropped = false;
@@ -123,6 +129,7 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
       </select>
       <label className="cp-save-alt">
         Elevation
+        {props.elevationFt === undefined ? "" : " (ground)"}
         <input
           type="number"
           min={0}
