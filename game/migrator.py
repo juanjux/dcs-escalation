@@ -58,6 +58,7 @@ class Migrator:
         try_set_attr(self.game.settings, "motorpool_spawn_cap", 10)
         self._ensure_motorpool_tgos()
         self._register_new_tgos()
+        self._wire_iads_sites_that_arrived_late()
         self._reload_terrain()
         self._update_theater()
         self._update_campaign_name()
@@ -502,6 +503,17 @@ class Migrator:
             "IADS network rebuilt to enrol unnamed sites: "
             f"{before} -> {len(network.nodes)} nodes"
         )
+
+    def _wire_iads_sites_that_arrived_late(self) -> None:
+        """Runs after the new objectives are registered, which is the point.
+
+        The rebuild above happens before they exist and only happens once, so a site
+        that arrived with a later version was left outside the network for good.
+        """
+        network = self.game.theater.iads_network
+        enrolled = network.enrol_sites_that_arrived_late()
+        if enrolled:
+            logging.info("IADS: wired %s", ", ".join(sorted(enrolled)))
 
     def _relabel_formation_waypoints(self) -> None:
         """Rename join and split on flights that are their whole package.

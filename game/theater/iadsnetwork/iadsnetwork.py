@@ -466,6 +466,44 @@ class IadsNetwork:
                 continue
             self._make_advanced_connections_by_range(node)
 
+    def enrol_sites_that_arrived_late(self) -> list[str]:
+        """Wire any site that belongs in the network and has no grid link.
+
+        A save in progress gains ground objects after its network was built -- a GPS
+        jamming site every faction gained, a kind of objective added since -- and the
+        rebuild that enrols unnamed sites runs once. Anything registered after it sat
+        in the theater with nothing to cue it and no plant to bomb.
+
+        Safe to call again: a node that already has a comms tower or a power station
+        is left alone, so nothing is wired twice.
+        """
+        enrolled = []
+        for go in self.ground_objects.values():
+            if go.original_name in self.iads_config:
+                continue
+            if not self._belongs_in_the_network(go):
+                continue
+            node = self.node_for_tgo(go)
+            if node is None or self._has_grid(node):
+                continue
+            self._make_advanced_connections_by_range(node)
+            if self._has_grid(node):
+                enrolled.append(go.name)
+        if enrolled:
+            self.invalidate_state_map()
+        return enrolled
+
+    @staticmethod
+    def _has_grid(node: IadsNetworkNode) -> bool:
+        """Whether the node is already wired to a comms tower or a power station.
+
+        Its own point defence does not count: a site that only points at itself is
+        what an unwired one looks like.
+        """
+        return any(
+            group.iads_role.is_comms_or_power for group in node.connections.values()
+        )
+
     @staticmethod
     def _belongs_in_the_network(go: TheaterGroundObject) -> bool:
         """The same test the range-built network applies."""
