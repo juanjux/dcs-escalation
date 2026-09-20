@@ -188,7 +188,8 @@ def ask_about_kind(
         f"Save as {other.label.lower()}", QMessageBox.ButtonRole.AcceptRole
     )
     anyway = ask.addButton(
-        f"Save as {kind.label.lower()}", QMessageBox.ButtonRole.DestructiveRole
+        f"Save as {kind.label.lower()} (kneeboard only!)",
+        QMessageBox.ButtonRole.DestructiveRole,
     )
     ask.addButton(QMessageBox.StandardButton.Cancel)
     ask.setDefaultButton(as_other)

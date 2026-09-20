@@ -84,16 +84,22 @@ UNKNOWN_CEILING = 50
 #: spoken for (58 is HOME, 59 the bullseye), so 57 are free.
 #: Viper: ``MPD/NAV_PTS.lua`` stops at 25 steerpoints.
 #: A-10C II: its navigation computer indexes waypoints 0 to 2050
-#: (``NavigationComputer_param.lua``) and its markpoints are lettered, A to Z.
+#: (``NavigationComputer_param.lua``).
 #: Super Hornet (the CJS mod): the same cartridge the Hornet has, section for section.
+#:
+#: The markpoint column is all zeroes, and not for want of markpoints: every one of
+#: these aircraft has them. None of them can be handed one. The Hornet's cartridge has
+#: no markpoint section at all, and the A-10's DTS database is waypoints only -- its
+#: ``Waypoint_Types`` are airfields, beacons and ``WPT_UNK``, with nothing for the
+#: lettered marks, which are made in the cockpit.
 CAPACITY: dict[str, Capacity] = {
     "FA-18C_hornet": Capacity(waypoints=57, markpoints=0),
     "FA-18E": Capacity(waypoints=57, markpoints=0),
     "FA-18F": Capacity(waypoints=57, markpoints=0),
     "EA-18G": Capacity(waypoints=57, markpoints=0),
     "F-16C_50": Capacity(waypoints=25, markpoints=0),
-    "A-10C": Capacity(waypoints=2050, markpoints=26),
-    "A-10C_2": Capacity(waypoints=2050, markpoints=26),
+    "A-10C": Capacity(waypoints=2050, markpoints=0),
+    "A-10C_2": Capacity(waypoints=2050, markpoints=0),
 }
 
 
@@ -115,11 +121,9 @@ def kinds_for(dcs_id: str) -> list[PointKind]:
 
     A kind its cartridge cannot carry is still offered -- the kneeboard takes both,
     and a markpoint written down is a markpoint the player can punch in -- so this
-    is about order and about what the dialog says, not about refusing.
+    is about order and about what the dialog says, not about refusing. No aircraft
+    takes a loaded markpoint today, so the waypoint leads for all of them.
     """
-    capacity = capacity_for(dcs_id)
-    if capacity.markpoints and not capacity.waypoints:
-        return [PointKind.MARKPOINT, PointKind.WAYPOINT]
     return [PointKind.WAYPOINT, PointKind.MARKPOINT]
 
 

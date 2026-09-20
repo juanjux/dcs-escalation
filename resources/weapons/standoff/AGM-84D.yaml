@@ -1,5 +1,5 @@
 name: AGM-84D
-range: 67  # nm - stand-off launch range
+range: 97  # nm - stand-off launch range (DCS Range_max 180km)
 year: 1985
 fallback: AGM-84A
 clsids:
