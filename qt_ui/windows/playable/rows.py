@@ -60,17 +60,15 @@ FAINT_INK = "#6B7A87"
 
 #: Where the coordinates column starts, which is also where a name is cut.
 COORDINATES_LEFT = 210
+#: And where the elevation goes, after the longest coordinate string.
+ELEVATION_LEFT = 390
 
 #: The room the divider between the type and the flight name takes.
 DIVIDER_GAP = 15
-#: The gap between the squadron and the package summary beside it.
-SUMMARY_GAP = 10
-#: What the squadron name keeps even when the type is cut, and what the package
-#: summary needs before it is shown at all.
+#: What the squadron name keeps even when the aircraft type is cut.
 MINIMUM_LINK = 60
-MINIMUM_CONTEXT = 30
 
-AIRCRAFT_ROW = 56
+AIRCRAFT_ROW = 74
 POINT_ROW = 36
 GROUP_ROW = 26
 BANNER = QSize(91, 24)
@@ -226,7 +224,7 @@ class AircraftDelegate(QStyledItemDelegate):
     def _banner(self, painter: QPainter, rect: QRect, one: Aircraft) -> None:
         pixmap = AIRCRAFT_ICONS.get(one.dcs_id)
         where = QRect(
-            rect.left() + 14, rect.top() + 16, BANNER.width(), BANNER.height()
+            rect.left() + 14, rect.top() + 25, BANNER.width(), BANNER.height()
         )
         if pixmap is None:
             painter.setPen(QColor(DIVIDER))
@@ -246,7 +244,7 @@ class AircraftDelegate(QStyledItemDelegate):
 
     def _title(self, painter: QPainter, rect: QRect, one: Aircraft) -> None:
         x = rect.left() + TEXT_LEFT
-        baseline = rect.top() + 21
+        baseline = rect.top() + 20
         x = _draw(
             painter, x, baseline, one.title, _font(14, QFont.Weight.DemiBold), TITLE_INK
         )
@@ -256,18 +254,15 @@ class AircraftDelegate(QStyledItemDelegate):
     def _flight_line(
         self, painter: QPainter, rect: QRect, one: Aircraft, row: int
     ) -> None:
-        """Type | squadron · package, with two things to click on.
+        """Two lines under the name: the aeroplane and its squadron, then its package.
 
-        The squadron opens the air wing and the package summary opens the package,
-        because those are the two places a player goes from here. Neither is the
-        whole line: the aircraft type is context and is not a link.
-
-        What gives way when it does not fit is the package summary, then the squadron
-        name, then the type -- of the three the aeroplane is what a player scanning
-        the list is looking for.
+        The package gets a line of its own because it never fitted beside the other
+        two -- "F/A-18C Hornet (Lot 20)" and a squadron called "Capullos de Alien"
+        fill the row on their own -- and it is a link, so a link that is sometimes
+        not drawn at all is a link nobody learns to use.
         """
         x = rect.left() + TEXT_LEFT
-        baseline = rect.top() + 43
+        baseline = rect.top() + 41
         limit = rect.right() - 90
 
         if one.is_helicopter:
@@ -296,26 +291,13 @@ class AircraftDelegate(QStyledItemDelegate):
 
         link_font = _font(12)
         link_font.setUnderline(True)
-        package_font = _font(11)
-        package_font.setUnderline(True)
 
         def width(font: QFont, text: str) -> int:
             return QFontMetrics(font).horizontalAdvance(text)
 
         type_text = one.aircraft_name
         squadron_text = one.flight_name
-        package_text = one.package_summary
-        available = limit - x - DIVIDER_GAP - SUMMARY_GAP
-
-        spare = (
-            available - width(type_font, type_text) - width(link_font, squadron_text)
-        )
-        package_text = (
-            _elide(package_font, package_text, spare)
-            if spare >= MINIMUM_CONTEXT
-            else ""
-        )
-        budget = available - width(package_font, package_text)
+        budget = limit - x - DIVIDER_GAP
         if width(type_font, type_text) + width(link_font, squadron_text) > budget:
             room = min(
                 width(link_font, squadron_text),
@@ -331,15 +313,18 @@ class AircraftDelegate(QStyledItemDelegate):
 
         start = x
         x = _draw(painter, x, baseline, squadron_text, link_font, WAYPOINT)
-        self._squadrons[row] = QRect(start, rect.top() + 30, x - start, 18)
+        self._squadrons[row] = QRect(start, rect.top() + 28, x - start, 18)
 
-        if package_text:
-            x += SUMMARY_GAP
-            start = x
-            x = _draw(painter, x, baseline, package_text, package_font, WAYPOINT)
-            self._packages[row] = QRect(start, rect.top() + 30, x - start, 18)
-        else:
-            self._packages.pop(row, None)
+        package_font = _font(11)
+        package_font.setUnderline(True)
+        package = _elide(
+            package_font,
+            one.package_summary,
+            limit - (rect.left() + TEXT_LEFT),
+        )
+        start = rect.left() + TEXT_LEFT
+        end = _draw(painter, start, rect.top() + 60, package, package_font, WAYPOINT)
+        self._packages[row] = QRect(start, rect.top() + 47, end - start, 18)
 
     def _count(
         self, painter: QPainter, rect: QRect, one: Aircraft, selected: bool
@@ -348,7 +333,7 @@ class AircraftDelegate(QStyledItemDelegate):
         ceiling = one.ceiling
         full = one.total_room <= 0
         right = rect.right() - 14
-        baseline = rect.top() + 21
+        baseline = rect.top() + 20
         used_font = _mono(15, QFont.Weight.DemiBold)
 
         if ceiling == 0:
@@ -380,7 +365,7 @@ class AircraftDelegate(QStyledItemDelegate):
             ink,
         )
 
-        bar = QRect(right - 60, rect.top() + 33, 60, 3)
+        bar = QRect(right - 60, rect.top() + 30, 60, 3)
         painter.fillRect(bar, QColor(DIVIDER))
         if used > 0:
             filled = max(2, int(60 * min(used / ceiling, 1.0)))
@@ -644,6 +629,15 @@ class PointDelegate(QStyledItemDelegate):
                 _mono(11),
                 QUIET_INK,
             )
+        height = row.point.altitude_ft
+        _draw(
+            painter,
+            rect.left() + ELEVATION_LEFT,
+            rect.top() + 22,
+            f"{height} ft" if height else "—",
+            _mono(11),
+            QUIET_INK if height else FAINT_INK,
+        )
 
         _draw(
             painter,
