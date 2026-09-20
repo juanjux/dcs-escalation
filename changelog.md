@@ -163,6 +163,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** The Harpoon's stand-off range was 67 nm, the real missile's; DCS flies it 97.
 * **[FIX]** Saving a markpoint to an aircraft that cannot carry one now offers a waypoint instead.
 * **[FIX]** The map's coordinate popup no longer opens on every click of the ruler.
 * **[FIX]** The JAMMING row of a jamming site's card said the bubble was up even when the site was dark.
