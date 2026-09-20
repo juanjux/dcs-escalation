@@ -104,7 +104,10 @@ GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
     # Cruise missiles with no map of their own. AGM-158A/B only: the C is the LRASM,
     # which hunts ships. Both spellings of the JASSM -- CurrentHill's B-21 drops the
     # underscore.
-    "AGM_86",  # CALCM: TERCOM deleted in the conversion, GPS put in its place
+    # CALCM: the ALCM-to-CALCM conversion deleted its TERCOM and put GPS in its
+    # place. The bare fragment is safe because DCS ships no AGM-86B, the nuclear
+    # ALCM that kept the terrain database; check that again if one ever appears.
+    "AGM_86",
     "AGM_158A",
     "AGM_158B",
     "AGM158B",
