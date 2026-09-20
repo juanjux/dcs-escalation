@@ -558,7 +558,27 @@ class AirWingModel(QAbstractListModel):
             return self.icon_for_squadron(squadron)
         elif role == AirWingModel.SquadronRole:
             return squadron
+        if role == Qt.ItemDataRole.ToolTipRole:
+            return AirWingModel.tooltip_for_squadron(squadron)
         return None
+
+    @staticmethod
+    def tooltip_for_squadron(squadron: Squadron) -> Optional[str]:
+        """What the word under the task chip means.
+
+        The row draws a cohesion band by name -- Friendly, Frosty -- and the name on
+        its own does not say what it is about. Nothing at all for a squadron in the
+        Neutral band, which draws no word either.
+        """
+        from game.squadrons import friendship
+
+        value = squadron.cohesion
+        if value is None:
+            return None
+        band = friendship.band(value, squadron.settings)
+        if band.colour is None:
+            return None
+        return f"Squadron cohesion: {band.name} ({value:.1f} of 10)"
 
     @staticmethod
     def text_for_squadron(squadron: Squadron) -> str:
