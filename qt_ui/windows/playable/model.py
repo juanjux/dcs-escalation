@@ -96,6 +96,22 @@ class Aircraft:
         return str(getattr(target, "name", "") or "")
 
     @property
+    def package_summary(self) -> str:
+        """The package in a few words: what it is doing, to what, and when.
+
+        "Strike ECHIDNA 12:33". It is what the row shows and what opens the package
+        dialog, so it carries only what tells one package from another.
+        """
+        if not self.assigned:
+            return ""
+        parts = [self.task]
+        if self.target:
+            parts.append(self.target)
+        if self.tot:
+            parts.append(self.tot)
+        return " ".join(parts)
+
+    @property
     def tot(self) -> str:
         """The time over target, or empty when the flight plan has none yet."""
         plan = getattr(self.flight, "flight_plan", None)
@@ -224,6 +240,19 @@ class Clipboard:
             for point in aircraft.points
         ]
         self.source = aircraft.title
+
+    def take_one(self, point: SavedPoint, source: str) -> None:
+        """Copying one point is a copy too: the Paste beside it has to light up."""
+        self.points = [
+            SavedPoint(
+                kind=point.kind,
+                name=point.name,
+                x=point.x,
+                y=point.y,
+                altitude_ft=point.altitude_ft,
+            )
+        ]
+        self.source = source
 
     def fits(self, aircraft: Aircraft) -> int:
         """How many of the copied points the target will actually take."""

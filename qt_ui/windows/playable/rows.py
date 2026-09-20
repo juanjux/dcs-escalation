@@ -63,8 +63,10 @@ COORDINATES_LEFT = 210
 
 #: The room the divider between the type and the flight name takes.
 DIVIDER_GAP = 15
-#: What the flight name keeps even when the type is cut, and what the context needs
-#: before it is shown at all.
+#: The gap between the squadron and the package summary beside it.
+SUMMARY_GAP = 10
+#: What the squadron name keeps even when the type is cut, and what the package
+#: summary needs before it is shown at all.
 MINIMUM_LINK = 60
 MINIMUM_CONTEXT = 30
 
@@ -152,11 +154,7 @@ class AircraftModel(QAbstractListModel):
             line.append("·")
             line.append(one.aircraft_name)
             if one.assigned:
-                line.append(f"· {one.flight_name} · {one.task}")
-                if one.target:
-                    line.append(f"· {one.target}")
-                if one.tot:
-                    line.append(f"· {one.tot}")
+                line.append(f"· {one.flight_name} · {one.package_summary}")
             else:
                 line.append("· no flight this turn")
             return " ".join(line)
@@ -188,8 +186,11 @@ class AircraftDelegate(QStyledItemDelegate):
 
     def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
-        #: Where the flight name was drawn on each row, to know what was clicked.
-        self._links: dict[int, QRect] = {}
+        #: Where each link was drawn on each row, to know what was clicked. The
+        #: squadron goes to the air wing and the package summary to the package, so
+        #: they are two zones rather than one.
+        self._squadrons: dict[int, QRect] = {}
+        self._packages: dict[int, QRect] = {}
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
         return QSize(option.rect.width(), AIRCRAFT_ROW)
@@ -255,27 +256,19 @@ class AircraftDelegate(QStyledItemDelegate):
     def _flight_line(
         self, painter: QPainter, rect: QRect, one: Aircraft, row: int
     ) -> None:
-        """Type · flight · task · target · time, in one line that always fits.
+        """Type | squadron · package, with two things to click on.
 
-        The time is pinned to the right and never shrinks. What gives way, in order,
-        is the task and target, then the flight name, then the aircraft type: a 400 px
-        pane cannot hold "F/A-18C Hornet (Lot 20)" and a squadron called "Capullos de
-        Alien" and a target as well, and of the three the aeroplane is what a player
-        scanning the list is looking for.
+        The squadron opens the air wing and the package summary opens the package,
+        because those are the two places a player goes from here. Neither is the
+        whole line: the aircraft type is context and is not a link.
+
+        What gives way when it does not fit is the package summary, then the squadron
+        name, then the type -- of the three the aeroplane is what a player scanning
+        the list is looking for.
         """
         x = rect.left() + TEXT_LEFT
         baseline = rect.top() + 43
-        right = rect.right() - 90
-
-        tot_font = _mono(11)
-        tot_width = (
-            QFontMetrics(tot_font).horizontalAdvance(one.tot) + 8 if one.tot else 0
-        )
-        if one.tot:
-            _draw(
-                painter, right - tot_width + 8, baseline, one.tot, tot_font, QUIET_INK
-            )
-        limit = right - tot_width
+        limit = rect.right() - 90
 
         if one.is_helicopter:
             painter.setPen(QPen(QColor(HELICOPTER), 1.5))
@@ -297,39 +290,39 @@ class AircraftDelegate(QStyledItemDelegate):
                 TYPE_INK,
             )
             _draw(painter, x, baseline, note, italic, QUIET_INK)
-            self._links.pop(row, None)
+            self._squadrons.pop(row, None)
+            self._packages.pop(row, None)
             return
 
         link_font = _font(12)
         link_font.setUnderline(True)
-        context_font = _font(11)
+        package_font = _font(11)
+        package_font.setUnderline(True)
 
         def width(font: QFont, text: str) -> int:
             return QFontMetrics(font).horizontalAdvance(text)
 
-        context = f" · {one.task}"
-        if one.target:
-            context += f" · {one.target}"
-        available = limit - x - DIVIDER_GAP
-
         type_text = one.aircraft_name
-        link_text = one.flight_name
-        type_natural = width(type_font, type_text)
-        link_natural = width(link_font, link_text)
+        squadron_text = one.flight_name
+        package_text = one.package_summary
+        available = limit - x - DIVIDER_GAP - SUMMARY_GAP
 
-        # The task and the target are shown only out of what is left over.
-        spare = available - type_natural - link_natural
-        context = (
-            _elide(context_font, context, spare) if spare >= MINIMUM_CONTEXT else ""
+        spare = (
+            available - width(type_font, type_text) - width(link_font, squadron_text)
         )
-        budget = available - width(context_font, context)
-
-        if type_natural + link_natural > budget:
-            # The flight name keeps enough to be read and clicked; the type takes
-            # whatever remains, which is still the more useful of the two cut.
-            link_room = min(link_natural, max(MINIMUM_LINK, budget - type_natural))
-            type_text = _elide(type_font, type_text, budget - link_room)
-            link_text = _elide(link_font, link_text, link_room)
+        package_text = (
+            _elide(package_font, package_text, spare)
+            if spare >= MINIMUM_CONTEXT
+            else ""
+        )
+        budget = available - width(package_font, package_text)
+        if width(type_font, type_text) + width(link_font, squadron_text) > budget:
+            room = min(
+                width(link_font, squadron_text),
+                max(MINIMUM_LINK, budget - width(type_font, type_text)),
+            )
+            type_text = _elide(type_font, type_text, budget - room)
+            squadron_text = _elide(link_font, squadron_text, room)
 
         x = _draw(painter, x, baseline, type_text, type_font, TYPE_INK)
         painter.setPen(QColor(DIVIDER))
@@ -337,10 +330,16 @@ class AircraftDelegate(QStyledItemDelegate):
         x += DIVIDER_GAP
 
         start = x
-        x = _draw(painter, x, baseline, link_text, link_font, WAYPOINT)
-        self._links[row] = QRect(start, rect.top() + 30, x - start, 18)
-        if context:
-            _draw(painter, x, baseline, context, context_font, QUIET_INK)
+        x = _draw(painter, x, baseline, squadron_text, link_font, WAYPOINT)
+        self._squadrons[row] = QRect(start, rect.top() + 30, x - start, 18)
+
+        if package_text:
+            x += SUMMARY_GAP
+            start = x
+            x = _draw(painter, x, baseline, package_text, package_font, WAYPOINT)
+            self._packages[row] = QRect(start, rect.top() + 30, x - start, 18)
+        else:
+            self._packages.pop(row, None)
 
     def _count(
         self, painter: QPainter, rect: QRect, one: Aircraft, selected: bool
@@ -408,12 +407,15 @@ class AircraftDelegate(QStyledItemDelegate):
         rect = option.rect
         editor.setGeometry(QRect(rect.left() + TEXT_LEFT - 4, rect.top() + 6, 150, 22))
 
-    def link_at(self, row: int, point: QPoint, row_top: int) -> bool:
-        """Whether this point is on the flight name of that row."""
-        link = self._links.get(row)
-        if link is None:
-            return False
-        return link.adjusted(0, row_top, 0, row_top).contains(point)
+    def clicked_link(self, row: int, point: QPoint, row_top: int) -> Optional[str]:
+        """Which link this point landed on, if any: the squadron or the package."""
+        for name, zones in (("squadron", self._squadrons), ("package", self._packages)):
+            zone = zones.get(row)
+            if zone is not None and zone.adjusted(0, row_top, 0, row_top).contains(
+                point
+            ):
+                return name
+        return None
 
 
 # ----------------------------------------------------------------- the points

@@ -119,14 +119,16 @@ def points_of(flight: Flight) -> list[SavedPoint]:
 
 
 def kinds_for(dcs_id: str) -> list[PointKind]:
-    """The kinds this airframe is offered, most useful first.
+    """The kinds this airframe can be handed, most useful first.
 
-    A kind its cartridge cannot carry is still offered -- the kneeboard takes both,
-    and a markpoint written down is a markpoint the player can punch in -- so this
-    is about order and about what the dialog says, not about refusing. No aircraft
-    takes a loaded markpoint today, so the waypoint leads for all of them.
+    Only what will actually reach the aircraft. Offering a markpoint to a Hornet and
+    then explaining in a dialog that it will only reach the kneeboard is a question
+    the player should never have been asked: the answer is in the airframe, and the
+    control can just not offer it.
+
+    An airframe nobody has measured is offered nothing, which is the truth about it.
     """
-    return [PointKind.WAYPOINT, PointKind.MARKPOINT]
+    return [kind for kind in PointKind if reaches_the_aircraft(dcs_id, kind)]
 
 
 def reaches_the_aircraft(dcs_id: str, kind: PointKind) -> bool:
@@ -137,18 +139,6 @@ def reaches_the_aircraft(dcs_id: str, kind: PointKind) -> bool:
     the kneeboard takes both kinds -- it just does not reach the cockpit by itself.
     """
     return capacity_for(dcs_id).of(kind) > 0
-
-
-def instead_of(dcs_id: str, kind: PointKind) -> Optional[PointKind]:
-    """The kind worth offering when the chosen one cannot reach the aircraft.
-
-    None when there is nothing better to offer: the aircraft takes the chosen kind,
-    or it takes neither and swapping would gain nothing.
-    """
-    if reaches_the_aircraft(dcs_id, kind):
-        return None
-    other = PointKind.WAYPOINT if kind is PointKind.MARKPOINT else PointKind.MARKPOINT
-    return other if reaches_the_aircraft(dcs_id, other) else None
 
 
 def room_for(flight: Flight, kind: PointKind) -> int:

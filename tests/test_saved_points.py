@@ -17,7 +17,6 @@ from game.ato.savedpoints import (
     SavedPoint,
     add_point,
     capacity_for,
-    instead_of,
     kinds_for,
     points_of,
     receivers,
@@ -149,30 +148,15 @@ def test_one_page_of_points_is_not_numbered() -> None:
     assert page.total_pages == 1
 
 
-# ------------------------------------- the kind an aircraft cannot actually be given
+# --------------------------------- what an aircraft is offered, and what it is not
 
 
-def test_a_hornet_is_offered_a_waypoint_in_place_of_a_markpoint() -> None:
-    """Its data cartridge has no markpoint section -- they are made in the cockpit --
-    and the point is worth having in the aircraft as something."""
-    assert instead_of("FA-18C_hornet", PointKind.MARKPOINT) is PointKind.WAYPOINT
-
-
-def test_a_kind_the_aircraft_does_carry_is_not_questioned() -> None:
-    assert instead_of("FA-18C_hornet", PointKind.WAYPOINT) is None
-    assert instead_of("A-10C_2", PointKind.WAYPOINT) is None
-
-
-def test_no_aircraft_takes_a_loaded_markpoint() -> None:
-    """Every one of them has markpoints; none of them can be handed one. The Hornet's
-    cartridge has no markpoint section and the A-10's DTS database is waypoints only,
-    so the lettered marks are made in the cockpit either way."""
+def test_only_a_kind_the_aircraft_can_be_given_is_offered() -> None:
+    """A button that saves a markpoint and then explains that the markpoint will
+    never reach the cockpit is a question nobody should have been asked."""
     for aircraft in ("FA-18C_hornet", "FA-18E", "F-16C_50", "A-10C_2"):
-        assert instead_of(aircraft, PointKind.MARKPOINT) is PointKind.WAYPOINT
+        assert kinds_for(aircraft) == [PointKind.WAYPOINT]
 
 
-def test_an_airframe_that_carries_neither_is_left_alone() -> None:
-    """Swapping one kind it cannot take for another it cannot take gains nothing, so
-    the point is written down without a question."""
-    assert instead_of("Ka-50_3", PointKind.MARKPOINT) is None
-    assert instead_of("Ka-50_3", PointKind.WAYPOINT) is None
+def test_an_airframe_nobody_measured_is_offered_nothing() -> None:
+    assert kinds_for("Ka-50_3") == []
