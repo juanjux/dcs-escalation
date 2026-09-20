@@ -37,7 +37,10 @@ local MISS_POWER_SCALE = 1.0 -- multiplier on the weapon's OWN explosive mass
 local CUE_SHOOTER = true -- one text cue to the firing flight on its first spoof
 local GRACE = 60 -- s before any weapon can be degraded
 local TRACK_STEP = 0.2 -- s: weapon-track sample step
-local MAX_TRACK = 600 -- s: give up tracking a released weapon after this
+local MAX_TRACK = 2400 -- s: give up tracking a released weapon after this
+-- Sized off the longest flight on the weapon list: a CALCM or a JASSM-ER at ~250 m/s
+-- covers 600 km in 2400 s. At 600 s it covered 150 km, so a stand-off release was
+-- dropped from tracking before it ever reached the bubble and was never degraded.
 local MIN_MISS_FRACTION = 0.35 -- a weapon clipping the bubble edge still misses by this much
 
 local cfg = (dcsRetribution and dcsRetribution.gpsJamming) or nil

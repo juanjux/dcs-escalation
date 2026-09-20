@@ -38,43 +38,86 @@ if TYPE_CHECKING:
     from game.theater import ControlPoint
 
 #: DCS weapon *type name* fragments that identify a satellite-guided store.
-#: Matched as plain, case-insensitive substrings (never a Lua pattern -- weapon
-#: names carry ``-`` and ``(`` which a pattern match would read as magic
-#: ), so ``GBU-31`` catches every ``GBU-31(V)*/B`` variant at once.
 #:
-#: Curated deliberately narrowly (squadron call 2026-08-04): **GPS-guided air
-#: ordnance only**. Laser, TV, IR and anti-radiation weapons do not use GPS and
-#: must never appear here -- a Paveway that mysteriously misses is a bug report,
-#: not a feature. Ship-launched land-attack cruise missiles are
-#: deliberately absent too: they are their own flown feature and coupling them to
-#: an unflown one buys nothing.
+#: Matched as plain, case-insensitive substrings (never a Lua pattern -- weapon names
+#: carry ``-`` and ``(``, which a pattern match would read as magic), so ``GBU_31``
+#: catches every ``GBU_31_V_*B`` variant at once.
 #:
-#: ``GBU-54`` (Laser JDAM) is included because its *baseline* mode is GPS/INS --
-#: it only becomes a laser weapon when someone is lasing, which the runtime
-#: cannot see. ``KAB-500S``/``KAB-1500S`` are the GLONASS Russian equivalents, so
-#: red eats its own medicine wherever blue fields a jammer.
-#: The SLAM/SLAM-ER family is deliberately ABSENT. Its GPS/INS leg is only the
-#: midcourse: the imaging seeker can be brought up far outside a jammer's reach --
-#: bubbles are around 15 nm -- so by the time the weapon is over denied ground it is
-#: already looking at the target and no longer navigating by satellite. Degrading it
-#: would punish a weapon that, flown properly, does not depend on GPS where it counts.
+#: **Spelling is the whole game here.** ``Weapon:getTypeName()`` returns the weapon
+#: definition's ``name`` field, not its ``user_name``: DCS declares ``name = "GBU_31"``
+#: with an underscore and ``user_name = _("GBU-31(V)1/B")`` with a hyphen, and only the
+#: first ever reaches this list. Mod weapons follow no such rule -- CurrentHill ships
+#: ``"YJ-62"`` and ``"RBS-15 Mk4 Land"`` verbatim -- so a family that could be spelled
+#: either way carries both. Cross-check a new entry against a script known to work on
+#: type names (Splash Damage's weapon table, :data:`game.naval_magazines.
+#: ASHM_WEAPON_PATTERNS`) rather than against what the ME calls the store.
+#:
+#: Laser, TV, IR and anti-radiation weapons must never appear here -- a Paveway that
+#: mysteriously misses is a bug report, not a feature. ``GBU_54`` (Laser JDAM) is the
+#: one exception: its *baseline* mode is GPS/INS and it only becomes a laser weapon
+#: when someone is lasing, which the runtime cannot see. The ``KAB_*S`` are the GLONASS
+#: Russian equivalents, so red eats its own medicine wherever blue fields a jammer.
+#:
+#: Three rules decide the rest.
+#:
+#: **A pilot in the loop excludes**, human or AI. The SLAM/SLAM-ER family and the
+#: CM-802AKG are steered onto the target by whoever fired them; degrading the
+#: navigation of a weapon somebody is flying punishes the wrong thing.
+#:
+#: **A terrain database excludes.** TERCOM (Terrain Contour Matching), DSMAC, TERPROM
+#: and image-based navigation
+#: are not inertial backup that drifts -- they are an absolute position fix the weapon
+#: takes by comparing the ground it is flying over against a map it carries, and they
+#: are exactly what long-range cruise missiles were built around before GPS existed.
+#: Satellites only cross-check them, so denying satellites does not make the weapon
+#: miss. That is what keeps out the Tomahawk (TERCOM + DSMAC), the CJ-10 and the KD-20
+#: that copies it, the Kalibr, Storm Shadow (TERPROM + DSMAC), Taurus KEPD 350 (TRN +
+#: IBN) and the Kh-101/555 correlators. The AGM-86C/D is the one air-launched cruise
+#: missile left in: converting the ALCM to CALCM *removed* its TERCOM and put GPS in
+#: its place, so satellites are the only absolute fix it has.
+#:
+#: **An automatic terminal seeker does NOT excuse.** It has to find the target by
+#: itself, and a weapon already tens of miles off track is unlikely to have anything in
+#: its field of view when it looks -- which is the intended outcome, not a side effect.
+#: That is why JASSM stays: nothing navigates it but satellites and an IMU, and its
+#: IIR recogniser only helps once it arrives somewhere near.
+#:
+#: **Anti-ship missiles stay out**, whatever navigates their midcourse. Their target
+#: moves, so satellite guidance only refines a search basket that an active radar or
+#: imaging seeker then searches for real -- and the ship is not where the GPS said in
+#: the first place. That is the line between JASSM and the AGM-158C LRASM.
 GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
-    "GBU-31",  # JDAM, 2000 lb
-    "GBU-32",  # JDAM, 1000 lb
-    "GBU-38",  # JDAM, 500 lb
-    "GBU-54",  # Laser JDAM (GPS/INS baseline)
+    # Satellite-guided bombs and dispensers.
+    "GBU_31",  # JDAM, 2000 lb -- all (V) variants
+    "GBU_32",  # JDAM, 1000 lb
+    "GBU_38",  # JDAM, 500 lb
+    "GBU_39",  # SDB I -- INS/GPS
+    "GBU_54",  # Laser JDAM (GPS/INS baseline)
     "JDAM",  # any mod store that names itself plainly
-    "AGM-154",  # JSOW A/B/C
-    "JSOW",
-    "AGM-158",  # JASSM / JASSM-ER
-    "JASSM",
-    "CBU-103",  # WCMD -- inertial/GPS-corrected dispensers
-    "CBU-105",
-    "CBU-97_",  # the WCMD variant names; the plain CBU-97 is unguided
     "KAB_500S",  # GLONASS
-    "KAB-500S",
     "KAB_1500S",
-    "KAB-1500S",
+    "CBU_103",  # WCMD -- inertial/GPS-corrected dispensers
+    "CBU_105",
+    # Glide weapons.
+    "AGM_154",  # JSOW A/B/C
+    "JSOW",
+    # Cruise missiles with no map of their own. AGM-158A/B only: the C is the LRASM,
+    # which hunts ships. Both spellings of the JASSM -- CurrentHill's B-21 drops the
+    # underscore.
+    # CALCM: the ALCM-to-CALCM conversion deleted its TERCOM and put GPS in its
+    # place. The bare fragment is safe because DCS ships no AGM-86B, the nuclear
+    # ALCM that kept the terrain database; check that again if one ever appears.
+    "AGM_86",
+    "AGM_158A",
+    "AGM_158B",
+    "AGM158B",
+    "JASSM",
+    # Guided rockets and loitering munitions.
+    "GMLRS",
+    "GLSDB",
+    "ATACMS",
+    "FD280",  # PHL-16, BeiDou/INS
+    "SHAHED",  # the loitering munition the real world jams with exactly this
 )
 
 #: The reach a jammer gets when its unit definition names none.
@@ -83,9 +126,12 @@ GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
 #: denied release area. A weapon aimed at anything inside the bubble flies
 #: through the bubble whatever range it was released from, so standing off does
 #: not help a covered target -- the radius is simply the size of the target set
-#: that loses satellite guidance. At 27-30 nm one site denied a large share of a
-#: medium map; 15 nm denies a target cluster, so a campaign can field two or
-#: three on distinct clusters and most of the theatre stays GPS-usable.
+#: that loses satellite guidance.
+#:
+#: This is only the fallback for a jammer whose unit definition names no reach. What
+#: a campaign actually gets is the ``defaultReachNm`` plugin option, which ships at
+#: 30 nm; 15 nm here denies a target cluster, so nothing silently grows a bubble it
+#: was never given.
 DEFAULT_REACH = nautical_miles(15)
 
 #: How far off the aimpoint a fully-jammed weapon lands when the unit definition

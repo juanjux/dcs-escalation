@@ -41,13 +41,114 @@ def test_a_malformed_value_falls_back_rather_than_raising() -> None:
     assert props.radius_nm is None
 
 
+def _matches(type_name: str) -> bool:
+    """What the Lua does: a plain case-insensitive substring find, nothing else."""
+    low = type_name.lower()
+    return any(p.lower() in low for p in GPS_GUIDED_WEAPON_PATTERNS)
+
+
 def test_only_satellite_guided_weapons_are_degraded() -> None:
     """A Paveway that mysteriously misses is a bug report, not a feature: laser, TV,
     IR and anti-radiation weapons must never be on this list."""
-    patterns = [p.upper() for p in GPS_GUIDED_WEAPON_PATTERNS]
-    assert any("GBU-31" in p for p in patterns), "JDAM must be covered"
-    for never in ("GBU-12", "AGM-65", "AGM-88", "AGM-114", "GBU-16", "GBU-10"):
-        assert not any(never in p for p in patterns), f"{never} is not GPS-guided"
+    for never in (
+        "GBU_12",
+        "GBU_10",
+        "GBU_16",
+        "GBU_24",
+        "KAB_500Kr",
+        "KAB_1500LG",
+        "AGM_65D",
+        "AGM_88C",
+        "AGM_114K",
+        "CBU_87",
+        "CBU_99",
+    ):
+        assert not _matches(never), f"{never} is not satellite-guided"
+
+
+def test_the_patterns_are_spelled_the_way_dcs_names_weapons() -> None:
+    """``Weapon:getTypeName()`` returns the definition's ``name`` -- ``GBU_31``, with an
+    underscore -- and never the ``user_name`` the ME shows, ``GBU-31(V)1/B``. Matching on
+    the hyphenated spelling degrades nothing at all, silently."""
+    for real in (
+        "GBU_31",
+        "GBU_31_V_3B",
+        "GBU_32_V_2B",
+        "GBU_38",
+        "GBU_54_V_1B",
+        "GBU_39",
+        "AGM_154A",
+        "AGM_154B",
+        "AGM_154C",
+        "KAB_500S",
+    ):
+        assert _matches(real), f"{real} is how DCS names it and it must match"
+
+
+def test_a_weapon_somebody_flies_is_left_alone() -> None:
+    """The first exclusion is a pilot in the loop, human or AI. The SLAM family's
+    terminal leg is TV flown onto the target by whoever launched it; degrading the
+    navigation of a weapon being steered by hand punishes the wrong thing."""
+    for never in ("AGM_84E", "AGM_84H", "SLAM_ER", "mils_cm802akg"):
+        assert not _matches(never), f"{never} is flown by its shooter"
+
+
+def test_a_missile_that_carries_a_map_is_left_alone() -> None:
+    """The second exclusion is terrain-referenced navigation. TERCOM (Terrain Contour
+    Matching), DSMAC, TERPROM and image-based navigation fix the missile's position
+    absolutely, by comparing the ground below against a database it carries -- they are
+    not inertial backup that drifts. Long-range cruise missiles were built around them
+    before GPS existed, so denying satellites does not make them miss."""
+    for never in (
+        "BGM_109B",  # Tomahawk: TERCOM + DSMAC
+        "Ticonderoga_RGM_109C_III",
+        "ArleighBurkeIII_RGM_109E_V",
+        "Type052D_CJ10",  # CJ-10: INS/BeiDou/TERCOM + DSMAC
+        "GLCM_CJ10",
+        "KD_20",  # the CJ-10's air-launched sister, same suite
+        "3M14",  # Kalibr land attack
+        "X_101",  # Kh-101 optical correlator
+        "X_555",
+        "SU24MU_STORMSHADOW",  # TERPROM + DSMAC
+        "CH_KEPD350",  # Taurus: terrain-referenced + image-based navigation
+    ):
+        assert not _matches(never), f"{never} navigates off its own terrain database"
+
+
+def test_an_automatic_terminal_seeker_is_no_excuse() -> None:
+    """A seeker that comes up on its own is not an exclusion: it has to find the target
+    by itself, and a weapon already tens of miles off track is unlikely to have anything
+    in its field of view. JASSM is the case -- nothing navigates it but satellites and
+    an IMU, and its IIR recogniser only helps once it arrives somewhere near."""
+    for real in ("B21_AGM158B_AIR", "AGM_158B"):
+        assert _matches(real), f"{real} navigates by satellite alone"
+
+
+def test_the_calcm_is_the_one_cruise_missile_left_in() -> None:
+    """Converting the ALCM to CALCM *removed* its TERCOM and put GPS in its place, so
+    satellites are the only absolute fix the AGM-86C/D has."""
+    for real in ("AGM_86C", "AGM_86"):
+        assert _matches(real), f"{real} lost its terrain database in the conversion"
+
+
+def test_anti_ship_missiles_are_never_degraded() -> None:
+    """Their target moves. Satellite guidance only refines a search basket that an
+    active radar or imaging seeker then searches for real, and the ship is not where
+    the GPS said anyway."""
+    for never in (
+        "RBS-15 Mk4 Ship",
+        "Type26_SPEAR5_ASHM",
+        "B21_AGM158C_AIR",  # LRASM
+        "Constellation_NSM",
+        "Type45_NSM",
+        "TYPE055_YJ18",
+        "CH_YJ12",
+        "DF_21D",
+        "TYPE055_YJ21",
+        "RGM_84D",
+        "P_700",
+    ):
+        assert not _matches(never), f"{never} hunts a moving ship"
 
 
 def test_the_declared_jammers_carry_a_bubble() -> None:
