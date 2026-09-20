@@ -18,6 +18,7 @@ from typing import Any, Sequence, cast
 
 import pytest
 
+from game.ato.savedpoints import capacity_for
 from game.missiongenerator import dtc
 from game.theater import Player
 
@@ -528,3 +529,11 @@ def test_a_saved_point_carries_its_name_and_its_altitude() -> None:
     assert written.name == "Smoke over the ridge"
     assert (written.x, written.y) == (10.0, 20.0)
     assert round(written.alt_m) == 305
+
+
+def test_the_mod_s_tanker_super_hornets_read_one_too() -> None:
+    """DCS's own DTC editor lists them beside the E and the F, which is the list that
+    settles which aircraft can be handed a cartridge."""
+    for aircraft in ("FA-18ET", "FA-18FT"):
+        assert dtc.CARTRIDGES[aircraft].sections([], []).keys() == {"SA"}
+        assert capacity_for(aircraft) == capacity_for("FA-18E")

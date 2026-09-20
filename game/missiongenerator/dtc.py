@@ -339,6 +339,10 @@ CARTRIDGES: dict[str, Cartridge] = {
         SuperHornetCartridge("FA-18E"),
         SuperHornetCartridge("FA-18F"),
         SuperHornetCartridge("EA-18G"),
+        # The mod's tanker variants are units of their own, and DCS's own DTC editor
+        # lists them, so they read a cartridge like the E and the F they are.
+        SuperHornetCartridge("FA-18ET"),
+        SuperHornetCartridge("FA-18FT"),
     )
 }
 
