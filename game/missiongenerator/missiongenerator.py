@@ -182,11 +182,11 @@ class MissionGenerator:
         output.parent.mkdir(parents=True, exist_ok=True)
         self.mission.save(output)
 
-        # The A-10's cartridge is a Lua database beside the mission rather than a
-        # .dtc, so it is written here, where the mission's own path is known.
-        from game.missiongenerator.dts import write_database
+        # The A-10 has no cartridge at all: its navigation computer is written into
+        # the mission, at Avionics/<type>/<unit>/CDU/SETTINGS.lua.
+        from game.missiongenerator.a10cdu import write_into_mission as write_a10_cdu
 
-        write_database(self.game, output)
+        write_a10_cdu(self.game, self.mission_data, output)
 
         # The rest go inside the .miz, so the aircraft finds them without the player
         # going to the DTC page for them.

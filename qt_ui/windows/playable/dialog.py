@@ -530,7 +530,7 @@ class PlayableAircraftDialog(QDialog):
         if one is None:
             return ""
         from game.missiongenerator.dtc import CARTRIDGES
-        from game.missiongenerator.dts import AIRCRAFT as DTS_AIRCRAFT
+        from game.missiongenerator.a10cdu import AIRCRAFT as DTS_AIRCRAFT
 
         if one.dcs_id in CARTRIDGES:
             return (
@@ -539,8 +539,9 @@ class PlayableAircraftDialog(QDialog):
             )
         if one.dcs_id in DTS_AIRCRAFT:
             return (
-                "Written to the mission's DTS database: LOAD ALL on the CDU"
-                " (SYS → PG → DTS → DTSUPLD → ALL ORIG DATA)."
+                "In the navigation computer from the start, on flight plan EXTRA so"
+                " the mission route is untouched. The aircraft works out the ground"
+                " height under each one itself."
             )
         return "Nothing loads a point into this airframe: they go on the kneeboard."
 
