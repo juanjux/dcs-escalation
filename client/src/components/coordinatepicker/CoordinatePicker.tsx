@@ -26,6 +26,8 @@ interface Picked {
   at: LatLng;
   text: string;
   all: Record<string, string>;
+  // How high the ground is here, when the server could look it up.
+  elevationFt?: number;
 }
 
 const CROSSHAIR = L.divIcon({
@@ -69,7 +71,13 @@ export default function CoordinatePicker() {
       );
       const body = await response.json();
       setCopied(false);
-      setPicked({ at: event.latlng, text: body.text, all: body.all ?? {} });
+      setPicked({
+        at: event.latlng,
+        text: body.text,
+        all: body.all ?? {},
+        elevationFt:
+          typeof body.elevation_ft === "number" ? body.elevation_ft : undefined,
+      });
     } catch (error) {
       console.error("Could not read the coordinates of that point", error);
     }
@@ -102,7 +110,11 @@ export default function CoordinatePicker() {
           <button onClick={() => copy(picked.text)}>
             {copied ? "Copied" : "Copy"}
           </button>
-          <SavePoint at={picked.at} name={picked.text} />
+          <SavePoint
+            at={picked.at}
+            name={picked.text}
+            elevationFt={picked.elevationFt}
+          />
           <div className="cp-others">
             {Object.entries(picked.all)
               .filter(([, text]) => text !== picked.text)

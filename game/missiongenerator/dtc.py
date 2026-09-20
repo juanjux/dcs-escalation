@@ -408,10 +408,14 @@ def steerpoint_numbers(aircraft: str, route_length: int, count: int) -> list[int
     player cannot read off. An airframe with no cartridge at all is numbered as if it
     counted from 1, which is what the A-10's own database does.
     """
+    from game.missiongenerator.a10cdu import AIRCRAFT as A10, numbers_for
+
+    if aircraft in A10:
+        return numbers_for(route_length, count)
     profile = CARTRIDGES.get(aircraft)
-    first = profile.first_point if profile is not None else 1
-    last = profile.last_point if profile is not None else first + route_length + count
-    numbers = list(range(first + route_length, last + 1))
+    if profile is None:
+        return list(range(route_length + 1, route_length + 1 + count))
+    numbers = list(range(profile.first_point + route_length, profile.last_point + 1))
     return numbers[:count]
 
 
