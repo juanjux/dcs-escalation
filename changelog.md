@@ -10,8 +10,6 @@
 * **[UI]** The F-16 application icon now has a blue/yellow Ukrainian flag background for better visibility at desktop and taskbar sizes.
 * **[UI]** The location dialog was redrawn.
 * **[UI]** Coordinates: the map has a GPS picker that reads any point on it.
-* **[FIX]** The JAMMING row of a jamming site's card said the bubble was up even when the site was dark.
-* **[FIX]** A GPS jamming site the network had switched off went on jamming: bombing the substation that feeds it took the ring off the map but left the bubble eating satellite-guided weapons in the mission.
 * **[Campaigns]** Gran Polvorin: the Ushuaia power station stands 26 nm further north, where its grid also reaches Rio Grande's SAM, AAA and GPS jamming site instead of leaving them unpowered. NEW game required.
 * **[Campaigns]** Gran Polvorin has an air defence network.
 * **[Mission Plugins]** **Realistic CAS** adds gradual ground-target discovery for both coalitions through visual, EO/IR and ground-radar observations, with terrain LOS and approximate weather, daylight and cover effects. 
@@ -164,6 +162,9 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** The map's coordinate popup no longer opens on every click of the ruler.
+* **[FIX]** The JAMMING row of a jamming site's card said the bubble was up even when the site was dark.
+* **[FIX]** A GPS jamming site the network had switched off went on jamming: bombing the substation that feeds it took the ring off the map but left the bubble eating satellite-guided weapons in the mission.
 * **[FIX]** Unticking a unit in the New Game wizard survives adding another one.
 * **[FIX]** The map's coordinate picker copied nothing: the map is loaded from a file:// page, where the browser's clipboard API is not available. Clicking the coordinates copies them too.
 * **[UI]** Cancelling Save As or failing to save no longer closes the campaign after choosing to save on exit. Failed saves show an error and preserve the previous save path. Save/close decisions are logged for troubleshooting.

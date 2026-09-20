@@ -8,6 +8,10 @@
 // and are left alone. Leaflet marks those elements `leaflet-interactive` and still
 // bubbles the click up to the map, so the target is what tells the two apart.
 //
+// The ruler is the other claim on a bare click: while it is measuring, every click is a
+// vertex of the line being drawn, and a popup on each one is in the way. It marks its
+// own control button while it is on, which is the only thing it says out loud.
+//
 // The formatting is the server's, so the map, the objective dialog and anything added
 // later say the same thing about the same spot.
 import { HTTP_URL } from "../../api/backend";
@@ -37,6 +41,12 @@ export function landedOnSomething(target: EventTarget | null): boolean {
   );
 }
 
+// leaflet-ruler puts this class on its control while it is measuring, and takes it off
+// when the measurement ends.
+export function measuring(): boolean {
+  return document.querySelector(".leaflet-ruler-clicked") !== null;
+}
+
 export default function CoordinatePicker() {
   const [picked, setPicked] = useState<Picked | null>(null);
   const [copied, setCopied] = useState(false);
@@ -49,7 +59,7 @@ export default function CoordinatePicker() {
   }, [picked]);
 
   useMapEvent("click", async (event) => {
-    if (landedOnSomething(event.originalEvent.target)) {
+    if (landedOnSomething(event.originalEvent.target) || measuring()) {
       return;
     }
     const { lat, lng } = event.latlng;
