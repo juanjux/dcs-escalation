@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable, Optional
 
 if TYPE_CHECKING:
     from game.ato.flight import Flight
@@ -121,6 +121,28 @@ def kinds_for(dcs_id: str) -> list[PointKind]:
     if capacity.markpoints and not capacity.waypoints:
         return [PointKind.MARKPOINT, PointKind.WAYPOINT]
     return [PointKind.WAYPOINT, PointKind.MARKPOINT]
+
+
+def reaches_the_aircraft(dcs_id: str, kind: PointKind) -> bool:
+    """Whether the airframe's own cartridge or database carries this kind.
+
+    False for an airframe nobody has measured as well: a point that cannot be shown
+    to go in is one to say so about. Either way the point is still written down --
+    the kneeboard takes both kinds -- it just does not reach the cockpit by itself.
+    """
+    return capacity_for(dcs_id).of(kind) > 0
+
+
+def instead_of(dcs_id: str, kind: PointKind) -> Optional[PointKind]:
+    """The kind worth offering when the chosen one cannot reach the aircraft.
+
+    None when there is nothing better to offer: the aircraft takes the chosen kind,
+    or it takes neither and swapping would gain nothing.
+    """
+    if reaches_the_aircraft(dcs_id, kind):
+        return None
+    other = PointKind.WAYPOINT if kind is PointKind.MARKPOINT else PointKind.MARKPOINT
+    return other if reaches_the_aircraft(dcs_id, other) else None
 
 
 def room_for(flight: Flight, kind: PointKind) -> int:

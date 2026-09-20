@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMenu,
+    QMessageBox,
     QPushButton,
     QWidget,
 )
@@ -149,10 +150,56 @@ class CoordinateLabel(QWidget):
     def _save(self, flight: Any, kind: Any) -> None:
         from game.ato.savedpoints import SavedPoint, add_point
 
+        kind = self._confirm_kind(flight, kind)
+        if kind is None:
+            return
         add_point(
             flight,
             SavedPoint(kind=kind, name=self.text, x=self.position.x, y=self.position.y),
         )
+
+    def _confirm_kind(self, flight: Any, kind: Any) -> Any:
+        """The kind to save, or None to save nothing."""
+        from game.ato.savedpoints import instead_of
+
+        other = instead_of(flight.unit_type.dcs_unit_type.id, kind)
+        if other is None:
+            return kind
+        return ask_about_kind(self, flight.unit_type.display_name, kind, other)
+
+
+def ask_about_kind(
+    parent: Optional[QWidget], aircraft: str, kind: Any, other: Any
+) -> Any:
+    """The question for a kind the aircraft cannot be given.
+
+    Saving it is not refused -- the kneeboard carries both kinds -- so the three
+    answers are the other kind, this one anyway, and nothing.
+    """
+    ask = QMessageBox(parent)
+    ask.setIcon(QMessageBox.Icon.Question)
+    ask.setWindowTitle(kind.label)
+    ask.setText(f"The {aircraft} cannot be given {kind.label.lower()}s.")
+    ask.setInformativeText(
+        f"Saved as a {other.label.lower()} it goes into the aircraft. Saved as a "
+        f"{kind.label.lower()} it goes on the kneeboard only, to be entered by hand."
+    )
+    as_other = ask.addButton(
+        f"Save as {other.label.lower()}", QMessageBox.ButtonRole.AcceptRole
+    )
+    anyway = ask.addButton(
+        f"Save as {kind.label.lower()}", QMessageBox.ButtonRole.DestructiveRole
+    )
+    ask.addButton(QMessageBox.StandardButton.Cancel)
+    ask.setDefaultButton(as_other)
+    ask.exec()
+
+    clicked = ask.clickedButton()
+    if clicked is as_other:
+        return other
+    if clicked is anyway:
+        return kind
+    return None
 
 
 def _kinds() -> list[Any]:
