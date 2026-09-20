@@ -475,9 +475,12 @@ def test_the_route_comes_first_and_keeps_its_numbers() -> None:
     assert points[13].name == "P0"
 
 
-def test_only_the_flight_plan_claims_a_route_sequence() -> None:
-    """A saved point is a place to look at, not a leg to fly: SEQ1 is the route and
-    stepping through it is unchanged."""
+def test_the_flight_plan_is_sequence_one_and_the_saved_points_are_sequence_two() -> (
+    None
+):
+    """Stepping SEQ1 is the route, unchanged. The points the player wrote down are
+    one switch away rather than in no sequence at all, which is the only other way
+    to reach them -- typing each number into the HSI."""
     section = dtc.HornetCartridge().sections([], _nav(dtc.HornetCartridge(), 13, 2))
     written = section["WYPT"]["NAV_PTS"]
 
@@ -485,7 +488,9 @@ def test_only_the_flight_plan_claims_a_route_sequence() -> None:
     assert [point["R1"] for point in written] == [True] * 13 + [False] * 2
     assert [point["R1_order"] for point in written[:13]] == list(range(1, 14))
     assert all(point["R1_order"] is None for point in written[13:])
-    assert all(not point["R2"] and not point["R3"] for point in written)
+    assert [point["R2"] for point in written] == [False] * 13 + [True] * 2
+    assert [point["R2_order"] for point in written[13:]] == [1, 2]
+    assert all(not point["R3"] for point in written)
 
 
 def test_the_hornet_stops_before_home_and_the_bullseye() -> None:
@@ -537,3 +542,20 @@ def test_the_mod_s_tanker_super_hornets_read_one_too() -> None:
     for aircraft in ("FA-18ET", "FA-18FT"):
         assert dtc.CARTRIDGES[aircraft].sections([], []).keys() == {"SA"}
         assert capacity_for(aircraft) == capacity_for("FA-18E")
+
+
+def test_a_saved_point_is_numbered_as_the_aircraft_numbers_it() -> None:
+    """A Hornet whose route is nine points puts the first saved one at 9, and a
+    kneeboard that called it 1 was one the player could not read off."""
+    assert dtc.steerpoint_numbers("FA-18C_hornet", 9, 2) == [9, 10]
+    assert dtc.steerpoint_numbers("F-16C_50", 4, 3) == [5, 6, 7]
+
+
+def test_the_numbering_stops_where_the_module_does() -> None:
+    assert dtc.steerpoint_numbers("F-16C_50", 24, 5) == [25]
+    assert dtc.steerpoint_numbers("F-16C_50", 25, 5) == []
+
+
+def test_an_airframe_with_no_cartridge_is_numbered_from_one() -> None:
+    """Which is what the A-10's own database does."""
+    assert dtc.steerpoint_numbers("A-10C_2", 6, 2) == [7, 8]

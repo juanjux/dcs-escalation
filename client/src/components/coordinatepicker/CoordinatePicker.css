@@ -83,3 +83,18 @@
 .cp-save-asking .cp-save-buttons {
   margin-top: 4px;
 }
+
+.cp-save-alt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  opacity: 0.85;
+  margin-bottom: 4px;
+}
+
+.cp-save-alt input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+}

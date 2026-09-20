@@ -41,6 +41,7 @@ from tabulate import tabulate
 
 from game.ato.flighttype import FlightType
 from game.ato.savedpoints import SavedPoint
+from game.missiongenerator.dtc import steerpoint_numbers
 from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
 from game.coordinates import CoordinateFormat, format_latlng
@@ -1201,9 +1202,11 @@ class SavedPointsPage(KneeboardPage):
     """The points the player wrote down for this aircraft.
 
     Its own page rather than extra rows on the route: these are not part of the
-    flight plan and reading the route should not mean reading past them. Nothing
-    puts them in the aircraft yet, whatever it is, so this is where the player reads
-    one off and enters it himself.
+    flight plan and reading the route should not mean reading past them.
+
+    The numbers are the aircraft's own. They go in after the flight plan, so on a
+    Hornet whose route is nine points the first extra is 9 -- and a page that called
+    it 1 was a page the player could not read off against the cockpit.
 
     An aircraft holds far more of them than a page does -- an A-10's navigation
     database runs to thousands -- so the list is paginated rather than capped: the
@@ -1220,16 +1223,18 @@ class SavedPointsPage(KneeboardPage):
         theater: ConflictTheater,
         coordinate_format: CoordinateFormat,
         dark_kneeboard: bool,
-        first_number: int = 1,
+        numbers: Optional[list[int]] = None,
         page: int = 1,
         total_pages: int = 1,
     ) -> None:
         self.callsign = callsign
         self.points = points
+        self.numbers = (
+            numbers if numbers is not None else list(range(1, len(points) + 1))
+        )
         self.theater = theater
         self.coordinate_format = coordinate_format
         self.dark_kneeboard = dark_kneeboard
-        self.first_number = first_number
         self.page = page
         self.total_pages = total_pages
 
@@ -1241,16 +1246,17 @@ class SavedPointsPage(KneeboardPage):
         theater: ConflictTheater,
         coordinate_format: CoordinateFormat,
         dark_kneeboard: bool,
+        numbers: Optional[list[int]] = None,
     ) -> List["SavedPointsPage"]:
         """One page while they fit, as many as it takes when they do not.
 
         A single page carries no "(1/1)", so a handful of points reads exactly as it
         did before there was more than one page of them.
         """
-        chunks = [
-            points[start : start + cls.ROWS_PER_PAGE]
-            for start in range(0, max(len(points), 1), cls.ROWS_PER_PAGE)
-        ]
+        if numbers is None:
+            numbers = list(range(1, len(points) + 1))
+        starts = list(range(0, max(len(points), 1), cls.ROWS_PER_PAGE))
+        chunks = [points[start : start + cls.ROWS_PER_PAGE] for start in starts]
         return [
             cls(
                 callsign,
@@ -1258,30 +1264,30 @@ class SavedPointsPage(KneeboardPage):
                 theater,
                 coordinate_format,
                 dark_kneeboard,
-                first_number=index * cls.ROWS_PER_PAGE + 1,
+                numbers=numbers[start : start + cls.ROWS_PER_PAGE],
                 page=index + 1,
                 total_pages=len(chunks),
             )
-            for index, chunk in enumerate(chunks)
+            for index, (start, chunk) in enumerate(zip(starts, chunks))
         ]
 
     def write(self, path: Path) -> None:
         writer = KneeboardPageWriter(dark_theme=self.dark_kneeboard)
         counted = f" ({self.page}/{self.total_pages})" if self.total_pages > 1 else ""
-        writer.title(f"{self.callsign} points{counted}")
+        writer.title(f"{self.callsign} extra points{counted}")
         rows = []
-        for offset, point in enumerate(self.points):
+        for number, point in zip(self.numbers, self.points):
             at = DcsPoint(point.x, point.y, self.theater.terrain)
             rows.append(
                 [
-                    str(self.first_number + offset),
-                    point.kind.label,
+                    str(number),
+                    f"Extra {point.kind.label.lower()}",
                     point.name,
                     format_latlng(at.latlng(), self.coordinate_format),
                     f"{point.altitude_ft} ft" if point.altitude_ft else "",
                 ]
             )
-        writer.table(rows, headers=["#", "Kind", "Name", "Position", "Alt"])
+        writer.table(rows, headers=["STPT", "Kind", "Name", "Position", "Elev"])
         writer.write(path)
 
 
@@ -1623,6 +1629,11 @@ class KneeboardGenerator(MissionInfoGenerator):
                         self.game.settings, "coordinate_format", CoordinateFormat.DDM
                     ),
                     self.dark_kneeboard,
+                    numbers=steerpoint_numbers(
+                        flight.aircraft_type.dcs_unit_type.id,
+                        len(flight.waypoints),
+                        len(flight.saved_points),
+                    ),
                 )
             )
 

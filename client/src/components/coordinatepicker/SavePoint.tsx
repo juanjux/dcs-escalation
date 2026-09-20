@@ -31,6 +31,9 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
   const [receivers, setReceivers] = useState<Receiver[] | null>(null);
   const [chosen, setChosen] = useState<string>("");
   const [said, setSaid] = useState<string>("");
+  // A weapon aimed at a saved point from the wrong elevation lands short or long,
+  // which is what a JDAM or a JSOW does with a target of opportunity.
+  const [feet, setFeet] = useState<string>("");
 
   useEffect(() => {
     let dropped = false;
@@ -78,6 +81,7 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
           name: props.name,
           lat: props.at.lat,
           lng: props.at.lng,
+          altitude_ft: Math.max(0, Math.round(Number(feet) || 0)),
         }),
       });
       const body: unknown = await response.json().catch(() => null);
@@ -117,6 +121,18 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
           </option>
         ))}
       </select>
+      <label className="cp-save-alt">
+        Elevation
+        <input
+          type="number"
+          min={0}
+          step={100}
+          value={feet}
+          placeholder="0"
+          onChange={(e) => setFeet(e.target.value)}
+        />
+        ft
+      </label>
       <div className="cp-save-buttons">
         {(receiver.kinds ?? []).map((kind) => {
           const room = receiver.room[kind] ?? 0;

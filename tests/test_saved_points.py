@@ -130,7 +130,9 @@ def test_the_kneeboard_paginates_rather_than_capping(qt_free: None = None) -> No
     )
 
     assert len(pages) == 3
-    assert [page.first_number for page in pages] == [1, 23, 45]
+    # The numbers are the aircraft's own, so page two carries on where page one
+    # stopped rather than starting again.
+    assert [page.numbers[0] for page in pages] == [1, 23, 45]
     assert sum(len(page.points) for page in pages) == 50
 
 

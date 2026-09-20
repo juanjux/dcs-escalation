@@ -19,6 +19,7 @@ from PySide6.QtGui import QAction, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
+    QComboBox,
     QDialog,
     QHBoxLayout,
     QLabel,
@@ -176,6 +177,14 @@ class NewPoint(QDialog):
         self.name = styled_input(QLineEdit())
         self.name.setMaxLength(data.NAME_LENGTH)
         self.name.setPlaceholderText("Optional")
+        # The height matters: a weapon aimed at a point on the ground from the wrong
+        # elevation lands short or long, which is what a JDAM or a JSOW does with a
+        # target-of-opportunity point.
+        self.altitude = styled_input(QLineEdit(), width=110)
+        self.altitude.setPlaceholderText("0")
+        self.units = QComboBox()
+        self.units.addItems(["feet", "metres"])
+        styled_input(self.units, width=100)
         self.read = _label("", f"font-size: 11px; color: {QUIET_INK};")
         self.save = style_button(QPushButton("Save"), "primary")
         self.save.setEnabled(False)
@@ -194,6 +203,25 @@ class NewPoint(QDialog):
             _label("Name", f"font-size: 11px; font-weight: bold; color: {CAPTION};")
         )
         form.addWidget(self.name)
+        form.addSpacing(6)
+        form.addWidget(
+            _label(
+                "Elevation", f"font-size: 11px; font-weight: bold; color: {CAPTION};"
+            )
+        )
+        height = QHBoxLayout()
+        height.setContentsMargins(0, 0, 0, 0)
+        height.setSpacing(8)
+        height.addWidget(self.altitude)
+        height.addWidget(self.units)
+        height.addWidget(
+            _label(
+                "Above sea level. Left empty it is written down as 0.",
+                f"font-size: 11px; color: {QUIET_INK};",
+            )
+        )
+        height.addStretch()
+        form.addLayout(height)
         form.addSpacing(10)
         buttons = QHBoxLayout()
         buttons.addStretch()
@@ -220,6 +248,18 @@ class NewPoint(QDialog):
         if text and parse_latlng(text) is not None:
             self.position.setText(text.strip())
         self.position.selectAll()
+
+    @property
+    def altitude_ft(self) -> int:
+        """What was typed, in the feet a saved point is kept in."""
+        text = self.altitude.text().strip().replace(",", ".")
+        try:
+            value = float(text) if text else 0.0
+        except ValueError:
+            return 0
+        if self.units.currentText() == "metres":
+            value /= 0.3048
+        return max(0, round(value))
 
     def _reread(self) -> None:
         from game.coordinates import CoordinateFormat, format_latlng, parse_latlng
@@ -385,15 +425,18 @@ class PlayableAircraftDialog(QDialog):
         self.points_view.doubleClicked.connect(self.rename_at)
         for key, handler in (
             ("Return", self.show_current_on_map),
+            ("Enter", self.show_current_on_map),
             ("Ctrl+C", self.copy_coordinates),
             ("F2", self.rename_current),
             ("Del", self.delete_current),
         ):
             shortcut = QShortcut(QKeySequence(key), self.points_view)
-            shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+            # The view itself, not its children: an open name editor is a child, and
+            # a Return it does not get is a name the player cannot finish typing.
+            shortcut.setContext(Qt.ShortcutContext.WidgetShortcut)
             shortcut.activated.connect(handler)
         rename_aircraft = QShortcut(QKeySequence("F2"), self.aircraft_view)
-        rename_aircraft.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        rename_aircraft.setContext(Qt.ShortcutContext.WidgetShortcut)
         rename_aircraft.activated.connect(
             lambda: self.aircraft_view.edit(self.aircraft_view.currentIndex())
         )
@@ -505,6 +548,7 @@ class PlayableAircraftDialog(QDialog):
                 name=asked.name.text().strip() or "Point",
                 x=where.x,
                 y=where.y,
+                altitude_ft=asked.altitude_ft,
             ),
         )
         self.show_points()
@@ -571,10 +615,6 @@ class PlayableAircraftDialog(QDialog):
             self.points_view.edit(index)
 
     def show_current_on_map(self) -> None:
-        """Return shows the point -- unless an editor has it, which is where Return
-        means "I have finished typing"."""
-        if self.points_view.state() == QAbstractItemView.State.EditingState:
-            return
         self.show_on_map(self.points_view.currentIndex())
 
     def delete_current(self) -> None:

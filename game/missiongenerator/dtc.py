@@ -76,8 +76,9 @@ class NavPoint:
     x: float
     y: float
     alt_m: float
-    #: Part of the flight plan, as opposed to written down by the player. Only these
-    #: claim a route sequence: a saved point is a place to look at, not a leg to fly.
+    #: Where it comes in its own sequence, counted from 1.
+    sequence_order: int
+    #: Part of the flight plan, as opposed to written down by the player.
     on_route: bool
 
 
@@ -160,10 +161,14 @@ class HornetCartridge(Cartridge):
             "alt": point.alt_m,
             "note": "",
             "text_note": point.name[:24],
-            # Route sequence 1 is the flight plan, in the order it is flown.
+            # Sequence 1 is the flight plan, in the order it is flown. The points the
+            # player wrote down take the next sequence along rather than none at all:
+            # a point in no sequence can only be reached by typing its number into the
+            # HSI, and one sequence over is a switch.
             "R1": point.on_route,
             "R1_order": number + 1 if point.on_route else None,
-            "R2": False,
+            "R2": not point.on_route,
+            "R2_order": None if point.on_route else point.sequence_order,
             "R3": False,
             "altitudeType": 1,
             "velocityType": 3,
@@ -270,8 +275,10 @@ class ViperCartridge(Cartridge):
             "routeAltitude": 2000,
             "speed": 790,
             "note": point.name[:24],
+            # Same rule as the Hornet: the flight plan is sequence 1 and what the
+            # player wrote down is sequence 2.
             "R1": point.on_route,
-            "R2": False,
+            "R2": not point.on_route,
             "R3": False,
             "TOS": -1,
             "isTOSEnabled": False,
@@ -393,6 +400,21 @@ def _trim(profile: Cartridge, fronts: Sequence[Front]) -> list[Front]:
     return kept
 
 
+def steerpoint_numbers(aircraft: str, route_length: int, count: int) -> list[int]:
+    """The numbers these saved points will carry in the aircraft.
+
+    They go in after the flight plan, so the first one is not 1: on a Hornet whose
+    route is nine points it is 9, and a kneeboard that calls it 1 is a kneeboard the
+    player cannot read off. An airframe with no cartridge at all is numbered as if it
+    counted from 1, which is what the A-10's own database does.
+    """
+    profile = CARTRIDGES.get(aircraft)
+    first = profile.first_point if profile is not None else 1
+    last = profile.last_point if profile is not None else first + route_length + count
+    numbers = list(range(first + route_length, last + 1))
+    return numbers[:count]
+
+
 def navigation_set(
     profile: Cartridge, route: Sequence[Any], saved: Sequence[Any]
 ) -> list[NavPoint]:
@@ -423,8 +445,9 @@ def navigation_set(
             y=waypoint.position.y,
             alt_m=waypoint.alt.meters,
             on_route=True,
+            sequence_order=order,
         )
-        for number, waypoint in zip(numbers, route)
+        for order, (number, waypoint) in enumerate(zip(numbers, route), start=1)
     ]
     free = numbers[len(route) :]
     if len(saved) > len(free):
@@ -434,7 +457,7 @@ def navigation_set(
             len(saved),
             len(free),
         )
-    for number, point in zip(free, saved):
+    for order, (number, point) in enumerate(zip(free, saved), start=1):
         points.append(
             NavPoint(
                 number=number,
@@ -443,6 +466,7 @@ def navigation_set(
                 y=point.y,
                 alt_m=point.altitude_ft * 0.3048,
                 on_route=False,
+                sequence_order=order,
             )
         )
     return points
