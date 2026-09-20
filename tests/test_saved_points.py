@@ -48,8 +48,8 @@ def test_each_airframe_takes_what_its_own_cartridge_holds() -> None:
     Viper's steerpoints stop at 25."""
     assert capacity_for("FA-18C_hornet") == Capacity(waypoints=57, markpoints=0)
     assert capacity_for("F-16C_50") == Capacity(waypoints=25, markpoints=0)
-    # And an A-10 indexes two thousand waypoints and letters twenty-six marks.
-    assert capacity_for("A-10C_2") == Capacity(waypoints=2050, markpoints=26)
+    # And an A-10's DTS database indexes two thousand waypoints.
+    assert capacity_for("A-10C_2") == Capacity(waypoints=2050, markpoints=0)
     # The Super Hornets carry the Hornet's cartridge, section for section.
     assert capacity_for("FA-18E") == capacity_for("FA-18C_hornet")
 
@@ -62,7 +62,6 @@ def test_the_room_is_the_aircraft_s_own() -> None:
     """Not the kneeboard's: the page paginates, the aeroplane does not."""
     assert room_for(cast(Any, _flight()), PointKind.WAYPOINT) == 57
     assert room_for(cast(Any, _flight("A-10C_2")), PointKind.WAYPOINT) == 2050
-    assert room_for(cast(Any, _flight("A-10C_2")), PointKind.MARKPOINT) == 26
 
 
 def test_an_airframe_with_no_measured_room_still_takes_them() -> None:
@@ -161,8 +160,15 @@ def test_a_hornet_is_offered_a_waypoint_in_place_of_a_markpoint() -> None:
 
 def test_a_kind_the_aircraft_does_carry_is_not_questioned() -> None:
     assert instead_of("FA-18C_hornet", PointKind.WAYPOINT) is None
-    assert instead_of("A-10C_2", PointKind.MARKPOINT) is None
     assert instead_of("A-10C_2", PointKind.WAYPOINT) is None
+
+
+def test_no_aircraft_takes_a_loaded_markpoint() -> None:
+    """Every one of them has markpoints; none of them can be handed one. The Hornet's
+    cartridge has no markpoint section and the A-10's DTS database is waypoints only,
+    so the lettered marks are made in the cockpit either way."""
+    for aircraft in ("FA-18C_hornet", "FA-18E", "F-16C_50", "A-10C_2"):
+        assert instead_of(aircraft, PointKind.MARKPOINT) is PointKind.WAYPOINT
 
 
 def test_an_airframe_that_carries_neither_is_left_alone() -> None:
