@@ -184,7 +184,7 @@ export default function SavePoint(props: { at: LatLng; name: string }) {
                 save(asking.kind);
               }}
             >
-              Save as {LABEL[asking.kind]}
+              Save as {LABEL[asking.kind]} (kneeboard only!)
             </button>
             <button onClick={() => setAsking(null)}>Cancel</button>
           </div>
