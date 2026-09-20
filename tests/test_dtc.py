@@ -14,7 +14,7 @@ import json
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, Sequence, cast
 
 import pytest
 
@@ -34,6 +34,54 @@ def _game(*, fronts: int = 0) -> Any:
         campaign_name="A Campaign",
         blue=SimpleNamespace(ato=SimpleNamespace(packages=[])),
     )
+
+
+class _Unit:
+    """A flying unit, as much of one as the binder touches."""
+
+    def __init__(self, unit_type: str = "FA-18C_hornet", human: bool = True) -> None:
+        self.type = unit_type
+        self.human = human
+
+    def is_human(self) -> bool:
+        return self.human
+
+
+def _waypoint(name: str, x: float, y: float, alt_m: float = 6096.0) -> Any:
+    return SimpleNamespace(
+        display_name=name,
+        position=SimpleNamespace(x=x, y=y),
+        alt=SimpleNamespace(meters=alt_m),
+    )
+
+
+def _route(length: int) -> list[Any]:
+    return [_waypoint(f"WP{n}", float(n), float(n)) for n in range(length)]
+
+
+def _flight_data(
+    aircraft: str = "FA-18C_hornet",
+    callsign: str = "ENFIELD11",
+    crewed: int = 1,
+    route: int = 4,
+    saved: Sequence[Any] = (),
+) -> Any:
+    units = [_Unit(aircraft) for _ in range(crewed)]
+    return SimpleNamespace(
+        aircraft_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id=aircraft)),
+        callsign=callsign,
+        client_units=units,
+        waypoints=_route(route),
+        saved_points=list(saved),
+    )
+
+
+def _mission_data(*flights: Any) -> Any:
+    return SimpleNamespace(flights=list(flights))
+
+
+def _saved(kind: str, name: str, x: float, y: float, altitude_ft: int = 0) -> Any:
+    return SimpleNamespace(kind=kind, name=name, x=x, y=y, altitude_ft=altitude_ft)
 
 
 def _fronts(count: int) -> list[dtc.Front]:
@@ -64,8 +112,8 @@ def _crewed(game: Any, *seats: tuple[str, int]) -> None:
 def test_the_rings_are_mirrored_rather_than_drawn() -> None:
     """Listing them by hand works and looks wrong -- plain white rings instead of
     DCS's yellow dashed ones -- and needs every threat mapped to a name DCS knows."""
-    hornet = dtc.HornetCartridge().sections([])
-    viper = dtc.ViperCartridge().sections([])
+    hornet = dtc.HornetCartridge().sections([], [])
+    viper = dtc.ViperCartridge().sections([], [])
 
     assert hornet["SA"]["mirror_MEZ_THRTS"] is True
     assert viper["MPD"]["mirror_THREAT_PTS"] is True
@@ -75,7 +123,7 @@ def test_the_rings_are_mirrored_rather_than_drawn() -> None:
 
 
 def test_the_fronts_are_written_because_no_mirror_invents_them() -> None:
-    flot = dtc.HornetCartridge().sections(_fronts(1))["SA"]["FAOR_FLOT"]["FLOT"]
+    flot = dtc.HornetCartridge().sections(_fronts(1), [])["SA"]["FAOR_FLOT"]["FLOT"]
 
     assert len(flot) == 1
     assert flot[0]["id"] == "FLOT_1"
@@ -88,14 +136,16 @@ def test_the_fronts_are_written_because_no_mirror_invents_them() -> None:
 def test_the_page_is_told_which_line_to_show() -> None:
     """DCS spells 4 as NONE and starts there, so a cartridge that says nothing about
     it carries a line nobody is ever shown."""
-    assert dtc.HornetCartridge().sections(_fronts(1))["SA"]["Default_FLOT_Line"] == 1
+    assert (
+        dtc.HornetCartridge().sections(_fronts(1), [])["SA"]["Default_FLOT_Line"] == 1
+    )
     # Nothing to draw, so nothing is selected rather than an empty line.
-    assert dtc.HornetCartridge().sections([])["SA"]["Default_FLOT_Line"] == dtc.NONE
+    assert dtc.HornetCartridge().sections([], [])["SA"]["Default_FLOT_Line"] == dtc.NONE
 
 
 def test_the_viper_flags_each_line_point_rather_than_nesting_it() -> None:
     """Its twenty-five points are shared between four lines, not split among them."""
-    points = dtc.ViperCartridge().sections(_fronts(2))["MPD"]["GEO_LINES"]
+    points = dtc.ViperCartridge().sections(_fronts(2), [])["MPD"]["GEO_LINES"]
 
     assert len(points) == 4
     assert [point["L1"] for point in points] == [True, True, False, False]
@@ -109,8 +159,8 @@ def test_the_viper_flags_each_line_point_rather_than_nesting_it() -> None:
 
 
 def test_each_aircraft_keeps_it_somewhere_of_its_own() -> None:
-    assert set(dtc.HornetCartridge().sections([])) == {"SA"}
-    assert set(dtc.ViperCartridge().sections([])) == {"MPD"}
+    assert set(dtc.HornetCartridge().sections([], [])) == {"SA"}
+    assert set(dtc.ViperCartridge().sections([], [])) == {"MPD"}
 
 
 @pytest.mark.parametrize("aircraft", ["FA-18E", "FA-18F", "EA-18G"])
@@ -120,7 +170,7 @@ def test_the_super_hornets_carry_the_hornet_s_cartridge(aircraft: str) -> None:
     profile = dtc.CARTRIDGES[aircraft]
     hornet = dtc.CARTRIDGES["FA-18C_hornet"]
 
-    assert profile.sections(_fronts(1)) == hornet.sections(_fronts(1))
+    assert profile.sections(_fronts(1), []) == hornet.sections(_fronts(1), [])
     assert profile.max_lines == hornet.max_lines
 
 
@@ -164,19 +214,21 @@ def test_the_mission_carries_its_own_cartridges(tmp_path: Path) -> None:
     mission = tmp_path / "retribution_nextturn.miz"
     with zipfile.ZipFile(mission, "w") as archive:
         archive.writestr("mission", "-- a mission")
-    game = _game()
-    _crewed(game, ("FA-18C_hornet", 2), ("F-16C_50", 1))
+    data = _mission_data(
+        _flight_data(callsign="ENFIELD11"),
+        _flight_data(aircraft="F-16C_50", callsign="SPRINGFIELD21"),
+    )
 
-    written = dtc.write_into_mission(game, mission)
+    written = dtc.write_into_mission(_game(), data, mission)
 
     assert written == [
-        "DTC/retribution_nextturn F-16C_50.dtc",
-        "DTC/retribution_nextturn FA-18C_hornet.dtc",
+        "DTC/retribution_nextturn ENFIELD11.dtc",
+        "DTC/retribution_nextturn SPRINGFIELD21.dtc",
     ]
     with zipfile.ZipFile(mission) as archive:
         assert "mission" in archive.namelist()
         card = json.loads(
-            archive.read("DTC/retribution_nextturn FA-18C_hornet.dtc").decode("utf-8")
+            archive.read("DTC/retribution_nextturn ENFIELD11.dtc").decode("utf-8")
         )
     assert card["type"] == "FA-18C_hornet"
 
@@ -186,7 +238,7 @@ def test_nothing_to_carry_leaves_the_mission_alone(tmp_path: Path) -> None:
     with zipfile.ZipFile(mission, "w") as archive:
         archive.writestr("mission", "-- a mission")
 
-    assert dtc.write_into_mission(_game(), mission) == []
+    assert dtc.write_into_mission(_game(), _mission_data(), mission) == []
 
     with zipfile.ZipFile(mission) as archive:
         assert archive.namelist() == ["mission"]
@@ -268,7 +320,7 @@ def test_the_mod_really_does_keep_them_where_the_hornet_does(aircraft: str) -> N
 def test_the_sa_section_is_written_whole() -> None:
     """A cartridge that draws the rings carries a complete section; one that names
     three keys out of eleven is a shape the loader has never been handed."""
-    sa = dtc.HornetCartridge().sections(_fronts(1))["SA"]
+    sa = dtc.HornetCartridge().sections(_fronts(1), [])["SA"]
 
     assert set(sa) == {
         "CAP_PTS",
@@ -293,17 +345,19 @@ def test_a_cartridge_answers_to_exactly_one_name(tmp_path: Path) -> None:
         archive.writestr("mission", "-- a mission")
     game = _game()
     _crewed(game, ("FA-18C_hornet", 1))
+    flight = _flight_data(callsign="ENFIELD11")
 
-    written = dtc.write_into_mission(game, mission)
+    written = dtc.write_into_mission(game, _mission_data(flight), mission)
     with zipfile.ZipFile(mission) as archive:
         inside = json.loads(archive.read(written[0]).decode("utf-8"))
 
-    wanted = "retribution_nextturn FA-18C_hornet"
+    wanted = "retribution_nextturn ENFIELD11"
     assert written == [f"DTC/{wanted}.dtc"]
     assert inside["name"] == wanted
     assert inside["data"]["name"] == wanted
-    # And it is the name a Hornet of that mission is sent looking for.
-    assert dtc.cartridge_name("retribution_nextturn", "FA-18C_hornet") == wanted
+    # And it is the name the units of that flight are sent looking for.
+    dtc.bind_to_units(_mission_data(flight), "retribution_nextturn")
+    assert getattr(flight.client_units[0], dtc.CARTRIDGE_ON_UNIT) == wanted
     # The copy for the DTC page keeps the campaign's name: that is the list it has to
     # be findable in.
     assert dtc.write_cartridges(game, tmp_path)[0].name.startswith("Escalation")
@@ -319,7 +373,7 @@ def test_every_key_the_module_declares_is_one_we_write() -> None:
     body = skeleton[skeleton.index("SA = {") : skeleton.index("WYPT = {")]
     theirs = set(re.findall(r"(\w+)\s*=", body)) - {"SA"}
 
-    ours = set(dtc.HornetCartridge().sections([])["SA"])
+    ours = set(dtc.HornetCartridge().sections([], [])["SA"])
 
     assert theirs <= ours, sorted(theirs - ours)
 
@@ -327,44 +381,31 @@ def test_every_key_the_module_declares_is_one_we_write() -> None:
 # ------------------------------------------------ naming the cartridge on the unit
 
 
-class _Unit:
-    """A flying unit, as much of one as the binder touches."""
-
-    def __init__(self, unit_type: str, human: bool = True) -> None:
-        self.type = unit_type
-        self.human = human
-        self.written: dict[str, Any] = {}
-
-    def is_human(self) -> bool:
-        return self.human
-
-    def dict(self) -> dict[str, Any]:
-        return dict(self.written)
-
-
-def _mission(*units: Any) -> Any:
-    country = SimpleNamespace(
-        plane_group=[SimpleNamespace(units=list(units))], helicopter_group=[]
-    )
-    return SimpleNamespace(
-        coalition={"blue": SimpleNamespace(countries={"USA": country})}
-    )
-
-
 def test_only_a_crewed_aircraft_that_takes_one_is_bound() -> None:
     """A cartridge in the .miz is only on the shelf: the unit has to name it, which
     is what the mission editor writes and what a probe that draws the rings carries."""
-    hornet = _Unit("FA-18C_hornet")
-    ai = _Unit("FA-18C_hornet", human=False)
-    hog = _Unit("A-10C_2")
+    hornets = _flight_data(callsign="ENFIELD11", crewed=2)
+    ai = _flight_data(callsign="CHEVY31", crewed=0)
+    hogs = _flight_data(aircraft="A-10C_2", callsign="HAWG11")
 
-    bound = dtc.bind_to_units(_mission(hornet, ai, hog), "retribution_nextturn")
+    bound = dtc.bind_to_units(_mission_data(hornets, ai, hogs), "retribution_nextturn")
 
-    assert bound == 1
-    hornets = "retribution_nextturn FA-18C_hornet"
-    assert getattr(hornet, dtc.CARTRIDGE_ON_UNIT) == hornets
-    assert not hasattr(ai, dtc.CARTRIDGE_ON_UNIT)
-    assert not hasattr(hog, dtc.CARTRIDGE_ON_UNIT)
+    assert bound == 2
+    for unit in hornets.client_units:
+        assert getattr(unit, dtc.CARTRIDGE_ON_UNIT) == "retribution_nextturn ENFIELD11"
+    assert not hasattr(hogs.client_units[0], dtc.CARTRIDGE_ON_UNIT)
+
+
+def test_each_flight_is_sent_to_its_own_cartridge() -> None:
+    """What goes in one is that flight's: its route, and its own saved points."""
+    one = _flight_data(callsign="ENFIELD11")
+    two = _flight_data(callsign="ENFIELD21")
+
+    dtc.bind_to_units(_mission_data(one, two), "retribution_nextturn")
+
+    assert getattr(one.client_units[0], dtc.CARTRIDGE_ON_UNIT) != getattr(
+        two.client_units[0], dtc.CARTRIDGE_ON_UNIT
+    )
 
 
 def test_a_bound_unit_writes_the_table_dcs_reads() -> None:
@@ -406,3 +447,84 @@ def test_teaching_twice_does_not_wrap_twice() -> None:
     dtc.teach_to_write_cartridges(Unit)
 
     assert Unit.dict is once
+
+
+# ------------------------------------------- the points the player wrote down
+
+
+def _nav(profile: dtc.Cartridge, route: int, saved: int) -> list[dtc.NavPoint]:
+    points = [_saved("waypoint", f"P{n}", float(n), float(n)) for n in range(saved)]
+    return dtc.navigation_set(profile, _route(route), points)
+
+
+def test_nothing_written_down_leaves_the_navigation_set_alone() -> None:
+    """The mission's own route is what the aircraft starts with. Rewriting it to say
+    the same thing is risk for nothing, so no navigation section is written at all."""
+    assert _nav(dtc.HornetCartridge(), route=13, saved=0) == []
+    assert "WYPT" not in dtc.HornetCartridge().sections([], [])
+
+
+def test_the_route_comes_first_and_keeps_its_numbers() -> None:
+    """With the mirror off the cartridge is the whole navigation set, so the flight
+    plan goes in it too, point for point, or the aircraft loses its route."""
+    points = _nav(dtc.HornetCartridge(), route=13, saved=2)
+
+    assert [point.number for point in points] == list(range(15))
+    assert [point.on_route for point in points] == [True] * 13 + [False] * 2
+    assert points[13].name == "P0"
+
+
+def test_only_the_flight_plan_claims_a_route_sequence() -> None:
+    """A saved point is a place to look at, not a leg to fly: SEQ1 is the route and
+    stepping through it is unchanged."""
+    section = dtc.HornetCartridge().sections([], _nav(dtc.HornetCartridge(), 13, 2))
+    written = section["WYPT"]["NAV_PTS"]
+
+    assert section["WYPT"]["mirror_NAV_PTS"] is False
+    assert [point["R1"] for point in written] == [True] * 13 + [False] * 2
+    assert [point["R1_order"] for point in written[:13]] == list(range(1, 14))
+    assert all(point["R1_order"] is None for point in written[13:])
+    assert all(not point["R2"] and not point["R3"] for point in written)
+
+
+def test_the_hornet_stops_before_home_and_the_bullseye() -> None:
+    """58 is where HOME goes and 59 is the bullseye, so the set stops at 57."""
+    points = _nav(dtc.HornetCartridge(), route=13, saved=80)
+
+    assert points[-1].number == 57
+    assert len(points) == 58
+
+
+def test_the_viper_counts_from_one_and_stops_at_twenty_five() -> None:
+    points = _nav(dtc.ViperCartridge(), route=5, saved=40)
+
+    assert [point.number for point in points[:2]] == [1, 2]
+    assert points[-1].number == 25
+
+
+def test_a_route_that_fills_the_module_is_left_alone() -> None:
+    """Truncating a flight plan is worse than not adding the points."""
+    assert _nav(dtc.ViperCartridge(), route=26, saved=1) == []
+
+
+def test_the_viper_writes_its_own_record() -> None:
+    written = dtc.ViperCartridge().sections([], _nav(dtc.ViperCartridge(), 3, 1))["MPD"]
+
+    assert written["mirror_NAV_PTS"] is False
+    assert [point["id"] for point in written["NAV_PTS"]] == [
+        "STPT1",
+        "STPT2",
+        "STPT3",
+        "STPT4",
+    ]
+    assert [point["R1"] for point in written["NAV_PTS"]] == [True, True, True, False]
+    assert written["NAV_PTS"][0]["type"] == "STPT"
+
+
+def test_a_saved_point_carries_its_name_and_its_altitude() -> None:
+    point = _saved("waypoint", "Smoke over the ridge", 10.0, 20.0, altitude_ft=1000)
+    (written,) = dtc.navigation_set(dtc.HornetCartridge(), [], [point])
+
+    assert written.name == "Smoke over the ridge"
+    assert (written.x, written.y) == (10.0, 20.0)
+    assert round(written.alt_m) == 305
