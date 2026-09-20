@@ -1,6 +1,6 @@
 {
     "nameInUI": "GPS jamming (satellite-guided weapons go long)",
-    "descriptionInUI": "DCS models no GPS receiver, so the denial is scripted on the weapon: a satellite-guided store (JDAM, JSOW, JASSM, KAB-500S, and the autonomous cruise missiles -- Tomahawk, Kh-101, Storm Shadow -- but never laser, TV or IR, and never a weapon its shooter steers, such as the SLAM-ER) released inside a live jammer's bubble is destroyed just short of impact and detonated a scored distance off the aimpoint, further the deeper it was. Real ordnance, nothing spawned, and killing the jammer restores accuracy at once. A site degrades the opposing side only, and the firing flight is told the first time a weapon of theirs is spoofed. Inert unless a live jamming site exists.",
+    "descriptionInUI": "DCS models no GPS receiver, so the denial is scripted on the weapon: a satellite-guided store (JDAM, JSOW, SDB, GMLRS, KAB-500S, JASSM, the Shahed-136 -- never laser, TV or IR, never a weapon its shooter steers such as the SLAM-ER, and never a cruise missile that navigates off its own terrain database such as the Tomahawk) released inside a live jammer's bubble is destroyed just short of impact and detonated a scored distance off the aimpoint, further the deeper it was. Real ordnance, nothing spawned, and killing the jammer restores accuracy at once. A site degrades the opposing side only, and the firing flight is told the first time a weapon of theirs is spoofed. Inert unless a live jamming site exists.",
     "defaultValue": true,
     "specificOptions": [
         {
@@ -47,7 +47,7 @@
         },
         {
             "nameInUI": "Give up tracking a released weapon after (s)",
-            "descriptionInUI": "Has to outlast the longest flight on the weapon list. A cruise missile crosses 250 nm in about half an hour, and a weapon dropped before it reaches the bubble is never degraded at all.",
+            "descriptionInUI": "Has to outlast the longest flight on the weapon list. A stand-off weapon can be minutes from its target, and one dropped from tracking before it reaches the bubble is never degraded at all.",
             "mnemonic": "maxTrackS",
             "defaultValue": 2400
         },

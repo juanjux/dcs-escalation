@@ -86,58 +86,62 @@ def test_the_patterns_are_spelled_the_way_dcs_names_weapons() -> None:
 
 
 def test_a_weapon_somebody_flies_is_left_alone() -> None:
-    """The exclusion is a pilot in the loop, human or AI. The SLAM family's terminal
-    leg is TV flown onto the target by whoever launched it; degrading the navigation
-    of a weapon being steered by hand punishes the wrong thing."""
+    """The first exclusion is a pilot in the loop, human or AI. The SLAM family's
+    terminal leg is TV flown onto the target by whoever launched it; degrading the
+    navigation of a weapon being steered by hand punishes the wrong thing."""
     for never in ("AGM_84E", "AGM_84H", "SLAM_ER", "mils_cm802akg"):
         assert not _matches(never), f"{never} is flown by its shooter"
 
 
-def test_an_automatic_terminal_seeker_is_no_excuse() -> None:
-    """A seeker that comes up on its own has to find the target by itself, and a weapon
-    already tens of miles off track is unlikely to have anything in its field of view.
-    That covers the whole autonomous cruise-missile family."""
-    for real in (
-        "KD_20",
-        "X_101",
-        "X_555",
-        "AGM_86C",
-        "CH_KEPD350",
-        "SU24MU_STORMSHADOW",
-        "B21_AGM158B_AIR",
-    ):
-        assert _matches(real), f"{real} navigates by satellite with nobody flying it"
-
-
-def test_land_attack_cruise_missiles_are_covered_whoever_launched_them() -> None:
-    """The stock Tomahawk and every CurrentHill hull that names its round after itself,
-    plus the Chinese and Russian land-attack rounds."""
-    for real in (
-        "BGM_109B",
+def test_a_missile_that_carries_a_map_is_left_alone() -> None:
+    """The second exclusion is terrain-referenced navigation. TERCOM (Terrain Contour
+    Matching), DSMAC, TERPROM and image-based navigation fix the missile's position
+    absolutely, by comparing the ground below against a database it carries -- they are
+    not inertial backup that drifts. Long-range cruise missiles were built around them
+    before GPS existed, so denying satellites does not make them miss."""
+    for never in (
+        "BGM_109B",  # Tomahawk: TERCOM + DSMAC
         "Ticonderoga_RGM_109C_III",
         "ArleighBurkeIII_RGM_109E_V",
-        "Constellation_RGM_109E_V",
-        "Type052D_CJ10",
+        "Type052D_CJ10",  # CJ-10: INS/BeiDou/TERCOM + DSMAC
         "GLCM_CJ10",
-        "Type26_SPEAR5_LACM",
-        "RBS-15 Mk4 Land",
+        "KD_20",  # the CJ-10's air-launched sister, same suite
+        "3M14",  # Kalibr land attack
+        "X_101",  # Kh-101 optical correlator
+        "X_555",
+        "SU24MU_STORMSHADOW",  # TERPROM + DSMAC
+        "CH_KEPD350",  # Taurus: terrain-referenced + image-based navigation
     ):
-        assert _matches(real), f"{real} attacks a fixed point by satellite"
+        assert not _matches(never), f"{never} navigates off its own terrain database"
+
+
+def test_an_automatic_terminal_seeker_is_no_excuse() -> None:
+    """A seeker that comes up on its own is not an exclusion: it has to find the target
+    by itself, and a weapon already tens of miles off track is unlikely to have anything
+    in its field of view. JASSM is the case -- nothing navigates it but satellites and
+    an IMU, and its IIR recogniser only helps once it arrives somewhere near."""
+    for real in ("B21_AGM158B_AIR", "AGM_158B"):
+        assert _matches(real), f"{real} navigates by satellite alone"
+
+
+def test_the_calcm_is_the_one_cruise_missile_left_in() -> None:
+    """Converting the ALCM to CALCM *removed* its TERCOM and put GPS in its place, so
+    satellites are the only absolute fix the AGM-86C/D has."""
+    for real in ("AGM_86C", "AGM_86"):
+        assert _matches(real), f"{real} lost its terrain database in the conversion"
 
 
 def test_anti_ship_missiles_are_never_degraded() -> None:
     """Their target moves. Satellite guidance only refines a search basket that an
     active radar or imaging seeker then searches for real, and the ship is not where
-    the GPS said anyway. The Visby fires both, one letter apart."""
+    the GPS said anyway."""
     for never in (
         "RBS-15 Mk4 Ship",
-        "RBS-15 Mk4 Ship Pop-up",
         "Type26_SPEAR5_ASHM",
         "B21_AGM158C_AIR",  # LRASM
         "Constellation_NSM",
         "Type45_NSM",
         "TYPE055_YJ18",
-        "Type052D_YJ18",
         "CH_YJ12",
         "DF_21D",
         "TYPE055_YJ21",

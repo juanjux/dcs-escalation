@@ -1,7 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[Mission Plugins]** GPS jamming now covers land-attack cruise missiles (Tomahawk, CJ-10, Kh-101/555, Storm Shadow, Taurus, KD-20), guided rockets (GMLRS, GLSDB, ATACMS) and the Shahed-136. Anti-ship missiles stay out.
+* **[Mission Plugins]** GPS jamming also covers the SDB, the CALCM, JASSM, GMLRS, GLSDB, ATACMS and the Shahed-136. Cruise missiles with a terrain database of their own, such as the Tomahawk, and anti-ship missiles stay out.
 * **[Mission Generator]** Saved waypoints are written into the aircraft, after the flight plan and outside its route sequence.
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.

@@ -58,23 +58,34 @@ if TYPE_CHECKING:
 #: when someone is lasing, which the runtime cannot see. The ``KAB_*S`` are the GLONASS
 #: Russian equivalents, so red eats its own medicine wherever blue fields a jammer.
 #:
-#: **What earns an exclusion is a pilot in the loop**, human or AI. The SLAM/SLAM-ER
-#: family is deliberately ABSENT for that reason: its terminal leg is TV flown onto
-#: the target by whoever launched it, and degrading the navigation of a weapon
-#: somebody is steering by hand punishes the wrong thing.
+#: Three rules decide the rest.
 #:
-#: A terminal seeker that comes up on its own is NOT an exclusion. It has to find the
-#: target by itself, and a weapon already tens of miles off track is unlikely to have
-#: anything in its field of view when it looks -- which is the intended outcome, not
-#: a side effect. That is what puts the whole autonomous cruise-missile family here:
-#: satellite navigation flies the midcourse and an IIR or correlator seeker wakes up
-#: over the aimpoint with nobody minding it.
+#: **A pilot in the loop excludes**, human or AI. The SLAM/SLAM-ER family and the
+#: CM-802AKG are steered onto the target by whoever fired them; degrading the
+#: navigation of a weapon somebody is flying punishes the wrong thing.
+#:
+#: **A terrain database excludes.** TERCOM (Terrain Contour Matching), DSMAC, TERPROM
+#: and image-based navigation
+#: are not inertial backup that drifts -- they are an absolute position fix the weapon
+#: takes by comparing the ground it is flying over against a map it carries, and they
+#: are exactly what long-range cruise missiles were built around before GPS existed.
+#: Satellites only cross-check them, so denying satellites does not make the weapon
+#: miss. That is what keeps out the Tomahawk (TERCOM + DSMAC), the CJ-10 and the KD-20
+#: that copies it, the Kalibr, Storm Shadow (TERPROM + DSMAC), Taurus KEPD 350 (TRN +
+#: IBN) and the Kh-101/555 correlators. The AGM-86C/D is the one air-launched cruise
+#: missile left in: converting the ALCM to CALCM *removed* its TERCOM and put GPS in
+#: its place, so satellites are the only absolute fix it has.
+#:
+#: **An automatic terminal seeker does NOT excuse.** It has to find the target by
+#: itself, and a weapon already tens of miles off track is unlikely to have anything in
+#: its field of view when it looks -- which is the intended outcome, not a side effect.
+#: That is why JASSM stays: nothing navigates it but satellites and an IMU, and its
+#: IIR recogniser only helps once it arrives somewhere near.
 #:
 #: **Anti-ship missiles stay out**, whatever navigates their midcourse. Their target
 #: moves, so satellite guidance only refines a search basket that an active radar or
 #: imaging seeker then searches for real -- and the ship is not where the GPS said in
-#: the first place. That is the line between ``RBS-15 Mk4 Land`` and its ``Ship``
-#: sisters, and between JASSM and the AGM-158C LRASM.
+#: the first place. That is the line between JASSM and the AGM-158C LRASM.
 GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
     # Satellite-guided bombs and dispensers.
     "GBU_31",  # JDAM, 2000 lb -- all (V) variants
@@ -90,27 +101,14 @@ GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
     # Glide weapons.
     "AGM_154",  # JSOW A/B/C
     "JSOW",
-    # Air-launched cruise missiles. AGM-158A/B only: the C is the LRASM, which hunts
-    # ships. Both spellings of the JASSM -- CurrentHill's B-21 drops the underscore.
+    # Cruise missiles with no map of their own. AGM-158A/B only: the C is the LRASM,
+    # which hunts ships. Both spellings of the JASSM -- CurrentHill's B-21 drops the
+    # underscore.
+    "AGM_86",  # CALCM: TERCOM deleted in the conversion, GPS put in its place
     "AGM_158A",
     "AGM_158B",
     "AGM158B",
     "JASSM",
-    "AGM_86",  # CALCM: GPS/INS and no terminal seeker at all
-    "X_101",  # Kh-101 -- GLONASS midcourse, automatic optical correlator
-    "X_555",  # Kh-555
-    "KD_20",  # BeiDou midcourse, automatic IIR terminal leg
-    "KEPD350",  # Taurus
-    "STORMSHADOW",  # Storm Shadow / SCALP
-    # Ship- and ground-launched land-attack cruise missiles. "_109" is deliberate: it
-    # covers the stock BGM_109B and every CurrentHill hull that names its Tomahawk
-    # after itself (Ticonderoga_RGM_109C_III, ArleighBurkeIII_RGM_109E_V, ...).
-    "_109",
-    "CJ10",  # CJ-10 / DH-10, ship and ground launchers
-    "CJ_10",
-    "3M14",  # Kalibr LAND ATTACK -- never "Kalibr", which would catch the 3M54
-    "SPEAR5_LACM",
-    "RBS-15 Mk4 Land",  # the Visby's land-attack round; its Ship sisters stay out
     # Guided rockets and loitering munitions.
     "GMLRS",
     "GLSDB",
