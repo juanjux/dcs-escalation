@@ -55,5 +55,20 @@ export default function PickerToggle(props: PickerToggleProps) {
     bar.current?.classList.toggle("cp-toggle-on", props.on);
   }, [props.on]);
 
+  // The same crosshair the ruler puts up while it is measuring, set the same way it
+  // sets it: the cursor is what tells the player the next click is the tool's and
+  // not the map's.
+  useEffect(() => {
+    const container = map?.getContainer?.();
+    if (!container || !props.on) {
+      return;
+    }
+    const was = container.style.cursor;
+    container.style.cursor = "crosshair";
+    return () => {
+      container.style.cursor = was;
+    };
+  }, [map, props.on]);
+
   return null;
 }
