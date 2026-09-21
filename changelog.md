@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** The map's GPS picker is a tool you switch on, like the ruler, instead of answering every stray click.
 * **[Aircraft]** The A-10's saved points go into its navigation computer, on a flight plan of their own, with the ground height under each one.
 * **[UI]** A saved point gets the height of the ground under it, looked up from an open elevation model.
 * **[UI]** New window, *Playable aircraft*: what the player is flying this turn and the points saved for each one, which can also be typed or pasted in by hand.
