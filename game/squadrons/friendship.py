@@ -243,11 +243,15 @@ def drift_step(
     A rise stops at :func:`drift_ceiling`, so the bands that grant bonuses can only be
     reached by flying together. A fall is not floored.
 
-    ``returned`` is the opposite direction's value. Where it is higher, the warming
-    chance is raised by :func:`reciprocity_bonus`.
+    ``returned`` is the opposite direction's value, and the gap between the two
+    closes from whichever side is out of step: where it is higher the warming chance
+    is raised by :func:`reciprocity_bonus`, and where it is lower the cooling chance
+    is raised by :func:`cooling_from_enmity`. Being liked is noticed, and so is
+    being disliked.
     """
     up, down = drift_odds(same_squadron, settings)
     up = min(100.0, up + reciprocity_bonus(current, returned, settings))
+    down = min(100.0, down + cooling_from_enmity(current, returned, settings))
     roll = random.random() * 100
     step = drift_step_size(settings)
     ceiling = drift_ceiling(settings)
@@ -271,8 +275,13 @@ DRIFT_SAME_BASE_DOWN = 10
 
 #: Added to the warming chance for each point the other man's opinion is above his
 #: own. A pair four points apart rolls twenty percentage points likelier to close, on
-#: top of the ordinary odds; the cooling roll is left alone.
+#: top of the ordinary odds.
 RECIPROCITY_PER_POINT = 5.0
+
+#: The same figure the other way round: added to the cooling chance for each point the
+#: other man's opinion is *below* his own. A man who is disliked comes to dislike back,
+#: at the rate a man who is liked comes to like back.
+ENMITY_PER_POINT = 5.0
 
 #: How far one turn of drift moves a pair. A tenth of the scale, so this is the
 #: fastest-moving number in the feature.
@@ -391,9 +400,9 @@ def reciprocity_bonus(
     """Percentage points added to the warming chance for the difference between the two
     directions of a pair.
 
-    Only when ``returned`` is the higher of the two, and only to the warming roll; the
-    cooling roll is unaffected. Each point of difference on the 0 to 10 scale is worth
-    the campaign's per-point figure.
+    Only when ``returned`` is the higher of the two, and only to the warming roll.
+    Each point of difference on the 0 to 10 scale is worth the campaign's per-point
+    figure.
     """
     if returned is None:
         return 0.0
@@ -402,6 +411,27 @@ def reciprocity_bonus(
         return 0.0
     return gap * float(
         _setting(settings, "friendship_reciprocity_per_point", RECIPROCITY_PER_POINT)
+    )
+
+
+def cooling_from_enmity(
+    current: float, returned: Optional[float], settings: Any = None
+) -> float:
+    """Percentage points added to the cooling chance for the same difference, read the
+    other way.
+
+    The mirror of :func:`reciprocity_bonus`: only when ``returned`` is the *lower* of
+    the two, and only to the cooling roll. Nobody goes on thinking well of a man who
+    plainly cannot stand him, and the further the other man is below him the faster he
+    comes round to it.
+    """
+    if returned is None:
+        return 0.0
+    gap = current - returned
+    if gap <= 0:
+        return 0.0
+    return gap * float(
+        _setting(settings, "friendship_enmity_per_point", ENMITY_PER_POINT)
     )
 
 
