@@ -131,7 +131,7 @@ class QTopPanel(QFrame):
         style_button(self.air_wing)
         self.air_wing.clicked.connect(self.open_air_wing)
 
-        self.playable = QPushButton("My aircraft")
+        self.playable = QPushButton("Playable aircraft")
         self.playable.setDisabled(True)
         style_button(self.playable)
         self.playable.setToolTip(
