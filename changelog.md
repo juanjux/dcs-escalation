@@ -170,6 +170,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** Adding a flight to a package asked the fuel question again about the flights already answered for.
 * **[FIX]** A pilot marked as the player was asking the player for leave.
 * **[FIX]** OPFOR-AI: a package refused for being out of range told the caller to pass a field it had already passed.
 * **[FIX]** Cancelling a flight threw away the points saved for it; they belong to the squadron now.
