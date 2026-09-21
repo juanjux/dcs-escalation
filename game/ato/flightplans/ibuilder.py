@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Any, ClassVar, Generic, Optional, TYPE_CHECKING, TypeVar
 
 from game.navmesh import NavMeshError
+from . import alignpoint
 from .flightplan import FlightPlan, Layout
 from .planningerror import PlanningError
 from ..packagewaypoints import PackageWaypoints
@@ -66,6 +67,9 @@ class IBuilder(ABC, Generic[FlightPlanT, LayoutT]):
         try:
             self._generate_package_waypoints_if_needed(dump_debug_info)
             self._flight_plan = self.build(dump_debug_info)
+            # Here rather than in each of the fourteen builders: they all end the same
+            # way, with a nav leg home and the field at the end of it.
+            alignpoint.add_to(self.flight, getattr(self._flight_plan, "layout", None))
         except NavMeshError as ex:
             color = "blue" if self.flight.squadron.player.is_blue else "red"
             raise PlanningError(

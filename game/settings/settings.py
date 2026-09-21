@@ -1386,6 +1386,32 @@ class Settings:
             "flights only; existing flights are unchanged."
         ),
     )
+    align_before_landing: bool = boolean_option(
+        "Add an ALIGN waypoint before landing",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        detail=(
+            "Make the last waypoint before landing one that aligns the aircraft with "
+            "the active landing runway. Airfields only."
+        ),
+    )
+    align_distance_nm: float = bounded_float_option(
+        "How far out the ALIGN waypoint sits (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=15.0,
+        min=3.0,
+        max=100.0,
+        divisor=1,
+        prefix="",
+        decimals=0,
+        enabled_when=lambda settings: settings.align_before_landing,
+        detail=(
+            "Its height follows from this at three degrees of glideslope, about 300 ft "
+            "a mile, between 1500 and 6000 ft above the field."
+        ),
+    )
     switch_baro_fix: bool = boolean_option(
         "Switch altitude type of waypoints to AMSL above seas for helicopters",
         page=MISSION_GENERATOR_PAGE,
