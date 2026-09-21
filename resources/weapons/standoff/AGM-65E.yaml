@@ -1,4 +1,5 @@
 name: AGM-65E
+range: 8  # nm - stand-off launch range
 type: LGB
 year: 1985
 fallback: AGM-65G

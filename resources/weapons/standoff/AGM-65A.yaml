@@ -1,4 +1,5 @@
 name: AGM-65A
+range: 8  # nm - stand-off launch range
 year: 1972
 fallback: AGM-62 Walleye II
 clsids:

@@ -1,4 +1,5 @@
 name: 2xAGM-65H
+range: 12  # nm - stand-off launch range
 year: 2002
 fallback: AGM-65H
 clsids:

@@ -1,4 +1,5 @@
 name: 2xAGM-65D
+range: 12  # nm - stand-off launch range
 year: 1986
 fallback: AGM-65D
 clsids:

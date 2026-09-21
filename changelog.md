@@ -172,6 +172,7 @@
 
 ## Fixes
 * **[FIX]** Two knots of breeze sent everybody to a bare strip at a field whose instrument runway was free; in calm air the ILS runway wins.
+* **[FIX]** A Maverick-armed package began its attack run 45 nm out: the Mavericks had no launch range, so the planner used the doctrine ceiling.
 * **[FIX]** Adding a flight to a package asked the fuel question again about the flights already answered for.
 * **[FIX]** A pilot marked as the player was asking the player for leave.
 * **[FIX]** OPFOR-AI: a package refused for being out of range told the caller to pass a field it had already passed.
