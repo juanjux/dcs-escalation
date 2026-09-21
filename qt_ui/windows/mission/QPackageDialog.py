@@ -238,7 +238,10 @@ class QPackageDialog(QDialog):
             # nobody ever asks about it.
             EventStream.put_nowait(
                 offer_for_package(
-                    self.package_model, self, GameUpdateEvents().new_flight(flight)
+                    self.package_model,
+                    self,
+                    GameUpdateEvents().new_flight(flight),
+                    only=[flight],
                 )
             )
         except PlanningError as ex:

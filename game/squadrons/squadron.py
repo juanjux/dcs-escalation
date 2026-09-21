@@ -549,7 +549,11 @@ class Squadron:
 
             if not pilot.has_morale:
                 # The player is not worn down by the turn passing, is never overdue a
-                # rest he can take whenever he likes, and does not desert.
+                # rest he can take whenever he likes, and does not desert. A request
+                # made before he was marked as the player goes with the rest of it:
+                # nobody asks himself for a week off.
+                pilot.wants_leave = False
+                pilot.leave_turns_requested = 0
                 continue
 
             # Judged on the state he arrived in. The drift below lifts a man who is
@@ -694,7 +698,11 @@ class Squadron:
         asking = [
             pilot
             for pilot in self.current_roster
-            if pilot.wants_leave and pilot.status is PilotStatus.Active
+            # has_morale as well as the flag: a pilot marked as the player after he
+            # asked is still carrying the request, and it is not his to make.
+            if pilot.wants_leave
+            and pilot.has_morale
+            and pilot.status is PilotStatus.Active
         ]
         asking.sort(key=lambda pilot: pilot.morale)
         return asking

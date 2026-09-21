@@ -395,10 +395,52 @@ def test_being_liked_more_than_he_likes_back_makes_him_likelier_to_warm() -> Non
     assert _drift_with(50.0, current=5.0, returned=5.0) == -1.0
 
 
-def test_the_man_who_is_already_the_warmer_of_the_two_gets_nothing() -> None:
+def test_the_man_who_is_already_the_warmer_of_the_two_gets_no_warming() -> None:
     # The other half of the same pair: he is at 9 about a man who is at 5 about him,
-    # and rolls the ordinary table -- 50 is a cooling turn.
+    # so nothing is added to his warming roll -- 50 is not a warming turn.
     assert _drift_with(50.0, current=9.0, returned=5.0) == -1.0
+
+
+# --- enmity, which is the same rule read the other way --------------------------
+#
+# Nobody goes on thinking well of a man who plainly cannot stand him. The gap closes
+# from whichever side is out of step: the warmer half cools as the cooler half warms.
+
+
+def test_being_disliked_more_than_he_dislikes_back_makes_him_likelier_to_cool() -> None:
+    # He is at 5 about a man who is at 1 about him: four points, five each, twenty
+    # more, so cooling runs from 35 to 75. A roll of 60 cools him where an even pair
+    # would have been left alone.
+    assert _drift_with(60.0, current=5.0, returned=1.0) == -1.0
+    assert _drift_with(60.0, current=5.0, returned=5.0) == 0.0
+
+
+def test_the_warming_roll_is_left_alone() -> None:
+    # Warming is still the first 35 of the roll and no more.
+    assert _drift_with(30.0, current=5.0, returned=1.0) == 1.0
+    assert _drift_with(36.0, current=5.0, returned=1.0) == -1.0
+
+
+def test_the_man_who_is_already_the_colder_of_the_two_gets_nothing() -> None:
+    # He is at 1 about a man who is at 5 about him: the ordinary table, plus the
+    # warming bonus he is owed for being the one who is liked more than he likes back.
+    assert _drift_with(80.0, current=1.0, returned=5.0) == 0.0
+
+
+def test_a_pair_that_agree_about_each_other_drift_on_the_plain_odds() -> None:
+    assert _drift_with(60.0, current=2.0, returned=2.0) == 0.0
+
+
+def test_the_penalty_is_a_setting() -> None:
+    settings = SimpleNamespace(friendship_enmity_per_point=0)
+    assert friendship.cooling_from_enmity(5.0, 1.0, settings) == 0.0
+
+    settings = SimpleNamespace(friendship_enmity_per_point=10)
+    assert friendship.cooling_from_enmity(5.0, 1.0, settings) == 40.0
+
+
+def test_nothing_is_added_for_a_pair_with_no_other_half_to_read() -> None:
+    assert friendship.cooling_from_enmity(5.0, None) == 0.0
 
 
 def test_the_cooling_roll_is_left_alone() -> None:

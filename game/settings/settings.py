@@ -2506,6 +2506,25 @@ class Settings:
             " gets nothing. Set it to 0 and each side drifts on its own."
         ),
     )
+    friendship_enmity_per_point: int = bounded_int_option(
+        "Added to the cooling chance per point of difference (%)",
+        page=LIVE_PILOTS_PAGE,
+        section=LIVE_PILOTS_FRIENDSHIP_SECTION,
+        subsection=LIVE_PILOTS_FRIENDSHIP_DRIFT_SECTION,
+        default=5,
+        min=0,
+        max=20,
+        detail=(
+            "The same thing the other way round. When the other pilot likes him LESS"
+            " than he likes the other pilot, his chance of cooling goes up by this much"
+            " for each point of difference on the 0 to 10 scale. Example: the other"
+            " pilot is at 1 and he is at 5, a difference of 4, so with this set to 5%"
+            " his chance of cooling towards that pilot goes up by 20 points -- from 20%"
+            " to 40% for a squadron mate. His chance of warming is not changed, and the"
+            " other pilot, who already likes him less, gets nothing. Set it to 0 and"
+            " being disliked costs nothing."
+        ),
+    )
     friendship_drift_step: float = bounded_float_option(
         "How much it moves when it moves",
         page=LIVE_PILOTS_PAGE,
