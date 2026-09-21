@@ -34,11 +34,14 @@ def _flight(
             display_name=aircraft,
             helicopter=helicopter,
         ),
-        squadron=SimpleNamespace(nickname="Viper", name="VFA-000"),
+        squadron=SimpleNamespace(
+            nickname="Viper",
+            name="VFA-000",
+            saved_points=points if points is not None else [],
+        ),
         flight_type=SimpleNamespace(value="SEAD"),
         package=package,
         flight_plan=SimpleNamespace(tot=datetime(2026, 9, 20, 9, 20)),
-        saved_points=points if points is not None else [],
     )
 
 
