@@ -26,6 +26,11 @@ import { Marker, Tooltip } from "react-leaflet";
 // (MobileControlPoint) so a ship drag reads the same way: the live
 // nautical-mile distance plus the destination coordinates, or an
 // out-of-range notice with how far the attempted move was.
+// How often the "is this in range" question is worth asking while dragging.
+// Leaflet fires `drag` several times a frame; the answer changes once, when the
+// ship crosses its range ring.
+const RANGE_CHECK_INTERVAL_MS = 120;
+
 function metersToNauticalMiles(meters: number): number {
   return meters * 0.000539957;
 }
@@ -81,6 +86,15 @@ interface PrimaryMarkerProps {
 function PrimaryMarker(props: PrimaryMarkerProps) {
   const markerRef = useRef<LMarker | null>(null);
   const pathRef = useRef<MovementPathHandle | null>(null);
+  // True between dragstart and dragend. While the player is holding the mouse
+  // down, nothing arriving from the server may move this marker: react-leaflet
+  // answers a changed `position` prop with marker.setLatLng(), which yanks the
+  // icon out from under the cursor and reads exactly like the button being
+  // released. The event stream updates a tgo for reasons that have nothing to
+  // do with the drag -- an IADS link, a repair, the sim -- and each one carries
+  // a fresh `position` object, so the effect below fired on identity alone even
+  // when the coordinates were unchanged.
+  const dragging = useRef(false);
 
   // Stable icon reference. iconForTgo() builds a fresh leaflet Icon every call;
   // if a re-render happens mid-drag (the busy TGO event stream churns this
@@ -105,6 +119,9 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
   );
 
   useEffect(() => {
+    if (dragging.current) {
+      return;
+    }
     const authoritativePosition = props.tgo.destination ?? props.tgo.position;
     setPosition(authoritativePosition);
     setHasDestination(props.tgo.destination != null);
@@ -119,6 +136,10 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
     setPosition(props.tgo.position);
     setHasDestination(false);
   }, [props]);
+
+  // When the range check was last asked for, so a drag does not fire one per
+  // mouse position.
+  const lastAsked = useRef(0);
 
   const [putDestination, { isLoading }] = useSetTgoDestinationMutation();
   const [cancelTravel] = useClearTgoDestinationMutation();
@@ -142,6 +163,12 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
   // carrier marker (MobileControlPoint) avoids this the same way.  The drag
   // handler overrides this content live via setTooltipContent.
   useEffect(() => {
+    // The drag handler owns the tooltip while the drag lasts: it is showing the
+    // live distance, and overwriting it from here would flicker the name back
+    // in every time anything on the map updated.
+    if (dragging.current) {
+      return;
+    }
     markerRef.current?.setTooltipContent(
       props.tgo.destination
         ? destinationTooltipText(props.tgo, props.tgo.destination, true)
@@ -188,8 +215,21 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
               setHoveredEmitter({ id: props.tgo.id, source: "emitter" }),
             ),
           mouseout: () => dispatch(setHoveredEmitter(null)),
+          dragstart: () => {
+            dragging.current = true;
+          },
           drag: (event) => {
             const dest = event.target.getLatLng() as LatLng;
+            // The path follows every pixel; the range check does not. Leaflet
+            // fires this several times a frame, and one HTTP round trip per
+            // mouse position is a request storm for an answer that only changes
+            // when the ship crosses its range ring.
+            pathRef.current?.setDestination(dest);
+            const now = Date.now();
+            if (now - lastAsked.current < RANGE_CHECK_INTERVAL_MS) {
+              return;
+            }
+            lastAsked.current = now;
             backend
               .get(
                 `/tgos/${props.tgo.id}/destination-in-range?lat=${dest.lat}&lng=${dest.lng}`,
@@ -199,9 +239,9 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
                   destinationTooltipText(props.tgo, dest, inRange.data),
                 );
               });
-            pathRef.current?.setDestination(dest);
           },
           dragend: async (event) => {
+            dragging.current = false;
             const previous = new LatLng(position.lat, position.lng);
             const dest = event.target.getLatLng() as LatLng;
             setDestination(dest);
