@@ -25,13 +25,17 @@ for the next turn, then you would go back to Escalation UI and repeat, until eit
 # What does Escalation adds over it's ancestors Liberation and Retribution?
 
 ## LLM-controlled OPFOR (REST API + MCP)
-- **An external LLM (Claude, ChatGPT, etc) can play the enemy commander.** A REST API and an MCP server expose a
-  token-frugal turn context (forces, targets, threats, economy, naval, motorpools, runway
-  states, plus an optional rendered map image) and full player parity to act on it:
-  packages and flights, buying and selling, front-line stances, squadron relocation,
-  fleet movement, repairs and rebuilds. The LLM gets its own briefing at `/start` and
-  `/howtoplay`. Just copy the local URL from the button to Claude Coword, ChatGPT Codex, Grok build
-  or any other LLM that has a local interface, and start playing with it controlling OPFOR.
+An external LLM (Claude, ChatGPT, etc) can play the enemy commander. A REST API and an MCP server expose a
+token-frugal turn context (forces, targets, threats, economy, naval, motorpools, runway
+states, plus an optional rendered map image) and full player parity to act on it:
+packages and flights, buying and selling, front-line stances, squadron relocation,
+fleet movement, repairs and rebuilds. The LLM gets its own briefing at `/start` and
+`/howtoplay`. Just copy the local URL from the button to Claude Coword, ChatGPT Codex, Grok build
+or any other LLM that has a local interface, and start playing with it controlling OPFOR.
+
+**This is probably the biggest difference and how Escalation is meant to be played**; having a reasonably competent enemy totally 
+changes the engagement and fun factor of every campaign. While the current version still keeps the inherited dumb OPFOR planner, 
+it will probably be removed in the future.
 
 ## Live Pilots
 
@@ -359,43 +363,6 @@ and it is longer than this section.
   toolbar actions, the settings page, `FlightType.PRETENSE_CARGO` and the four `*_full`
   campaigns tuned for it.
 
-## Halted (or abandoned) for Now
-
-Work that was built and soak-tested but **parked** — pulled out of `master` and
-`juanjux-dev` to keep them clean, with every branch preserved here so it can be
-revived later.
-
-### Mission chronicle
-
-An account of the mission in prose, from a button in the debriefing and as a `.md` beside
-the archived `.miz`. Parked after reading one: with fixed templates it comes out
-repetitive, and the Mission Log already tells you everything it does. The code has been
-taken back out; the event recording it fed on still lands in `state.json`, so reviving it
-means writing a better renderer against that timeline.
-([#121](https://github.com/juanjux/dcs-escalation/pull/121))
-
-### SYNTAX weapon mods (AARGM-ER, LRASM, JASSM-ER)
-
-Optional-mod toggles in the New Game wizard that swapped a stock weapon for a
-SYNTAX one: the AGM-88G AARGM-ER in place of the HARM in SEAD loadouts
-([#65](https://github.com/juanjux/dcs-escalation/pull/65)), the AGM-158C LRASM
-in place of the Harpoon ([#66](https://github.com/juanjux/dcs-escalation/pull/66)),
-and the AGM-158B JASSM-ER in place of the JSOW-A
-([#67](https://github.com/juanjux/dcs-escalation/pull/67)).
-**Parked because the mods are not reliable enough** to build campaign balance on.
-Removed from `master` and `juanjux-dev`; the branches are preserved.
-
-### Electronic Warfare (EWAR "Jamming")
-
-A dedicated **EWAR / "Jamming" flight task** for EW aircraft (EA-18G, EA-6B, Su-34, Mi-8,
-plus emulated EC-130 Compass Call / Su-24MP / Tornado ECR variants), built on upstream's
-`ewrj` jammer plugin: offensive radar suppression, a defensive missile-deletion bubble,
-engine ECM, naval point-defense handling and a launcher-jam missile kill.
-
-**Why halted:** a reliable EWAR is not possible without proper support from the DCS
-engine. The available levers (scripted ROE, missile deletion, engine ECM) do not scale
-consistently — a few jammers saturate a fleet's radar into total silence. Parked until
-DCS exposes real EW hooks.
 ---
 
 For installation and general usage, see the upstream
