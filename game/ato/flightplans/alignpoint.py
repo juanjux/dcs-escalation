@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 #: How far out it sits, and how high. Three degrees of glideslope is about 300 ft a
 #: mile, which is the number the altitude is worked out from; the floor and ceiling
 #: keep a short or a long setting inside the range a run-in is actually flown at.
-DEFAULT_DISTANCE_NM = 10.0
+DEFAULT_DISTANCE_NM = 15.0
 FEET_PER_NAUTICAL_MILE = 300.0
 MIN_ALTITUDE_FT = 1500.0
 MAX_ALTITUDE_FT = 6000.0

@@ -1387,26 +1387,22 @@ class Settings:
         ),
     )
     align_before_landing: bool = boolean_option(
-        "Add an ALIGN waypoint on the runway centreline before landing",
+        "Add an ALIGN waypoint before landing",
         page=MISSION_GENERATOR_PAGE,
         section=GAMEPLAY_SECTION,
-        default=False,
+        default=True,
         detail=(
-            "The route ends at the airfield, which is a point and not a direction, so "
-            "the last leg arrives on whatever heading the one before it left. This "
-            "puts a waypoint on the approach course of the active runway -- the one "
-            "the campaign picks from the wind, the same one the kneeboard gives -- so "
-            "the flight is lined up before it gets there. Airfields only: a FARP has "
-            "no runway and a carrier is neither still nor flown to straight-in."
+            "Make the last waypoint before landing one that aligns the aircraft with "
+            "the active landing runway. Airfields only."
         ),
     )
     align_distance_nm: float = bounded_float_option(
         "How far out the ALIGN waypoint sits (NM)",
         page=MISSION_GENERATOR_PAGE,
         section=GAMEPLAY_SECTION,
-        default=10.0,
+        default=15.0,
         min=3.0,
-        max=25.0,
+        max=100.0,
         divisor=1,
         prefix="",
         decimals=0,
