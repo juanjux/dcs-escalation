@@ -10,13 +10,14 @@ import {
   useClearControlPointDestinationMutation,
   useSetControlPointDestinationMutation,
 } from "../../api/liberationApi";
+import { RANGE_CHECK_INTERVAL_MS } from "../map/dragging";
 import { makeLocationMarkerEventHandlers } from "./EventHandlers";
 import { iconForControlPoint } from "./Icons";
 import LocationTooltipText from "./LocationTooltipText";
 import { MovementPath, MovementPathHandle } from "./MovementPath";
 import { StaticControlPoint } from "./StaticControlPoint";
 import { LatLng, Marker as LMarker, LatLngLiteral } from "leaflet";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactDOMServer from "react-dom/server";
 import { Marker, Tooltip } from "react-leaflet";
 
@@ -83,6 +84,26 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
       selectHoveredEmitter(state) === props.controlPoint.id
   );
 
+  // iconForControlPoint() builds a fresh Leaflet Icon every call, and this was
+  // calling it inline: a new reference on every render, which react-leaflet
+  // answers with marker.setIcon(). setIcon replaces the marker's DOM element,
+  // and Leaflet's drag handler is bound to that element -- so any re-render
+  // during a drag ended the drag, exactly as if the button had been released.
+  // The symbol only changes with the sidc, so that is what it is keyed on.
+  const icon = useMemo(
+    () => iconForControlPoint(props.controlPoint),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [props.controlPoint.sidc]
+  );
+
+  // True between dragstart and dragend. Nothing that redraws the marker may run
+  // while the player is holding the mouse down.
+  const dragging = useRef(false);
+
+  // When the range check was last asked for, so a drag does not fire one per
+  // mouse position.
+  const lastAsked = useRef(0);
+
   const [hasDestination, setHasDestination] = useState<boolean>(
     props.controlPoint.destination != null
   );
@@ -107,6 +128,12 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
   const [cancelTravel] = useClearControlPointDestinationMutation();
 
   useEffect(() => {
+    // The drag handler owns the tooltip while the drag lasts: it is showing the
+    // live distance, and this would put the name back every time anything on
+    // the map updated.
+    if (dragging.current) {
+      return;
+    }
     markerRef.current?.setTooltipContent(
       props.controlPoint.destination
         ? destinationTooltipText(
@@ -133,7 +160,7 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
     <>
       <Marker
         position={position}
-        icon={iconForControlPoint(props.controlPoint)}
+        icon={icon}
         draggable={!isLoading}
         autoPan
         // We might draw other markers on top of the CP. The tooltips from the
@@ -170,8 +197,21 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
               locationClickHandlers.contextmenu();
             }
           },
+          dragstart: () => {
+            dragging.current = true;
+          },
           drag: (event) => {
             const destination = event.target.getLatLng();
+            // The path follows every pixel; the range check does not. Leaflet
+            // fires this several times a frame, and one HTTP round trip per
+            // mouse position is a request storm for an answer that only changes
+            // when the carrier crosses its range ring.
+            pathRef.current?.setDestination(destination);
+            const now = Date.now();
+            if (now - lastAsked.current < RANGE_CHECK_INTERVAL_MS) {
+              return;
+            }
+            lastAsked.current = now;
             backend
               .get(
                 `/control-points/${props.controlPoint.id}/destination-in-range?lat=${destination.lat}&lng=${destination.lng}`
@@ -185,9 +225,9 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
                   )
                 );
               });
-            pathRef.current?.setDestination(destination);
           },
           dragend: async (event) => {
+            dragging.current = false;
             const currentPosition = new LatLng(position.lat, position.lng);
             const destination = event.target.getLatLng();
             setDestination(destination);

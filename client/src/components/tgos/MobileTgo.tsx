@@ -12,6 +12,7 @@ import {
   setHoveredEmitter,
 } from "../../api/mapSlice";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { RANGE_CHECK_INTERVAL_MS } from "../map/dragging";
 import {
   MovementPath,
   MovementPathHandle,
@@ -26,11 +27,6 @@ import { Marker, Tooltip } from "react-leaflet";
 // (MobileControlPoint) so a ship drag reads the same way: the live
 // nautical-mile distance plus the destination coordinates, or an
 // out-of-range notice with how far the attempted move was.
-// How often the "is this in range" question is worth asking while dragging.
-// Leaflet fires `drag` several times a frame; the answer changes once, when the
-// ship crosses its range ring.
-const RANGE_CHECK_INTERVAL_MS = 120;
-
 function metersToNauticalMiles(meters: number): number {
   return meters * 0.000539957;
 }
