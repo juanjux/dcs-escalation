@@ -12,12 +12,19 @@ from game.atcdata import AtcData
 from game.dcs.beacons import BeaconType, Beacons
 from game.radio.radios import RadioFrequency
 from game.radio.tacan import TacanChannel
-from game.utils import Heading
+from game.utils import Heading, Speed, knots, mps
 from game.weather.conditions import Conditions
 
 if TYPE_CHECKING:
     from game.dcs.beacons import Beacon
     from game.theater import ConflictTheater
+
+
+#: Under this there is no headwind worth chasing, so the runway with the approach
+#: aid is the one to use -- which is what a real field does in calm air, and what a
+#: flight plan's approach course should be lined up with. Above it the wind decides,
+#: as it did before.
+CALM_WIND: Speed = knots(5)
 
 
 @dataclass(frozen=True)
@@ -120,12 +127,19 @@ class RunwayAssigner:
     ) -> RunwayData:
         """Returns the preferred runway for the given airport.
 
-        Right now we're only selecting runways based on whether or not
-        they have
-        ILS, but we could also choose based on wind conditions, or which
-        direction flight plans should follow.
+        The wind decides, and where there is no wind to speak of the approach aid
+        does: two knots of breeze used to be enough to send everybody to a runway
+        with nothing on it, at a field whose instrument runway was sitting there
+        unused.
         """
         runways = list(RunwayData.for_pydcs_airport(theater, airport))
+
+        if mps(self.conditions.weather.wind.at_0m.speed) < CALM_WIND:
+            instrument = [runway for runway in runways if runway.ils is not None]
+            if instrument:
+                # Still the most into what little wind there is, of the ones that
+                # have the aid.
+                return min(instrument, key=lambda r: self.angle_off_headwind(r).degrees)
 
         # Find the runway with the best headwind first.
         best_runways = [runways[0]]
