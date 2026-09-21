@@ -160,10 +160,9 @@ def test_a_target_nearer_than_the_minimum_ingress_distance_can_still_be_planned(
 
     The solver looks for the IP in the ring between the doctrine's minimum ingress
     distance and its maximum. PackageWaypoints lowers that maximum to the reach of the
-    weapons, and where the target was nearer than the doctrine's own minimum, the
-    maximum was clamped back up to it -- inner radius and outer radius the same, a ring
-    with no points in it. Every strategy failed on a geometry that is perfectly
-    solvable, and the package could not be planned at all.
+    weapons, and where the target is nearer than the doctrine's own minimum the floor
+    comes down with it -- a ring of no width holds no points, and every strategy
+    failed on a geometry that is perfectly solvable.
     """
     from game.ato.packagewaypoints import PackageWaypoints
 
@@ -178,8 +177,7 @@ def test_a_target_nearer_than_the_minimum_ingress_distance_can_still_be_planned(
     ip = IpSolver(departure, target, planned, MultiPolygon([])).solve()
 
     assert ip is not None
-    # It is behind the departure, which is what the backtracking strategies are for:
-    # there is no room for a ten mile run in at a target nine and a half miles away.
-    assert meters(math.hypot(ip.x - target.x, ip.y - target.y)) >= (
-        doctrine.min_ingress_distance
-    )
+    # And it is in the ring that was asked for, rather than flung behind the departure
+    # because the only ring on offer was the doctrine's own.
+    away = meters(math.hypot(ip.x - target.x, ip.y - target.y))
+    assert planned.min_ingress_distance <= away <= planned.max_ingress_distance

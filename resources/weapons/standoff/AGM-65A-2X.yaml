@@ -1,4 +1,5 @@
 name: 2xAGM-65A
+range: 8  # nm - stand-off launch range
 year: 1972
 clsids:
   - "{HB_F4EAGM-65A_LAU88_2x_Right}"
