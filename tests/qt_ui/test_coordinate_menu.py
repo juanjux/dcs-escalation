@@ -31,7 +31,8 @@ def _flight(task: str = "SEAD", aircraft: str = "AV-8B", crewed: int = 1) -> Any
             display_name=aircraft, dcs_unit_type=SimpleNamespace(id="FA-18C_hornet")
         ),
         client_count=crewed,
-        saved_points=[],
+        # The points live on the squadron, not on the flight.
+        squadron=SimpleNamespace(saved_points=[]),
     )
 
 

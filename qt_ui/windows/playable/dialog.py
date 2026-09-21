@@ -452,7 +452,8 @@ class PlayableAircraftDialog(QDialog):
         layout.addWidget(
             _label(
                 "GPS Points can also be added from the map by clicking on any unit"
-                " or empty spot.",
+                " or empty spot. They belong to the squadron, so cancelling a"
+                " flight and planning another does not lose them.",
                 f"font-size: 11px; color: {FAINT_INK}; padding: 6px 12px 10px;",
             )
         )
