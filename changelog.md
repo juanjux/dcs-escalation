@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mission Generator]** Optional ALIGN waypoint before landing, on the centreline of the active runway, so the last leg arrives lined up.
 * **[Aircraft]** The A-10's saved points go into its navigation computer, on a flight plan of their own, with the ground height under each one.
 * **[UI]** A saved point gets the height of the ground under it, looked up from an open elevation model.
 * **[UI]** New window, *Playable aircraft*: what the player is flying this turn and the points saved for each one, which can also be typed or pasted in by hand.

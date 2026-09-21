@@ -134,6 +134,13 @@ Still to come:
 
 
 ## Missions, AI & tasking
+- **A flight can arrive lined up with the runway.** The route ends at the airfield,
+  which is a point and not a direction, so the last leg arrives on whatever heading the
+  one before it left. An optional ALIGN waypoint goes on the approach course of the
+  **active** runway -- the one the campaign works out from the wind, the same one the
+  kneeboard and the ATC give -- a settable distance out and at the height a three-degree
+  slope puts it. Off by default, under Mission Generator. Airfields only.
+
 - **Realistic CAS** — an experimental, off-by-default Mission Plugin that makes
   ground targets something to discover instead of immediately available to every
   AI attacker. Both sides search using visual, EO/IR and ground-radar observations,
