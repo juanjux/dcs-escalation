@@ -98,3 +98,17 @@
   min-width: 0;
   font: inherit;
 }
+
+/* The toggle in the map corner, sized and lit like the ruler button beside it. */
+.cp-toggle a {
+  width: 30px;
+  height: 30px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='6'/%3E%3Cpath d='M12 1v5M12 18v5M1 12h5M18 12h5'/%3E%3C/svg%3E");
+  background-size: 20px 20px;
+}
+
+.cp-toggle-on {
+  border-color: chartreuse !important;
+}

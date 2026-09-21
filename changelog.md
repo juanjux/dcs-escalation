@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** The map's GPS picker is a tool you switch on, like the ruler, instead of answering every stray click.
 * **[Aircraft]** The A-10's saved points go into its navigation computer, on a flight plan of their own, with the ground height under each one.
 * **[UI]** A saved point gets the height of the ground under it, looked up from an open elevation model.
 * **[UI]** New window, *Playable aircraft*: what the player is flying this turn and the points saved for each one, which can also be typed or pasted in by hand.
@@ -169,6 +170,7 @@
 
 ## Fixes
 * **[FIX]** Adding a flight to a package asked the fuel question again about the flights already answered for.
+* **[FIX]** A pilot marked as the player was asking the player for leave.
 * **[FIX]** OPFOR-AI: a package refused for being out of range told the caller to pass a field it had already passed.
 * **[FIX]** Cancelling a flight threw away the points saved for it; they belong to the squadron now.
 * **[FIX]** Dragging a ship group or a carrier on the map let go on its own: the marker was being put back, or rebuilt, mid-drag.
