@@ -139,7 +139,14 @@ Still to come:
   one before it left. An optional ALIGN waypoint goes on the approach course of the
   **active** runway -- the one the campaign works out from the wind, the same one the
   kneeboard and the ATC give -- a settable distance out and at the height a three-degree
-  slope puts it. On by default, under Mission Generator. Airfields only.
+  slope puts it. On by default, under Mission Generator.
+
+  A carrier gets one too, on the base recovery course and at the position the ship will
+  have steamed to by the time the flight lands: fifty miles astern by default, which is
+  where a Case III starts. DCS gives no coordinates for a runway, only its heading, so
+  at a field with more than one strip the course is right but the line can sit beside
+  the tarmac rather than on it. In calm air the instrument runway is preferred, which is
+  usually the one the field's own reference point is on.
 
 - **Realistic CAS** — an experimental, off-by-default Mission Plugin that makes
   ground targets something to discover instead of immediately available to every

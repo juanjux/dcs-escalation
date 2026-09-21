@@ -69,7 +69,7 @@ class IBuilder(ABC, Generic[FlightPlanT, LayoutT]):
             self._flight_plan = self.build(dump_debug_info)
             # Here rather than in each of the fourteen builders: they all end the same
             # way, with a nav leg home and the field at the end of it.
-            alignpoint.add_to(self.flight, getattr(self._flight_plan, "layout", None))
+            alignpoint.add_to(self.flight, self._flight_plan)
         except NavMeshError as ex:
             color = "blue" if self.flight.squadron.player.is_blue else "red"
             raise PlanningError(
