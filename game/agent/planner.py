@@ -27,6 +27,7 @@ from game.squadrons import friendship
 from game.sim.missionresultsprocessor import killer_sentence
 from game.squadrons import hardening
 from game.squadrons import morale as morale_rules
+from game.utils import meters, nautical_miles
 
 if TYPE_CHECKING:
     from game import Game
@@ -456,6 +457,64 @@ def _diagnose_flights(
     used: dict[int, int] = defaultdict(
         int
     )  # squadron -> aircraft reserved by earlier flights
+
+    def _over_the_limit(squadron, task, count) -> str | None:
+        """How far past the auto-planner's limit this squadron is, or None when the
+        limit is not what stopped it -- asked by putting the question again with the
+        limit lifted."""
+        if target is None:
+            return None
+        if not _try(
+            squadron.can_auto_assign_mission, target, task, count, False, True, True
+        ):
+            return None
+        away = _try(
+            lambda: meters(target.distance_to(squadron.location)).nautical_miles
+        )
+        limit = _try(
+            lambda: max(
+                squadron.aircraft.max_mission_range,
+                nautical_miles(game.settings.max_mission_range_planes),
+            ).nautical_miles
+        )
+        if away is None or limit is None:
+            return ""
+        return f" ({away:.0f} NM to the target, limit {limit:.0f} NM)"
+
+    def _why_not_assignable(f, candidates, free, task, count) -> str:
+        """Why nothing would take this flight, and what would actually help.
+
+        Range and role both used to read "out of the auto-planner's range", and both
+        were answered with "pass squadron_id" -- which the caller may have passed
+        already, and which does nothing about the range either way.
+        """
+        over = next(
+            (
+                d
+                for d in (_over_the_limit(s, task, count) for s in free)
+                if d is not None
+            ),
+            None,
+        )
+        if over is None:
+            # It fails with the limit lifted, so the limit is not what stopped it.
+            if f.squadron_id:
+                name = _try(lambda: candidates[0].name) or f.squadron_id
+                return (
+                    f"{name} is capable and free, but the planner will not assign it "
+                    "this mission — its base, or the crews it can put up this turn"
+                )
+            role = _try(lambda: task.value) or str(f.task).upper()
+            return (
+                f"no squadron auto-assigns {role} (role, base or crews) — pass "
+                "squadron_id to force a capable one, as a human assigns by hand"
+            )
+        also = "" if f.squadron_id else ", or squadron_id to pick the squadron yourself"
+        return (
+            f"capable and free, but out of the auto-planner's range{over}"
+            f" — add ignore_range:true to send it anyway{also}"
+        )
+
     out: list[tuple[int, str, str | None]] = []
     for i, f in enumerate(flights):
         label = _flight_label(f)
@@ -527,18 +586,8 @@ def _diagnose_flights(
                     )
                 )
             else:
-                hint = (
-                    ""
-                    if spec.ignore_range
-                    else " — pass squadron_id to force a specific capable squadron (as a "
-                    "human assigns by hand), or ignore_range:true to send it past the range limit"
-                )
                 out.append(
-                    (
-                        i,
-                        label,
-                        f"capable and free, but out of the auto-planner's range{hint}",
-                    )
+                    (i, label, _why_not_assignable(f, candidates, free, task, count))
                 )
             continue
         used[id(assignable)] += count  # this flight is fine on its own — reserve it

@@ -168,6 +168,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** OPFOR-AI: a package refused for being out of range told the caller to pass a field it had already passed.
 * **[FIX]** Dragging a ship group or a carrier on the map let go on its own: the marker was being put back, or rebuilt, mid-drag.
 * **[FIX]** Run from source, the taskbar showed Python's icon instead of the application's.
 * **[FIX]** Dragging a ship group on the map let go on its own: an update arriving mid-drag put the marker back.
