@@ -1,4 +1,5 @@
 name: AGM-65F
+range: 15  # nm - stand-off launch range
 year: 1991
 fallback: 3xAGM-65D
 clsids:
