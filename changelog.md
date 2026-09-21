@@ -169,6 +169,7 @@
 
 ## Fixes
 * **[FIX]** Run from source, the taskbar showed Python's icon instead of the application's.
+* **[FIX]** Dragging a ship group on the map let go on its own: an update arriving mid-drag put the marker back.
 * **[FIX]** The word under a squadron's task chip in the Air Wing says what it measures: its cohesion.
 * **[FIX]** The saved-points list cut the coordinates; it is a table with columns the player can widen.
 * **[FIX]** The kneeboard numbered a saved point 1; the aircraft numbers it after the flight plan.
