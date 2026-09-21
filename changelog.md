@@ -3,7 +3,7 @@
 ## Features/Improvements
 * **[Mission Generator]** Optional ALIGN waypoint before landing, on the centreline of the active runway, so the last leg arrives lined up.
 * **[Live Pilots]** Being disliked is noticed too: each point the other man is below him adds to his chance of cooling, mirroring the warming bonus. 5% a point, a new setting.
-* **[UI]** The map's GPS picker is a tool you switch on, like the ruler, instead of answering every stray click.
+* **[UI]** The map's GPS picker is a tool you switch on, like the ruler, instead of answering every stray click, and the map wears the same crosshair while it is on.
 * **[Aircraft]** The A-10's saved points go into its navigation computer, on a flight plan of their own, with the ground height under each one.
 * **[UI]** A saved point gets the height of the ground under it, looked up from an open elevation model.
 * **[UI]** New window, *Playable aircraft*: what the player is flying this turn and the points saved for each one, which can also be typed or pasted in by hand.
