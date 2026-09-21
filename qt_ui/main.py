@@ -45,6 +45,34 @@ from qt_ui.windows.preferences.QLiberationFirstStartWindow import (
 THIS_DIR = Path(__file__).parent
 
 
+#: What Windows files this process under. The taskbar icon does not come from
+#: setWindowIcon: Windows groups a window by the application id of the process that
+#: owns it, and a process that never claims one inherits the launcher's -- which is
+#: why running from source showed Python's icon and the built executable did not.
+#: Any stable string will do, and this one will not collide with anything.
+APP_ID = "juanjux.dcs.escalation"
+
+
+def claim_taskbar_identity(app_id: str = APP_ID) -> bool:
+    """Tell Windows this is its own application. True if it took.
+
+    Has to happen before the first window is created, and does nothing anywhere
+    else: everything below is Windows' own shell.
+    """
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
+    except Exception:
+        # A missing shell32, an older Windows, a locked-down host: the icon is not
+        # worth failing to start over.
+        logging.info("Could not claim the taskbar identity", exc_info=True)
+        return False
+    return True
+
+
 def inject_custom_payloads(user_path: Path) -> None:
     dev_payloads = THIS_DIR.parent / "resources/customized_payloads"
     # The packaged release rearranges the file locations, so the release has the
@@ -83,6 +111,10 @@ def run_ui(game: Optional[Game], ui_flags: UiFlags) -> None:
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
+
+    # Before the first window exists, or Windows has already filed us under
+    # whatever launched the process.
+    claim_taskbar_identity()
 
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon("./resources/icon.ico"))
