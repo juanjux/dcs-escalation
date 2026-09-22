@@ -171,6 +171,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** A strike had a line-up waypoint ten miles from its join, both saying the same thing; only the far-join case keeps it.
 * **[FIX]** The join point sat at a fixed fraction of the straight line home, off the route; it goes just before the ingress now.
 * **[FIX]** A carrier recovery got no ALIGN waypoint: the package had no time over target yet when the plan was first built.
 * **[FIX]** Two knots of wind was enough to select a bare runway at a field whose ILS runway was free; in calm air the ILS runway is preferred.
