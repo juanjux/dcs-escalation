@@ -20,21 +20,21 @@ if TYPE_CHECKING:
     from game.coalition import Coalition
 
 
-#: How far along the route home the package forms up. The join has to be early
-#: enough that whatever joins there -- an escort, above all -- is with the package for
-#: most of the trip, and it has to be on the route or the flight leaves its track to
-#: reach it.
+#: How far along the outbound route the package forms up, as a fraction of it.
 JOIN_FRACTION = 0.355
 
 
 def join_along_route(
     coalition: Coalition, home: Point, ingress: Point
 ) -> Optional[Point]:
-    """The point a third of the way along the route from home to the ingress.
+    """Where the package forms up: a fraction of the way along the route to the ingress.
 
-    The route is the navmesh path, which is what the flight will fly, so a point on it
-    costs nothing to reach. None when the navmesh cannot path between the two, and the
-    caller falls back to the zone geometry.
+    The route is the navmesh path, which is the one the flight will fly, so the join
+    adds no distance to it. Placing the join on the straight line to the target
+    instead leaves it off the route, and the flight has to divert to it and turn back.
+
+    Returns None if the navmesh cannot find a path; the caller then falls back to
+    JoinZoneGeometry.
     """
     try:
         path = coalition.nav_mesh.shortest_path(home, ingress)
@@ -48,7 +48,7 @@ def join_along_route(
     if not total:
         return None
 
-    # Never so far along that it lands on top of the ingress.
+    # Keep it at least the doctrine's join distance short of the ingress.
     join_distance = coalition.doctrine.join_distance.meters
     wanted = min(total * JOIN_FRACTION, max(total - join_distance, 0.0))
 
