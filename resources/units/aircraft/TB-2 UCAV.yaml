@@ -1,0 +1,13 @@
+description: "The Bayraktar TB2 is a Turkish medium-altitude armed drone that carries four MAM glide munitions. Turkey, Ukraine and a dozen other operators fly it for armed reconnaissance and close support."
+introduced: 2014
+manufacturer: Baykar
+origin: Turkey
+price: 8
+role: Armed Reconnaissance UAV
+max_range: 130
+variants:
+  "[CH] TB-2 UCAV": null
+tasks:
+  CAS: 20
+  BAI: 20
+  Armed Recon: 20

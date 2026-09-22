@@ -71,6 +71,7 @@ class MigrationUnpickler(pickle.Unpickler):
             self._handle_weather_classes,
             self._handle_ch_russian_assets,
             self._handle_ch_usa_assets,
+            self._handle_ch_uk_assets,
             self._handle_ch_ukraine_assets,
             self._handle_su30,
             self._handle_misc,
@@ -282,6 +283,20 @@ class MigrationUnpickler(pickle.Unpickler):
         if name == "B_21":
             return getattr(usamilitaryassetspack, "CH_B_21", None)
         return None
+
+    def _handle_ch_uk_assets(self, module: str, name: str) -> Any:
+        """Handle migrations for the UK military assets pack: 1.5.0 dropped the
+        Scimitar and the Scorpion as redundant with the DCS units ED shipped, so map
+        old saves to the native class."""
+        if module != "pydcs_extensions.ukmilitaryassetspack.ukmilitaryassetspack":
+            return None
+        from dcs.vehicles import Armor
+
+        native = {
+            "CH_Scimitar": Armor.CHAP_FV107,
+            "CH_Scorpion": Armor.CHAP_FV101,
+        }
+        return native.get(name)
 
     def _handle_ch_ukraine_assets(self, module: str, name: str) -> Any:
         """Handle migrations for the Ukraine military assets pack: 2.0.0 removed the

@@ -37,6 +37,20 @@ def test_every_retired_name_resolves() -> None:
 @pytest.mark.parametrize(
     "old,dcs_id",
     [
+        ("[CH] Scimitar CRV", "CHAP_FV107"),
+        ("[CH] Scorpion LT", "CHAP_FV101"),
+    ],
+)
+def test_the_uk_pack_units_dcs_took_over(old: str, dcs_id: str) -> None:
+    """UK pack 1.5.0 dropped both as redundant with the units ED shipped."""
+    from game.dcs.groundunittype import GroundUnitType
+
+    assert GroundUnitType.named(old).dcs_unit_type.id == dcs_id
+
+
+@pytest.mark.parametrize(
+    "old,dcs_id",
+    [
         ("[CH] T-64BV MBT", "CHAP_T64BV"),
         ("[CH] T-84 Oplot-M MBT", "CHAP_T84OplotM"),
     ],
@@ -48,7 +62,17 @@ def test_the_ukraine_pack_units_dcs_took_over(old: str, dcs_id: str) -> None:
     assert GroundUnitType.named(old).dcs_unit_type.id == dcs_id
 
 
-def test_the_unpickler_maps_the_retired_classes() -> None:
+def test_the_unpickler_maps_the_retired_uk_classes() -> None:
+    from game.persistency import MigrationUnpickler
+
+    unpickler = MigrationUnpickler.__new__(MigrationUnpickler)
+    module = "pydcs_extensions.ukmilitaryassetspack.ukmilitaryassetspack"
+    assert unpickler._handle_ch_uk_assets(module, "CH_Scimitar").id == "CHAP_FV107"
+    assert unpickler._handle_ch_uk_assets(module, "CH_Scorpion").id == "CHAP_FV101"
+    assert unpickler._handle_ch_uk_assets(module, "CH_Ajax") is None
+
+
+def test_the_unpickler_maps_the_retired_ukraine_classes() -> None:
     from game.persistency import MigrationUnpickler
 
     unpickler = MigrationUnpickler.__new__(MigrationUnpickler)
