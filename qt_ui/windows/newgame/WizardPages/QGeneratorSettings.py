@@ -259,7 +259,7 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 self.usamilitaryassetspack,
             ),
             (
-                "CurrentHill UK Military Assets pack (1.1.2)",
+                "CurrentHill UK Military Assets pack (1.5.0)",
                 self.ukmilitaryassetspack,
             ),
             (
