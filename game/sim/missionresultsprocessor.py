@@ -20,6 +20,18 @@ from game.squadrons.experience import (
     XP_SHIP_KILL,
     XP_UNKNOWN_KILL,
     XP_WOUNDED,
+    XP_AIR,
+    XP_BUILDINGS,
+    XP_COMPANY,
+    XP_DAMAGE,
+    XP_GROUND,
+    XP_HELD_BACK,
+    XP_LEARNING,
+    XP_MISSION,
+    XP_MORALE,
+    XP_SHIPS,
+    XP_WOUND,
+    XpAward,
     building_xp,
     turns_phrase,
     survival_chance,
@@ -59,6 +71,16 @@ VEHICLE = "vehicle"
 BUILDING = "building"
 UNKNOWN = "unknown"
 NOTHING = "nothing"
+
+
+#: Which line of a debriefing's experience breakdown each kind is paid on. Anything
+#: unrecognised was still destroyed on the ground, so it reads there.
+_XP_REASON_BY_KIND = {
+    AIR: XP_AIR,
+    SHIP: XP_SHIPS,
+    VEHICLE: XP_GROUND,
+    BUILDING: XP_BUILDINGS,
+}
 
 
 #: How a pilot would group what he destroyed on the ground -- coarser than the unit
@@ -137,6 +159,22 @@ def killer_sentence(parts: KilledBy) -> str:
     return said
 
 
+@dataclass(frozen=True)
+class XpMultiplier:
+    """What a sortie is multiplied by, and which of the three did it."""
+
+    #: The morale component, and the baseline: 1.0 for a pilot with no morale at all.
+    morale: float
+    #: What the best pilot in the formation taught him.
+    learning: float
+    #: What he thinks of the men he flew with.
+    company: float
+
+    @property
+    def total(self) -> float:
+        return self.morale + self.learning + self.company
+
+
 class MissionResultsProcessor:
     def __init__(self, game: Game) -> None:
         self.game = game
@@ -144,6 +182,11 @@ class MissionResultsProcessor:
         self._xp_log: Optional[XpLog] = None
         #: Morale movements collected during the pass, applied once it is over.
         self._morale_events: dict[int, list[Any]] = {}
+        #: What each pilot was paid for, by ``id()``. The totals are worked out by the
+        #: passes below; this is the same arithmetic kept in the shape a debriefing can
+        #: read, because "gained 1,400" says nothing about whether that was two MiGs or
+        #: a long afternoon of trucks.
+        self._xp_reasons: dict[int, dict[str, int]] = {}
         #: ``id()`` of the men the medics took this turn. A pilot does not mourn his
         #: own wound, the way the dead do not mourn themselves.
         self._wounded_this_turn: set[int] = set()
@@ -170,6 +213,37 @@ class MissionResultsProcessor:
         """
         if times > 0:
             self._morale_events.setdefault(id(pilot), []).extend([event] * times)
+
+    def _note_xp(self, pilot: Any, reason: str, xp: int) -> None:
+        """Record why a pilot was paid. Zero is not a reason."""
+        if not xp:
+            return
+        reasons = self._xp_reasons.setdefault(id(pilot), {})
+        reasons[reason] = reasons.get(reason, 0) + xp
+
+    def _note_multiplier(
+        self, pilot: Any, parts: "XpMultiplier", base: int, delta: int
+    ) -> None:
+        """Attribute the multiplier's effect to the three things that caused it.
+
+        Each share is what that component alone would have added to ``base``. They are
+        rounded independently and then reconciled against ``delta``, because three
+        rounded shares do not have to add up to the rounded whole and a breakdown that
+        does not match its own total is worse than a coarse one.
+        """
+        shares = {
+            XP_MORALE: round(base * (parts.morale - 1.0)),
+            XP_LEARNING: round(base * parts.learning),
+            XP_COMPANY: round(base * parts.company),
+        }
+        remainder = delta - sum(shares.values())
+        if remainder:
+            # Onto the largest share by magnitude: it is the one a rounding error is
+            # least visible on, and something has to carry it.
+            largest = max(shares, key=lambda reason: abs(shares[reason]))
+            shares[largest] += remainder
+        for reason, xp in shares.items():
+            self._note_xp(pilot, reason, xp)
 
     def _note_friendship(self, pilot: Any, other: Any, amount: float) -> None:
         """He saw a bit more of this man today. Spent at the end of the pass."""
@@ -904,6 +978,7 @@ class MissionResultsProcessor:
             xp = self._kill_xp(victim)
             if xp:
                 earned[id(pilot)] = earned.get(id(pilot), 0) + xp
+                self._note_xp(pilot, _XP_REASON_BY_KIND.get(kind.kind, XP_GROUND), xp)
                 self.xp_log.award(pilot, xp, "destroyed", victim, target)
             # His own tally, which the campaign never reads and the pilot dialog is
             # the whole reason for. Kept only for what has a name: "one of something
@@ -963,6 +1038,7 @@ class MissionResultsProcessor:
             xp = int(self._kill_xp(victim) * XP_DAMAGE_SHARE)
             if xp:
                 earned[id(pilot)] = earned.get(id(pilot), 0) + xp
+                self._note_xp(pilot, XP_DAMAGE, xp)
                 self.xp_log.award(pilot, xp, "damaged", victim, target)
         return earned
 
@@ -1008,6 +1084,7 @@ class MissionResultsProcessor:
                         extras.append(
                             ("returned", "mission complete", XP_MISSION_COMPLETE)
                         )
+                        self._note_xp(pilot, XP_MISSION, XP_MISSION_COMPLETE)
                     if pilot.wounded:
                         extras.append(
                             (
@@ -1016,24 +1093,23 @@ class MissionResultsProcessor:
                                 XP_WOUNDED,
                             )
                         )
+                        self._note_xp(pilot, XP_WOUND, XP_WOUNDED)
                     # The same floor pilot_skill measures against, or the rungs
                     # would be counted from the difficulty setting Live Pilots
                     # replaces.
-                    multiplier = self._xp_multiplier(flight, squadron, pilot)
-                    paid = round(
-                        (earned.get(id(pilot), 0) + sum(x for _, _, x in extras))
-                        * multiplier
-                    )
+                    parts = self._xp_multiplier_parts(flight, squadron, pilot)
+                    multiplier = parts.total
+                    base = earned.get(id(pilot), 0) + sum(x for _, _, x in extras)
+                    paid = round(base * multiplier)
                     if multiplier != 1.0:
                         extras.append(
                             (
                                 "x%.1f" % multiplier,
                                 "morale and the company he flew in",
-                                paid
-                                - earned.get(id(pilot), 0)
-                                - sum(x for _, _, x in extras),
+                                paid - base,
                             )
                         )
+                        self._note_multiplier(pilot, parts, base, paid - base)
                     raw = had + paid
                     pilot.record.xp = one_promotion_at_most(
                         had, raw, squadron.base_skill, self.game.settings
@@ -1046,6 +1122,7 @@ class MissionResultsProcessor:
                                 pilot.record.xp - raw,
                             )
                         )
+                        self._note_xp(pilot, XP_HELD_BACK, pilot.record.xp - raw)
                     after = squadron.pilot_rank(pilot)
                     promotion = None
                     if before is not None and after is not None and after != before:
@@ -1063,6 +1140,21 @@ class MissionResultsProcessor:
                                 from_level=before_level,
                                 to_level=self._rank_level(squadron, pilot),
                                 blue=squadron.player.is_blue,
+                            )
+                        )
+                    reasons = self._xp_reasons.pop(id(pilot), {})
+                    if reasons:
+                        debriefing.pilot_outcomes.xp_awards.append(
+                            XpAward(
+                                pilot_name=pilot.name,
+                                squadron=str(squadron),
+                                aircraft=str(squadron.aircraft),
+                                rank=before.abbreviation if before else "",
+                                level=before_level,
+                                blue=squadron.player.is_blue,
+                                before=had,
+                                after=pilot.record.xp,
+                                reasons=reasons,
                             )
                         )
                     self.xp_log.collected(
@@ -1123,16 +1215,23 @@ class MissionResultsProcessor:
             self._note_friendly_fire(mourner, shooter, air_squadron)
 
     def _xp_multiplier(self, flight: Any, squadron: Any, pilot: Any) -> float:
-        """The experience multiplier for this pilot's sortie.
+        """The experience multiplier for this pilot's sortie."""
+        return self._xp_multiplier_parts(flight, squadron, pilot).total
+
+    def _xp_multiplier_parts(
+        self, flight: Any, squadron: Any, pilot: Any
+    ) -> XpMultiplier:
+        """The experience multiplier for this pilot's sortie, and where it came from.
 
         Three things move it: his morale, the best pilot in the formation (who teaches
         the ones below him and gains nothing himself), and what he thinks of the crew he
-        flew with.
+        flew with. Kept apart because a debriefing that says only "x1.3" cannot tell a
+        pilot which of the three he has, or which he would lose by flying alone.
 
         """
         settings = self.game.settings
         if not settings.live_pilots_enabled:
-            return 1.0
+            return XpMultiplier(1.0, 0.0, 0.0)
         morale_on = getattr(settings, "morale_enabled", True)
         best = squadron.pilot_skill(pilot)
         # The same man twice over: the one who teaches, and the one the formation is
@@ -1173,7 +1272,11 @@ class MissionResultsProcessor:
             if friendship.in_play(settings)
             else 0.0
         )
-        return max(0.0, state + learning + company)
+        # The floor is on the whole thing, not on the parts: a pilot whose morale has
+        # collapsed far enough to zero out the sortie is not then paid for his friends.
+        if state + learning + company <= 0.0:
+            return XpMultiplier(0.0, 0.0, 0.0)
+        return XpMultiplier(state, learning, company)
 
     def _note_mission_morale(
         self,

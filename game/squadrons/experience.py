@@ -201,6 +201,84 @@ class MoraleShift:
         return ", ".join(parts)
 
 
+#: The reason labels an award is broken into, in the order a debriefing reads them:
+#: what he shot at first, then what the sortie itself was worth, then what the company
+#: he kept made of it.
+XP_AIR = "Air kills"
+XP_GROUND = "Ground kills"
+XP_SHIPS = "Ships"
+XP_BUILDINGS = "Structures"
+XP_DAMAGE = "Damage dealt"
+XP_MISSION = "Mission complete"
+XP_WOUND = "Wounded"
+XP_MORALE = "Morale"
+XP_LEARNING = "Flew with better pilots"
+XP_COMPANY = "Flew with friends"
+XP_HELD_BACK = "Held back"
+
+#: The order the reasons are shown in, whatever order they were collected in.
+XP_REASON_ORDER = (
+    XP_AIR,
+    XP_GROUND,
+    XP_SHIPS,
+    XP_BUILDINGS,
+    XP_DAMAGE,
+    XP_MISSION,
+    XP_WOUND,
+    XP_MORALE,
+    XP_LEARNING,
+    XP_COMPANY,
+    XP_HELD_BACK,
+)
+
+
+@dataclass
+class XpAward:
+    """What one pilot was paid this mission, and for what.
+
+    The reasons are the point: a number on its own says a pilot gained 1,400 and
+    nothing about whether that was two MiGs or a long list of trucks, and the
+    multipliers are invisible in a total. Held as a mapping so a reason can be added
+    from wherever it is decided, and read back in a fixed order.
+    """
+
+    pilot_name: str
+    squadron: str
+    aircraft: str = ""
+    rank: str = ""
+    level: int = 0
+    blue: bool = True
+    #: What he held before the mission and what he holds now. The difference is what
+    #: the reasons add up to, except where a promotion was held back.
+    before: int = 0
+    after: int = 0
+    reasons: dict[str, int] = field(default_factory=dict)
+
+    def add(self, reason: str, xp: int) -> None:
+        """Fold another award in. Zero is not a reason and is dropped."""
+        if not xp:
+            return
+        self.reasons[reason] = self.reasons.get(reason, 0) + xp
+
+    @property
+    def gained(self) -> int:
+        return self.after - self.before
+
+    @property
+    def ordered_reasons(self) -> list[tuple[str, int]]:
+        """The reasons in reading order, the ones that moved nothing left out."""
+        return [
+            (reason, self.reasons[reason])
+            for reason in XP_REASON_ORDER
+            if self.reasons.get(reason)
+        ]
+
+    @property
+    def summary(self) -> str:
+        """The reasons on one line, for anything without room for a list."""
+        return ", ".join(f"{reason} {xp:+,}" for reason, xp in self.ordered_reasons)
+
+
 @dataclass
 class PilotOutcomes:
     """What became of the aircrew this mission, for the debriefing to read.
@@ -215,6 +293,7 @@ class PilotOutcomes:
     wounded: list[PilotWound] = field(default_factory=list)
     deaths: list[PilotDeath] = field(default_factory=list)
     morale_shifts: list[MoraleShift] = field(default_factory=list)
+    xp_awards: list[XpAward] = field(default_factory=list)
 
     #: ``id()`` of every pilot who lost his aircraft, however it ended for him. He did
     #: not complete the mission, so he is not paid for completing it.
@@ -228,4 +307,5 @@ class PilotOutcomes:
             or self.wounded
             or self.deaths
             or self.morale_shifts
+            or self.xp_awards
         )
