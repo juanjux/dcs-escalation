@@ -181,6 +181,8 @@
 
 ## Fixes
 * **[FIX]** The leg from the join to the ingress is flown at the package's speed, like the rest of the formation route. It was priced per flight, so an escort on a faster airframe arrived first. (adapted from the RetLab fork)
+* **[FIX]** Live weather could brief a wind DCS will not fly. A real jet stream beats the sim's 97-knot ceiling, and only the generated wind was held to it. (found in the RetLab fork)
+* **[FIX]** TIC stopped recognising the BMP-3 when DCS renamed it to "IFV BMP-3 [CH]", so it fired six rounds a burst with a 100 mm gun instead of one. (adapted from the RetLab fork)
 * **[FIX]** The theatre AEW&C station could land on a boat, so a squadron flew two racetracks beside the carrier while an airfield with an E-3A parked on it was skipped. It is a land base now, and never a station already planned. (found in the RetLab fork)
 * **[FIX]** A supply route or shipping lane whose two ends are the same base is skipped and named in the log. Five shipped campaigns carried one. (adapted from the RetLab fork)
 * **[FIX]** US Super Hornets called with Australia's callsigns. The mod ships four pools and the extension carried one, holding the RAAF names. (adapted from the RetLab fork)
