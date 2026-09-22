@@ -177,6 +177,10 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
             "[CH] M142 HIMARS (PrSM AShM)": "MLRS M142 HIMARS ATACMS HE [CH]",  # CHAP_M142_ATACMS_M48
             "[CH] Oshkosh FMTV M1083": "Truck M1083 A1P2 MTV [CH]",  # CHAP_M1083
             "[CH] Oshkosh M-ATV MRAP (M2)": "APC MRAP M-ATV [CH]",  # CHAP_MATV
+            # CH Ukraine pack 2.0.0 dropped these two as duplicates of the
+            # native DCS units ED shipped.
+            "[CH] T-64BV MBT": "MBT T-64BV Type 2017 [CH]",  # CHAP_T64BV
+            "[CH] T-84 Oplot-M MBT": "MBT T-84 Oplot-M [CH]",  # CHAP_T84OplotM
         }
 
     @classmethod

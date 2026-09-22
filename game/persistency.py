@@ -71,6 +71,7 @@ class MigrationUnpickler(pickle.Unpickler):
             self._handle_weather_classes,
             self._handle_ch_russian_assets,
             self._handle_ch_usa_assets,
+            self._handle_ch_ukraine_assets,
             self._handle_su30,
             self._handle_misc,
         ]
@@ -281,6 +282,22 @@ class MigrationUnpickler(pickle.Unpickler):
         if name == "B_21":
             return getattr(usamilitaryassetspack, "CH_B_21", None)
         return None
+
+    def _handle_ch_ukraine_assets(self, module: str, name: str) -> Any:
+        """Handle migrations for the Ukraine military assets pack: 2.0.0 removed the
+        T-64BV and the T-84 Oplot-M as duplicates of the DCS units ED shipped, so map
+        old saves to the native class."""
+        if module != (
+            "pydcs_extensions.ukrainemilitaryassetspack.ukrainemilitaryassetspack"
+        ):
+            return None
+        from dcs.vehicles import Armor
+
+        native = {
+            "CH_T64BV": Armor.CHAP_T64BV,
+            "T84_OplotM": Armor.CHAP_T84OplotM,
+        }
+        return native.get(name)
 
     def _handle_su30(self, module: str, name: str) -> Any:
         """Handle migrations for Su-30 aircraft variants"""
