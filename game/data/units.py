@@ -83,6 +83,27 @@ ANTI_AIR_UNIT_CLASSES = [
 ]
 
 
+#: What a SEAD flight can be pointed at. It shoots anti-radiation missiles from a
+#: standoff orbit, so its steerpoints are the site's emitters -- the radars, the
+#: launchers they serve, and the radar-directed point defence around them. The support
+#: section (cargo trucks, fuel bowsers, optical trackers) is not something a HARM can
+#: home on, and listing it also publishes the site's exact composition on a kneeboard
+#: page written to withhold it. DEAD is not filtered: it kills individual vehicles, and
+#: a site's trucks are what a mobile SAM moves with.
+SEAD_TARGET_UNIT_CLASSES: frozenset[UnitClass] = frozenset(
+    {
+        UnitClass.EARLY_WARNING_RADAR,
+        UnitClass.LAUNCHER,
+        UnitClass.SEARCH_RADAR,
+        UnitClass.SEARCH_TRACK_RADAR,
+        UnitClass.SHORAD,
+        UnitClass.SPECIALIZED_RADAR,
+        UnitClass.TELAR,
+        UnitClass.TRACK_RADAR,
+    }
+)
+
+
 #: One short phrase per class, for the unit rows of a location. Kept next to the enum
 #: so a new class either gets a description here or reads as nothing, never as a stale
 #: one from somewhere else.
