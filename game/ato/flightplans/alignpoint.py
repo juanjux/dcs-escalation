@@ -137,17 +137,23 @@ def _airfield_waypoint(
     )
 
 
-def _recovery_delay(plan: Any, conditions: Any) -> Optional[timedelta]:
-    """Time from mission start to this flight's landing.
+def _recovery_delay(plan: Any, conditions: Any) -> timedelta:
+    """Time from mission start to this flight's landing, or zero if not yet known.
 
     Read off the plan as built, which is one waypoint short of the finished one. The
     leg this adds is worth a minute or two of the ship's progress and does not move
     the waypoint off the final bearing.
+
+    A plan is first built before its package has a time over target, and the landing
+    time cannot be worked out without one. Zero is used then: the waypoint is still on
+    the recovery course, only closer to the ship than it will be, and the next time
+    the plan is built the real time is available.
     """
     try:
-        return plan.landing_time - conditions.start_time
+        delay = plan.landing_time - conditions.start_time
     except Exception:
-        return None
+        return timedelta()
+    return delay if delay.total_seconds() > 0 else timedelta()
 
 
 def _carrier_waypoint(
@@ -155,9 +161,9 @@ def _carrier_waypoint(
 ) -> Optional[FlightWaypoint]:
     conditions = flight.coalition.game.conditions
     course = base_recovery_course(conditions)
-    delay = _recovery_delay(plan, conditions)
-    if course is None or delay is None or delay.total_seconds() < 0:
+    if course is None:
         return None
+    delay = _recovery_delay(plan, conditions)
 
     steamed = min(
         meters(steaming_speed(conditions).meters_per_second * delay.total_seconds()),
