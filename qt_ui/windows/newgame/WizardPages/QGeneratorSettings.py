@@ -214,6 +214,8 @@ class GeneratorOptions(QtWidgets.QWizardPage):
         self.registerField("ukmilitaryassetspack", self.ukmilitaryassetspack)
         self.ukrainemilitaryassetspack = QtWidgets.QCheckBox()
         self.registerField("ukrainemilitaryassetspack", self.ukrainemilitaryassetspack)
+        self.turkeymilitaryassetspack = QtWidgets.QCheckBox()
+        self.registerField("turkeymilitaryassetspack", self.turkeymilitaryassetspack)
         self.mig31bm_foxhound = QtWidgets.QCheckBox()
         self.registerField("mig31bm_foxhound", self.mig31bm_foxhound)
         self.mam = QtWidgets.QCheckBox()
@@ -261,6 +263,10 @@ class GeneratorOptions(QtWidgets.QWizardPage):
             (
                 "CurrentHill UK Military Assets pack (1.1.2)",
                 self.ukmilitaryassetspack,
+            ),
+            (
+                "CurrentHill Turkey Military Assets pack (2.0.0)",
+                self.turkeymilitaryassetspack,
             ),
             (
                 "CurrentHill Ukraine Military Assets pack (1.1.1)",
@@ -398,6 +404,9 @@ class GeneratorOptions(QtWidgets.QWizardPage):
         )
         self.usamilitaryassetspack.setChecked(s.get("usamilitaryassetspack", False))
         self.ukmilitaryassetspack.setChecked(s.get("ukmilitaryassetspack", False))
+        self.turkeymilitaryassetspack.setChecked(
+            s.get("turkeymilitaryassetspack", False)
+        )
         self.ukrainemilitaryassetspack.setChecked(
             s.get("ukrainemilitaryassetspack", False)
         )
