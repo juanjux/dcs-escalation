@@ -171,6 +171,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** The High Digit SAMs 40B6M track radar was declared under an id no build of the mod registers, so DCS dropped it from any site that used it.
 * **[FIX]** A strike had a line-up waypoint ten miles before its ingress, which said nothing the ingress did not.
 * **[FIX]** A strike had a line-up waypoint ten miles from its join, both saying the same thing; only the far-join case keeps it.
 * **[FIX]** The join point sat at a fixed fraction of the straight line home, off the route; it goes a third of the way along the route now.
