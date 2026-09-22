@@ -84,12 +84,11 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
       selectHoveredEmitter(state) === props.controlPoint.id
   );
 
-  // iconForControlPoint() builds a fresh Leaflet Icon every call, and this was
-  // calling it inline: a new reference on every render, which react-leaflet
-  // answers with marker.setIcon(). setIcon replaces the marker's DOM element,
-  // and Leaflet's drag handler is bound to that element -- so any re-render
-  // during a drag ended the drag, exactly as if the button had been released.
-  // The symbol only changes with the sidc, so that is what it is keyed on.
+  // iconForControlPoint() returns a new Leaflet Icon on every call, and it was
+  // called inline, so every render passed react-leaflet a new reference and it
+  // answered with marker.setIcon(). setIcon replaces the marker's DOM element,
+  // which Leaflet's drag handler is bound to, so any re-render during a drag
+  // ended it. The symbol only changes with the sidc, so that is the key.
   const icon = useMemo(
     () => iconForControlPoint(props.controlPoint),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,7 +96,7 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
   );
 
   // True between dragstart and dragend. Nothing that redraws the marker may run
-  // while the player is holding the mouse down.
+  // while the mouse button is held down.
   const dragging = useRef(false);
 
   // When the range check was last asked for, so a drag does not fire one per
@@ -128,9 +127,9 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
   const [cancelTravel] = useClearControlPointDestinationMutation();
 
   useEffect(() => {
-    // The drag handler owns the tooltip while the drag lasts: it is showing the
-    // live distance, and this would put the name back every time anything on
-    // the map updated.
+    // The drag handler owns the tooltip while the drag lasts, because it shows
+    // the live distance. This would replace it with the name on every map
+    // update.
     if (dragging.current) {
       return;
     }
@@ -203,9 +202,9 @@ function PrimaryMarker(props: PrimaryMarkerProps) {
           drag: (event) => {
             const destination = event.target.getLatLng();
             // The path follows every pixel; the range check does not. Leaflet
-            // fires this several times a frame, and one HTTP round trip per
-            // mouse position is a request storm for an answer that only changes
-            // when the carrier crosses its range ring.
+            // fires this several times a frame, and one HTTP request per mouse
+            // position is wasteful for an answer that only changes when the
+            // marker crosses its range ring.
             pathRef.current?.setDestination(destination);
             const now = Date.now();
             if (now - lastAsked.current < RANGE_CHECK_INTERVAL_MS) {

@@ -61,10 +61,11 @@ def test_doctrine_ingress_lowered_to_a_short_weapon_range() -> None:
 
 
 def test_a_weapon_shorter_than_the_floor_brings_the_whole_ring_down() -> None:
-    """An eight-mile Maverick has no business starting its run forty-five out.
+    """An eight-mile Maverick should not start its run forty-five miles out.
 
-    The ceiling cannot come down to meet the floor -- a ring with no width between
-    them holds no points, and every strategy fails -- so both move together.
+    The ceiling cannot come down to meet the floor, because a ring with no width
+    between them contains no points and every strategy fails, so both move
+    together.
     """
     doctrine = ALL_DOCTRINES[0]
     reach = doctrine.min_ingress_distance / 2
@@ -76,7 +77,8 @@ def test_a_weapon_shorter_than_the_floor_brings_the_whole_ring_down() -> None:
 
 
 def test_a_weapon_with_no_reach_at_all_leaves_the_doctrine_alone() -> None:
-    """There is nowhere to put the run, and a ring of no width is not an answer."""
+    """There is no reach to place the run at, and a ring of no width is not an
+    answer."""
     doctrine = ALL_DOCTRINES[0]
     result = PackageWaypoints.doctrine_for_weapon_range(
         doctrine, meters(0), nautical_miles(300)

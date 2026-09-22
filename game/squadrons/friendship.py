@@ -243,11 +243,10 @@ def drift_step(
     A rise stops at :func:`drift_ceiling`, so the bands that grant bonuses can only be
     reached by flying together. A fall is not floored.
 
-    ``returned`` is the opposite direction's value, and the gap between the two
-    closes from whichever side is out of step: where it is higher the warming chance
-    is raised by :func:`reciprocity_bonus`, and where it is lower the cooling chance
-    is raised by :func:`cooling_from_enmity`. Being liked is noticed, and so is
-    being disliked.
+    ``returned`` is the opposite direction's value. The gap between the two closes
+    from whichever side is out of step: where ``returned`` is higher the warming
+    chance is raised by :func:`reciprocity_bonus`, and where it is lower the cooling
+    chance is raised by :func:`cooling_from_enmity`.
     """
     up, down = drift_odds(same_squadron, settings)
     up = min(100.0, up + reciprocity_bonus(current, returned, settings))
@@ -278,9 +277,9 @@ DRIFT_SAME_BASE_DOWN = 10
 #: top of the ordinary odds.
 RECIPROCITY_PER_POINT = 5.0
 
-#: The same figure the other way round: added to the cooling chance for each point the
-#: other man's opinion is *below* his own. A man who is disliked comes to dislike back,
-#: at the rate a man who is liked comes to like back.
+#: The same figure in the other direction: added to the cooling chance for each point
+#: the other pilot's opinion is *below* his own, at the same rate as the warming
+#: bonus.
 ENMITY_PER_POINT = 5.0
 
 #: How far one turn of drift moves a pair. A tenth of the scale, so this is the
@@ -421,9 +420,8 @@ def cooling_from_enmity(
     other way.
 
     The mirror of :func:`reciprocity_bonus`: only when ``returned`` is the *lower* of
-    the two, and only to the cooling roll. Nobody goes on thinking well of a man who
-    plainly cannot stand him, and the further the other man is below him the faster he
-    comes round to it.
+    the two, and only to the cooling roll. The further below him the other pilot is,
+    the faster he cools towards them.
     """
     if returned is None:
         return 0.0

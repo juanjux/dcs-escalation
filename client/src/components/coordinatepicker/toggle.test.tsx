@@ -1,9 +1,8 @@
 /**
  * The toggle beside the ruler, and what it does to the map while it is on.
  *
- * A tool that is picked up has to look picked up: the ruler puts a crosshair on the
- * map for exactly that reason, and a picker that changes nothing leaves the player
- * clicking to find out whether it is armed.
+ * The ruler shows a crosshair while it is active so the player can see it is armed;
+ * the picker does the same.
  */
 import PickerToggle from "./PickerToggle";
 import { act, render } from "@testing-library/react";
@@ -11,8 +10,8 @@ import { act, render } from "@testing-library/react";
 const mockContainer = document.createElement("div");
 mockContainer.style.cursor = "grab";
 
-// Enough of a Leaflet map for Control.addTo: the corner it hangs the button in, and
-// the event pair it registers on.
+// Enough of a Leaflet map for Control.addTo: the corner it appends the button to,
+// and the events it registers.
 const mockMap = {
   getContainer: () => mockContainer,
   _controlCorners: { topleft: document.createElement("div") },
@@ -35,7 +34,7 @@ it("puts a crosshair on the map while it is on", () => {
   expect(mockContainer.style.cursor).toBe("crosshair");
 });
 
-it("gives the map its own cursor back when it is put down", () => {
+it("restores the map cursor when it is switched off", () => {
   const { rerender } = render(<PickerToggle on={true} toggle={() => {}} />);
 
   act(() => {
@@ -51,7 +50,7 @@ it("leaves the cursor alone while it is off", () => {
   expect(mockContainer.style.cursor).toBe("grab");
 });
 
-it("gives it back when the map goes away with the tool still up", () => {
+it("restores the cursor if the map unmounts while it is on", () => {
   const { unmount } = render(<PickerToggle on={true} toggle={() => {}} />);
 
   act(() => {

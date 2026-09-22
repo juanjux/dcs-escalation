@@ -195,8 +195,8 @@ def _package_model(flights: list[Any]) -> Any:
 
 
 def test_adding_a_flight_asks_about_that_flight_only(qt_app: Any, fuel: Any) -> None:
-    """The report: a second BARCAP put the first one's question again, and the first
-    one had already been given its waypoint."""
+    """The reported bug: a second BARCAP put the question to the first one
+    again, which had already been given its waypoint."""
     from game.sim import GameUpdateEvents
     from qt_ui.windows.mission import refueloffer
 

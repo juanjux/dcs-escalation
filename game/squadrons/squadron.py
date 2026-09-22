@@ -104,12 +104,12 @@ class Squadron:
         init=False, hash=False, compare=False, repr=False, default=None
     )
 
-    #: Points the player wrote down for the aircraft he flies out of here.
+    #: Points the player saved for the aircraft flown out of here.
     #:
-    #: They belong to the squadron and not to one flight. A flight is a plan, and a
-    #: plan is cancelled and made again several times in a turn -- same aircraft,
-    #: same squadron, same player -- and points kept on the flight went with it.
-    #: Defaulted, so a squadron out of a save written before them reads an empty list.
+    #: They belong to the squadron and not to one flight, because a flight is
+    #: cancelled and rebuilt several times a turn with the same aircraft, squadron
+    #: and player, and points kept on the flight went with it. Defaulted, so a
+    #: squadron from a save written before them reads an empty list.
     saved_points: list[SavedPoint] = field(
         init=False, hash=False, compare=False, repr=False, default_factory=list
     )
@@ -548,10 +548,10 @@ class Squadron:
                 continue
 
             if not pilot.has_morale:
-                # The player is not worn down by the turn passing, is never overdue a
-                # rest he can take whenever he likes, and does not desert. A request
-                # made before he was marked as the player goes with the rest of it:
-                # nobody asks himself for a week off.
+                # The player is not worn down by the turn passing, is never
+                # overdue a rest he can take whenever he likes, and does not desert.
+                # A request made before he was marked as the player is dropped with
+                # the rest of it.
                 pilot.wants_leave = False
                 pilot.leave_turns_requested = 0
                 continue
@@ -698,8 +698,8 @@ class Squadron:
         asking = [
             pilot
             for pilot in self.current_roster
-            # has_morale as well as the flag: a pilot marked as the player after he
-            # asked is still carrying the request, and it is not his to make.
+            # has_morale as well as the flag: a pilot marked as the player after
+            # requesting leave still carries the request, which is not his to make.
             if pilot.wants_leave
             and pilot.has_morale
             and pilot.status is PilotStatus.Active

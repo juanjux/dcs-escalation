@@ -285,10 +285,10 @@ def offer_for_package(
     flights have nothing left to ask. And a player who says no is not asked again
     about the next flight: they have answered the question.
 
-    ``only`` narrows it to the flights nobody has asked about yet. Adding a second
-    flight to a package put the first one's question all over again -- and worse,
-    ``fresh`` takes the waypoint back off before asking, so the answer the player had
-    already given was undone to ask for it again.
+    ``only`` narrows it to the flights that have not been asked about yet. Adding a
+    second flight to a package put the question to the first one again, and a fresh
+    ask removes the refuelling waypoint before putting it, so the answer already
+    given was undone in order to ask for it again.
     """
     asking = list(package_model.package.flights) if only is None else list(only)
     for flight in asking:

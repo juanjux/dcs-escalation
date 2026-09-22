@@ -459,9 +459,8 @@ def _diagnose_flights(
     )  # squadron -> aircraft reserved by earlier flights
 
     def _over_the_limit(squadron, task, count) -> str | None:
-        """How far past the auto-planner's limit this squadron is, or None when the
-        limit is not what stopped it -- asked by putting the question again with the
-        limit lifted."""
+        """How far past the auto-planner's limit this squadron is, or None if the
+        limit is not what stopped it. Told apart by asking again with it lifted."""
         if target is None:
             return None
         if not _try(
@@ -482,11 +481,11 @@ def _diagnose_flights(
         return f" ({away:.0f} NM to the target, limit {limit:.0f} NM)"
 
     def _why_not_assignable(f, candidates, free, task, count) -> str:
-        """Why nothing would take this flight, and what would actually help.
+        """Why no squadron would take this flight, and what would change that.
 
-        Range and role both used to read "out of the auto-planner's range", and both
-        were answered with "pass squadron_id" -- which the caller may have passed
-        already, and which does nothing about the range either way.
+        Range and role both used to report "out of the auto-planner's range" and both
+        suggested passing squadron_id, which the caller may already have passed and
+        which does not affect the range in any case.
         """
         over = next(
             (
@@ -497,7 +496,7 @@ def _diagnose_flights(
             None,
         )
         if over is None:
-            # It fails with the limit lifted, so the limit is not what stopped it.
+            # It fails with the limit lifted, so the limit is not the cause.
             if f.squadron_id:
                 name = _try(lambda: candidates[0].name) or f.squadron_id
                 return (

@@ -234,9 +234,9 @@ class Flight(
 
     @property
     def saved_points(self) -> list[SavedPoint]:
-        """Points the player wrote down for this aircraft from the map's coordinate
-        picker: they ride on the kneeboard and in the data cartridge, not in the
-        flight plan. Kept on the squadron so cancelling the flight does not lose
+        """Points the player saved for this aircraft from the map's coordinate
+        picker. They go on the kneeboard and in the data cartridge, not in the flight
+        plan, and are kept on the squadron so cancelling the flight does not lose
         them."""
         return points_of(self)
 

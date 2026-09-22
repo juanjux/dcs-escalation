@@ -4,8 +4,8 @@
 // coordinate format with a button that copies it, and the other formats under it, each
 // of which copies when clicked.
 //
-// It is behind a toggle in the corner, off until it is switched on. Always-on meant
-// every missed click -- and most of the map is a miss -- opened a popup to dismiss.
+// It is behind a toggle in the corner, off until it is switched on. Always on meant
+// every stray click opened a popup that had to be dismissed.
 //
 // Clicks that land on something -- a route, an objective, a base -- belong to that thing
 // and are left alone. Leaflet marks those elements `leaflet-interactive` and still
@@ -98,7 +98,7 @@ export default function CoordinatePicker() {
     setCopied(await copyText(text));
   };
 
-  // Putting the tool down takes the open popup with it.
+  // Switching it off closes any open popup.
   const toggle = () => {
     setPicking((on) => !on);
     setPicked(null);

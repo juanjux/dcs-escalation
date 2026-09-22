@@ -12,13 +12,13 @@ reference. How many of each an airframe holds is its own business -- a number pe
 module, read off DCS's own data-cartridge scripts rather than remembered -- and an
 airframe nobody has measured claims none.
 
-They belong to the squadron the player flies out of, not to one flight: a flight is a
-plan, and a plan is cancelled and made again several times in a turn.
+They belong to the squadron the player flies out of rather than to one flight,
+because a flight is a plan and a plan is cancelled and rebuilt several times a turn.
 
-They ride on the kneeboard, on a page of their own so the route page stays the route,
-and into the aircraft itself where the airframe has somewhere to put them -- the data
-cartridge on the Hornet and the Viper, the navigation computer on the A-10 -- always
-outside the route the mission generated.
+They appear on a kneeboard page of their own, so the route page stays the route, and
+in the aircraft itself where the airframe can hold them: the data cartridge on the
+Hornet and the Viper, the navigation computer on the A-10. Always outside the route
+the mission generated.
 """
 
 from __future__ import annotations
@@ -115,15 +115,14 @@ def capacity_for(dcs_id: str) -> Capacity:
 
 
 def points_of(flight: Flight) -> list[SavedPoint]:
-    """The points written down for this aircraft.
+    """The points saved for this aircraft.
 
-    They are the squadron's, not the flight's. A flight is a plan: it is cancelled
-    and made again, with the same aircraft and the same player, several times in a
-    turn, and points kept on the flight went with it every time. A squadron outlives
-    its plans.
+    They belong to the squadron, not to the flight: a flight is cancelled and rebuilt
+    with the same aircraft and the same player several times a turn, and points kept
+    on the flight went with it.
 
-    A save written while they were on the flight is moved across here, once, the
-    first time anything asks.
+    A save written while they were on the flight has them moved across here once,
+    the first time anything asks.
     """
     squadron = flight.squadron
     points = getattr(squadron, "saved_points", None)
@@ -131,8 +130,9 @@ def points_of(flight: Flight) -> list[SavedPoint]:
         points = []
         squadron.saved_points = points
 
-    # Popped from the instance dict rather than read off the flight: Flight.saved_points
-    # is a property now, and the property is what attribute access finds.
+    # Popped from the instance dict rather than read off the flight, because
+    # Flight.saved_points is a property and the property is what attribute access
+    # finds.
     for point in flight.__dict__.pop("saved_points", None) or []:
         if point not in points:
             points.append(point)

@@ -20,10 +20,10 @@ if TYPE_CHECKING:
     from game.coalition import Coalition
 
 
-#: Where the inner edge of the IP ring goes when the outer one has come below the
-#: doctrine own floor. It only has to leave the solver somewhere to look: the solver
-#: takes the point furthest from the target that the rules allow, which is the outer
-#: edge, so this number decides nothing except that the ring is not empty.
+#: Where the inner edge of the IP ring goes when the outer edge has come below the
+#: doctrine's own floor. It only has to leave the solver somewhere to look: the
+#: solver takes the point furthest from the target that the rules allow, which is
+#: the outer edge, so this value decides nothing except that the ring is not empty.
 INGRESS_RING_FLOOR = 0.6
 
 
@@ -64,20 +64,19 @@ class PackageWaypoints:
         could send the IP far off the route or off the map.
 
         Under the doctrine's own floor the whole ring comes down, not the ceiling
-        alone. The solver looks for the IP between the minimum ingress distance and
-        the maximum, and a ring whose inner and outer radius are the same holds no
-        points at all -- so lowering the ceiling to meet the floor used to mean the
-        package could not be planned, and the answer was to leave the ceiling where
-        it was. That left an eight-mile Maverick beginning its attack run forty-five
-        miles out. Both radii move together instead, which keeps a ring to solve in
-        and puts the run where the weapon is used from.
+        alone. The solver looks for the IP between the minimum and maximum ingress
+        distance, and a ring whose inner and outer radius are equal contains no
+        points, so lowering the ceiling to meet the floor made the package
+        unplannable and the previous answer was to leave the ceiling alone. That
+        put an eight-mile Maverick's attack run forty-five miles out. Both radii
+        move together instead.
         """
         if weapon_range is None:
             return doctrine
         wanted = min(weapon_range, distance_to_target)
         if not wanted:
-            # Nothing to put the run at. The doctrine keeps its own figures rather
-            # than being given a ring of no width, which holds no points at all.
+            # No reach to place the run at, so the doctrine keeps its own figures
+            # rather than being given a ring of no width.
             return doctrine
         if wanted <= doctrine.min_ingress_distance:
             return replace(
