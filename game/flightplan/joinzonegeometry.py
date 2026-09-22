@@ -17,13 +17,28 @@ if TYPE_CHECKING:
     from game.coalition import Coalition
 
 
+#: How far along the home-to-target leg the join has to be before the ring behind
+#: the ingress is used. Below it there is not enough room between home and the
+#: ingress to form up, so the join goes back to a fraction of the leg.
+MIN_JOIN_FRACTION = 0.25
+
+
 class JoinZoneGeometry:
     """Defines the zones used for finding optimal join point placement.
 
     The zones themselves are stored in the class rather than just the resulting join
     point so that the zones can be drawn in the map for debugging purposes.
-    Join placement is additionally randomized to keep join points closer to home than
-    the target (25% to 40% of the home-to-target distance).
+
+    The join sits in a ring behind the ingress point, between one and two times the
+    doctrine's join distance from it, so it is on the way rather than at a fixed
+    fraction of the straight line home. That fraction put the join off the route
+    whenever the route was not straight -- which is most of the time, and always when
+    the ingress has been pushed out to a stand-off weapon's range -- and the flight
+    had to leave its track to reach the join and turn back onto it afterwards.
+
+    Where the ingress is close enough to home that the ring would reach behind it, the
+    old fraction of the home-to-target leg is used instead, so a short mission still
+    forms up before setting off rather than over the airfield.
     """
 
     def __init__(
@@ -43,17 +58,23 @@ class JoinZoneGeometry:
         self.threat_zone = coalition.opponent.threat_zone.all
         self.home = ShapelyPoint(home.x, home.y)
 
-        # Randomize join distance between 25% and 40% of the home-to-target leg.
+        join_distance = coalition.doctrine.join_distance.meters
+        self.ip_bubble = self.ip.buffer(join_distance)
+
+        # A ring behind the ingress, one to two join distances from it. The fallback
+        # is the old ring around home, used when the ingress is too close to home for
+        # a ring behind it to leave room to form up.
         total_distance = home.distance_to_point(target)
-        min_join_distance = total_distance * 0.35
-        max_join_distance = total_distance * 0.36
-        self.min_distance_bubble = self.home.buffer(min_join_distance)
-        self.max_distance_bubble = self.home.buffer(max_join_distance)
+        home_to_ip = home.distance_to_point(ip)
+        if home_to_ip - 2 * join_distance >= total_distance * MIN_JOIN_FRACTION:
+            self.min_distance_bubble = self.ip_bubble
+            self.max_distance_bubble = self.ip.buffer(2 * join_distance)
+        else:
+            self.min_distance_bubble = self.home.buffer(total_distance * 0.35)
+            self.max_distance_bubble = self.home.buffer(total_distance * 0.36)
         self.distance_ring = self.max_distance_bubble.difference(
             self.min_distance_bubble
         )
-
-        self.ip_bubble = self.ip.buffer(coalition.doctrine.join_distance.meters)
 
         ip_distance = ip.distance_to_point(target)
         self.target_bubble = ShapelyPoint(target.x, target.y).buffer(ip_distance)
