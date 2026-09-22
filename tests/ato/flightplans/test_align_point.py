@@ -226,3 +226,28 @@ def test_the_assumed_steaming_stops_at_the_end_of_the_ships_leg() -> None:
 
     assert long_mission is not None and longer is not None
     assert long_mission.position.y == pytest.approx(longer.position.y, abs=1)
+
+
+def test_it_is_added_before_the_package_has_a_time_over_target() -> None:
+    """A plan is first built before its package is timed, and the landing time cannot
+    be worked out without one. The waypoint is still placed, on the recovery course
+    and against the ship's current position."""
+    flight = _flight(_Carrier(), conditions=_conditions(from_degrees=270, mps=0.0))
+    untimed = SimpleNamespace()  # no landing_time at all
+
+    waypoint = alignpoint.align_waypoint(flight, untimed)
+
+    assert waypoint is not None
+    away = meters(waypoint.position.distance_to_point(Point(0, 0, cast(Any, None))))
+    assert away.nautical_miles == pytest.approx(50.0, abs=0.2)
+    assert waypoint.position.y > 0
+
+
+def test_a_landing_time_before_the_mission_starts_is_treated_as_zero() -> None:
+    flight = _flight(_Carrier(), conditions=_conditions(from_degrees=270, mps=0.0))
+
+    waypoint = alignpoint.align_waypoint(flight, _plan(minutes_to_landing=-30))
+
+    assert waypoint is not None
+    away = meters(waypoint.position.distance_to_point(Point(0, 0, cast(Any, None))))
+    assert away.nautical_miles == pytest.approx(50.0, abs=0.2)

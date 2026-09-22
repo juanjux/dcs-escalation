@@ -171,6 +171,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** A carrier recovery got no ALIGN waypoint: the package had no time over target yet when the plan was first built.
 * **[FIX]** Two knots of wind was enough to select a bare runway at a field whose ILS runway was free; in calm air the ILS runway is preferred.
 * **[FIX]** A Maverick-armed package began its attack run 45 nm out: the Mavericks had no launch range, so the planner used the doctrine ceiling.
 * **[FIX]** Adding a flight to a package asked the fuel question again about the flights already answered for.
