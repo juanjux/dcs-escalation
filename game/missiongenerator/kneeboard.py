@@ -1041,8 +1041,18 @@ class SeadTaskPage(KneeboardPage):
 
     @property
     def target_units(self) -> Iterator[TheaterUnit]:
-        if isinstance(self.flight.package.target, TheaterGroundObject):
-            yield from self.flight.package.target.strike_targets
+        """The rows of the page, which must be the list the waypoints were built from.
+
+        DEAD kills individual vehicles and gets the whole site; SEAD shoots at radars
+        and gets the emitters, which is also what its flight plan steers to.
+        """
+        target = self.flight.package.target
+        if not isinstance(target, TheaterGroundObject):
+            return
+        if self.flight.flight_type == FlightType.DEAD:
+            yield from target.strike_targets
+        else:
+            yield from target.sead_targets
 
     def _waypoint_number_by_position(self) -> Dict[Tuple[float, float], int]:
         """STPT number of each per-target waypoint, keyed by its position.
