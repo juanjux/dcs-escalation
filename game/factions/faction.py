@@ -600,7 +600,7 @@ class Faction:
             self.remove_aircraft("EA-18G")
         # spanish naval assets pack
         if not mod_settings.spanishnavypack:
-            self.remove_ship("L61")
+            self.remove_ship("L61SP")
             self.remove_ship("F100")
             self.remove_ship("F105")
             self.remove_ship("L52")
@@ -947,8 +947,6 @@ class Faction:
             self.remove_vehicle("CH_LandRoverWolf")
             self.remove_vehicle("CH_LandRoverWMIK_M2")
             self.remove_vehicle("CH_LandRoverWMIK_MK19")
-            self.remove_vehicle("CH_Scimitar")
-            self.remove_vehicle("CH_Scorpion")
             self.remove_vehicle("CH_SkySabreC2")
             self.remove_vehicle("CH_SkySabreGiraffe")
             self.remove_vehicle("CH_SkySabre")

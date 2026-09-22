@@ -50,6 +50,9 @@ class SAM_SA_10B_S_300PS_5P85SU_LN(unittype.VehicleType):
     air_weapon_dist = 75000
 
 
+# Neither High Digit SAMs build registers this launcher; both call the 5P85CE a
+# PMU1 unit, which is declared below. Kept declared only so campaigns saved earlier
+# still load, like the two above.
 @vehiclemod
 class SAM_SA_10__5V55RUD__S_300PS_LN_5P85CE(unittype.VehicleType):
     id = "S-300PS 5P85CE ln"
@@ -79,7 +82,7 @@ class SAM_SA_10B_S_300PS_30N6_TR(unittype.VehicleType):
 
 @vehiclemod
 class SAM_SA_10B_S_300PS_40B6M_TR(unittype.VehicleType):
-    id = "S-300PS SA-10B 40B6M MAST tr"
+    id = "S-300PS 40B6M MAST tr"
     name = "SAM SA-10B S-300PS 40B6M TR"
     detection_range = 160000
     threat_range = 0
