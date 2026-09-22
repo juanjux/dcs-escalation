@@ -247,11 +247,11 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 self.iranmilitaryassetspack,
             ),
             (
-                "CurrentHill Russian Military Assets pack (2.0.0)",
+                "CurrentHill Russian Military Assets pack (2.0.1)",
                 self.russianmilitaryassetspack,
             ),
             (
-                "CurrentHill Swedish Military Assets pack (1.10)",
+                "CurrentHill Swedish Military Assets pack (1.5.0)",
                 self.swedishmilitaryassetspack,
             ),
             (
@@ -259,7 +259,7 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 self.usamilitaryassetspack,
             ),
             (
-                "CurrentHill UK Military Assets pack (1.1.2)",
+                "CurrentHill UK Military Assets pack (1.5.0)",
                 self.ukmilitaryassetspack,
             ),
             (
