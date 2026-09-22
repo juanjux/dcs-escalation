@@ -3,6 +3,9 @@ from dcs.unittype import ShipType
 from game.modsupport import shipmod
 
 
+# Pack 3.3.0 also ships an "L61SP" hull. It is the same ship with an alarm-state
+# animation added for single player, so it is deliberately not declared here: a second
+# Juan Carlos I in every ship list buys nothing.
 @shipmod
 class L61(ShipType):
     id = "L61"
