@@ -78,26 +78,6 @@ class CH_LandRoverWMIK_MK19(unittype.VehicleType):
 
 
 @vehiclemod
-class CH_Scimitar(unittype.VehicleType):
-    id = "CH_Scimitar"
-    name = "[CH] Scimitar CRV"
-    detection_range = 5000
-    threat_range = 3000
-    air_weapon_dist = 3000
-    eplrs = True
-
-
-@vehiclemod
-class CH_Scorpion(unittype.VehicleType):
-    id = "CH_Scorpion"
-    name = "[CH] Scorpion LT"
-    detection_range = 5000
-    threat_range = 3000
-    air_weapon_dist = 3000
-    eplrs = True
-
-
-@vehiclemod
 class CH_SkySabreC2(unittype.VehicleType):
     id = "CH_SkySabreC2"
     name = "[CH] Sky Sabre C2 (HX)"

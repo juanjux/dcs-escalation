@@ -1,6 +1,9 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mods]** The Spanish Naval Assets pack is declared at desdemicabina 3.3.0, and the Juan Carlos I is the single-player hull the release added, whose deck elevators move.
+* **[Mods]** CurrentHill UK pack 1.5.0: the Scimitar and the Scorpion are gone from the mod, which ED now ships itself. Campaigns in progress move to the DCS units.
+* **[Mods]** The CurrentHill Russia and Sweden packs are declared at 2.0.1 and 1.5.0. Neither release added, removed or renamed a unit.
 * **[Mission Generator]** Optional ALIGN waypoint before landing, on the approach course of the active runway, or on a carrier's recovery course at its projected position. The hold point can be put on the departure runway's centreline the same way, at a settable distance.
 * **[Live Pilots]** Being disliked is noticed too: each point the other man is below him adds to his chance of cooling, mirroring the warming bonus. 5% a point, a new setting.
 * **[UI]** The map's GPS picker is a tool you switch on, like the ruler, instead of answering every stray click, and the map wears the same crosshair while it is on.
@@ -172,6 +175,7 @@
 
 ## Fixes
 * **[FIX]** The selected pilot in the roster is boxed and takes a wider bar. With friendship on, every other row carries a wash of its own and a three-pixel bar was lost among them.
+* **[FIX]** The High Digit SAMs 40B6M track radar was declared under an id no build of the mod registers, so DCS dropped it from any site that used it.
 * **[FIX]** A combo box's dropdown was a lighter blue than the one the searchable combo opens, so two lists in the same dialog did not match.
 * **[FIX]** A strike had a line-up waypoint ten miles before its ingress, which said nothing the ingress did not.
 * **[FIX]** A strike had a line-up waypoint ten miles from its join, both saying the same thing; only the far-join case keeps it.
