@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mods]** F-22A 2.1.0: the IRST pod moved to station 6 and the combined AMRAAM-plus-pod stores are gone, so every shipped loadout was rebuilt around them. The mod's own smoke, the GBU-32 and the anti-radiation Mako are offered in the pylon editor.
 * **[Mods]** Frenchpack 5.0: the FELIN riflemen, LRAC gunner and PGM marksman are selectable. The mod's own VAB Mephisto is gone, which DCS now ships, and campaigns in progress move to it.
 * **[Mods]** CurrentHill Ukraine pack 2.0.0: the T-64BV and the T-84 Oplot-M are gone from the mod, which ED now ships itself. Campaigns in progress move to the DCS units.
 * **[Mods]** Support for the CurrentHill Turkey Military Assets pack (2.0.0), behind a New Game checkbox: the Bayraktar TB2 with its MAM-C and MAM-L munitions, flying CAS, BAI and armed recon for Ukraine 2020.
