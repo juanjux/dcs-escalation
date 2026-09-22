@@ -5,7 +5,7 @@ import math
 import operator
 from collections.abc import Iterable, Iterator
 from random import randint
-from typing import TYPE_CHECKING, TypeVar
+from typing import Optional, TYPE_CHECKING, TypeVar
 
 from game.ato.closestairfields import ClosestAirfields, ObjectiveDistanceCache
 from game.theater import (
@@ -253,22 +253,28 @@ class ObjectiveFinder:
             c for c in self.game.theater.controlpoints if c.is_friendly(self.is_player)
         )
 
-    def farthest_friendly_control_point(self) -> ControlPoint:
-        """Finds the friendly control point that is farthest from any threats."""
+    def farthest_friendly_airfield(self) -> Optional[ControlPoint]:
+        """The land base farthest from any threat: the theatre AEW&C station.
+
+        Land, because every boat already gets a station of its own. Taking this pick
+        from the fleet put the theatre station on a hull -- on one Syria turn the
+        amphib parked three miles from the carrier -- so a single squadron flew two
+        racetracks side by side and the airfield with the aircraft parked on it was
+        skipped. None when the coalition holds no land base, which is not an error: its
+        carriers are stations already.
+        """
         threat_zones = self.game.threat_zone_for(self.is_player.opponent)
 
         farthest = None
         max_distance = meters(0)
         for cp in self.friendly_control_points():
-            if isinstance(cp, OffMapSpawn):
+            if isinstance(cp, OffMapSpawn) or cp.is_fleet:
                 continue
             distance = threat_zones.distance_to_threat(cp.position)
             if distance > max_distance:
                 farthest = cp
                 max_distance = distance
 
-        if farthest is None:
-            raise RuntimeError("Found no friendly control points. You probably lost.")
         return farthest
 
     def closest_friendly_control_point(self) -> ControlPoint:
