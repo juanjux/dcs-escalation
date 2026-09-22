@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import pytest
 
-
 TYPES = ["FA_18E", "FA_18F", "EA_18G", "FA_18ET", "FA_18FT"]
 
 
