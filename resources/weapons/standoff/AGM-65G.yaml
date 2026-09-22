@@ -1,4 +1,5 @@
 name: AGM-65G
+range: 12  # nm - stand-off launch range
 year: 1989
 fallback: AGM-65F
 clsids:

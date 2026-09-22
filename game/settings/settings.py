@@ -1386,6 +1386,48 @@ class Settings:
             "flights only; existing flights are unchanged."
         ),
     )
+    align_before_landing: bool = boolean_option(
+        "Add an ALIGN waypoint before landing",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        detail=(
+            "Make the last waypoint before landing one that aligns the aircraft with "
+            "the active landing runway. Airfields only."
+        ),
+    )
+    align_distance_nm: float = bounded_float_option(
+        "How far out the ALIGN waypoint sits (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=15.0,
+        min=3.0,
+        max=100.0,
+        divisor=1,
+        prefix="",
+        decimals=0,
+        enabled_when=lambda settings: settings.align_before_landing,
+        detail=(
+            "Its height follows from this at three degrees of glideslope, about 300 ft "
+            "a mile, between 1500 and 6000 ft above the field."
+        ),
+    )
+    align_carrier_distance_nm: float = bounded_float_option(
+        "How far astern of a carrier the ALIGN waypoint sits (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=50.0,
+        min=5.0,
+        max=100.0,
+        divisor=1,
+        prefix="",
+        decimals=0,
+        enabled_when=lambda settings: settings.align_before_landing,
+        detail=(
+            "On the base recovery course, at the position the ship will have steamed "
+            "to by the time the flight lands. Fifty is where a Case III starts."
+        ),
+    )
     switch_baro_fix: bool = boolean_option(
         "Switch altitude type of waypoints to AMSL above seas for helicopters",
         page=MISSION_GENERATOR_PAGE,
@@ -2474,6 +2516,25 @@ class Settings:
             " by 20 points -- from 35% to 55% for a squadron mate. His chance of"
             " cooling is not changed, and the other pilot, who already likes him more,"
             " gets nothing. Set it to 0 and each side drifts on its own."
+        ),
+    )
+    friendship_enmity_per_point: int = bounded_int_option(
+        "Added to the cooling chance per point of difference (%)",
+        page=LIVE_PILOTS_PAGE,
+        section=LIVE_PILOTS_FRIENDSHIP_SECTION,
+        subsection=LIVE_PILOTS_FRIENDSHIP_DRIFT_SECTION,
+        default=5,
+        min=0,
+        max=20,
+        detail=(
+            "The same thing the other way round. When the other pilot likes him LESS"
+            " than he likes the other pilot, his chance of cooling goes up by this much"
+            " for each point of difference on the 0 to 10 scale. Example: the other"
+            " pilot is at 1 and he is at 5, a difference of 4, so with this set to 5%"
+            " his chance of cooling towards that pilot goes up by 20 points -- from 20%"
+            " to 40% for a squadron mate. His chance of warming is not changed, and the"
+            " other pilot, who already likes him less, gets nothing. Set it to 0 and"
+            " being disliked costs nothing."
         ),
     )
     friendship_drift_step: float = bounded_float_option(

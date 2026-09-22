@@ -459,6 +459,24 @@ def test_the_turn_passing_does_nothing_to_him() -> None:
     assert pilot.status is PilotStatus.Active, "nor deserting"
 
 
+def test_a_request_he_made_before_he_was_the_player_is_dropped() -> None:
+    """He requested leave as an ordinary pilot and was then marked as the
+    player. The request stayed in the queue for the player to answer."""
+    squadron = _squadron(_live_settings())
+    pilot = Pilot("Vega")
+    pilot.wants_leave = True
+    pilot.leave_turns_requested = 7
+    squadron.current_roster = [pilot]
+    assert squadron.pilots_asking_for_leave() == [pilot]
+
+    pilot.player = True
+
+    assert squadron.pilots_asking_for_leave() == []
+    squadron.tend_morale(4)
+    assert not pilot.wants_leave
+    assert pilot.leave_turns_requested == 0
+
+
 def test_but_leave_he_granted_himself_still_runs_out() -> None:
     squadron = _squadron(_live_settings())
     pilot = Pilot("Vega", player=True)

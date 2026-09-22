@@ -1,9 +1,12 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mission Generator]** Optional ALIGN waypoint before landing, on the approach course of the active runway, or on a carrier's recovery course at its projected position.
+* **[Live Pilots]** Being disliked is noticed too: each point the other man is below him adds to his chance of cooling, mirroring the warming bonus. 5% a point, a new setting.
+* **[UI]** The map's GPS picker is a tool you switch on, like the ruler, instead of answering every stray click, and the map wears the same crosshair while it is on.
 * **[Aircraft]** The A-10's saved points go into its navigation computer, on a flight plan of their own, with the ground height under each one.
 * **[UI]** A saved point gets the height of the ground under it, looked up from an open elevation model.
-* **[UI]** New window, *My aircraft*: what the player is flying this turn and the points saved for each one, which can also be typed or pasted in by hand.
+* **[UI]** New window, *Playable aircraft*: what the player is flying this turn and the points saved for each one, which can also be typed or pasted in by hand.
 * **[Mission Plugins]** GPS jamming also covers the SDB, the CALCM, JASSM, GMLRS, GLSDB, ATACMS and the Shahed-136. Cruise missiles with a terrain database of their own, such as the Tomahawk, and anti-ship missiles stay out.
 * **[Aircraft]** The CJS tanker Super Hornets get a data cartridge like the E and the F.
 * **[Mission Generator]** Saved waypoints are written into the aircraft, after the flight plan and outside its route sequence.
@@ -168,9 +171,16 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** The join point sat at a fixed fraction of the straight line home, off the route; it goes just before the ingress now.
+* **[FIX]** A carrier recovery got no ALIGN waypoint: the package had no time over target yet when the plan was first built.
+* **[FIX]** Two knots of wind was enough to select a bare runway at a field whose ILS runway was free; in calm air the ILS runway is preferred.
+* **[FIX]** A Maverick-armed package began its attack run 45 nm out: the Mavericks had no launch range, so the planner used the doctrine ceiling.
+* **[FIX]** Adding a flight to a package asked the fuel question again about the flights already answered for.
+* **[FIX]** A pilot marked as the player was asking the player for leave.
+* **[FIX]** OPFOR-AI: a package refused for being out of range told the caller to pass a field it had already passed.
+* **[FIX]** Cancelling a flight threw away the points saved for it; they belong to the squadron now.
 * **[FIX]** Dragging a ship group or a carrier on the map let go on its own: the marker was being put back, or rebuilt, mid-drag.
 * **[FIX]** Run from source, the taskbar showed Python's icon instead of the application's.
-* **[FIX]** Dragging a ship group on the map let go on its own: an update arriving mid-drag put the marker back.
 * **[FIX]** The word under a squadron's task chip in the Air Wing says what it measures: its cohesion.
 * **[FIX]** The saved-points list cut the coordinates; it is a table with columns the player can widen.
 * **[FIX]** The kneeboard numbered a saved point 1; the aircraft numbers it after the flight plan.

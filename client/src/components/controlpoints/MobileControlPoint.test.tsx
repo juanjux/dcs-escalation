@@ -1,11 +1,11 @@
-// Dragging a carrier or an LHA let go on its own, the same symptom the ship
-// markers had and a different cause.
+// Dragging a carrier or an LHA stopped on its own: the same symptom as the ship
+// markers, with a different cause.
 //
-// The icon was built inline: iconForControlPoint() returns a fresh Leaflet Icon
-// every call, so every render handed react-leaflet a new reference and it answered
-// with marker.setIcon(). setIcon replaces the marker's DOM element, and Leaflet's
-// drag handler is bound to that element -- so any re-render during a drag ended the
-// drag, which reads as the button being released.
+// The icon was built inline. iconForControlPoint() returns a new Leaflet Icon on
+// every call, so every render passed react-leaflet a new reference and it
+// answered with marker.setIcon(). setIcon replaces the marker's DOM element,
+// which Leaflet's drag handler is bound to, so any re-render during a drag
+// ended it.
 import { ControlPoint } from "../../api/_liberationApi";
 import { renderWithProviders } from "../../testutils";
 import { MobileControlPoint } from "./MobileControlPoint";
@@ -46,7 +46,7 @@ jest.mock("../../api/liberationApi", () => ({
 }));
 
 function carrier(name: string): ControlPoint {
-  // A new object every call, which is what the event stream hands out.
+  // A new object on every call, as the event stream produces.
   return {
     id: "cp-1",
     name: name,
@@ -67,8 +67,8 @@ beforeEach(() => {
 });
 
 it("keeps the same icon across a re-render", () => {
-  // The whole bug: a new icon reference makes react-leaflet replace the marker's
-  // element, and the drag bound to that element dies with it.
+  // The bug: a new icon reference makes react-leaflet replace the marker's
+  // element, and the drag handler bound to it goes with it.
   const { rerender } = renderWithProviders(
     <MobileControlPoint controlPoint={carrier("CVN-72")} />,
   );
@@ -96,8 +96,8 @@ it("builds a new icon when the symbol really changes", () => {
 });
 
 it("does not ask whether the point is in range on every pixel", () => {
-  // Leaflet fires `drag` several times a frame; one HTTP round trip each is a
-  // request storm for an answer that changes once, at the range ring.
+  // Leaflet fires `drag` several times a frame; one HTTP request each is
+  // wasteful for an answer that only changes at the range ring.
   const backend = require("../../api/backend").default;
   const asked = jest.spyOn(backend, "get");
   renderWithProviders(<MobileControlPoint controlPoint={carrier("CVN-72")} />);

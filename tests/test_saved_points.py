@@ -1,8 +1,7 @@
-"""Points the player writes down for his own aircraft.
+"""Points the player saves for his own aircraft.
 
-A spot on the map is worth noting long before it is worth a flight plan. What matters
-here is that it goes to an aircraft somebody is actually flying, and that an airframe
-is never promised more room than it has.
+What matters here is that a point goes to an aircraft somebody is flying, and
+that an airframe is never offered more room than it has.
 """
 
 from __future__ import annotations
@@ -30,6 +29,7 @@ def _flight(aircraft: str = "FA-18C_hornet", crewed: int = 1) -> Any:
         callsign="TARSIER",
         client_count=crewed,
         unit_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id=aircraft)),
+        squadron=SimpleNamespace(),
     )
 
 
@@ -162,3 +162,62 @@ def test_only_a_kind_the_aircraft_can_be_given_is_offered() -> None:
 
 def test_an_airframe_nobody_measured_is_offered_nothing() -> None:
     assert kinds_for("Ka-50_3") == []
+
+
+# ------------------------------------------- what happens when the flight is cancelled
+
+
+def test_cancelling_the_flight_does_not_lose_what_was_written_down() -> None:
+    """The reported bug: three targets saved, the flight re-planned, and the
+    player typing the three of them in again."""
+    squadron = SimpleNamespace()
+    cancelled = _flight()
+    cancelled.squadron = squadron
+    add_point(cast(Any, cancelled), _point(name="POWER STATION"))
+
+    # Same aircraft, same squadron, a new plan.
+    replanned = _flight()
+    replanned.squadron = squadron
+
+    (point,) = points_of(cast(Any, replanned))
+    assert point.name == "POWER STATION"
+
+
+def test_another_squadron_is_another_aircraft() -> None:
+    """They follow the aircraft the player flies, not the whole campaign."""
+    mine = _flight()
+    mine.squadron = SimpleNamespace()
+    add_point(cast(Any, mine), _point())
+
+    somebody_else = _flight()
+    somebody_else.squadron = SimpleNamespace()
+
+    assert points_of(cast(Any, somebody_else)) == []
+
+
+def test_a_save_written_while_they_were_on_the_flight_moves_them_across() -> None:
+    flight = _flight()
+    flight.squadron = SimpleNamespace()
+    flight.saved_points = [_point(name="SMOKE")]
+
+    (point,) = points_of(cast(Any, flight))
+
+    assert point.name == "SMOKE"
+    # And the flight is not holding a second copy the next edit would miss.
+    assert "saved_points" not in flight.__dict__
+    assert flight.squadron.saved_points == [_point(name="SMOKE")]
+
+
+def test_moving_them_across_twice_does_not_write_them_twice() -> None:
+    """Two flights of one squadron from the same save, each carrying the list."""
+    squadron = SimpleNamespace()
+    first = _flight()
+    first.squadron = squadron
+    first.saved_points = [_point(name="SMOKE")]
+    second = _flight()
+    second.squadron = squadron
+    second.saved_points = [_point(name="SMOKE")]
+
+    points_of(cast(Any, first))
+
+    assert len(points_of(cast(Any, second))) == 1

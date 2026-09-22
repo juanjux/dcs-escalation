@@ -60,16 +60,28 @@ def test_doctrine_ingress_lowered_to_a_short_weapon_range() -> None:
     assert result.max_ingress_distance == short_range
 
 
-def test_doctrine_left_alone_by_a_weapon_that_cannot_stand_off() -> None:
-    """Rockets and iron do not drag the attack run onto the target itself.
+def test_a_weapon_shorter_than_the_floor_brings_the_whole_ring_down() -> None:
+    """An eight-mile Maverick should not start its run forty-five miles out.
 
-    Nor onto the minimum ingress distance, which would leave the solver looking for
-    the IP in a ring with no width between it and the maximum. There are no points in
-    such a ring, so every strategy fails and the package cannot be planned at all.
+    The ceiling cannot come down to meet the floor, because a ring with no width
+    between them contains no points and every strategy fails, so both move
+    together.
     """
     doctrine = ALL_DOCTRINES[0]
+    reach = doctrine.min_ingress_distance / 2
     result = PackageWaypoints.doctrine_for_weapon_range(
-        doctrine, doctrine.min_ingress_distance / 2, nautical_miles(300)
+        doctrine, reach, nautical_miles(300)
+    )
+    assert result.max_ingress_distance == reach
+    assert result.max_ingress_distance > result.min_ingress_distance
+
+
+def test_a_weapon_with_no_reach_at_all_leaves_the_doctrine_alone() -> None:
+    """There is no reach to place the run at, and a ring of no width is not an
+    answer."""
+    doctrine = ALL_DOCTRINES[0]
+    result = PackageWaypoints.doctrine_for_weapon_range(
+        doctrine, meters(0), nautical_miles(300)
     )
     assert result.max_ingress_distance == doctrine.max_ingress_distance
     assert result.max_ingress_distance > result.min_ingress_distance

@@ -1,4 +1,5 @@
 name: 3xAGM-65K
+range: 12  # nm - stand-off launch range
 year: 2008
 fallback: 2xAGM-65K
 clsids:

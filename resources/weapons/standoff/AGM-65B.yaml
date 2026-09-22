@@ -1,4 +1,5 @@
 name: AGM-65B
+range: 8  # nm - stand-off launch range
 year: 1975
 fallback: AGM-65A
 clsids:

@@ -141,8 +141,8 @@ def test_standoff_weapon_has_launch_range_from_yaml() -> None:
 
 
 def test_weapon_without_range_has_no_launch_range() -> None:
-    # The AGM-65A Maverick has no `range` key, so it stays unranged.
-    weapon = Weapon.with_clsid("{RB75}")
+    # A Mk 82 has no `range` key: it is dropped, not launched, so it stays unranged.
+    weapon = Weapon.with_clsid("{BRU-32 MK-82}")
 
     assert weapon is not None
     assert weapon.launch_range is None
@@ -151,12 +151,18 @@ def test_weapon_without_range_has_no_launch_range() -> None:
 def test_loadout_max_standoff_range_picks_longest() -> None:
     kh22 = Weapon.with_clsid("{12429ECF-03F0-4DF6-BCBD-5D38B6343DE1}")
     maverick = Weapon.with_clsid("{RB75}")
+    bomb = Weapon.with_clsid("{BRU-32 MK-82}")
     assert kh22 is not None
     assert maverick is not None
+    assert bomb is not None
 
     ranged = Loadout("Test", {1: kh22, 2: maverick}, date=None)
     assert ranged.max_standoff_range() is not None
     assert ranged.max_standoff_range().nautical_miles == pytest.approx(160)  # type: ignore[union-attr]
 
-    unranged = Loadout("Test", {1: maverick}, date=None)
+    # The Maverick is short, but it is still a launch range and still the longest here.
+    shorter = Loadout("Test", {1: maverick, 2: bomb}, date=None)
+    assert shorter.max_standoff_range() == maverick.launch_range
+
+    unranged = Loadout("Test", {1: bomb}, date=None)
     assert unranged.max_standoff_range() is None

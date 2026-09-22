@@ -12,8 +12,13 @@ reference. How many of each an airframe holds is its own business -- a number pe
 module, read off DCS's own data-cartridge scripts rather than remembered -- and an
 airframe nobody has measured claims none.
 
-Nothing here reaches the aircraft on its own. The points ride on the kneeboard, on a
-page of their own so the route page stays the route.
+They belong to the squadron the player flies out of rather than to one flight,
+because a flight is a plan and a plan is cancelled and rebuilt several times a turn.
+
+They appear on a kneeboard page of their own, so the route page stays the route, and
+in the aircraft itself where the airframe can hold them: the data cartridge on the
+Hornet and the Viper, the navigation computer on the A-10. Always outside the route
+the mission generated.
 """
 
 from __future__ import annotations
@@ -110,11 +115,27 @@ def capacity_for(dcs_id: str) -> Capacity:
 
 
 def points_of(flight: Flight) -> list[SavedPoint]:
-    """This flight's points, on a save that predates the feature as well."""
-    points = getattr(flight, "saved_points", None)
+    """The points saved for this aircraft.
+
+    They belong to the squadron, not to the flight: a flight is cancelled and rebuilt
+    with the same aircraft and the same player several times a turn, and points kept
+    on the flight went with it.
+
+    A save written while they were on the flight has them moved across here once,
+    the first time anything asks.
+    """
+    squadron = flight.squadron
+    points = getattr(squadron, "saved_points", None)
     if points is None:
         points = []
-        flight.saved_points = points
+        squadron.saved_points = points
+
+    # Popped from the instance dict rather than read off the flight, because
+    # Flight.saved_points is a property and the property is what attribute access
+    # finds.
+    for point in flight.__dict__.pop("saved_points", None) or []:
+        if point not in points:
+            points.append(point)
     return points
 
 

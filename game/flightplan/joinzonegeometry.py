@@ -17,13 +17,29 @@ if TYPE_CHECKING:
     from game.coalition import Coalition
 
 
+#: How far along the home-to-target leg the join has to be before the ring behind
+#: the ingress is used. Below it there is not enough room between home and the
+#: ingress to form up, so the join goes back to a fraction of the leg.
+MIN_JOIN_FRACTION = 0.25
+
+
 class JoinZoneGeometry:
     """Defines the zones used for finding optimal join point placement.
 
     The zones themselves are stored in the class rather than just the resulting join
     point so that the zones can be drawn in the map for debugging purposes.
-    Join placement is additionally randomized to keep join points closer to home than
-    the target (25% to 40% of the home-to-target distance).
+
+    The join sits in a ring behind the ingress point, between one and two times the
+    doctrine's join distance from it, so it is on the way rather than at a fixed
+    fraction of the straight line home. That fraction put the join off the route
+    whenever the route was not straight -- which is most of the time, and always when
+    the ingress has been pushed out to a stand-off weapon's range -- and the flight
+    had to leave its track to reach the join and turn back onto it afterwards.
+
+    The old ring around home is the fallback, used when the ingress is too close to
+    home for a ring behind it, and when the ring behind it is entirely threatened or
+    outside the turn limit. A short mission then still forms up before setting off
+    rather than over the airfield.
     """
 
     def __init__(
@@ -43,17 +59,22 @@ class JoinZoneGeometry:
         self.threat_zone = coalition.opponent.threat_zone.all
         self.home = ShapelyPoint(home.x, home.y)
 
-        # Randomize join distance between 25% and 40% of the home-to-target leg.
-        total_distance = home.distance_to_point(target)
-        min_join_distance = total_distance * 0.35
-        max_join_distance = total_distance * 0.36
-        self.min_distance_bubble = self.home.buffer(min_join_distance)
-        self.max_distance_bubble = self.home.buffer(max_join_distance)
-        self.distance_ring = self.max_distance_bubble.difference(
-            self.min_distance_bubble
-        )
+        join_distance = coalition.doctrine.join_distance.meters
+        self.ip_bubble = self.ip.buffer(join_distance)
 
-        self.ip_bubble = self.ip.buffer(coalition.doctrine.join_distance.meters)
+        total_distance = home.distance_to_point(target)
+        home_to_ip = home.distance_to_point(ip)
+        # A ring behind the ingress, one to two join distances from it, and the old
+        # ring around home to fall back on.
+        self._rings = []
+        if home_to_ip - 2 * join_distance >= total_distance * MIN_JOIN_FRACTION:
+            self._rings.append((self.ip_bubble, self.ip.buffer(2 * join_distance)))
+        self._rings.append(
+            (
+                self.home.buffer(total_distance * 0.35),
+                self.home.buffer(total_distance * 0.36),
+            )
+        )
 
         ip_distance = ip.distance_to_point(target)
         self.target_bubble = ShapelyPoint(target.x, target.y).buffer(ip_distance)
@@ -89,28 +110,35 @@ class JoinZoneGeometry:
             ]
         )
 
-        permissible_zones = (
-            ip_direction_limit_wedge.difference(self.excluded_zones)
-            .difference(self.home_bubble)
-            .intersection(self.distance_ring)
-        )
-        if permissible_zones.is_empty:
-            permissible_zones = MultiPolygon([])
-        if not isinstance(permissible_zones, MultiPolygon):
-            permissible_zones = MultiPolygon([permissible_zones])
-        self.permissible_zones = permissible_zones
+        for inner, outer in self._rings:
+            self.min_distance_bubble = inner
+            self.max_distance_bubble = outer
+            self.distance_ring = outer.difference(inner)
 
-        preferred_lines = (
-            ip_direction_limit_wedge.intersection(self.excluded_zones.boundary)
-            .difference(self.home_bubble)
-            .intersection(self.distance_ring)
-        )
+            permissible_zones = (
+                ip_direction_limit_wedge.difference(self.excluded_zones)
+                .difference(self.home_bubble)
+                .intersection(self.distance_ring)
+            )
+            if permissible_zones.is_empty:
+                permissible_zones = MultiPolygon([])
+            if not isinstance(permissible_zones, MultiPolygon):
+                permissible_zones = MultiPolygon([permissible_zones])
+            self.permissible_zones = permissible_zones
 
-        if preferred_lines.is_empty:
-            preferred_lines = MultiLineString([])
-        if not isinstance(preferred_lines, MultiLineString):
-            preferred_lines = MultiLineString([preferred_lines])
-        self.preferred_lines = preferred_lines
+            preferred_lines = (
+                ip_direction_limit_wedge.intersection(self.excluded_zones.boundary)
+                .difference(self.home_bubble)
+                .intersection(self.distance_ring)
+            )
+            if preferred_lines.is_empty:
+                preferred_lines = MultiLineString([])
+            if not isinstance(preferred_lines, MultiLineString):
+                preferred_lines = MultiLineString([preferred_lines])
+            self.preferred_lines = preferred_lines
+
+            if not self.preferred_lines.is_empty or not self.permissible_zones.is_empty:
+                break
 
     def find_best_join_point(self) -> Point:
         # Choose the best available geometry for nearest point computation.

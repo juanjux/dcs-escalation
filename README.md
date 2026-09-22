@@ -155,6 +155,20 @@ Still to come:
 
 
 ## Missions, AI & tasking
+- **A flight can arrive lined up with the runway.** The route ends at the airfield,
+  which is a point and not a direction, so the last leg arrives on whatever heading the
+  one before it left. An optional ALIGN waypoint goes on the approach course of the
+  **active** runway -- the one the campaign works out from the wind, the same one the
+  kneeboard and the ATC give -- a settable distance out and at the height a three-degree
+  slope puts it. On by default, under Mission Generator.
+
+  Carriers get one on their base recovery course, at the position the ship will have
+  reached by the time the flight lands: fifty miles astern by default, which is where a
+  Case III approach starts. DCS exposes a runway's heading but no coordinates, so at a
+  field with more than one runway the course is correct but the waypoint can be
+  laterally offset. In calm air the ILS runway is preferred, which is usually the one
+  the field's reference point sits on.
+
 - **Realistic CAS** — an experimental, off-by-default Mission Plugin that makes
   ground targets something to discover instead of immediately available to every
   AI attacker. Both sides search using visual, EO/IR and ground-radar observations,

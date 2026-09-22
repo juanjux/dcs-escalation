@@ -14,7 +14,7 @@ button all ask the same questions in the same words.
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Iterable, Optional
 
 from PySide6.QtWidgets import QInputDialog, QMessageBox, QWidget
 
@@ -277,14 +277,21 @@ def offer_for_package(
     parent: QWidget,
     events: GameUpdateEvents,
     fresh: bool = True,
+    only: Optional[Iterable[Flight]] = None,
 ) -> GameUpdateEvents:
     """Ask about a whole package, which is what creating one produces.
 
     One tanker serves the package, so the moment one is agreed to the rest of its
     flights have nothing left to ask. And a player who says no is not asked again
     about the next flight: they have answered the question.
+
+    ``only`` narrows it to the flights that have not been asked about yet. Adding a
+    second flight to a package put the question to the first one again, and a fresh
+    ask removes the refuelling waypoint before putting it, so the answer already
+    given was undone in order to ask for it again.
     """
-    for flight in list(package_model.package.flights):
+    asking = list(package_model.package.flights) if only is None else list(only)
+    for flight in asking:
         if _package_already_has_a_tanker(flight):
             break
         offer = RefuelOffer(flight, package_model, parent)

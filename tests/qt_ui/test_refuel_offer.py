@@ -179,3 +179,76 @@ def test_the_question_reads_once(qt_app: Any) -> None:
     assert len(sentences) == len(set(sentences)), text
     assert "does not have the fuel" in text
     assert "no longer" not in text
+
+
+# --- a second flight in a package already answered for ----------------------
+
+
+def _package_model(flights: list[Any]) -> Any:
+    from game.ato.flighttype import FlightType
+
+    package = SimpleNamespace(flights=flights)
+    for flight in flights:
+        flight.package = package
+        flight.flight_type = FlightType.BARCAP
+    return SimpleNamespace(package=package)
+
+
+def test_adding_a_flight_asks_about_that_flight_only(qt_app: Any, fuel: Any) -> None:
+    """The reported bug: a second BARCAP put the question to the first one
+    again, which had already been given its waypoint."""
+    from game.sim import GameUpdateEvents
+    from qt_ui.windows.mission import refueloffer
+
+    fuel(12000, 10000)
+    answered = _flight(refuel=object())  # the player said "waypoint only" already
+    added = _flight(refuel=object())
+    asked: list[Any] = []
+
+    class _Recording(refueloffer.RefuelOffer):
+        def ask(self, events: Any, fresh: bool = False) -> Any:
+            asked.append(self.flight)
+            return events
+
+    original = refueloffer.RefuelOffer
+    refueloffer.RefuelOffer = _Recording  # type: ignore[misc]
+    try:
+        refueloffer.offer_for_package(
+            cast(Any, _package_model([answered, added])),
+            cast(Any, None),
+            GameUpdateEvents(),
+            only=[added],
+        )
+    finally:
+        refueloffer.RefuelOffer = original  # type: ignore[misc]
+
+    assert asked == [added]
+    assert answered.flight_plan.layout.refuel is not None, "and its answer stands"
+
+
+def test_a_whole_package_still_asks_about_all_of_it(qt_app: Any, fuel: Any) -> None:
+    from game.sim import GameUpdateEvents
+    from qt_ui.windows.mission import refueloffer
+
+    fuel(12000, 10000)
+    first = _flight(refuel=object())
+    second = _flight(refuel=object())
+    asked: list[Any] = []
+
+    class _Recording(refueloffer.RefuelOffer):
+        def ask(self, events: Any, fresh: bool = False) -> Any:
+            asked.append(self.flight)
+            return events
+
+    original = refueloffer.RefuelOffer
+    refueloffer.RefuelOffer = _Recording  # type: ignore[misc]
+    try:
+        refueloffer.offer_for_package(
+            cast(Any, _package_model([first, second])),
+            cast(Any, None),
+            GameUpdateEvents(),
+        )
+    finally:
+        refueloffer.RefuelOffer = original  # type: ignore[misc]
+
+    assert asked == [first, second]

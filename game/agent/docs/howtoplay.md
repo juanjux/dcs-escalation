@@ -1492,8 +1492,9 @@ Write bodies:
   SQUADRON with `squadron_id` (from `turn_context.air_wing`) — that exact squadron, not
   merely its airframe, so two squadrons flying the same jet stay distinct and the one you
   counted aircraft against is the one that spends them — even one the auto-planner
-  wouldn't pick, exactly like the human tasking it by hand. It still has to be able to
-  fly the mission: out of range or out of aircraft is refused rather than substituted.
+  wouldn't pick for the role, exactly like the human tasking it by hand. It forces the
+  ROLE, not the range: a target past the auto-planner's limit still wants
+  `ignore_range:true`, and out of aircraft is refused rather than substituted.
   You may also set the `loadout`: either
   a name (from `/aircraft/loadouts`) or a custom `{pylon: clsid}` map (build it from
   `/aircraft/pylons`, check it with `/payload/validate`). The created flights come back
@@ -1533,7 +1534,8 @@ Write bodies:
   multirole JF-17/FC-1 flying BARCAP over its home base) **pass that flight's `squadron_id`
   to force it** — exactly like a human assigning the flight by hand. Without a `squadron_id`
   only squadrons whose default role set already includes the task are considered, so a
-  capable jet can otherwise be skipped and misreported as "out of range".
+  capable jet can otherwise be skipped. The refusal says which of the two stopped it, and
+  how far the target is against the limit when it was the range.
 - `POST /payload/validate` `{side, squadron_id, payload:{pylon: clsid}}` → `{ok, aircraft,
   errors?:{pylon: reason}}` — check a custom payload is valid for the airframe before you
   use it (unknown weapon, wrong pylon, etc.).
