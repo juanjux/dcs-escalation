@@ -19,7 +19,7 @@ local unitPayloads = {
 					["num"] = 9,
 				},
 				[4] = {
-					["CLSID"] = "{AIM_120D-3_IRST_RIGHT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 8,
 				},
 				[5] = {
@@ -27,7 +27,7 @@ local unitPayloads = {
 					["num"] = 7,
 				},
 				[6] = {
-					["CLSID"] = "{AIM_120D-3_IRST_LEFT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 4,
 				},
 				[7] = {
@@ -37,6 +37,10 @@ local unitPayloads = {
 				[8] = {
 					["CLSID"] = "{MAKO_A2A_C}",
 					["num"] = 5,
+				},
+				[9] = {
+					["CLSID"] = "{F22_IRST}",
+					["num"] = 6,
 				},
 			},
 			["tasks"] = {
@@ -59,7 +63,7 @@ local unitPayloads = {
 					["num"] = 9,
 				},
 				[4] = {
-					["CLSID"] = "{AIM_120D-3_IRST_RIGHT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 8,
 				},
 				[5] = {
@@ -67,7 +71,7 @@ local unitPayloads = {
 					["num"] = 7,
 				},
 				[6] = {
-					["CLSID"] = "{AIM_120D-3_IRST_LEFT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 4,
 				},
 				[7] = {
@@ -77,6 +81,10 @@ local unitPayloads = {
 				[8] = {
 					["CLSID"] = "{MAKO_A2A_C}",
 					["num"] = 5,
+				},
+				[9] = {
+					["CLSID"] = "{F22_IRST}",
+					["num"] = 6,
 				},
 			},
 			["tasks"] = {
@@ -99,7 +107,7 @@ local unitPayloads = {
 					["num"] = 9,
 				},
 				[4] = {
-					["CLSID"] = "{AIM_120D-3_IRST_RIGHT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 8,
 				},
 				[5] = {
@@ -107,7 +115,7 @@ local unitPayloads = {
 					["num"] = 7,
 				},
 				[6] = {
-					["CLSID"] = "{AIM_120D-3_IRST_LEFT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 4,
 				},
 				[7] = {
@@ -117,6 +125,10 @@ local unitPayloads = {
 				[8] = {
 					["CLSID"] = "{MAKO_A2A_C}",
 					["num"] = 5,
+				},
+				[9] = {
+					["CLSID"] = "{F22_IRST}",
+					["num"] = 6,
 				},
 			},
 			["tasks"] = {
@@ -139,7 +151,7 @@ local unitPayloads = {
 					["num"] = 9,
 				},
 				[4] = {
-					["CLSID"] = "{AIM_120D-3_IRST_RIGHT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 8,
 				},
 				[5] = {
@@ -147,7 +159,7 @@ local unitPayloads = {
 					["num"] = 7,
 				},
 				[6] = {
-					["CLSID"] = "{AIM_120D-3_IRST_LEFT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 4,
 				},
 				[7] = {
@@ -157,6 +169,10 @@ local unitPayloads = {
 				[8] = {
 					["CLSID"] = "{MAKO_A2A_C}",
 					["num"] = 5,
+				},
+				[9] = {
+					["CLSID"] = "{F22_IRST}",
+					["num"] = 6,
 				},
 			},
 			["tasks"] = {
@@ -179,7 +195,7 @@ local unitPayloads = {
 					["num"] = 9,
 				},
 				[4] = {
-					["CLSID"] = "{AIM_120D-3_IRST_RIGHT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 8,
 				},
 				[5] = {
@@ -187,7 +203,7 @@ local unitPayloads = {
 					["num"] = 7,
 				},
 				[6] = {
-					["CLSID"] = "{AIM_120D-3_IRST_LEFT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 4,
 				},
 				[7] = {
@@ -197,6 +213,10 @@ local unitPayloads = {
 				[8] = {
 					["CLSID"] = "{MAKO_A2A_C}",
 					["num"] = 5,
+				},
+				[9] = {
+					["CLSID"] = "{F22_IRST}",
+					["num"] = 6,
 				},
 			},
 			["tasks"] = {
@@ -219,7 +239,7 @@ local unitPayloads = {
 					["num"] = 9,
 				},
 				[4] = {
-					["CLSID"] = "{AIM_120D-3_IRST_RIGHT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 8,
 				},
 				[5] = {
@@ -227,7 +247,7 @@ local unitPayloads = {
 					["num"] = 7,
 				},
 				[6] = {
-					["CLSID"] = "{AIM_120D-3_IRST_LEFT}",
+					["CLSID"] = "{AIM-120D-3}",
 					["num"] = 4,
 				},
 				[7] = {
@@ -237,6 +257,10 @@ local unitPayloads = {
 				[8] = {
 					["CLSID"] = "{MAKO_A2A_C}",
 					["num"] = 5,
+				},
+				[9] = {
+					["CLSID"] = "{F22_IRST}",
+					["num"] = 6,
 				},
 			},
 			["tasks"] = {

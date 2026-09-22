@@ -106,6 +106,8 @@ class F22AWeapons:
         "name": "2x AIM-260A - Active Radar AAM",
         "weight": 370,
     }
+    # Station 4/8 pod, gone from the mod in 2.1.0 along with the combined stores
+    # above; kept declared so a save that holds one still resolves the weapon.
     IRST_Sensor_Pod = {
         "clsid": "{IRST_SENSOR_Pod}",
         "name": "IRST Sensor Pod",
@@ -115,6 +117,41 @@ class F22AWeapons:
         "clsid": "{MAKO_A2A_C}",
         "name": "Mako Multi-Mission Hypersonic Missile - Active Radar AAM",
         "weight": 160,
+    }
+    # 2.1.0. The mod declares both of these CAT_AIR_TO_AIR, so DCS treats them as
+    # air-to-air missiles whatever their names say. They are offered here because the
+    # mod offers them, and the aircraft keeps its air-to-air tasks.
+    Mako_Multi_Mission_Hypersonic_Missile___Anti_Radiation = {
+        "clsid": "{MAKO_A2G_C}",
+        "name": "Mako Multi-Mission Hypersonic Missile - Anti Radiation",
+        "weight": 590,
+    }
+    GBU32___JDAM = {
+        "clsid": "{GBU32_JDAM}",
+        "name": "GBU32 - JDAM",
+        "weight": 460,
+    }
+    # 2.1.0 moved the IRST pod to station 6 and gave it its own clsid; the combined
+    # AMRAAM + pod stores above are gone from the mod, and are kept declared only so a
+    # save that holds one still resolves the weapon.
+    IRST_Sensor_Pod_Station_6 = {
+        "clsid": "{F22_IRST}",
+        "name": "IRST Sensor Pod",
+        "weight": 105,
+    }
+    Smoke_red = {"clsid": "{INV-SMOKE-RED}", "name": "Smoke - red", "weight": 0}
+    Smoke_green = {"clsid": "{INV-SMOKE-GREEN}", "name": "Smoke - green", "weight": 0}
+    Smoke_blue = {"clsid": "{INV-SMOKE-BLUE}", "name": "Smoke - blue", "weight": 0}
+    Smoke_white = {"clsid": "{INV-SMOKE-WHITE}", "name": "Smoke - white", "weight": 0}
+    Smoke_yellow = {
+        "clsid": "{INV-SMOKE-YELLOW}",
+        "name": "Smoke - yellow",
+        "weight": 0,
+    }
+    Smoke_orange = {
+        "clsid": "{INV-SMOKE-ORANGE}",
+        "name": "Smoke - orange",
+        "weight": 0,
     }
 
 
@@ -203,7 +240,6 @@ class F_22A(PlaneType):
         AIM_260A___Active_Radar_AAM = (3, F22AWeapons.AIM_260A___Active_Radar_AAM)
 
     class Pylon4:
-        IRST_Sensor_Pod = (4, F22AWeapons.IRST_Sensor_Pod)
         AIM_120C_AMRAAM___Active_Radar_AAM = (
             4,
             Weapons.AIM_120C_AMRAAM___Active_Radar_AAM,
@@ -220,21 +256,9 @@ class F_22A(PlaneType):
             4,
             F22AWeapons.Mako_Multi_Mission_Hypersonic_Missile___Active_Radar_AAM,
         )
-        AIM_120C7___Active_Radar_AAM__IRST_POD = (
+        Mako_Multi_Mission_Hypersonic_Missile___Anti_Radiation = (
             4,
-            F22AWeapons.AIM_120C7___Active_Radar_AAM__IRST_POD,
-        )
-        AIM_120C8___Active_Radar_AAM__IRST_POD = (
-            4,
-            F22AWeapons.AIM_120C8___Active_Radar_AAM__IRST_POD,
-        )
-        AIM_120D3___Active_Radar_AAM__IRST_POD = (
-            4,
-            F22AWeapons.AIM_120D3___Active_Radar_AAM__IRST_POD,
-        )
-        AIM_260A___Active_Radar_AAM__IRST_POD = (
-            4,
-            F22AWeapons.AIM_260A___Active_Radar_AAM__IRST_POD,
+            F22AWeapons.Mako_Multi_Mission_Hypersonic_Missile___Anti_Radiation,
         )
 
     class Pylon5:
@@ -254,13 +278,20 @@ class F_22A(PlaneType):
             5,
             F22AWeapons.Mako_Multi_Mission_Hypersonic_Missile___Active_Radar_AAM,
         )
+        Mako_Multi_Mission_Hypersonic_Missile___Anti_Radiation = (
+            5,
+            F22AWeapons.Mako_Multi_Mission_Hypersonic_Missile___Anti_Radiation,
+        )
+        GBU32___JDAM = (5, F22AWeapons.GBU32___JDAM)
 
     class Pylon6:
-        Smokewinder___red = (6, Weapons.Smokewinder___red)
-        Smokewinder___green = (6, Weapons.Smokewinder___green)
-        Smokewinder___blue = (6, Weapons.Smokewinder___blue)
-        Smokewinder___white = (6, Weapons.Smokewinder___white)
-        Smokewinder___yellow = (6, Weapons.Smokewinder___yellow)
+        IRST_Sensor_Pod = (6, F22AWeapons.IRST_Sensor_Pod_Station_6)
+        Smoke_red = (6, F22AWeapons.Smoke_red)
+        Smoke_green = (6, F22AWeapons.Smoke_green)
+        Smoke_blue = (6, F22AWeapons.Smoke_blue)
+        Smoke_white = (6, F22AWeapons.Smoke_white)
+        Smoke_yellow = (6, F22AWeapons.Smoke_yellow)
+        Smoke_orange = (6, F22AWeapons.Smoke_orange)
 
     class Pylon7:
         AIM_120C_AMRAAM___Active_Radar_AAM = (
@@ -279,9 +310,13 @@ class F_22A(PlaneType):
             7,
             Weapons.Mako_Multi_Mission_Hypersonic_Missile___Active_Radar_AAM,
         )
+        Mako_Multi_Mission_Hypersonic_Missile___Anti_Radiation = (
+            7,
+            F22AWeapons.Mako_Multi_Mission_Hypersonic_Missile___Anti_Radiation,
+        )
+        GBU32___JDAM = (7, F22AWeapons.GBU32___JDAM)
 
     class Pylon8:
-        IRST_Sensor_Pod = (8, F22AWeapons.IRST_Sensor_Pod)
         AIM_120C_AMRAAM___Active_Radar_AAM = (
             8,
             Weapons.AIM_120C_AMRAAM___Active_Radar_AAM,
@@ -298,21 +333,9 @@ class F_22A(PlaneType):
             8,
             Weapons.Mako_Multi_Mission_Hypersonic_Missile___Active_Radar_AAM,
         )
-        AIM_120C7___Active_Radar_AAM__IRST_POD_ = (
+        Mako_Multi_Mission_Hypersonic_Missile___Anti_Radiation = (
             8,
-            Weapons.AIM_120C7___Active_Radar_AAM__IRST_POD_,
-        )
-        AIM_120C8___Active_Radar_AAM__IRST_POD_ = (
-            8,
-            Weapons.AIM_120C8___Active_Radar_AAM__IRST_POD_,
-        )
-        AIM_120D3___Active_Radar_AAM__IRST_POD_ = (
-            8,
-            Weapons.AIM_120D3___Active_Radar_AAM__IRST_POD_,
-        )
-        AIM_260A___Active_Radar_AAM__IRST_POD_ = (
-            8,
-            Weapons.AIM_260A___Active_Radar_AAM__IRST_POD_,
+            F22AWeapons.Mako_Multi_Mission_Hypersonic_Missile___Anti_Radiation,
         )
 
     class Pylon9:
