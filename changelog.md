@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mods]** The Su-35S is declared at v2.0.37b. Every store the fork puts on a pylon is still one the mod offers.
 * **[Mission Generator]** Optional ALIGN waypoint before landing, on the approach course of the active runway, or on a carrier's recovery course at its projected position. The hold point can be put on the departure runway's centreline the same way, at a settable distance.
 * **[Live Pilots]** Being disliked is noticed too: each point the other man is below him adds to his chance of cooling, mirroring the warming bonus. 5% a point, a new setting.
 * **[UI]** The map's GPS picker is a tool you switch on, like the ruler, instead of answering every stray click, and the map wears the same crosshair while it is on.
