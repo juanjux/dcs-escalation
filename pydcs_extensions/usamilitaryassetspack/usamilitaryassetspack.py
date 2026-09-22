@@ -541,7 +541,8 @@ class CH_M2A3(unittype.VehicleType):
     eplrs = True
 
 
-# Added in CH USA export refresh (mod 2.4.x): Abrams X + Patriot KAT1 battery
+# Added in CH USA export refresh (mod 2.4.x). The Patriot KAT1 battery came with
+# it and moved to the Germany pack in 1.5.0.
 @vehiclemod
 class CH_AbramsX(unittype.VehicleType):
     id = "CH_AbramsX"
@@ -549,46 +550,6 @@ class CH_AbramsX(unittype.VehicleType):
     detection_range = 0
     threat_range = 5000
     air_weapon_dist = 2000
-    eplrs = True
-
-
-@vehiclemod
-class CH_MIM104_M901_PAC2_KAT1(unittype.VehicleType):
-    id = "CH_MIM104_M901_PAC2_KAT1"
-    name = "[CH] MIM-104 M901 PAC-2 GEM LN (KAT1)"
-    detection_range = 0
-    threat_range = 150000
-    air_weapon_dist = 150000
-    eplrs = True
-
-
-@vehiclemod
-class CH_MIM104_ANMPQ53_KAT1(unittype.VehicleType):
-    id = "CH_MIM104_ANMPQ53_KAT1"
-    name = "[CH] MIM-104 AN/MPQ-53 STR (KAT1)"
-    detection_range = 160000
-    threat_range = 0
-    air_weapon_dist = 0
-    eplrs = True
-
-
-@vehiclemod
-class CH_MIM104_ECS_KAT1(unittype.VehicleType):
-    id = "CH_MIM104_ECS_KAT1"
-    name = "[CH] MIM-104 ECS (HX)"
-    detection_range = 0
-    threat_range = 0
-    air_weapon_dist = 0
-    eplrs = True
-
-
-@vehiclemod
-class CH_MIM104_EPP_KAT1(unittype.VehicleType):
-    id = "CH_MIM104_EPP_KAT1"
-    name = "[CH] MIM-104 EPP (HX)"
-    detection_range = 0
-    threat_range = 0
-    air_weapon_dist = 0
     eplrs = True
 
 

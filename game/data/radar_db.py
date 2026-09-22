@@ -32,6 +32,7 @@ from pydcs_extensions import russianmilitaryassetspack as rmap
 from pydcs_extensions import swedishmilitaryassetspack as smap
 from pydcs_extensions import ukmilitaryassetspack as ukmap
 from pydcs_extensions import usamilitaryassetspack as usamap
+from pydcs_extensions import germanymilitaryassetspack as demap
 
 TELARS = {
     AirDefence.x_2S6_Tunguska,
@@ -78,7 +79,7 @@ TRACK_RADARS = {
     # tracker its launchers recognise, so it reports a threat range of zero and
     # the map draws no ring at all, while in the mission it shoots perfectly
     # well. That is what happened at Baghdad International.
-    usamap.CH_MIM104_ANMPQ53_KAT1,
+    demap.CH_MIM104_ANMPQ53_KAT1,
     usamap.CH_MIM104_ANMPQ65,
     usamap.CH_MIM104_ANMPQ65A,
     usamap.CH_MIM104_ANMPQ65_HEMTT,
@@ -145,7 +146,7 @@ LAUNCHER_TRACKER_PAIRS = {
     smap.RBS_98: (smap.UndE23,),
     ukmap.CH_SkySabreLN: (ukmap.CH_SkySabreGiraffe,),
     usamap.CH_MIM104_M903_PAC2: (
-        usamap.CH_MIM104_ANMPQ53_KAT1,
+        demap.CH_MIM104_ANMPQ53_KAT1,
         usamap.CH_MIM104_ANMPQ65,
         usamap.CH_MIM104_ANMPQ65A,
         usamap.CH_MIM104_LTAMDS,
@@ -154,7 +155,7 @@ LAUNCHER_TRACKER_PAIRS = {
         usamap.CH_MIM104_LTAMDS_HEMTT,
     ),
     usamap.CH_MIM104_M903_PAC3: (
-        usamap.CH_MIM104_ANMPQ53_KAT1,
+        demap.CH_MIM104_ANMPQ53_KAT1,
         usamap.CH_MIM104_ANMPQ65,
         usamap.CH_MIM104_ANMPQ65A,
         usamap.CH_MIM104_LTAMDS,
@@ -163,7 +164,7 @@ LAUNCHER_TRACKER_PAIRS = {
         usamap.CH_MIM104_LTAMDS_HEMTT,
     ),
     usamap.CH_MIM104_M903_PAC2_HEMTT: (
-        usamap.CH_MIM104_ANMPQ53_KAT1,
+        demap.CH_MIM104_ANMPQ53_KAT1,
         usamap.CH_MIM104_ANMPQ65,
         usamap.CH_MIM104_ANMPQ65A,
         usamap.CH_MIM104_LTAMDS,
@@ -172,7 +173,7 @@ LAUNCHER_TRACKER_PAIRS = {
         usamap.CH_MIM104_LTAMDS_HEMTT,
     ),
     usamap.CH_MIM104_M903_PAC3_HEMTT: (
-        usamap.CH_MIM104_ANMPQ53_KAT1,
+        demap.CH_MIM104_ANMPQ53_KAT1,
         usamap.CH_MIM104_ANMPQ65,
         usamap.CH_MIM104_ANMPQ65A,
         usamap.CH_MIM104_LTAMDS,

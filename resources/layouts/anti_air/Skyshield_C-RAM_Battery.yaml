@@ -1,0 +1,32 @@
+name: Skyshield C-RAM Battery
+tasks:
+  - AAA
+groups:
+  - Skyshield:
+    # The generic AAA site leaves its radar slot empty on purpose, because it drew
+    # whatever search radar the faction could reach. Here the slot is pinned to the
+    # system's own fire control unit, which is what lays the guns.
+    - name: AAA Site Radar
+      fill: false
+      unit_count:
+        - 1
+      unit_types:
+        - CH_Skyshield_FCU
+      unit_classes:
+        - SearchRadar
+    - name: AAA Site
+      unit_count:
+        - 2
+        - 4
+      unit_types:
+        - CH_Skyshield_Gun
+      unit_classes:
+        - AAA
+    - name: AAA Site Logistics
+      optional: true
+      unit_count:
+        - 1
+        - 2
+      unit_classes:
+        - Logistics
+layout_file: resources/layouts/anti_air/AAA_Site.miz

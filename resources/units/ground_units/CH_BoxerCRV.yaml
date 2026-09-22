@@ -1,0 +1,9 @@
+class: IFV
+description: "The Boxer CRV mounts the Lance turret with a 30 mm autocannon, giving the wheeled Boxer the firepower of a tracked IFV."
+introduced: 2019
+manufacturer: ARTEC
+origin: Germany
+price: 12
+role: Infantry Fighting Vehicle
+variants:
+  "[CH] Boxer IFV": null

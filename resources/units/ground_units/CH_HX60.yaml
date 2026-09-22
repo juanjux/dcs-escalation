@@ -1,0 +1,9 @@
+class: Logistics
+description: "The HX60 is the light member of the Rheinmetall MAN HX family, the German Army's standard tactical truck."
+introduced: 2010
+manufacturer: Rheinmetall MAN
+origin: Germany
+price: 3
+role: Truck
+variants:
+  "[CH] HX60 Truck": null

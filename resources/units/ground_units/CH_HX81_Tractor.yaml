@@ -1,0 +1,9 @@
+class: Logistics
+description: "The HX81 tractor without its trailer."
+introduced: 2012
+manufacturer: Rheinmetall MAN
+origin: Germany
+price: 3
+role: Tractor
+variants:
+  "[CH] HX81 Tractor": null

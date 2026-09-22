@@ -1,0 +1,9 @@
+class: APC
+description: "The Boxer is a wheeled modular armoured vehicle built around swappable mission modules; this one carries a remote weapon station."
+introduced: 2011
+manufacturer: ARTEC
+origin: Germany
+price: 8
+role: Armoured Fighting Vehicle
+variants:
+  "[CH] Boxer AFV": null

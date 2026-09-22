@@ -1,0 +1,9 @@
+class: Logistics
+description: "The HX81 is the German Army's heavy tractor, moving Leopard 2s on a low-loader trailer."
+introduced: 2012
+manufacturer: Rheinmetall MAN
+origin: Germany
+price: 4
+role: Tank Transporter
+variants:
+  "[CH] HX81 Tank Transporter": null

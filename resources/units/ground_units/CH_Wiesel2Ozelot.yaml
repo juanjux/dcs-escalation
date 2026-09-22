@@ -1,0 +1,9 @@
+class: SHORAD
+description: "The Ozelot is a Wiesel 2 carrying four Stinger missiles and a passive sight, the German Army's air-portable point defence."
+introduced: 2001
+manufacturer: Rheinmetall
+origin: Germany
+price: 20
+role: Very Short-Range Air Defence
+variants:
+  "[CH] Wiesel 2 Ozelot VSHORAD": null

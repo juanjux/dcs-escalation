@@ -125,6 +125,7 @@ class NewGameWizard(QtWidgets.QWizard):
             high_digit_sams_ultimate=self.field("high_digit_sams_ultimate"),
             spanishnavypack=self.field("spanishnavypack"),
             swedishmilitaryassetspack=self.field("swedishmilitaryassetspack"),
+            germanymilitaryassetspack=self.field("germanymilitaryassetspack"),
             coldwarassets=self.field("coldwarassets"),
             SWPack=self.field("SWPack"),
             vietnamwarvessels=self.field("vietnamwarvessels"),

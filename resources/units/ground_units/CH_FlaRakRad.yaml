@@ -1,0 +1,9 @@
+class: SHORAD
+description: "A wheeled launcher carrying IRIS-T SLS missiles with a search radar, replacing the German Army's Ozelot in the short-range role."
+introduced: 2024
+manufacturer: Rheinmetall
+origin: Germany
+price: 30
+role: Short-Range Air Defence
+variants:
+  "[CH] FlaRakRad SHORAD": null

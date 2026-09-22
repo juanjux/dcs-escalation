@@ -1,0 +1,9 @@
+class: Logistics
+description: "The HX77 is the 8x8 cargo truck of the HX family, used for supply and as a carrier for mission modules."
+introduced: 2010
+manufacturer: Rheinmetall MAN
+origin: Germany
+price: 3
+role: Truck
+variants:
+  "[CH] HX77 Truck": null

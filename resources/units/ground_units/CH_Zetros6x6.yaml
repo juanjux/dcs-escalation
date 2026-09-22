@@ -1,0 +1,9 @@
+class: Logistics
+description: "The Zetros is a bonneted off-road truck used by the German Army where the cab-over HX cannot go."
+introduced: 2008
+manufacturer: Mercedes-Benz
+origin: Germany
+price: 3
+role: Truck
+variants:
+  "[CH] Zetros 6x6 Truck": null

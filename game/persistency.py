@@ -263,6 +263,12 @@ class MigrationUnpickler(pickle.Unpickler):
 
         if name.startswith("MIM104_"):
             return getattr(usamilitaryassetspack, "CH_" + name, None)
+        if name.endswith("_KAT1"):
+            # The mod moved the whole Patriot KAT1 battery to the Germany pack in
+            # 1.5.0, so the class is in another module now.
+            from pydcs_extensions import germanymilitaryassetspack
+
+            return getattr(germanymilitaryassetspack, name, None)
         # Mod -> native DCS: ED shipped these as CHAP units, so migrate old saves to the
         # native class (mirrors the CH Russia handler above and the groundunittype
         # display-name migrator). The HIMARS variants ED didn't add (GLSDB / PrSM /
