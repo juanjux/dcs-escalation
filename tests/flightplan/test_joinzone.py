@@ -13,7 +13,7 @@ from typing import Any, cast
 
 import pytest
 from dcs.mapping import Point
-from shapely.geometry import MultiPolygon
+from shapely.geometry import MultiPolygon, Point as ShapelyPoint
 
 from game.flightplan.joinzonegeometry import MIN_JOIN_FRACTION, JoinZoneGeometry
 from game.utils import Heading, meters, nautical_miles
@@ -104,3 +104,22 @@ def test_it_stays_between_home_and_the_target() -> None:
     join = _join(target_nm=400, ingress_nm=250)
 
     assert 0 < _from_home(join) < 400
+
+
+def test_a_threatened_ring_behind_the_ingress_falls_back_to_the_home_ring() -> None:
+    """Otherwise there is nothing to pick and the join lands on the ingress itself."""
+    home, target, ingress = _at(0), _at(400), _at(250)
+    covered = _at(250).point_from_heading(270, nautical_miles(25).meters)
+    threat = MultiPolygon(
+        [ShapelyPoint(covered.x, covered.y).buffer(nautical_miles(40).meters)]
+    )
+    coalition = SimpleNamespace(
+        doctrine=SimpleNamespace(join_distance=JOIN_DISTANCE),
+        opponent=SimpleNamespace(threat_zone=SimpleNamespace(all=threat)),
+    )
+
+    join = JoinZoneGeometry(
+        target, home, ingress, cast(Any, coalition)
+    ).find_best_join_point()
+
+    assert 400 * 0.35 - 1 <= _from_home(join) <= 400 * 0.36 + 1

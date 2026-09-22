@@ -36,9 +36,10 @@ class JoinZoneGeometry:
     the ingress has been pushed out to a stand-off weapon's range -- and the flight
     had to leave its track to reach the join and turn back onto it afterwards.
 
-    Where the ingress is close enough to home that the ring would reach behind it, the
-    old fraction of the home-to-target leg is used instead, so a short mission still
-    forms up before setting off rather than over the airfield.
+    The old ring around home is the fallback, used when the ingress is too close to
+    home for a ring behind it, and when the ring behind it is entirely threatened or
+    outside the turn limit. A short mission then still forms up before setting off
+    rather than over the airfield.
     """
 
     def __init__(
@@ -61,19 +62,18 @@ class JoinZoneGeometry:
         join_distance = coalition.doctrine.join_distance.meters
         self.ip_bubble = self.ip.buffer(join_distance)
 
-        # A ring behind the ingress, one to two join distances from it. The fallback
-        # is the old ring around home, used when the ingress is too close to home for
-        # a ring behind it to leave room to form up.
         total_distance = home.distance_to_point(target)
         home_to_ip = home.distance_to_point(ip)
+        # A ring behind the ingress, one to two join distances from it, and the old
+        # ring around home to fall back on.
+        self._rings = []
         if home_to_ip - 2 * join_distance >= total_distance * MIN_JOIN_FRACTION:
-            self.min_distance_bubble = self.ip_bubble
-            self.max_distance_bubble = self.ip.buffer(2 * join_distance)
-        else:
-            self.min_distance_bubble = self.home.buffer(total_distance * 0.35)
-            self.max_distance_bubble = self.home.buffer(total_distance * 0.36)
-        self.distance_ring = self.max_distance_bubble.difference(
-            self.min_distance_bubble
+            self._rings.append((self.ip_bubble, self.ip.buffer(2 * join_distance)))
+        self._rings.append(
+            (
+                self.home.buffer(total_distance * 0.35),
+                self.home.buffer(total_distance * 0.36),
+            )
         )
 
         ip_distance = ip.distance_to_point(target)
@@ -110,28 +110,35 @@ class JoinZoneGeometry:
             ]
         )
 
-        permissible_zones = (
-            ip_direction_limit_wedge.difference(self.excluded_zones)
-            .difference(self.home_bubble)
-            .intersection(self.distance_ring)
-        )
-        if permissible_zones.is_empty:
-            permissible_zones = MultiPolygon([])
-        if not isinstance(permissible_zones, MultiPolygon):
-            permissible_zones = MultiPolygon([permissible_zones])
-        self.permissible_zones = permissible_zones
+        for inner, outer in self._rings:
+            self.min_distance_bubble = inner
+            self.max_distance_bubble = outer
+            self.distance_ring = outer.difference(inner)
 
-        preferred_lines = (
-            ip_direction_limit_wedge.intersection(self.excluded_zones.boundary)
-            .difference(self.home_bubble)
-            .intersection(self.distance_ring)
-        )
+            permissible_zones = (
+                ip_direction_limit_wedge.difference(self.excluded_zones)
+                .difference(self.home_bubble)
+                .intersection(self.distance_ring)
+            )
+            if permissible_zones.is_empty:
+                permissible_zones = MultiPolygon([])
+            if not isinstance(permissible_zones, MultiPolygon):
+                permissible_zones = MultiPolygon([permissible_zones])
+            self.permissible_zones = permissible_zones
 
-        if preferred_lines.is_empty:
-            preferred_lines = MultiLineString([])
-        if not isinstance(preferred_lines, MultiLineString):
-            preferred_lines = MultiLineString([preferred_lines])
-        self.preferred_lines = preferred_lines
+            preferred_lines = (
+                ip_direction_limit_wedge.intersection(self.excluded_zones.boundary)
+                .difference(self.home_bubble)
+                .intersection(self.distance_ring)
+            )
+            if preferred_lines.is_empty:
+                preferred_lines = MultiLineString([])
+            if not isinstance(preferred_lines, MultiLineString):
+                preferred_lines = MultiLineString([preferred_lines])
+            self.preferred_lines = preferred_lines
+
+            if not self.preferred_lines.is_empty or not self.permissible_zones.is_empty:
+                break
 
     def find_best_join_point(self) -> Point:
         # Choose the best available geometry for nearest point computation.
