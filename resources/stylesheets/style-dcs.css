@@ -511,10 +511,17 @@ QComboBox QAbstractItemView {
     padding: 4px;
     border:1px solid #3B4656;
     background: #14202B;
+    /* Otherwise the current row wears a white focus rectangle over its highlight. */
+    outline: 0;
 }
 
-QComboBox QAbstractItemView::item:selected {
+/* The popup's rows belong to the combo, not to the view: a
+   `QComboBox QAbstractItemView::item` rule never reaches them, and without this the
+   highlight is the combo's own background and barely reads against the list. Giving
+   the rows padding here resizes them, so only the colour is set. */
+QComboBox::item:selected {
     background: #435466;
+    color: #fff;
 }
 
 
