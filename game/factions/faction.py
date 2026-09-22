@@ -545,7 +545,9 @@ class Faction:
             self.remove_vehicle("VAB_RADIO")
             self.remove_vehicle("VAB_50")
             self.remove_vehicle("VIB_VBR")
-            self.remove_vehicle("VAB_HOT")
+            self.remove_vehicle("felin_famas")
+            self.remove_vehicle("felin_lrac")
+            self.remove_vehicle("felin_PGM")
             self.remove_vehicle("VAB_MORTIER")
             self.remove_vehicle("VBL50")
             self.remove_vehicle("VBLANF1")
@@ -957,13 +959,14 @@ class Faction:
             self.remove_preset("Sky Sabre Battery")
             self.remove_preset("Sky Sabre Battery (Mobile)")
             self.remove_preset("Stormer HVM Battery")
+        # turkish military assets pack
+        if not mod_settings.turkeymilitaryassetspack:
+            self.remove_aircraft("TB-2 UCAV")
         if not mod_settings.ukrainemilitaryassetspack:
             self.remove_aircraft("CH_Su-24MU")
             self.remove_aircraft("CH_MiG-29MU2")
             self.remove_aircraft("CH_Su-27P1M")
-            self.remove_vehicle("T84_OplotM")
             self.remove_vehicle("CH_BTR-4")
-            self.remove_vehicle("CH_T64BV")
             self.remove_vehicle("CH_Kozak5")
             self.remove_vehicle("CH_KrAZSpartan")
             self.remove_vehicle("CH_BRDM2L1")

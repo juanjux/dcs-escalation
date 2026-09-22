@@ -53,6 +53,7 @@ from .usamilitaryassetspack import *
 from .ukmilitaryassetspack import *
 from .ukrainemilitaryassetspack import *
 from .tornado_adv import *
+from .turkeymilitaryassetspack import *
 from .VSN_F35 import *
 
 

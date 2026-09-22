@@ -60,32 +60,12 @@ inject_weapons(WeaponsUKR)
 
 # Armor
 @vehiclemod
-class T84_OplotM(unittype.VehicleType):
-    id = "T84_OplotM"
-    name = "[CH] T-84 Oplot-M MBT"
-    detection_range = 8000
-    threat_range = 5000
-    air_weapon_dist = 5000
-    eplrs = True
-
-
-@vehiclemod
 class BTR_4(unittype.VehicleType):
     id = "CH_BTR-4"
     name = "[CH] BTR-4 IFV"
     detection_range = 0
     threat_range = 5000
     air_weapon_dist = 5000
-    eplrs = True
-
-
-@vehiclemod
-class CH_T64BV(unittype.VehicleType):
-    id = "CH_T64BV"
-    name = "[CH] T-64BV MBT"
-    detection_range = 5000
-    threat_range = 4000
-    air_weapon_dist = 4000
     eplrs = True
 
 

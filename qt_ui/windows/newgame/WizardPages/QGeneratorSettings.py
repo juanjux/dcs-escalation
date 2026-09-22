@@ -214,6 +214,8 @@ class GeneratorOptions(QtWidgets.QWizardPage):
         self.registerField("ukmilitaryassetspack", self.ukmilitaryassetspack)
         self.ukrainemilitaryassetspack = QtWidgets.QCheckBox()
         self.registerField("ukrainemilitaryassetspack", self.ukrainemilitaryassetspack)
+        self.turkeymilitaryassetspack = QtWidgets.QCheckBox()
+        self.registerField("turkeymilitaryassetspack", self.turkeymilitaryassetspack)
         self.mig31bm_foxhound = QtWidgets.QCheckBox()
         self.registerField("mig31bm_foxhound", self.mig31bm_foxhound)
         self.mam = QtWidgets.QCheckBox()
@@ -263,7 +265,11 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 self.ukmilitaryassetspack,
             ),
             (
-                "CurrentHill Ukraine Military Assets pack (1.1.1)",
+                "CurrentHill Turkey Military Assets pack (2.0.0)",
+                self.turkeymilitaryassetspack,
+            ),
+            (
+                "CurrentHill Ukraine Military Assets pack (2.0.0)",
                 self.ukrainemilitaryassetspack,
             ),
             ("EA-6B Prowler (v2.9.4.102)", self.ea6b_prowler),
@@ -290,7 +296,7 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 "F/A-18E/F Super Hornet AI Tanker (version 2.4.5.260501.RC1)",
                 self.fa18ef_tanker,
             ),
-            ("Frenchpack (v4.9.1)", self.frenchpack),
+            ("Frenchpack (v5.0)", self.frenchpack),
             ("High Digit SAMs (v2.1.0, Auranis)", self.high_digit_sams),
             (
                 "High Digit SAMs - Ultimate Compilation (v1.4.4, dcs-sams)",
@@ -309,7 +315,7 @@ class GeneratorOptions(QtWidgets.QWizardPage):
             ("Star Wars Modpack 2.54+", self.SWPack),
             ("Su-15 Flagon (v1.0)", self.su15_flagon),
             ("Su-30 Flanker-H (v2.8.04b + CWS 3.72)", self.su30_flanker_h),
-            ("Su-35S Flanker-M (v2.0.27b)", self.su35s_flanker_m),
+            ("Su-35S Flanker-M (v2.0.37b)", self.su35s_flanker_m),
             ("Su-57 Felon (build-04)", self.su57_felon),
             ("Super Étendard (v2.5.5)", self.super_etendard),
             ("Tornado F3 ADV (1.0)", self.tornado_adv),
@@ -398,6 +404,9 @@ class GeneratorOptions(QtWidgets.QWizardPage):
         )
         self.usamilitaryassetspack.setChecked(s.get("usamilitaryassetspack", False))
         self.ukmilitaryassetspack.setChecked(s.get("ukmilitaryassetspack", False))
+        self.turkeymilitaryassetspack.setChecked(
+            s.get("turkeymilitaryassetspack", False)
+        )
         self.ukrainemilitaryassetspack.setChecked(
             s.get("ukrainemilitaryassetspack", False)
         )

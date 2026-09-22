@@ -181,6 +181,12 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
             # native DCS units ED shipped.
             "[CH] Scimitar CRV": "Scout FV107 Scimitar [CH]",  # CHAP_FV107
             "[CH] Scorpion LT": "LT FV101 Scorpion [CH]",  # CHAP_FV101
+            # CH Ukraine pack 2.0.0 dropped these two as duplicates of the
+            # native DCS units ED shipped.
+            "[CH] T-64BV MBT": "MBT T-64BV Type 2017 [CH]",  # CHAP_T64BV
+            "[CH] T-84 Oplot-M MBT": "MBT T-84 Oplot-M [CH]",  # CHAP_T84OplotM
+            # Frenchpack 5.0 dropped its own Mephisto; DCS ships one.
+            "VAB Mephisto Frenchpack": "VAB Mephisto",  # VAB_Mephisto
         }
 
     @classmethod
