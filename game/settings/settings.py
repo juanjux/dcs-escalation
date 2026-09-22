@@ -1412,6 +1412,17 @@ class Settings:
             "a mile, between 1500 and 6000 ft above the field."
         ),
     )
+    align_hold_with_runway: bool = boolean_option(
+        "Hold on the departure runway's centreline",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        detail=(
+            "Put the hold point straight ahead of the runway the flight takes off "
+            "from, at the doctrine's hold distance, instead of wherever the hold "
+            "geometry puts it. A carrier uses its recovery course."
+        ),
+    )
     align_carrier_distance_nm: float = bounded_float_option(
         "How far astern of a carrier the ALIGN waypoint sits (NM)",
         page=MISSION_GENERATOR_PAGE,

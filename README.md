@@ -169,6 +169,10 @@ Still to come:
   laterally offset. In calm air the ILS runway is preferred, which is usually the one
   the field's reference point sits on.
 
+  The hold point works the same way at the departure end, under its own setting: the
+  flight climbs out along the runway it took off from, or a carrier's recovery course,
+  instead of turning straight for the target.
+
 - **Realistic CAS** — an experimental, off-by-default Mission Plugin that makes
   ground targets something to discover instead of immediately available to every
   AI attacker. Both sides search using visual, EO/IR and ground-radar observations,
