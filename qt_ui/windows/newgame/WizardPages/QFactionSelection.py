@@ -34,6 +34,7 @@ from game.dcs.shipunittype import ShipUnitType
 from game.dcs.unittype import UnitType
 from game.factions import Faction, FACTIONS
 from qt_ui.uiconstants import EVENT_ICONS
+from qt_ui.widgets.searchablecombo import SearchableComboBox
 from qt_ui.windows.newgame.jinja_env import jinja_env
 
 
@@ -141,7 +142,7 @@ class QFactionUnits(QScrollArea):
             grid.addWidget(self.doctrine_combo, counter, 1)
             counter += 2
 
-        self.add_ac_combo = QComboBox()
+        self.add_ac_combo = SearchableComboBox(placeholder="Type to find an aircraft…")
         hbox = self._create_aircraft_combobox(
             self.add_ac_combo,
             lambda: self._on_add_ac(self.faction.aircraft, self.add_ac_combo),
@@ -150,7 +151,9 @@ class QFactionUnits(QScrollArea):
         grid.addWidget(QLabel("<strong>Aircraft:</strong>"), counter, 0)
         counter = self._add_checkboxes(self.faction.aircraft, counter, grid, hbox)
 
-        self.add_awacs_combo = QComboBox()
+        self.add_awacs_combo = SearchableComboBox(
+            placeholder="Type to find an aircraft…"
+        )
         hbox = self._create_aircraft_combobox(
             self.add_awacs_combo,
             lambda: self._on_add_ac(self.faction.awacs, self.add_awacs_combo),
@@ -159,7 +162,9 @@ class QFactionUnits(QScrollArea):
         grid.addWidget(QLabel("<strong>AWACS:</strong>"), counter, 0)
         counter = self._add_checkboxes(self.faction.awacs, counter, grid, hbox)
 
-        self.add_tanker_combo = QComboBox()
+        self.add_tanker_combo = SearchableComboBox(
+            placeholder="Type to find an aircraft…"
+        )
         hbox = self._create_aircraft_combobox(
             self.add_tanker_combo,
             lambda: self._on_add_ac(self.faction.tankers, self.add_tanker_combo),
@@ -168,7 +173,9 @@ class QFactionUnits(QScrollArea):
         grid.addWidget(QLabel("<strong>Tankers:</strong>"), counter, 0)
         counter = self._add_checkboxes(self.faction.tankers, counter, grid, hbox)
 
-        self.add_frontline_combo = QComboBox()
+        self.add_frontline_combo = SearchableComboBox(
+            placeholder="Type to find a unit…"
+        )
         hbox = self._create_unit_combobox(
             self.add_frontline_combo,
             lambda: self._on_add_unit(
@@ -182,7 +189,9 @@ class QFactionUnits(QScrollArea):
             self.faction.frontline_units, counter, grid, hbox
         )
 
-        self.add_artillery_combo = QComboBox()
+        self.add_artillery_combo = SearchableComboBox(
+            placeholder="Type to find a unit…"
+        )
         hbox = self._create_unit_combobox(
             self.add_artillery_combo,
             lambda: self._on_add_unit(
@@ -196,7 +205,9 @@ class QFactionUnits(QScrollArea):
             self.faction.artillery_units, counter, grid, hbox
         )
 
-        self.add_logistics_combo = QComboBox()
+        self.add_logistics_combo = SearchableComboBox(
+            placeholder="Type to find a unit…"
+        )
         hbox = self._create_unit_combobox(
             self.add_logistics_combo,
             lambda: self._on_add_unit(
@@ -210,7 +221,7 @@ class QFactionUnits(QScrollArea):
             self.faction.logistics_units, counter, grid, hbox
         )
 
-        self.add_infantry_combo = QComboBox()
+        self.add_infantry_combo = SearchableComboBox(placeholder="Type to find a unit…")
         hbox = self._create_unit_combobox(
             self.add_infantry_combo,
             lambda: self._on_add_unit(
@@ -222,7 +233,9 @@ class QFactionUnits(QScrollArea):
         grid.addWidget(QLabel("<strong>Infantry units:</strong>"), counter, 0)
         counter = self._add_checkboxes(self.faction.infantry_units, counter, grid, hbox)
 
-        self.add_preset_group_combo = QComboBox()
+        self.add_preset_group_combo = SearchableComboBox(
+            placeholder="Type to find a group…"
+        )
         hbox = self._create_preset_group_combobox(
             self.add_preset_group_combo,
             lambda: self._on_add_preset_group(
@@ -232,7 +245,9 @@ class QFactionUnits(QScrollArea):
         grid.addWidget(QLabel("<strong>Preset groups:</strong>"), counter, 0)
         counter = self._add_checkboxes(self.faction.preset_groups, counter, grid, hbox)
 
-        self.add_air_defense_combo = QComboBox()
+        self.add_air_defense_combo = SearchableComboBox(
+            placeholder="Type to find a unit…"
+        )
         hbox = self._create_unit_combobox(
             self.add_air_defense_combo,
             lambda: self._on_add_unit(
@@ -246,7 +261,7 @@ class QFactionUnits(QScrollArea):
             self.faction.air_defense_units, counter, grid, hbox
         )
 
-        self.add_naval_combo = QComboBox()
+        self.add_naval_combo = SearchableComboBox(placeholder="Type to find a ship…")
         hbox = self._create_naval_combobox(
             self.add_naval_combo,
             lambda: self._on_add_unit(self.faction.naval_units, self.add_naval_combo),
@@ -254,7 +269,7 @@ class QFactionUnits(QScrollArea):
         grid.addWidget(QLabel("<strong>Naval units:</strong>"), counter, 0)
         counter = self._add_checkboxes(self.faction.naval_units, counter, grid, hbox)
 
-        self.add_missile_combo = QComboBox()
+        self.add_missile_combo = SearchableComboBox(placeholder="Type to find a unit…")
         hbox = self._create_unit_combobox(
             self.add_missile_combo,
             lambda: self._on_add_unit(self.faction.missiles, self.add_missile_combo),
