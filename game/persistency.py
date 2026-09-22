@@ -73,6 +73,7 @@ class MigrationUnpickler(pickle.Unpickler):
             self._handle_ch_usa_assets,
             self._handle_ch_uk_assets,
             self._handle_ch_ukraine_assets,
+            self._handle_frenchpack,
             self._handle_su30,
             self._handle_misc,
         ]
@@ -313,6 +314,17 @@ class MigrationUnpickler(pickle.Unpickler):
             "T84_OplotM": Armor.CHAP_T84OplotM,
         }
         return native.get(name)
+
+    def _handle_frenchpack(self, module: str, name: str) -> Any:
+        """Handle migrations for Frenchpack: 5.0 dropped its own VAB Mephisto, which
+        DCS ships itself, so map old saves to the native class."""
+        if module != "pydcs_extensions.frenchpack.frenchpack":
+            return None
+        if name == "VAB_MEPHISTO":
+            from dcs.vehicles import Armor
+
+            return Armor.VAB_Mephisto
+        return None
 
     def _handle_su30(self, module: str, name: str) -> Any:
         """Handle migrations for Su-30 aircraft variants"""

@@ -1,0 +1,9 @@
+class: Infantry
+description: A French rifleman of the FELIN infantry system, carrying the LRAC F1 anti-tank rocket launcher.
+introduced: 2010
+manufacturer: Sagem
+origin: France
+price: 2
+role: Infantry
+variants:
+  Soldat LRAC F1: null

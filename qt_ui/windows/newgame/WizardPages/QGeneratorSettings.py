@@ -296,7 +296,7 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 "F/A-18E/F Super Hornet AI Tanker (version 2.4.5.260501.RC1)",
                 self.fa18ef_tanker,
             ),
-            ("Frenchpack (v4.9.1)", self.frenchpack),
+            ("Frenchpack (v5.0)", self.frenchpack),
             ("High Digit SAMs (v2.1.0, Auranis)", self.high_digit_sams),
             (
                 "High Digit SAMs - Ultimate Compilation (v1.4.4, dcs-sams)",
