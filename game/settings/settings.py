@@ -1412,6 +1412,22 @@ class Settings:
             "a mile, between 1500 and 6000 ft above the field."
         ),
     )
+    align_carrier_distance_nm: float = bounded_float_option(
+        "How far astern of a carrier the ALIGN waypoint sits (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=50.0,
+        min=5.0,
+        max=100.0,
+        divisor=1,
+        prefix="",
+        decimals=0,
+        enabled_when=lambda settings: settings.align_before_landing,
+        detail=(
+            "On the base recovery course, at the position the ship will have steamed "
+            "to by the time the flight lands. Fifty is where a Case III starts."
+        ),
+    )
     switch_baro_fix: bool = boolean_option(
         "Switch altitude type of waypoints to AMSL above seas for helicopters",
         page=MISSION_GENERATOR_PAGE,
