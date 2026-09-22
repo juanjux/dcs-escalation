@@ -501,3 +501,68 @@ def test_the_squadron_link_opens_his_own_squadron(
 
     # Nothing above it that knows about a game: no exception.
     open_squadron(QWidget(), cast(Any, squadron))
+
+
+def _paint_row(qt_app: Any, selected: bool) -> Any:
+    """One roster row, painted into an image so its selection can be measured."""
+    from types import SimpleNamespace as NS
+
+    from PySide6.QtCore import QModelIndex, QRect
+    from PySide6.QtGui import QImage, QPainter
+    from PySide6.QtWidgets import QStyle, QStyleOptionViewItem
+
+    from qt_ui.windows.SquadronDialog import PILOT_ROW_HEIGHT, PilotDelegate
+
+    pilot = _pilot()
+    model = cast(Any, NS(squadron=_squadron(), pilot_at_index=lambda _index: pilot))
+    delegate = PilotDelegate(model)
+
+    width = 320
+    image = QImage(width, PILOT_ROW_HEIGHT, QImage.Format.Format_RGB32)
+    image.fill(0)
+    option = QStyleOptionViewItem()
+    option.rect = QRect(0, 0, width, PILOT_ROW_HEIGHT)
+    if selected:
+        option.state |= QStyle.StateFlag.State_Selected
+    painter = QPainter(image)
+    delegate.paint(painter, option, QModelIndex())
+    painter.end()
+    return image
+
+
+def test_the_selected_row_is_boxed(qt_app: Any) -> None:
+    """The bar alone was lost among the affinity washes on the rows around it."""
+    from qt_ui.windows.SquadronDialog import BAR_SELECTED, PILOT_ROW_HEIGHT
+
+    image = _paint_row(qt_app, selected=True)
+    edge = BAR_SELECTED.lower()
+    middle = image.width() // 2
+    assert image.pixelColor(middle, 0).name() == edge
+    assert image.pixelColor(middle, PILOT_ROW_HEIGHT - 1).name() == edge
+    assert image.pixelColor(image.width() - 1, PILOT_ROW_HEIGHT // 2).name() == edge
+
+
+def test_the_selected_bar_is_wider_than_the_hover_one(qt_app: Any) -> None:
+    from qt_ui.windows.SquadronDialog import (
+        BAR_SELECTED,
+        BAR_WIDTH_HOVERED,
+        BAR_WIDTH_SELECTED,
+        PILOT_ROW_HEIGHT,
+    )
+
+    image = _paint_row(qt_app, selected=True)
+    y = PILOT_ROW_HEIGHT // 2
+    bar = [
+        x
+        for x in range(BAR_WIDTH_SELECTED + 2)
+        if image.pixelColor(x, y).name() == BAR_SELECTED.lower()
+    ]
+    assert bar == list(range(BAR_WIDTH_SELECTED))
+    assert BAR_WIDTH_SELECTED > BAR_WIDTH_HOVERED
+
+
+def test_an_unselected_row_is_not_boxed(qt_app: Any) -> None:
+    from qt_ui.windows.SquadronDialog import BAR_SELECTED
+
+    image = _paint_row(qt_app, selected=False)
+    assert image.pixelColor(image.width() // 2, 0).name() != BAR_SELECTED.lower()

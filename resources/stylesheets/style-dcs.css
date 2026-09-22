@@ -505,12 +505,17 @@ QComboBox::down-arrow {
     image: url(resources/stylesheets/chevron-down.png);
 }
 
+/* The dark surface the rest of the theme uses, and the one the searchable combo's
+   own popup already had: the two dropdowns sat side by side in different colours. */
 QComboBox QAbstractItemView {
     padding: 4px;
     border:1px solid #3B4656;
-    background: #465C74;
+    background: #14202B;
+}
 
-  }
+QComboBox QAbstractItemView::item:selected {
+    background: #435466;
+}
 
 
 /*QSpinBox number input with up down arrows*/

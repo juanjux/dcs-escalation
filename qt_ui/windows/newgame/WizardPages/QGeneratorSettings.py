@@ -214,6 +214,8 @@ class GeneratorOptions(QtWidgets.QWizardPage):
         self.registerField("ukmilitaryassetspack", self.ukmilitaryassetspack)
         self.ukrainemilitaryassetspack = QtWidgets.QCheckBox()
         self.registerField("ukrainemilitaryassetspack", self.ukrainemilitaryassetspack)
+        self.turkeymilitaryassetspack = QtWidgets.QCheckBox()
+        self.registerField("turkeymilitaryassetspack", self.turkeymilitaryassetspack)
         self.mig31bm_foxhound = QtWidgets.QCheckBox()
         self.registerField("mig31bm_foxhound", self.mig31bm_foxhound)
         self.mam = QtWidgets.QCheckBox()
@@ -247,11 +249,11 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 self.iranmilitaryassetspack,
             ),
             (
-                "CurrentHill Russian Military Assets pack (2.0.0)",
+                "CurrentHill Russian Military Assets pack (2.0.1)",
                 self.russianmilitaryassetspack,
             ),
             (
-                "CurrentHill Swedish Military Assets pack (1.10)",
+                "CurrentHill Swedish Military Assets pack (1.5.0)",
                 self.swedishmilitaryassetspack,
             ),
             (
@@ -259,11 +261,15 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 self.usamilitaryassetspack,
             ),
             (
-                "CurrentHill UK Military Assets pack (1.1.2)",
+                "CurrentHill UK Military Assets pack (1.5.0)",
                 self.ukmilitaryassetspack,
             ),
             (
-                "CurrentHill Ukraine Military Assets pack (1.1.1)",
+                "CurrentHill Turkey Military Assets pack (2.0.0)",
+                self.turkeymilitaryassetspack,
+            ),
+            (
+                "CurrentHill Ukraine Military Assets pack (2.0.0)",
                 self.ukrainemilitaryassetspack,
             ),
             ("EA-6B Prowler (v2.9.4.102)", self.ea6b_prowler),
@@ -305,11 +311,11 @@ class GeneratorOptions(QtWidgets.QWizardPage):
             ("OH-6 Vietnam Asset Pack (v1.0)", self.oh_6_vietnamassetpack),
             ("OV-10A Bronco", self.ov10a_bronco),
             ("Saab 105/SK-60B (v1.2.1)", self.sk_60),
-            ("Spanish Naval Assets pack (desdemicabina 3.2.0)", self.spanishnavypack),
+            ("Spanish Naval Assets pack (desdemicabina 3.3.0)", self.spanishnavypack),
             ("Star Wars Modpack 2.54+", self.SWPack),
             ("Su-15 Flagon (v1.0)", self.su15_flagon),
             ("Su-30 Flanker-H (v2.8.04b + CWS 3.72)", self.su30_flanker_h),
-            ("Su-35S Flanker-M (v2.0.27b)", self.su35s_flanker_m),
+            ("Su-35S Flanker-M (v2.0.37b)", self.su35s_flanker_m),
             ("Su-57 Felon (build-04)", self.su57_felon),
             ("Super Étendard (v2.5.5)", self.super_etendard),
             ("Tornado F3 ADV (1.0)", self.tornado_adv),
@@ -398,6 +404,9 @@ class GeneratorOptions(QtWidgets.QWizardPage):
         )
         self.usamilitaryassetspack.setChecked(s.get("usamilitaryassetspack", False))
         self.ukmilitaryassetspack.setChecked(s.get("ukmilitaryassetspack", False))
+        self.turkeymilitaryassetspack.setChecked(
+            s.get("turkeymilitaryassetspack", False)
+        )
         self.ukrainemilitaryassetspack.setChecked(
             s.get("ukrainemilitaryassetspack", False)
         )

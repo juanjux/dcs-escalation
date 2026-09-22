@@ -94,6 +94,10 @@ ROW_HOVERED = "#1A2A38"
 ROW_SEPARATOR = "#1D2731"
 BAR_HOVERED = "#3F5D73"
 BAR_SELECTED = "#8FC3F0"
+#: The selected row also gets its own outline, because with friendship on every other
+#: row carries an affinity wash of its own and a thin bar was lost among them.
+BAR_WIDTH_HOVERED = 3
+BAR_WIDTH_SELECTED = 5
 
 NAME = "#F2F7FA"
 NAME_SELECTED = "#FFFFFF"
@@ -241,15 +245,31 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
                 painter.fillRect(0, 0, width, PILOT_ROW_HEIGHT, tint)
             if selected:
                 painter.fillRect(0, 0, width, PILOT_ROW_HEIGHT, QColor(ROW_SELECTED))
-                painter.fillRect(0, 0, 3, PILOT_ROW_HEIGHT, QColor(BAR_SELECTED))
+                painter.fillRect(
+                    0, 0, BAR_WIDTH_SELECTED, PILOT_ROW_HEIGHT, QColor(BAR_SELECTED)
+                )
             elif hovered:
                 painter.fillRect(0, 0, width, PILOT_ROW_HEIGHT, QColor(ROW_HOVERED))
-                painter.fillRect(0, 0, 3, PILOT_ROW_HEIGHT, QColor(BAR_HOVERED))
+                painter.fillRect(
+                    0, 0, BAR_WIDTH_HOVERED, PILOT_ROW_HEIGHT, QColor(BAR_HOVERED)
+                )
             painter.fillRect(0, 51, width, 1, QColor(ROW_SEPARATOR))
+            if selected:
+                # After the separator, which runs along the row's bottom edge and would
+                # otherwise paint over it.
+                self._outline(painter, width)
 
             self._paint_identity(painter, pilot, selected)
             self._paint_notes(painter, pilot, width)
             self._paint_state(painter, pilot, width, selected)
+
+    @staticmethod
+    def _outline(painter: QPainter, width: int) -> None:
+        """A one-pixel box around the row, drawn square so it sits on the separator."""
+        edge = QColor(BAR_SELECTED)
+        painter.fillRect(0, 0, width, 1, edge)
+        painter.fillRect(0, PILOT_ROW_HEIGHT - 1, width, 1, edge)
+        painter.fillRect(width - 1, 0, 1, PILOT_ROW_HEIGHT, edge)
 
     def _affinity_tint(self, pilot: Pilot) -> Optional[QColor]:
         """Background wash showing what the selected pilot thinks of this one.
