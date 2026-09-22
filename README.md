@@ -171,7 +171,7 @@ Still to come:
 
   The hold point works the same way at the departure end, under its own setting: the
   flight climbs out along the runway it took off from, or a carrier's recovery course,
-  instead of turning straight for the target.
+  instead of turning straight for the target. How far out it sits is settable too.
 
 - **Realistic CAS** — an experimental, off-by-default Mission Plugin that makes
   ground targets something to discover instead of immediately available to every

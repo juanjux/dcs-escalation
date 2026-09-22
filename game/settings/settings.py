@@ -1419,8 +1419,25 @@ class Settings:
         default=True,
         detail=(
             "Put the hold point straight ahead of the runway the flight takes off "
-            "from, at the doctrine's hold distance, instead of wherever the hold "
-            "geometry puts it. A carrier uses its recovery course."
+            "from instead of wherever the hold geometry puts it. A carrier uses its "
+            "recovery course."
+        ),
+    )
+    align_hold_distance_nm: float = bounded_float_option(
+        "How far out the hold sits (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=25.0,
+        min=5.0,
+        max=100.0,
+        divisor=1,
+        prefix="",
+        decimals=0,
+        enabled_when=lambda settings: settings.align_hold_with_runway,
+        detail=(
+            "Replaces the doctrine's own hold distance, which is 25 NM for a modern "
+            "campaign and shorter for earlier ones. Only used while the option above "
+            "is on."
         ),
     )
     align_carrier_distance_nm: float = bounded_float_option(
