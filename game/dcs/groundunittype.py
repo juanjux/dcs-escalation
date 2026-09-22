@@ -177,6 +177,8 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
             "[CH] M142 HIMARS (PrSM AShM)": "MLRS M142 HIMARS ATACMS HE [CH]",  # CHAP_M142_ATACMS_M48
             "[CH] Oshkosh FMTV M1083": "Truck M1083 A1P2 MTV [CH]",  # CHAP_M1083
             "[CH] Oshkosh M-ATV MRAP (M2)": "APC MRAP M-ATV [CH]",  # CHAP_MATV
+            # Frenchpack 5.0 dropped its own Mephisto; DCS ships one.
+            "VAB Mephisto Frenchpack": "VAB Mephisto",  # VAB_Mephisto
         }
 
     @classmethod

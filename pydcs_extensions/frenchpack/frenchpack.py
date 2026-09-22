@@ -55,16 +55,6 @@ class VAB_T20_13(unittype.VehicleType):
 
 
 @vehiclemod
-class VAB_MEPHISTO(unittype.VehicleType):
-    id = "VAB_HOT"
-    name = "VAB MEPHISTO"
-    detection_range = 0
-    threat_range = 4000
-    air_weapon_dist = 4000
-    eplrs = True
-
-
-@vehiclemod
 class VBL__50(unittype.VehicleType):
     id = "VBL50"
     name = "VBL .50"
@@ -172,24 +162,6 @@ class DIM__KAMIKAZE(unittype.VehicleType):
 
 
 ## FORTIFICATION
-
-
-@vehiclemod
-class _FIELD_HIDE(unittype.VehicleType):
-    id = "FieldHL"
-    name = "*FIELD HIDE"
-    detection_range = 0
-    threat_range = 0
-    air_weapon_dist = 0
-
-
-@vehiclemod
-class _FIELD_HIDE_SMALL(unittype.VehicleType):
-    id = "HARRIERH"
-    name = "*FIELD HIDE SMALL"
-    detection_range = 0
-    threat_range = 0
-    air_weapon_dist = 0
 
 
 @vehiclemod
@@ -385,6 +357,36 @@ class KORNET_ATGM(unittype.VehicleType):
 
 
 ## INFANTRY
+
+
+@vehiclemod
+class Soldat_Famas(unittype.VehicleType):
+    id = "felin_famas"
+    name = "Soldat Famas"
+    detection_range = 0
+    threat_range = 500
+    air_weapon_dist = 500
+    eplrs = True
+
+
+@vehiclemod
+class Soldat_LRAC_F1(unittype.VehicleType):
+    id = "felin_lrac"
+    name = "Soldat LRAC F1"
+    detection_range = 0
+    threat_range = 500
+    air_weapon_dist = 500
+    eplrs = True
+
+
+@vehiclemod
+class Soldat_PGM(unittype.VehicleType):
+    id = "felin_PGM"
+    name = "Soldat PGM"
+    detection_range = 0
+    threat_range = 2000
+    air_weapon_dist = 2000
+    eplrs = True
 
 
 @vehiclemod
