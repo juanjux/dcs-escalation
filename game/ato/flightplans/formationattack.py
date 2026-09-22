@@ -13,7 +13,7 @@ from game.flightplan import HoldZoneGeometry
 from game.theater import MissionTarget, TheaterGroundObject
 from game.theater import MissionTarget
 from game.theater.theatergroundobject import MotorpoolGroundObject
-from game.utils import nautical_miles, Speed, feet
+from game.utils import meters, nautical_miles, Speed, feet
 from .refuelneed import needs_refuelling
 from .flightplan import FlightPlan
 from .formation import FormationFlightPlan, FormationLayout
@@ -162,6 +162,13 @@ class FormationAttackFlightPlan(FormationFlightPlan, ABC):
         return super().tot_for_waypoint(waypoint)
 
 
+#: How far before the ingress a strike lines up for its run.
+LINEUP_DISTANCE = nautical_miles(10)
+
+#: And how far away the join has to be before that is worth a waypoint of its own.
+LINEUP_NEEDED_BEYOND = nautical_miles(45)
+
+
 @dataclass
 class FormationAttackLayout(FormationLayout):
     ingress: FlightWaypoint
@@ -262,10 +269,17 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
         elif ingress_type == FlightWaypointType.INGRESS_SEAD_SWEEP:
             initial = builder.sead_sweep(self.package.target)
 
+        # A strike lines up ten miles before the ingress. That was worth a waypoint
+        # when the join was a long way back, but the join sits on the run-in now and
+        # a second point ten miles further along adds nothing but clutter.
         lineup = None
-        if self.flight.flight_type == FlightType.STRIKE:
+        if self.flight.flight_type == FlightType.STRIKE and (
+            join is None
+            or meters(join.position.distance_to_point(ingress.position))
+            > LINEUP_NEEDED_BEYOND
+        ):
             hdg = self.package.target.position.heading_between_point(ingress.position)
-            pos = ingress.position.point_from_heading(hdg, nautical_miles(10).meters)
+            pos = ingress.position.point_from_heading(hdg, LINEUP_DISTANCE.meters)
             lineup = builder.nav(pos, builder.get_combat_altitude)
 
         is_helo = self.flight.is_helo
