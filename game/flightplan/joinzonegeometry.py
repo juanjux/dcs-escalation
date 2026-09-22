@@ -29,17 +29,10 @@ class JoinZoneGeometry:
     The zones themselves are stored in the class rather than just the resulting join
     point so that the zones can be drawn in the map for debugging purposes.
 
-    The join sits in a ring behind the ingress point, between one and two times the
-    doctrine's join distance from it, so it is on the way rather than at a fixed
-    fraction of the straight line home. That fraction put the join off the route
-    whenever the route was not straight -- which is most of the time, and always when
-    the ingress has been pushed out to a stand-off weapon's range -- and the flight
-    had to leave its track to reach the join and turn back onto it afterwards.
-
-    The old ring around home is the fallback, used when the ingress is too close to
-    home for a ring behind it, and when the ring behind it is entirely threatened or
-    outside the turn limit. A short mission then still forms up before setting off
-    rather than over the airfield.
+    This is the fallback for when the route itself cannot be used to place the join
+    (see ``join_along_route``). The join goes in a ring at 35% of the straight line
+    from home to the target, and in a ring behind the ingress when nothing in the
+    first one is usable.
     """
 
     def __init__(
@@ -62,19 +55,16 @@ class JoinZoneGeometry:
         join_distance = coalition.doctrine.join_distance.meters
         self.ip_bubble = self.ip.buffer(join_distance)
 
+        # A ring around home, and a ring behind the ingress to fall back on when
+        # nothing in it is usable.
         total_distance = home.distance_to_point(target)
-        home_to_ip = home.distance_to_point(ip)
-        # A ring behind the ingress, one to two join distances from it, and the old
-        # ring around home to fall back on.
-        self._rings = []
-        if home_to_ip - 2 * join_distance >= total_distance * MIN_JOIN_FRACTION:
-            self._rings.append((self.ip_bubble, self.ip.buffer(2 * join_distance)))
-        self._rings.append(
+        self._rings = [
             (
                 self.home.buffer(total_distance * 0.35),
                 self.home.buffer(total_distance * 0.36),
-            )
-        )
+            ),
+            (self.ip_bubble, self.ip.buffer(2 * join_distance)),
+        ]
 
         ip_distance = ip.distance_to_point(target)
         self.target_bubble = ShapelyPoint(target.x, target.y).buffer(ip_distance)

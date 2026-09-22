@@ -172,7 +172,7 @@
 
 ## Fixes
 * **[FIX]** A strike had a line-up waypoint ten miles from its join, both saying the same thing; only the far-join case keeps it.
-* **[FIX]** The join point sat at a fixed fraction of the straight line home, off the route; it goes just before the ingress now.
+* **[FIX]** The join point sat at a fixed fraction of the straight line home, off the route; it goes a third of the way along the route now.
 * **[FIX]** A carrier recovery got no ALIGN waypoint: the package had no time over target yet when the plan was first built.
 * **[FIX]** Two knots of wind was enough to select a bare runway at a field whose ILS runway was free; in calm air the ILS runway is preferred.
 * **[FIX]** A Maverick-armed package began its attack run 45 nm out: the Mavericks had no launch range, so the planner used the doctrine ceiling.

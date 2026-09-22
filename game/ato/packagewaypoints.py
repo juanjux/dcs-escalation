@@ -20,6 +20,48 @@ if TYPE_CHECKING:
     from game.coalition import Coalition
 
 
+#: How far along the route home the package forms up. The join has to be early
+#: enough that whatever joins there -- an escort, above all -- is with the package for
+#: most of the trip, and it has to be on the route or the flight leaves its track to
+#: reach it.
+JOIN_FRACTION = 0.355
+
+
+def join_along_route(
+    coalition: Coalition, home: Point, ingress: Point
+) -> Optional[Point]:
+    """The point a third of the way along the route from home to the ingress.
+
+    The route is the navmesh path, which is what the flight will fly, so a point on it
+    costs nothing to reach. None when the navmesh cannot path between the two, and the
+    caller falls back to the zone geometry.
+    """
+    try:
+        path = coalition.nav_mesh.shortest_path(home, ingress)
+    except Exception:
+        return None
+    if len(path) < 2:
+        return None
+
+    legs = [(a, b, a.distance_to_point(b)) for a, b in zip(path, path[1:])]
+    total = sum(leg for _, _, leg in legs)
+    if not total:
+        return None
+
+    # Never so far along that it lands on top of the ingress.
+    join_distance = coalition.doctrine.join_distance.meters
+    wanted = min(total * JOIN_FRACTION, max(total - join_distance, 0.0))
+
+    walked = 0.0
+    for a, b, leg in legs:
+        if walked + leg >= wanted:
+            if not leg:
+                return a
+            return a.point_from_heading(a.heading_between_point(b), wanted - walked)
+        walked += leg
+    return path[-2]
+
+
 #: Where the inner edge of the IP ring goes when the outer edge has come below the
 #: doctrine's own floor. It only has to leave the solver somewhere to look: the
 #: solver takes the point furthest from the target that the rules allow, which is
@@ -123,12 +165,15 @@ class PackageWaypoints:
         tgt_point = package.target.position
         initial_point = PackageWaypoints.get_initial_point(ingress_point, tgt_point)
 
-        join_point = JoinZoneGeometry(
-            package.target.position,
-            origin.position,
-            ingress_point,
-            coalition,
-        ).find_best_join_point()
+        join_point = (
+            join_along_route(coalition, origin.position, ingress_point)
+            or JoinZoneGeometry(
+                package.target.position,
+                origin.position,
+                ingress_point,
+                coalition,
+            ).find_best_join_point()
+        )
 
         # Join/split are derived from this base join_point. JoinZoneGeometry
         # fixes the base join distance between 35% and 36% of the home-to-target
