@@ -957,6 +957,9 @@ class Faction:
             self.remove_preset("Sky Sabre Battery")
             self.remove_preset("Sky Sabre Battery (Mobile)")
             self.remove_preset("Stormer HVM Battery")
+        # turkish military assets pack
+        if not mod_settings.turkeymilitaryassetspack:
+            self.remove_aircraft("TB-2 UCAV")
         if not mod_settings.ukrainemilitaryassetspack:
             self.remove_aircraft("CH_Su-24MU")
             self.remove_aircraft("CH_MiG-29MU2")

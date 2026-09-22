@@ -129,6 +129,7 @@ class ModSettings:
     usamilitaryassetspack: bool = False
     ukmilitaryassetspack: bool = False
     ukrainemilitaryassetspack: bool = False
+    turkeymilitaryassetspack: bool = False
     mig31bm_foxhound: bool = False
     VSN_F35: bool = False
 
