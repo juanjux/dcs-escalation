@@ -177,6 +177,10 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
             "[CH] M142 HIMARS (PrSM AShM)": "MLRS M142 HIMARS ATACMS HE [CH]",  # CHAP_M142_ATACMS_M48
             "[CH] Oshkosh FMTV M1083": "Truck M1083 A1P2 MTV [CH]",  # CHAP_M1083
             "[CH] Oshkosh M-ATV MRAP (M2)": "APC MRAP M-ATV [CH]",  # CHAP_MATV
+            # CH UK pack 1.5.0 dropped these two as redundant with the
+            # native DCS units ED shipped.
+            "[CH] Scimitar CRV": "Scout FV107 Scimitar [CH]",  # CHAP_FV107
+            "[CH] Scorpion LT": "LT FV101 Scorpion [CH]",  # CHAP_FV101
         }
 
     @classmethod
