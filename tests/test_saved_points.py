@@ -1,8 +1,7 @@
-"""Points the player writes down for his own aircraft.
+"""Points the player saves for his own aircraft.
 
-A spot on the map is worth noting long before it is worth a flight plan. What matters
-here is that it goes to an aircraft somebody is actually flying, and that an airframe
-is never promised more room than it has.
+What matters here is that a point goes to an aircraft somebody is flying, and
+that an airframe is never offered more room than it has.
 """
 
 from __future__ import annotations
@@ -169,8 +168,8 @@ def test_an_airframe_nobody_measured_is_offered_nothing() -> None:
 
 
 def test_cancelling_the_flight_does_not_lose_what_was_written_down() -> None:
-    """The bug this moved for: three targets written down, the flight re-planned,
-    and the player typing the three of them in again."""
+    """The reported bug: three targets saved, the flight re-planned, and the
+    player typing the three of them in again."""
     squadron = SimpleNamespace()
     cancelled = _flight()
     cancelled.squadron = squadron
@@ -185,7 +184,7 @@ def test_cancelling_the_flight_does_not_lose_what_was_written_down() -> None:
 
 
 def test_another_squadron_is_another_aircraft() -> None:
-    """They follow the aircraft the player flies, not the campaign."""
+    """They follow the aircraft the player flies, not the whole campaign."""
     mine = _flight()
     mine.squadron = SimpleNamespace()
     add_point(cast(Any, mine), _point())
@@ -204,13 +203,13 @@ def test_a_save_written_while_they_were_on_the_flight_moves_them_across() -> Non
     (point,) = points_of(cast(Any, flight))
 
     assert point.name == "SMOKE"
-    # And the flight is not holding a second copy that the next edit would miss.
+    # And the flight is not holding a second copy the next edit would miss.
     assert "saved_points" not in flight.__dict__
     assert flight.squadron.saved_points == [_point(name="SMOKE")]
 
 
 def test_moving_them_across_twice_does_not_write_them_twice() -> None:
-    """Two flights of one squadron out of the same save, each carrying the list."""
+    """Two flights of one squadron from the same save, each carrying the list."""
     squadron = SimpleNamespace()
     first = _flight()
     first.squadron = squadron

@@ -1,8 +1,7 @@
 // The switch that decides whether a click on bare map reports its coordinates.
 //
-// It used to be always on, so every miss -- and half the map is a miss -- opened a
-// popup that had to be dismissed. It is a tool now, like the ruler beside it: off
-// until it is picked up.
+// It was always on, so every stray click opened a popup that had to be dismissed.
+// It works like the ruler beside it now: off until it is switched on.
 import L from "leaflet";
 import { useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
@@ -16,7 +15,7 @@ export default function PickerToggle(props: PickerToggleProps) {
   const map = useMap();
   const bar = useRef<HTMLElement | null>(null);
 
-  // Read through a ref: the control is built once, and the handler it keeps has to
+  // Read through a ref: the control is built once, so the handler it holds has to
   // be the current one rather than the one from the render that built it.
   const toggle = useRef(props.toggle);
   toggle.current = props.toggle;
@@ -55,9 +54,8 @@ export default function PickerToggle(props: PickerToggleProps) {
     bar.current?.classList.toggle("cp-toggle-on", props.on);
   }, [props.on]);
 
-  // The same crosshair the ruler puts up while it is measuring, set the same way it
-  // sets it: the cursor is what tells the player the next click is the tool's and
-  // not the map's.
+  // The same crosshair the ruler shows while measuring, set the same way. The
+  // cursor is what indicates that the next click belongs to the tool.
   useEffect(() => {
     const container = map?.getContainer?.();
     if (!container || !props.on) {

@@ -460,8 +460,8 @@ def test_the_turn_passing_does_nothing_to_him() -> None:
 
 
 def test_a_request_he_made_before_he_was_the_player_is_dropped() -> None:
-    """He asked as an ordinary pilot, then the player took his seat. The request was
-    still in the queue, asking the player to grant himself a week off."""
+    """He requested leave as an ordinary pilot and was then marked as the
+    player. The request stayed in the queue for the player to answer."""
     squadron = _squadron(_live_settings())
     pilot = Pilot("Vega")
     pilot.wants_leave = True

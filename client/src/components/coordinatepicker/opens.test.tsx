@@ -76,8 +76,8 @@ describe("the coordinate popup", () => {
     );
   });
 
-  it("stays out of the way until the tool is picked up", async () => {
-    // Most of the map is a miss, and every miss used to open a popup.
+  it("does nothing until it is switched on", async () => {
+    // Every stray click used to open a popup.
     render(<CoordinatePicker />);
 
     await clickTheMap();
@@ -92,7 +92,7 @@ describe("the coordinate popup", () => {
     expect(mockToggle.on).toBe(false);
   });
 
-  it("putting it down closes the point it had open", async () => {
+  it("switching it off closes the open point", async () => {
     await pickUpTheTool();
     await clickTheMap();
     (global.fetch as jest.Mock).mockClear();
