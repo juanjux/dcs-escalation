@@ -65,6 +65,10 @@ DECK_SPEED = knots(25)
 #: in the way. It stops at the end of it, so the assumed progress is capped there.
 MAX_STEAMED = meters(100000)
 
+#: How far out the hold sits when the setting is missing, which is the
+#: modern doctrine's own figure.
+DEFAULT_HOLD_DISTANCE_NM = 25.0
+
 
 def altitude_for(distance: Distance) -> Distance:
     """Height above the field on a three-degree slope from that distance."""
@@ -192,11 +196,23 @@ def _carrier_waypoint(
     )
 
 
+def hold_distance_from(settings: object, doctrine: Any) -> Distance:
+    """How far out the hold goes: the setting, or the doctrine if it is missing."""
+    configured = getattr(settings, "align_hold_distance_nm", None)
+    if configured is not None:
+        return nautical_miles(float(configured))
+    try:
+        return doctrine.hold_distance
+    except Exception:
+        return nautical_miles(DEFAULT_HOLD_DISTANCE_NM)
+
+
 def hold_point(flight: Flight, doctrine: Any) -> Optional[Point]:
     """Where to hold: on the centreline of the runway the flight takes off from.
 
     Departure and arrival use the same runway, so this is the landing course read
-    forwards. The distance is the doctrine's own hold distance.
+    forwards. The distance is the setting's, which replaces the doctrine's while the
+    option is on.
 
     Returns None when the setting is off or the departure has no runway; the caller
     then falls back to HoldZoneGeometry.
@@ -225,10 +241,7 @@ def hold_point(flight: Flight, doctrine: Any) -> Optional[Point]:
     else:
         return None
 
-    try:
-        distance = doctrine.hold_distance
-    except Exception:
-        return None
+    distance = hold_distance_from(settings, doctrine)
     return departure.position.point_from_heading(course.degrees, distance.meters)
 
 

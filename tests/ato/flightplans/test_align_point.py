@@ -304,3 +304,22 @@ def test_nothing_is_placed_when_the_setting_is_off() -> None:
 
 def test_a_field_with_no_runway_data_holds_where_it_always_did() -> None:
     assert alignpoint.hold_point(_departing(_Airfield(runway="")), DOCTRINE) is None
+
+
+def test_how_far_out_the_hold_sits_is_a_setting() -> None:
+    flight = _departing(_Airfield(heading=90))
+    flight.coalition.game.settings.align_hold_distance_nm = 40.0
+
+    hold = alignpoint.hold_point(flight, DOCTRINE)
+
+    assert hold is not None
+    away = meters(hold.distance_to_point(Point(0, 0, cast(Any, None))))
+    assert away.nautical_miles == pytest.approx(40.0, abs=0.2)
+
+
+def test_without_the_setting_the_doctrine_decides() -> None:
+    """A save written before the setting existed, and any other caller."""
+    assert (
+        alignpoint.hold_distance_from(SimpleNamespace(), DOCTRINE)
+        == DOCTRINE.hold_distance
+    )
