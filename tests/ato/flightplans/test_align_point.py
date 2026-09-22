@@ -251,3 +251,56 @@ def test_a_landing_time_before_the_mission_starts_is_treated_as_zero() -> None:
     assert waypoint is not None
     away = meters(waypoint.position.distance_to_point(Point(0, 0, cast(Any, None))))
     assert away.nautical_miles == pytest.approx(50.0, abs=0.2)
+
+
+# ---------------------------------------------------------------- the hold
+
+
+DOCTRINE = SimpleNamespace(hold_distance=nautical_miles(25))
+
+
+def _departing(arrival: Any, *, on: bool = True, conditions: Any = None) -> Any:
+    flight = _flight(arrival, conditions=conditions)
+    flight.departure = arrival
+    flight.coalition.game.settings.align_hold_with_runway = on
+    return flight
+
+
+def test_the_hold_is_on_the_departure_runway_centreline() -> None:
+    """Runway 09 is flown heading east, so the hold is east of the field."""
+    flight = _departing(_Airfield(heading=90))
+
+    hold = alignpoint.hold_point(flight, DOCTRINE)
+
+    assert hold is not None
+    assert hold.y > 0
+    assert hold.x == pytest.approx(0, abs=200)
+    away = meters(hold.distance_to_point(Point(0, 0, cast(Any, None))))
+    assert away.nautical_miles == pytest.approx(25.0, abs=0.2)
+
+
+def test_the_hold_follows_the_runway_in_use() -> None:
+    flight = _departing(_Airfield(heading=270, runway="27"))
+
+    hold = alignpoint.hold_point(flight, DOCTRINE)
+
+    assert hold is not None
+    assert hold.y < 0
+
+
+def test_a_carrier_holds_on_its_recovery_course() -> None:
+    """Wind from the west, so the ship points west and so does the climb out."""
+    flight = _departing(_Carrier(), conditions=_conditions(from_degrees=270, mps=0.0))
+
+    hold = alignpoint.hold_point(flight, DOCTRINE)
+
+    assert hold is not None
+    assert hold.y < 0
+
+
+def test_nothing_is_placed_when_the_setting_is_off() -> None:
+    assert alignpoint.hold_point(_departing(_Airfield(), on=False), DOCTRINE) is None
+
+
+def test_a_field_with_no_runway_data_holds_where_it_always_did() -> None:
+    assert alignpoint.hold_point(_departing(_Airfield(runway="")), DOCTRINE) is None

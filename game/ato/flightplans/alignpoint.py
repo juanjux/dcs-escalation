@@ -17,6 +17,9 @@ DCS exposes a runway's heading but no coordinates, so the waypoint is placed rel
 to the airfield's reference point. At a field with one runway that is the runway; at a
 field with several the course is correct but the waypoint can be laterally offset.
 
+The hold works the same way at the departure end: the flight climbs out along
+the runway it took off from instead of turning straight for the target.
+
 FARPs have no runway and get nothing.
 """
 
@@ -24,6 +27,8 @@ from __future__ import annotations
 
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Optional
+
+from dcs.mapping import Point
 
 from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
@@ -185,6 +190,46 @@ def _carrier_waypoint(
         ),
         pretty_name="Align with the recovery course",
     )
+
+
+def hold_point(flight: Flight, doctrine: Any) -> Optional[Point]:
+    """Where to hold: on the centreline of the runway the flight takes off from.
+
+    Departure and arrival use the same runway, so this is the landing course read
+    forwards. The distance is the doctrine's own hold distance.
+
+    Returns None when the setting is off or the departure has no runway; the caller
+    then falls back to HoldZoneGeometry.
+    """
+    from game.theater.controlpoint import Airfield, NavalControlPoint
+
+    settings = flight.coalition.game.settings
+    if not bool(getattr(settings, "align_hold_with_runway", False)):
+        return None
+
+    departure = flight.departure
+    conditions = flight.coalition.game.conditions
+    course: Optional[Heading]
+    if isinstance(departure, Airfield):
+        try:
+            runway = departure.active_runway(departure.theater, conditions, {})
+        except Exception:
+            return None
+        if not runway.runway_name:
+            return None
+        course = runway.runway_heading
+    elif isinstance(departure, NavalControlPoint):
+        course = base_recovery_course(conditions)
+        if course is None:
+            return None
+    else:
+        return None
+
+    try:
+        distance = doctrine.hold_distance
+    except Exception:
+        return None
+    return departure.position.point_from_heading(course.degrees, distance.meters)
 
 
 def align_waypoint(flight: Flight, plan: Any = None) -> Optional[FlightWaypoint]:
