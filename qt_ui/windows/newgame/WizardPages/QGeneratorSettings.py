@@ -269,7 +269,7 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 self.turkeymilitaryassetspack,
             ),
             (
-                "CurrentHill Ukraine Military Assets pack (1.1.1)",
+                "CurrentHill Ukraine Military Assets pack (2.0.0)",
                 self.ukrainemilitaryassetspack,
             ),
             ("EA-6B Prowler (v2.9.4.102)", self.ea6b_prowler),
