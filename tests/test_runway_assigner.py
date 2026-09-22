@@ -1,10 +1,4 @@
-"""Which runway the campaign calls the active one.
-
-Two knots of breeze used to be enough to send everybody to a bare strip at a field
-whose instrument runway was sitting there unused -- and at a field with more than one
-strip, to the one the airfield's own reference point is not on, which is what the
-approach course of a flight plan gets drawn through.
-"""
+"""Which runway the campaign reports as active."""
 
 from __future__ import annotations
 
@@ -26,7 +20,7 @@ def _runway(name: str, heading: int, ils: bool = False) -> RunwayData:
     )
 
 
-#: Mount Pleasant: two strips, and the instrument aid is on the second one.
+#: Mount Pleasant: two runways, with the ILS on the second.
 MOUNT_PLEASANT = [
     _runway("23", 230),
     _runway("05", 50),
@@ -41,7 +35,7 @@ def _chosen(
     mps: float,
     runways: list[RunwayData] = MOUNT_PLEASANT,
 ) -> str:
-    """Wind as DCS gives it: the direction it blows towards, in m/s."""
+    """Wind in the form DCS stores it: the direction it blows towards, in m/s."""
     conditions = SimpleNamespace(
         weather=SimpleNamespace(
             wind=SimpleNamespace(
@@ -60,12 +54,12 @@ def _chosen(
 
 
 def test_calm_air_uses_the_instrument_runway(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Two knots from the north-east would otherwise pick 05, which has nothing."""
+    """Two knots from the north-east would otherwise select 05, which has no ILS."""
     assert _chosen(monkeypatch, from_degrees=29, mps=1.0) == "28"
 
 
 def test_a_real_wind_still_decides(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Twenty knots down the 05 is a reason to use it, aid or no aid."""
+    """Twenty knots down runway 05 selects it, ILS or not."""
     assert _chosen(monkeypatch, from_degrees=50, mps=10.0) == "05"
 
 
@@ -85,5 +79,5 @@ def test_calm_air_at_a_field_with_no_aid_still_reads_the_wind(
     assert _chosen(monkeypatch, from_degrees=29, mps=1.0, runways=bare) == "05"
 
 
-def test_the_calm_threshold_is_a_breeze_and_not_a_gale() -> None:
+def test_the_calm_threshold_is_five_knots() -> None:
     assert CALM_WIND == knots(5)

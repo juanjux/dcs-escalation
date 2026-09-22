@@ -1,26 +1,23 @@
-"""A waypoint on the extended centreline, so the last leg is already lined up.
+"""Adds an approach waypoint ahead of the landing waypoint.
 
-The route ends at the field itself, which is a point and not a direction: the flight
-arrives on whatever heading the previous leg happened to leave it on, and lining up
-is the player's problem at the worst moment to have one.
+The route ends at the airfield, which is a position and not a direction, so the final
+leg arrives on whatever heading the previous leg left. This module adds a waypoint on
+the approach course of the active runway, a configurable distance out, so the flight
+is lined up before it gets there.
 
-So a waypoint goes in before it, on the approach course and a few miles out. The
-course is the active runway's, which the campaign already works out from the wind --
-the same answer the kneeboard and the ATC give -- so the point is where the aeroplane
-would be if it were already established.
+The active runway is the campaign's own wind-based choice, the same one used by the
+kneeboard and the ATC.
 
-A carrier gets one too, further out, because that is what a Case III recovery is. Its
-course is the base recovery course, which is simply the reciprocal of the wind, and
-its position is where the ship will have steamed to by the time the flight lands: the
-carrier holds that course for the whole mission, so a flight that arrives late finds
-the point still on the final bearing, only further behind the ship than planned.
+Carriers get the same thing on their base recovery course, which is the reciprocal of
+the wind, positioned where the ship will be when the flight lands. The ship holds that
+course for the whole mission, so a late arrival still finds the waypoint on the final
+bearing, only further from the ship than planned.
 
-DCS gives us the heading of a runway and nothing else about it -- no threshold, no
-centreline -- so the point is drawn through the airfield's own reference point. At a
-field with one strip that is the strip. At a field with several the course is right
-and the line can sit beside the tarmac rather than on it.
+DCS exposes a runway's heading but no coordinates, so the waypoint is placed relative
+to the airfield's reference point. At a field with one runway that is the runway; at a
+field with several the course is correct but the waypoint can be laterally offset.
 
-A FARP has no runway at all, so it gets nothing.
+FARPs have no runway and get nothing.
 """
 
 from __future__ import annotations
@@ -44,30 +41,28 @@ from game.utils import (
 if TYPE_CHECKING:
     from game.ato.flight import Flight
 
-#: How far out it sits, and how high. Three degrees of glideslope is about 300 ft a
-#: mile, which is the number the altitude is worked out from; the floor and ceiling
-#: keep a short or a long setting inside the range a run-in is actually flown at. The
-#: ceiling is also where a Case III marshal sits, which is what fifty miles of slope
-#: comes to anyway.
+#: Default distance from the field. The altitude follows from it: a three-degree
+#: glideslope is about 300 ft per nautical mile, and the floor and ceiling keep the
+#: result within the range an approach is flown at. The ceiling also matches a Case III
+#: marshal altitude, which is what 50 nm on the slope works out to.
 DEFAULT_DISTANCE_NM = 15.0
 DEFAULT_CARRIER_DISTANCE_NM = 50.0
 FEET_PER_NAUTICAL_MILE = 300.0
 MIN_ALTITUDE_FT = 1500.0
 MAX_ALTITUDE_FT = 6000.0
 
-#: What the mission generator gives a carrier group: twenty-five knots over the deck,
-#: which it makes by steaming at that less whatever the wind is doing for it. Read
-#: here as well so the point lands where the ship will actually be.
+#: What the mission generator gives a carrier group: 25 knots over the deck, made by
+#: steaming at 25 knots less whatever the wind provides. Read here as well so the
+#: waypoint matches where the ship will actually be.
 DECK_SPEED = knots(25)
 
-#: And how far it sends her: one leg of a hundred kilometres, shortened where there is
-#: land in the way. She stops at the end of it, so a long mission's marshal is not put
-#: any further out than that.
+#: The generator gives the ship a single leg of 100 km, shortened where there is land
+#: in the way. It stops at the end of it, so the assumed progress is capped there.
 MAX_STEAMED = meters(100000)
 
 
 def altitude_for(distance: Distance) -> Distance:
-    """Height above the field, on a three-degree slope from that far out."""
+    """Height above the field on a three-degree slope from that distance."""
     on_the_slope = distance.nautical_miles * FEET_PER_NAUTICAL_MILE
     return feet(min(MAX_ALTITUDE_FT, max(MIN_ALTITUDE_FT, on_the_slope)))
 
@@ -91,10 +86,10 @@ def carrier_distance_from(settings: object) -> Distance:
 
 
 def base_recovery_course(conditions: Any) -> Optional[Heading]:
-    """Where the ship points: into the wind, which is the reciprocal of it.
+    """The ship's course: into the wind, so the reciprocal of the wind vector.
 
-    The same reading the mission generator takes when it sets the carrier's course,
-    so the point and the ship agree.
+    Takes the same reading as the mission generator when it sets the ship's course,
+    so the waypoint and the ship agree.
     """
     try:
         wind = conditions.weather.wind.at_0m
@@ -104,7 +99,7 @@ def base_recovery_course(conditions: Any) -> Optional[Heading]:
 
 
 def steaming_speed(conditions: Any) -> Speed:
-    """Twenty-five knots over the deck, less what the wind provides."""
+    """25 knots over the deck, less whatever the wind provides."""
     try:
         made_good = DECK_SPEED - mps(conditions.weather.wind.at_0m.speed)
     except Exception:
@@ -122,11 +117,12 @@ def _airfield_waypoint(
     except Exception:
         return None
     if not runway.runway_name:
-        # A stub, which is what a field with no runways in its data answers with.
+        # A stub, which is what a field with no runways in its data returns.
         return None
 
     distance = distance_from(settings)
-    # The approach course is the runway's heading, so the fix is that far back down it.
+    # The approach course is the runway heading, so the waypoint goes that distance
+    # back along its reciprocal.
     position = arrival.position.point_from_heading(
         runway.runway_heading.opposite.degrees, distance.meters
     )
@@ -142,11 +138,11 @@ def _airfield_waypoint(
 
 
 def _recovery_delay(plan: Any, conditions: Any) -> Optional[timedelta]:
-    """How long after the mission starts this flight comes home.
+    """Time from mission start to this flight's landing.
 
-    Read off the plan as it stands, which is one waypoint short of the finished one:
-    the leg this adds is worth a minute or two of the ship's progress, and the point
-    stays on the final bearing either way.
+    Read off the plan as built, which is one waypoint short of the finished one. The
+    leg this adds is worth a minute or two of the ship's progress and does not move
+    the waypoint off the final bearing.
     """
     try:
         return plan.landing_time - conditions.start_time
@@ -178,18 +174,18 @@ def _carrier_waypoint(
         altitude_for(distance),
         alt_type="RADIO",
         description=(
-            f"On {arrival.name}'s final bearing {course.degrees:03}, "
-            f"{distance.nautical_miles:.0f} nm astern of where she will be"
+            f"{arrival.name} final bearing {course.degrees:03}, "
+            f"{distance.nautical_miles:.0f} nm astern of its projected position"
         ),
         pretty_name="Align with the recovery course",
     )
 
 
 def align_waypoint(flight: Flight, plan: Any = None) -> Optional[FlightWaypoint]:
-    """The waypoint, or None when this flight is not one to have one.
+    """The waypoint, or None if this flight does not get one.
 
-    Guarded throughout: a flight plan that cannot be given an approach fix is a flight
-    plan that goes without one, never one that fails to build.
+    Fully guarded: a flight plan that cannot be given an approach waypoint goes
+    without one rather than failing to build.
     """
     from game.theater.controlpoint import Airfield, NavalControlPoint
 
@@ -205,10 +201,10 @@ def align_waypoint(flight: Flight, plan: Any = None) -> Optional[FlightWaypoint]
 
 
 def add_to(flight: Flight, plan: Any) -> None:
-    """Put one at the end of the way home, if this flight is to have one."""
+    """Append the waypoint to the end of the return leg, if this flight gets one."""
     nav_from = getattr(getattr(plan, "layout", None), "nav_from", None)
     if nav_from is None:
-        # Not a layout that flies home along a nav leg -- a custom plan, say.
+        # Not a layout with a nav leg home, e.g. a custom plan.
         return
     waypoint = align_waypoint(flight, plan)
     if waypoint is not None:

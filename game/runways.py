@@ -20,10 +20,8 @@ if TYPE_CHECKING:
     from game.theater import ConflictTheater
 
 
-#: Under this there is no headwind worth chasing, so the runway with the approach
-#: aid is the one to use -- which is what a real field does in calm air, and what a
-#: flight plan's approach course should be lined up with. Above it the wind decides,
-#: as it did before.
+#: Below this there is no meaningful headwind to choose between runways, so the one
+#: with an approach aid is preferred. Above it the wind decides.
 CALM_WIND: Speed = knots(5)
 
 
@@ -127,18 +125,17 @@ class RunwayAssigner:
     ) -> RunwayData:
         """Returns the preferred runway for the given airport.
 
-        The wind decides, and where there is no wind to speak of the approach aid
-        does: two knots of breeze used to be enough to send everybody to a runway
-        with nothing on it, at a field whose instrument runway was sitting there
-        unused.
+        The wind decides. Below CALM_WIND there is no meaningful headwind to choose
+        between runways, so an ILS-equipped runway is preferred instead: two knots of
+        wind was otherwise enough to select a bare runway at a field whose instrument
+        runway was unused.
         """
         runways = list(RunwayData.for_pydcs_airport(theater, airport))
 
         if mps(self.conditions.weather.wind.at_0m.speed) < CALM_WIND:
             instrument = [runway for runway in runways if runway.ils is not None]
             if instrument:
-                # Still the most into what little wind there is, of the ones that
-                # have the aid.
+                # Of those, the one most into what wind there is.
                 return min(instrument, key=lambda r: self.angle_off_headwind(r).degrees)
 
         # Find the runway with the best headwind first.
