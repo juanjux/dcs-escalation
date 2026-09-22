@@ -14,6 +14,7 @@ from game.theater import MissionTarget, TheaterGroundObject
 from game.theater import MissionTarget
 from game.theater.theatergroundobject import MotorpoolGroundObject
 from game.utils import meters, nautical_miles, Speed, feet
+from . import alignpoint
 from .refuelneed import needs_refuelling
 from .flightplan import FlightPlan
 from .formation import FormationFlightPlan, FormationLayout
@@ -409,6 +410,9 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
 
     def _hold_point(self) -> Point:
         assert self.package.waypoints is not None
+        aligned = alignpoint.hold_point(self.flight, self.coalition.doctrine)
+        if aligned is not None:
+            return aligned
         origin = self.flight.departure.position
         target = self.package.target.position
         join = self.package.waypoints.join
