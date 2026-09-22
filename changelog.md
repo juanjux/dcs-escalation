@@ -180,6 +180,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** A supply route or shipping lane whose two ends are the same base is skipped and named in the log. Five shipped campaigns carried one. (adapted from the RetLab fork)
 * **[FIX]** US Super Hornets called with Australia's callsigns. The mod ships four pools and the extension carried one, holding the RAAF names. (adapted from the RetLab fork)
 * **[FIX]** A SEAD flight got one steerpoint per unit at the objective, fuel bowsers included, and the kneeboard page listed them. It gets the site's emitters now; DEAD still gets every unit. (adapted from the RetLab fork)
 * **[FIX]** The selected pilot in the roster is boxed and takes a wider bar. With friendship on, every other row carries a wash of its own and a three-pixel bar was lost among them.
