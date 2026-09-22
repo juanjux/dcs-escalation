@@ -92,33 +92,6 @@ Still to come:
 
   <img src="https://raw.githubusercontent.com/juanjux/dcs-escalation/juanjux/screenshots/airwing-redesign.png" width="760">
 
-- **Coordinates anywhere on the map, in the format of choice.** A picker reads any
-  point, the objective dialog gives the coordinates of every unit and building, and both
-  copy to the clipboard. DMS, decimal minutes, decimal degrees and MGRS, set on the new
-  General settings page.
-  ([#296](https://github.com/juanjux/dcs-escalation/pull/296))
-
-- **A point on the map can be saved into the player's aircraft**, as a waypoint or a
-  markpoint, with the height of the ground under it looked up from an open elevation
-  model. Mostly useful for targets: a fleet's last reported position, a power station,
-  anything the flight plan does not already pass through.
-
-  They are kept **out of the route**, so they cannot collide with the flight plan the
-  mission generated. The Hornet and the Viper get them numbered after the last route
-  waypoint and on route sequence 2 -- SEQ1 is still the route. The A-10, whose navigation
-  computer works differently, gets them on a flight plan of its own called EXTRA, leaving
-  MSN untouched.
-
-- **A window for what you are flying this turn**, opened with *Playable aircraft* on
-  the top panel: each aircraft with its squadron and package, and the points saved to it, which
-  can also be typed or pasted in by hand instead of clicked on the map. They also get a kneeboard page of their own.
-  ([#343](https://github.com/juanjux/dcs-escalation/pull/343),
-  [#354](https://github.com/juanjux/dcs-escalation/pull/354),
-  [#360](https://github.com/juanjux/dcs-escalation/pull/360),
-  [#364](https://github.com/juanjux/dcs-escalation/pull/364))
-
-  <img src="https://raw.githubusercontent.com/juanjux/dcs-escalation/juanjux/screenshots/playable-aircraft.png" width="760">
-
 ## IADS Reworked
 
 - **Custom Skynetfork**, [juanjux/Skynet-IADS](https://github.com/juanjux/Skynet-IADS): upstream 3.3.0 with its
@@ -155,6 +128,33 @@ Still to come:
 
 
 ## Missions, AI & tasking
+- **Coordinates anywhere on the map, in the format of choice.** A picker reads any
+  point, the objective dialog gives the coordinates of every unit and building, and both
+  copy to the clipboard. DMS, decimal minutes, decimal degrees and MGRS, set on the new
+  General settings page.
+  ([#296](https://github.com/juanjux/dcs-escalation/pull/296))
+
+- **A point on the map can be saved into the player's aircraft**, as a waypoint or a
+  markpoint, with the height of the ground under it looked up from an open elevation
+  model. Mostly useful for targets: a fleet's last reported position, a power station,
+  anything the flight plan does not already pass through.
+
+  They are kept **out of the route**, so they cannot collide with the flight plan the
+  mission generated. The Hornet and the Viper get them numbered after the last route
+  waypoint and on route sequence 2 -- SEQ1 is still the route. The A-10, whose navigation
+  computer works differently, gets them on a flight plan of its own called EXTRA, leaving
+  MSN untouched.
+
+- **A window for what you are flying this turn**, opened with *Playable aircraft* on
+  the top panel: each aircraft with its squadron and package, and the points saved to it, which
+  can also be typed or pasted in by hand instead of clicked on the map. They also get a kneeboard page of their own.
+  ([#343](https://github.com/juanjux/dcs-escalation/pull/343),
+  [#354](https://github.com/juanjux/dcs-escalation/pull/354),
+  [#360](https://github.com/juanjux/dcs-escalation/pull/360),
+  [#364](https://github.com/juanjux/dcs-escalation/pull/364))
+
+  <img src="https://raw.githubusercontent.com/juanjux/dcs-escalation/juanjux/screenshots/playable-aircraft.png" width="760">
+
 - **A flight can arrive lined up with the runway.** The route ends at the airfield,
   which is a point and not a direction, so the last leg arrives on whatever heading the
   one before it left. An optional ALIGN waypoint goes on the approach course of the
