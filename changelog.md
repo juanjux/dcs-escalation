@@ -181,6 +181,9 @@
 
 ## Fixes
 * **[FIX]** The leg from the join to the ingress is flown at the package's speed, like the rest of the formation route. It was priced per flight, so an escort on a faster airframe arrived first. (adapted from the RetLab fork)
+* **[FIX]** A supply route or shipping lane whose two ends are the same base is skipped and named in the log. Five shipped campaigns carried one. (adapted from the RetLab fork)
+* **[FIX]** US Super Hornets called with Australia's callsigns. The mod ships four pools and the extension carried one, holding the RAAF names. (adapted from the RetLab fork)
+* **[FIX]** A SEAD flight got one steerpoint per unit at the objective, fuel bowsers included, and the kneeboard page listed them. It gets the site's emitters now; DEAD still gets every unit. (adapted from the RetLab fork)
 * **[FIX]** The selected pilot in the roster is boxed and takes a wider bar. With friendship on, every other row carries a wash of its own and a three-pixel bar was lost among them.
 * **[FIX]** The High Digit SAMs 40B6M track radar was declared under an id no build of the mod registers, so DCS dropped it from any site that used it.
 * **[FIX]** A combo box's dropdown was a lighter blue than the one the searchable combo opens, so two lists in the same dialog did not match.

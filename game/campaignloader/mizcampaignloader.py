@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import logging
 from functools import cached_property
 from pathlib import Path
 from typing import Iterator, List, TYPE_CHECKING, Tuple, Optional
@@ -486,6 +487,28 @@ class MizCampaignLoader:
             )
         )
 
+    @staticmethod
+    def _binds_one_control_point(
+        kind: str, name: str, origin: ControlPoint, destination: ControlPoint
+    ) -> bool:
+        """True when both ends of an authored route resolve to the same base.
+
+        A single-waypoint path group, or a road drawn back onto its own field, binds a
+        base to itself: each end is matched to the nearest control point on its own, so
+        nothing notices they are the same one. The self-entry then lists a base among
+        its own neighbours, and asking the transit network to route a base to itself
+        returns an empty path that the transport planner indexes unguarded.
+        """
+        if origin is not destination:
+            return False
+        logging.warning(
+            "%s '%s' begins and ends at %s - skipped (both ends bind one base)",
+            kind,
+            name,
+            origin.name,
+        )
+        return True
+
     def add_supply_routes(self) -> None:
         for group in self.front_line_path_groups:
             # The unit will have its first waypoint at the source CP and the final
@@ -502,6 +525,11 @@ class MizCampaignLoader:
                 raise RuntimeError(
                     f"No control point near the final waypoint of {group.name}"
                 )
+
+            if self._binds_one_control_point(
+                "supply route", group.name, origin, destination
+            ):
+                continue
 
             o_spawns = self._construct_cp_spawnpoints(waypoints[0])
             d_spawns = self._construct_cp_spawnpoints(waypoints[-1])
@@ -529,6 +557,11 @@ class MizCampaignLoader:
                 raise RuntimeError(
                     f"No control point near the final waypoint of {group.name}"
                 )
+
+            if self._binds_one_control_point(
+                "shipping lane", group.name, origin, destination
+            ):
+                continue
 
             self.control_points[origin.id].create_shipping_lane(destination, waypoints)
             self.control_points[destination.id].create_shipping_lane(

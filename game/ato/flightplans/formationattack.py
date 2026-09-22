@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, TypeVar
 from dcs import Point
 
 from game.flightplan import HoldZoneGeometry
-from game.theater import MissionTarget, TheaterGroundObject
+from game.theater import MissionTarget, TheaterGroundObject, TheaterUnit
 from game.theater import MissionTarget
 from game.theater.theatergroundobject import MotorpoolGroundObject
 from game.utils import meters, nautical_miles, Speed, feet
@@ -373,8 +373,17 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
         target also gets its own TARGET_POINT waypoint in the aircraft, making it
         trivial to designate with TOO.
         """
+        return FormationAttackBuilder._targets_from(location.strike_targets)
+
+    @staticmethod
+    def sead_targets_for(location: TheaterGroundObject) -> list[StrikeTarget]:
+        """As above, but only the emitters: see `TheaterGroundObject.sead_targets`."""
+        return FormationAttackBuilder._targets_from(location.sead_targets)
+
+    @staticmethod
+    def _targets_from(units: list[TheaterUnit]) -> list[StrikeTarget]:
         targets: list[StrikeTarget] = []
-        for idx, unit in enumerate(location.strike_targets):
+        for idx, unit in enumerate(units):
             # Vehicles read better as their type ("Patriot ln #3"); statics carry the
             # objective in their name ("Factory Zaragoza-2"), which beats the DCS type.
             name = unit.type.id if unit.unit_type is not None else unit.name

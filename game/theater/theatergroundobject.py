@@ -9,7 +9,7 @@ from dcs.mapping import Point
 from shapely.geometry import Point as ShapelyPoint
 
 from game.config import IADS_REPAIR_COST, REWARDS
-from game.data.units import UnitClass
+from game.data.units import SEAD_TARGET_UNIT_CLASSES, UnitClass
 from game.ground_forces.ai_ground_planner import reserve_armor_for
 from game.sidc import (
     Entity,
@@ -330,6 +330,25 @@ class TheaterGroundObject(MissionTarget, SidcDescribable, ABC):
     @property
     def strike_targets(self) -> list[TheaterUnit]:
         return [unit for unit in self.units if unit.alive]
+
+    @property
+    def sead_targets(self) -> list[TheaterUnit]:
+        """The emitters of this site, for a flight that shoots at radars.
+
+        A unit whose type does not resolve is kept: an unregistered mod radar is
+        unknown, not absent. Falls back to the full roster when nothing matches, so a
+        SEAD flight fragged by hand onto a site with no emitter still has a target.
+        """
+        emitters = []
+        for unit in self.strike_targets:
+            try:
+                unit_class = unit.unit_type.unit_class if unit.unit_type else None
+            except StopIteration:
+                emitters.append(unit)
+                continue
+            if unit_class is None or unit_class in SEAD_TARGET_UNIT_CLASSES:
+                emitters.append(unit)
+        return emitters or self.strike_targets
 
     @property
     def mark_locations(self) -> Iterator[Point]:
