@@ -1,7 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[Mods]** Support for the CurrentHill German Military Assets pack (1.5.0), behind a New Game checkbox: 25 units from the Leopard 2A7V to the Sachsen frigate, with the combat ones in the modern NATO faction. The Patriot KAT1 battery moved here from the USA pack.
+* **[Mods]** Support for the CurrentHill German Military Assets pack (1.5.0), behind a New Game checkbox: 25 units from the Leopard 2A7V to the Sachsen frigate, with the combat ones in the modern NATO faction. The Patriot KAT1 battery moved here from the USA pack. Two batteries can be generated and bought: Skyshield C-RAM, and FlaRakRad with IRIS-T SLS.
 * **[Mission Generator]** Optional ALIGN waypoint before landing, on the approach course of the active runway, or on a carrier's recovery course at its projected position. The hold point can be put on the departure runway's centreline the same way, at a settable distance.
 * **[Live Pilots]** Being disliked is noticed too: each point the other man is below him adds to his chance of cooling, mirroring the warming bonus. 5% a point, a new setting.
 * **[UI]** The map's GPS picker is a tool you switch on, like the ruler, instead of answering every stray click, and the map wears the same crosshair while it is on.

@@ -1,0 +1,7 @@
+name: FlaRakRad Battery
+tasks:
+  - SHORAD
+units:
+  - "[CH] FlaRakRad SHORAD"
+layouts:
+  - 2 Launcher Site

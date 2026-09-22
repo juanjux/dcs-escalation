@@ -1,0 +1,8 @@
+name: Skyshield C-RAM Battery
+tasks:
+  - AAA
+units:
+  - "[CH] Skyshield C-RAM STR"
+  - "[CH] Skyshield C-RAM Gun"
+layouts:
+  - Skyshield C-RAM Battery

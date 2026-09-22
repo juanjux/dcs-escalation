@@ -962,6 +962,8 @@ class Faction:
             self.remove_vehicle("CH_HX81_Tractor")
             self.remove_vehicle("CH_Zetros6x6")
             self.remove_ship("CH_F124")
+            self.remove_preset("Skyshield C-RAM Battery")
+            self.remove_preset("FlaRakRad Battery")
         if not mod_settings.ukmilitaryassetspack:
             self.remove_vehicle("CH_Ajax")
             self.remove_vehicle("CH_AS90")
