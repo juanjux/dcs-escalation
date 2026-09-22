@@ -236,8 +236,14 @@ class TheaterState(WorldState["TheaterState"]):
             if not bp.blocking_capture or cp.is_fleet
         ]
 
-        aewc_targets = [cp for cp in finder.friendly_control_points() if cp.is_carrier]
-        aewc_targets.append(finder.farthest_friendly_control_point())
+        aewc_targets: list[MissionTarget] = [
+            cp for cp in finder.friendly_control_points() if cp.is_carrier
+        ]
+        # One station per boat, plus one over land. The land pick can be a base that
+        # is already a station, and planning it twice puts two racetracks on it.
+        land_station = finder.farthest_friendly_airfield()
+        if land_station is not None and land_station not in aewc_targets:
+            aewc_targets.append(land_station)
 
         enemy_air_defenses = list(finder.enemy_air_defenses())
         enemy_ships = list(finder.enemy_ships())
