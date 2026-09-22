@@ -1,0 +1,9 @@
+class: Artillery
+description: "The same howitzer firing the M982 Excalibur, a GPS-guided shell that reaches further and lands within a few metres."
+introduced: 2007
+manufacturer: Krauss-Maffei Wegmann
+origin: Germany
+price: 30
+role: Self-Propelled Howitzer
+variants:
+  "[CH] PzH 2000 SPG M982 Excalibur": null

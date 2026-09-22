@@ -1,0 +1,9 @@
+class: IFV
+description: "The Puma is the Marder's successor: a 30 mm autocannon, a Spike LR launcher and modular armour that can be flown in at reduced weight."
+introduced: 2021
+manufacturer: PSM
+origin: Germany
+price: 14
+role: Infantry Fighting Vehicle
+variants:
+  "[CH] Puma A1 IFV": null

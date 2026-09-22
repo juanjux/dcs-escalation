@@ -1,0 +1,9 @@
+class: SearchRadar
+description: "The Skyshield fire control unit: a search and track radar with an electro-optical sight that directs the system's guns."
+introduced: 2010
+manufacturer: Rheinmetall
+origin: Germany
+price: 24
+role: Fire Control Radar
+variants:
+  "[CH] Skyshield C-RAM STR": null

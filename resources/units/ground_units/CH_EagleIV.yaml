@@ -1,0 +1,9 @@
+class: APC
+description: "The Eagle IV is a mine-resistant patrol vehicle on a Duro chassis, used by the German Army for protected transport and reconnaissance."
+introduced: 2008
+manufacturer: General Dynamics European Land Systems
+origin: Germany
+price: 5
+role: MRAP
+variants:
+  "[CH] Eagle IV MRAP": null

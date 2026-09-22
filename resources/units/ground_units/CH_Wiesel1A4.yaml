@@ -1,0 +1,9 @@
+class: IFV
+description: "The Wiesel 1 is a tracked weapons carrier light enough to be carried by helicopter; the A4 mounts a 20 mm autocannon."
+introduced: 1990
+manufacturer: Rheinmetall
+origin: Germany
+price: 6
+role: Air-portable Weapons Carrier
+variants:
+  "[CH] Wiesel 1A4 AWC": null

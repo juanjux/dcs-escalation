@@ -1,0 +1,9 @@
+class: Frigate
+description: "The Sachsen class is the German Navy's air-defence frigate, with the APAR and SMART-L radars and a Mk 41 cell of SM-2 and ESSM missiles."
+introduced: 2004
+manufacturer: Blohm+Voss
+origin: Germany
+price: 0
+role: Guided Missile Frigate
+variants:
+  "[CH] F124 Sachsen Frigate": null

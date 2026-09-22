@@ -1,0 +1,9 @@
+class: AAA
+description: "Skynex is a 35 mm revolver gun on an HX truck firing programmable airburst rounds against drones, rockets and mortar bombs."
+introduced: 2023
+manufacturer: Rheinmetall
+origin: Germany
+price: 26
+role: Counter-Rocket and Mortar
+variants:
+  "[CH] Skynex HX SPAAG": null

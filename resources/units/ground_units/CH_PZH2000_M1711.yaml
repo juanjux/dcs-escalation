@@ -1,0 +1,9 @@
+class: Artillery
+description: "The PzH 2000 is a 155 mm self-propelled howitzer with an automatic loader; this one fires the M1711 base-bleed round."
+introduced: 1998
+manufacturer: Krauss-Maffei Wegmann
+origin: Germany
+price: 25
+role: Self-Propelled Howitzer
+variants:
+  "[CH] PzH 2000 SPG M1711": null

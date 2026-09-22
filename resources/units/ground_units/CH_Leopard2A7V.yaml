@@ -1,0 +1,9 @@
+class: Tank
+description: "The Leopard 2A7V is the German Army's current Leopard 2 standard, with the longer L/55A1 gun, added belly and turret protection and a new sight."
+introduced: 2021
+manufacturer: Krauss-Maffei Wegmann
+origin: Germany
+price: 28
+role: Main Battle Tank
+variants:
+  "[CH] Leopard 2A7V MBT": null

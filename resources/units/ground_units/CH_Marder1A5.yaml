@@ -1,0 +1,9 @@
+class: IFV
+description: "The Marder 1A5 is the mine-protected late standard of the German Army's first IFV, armed with a 20 mm autocannon and MILAN missiles."
+introduced: 2004
+manufacturer: Rheinmetall
+origin: Germany
+price: 10
+role: Infantry Fighting Vehicle
+variants:
+  "[CH] Marder 1A5 IFV": null
