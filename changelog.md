@@ -180,6 +180,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** Live weather could brief a wind DCS will not fly. A real jet stream beats the sim's 97-knot ceiling, and only the generated wind was held to it. (found in the RetLab fork)
 * **[FIX]** A supply route or shipping lane whose two ends are the same base is skipped and named in the log. Five shipped campaigns carried one. (adapted from the RetLab fork)
 * **[FIX]** US Super Hornets called with Australia's callsigns. The mod ships four pools and the extension carried one, holding the RAAF names. (adapted from the RetLab fork)
 * **[FIX]** A SEAD flight got one steerpoint per unit at the objective, fuel bowsers included, and the kneeboard page listed them. It gets the site's emitters now; DEAD still gets every unit. (adapted from the RetLab fork)
