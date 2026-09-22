@@ -600,7 +600,7 @@ class Faction:
             self.remove_aircraft("EA-18G")
         # spanish naval assets pack
         if not mod_settings.spanishnavypack:
-            self.remove_ship("L61")
+            self.remove_ship("L61SP")
             self.remove_ship("F100")
             self.remove_ship("F105")
             self.remove_ship("L52")

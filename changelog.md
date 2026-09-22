@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mods]** The Spanish Naval Assets pack is declared at desdemicabina 3.3.0, and the Juan Carlos I is the single-player hull the release added, whose deck elevators move.
 * **[Mods]** CurrentHill UK pack 1.5.0: the Scimitar and the Scorpion are gone from the mod, which ED now ships itself. Campaigns in progress move to the DCS units.
 * **[Mods]** The CurrentHill Russia and Sweden packs are declared at 2.0.1 and 1.5.0. Neither release added, removed or renamed a unit.
 * **[Mission Generator]** Optional ALIGN waypoint before landing, on the approach course of the active runway, or on a carrier's recovery course at its projected position. The hold point can be put on the departure runway's centreline the same way, at a settable distance.
