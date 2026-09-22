@@ -3,12 +3,12 @@ from dcs.unittype import ShipType
 from game.modsupport import shipmod
 
 
-# Pack 3.3.0 also ships an "L61SP" hull. It is the same ship with an alarm-state
-# animation added for single player, so it is deliberately not declared here: a second
-# Juan Carlos I in every ship list buys nothing.
+# Pack 3.3.0's "L61SP" hull: the same ship with the alarm-state animation that drives
+# the deck elevators, which the plain L61 does not have. Same name, so a save and every
+# faction that names the Juan Carlos I keep working; only the type DCS spawns changes.
 @shipmod
 class L61(ShipType):
-    id = "L61"
+    id = "L61SP"
     name = "L61 Juan Carlos I"
     plane_num = 40
     helicopter_num = 36
