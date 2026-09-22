@@ -2,6 +2,10 @@
 
 ## Features/Improvements
 * **[Mods]** Support for the CurrentHill Turkey Military Assets pack (2.0.0), behind a New Game checkbox: the Bayraktar TB2 with its MAM-C and MAM-L munitions, flying CAS, BAI and armed recon for Ukraine 2020.
+* **[Mods]** The Su-35S is declared at v2.0.37b. Every store the fork puts on a pylon is still one the mod offers.
+* **[Mods]** The Spanish Naval Assets pack is declared at desdemicabina 3.3.0, and the Juan Carlos I is the single-player hull the release added, whose deck elevators move.
+* **[Mods]** CurrentHill UK pack 1.5.0: the Scimitar and the Scorpion are gone from the mod, which ED now ships itself. Campaigns in progress move to the DCS units.
+* **[Mods]** The CurrentHill Russia and Sweden packs are declared at 2.0.1 and 1.5.0. Neither release added, removed or renamed a unit.
 * **[Mission Generator]** Optional ALIGN waypoint before landing, on the approach course of the active runway, or on a carrier's recovery course at its projected position. The hold point can be put on the departure runway's centreline the same way, at a settable distance.
 * **[Live Pilots]** Being disliked is noticed too: each point the other man is below him adds to his chance of cooling, mirroring the warming bonus. 5% a point, a new setting.
 * **[UI]** The map's GPS picker is a tool you switch on, like the ruler, instead of answering every stray click, and the map wears the same crosshair while it is on.
@@ -67,7 +71,7 @@
 * **[Plugins]** Mission Log: *monitoring* is off by default, a ground kill carries the same "enemy" prefix an aircraft already had, and SHOT DOWN / CRASHED / EJECTED / DESTROYED are shouted so a kill does not read like a takeoff.
 * **[UI]** The Edit Flight dialog was redrawn: a header naming the aircraft, squadron, package and target, cards instead of group boxes, a button per seat with its pilot's name, and a fuel bar against what the aircraft carries.
 * **[UI]** The flight editor is no longer modal and follows the flight picked: a selector in its header lists the package's other flights, and clicking one in the main window's Flights list switches the open editor to it.
-* **[UI]** Long combo lists -- payload presets in the flight creator and the payload tab, liveries, predefined waypoints and every pylon's own store list, which runs to seventy-five stores on a Hornet -- open with a search field; below a dozen items they keep the ordinary popup.
+* **[UI]** Long combo lists -- payload presets in the flight creator and the payload tab, liveries, predefined waypoints, every pylon's own store list, which runs to seventy-five stores on a Hornet, and the faction editor's add-a-unit lists -- open with a search field; below a dozen items they keep the ordinary popup.
 * **[UI]** Adding waypoints by hand is greyed out for a flight with an AI seat in it and says how many; JTAC laser codes are only offered when the campaign is generating JTACs.
 * **[Campaign AI]** The flight editor asks again on the way out when an edit has left the flight short of fuel, or given it fuel to spare, offering *Add waypoint and tanker* or *Add waypoint only* — with the first greyed out and the reason on screen when there is nothing to send. Saying yes does not rebuild the plan.
 * **[Campaign AI]** One *Plan a tanker and a refuelling waypoint when a package needs the fuel* option replaces the three per-task ones, and the refuelling waypoint is only added to a flight the fuel estimate says cannot make the plan.
@@ -172,6 +176,9 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** The selected pilot in the roster is boxed and takes a wider bar. With friendship on, every other row carries a wash of its own and a three-pixel bar was lost among them.
+* **[FIX]** The High Digit SAMs 40B6M track radar was declared under an id no build of the mod registers, so DCS dropped it from any site that used it.
+* **[FIX]** A combo box's dropdown was a lighter blue than the one the searchable combo opens, so two lists in the same dialog did not match.
 * **[FIX]** A strike had a line-up waypoint ten miles before its ingress, which said nothing the ingress did not.
 * **[FIX]** A strike had a line-up waypoint ten miles from its join, both saying the same thing; only the far-join case keeps it.
 * **[FIX]** The join point sat at a fixed fraction of the straight line home, off the route; it goes a third of the way along the route now.

@@ -249,11 +249,11 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 self.iranmilitaryassetspack,
             ),
             (
-                "CurrentHill Russian Military Assets pack (2.0.0)",
+                "CurrentHill Russian Military Assets pack (2.0.1)",
                 self.russianmilitaryassetspack,
             ),
             (
-                "CurrentHill Swedish Military Assets pack (1.10)",
+                "CurrentHill Swedish Military Assets pack (1.5.0)",
                 self.swedishmilitaryassetspack,
             ),
             (
@@ -261,7 +261,7 @@ class GeneratorOptions(QtWidgets.QWizardPage):
                 self.usamilitaryassetspack,
             ),
             (
-                "CurrentHill UK Military Assets pack (1.1.2)",
+                "CurrentHill UK Military Assets pack (1.5.0)",
                 self.ukmilitaryassetspack,
             ),
             (
@@ -311,11 +311,11 @@ class GeneratorOptions(QtWidgets.QWizardPage):
             ("OH-6 Vietnam Asset Pack (v1.0)", self.oh_6_vietnamassetpack),
             ("OV-10A Bronco", self.ov10a_bronco),
             ("Saab 105/SK-60B (v1.2.1)", self.sk_60),
-            ("Spanish Naval Assets pack (desdemicabina 3.2.0)", self.spanishnavypack),
+            ("Spanish Naval Assets pack (desdemicabina 3.3.0)", self.spanishnavypack),
             ("Star Wars Modpack 2.54+", self.SWPack),
             ("Su-15 Flagon (v1.0)", self.su15_flagon),
             ("Su-30 Flanker-H (v2.8.04b + CWS 3.72)", self.su30_flanker_h),
-            ("Su-35S Flanker-M (v2.0.27b)", self.su35s_flanker_m),
+            ("Su-35S Flanker-M (v2.0.37b)", self.su35s_flanker_m),
             ("Su-57 Felon (build-04)", self.su57_felon),
             ("Super Étendard (v2.5.5)", self.super_etendard),
             ("Tornado F3 ADV (1.0)", self.tornado_adv),
