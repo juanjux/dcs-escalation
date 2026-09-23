@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -65,6 +66,18 @@ class Front:
 
     name: str
     points: tuple[tuple[float, float], ...]
+
+
+@dataclass(frozen=True)
+class Box:
+    """A tanker's orbit as a closed outline, named for the tanker."""
+
+    name: str
+    points: tuple[tuple[float, float], ...]
+
+
+#: The points a box takes: four corners and the first again to close it.
+BOX_POINTS = 5
 
 
 @dataclass(frozen=True)
@@ -98,9 +111,33 @@ class Cartridge(ABC):
     first_point: int
     last_point: int
 
+    #: How many tanker boxes it takes, and the refuelling system of its receiver:
+    #: "boom" or "drogue", as ``refueledit.BOOM_ONLY_TANKERS`` tells tankers apart.
+    max_boxes: int
+    refuels_from: str
+
+    #: Whether the points the player saves for it go into its cartridge. When they
+    #: do not, they are on the kneeboard only.
+    takes_saved_points = True
+
+    def front_points(self, boxes: int) -> int:
+        """How many points the front line can have beside this many boxes."""
+        return self.max_line_points
+
+    def campaign_sections(
+        self, game: Game, flight: Optional[Any] = None
+    ) -> dict[str, Any]:
+        """What the cartridge takes from the campaign rather than from the lines:
+        the settings the player chose, and what the campaign knows. Merged into the
+        sections of the same name, at any depth."""
+        return {}
+
     @abstractmethod
     def sections(
-        self, fronts: Sequence[Front], navigation: Sequence[NavPoint]
+        self,
+        fronts: Sequence[Front],
+        navigation: Sequence[NavPoint],
+        boxes: Sequence[Box] = (),
     ) -> dict[str, Any]:
         """The part of the cartridge's ``data`` tree this aircraft fills.
 
@@ -114,9 +151,11 @@ class Cartridge(ABC):
 class HornetCartridge(Cartridge):
     """The Hornet family: the SA page.
 
-    Limits from ``FA-18C/DTC/SA``: three FLOT lines of seven points. The CJS Super
-    Hornet mod ships the same cartridge, section for section, for the E, the F and
-    the Growler, so they are the same profile under another type name.
+    Limits from ``FA-18C/DTC/SA``: three FLOT lines of seven points. The page draws
+    one of them, the selected one -- its script has room for a single FLOT line --
+    so the whole front goes on line 1. The CJS Super Hornet mod ships the same
+    cartridge, section for section, for the E, the F and the Growler, so they are
+    the same profile under another type name.
     """
 
     aircraft = "FA-18C_hornet"
@@ -126,6 +165,10 @@ class HornetCartridge(Cartridge):
     # last two are left alone: 58 is where HOME goes and 59 is the bullseye.
     first_point = 0
     last_point = 57
+    # The boxes go on the FAOR lines, three of seven points. The page draws only the
+    # selected one, as with FLOT, so the tanker that matters most goes first.
+    max_boxes = 3
+    refuels_from = "drogue"
 
     def navigation(self, points: Sequence[NavPoint]) -> dict[str, Any]:
         """The WYPT section.
@@ -185,8 +228,26 @@ class HornetCartridge(Cartridge):
             "OA_Elevation_Units": 1,
         }
 
+    @staticmethod
+    def _lines(kind: str, lines: Sequence[Front | Box]) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": f"{kind}_{number}",
+                "num": number,
+                "note": line.name[:24],
+                "points": [
+                    {"id": f"{kind}_{number}_PT_{n}", "x": point[0], "y": point[1]}
+                    for n, point in enumerate(line.points, start=1)
+                ],
+            }
+            for number, line in enumerate(lines, start=1)
+        ]
+
     def sections(
-        self, fronts: Sequence[Front], navigation: Sequence[NavPoint]
+        self,
+        fronts: Sequence[Front],
+        navigation: Sequence[NavPoint],
+        boxes: Sequence[Box] = (),
     ) -> dict[str, Any]:
         written: dict[str, Any] = {
             "SA": {
@@ -202,7 +263,7 @@ class HornetCartridge(Cartridge):
                 "SETTINGS": {},
                 "Default_CAP_Point": 10,
                 "Default_CORRIDORS_Point": 8,
-                "Default_FAOR_Line": NONE,
+                "Default_FAOR_Line": 1 if boxes else NONE,
                 "Default_MEZ_THRTS_Level": NONE,
                 # The whole point. Off, the page is blank; on, it is the pre-2.9.29
                 # behaviour back, filtered by hiddenOnMFD as it always was. The
@@ -214,23 +275,8 @@ class HornetCartridge(Cartridge):
                 # because a mirrored ring never goes through that list.
                 "mirror_MEZ_THRTS": True,
                 "FAOR_FLOT": {
-                    "FAOR": [],
-                    "FLOT": [
-                        {
-                            "id": f"FLOT_{number}",
-                            "num": number,
-                            "note": front.name[:24],
-                            "points": [
-                                {
-                                    "id": f"FLOT_{number}_PT_{n}",
-                                    "x": point[0],
-                                    "y": point[1],
-                                }
-                                for n, point in enumerate(front.points, start=1)
-                            ],
-                        }
-                        for number, front in enumerate(fronts, start=1)
-                    ],
+                    "FAOR": self._lines("FAOR", boxes[: self.max_boxes]),
+                    "FLOT": self._lines("FLOT", fronts),
                 },
                 # The lines do go through a list, so this one has to be said.
                 "Default_FLOT_Line": 1 if fronts else NONE,
@@ -257,6 +303,23 @@ class ViperCartridge(Cartridge):
     # ``MPD/NAV_PTS.lua`` numbers its steerpoints from 1 and refuses a twenty-sixth.
     first_point = 1
     last_point = 25
+    # One box per line after the front's, out of the same twenty-five points. Three
+    # of them leave the front ten.
+    max_boxes = 3
+    refuels_from = "boom"
+
+    def front_points(self, boxes: int) -> int:
+        return self.max_line_points - BOX_POINTS * boxes
+
+    def campaign_sections(
+        self, game: Game, flight: Optional[Any] = None
+    ) -> dict[str, Any]:
+        mpd: dict[str, Any] = {}
+        if game.settings.dtc_viper_countermeasures:
+            mpd["CMDS"] = countermeasure_programs()
+        if game.settings.dtc_viper_roe:
+            mpd["ROE"] = roe_section(game)
+        return {"MPD": mpd} if mpd else {}
 
     @staticmethod
     def _nav_point(point: NavPoint) -> dict[str, Any]:
@@ -289,10 +352,14 @@ class ViperCartridge(Cartridge):
         }
 
     def sections(
-        self, fronts: Sequence[Front], navigation: Sequence[NavPoint]
+        self,
+        fronts: Sequence[Front],
+        navigation: Sequence[NavPoint],
+        boxes: Sequence[Box] = (),
     ) -> dict[str, Any]:
         points: list[dict[str, Any]] = []
-        for line, front in enumerate(fronts, start=1):
+        lines: list[Front | Box] = [*fronts, *boxes[: self.max_boxes]]
+        for line, front in enumerate(lines[: self.max_lines], start=1):
             for point in front.points:
                 number = len(points) + 1
                 points.append(
@@ -329,12 +396,424 @@ class SuperHornetCartridge(HornetCartridge):
         self.aircraft = aircraft
 
 
+#: The type of a TSD line that is the forward line of own troops, the fourth in the
+#: list ``AH-64D/DTC/NAV/Lines.lua`` numbers them by.
+APACHE_FLOT_LINE = 4
+
+#: How many target points the TSD holds (``NAV/Points.lua``).
+APACHE_MAX_TARGETS = 50
+
+#: The symbols the TSD has for the air defence it knows by name, from the TGT list
+#: of ``NAV/Points.lua``, keyed by the DCS type of the system's launcher or gun.
+APACHE_THREAT_SYMBOLS: dict[str, int] = {
+    "S_75M_Volhov": 4,  # SA-2
+    "5p73 s-125 ln": 5,  # SA-3
+    "S-200_Launcher": 7,  # SA-5
+    "Kub 2P25 ln": 8,  # SA-6
+    "Osa 9A33 ln": 10,  # SA-8
+    "Strela-1 9P31": 11,  # SA-9
+    "S-300PS 5P85C ln": 12,  # SA-10
+    "S-300PS 5P85D ln": 12,
+    "SA-11 Buk LN 9A310M1": 13,  # SA-11
+    "Strela-10M3": 15,  # SA-13
+    "Tor 9A331": 17,  # SA-15
+    # The TSD has no SA-18: the SA-16 it does have is the same Igla family.
+    "SA-18 Igla manpad": 18,
+    "SA-18 Igla-S manpad": 18,
+    "Igla manpad INS": 18,
+    "SA-17 Buk M1-2 LN 9A310M1-2": 19,  # SA-17
+    "2S6 Tunguska": 20,  # 2S6
+    "ZSU-23-4 Shilka": 21,  # ZSU-23-4
+    "Hawk ln": 24,  # Hawk
+    "Roland ADS": 25,  # Roland
+    # The HQ-7 is a copy of the Crotale.
+    "HQ-7_LN_SP": 28,
+    "HQ-7_LN_P": 28,
+    "rapier_fsa_launcher": 29,  # Rapier
+    "Patriot ln": 43,  # Patriot
+    "M1097 Avenger": 44,  # Stinger
+    "Soldier stinger": 44,
+    "M48 Chaparral": 46,  # Chaparral
+    "Gepard": 56,  # Gepard
+}
+#: What the rest are: a generic air defence unit, a gun, or a warship.
+APACHE_GENERIC_AIR_DEFENCE = 2
+APACHE_AIR_DEFENCE_GUN = 26
+APACHE_NAVAL_AIR_DEFENCE = 38
+
+#: The editor's ten route names, two of them padded to five characters.
+APACHE_ROUTES = (
+    "ALPHA", "BRAVO", "DELTA", "ECHO ", "HOTEL",
+    "INDIA", "LIMA ", "OSCAR", "ROMEO", "TANGO",
+)  # fmt: skip
+
+
+def apache_mission_file() -> dict[str, Any]:
+    """An empty mission file, every partition present and none of them uploaded.
+
+    The shape ``NAV/NAV.lua`` starts from. Each point partition, each route and the
+    ADF carry an ``isEnabled`` that is the editor's "do not upload" box: off, the
+    aircraft keeps what it already has, which for the waypoints and the routes is the
+    flight plan the mission gives it.
+    """
+    return {
+        "Points": {
+            "WPTHZ": {"isEnabled": False, "POINTS": []},
+            "CTRLM": {"isEnabled": False, "POINTS": []},
+            "TGT": {"isEnabled": False, "POINTS": []},
+        },
+        "Lines": [],
+        "Areas": [],
+        "Zones": {"PFZ": [], "NFZ": []},
+        "Routes": [
+            {"isEnabled": False, "Name": name, "POINTS": []} for name in APACHE_ROUTES
+        ],
+        "ADF": {
+            **{f"Preset_{n}": {"ID": "", "Freq": 100.0} for n in range(1, 11)},
+            "isEnabled": False,
+        },
+    }
+
+
+def _shooters(ground_object: Any) -> list[Any]:
+    """The units at a site that shoot at aircraft: a missile or a gun, not a radar."""
+    from game.mfd import GUN_CLASSES
+
+    return [
+        unit
+        for unit in ground_object.units
+        if unit.alive
+        and unit.is_anti_air
+        and (
+            unit.threat_range.meters > 0
+            or getattr(unit.unit_type, "unit_class", None) in GUN_CLASSES
+        )
+    ]
+
+
+def _apache_symbol(ground_object: Any) -> int:
+    from game.mfd import GUN_CLASSES
+    from game.theater.theatergroundobject import NavalGroundObject
+
+    if isinstance(ground_object, NavalGroundObject):
+        return APACHE_NAVAL_AIR_DEFENCE
+    shooters = _shooters(ground_object)
+    for unit in shooters:
+        if unit.type.id in APACHE_THREAT_SYMBOLS:
+            return APACHE_THREAT_SYMBOLS[unit.type.id]
+    if shooters and all(
+        getattr(unit.unit_type, "unit_class", None) in GUN_CLASSES for unit in shooters
+    ):
+        return APACHE_AIR_DEFENCE_GUN
+    return APACHE_GENERIC_AIR_DEFENCE
+
+
+def apache_targets(game: Game, flight: Optional[Any] = None) -> list[dict[str, Any]]:
+    """The enemy air defence the displays may show, as the TSD's target points.
+
+    The same sites the Hornet and the Viper show (``game/mfd.py``), less the ones
+    with nothing that shoots -- an early warning radar is no threat to a helicopter --
+    nearest the flight's target first, as many as the TSD holds. Their elevation is
+    left at zero: the campaign does not know the height of the ground, and these are
+    for seeing a threat, not for aiming at it.
+    """
+    from game.mfd import shows_on_mfd
+
+    sites = [
+        ground_object
+        for ground_object in game.theater.ground_objects
+        if ground_object.control_point.captured.is_red
+        and not ground_object.is_dead
+        and _shooters(ground_object)
+        and shows_on_mfd(ground_object, game.settings)
+    ]
+    target = _target_of(flight) if flight is not None else None
+    if target is not None:
+        sites.sort(
+            key=lambda site: math.dist((site.position.x, site.position.y), target)
+        )
+    return [
+        {
+            "num": number,
+            "id": _apache_symbol(site),
+            "note": site.name[:40],
+            "text": f"T{number:02d}",
+            "x": site.position.x,
+            "y": site.position.y,
+            "alt": 0,
+        }
+        for number, site in enumerate(sites[:APACHE_MAX_TARGETS], start=1)
+    ]
+
+
+class ApacheCartridge(Cartridge):
+    """AH-64D: the TSD, from ``AH-64D/DTC/NAV``.
+
+    The cartridge is a mission file of points, routes, lines and areas. The front line
+    goes on its lines as FLOT, and the enemy air defence on its target points under
+    the TSD's own symbols. Its waypoints and routes are left alone, so the aircraft
+    keeps the flight plan the mission gives it and the points the player saves stay on
+    the kneeboard. It takes no fuel in the air, so it gets no tanker boxes.
+    """
+
+    aircraft = "AH-64D_BLK_II"
+    #: Fifteen lines of two to four points (``NAV/Lines.lua``).
+    max_lines = 15
+    max_line_points = 4
+    first_point = 1
+    last_point = 50
+    max_boxes = 0
+    refuels_from = ""
+    takes_saved_points = False
+
+    def front_points(self, boxes: int) -> int:
+        # A line longer than four points carries on in the next, from the point the
+        # last one ended on.
+        return self.max_lines * (self.max_line_points - 1) + 1
+
+    def sections(
+        self,
+        fronts: Sequence[Front],
+        navigation: Sequence[NavPoint],
+        boxes: Sequence[Box] = (),
+    ) -> dict[str, Any]:
+        mission = apache_mission_file()
+        step = self.max_line_points - 1
+        for front in fronts:
+            points = list(front.points)
+            for start in range(0, len(points) - 1, step):
+                if len(mission["Lines"]) >= self.max_lines:
+                    break
+                mission["Lines"].append(
+                    {
+                        "type_num": APACHE_FLOT_LINE,
+                        "text": "",
+                        "note": front.name[:40],
+                        "vertices": [
+                            {"x": x, "y": y}
+                            for x, y in points[start : start + self.max_line_points]
+                        ],
+                    }
+                )
+        return {
+            "NAV": {
+                "MissionFile": 1,
+                "Mission_1": mission,
+                "Mission_2": apache_mission_file(),
+            }
+        }
+
+    def campaign_sections(
+        self, game: Game, flight: Optional[Any] = None
+    ) -> dict[str, Any]:
+        targets = apache_targets(game, flight)
+        if not targets:
+            return {}
+        return {
+            "NAV": {
+                "Mission_1": {"Points": {"TGT": {"isEnabled": True, "POINTS": targets}}}
+            }
+        }
+
+
+#: A dispenser's program: burst quantity, burst interval (s), salvo quantity, salvo
+#: interval (s).
+Dispense = tuple[int, float, int, float]
+
+#: The Viper's own programs, from ``F-16C/DTC/MPD/CMDS_defs.lua``, as (chaff, flare).
+#: The OTHER1 and OTHER2 dispensers are the same on every program, and unused.
+STOCK_CMDS_PROGRAMS: dict[str, tuple[Dispense, Dispense]] = {
+    "MAN1": ((1, 0.02, 10, 1.0), (1, 0.02, 10, 1.0)),
+    "MAN2": ((1, 0.02, 10, 0.5), (1, 0.02, 10, 0.5)),
+    "MAN3": ((2, 0.1, 5, 1.0), (2, 0.1, 5, 1.0)),
+    "MAN4": ((2, 0.1, 5, 0.5), (2, 0.1, 5, 0.5)),
+    "MAN5": ((2, 0.05, 20, 0.75), (2, 0.05, 20, 0.75)),
+    "MAN6": ((1, 0.02, 1, 0.5), (1, 0.02, 1, 0.5)),
+    "AUTO1": ((1, 0.02, 4, 1.5), (0, 0.0, 0, 0.0)),
+    "AUTO2": ((1, 0.02, 6, 1.0), (0, 0.0, 0, 0.0)),
+    "AUTO3": ((1, 0.02, 8, 0.5), (0, 0.0, 0, 0.0)),
+    "BYP": ((1, 0.02, 1, 0.5), (1, 0.02, 1, 0.5)),
+}
+STOCK_OTHER: Dispense = (0, 0.02, 0, 0.5)
+NO_DISPENSE: Dispense = (0, 0.0, 0, 0.0)
+
+#: MAN 1, fired with CMS forward and the program knob on 1, dispenses flares only,
+#: and MAN 6, fired with CMS left, chaff only: one answers an infrared shot and the
+#: other a radar one, both from the stick. (MAN 5 is the button on the cockpit wall.)
+CMDS_PROGRAMS = {
+    **STOCK_CMDS_PROGRAMS,
+    "MAN1": (NO_DISPENSE, (5, 0.5, 1, 0.0)),
+    "MAN6": ((2, 0.1, 5, 0.75), NO_DISPENSE),
+}
+
+
+#: The families on the Viper's ROE tab, in the order ``F-16C/DTC/MPD/ROE_defs.lua``
+#: lists them, with the unit types ``threat_base.lua`` puts in each. The module knows
+#: some of them by DCS world type rather than by unit; those are named here by the
+#: units the family's hint lists.
+ROE_FAMILIES: dict[str, tuple[str, ...]] = {
+    "A-6": ("A6E",),
+    "A-10": ("A-10A", "A-10C", "A-10C_2"),
+    "AJS37": ("AJS37",),
+    "An-26": ("An-26B",),
+    "An-30": ("An-30M",),
+    "AV-8B": ("AV8BNA",),
+    "B-1": ("B-1B",),
+    "B-52": ("B-52H",),
+    "C-17": ("C-17A",),
+    "C-130": ("C-130", "C-130J-30", "KC130"),
+    "E-2": ("E-2C",),
+    "E-3": ("E-3A",),
+    "F-4": ("F-4E", "F-4E-45MC", "QF-4E"),
+    "F-5": ("F-5E", "F-5E-3", "F-5E-3_FC"),
+    "F-14": (
+        "F-14A",
+        "F-14A-135-GR",
+        "F-14A-135-GR-Early",
+        "F-14A-95-GR",
+        "F-14B",
+        "F-14BU",
+        "F-14D",
+    ),
+    "F-15": ("F-15C", "F-15E", "F-15ESE"),
+    "F-16": ("F-16A", "F-16A MLU", "F-16C bl.50", "F-16C bl.52d", "F-16C_50"),
+    "F/A-18": ("F/A-18A", "F/A-18C", "FA-18C_hornet"),
+    "Il-76": ("A-50", "IL-76MD"),
+    "Il-78": ("IL-78M",),
+    "JF-17": ("JF-17",),
+    "KC-135": ("KC-135", "KC135MPRS"),
+    "KJ-2000": ("KJ-2000",),
+    "L-39": ("L-39C", "L-39ZA"),
+    "MiG-19": ("MiG-19P",),
+    "MiG-21": ("MiG-21Bis",),
+    "MiG-23": ("MiG-23MLD",),
+    "MiG-25": ("MiG-25PD", "MiG-25RBT"),
+    "MiG-27": ("MiG-27K",),
+    "MiG-29": ("MiG-29 Fulcrum", "MiG-29A", "MiG-29G", "MiG-29S"),
+    "MiG-31": ("MiG-31",),
+    "Mirage 2000": ("M-2000C", "Mirage 2000-5"),
+    "Mirage F1": (
+        "Mirage-F1AD",
+        "Mirage-F1AZ",
+        "Mirage-F1B",
+        "Mirage-F1BD",
+        "Mirage-F1BE",
+        "Mirage-F1BQ",
+        "Mirage-F1C",
+        "Mirage-F1C-200",
+        "Mirage-F1CE",
+        "Mirage-F1CG",
+        "Mirage-F1CH",
+        "Mirage-F1CJ",
+        "Mirage-F1CK",
+        "Mirage-F1CR",
+        "Mirage-F1CT",
+        "Mirage-F1CZ",
+        "Mirage-F1DDA",
+        "Mirage-F1ED",
+        "Mirage-F1EDA",
+        "Mirage-F1EE",
+        "Mirage-F1EH",
+        "Mirage-F1EQ",
+        "Mirage-F1JA",
+        "Mirage-F1M-CE",
+        "Mirage-F1M-EE",
+    ),
+    "S-3": ("S-3B", "S-3B Tanker"),
+    "Su-17": ("Su-17M4",),
+    "Su-24": ("Su-24M", "Su-24MR"),
+    "Su-25": ("Su-25", "Su-25T", "Su-25TM"),
+    "Su-27": ("Su-27", "J-11A"),
+    "Su-30": ("Su-30",),
+    "Su-33": ("Su-33",),
+    "Su-34": ("Su-34",),
+    "Tornado GR1": ("Tornado IDS",),
+    "Tornado GR4": ("Tornado GR4",),
+    "Tu-16": ("H-6J",),
+    "Tu-22": ("Tu-22M3",),
+    # The module names the CurrentHill unit; the stock one is the same aircraft.
+    "Tu-95": ("Tu-95MS", "Tu-95MS_CHAP"),
+    "Tu-142": ("Tu-142",),
+    "Tu-160": ("Tu-160",),
+}
+FRIENDLY = 1
+HOSTILE = 2
+UNKNOWN = 3
+
+
+def roe_section(game: Game) -> dict[str, Any]:
+    """The Viper's ROE tab, with every family's side taken from the two air wings.
+
+    A family only the player's side flies is friendly and one only the enemy flies
+    hostile. One both sides fly stays unknown, which is where the module starts every
+    row, so one side's variant never makes the other side's look friendly. Every row
+    is written: the loader replaces the list whole.
+    """
+    flown: dict[Player, set[str]] = {Player.BLUE: set(), Player.RED: set()}
+    for player, coalition in ((Player.BLUE, game.blue), (Player.RED, game.red)):
+        for squadron in coalition.air_wing.iter_squadrons():
+            flown[player].add(squadron.aircraft.dcs_unit_type.id)
+
+    rows = []
+    for family, members in ROE_FAMILIES.items():
+        blue = not flown[Player.BLUE].isdisjoint(members)
+        red = not flown[Player.RED].isdisjoint(members)
+        if blue and not red:
+            sovereignty = FRIENDLY
+        elif red and not blue:
+            sovereignty = HOSTILE
+        else:
+            sovereignty = UNKNOWN
+        rows.append({"group_name": family, "sovereignty": sovereignty})
+    return {"Settings": {"TypeSovereignty": True, "Mode4Status": True}, "List": rows}
+
+
+def countermeasure_programs() -> dict[str, Any]:
+    """The Viper's CMDS section: the bingo counts and every program, whole.
+
+    The per-threat choice of automatic program is left out, so the module keeps its
+    own: DCS's loader merges a cartridge field by field, and its own sample cartridges
+    carry these two tables and nothing else.
+    """
+
+    def dispense(values: Dispense) -> dict[str, float]:
+        burst, burst_interval, salvo, salvo_interval = values
+        return {
+            "BurstQuantity": burst,
+            "BurstInterval": burst_interval,
+            "SalvoQuantity": salvo,
+            "SalvoInterval": salvo_interval,
+        }
+
+    return {
+        "CMDSBingoSettings": {
+            "ChaffNum": 10,
+            "FlaresNum": 10,
+            "Other1Num": 0,
+            "Other2Num": 0,
+            "FDBK": True,
+            "REQCTR": True,
+            "BINGO": True,
+        },
+        "CMDSProgramSettings": {
+            name: {
+                "Chaff": dispense(chaff),
+                "Flare": dispense(flare),
+                "Other1": dispense(STOCK_OTHER),
+                "Other2": dispense(STOCK_OTHER),
+            }
+            for name, (chaff, flare) in CMDS_PROGRAMS.items()
+        },
+    }
+
+
 #: One per aircraft that can be handed any of this. An airframe missing from here
 #: gets no cartridge, and the reason is always the module rather than the campaign.
 #: Of everything that has a DTC -- the Hornet, the Viper, the Tomcat, the Apache, the
 #: Chinook, the full-cockpit Fulcrum, and the CJS Super Hornets -- only the Hornet
-#: family and the Viper keep a threat ring and a map line at all: the Tomcat and the
-#: Apache carry lines but no rings, the Fulcrum and the Chinook neither. The A-10 has
+#: family and the Viper keep a threat ring and a map line at all: the Tomcat carries
+#: lines but no rings, the Apache lines and target points, the Fulcrum and the Chinook
+#: neither. The A-10 has
 #: no .dtc of any kind; its DTS database is a Lua file beside the mission
 #: (``game/missiongenerator/dts.py``) and carries waypoints only. The JF-17's
 #: cartridge is Deka's own, loaded from the special options tab, not one of these.
@@ -350,54 +829,162 @@ CARTRIDGES: dict[str, Cartridge] = {
         # lists them, so they read a cartridge like the E and the F they are.
         SuperHornetCartridge("FA-18ET"),
         SuperHornetCartridge("FA-18FT"),
+        ApacheCartridge(),
     )
 }
 
 
 def fronts_of(theater: ConflictTheater) -> list[Front]:
-    """Each front as the points that draw it, longest first.
+    """Each front as the points that draw it.
 
     Two points is all a front needs: it is a straight contact line on the map already.
-    Longest first because a cartridge takes a few and the one worth carrying is the
-    one the fighting is on.
     """
-    found: list[tuple[float, Front]] = []
+    found: list[Front] = []
     for front_line in theater.conflicts():
         bounds = FrontLineConflictDescription.frontline_bounds(front_line, theater)
         end = bounds.left_position.point_from_heading(
             bounds.heading_from_left_to_right.degrees, bounds.length
         )
         found.append(
-            (
-                bounds.length,
-                Front(
-                    front_line.name,
-                    (
-                        (bounds.left_position.x, bounds.left_position.y),
-                        (end.x, end.y),
-                    ),
-                ),
+            Front(
+                front_line.name,
+                ((bounds.left_position.x, bounds.left_position.y), (end.x, end.y)),
             )
         )
-    found.sort(key=lambda pair: -pair[0])
-    return [front for _length, front in found]
+    return found
 
 
-def _trim(profile: Cartridge, fronts: Sequence[Front]) -> list[Front]:
-    """As many fronts as this aircraft will take, and a word about the rest."""
-    kept: list[Front] = []
-    points = 0
-    for front in fronts[: profile.max_lines]:
-        if points + len(front.points) > profile.max_line_points:
-            logging.info("DTC %s: no room left for %s", profile.aircraft, front.name)
-            break
-        kept.append(front)
-        points += len(front.points)
-    if len(kept) < len(fronts):
-        logging.info(
-            "DTC %s: %d fronts, carrying %d", profile.aircraft, len(fronts), len(kept)
+def join_fronts(fronts: Sequence[Front]) -> Optional[Front]:
+    """Every front as one line, in the order a line through all of them runs.
+
+    A front is a bar across the road the two sides contest, so a theater with several
+    fronts has several stubs with uncontested border between them, and drawn apart
+    they do not say which side of them is hostile. The gaps are joined straight:
+    nothing in the campaign says where an uncontested border runs.
+
+    The line starts at the end farthest from the middle of them all, so it runs
+    across the theater rather than out from its centre, and each next front is the
+    one with an end nearest the last point, turned to start from that end.
+    """
+    bars = [list(front.points) for front in fronts if len(front.points) >= 2]
+    if not bars:
+        return None
+    ends = [point for bar in bars for point in (bar[0], bar[-1])]
+    middle = (
+        sum(x for x, _ in ends) / len(ends),
+        sum(y for _, y in ends) / len(ends),
+    )
+    first = max(
+        bars, key=lambda bar: max(math.dist(bar[0], middle), math.dist(bar[-1], middle))
+    )
+    bars.remove(first)
+    if math.dist(first[-1], middle) > math.dist(first[0], middle):
+        first.reverse()
+    line = first
+    while bars:
+        last = line[-1]
+        following = min(
+            bars, key=lambda bar: min(math.dist(last, bar[0]), math.dist(last, bar[-1]))
         )
-    return kept
+        bars.remove(following)
+        if math.dist(last, following[-1]) < math.dist(last, following[0]):
+            following.reverse()
+        line.extend(following)
+    name = fronts[0].name if len(fronts) == 1 else "FLOT"
+    return Front(name, tuple(line))
+
+
+def simplified(
+    points: Sequence[tuple[float, float]], count: int
+) -> list[tuple[float, float]]:
+    """The line cut down to ``count`` points, keeping both ends.
+
+    Starting from the two ends, each pass adds back the point farthest from the line
+    kept so far, so a bend survives however narrow it is.
+    """
+    if len(points) <= max(count, 2):
+        return list(points)
+
+    def distance(index: int, start: int, end: int) -> float:
+        """From the point to the segment between two kept points."""
+        (px, py), (ax, ay), (bx, by) = points[index], points[start], points[end]
+        dx, dy = bx - ax, by - ay
+        squared = dx * dx + dy * dy
+        along = 0.0
+        if squared > 0:
+            along = min(1.0, max(0.0, ((px - ax) * dx + (py - ay) * dy) / squared))
+        return math.dist((px, py), (ax + along * dx, ay + along * dy))
+
+    kept = [0, len(points) - 1]
+    while len(kept) < count:
+        farthest = max(
+            (
+                (distance(index, start, end), index)
+                for start, end in zip(kept, kept[1:])
+                for index in range(start + 1, end)
+            ),
+            default=None,
+        )
+        if farthest is None:
+            break
+        kept.append(farthest[1])
+        kept.sort()
+    return [points[index] for index in kept]
+
+
+def _fit(profile: Cartridge, line: Front, room: int) -> Front:
+    """The front line with no more points than there is room for."""
+    if len(line.points) <= room:
+        return line
+    logging.info(
+        "DTC %s: front line of %d points cut to %d",
+        profile.aircraft,
+        len(line.points),
+        room,
+    )
+    return Front(line.name, tuple(simplified(line.points, room)))
+
+
+def _target_of(flight: Any) -> Optional[tuple[float, float]]:
+    """Where the flight is going: its first target, or else its last waypoint."""
+    waypoints = list(getattr(flight, "waypoints", []))
+    for waypoint in waypoints:
+        if "TARGET" in waypoint.waypoint_type.name:
+            return waypoint.position.x, waypoint.position.y
+    if waypoints:
+        return waypoints[-1].position.x, waypoints[-1].position.y
+    return None
+
+
+def tanker_boxes(
+    profile: Cartridge, mission_data: Any, flight: Optional[Any] = None
+) -> list[Box]:
+    """The tankers this aircraft can take fuel from, each as a box round its orbit.
+
+    Only the tankers whose system matches the aircraft's: a Hornet has no use for a
+    boom, nor a Viper for a drogue. Nearest the flight's target first, since the
+    Hornet shows one box at a time; in the order they were planned when there is no
+    flight to measure from.
+    """
+    from game.ato.flightplans.refueledit import BOOM_ONLY_TANKERS
+    from game.missiongenerator.orbits import tanker_orbits
+
+    usable = [
+        orbit
+        for orbit in tanker_orbits(mission_data)
+        if (
+            "boom"
+            if orbit.flight.aircraft_type.dcs_id in BOOM_ONLY_TANKERS
+            else "drogue"
+        )
+        == profile.refuels_from
+    ]
+    target = _target_of(flight) if flight is not None else None
+    if target is not None:
+        usable.sort(key=lambda orbit: math.dist(orbit.centre, target))
+    return [
+        Box(orbit.flight.callsign, orbit.box()) for orbit in usable[: profile.max_boxes]
+    ]
 
 
 def steerpoint_numbers(aircraft: str, route_length: int, count: int) -> list[int]:
@@ -413,7 +1000,7 @@ def steerpoint_numbers(aircraft: str, route_length: int, count: int) -> list[int
     if aircraft in A10:
         return numbers_for(route_length, count)
     profile = CARTRIDGES.get(aircraft)
-    if profile is None:
+    if profile is None or not profile.takes_saved_points:
         return list(range(route_length + 1, route_length + 1 + count))
     numbers = list(range(profile.first_point + route_length, profile.last_point + 1))
     return numbers[:count]
@@ -482,12 +1069,15 @@ def cartridge(
     aircraft: str,
     name: str,
     navigation: Sequence[NavPoint] = (),
+    mission_data: Optional[Any] = None,
+    flight: Optional[Any] = None,
 ) -> dict[str, Any]:
     """One aircraft's cartridge, as the file holds it.
 
     Only the sections its profile fills are written. DCS merges a partial cartridge,
     so nothing here has to invent values for the radios, the countermeasures or the
-    RWR.
+    RWR. The tanker boxes need the generated flights, ``mission_data``; ``flight`` is
+    the one the cartridge is for, when there is one.
     """
     profile = CARTRIDGES[aircraft]
     data: dict[str, Any] = {
@@ -495,8 +1085,22 @@ def cartridge(
         "type": aircraft,
         "terrain": game.theater.terrain.name,
     }
-    data.update(profile.sections(_trim(profile, fronts_of(game.theater)), navigation))
+    boxes = tanker_boxes(profile, mission_data, flight) if mission_data else []
+    line = join_fronts(fronts_of(game.theater))
+    room = profile.front_points(len(boxes))
+    fronts = [_fit(profile, line, room)] if line is not None else []
+    data.update(profile.sections(fronts, navigation, boxes))
+    _merge(data, profile.campaign_sections(game, flight))
     return {"name": name, "type": aircraft, "data": data}
+
+
+def _merge(into: dict[str, Any], extra: dict[str, Any]) -> None:
+    """Put ``extra`` into ``into``, key by key down to the values."""
+    for key, value in extra.items():
+        if isinstance(value, dict) and isinstance(into.get(key), dict):
+            _merge(into[key], value)
+        else:
+            into[key] = value
 
 
 def player_aircraft(game: Game) -> set[str]:
@@ -521,7 +1125,9 @@ def cartridge_name(prefix: str, whose: str) -> str:
     return f"{prefix} {whose}"
 
 
-def cartridges_for(game: Game, name: Optional[str] = None) -> dict[str, dict[str, Any]]:
+def cartridges_for(
+    game: Game, name: Optional[str] = None, mission_data: Optional[Any] = None
+) -> dict[str, dict[str, Any]]:
     """Every cartridge this turn wants, keyed by the airframe it is for.
 
     ``name`` is the half of the name the cartridges share: the mission's own for the
@@ -531,7 +1137,13 @@ def cartridges_for(game: Game, name: Optional[str] = None) -> dict[str, dict[str
     """
     name = name or f"Escalation {game.campaign_name or 'campaign'}"[:48]
     return {
-        aircraft: cartridge(game, Player.BLUE, aircraft, cartridge_name(name, aircraft))
+        aircraft: cartridge(
+            game,
+            Player.BLUE,
+            aircraft,
+            cartridge_name(name, aircraft),
+            mission_data=mission_data,
+        )
         for aircraft in sorted(player_aircraft(game))
     }
 
@@ -615,12 +1227,19 @@ def write_into_mission(game: Game, mission_data: Any, mission: Path) -> list[str
     for flight in cartridges_of(mission_data):
         aircraft = flight.aircraft_type.dcs_unit_type.id
         name = cartridge_name(mission.stem, flight.callsign)
+        profile = CARTRIDGES[aircraft]
         card = cartridge(
             game,
             Player.BLUE,
             aircraft,
             name,
-            navigation_set(CARTRIDGES[aircraft], flight.waypoints, flight.saved_points),
+            (
+                navigation_set(profile, flight.waypoints, flight.saved_points)
+                if profile.takes_saved_points
+                else []
+            ),
+            mission_data=mission_data,
+            flight=flight,
         )
         entries[f"DTC/{name}.dtc"] = card
     if not entries:
@@ -637,7 +1256,9 @@ def write_into_mission(game: Game, mission_data: Any, mission: Path) -> list[str
     return sorted(entries)
 
 
-def write_cartridges(game: Game, into: Path) -> list[Path]:
+def write_cartridges(
+    game: Game, into: Path, mission_data: Optional[Any] = None
+) -> list[Path]:
     """A copy per player airframe in the DTC folder, replacing last turn's.
 
     The mission carries its own; this is the one the player can load by hand, named
@@ -646,7 +1267,7 @@ def write_cartridges(game: Game, into: Path) -> list[Path]:
     """
     written = []
     into.mkdir(parents=True, exist_ok=True)
-    for card in cartridges_for(game).values():
+    for card in cartridges_for(game, mission_data=mission_data).values():
         path = into / f"{card['name']}.dtc"
         try:
             path.write_text(json.dumps(card, indent=1), encoding="utf-8")

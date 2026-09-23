@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from typing import TYPE_CHECKING, Optional
 
 from dcs import Point
@@ -14,11 +13,15 @@ from game.missiongenerator.frontlineconflictdescription import (
     FrontLineConflictDescription,
 )
 from game.missiongenerator.missiondata import TankerInfo
-from game.missiongenerator.orbits import Orbit, cap_stations, support_orbits
+from game.missiongenerator.orbits import (
+    MIN_HALF_WIDTH_M,
+    Orbit,
+    cap_stations,
+    support_orbits,
+)
 
 # Misc config settings for objects drawn in ME mission file (and F10 map)
 from game.theater import TRIGGER_RADIUS_CAPTURE
-from game.utils import nautical_miles
 
 if TYPE_CHECKING:
     from game.missiongenerator.missiondata import MissionData
@@ -36,18 +39,6 @@ ORBIT_FILL = Rgba(0, 200, 255, 55)
 NO_FILL = Rgba(0, 0, 0, 0)
 ORBIT_LABEL_TEXT = Rgba(0, 190, 255, 255)
 ORBIT_LABEL_FILL = Rgba(0, 30, 45, 150)
-
-#: The narrowest orbit drawn, as the distance from the leg to the edge. A CAP station
-#: is always drawn this wide: a CAP leaves its racetrack to chase contacts, so the
-#: shape marks the station rather than where the flight will be.
-MIN_ORBIT_HALF_WIDTH = nautical_miles(2).meters
-
-#: A tanker or AEW&C orbit is drawn as wide as its turns need. The AI turns shallow
-#: and overshoots the end of the leg before rolling in, so the half-width is the turn
-#: radius at 20 degrees of bank plus 3 nm. The RetLab fork measured KC-135s up to
-#: 19 km off the leg, an E-3A 13.8 km and an E-2C 8.9 km; this contains them.
-ORBIT_TURN_BANK_DEG = 20.0
-ORBIT_TURN_MARGIN = nautical_miles(3).meters
 
 
 class DrawingsGenerator:
@@ -145,16 +136,6 @@ class DrawingsGenerator:
         self.names[name] = seen
         return name if seen == 1 else f"{name} {seen}"
 
-    @staticmethod
-    def _half_width(orbit: Orbit) -> float:
-        """How far either side of its leg a tanker or AEW&C is drawn."""
-        speed = orbit.flight.patrol_speed
-        if speed is None:
-            return MIN_ORBIT_HALF_WIDTH
-        v = speed.meters_per_second
-        turn_radius = v * v / (9.81 * math.tan(math.radians(ORBIT_TURN_BANK_DEG)))
-        return max(MIN_ORBIT_HALF_WIDTH, turn_radius + ORBIT_TURN_MARGIN)
-
     def _draw_orbit(
         self, orbit: Orbit, half_width: float, thickness: int, fill: Rgba
     ) -> None:
@@ -201,7 +182,7 @@ class DrawingsGenerator:
         }
         for orbit in support_orbits(self.mission_data):
             flight = orbit.flight
-            self._draw_orbit(orbit, self._half_width(orbit), 6, ORBIT_FILL)
+            self._draw_orbit(orbit, orbit.half_width, 6, ORBIT_FILL)
             text = f"{flight.callsign}  {flight.aircraft_type.display_name}"
             info = radios.get(flight.group_name)
             if info is not None:
@@ -216,7 +197,7 @@ class DrawingsGenerator:
         if self.mission_data is None:
             return
         for station in cap_stations(self.mission_data):
-            self._draw_orbit(station, MIN_ORBIT_HALF_WIDTH, 3, NO_FILL)
+            self._draw_orbit(station, MIN_HALF_WIDTH_M, 3, NO_FILL)
             kind = (
                 "TARCAP" if station.flight.flight_type is FlightType.TARCAP else "CAP"
             )
