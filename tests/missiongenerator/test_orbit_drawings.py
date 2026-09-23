@@ -12,12 +12,9 @@ from dcs.terrain import Caucasus
 
 from game.ato.flighttype import FlightType
 from game.ato.flightwaypointtype import FlightWaypointType
-from game.missiongenerator.drawingsgenerator import (
-    MIN_ORBIT_HALF_WIDTH,
-    DrawingsGenerator,
-)
+from game.missiongenerator.drawingsgenerator import DrawingsGenerator
 from game.missiongenerator.missiondata import AwacsInfo, TankerInfo
-from game.missiongenerator.orbits import cap_stations
+from game.missiongenerator.orbits import MIN_HALF_WIDTH_M, cap_stations
 from game.radio.radios import MHz
 from game.radio.tacan import TacanBand, TacanChannel
 from game.theater import Player
@@ -162,7 +159,7 @@ def test_a_faster_orbit_is_drawn_wider() -> None:
         shape = next(o for o in objects if o.name == name)
         return max(abs(point.y) for point in shape.points)
 
-    assert width("Slow 1 orbit") >= MIN_ORBIT_HALF_WIDTH - 1
+    assert width("Slow 1 orbit") >= MIN_HALF_WIDTH_M - 1
     assert width("Fast 1 orbit") > width("Slow 1 orbit")
 
 

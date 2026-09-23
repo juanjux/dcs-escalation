@@ -163,7 +163,7 @@ class MissionGenerator:
             from game.missiongenerator.dtc import write_cartridges
             from game.persistency import data_cartridge_dir
 
-            write_cartridges(self.game, data_cartridge_dir())
+            write_cartridges(self.game, data_cartridge_dir(), self.mission_data)
 
         self.setup_combined_arms()
 
