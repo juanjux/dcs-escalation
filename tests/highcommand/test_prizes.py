@@ -48,6 +48,8 @@ def _faction(*bands: GroupTask) -> Any:
             _Aircraft("F-15E", 30, FlightType.STRIKE),
             _Aircraft("KC-135", 50, FlightType.REFUELING),
         },
+        awacs={_Aircraft("E-3A", 60, FlightType.AEWC)},
+        tankers={_Aircraft("KC-10", 60, FlightType.REFUELING)},
         frontline_units={
             _Vehicle("M1A2", UnitClass.TANK),
             _Vehicle("M2A2", UnitClass.IFV),

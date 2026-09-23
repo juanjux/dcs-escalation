@@ -608,6 +608,13 @@ class Game:
         if self.turn > 1:
             self.conditions = self.generate_conditions()
 
+        # Before the new turn is planned: a squadron whose loan is over flies no more.
+        try:
+            for line in self.high_command.return_loans(self):
+                self.message("High Command", line)
+        except Exception:
+            logging.exception("Could not take back the High Command's loans")
+
     def begin_turn_0(self, squadrons_start_full: bool) -> None:
         """Initialization for the first turn of the game."""
         from .sim import GameUpdateEvents

@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional
 
 from game.ato.flighttype import FlightType
 from game.data.groups import GroupTask
@@ -151,6 +151,11 @@ class Step:
 
 #: Gives a prize, with what was picked for each of its steps, and says what it gave.
 Give = Callable[["Game", Prize, tuple[str, ...]], str]
+
+
+class CannotGive(Exception):
+    """The prize cannot be given now, for the reason the message says. A ticket
+    stays unspent."""
 
 
 def _always(settings: Any) -> bool:
@@ -474,14 +479,27 @@ def _ace(score: int, context: Context) -> Worked:
 
 @_kind("awacs", ticket=True)
 def _awacs(score: int, context: Context) -> Worked:
+    if not _support_types(context.faction.awacs, FlightType.AEWC):
+        return None
     turns = half_up(score)
     return f"A ticket for an extra AWACS for {_turns(turns)}.", {"turns": turns}
 
 
 @_kind("tanker", ticket=True)
 def _tanker(score: int, context: Context) -> Worked:
+    if not _support_types(context.faction.tankers, FlightType.REFUELING):
+        return None
     turns = half_up(score)
     return f"A ticket for an extra tanker for {_turns(turns)}.", {"turns": turns}
+
+
+def _support_types(aircraft: Iterable[Any], task: FlightType) -> list[Any]:
+    """The faction's aircraft for a support task, the best at it first. A faction
+    keeps its AWACS and its tankers in lists of their own."""
+    return sorted(
+        aircraft,
+        key=lambda a: (-a.task_priorities.get(task, 0), a.display_name),
+    )
 
 
 @_kind("heal", min_score=6, ticket=True, needs=_live_pilots)
@@ -697,3 +715,67 @@ def _give_sam(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
     force_group = next(g for g in _band_groups(game, prize) if g.name == picked[1])
     EventStream.put_nowait(place(game, site, force_group))
     return f"{force_group.name} set up at {site.name}."
+
+
+def _lend(
+    game: Game,
+    aircraft: Any,
+    count: int,
+    turns: int,
+    task: FlightType,
+    front: bool,
+) -> str:
+    from game.highcommand.loans import lend
+
+    loan = lend(game, PLAYER, aircraft, count, turns, task, front)
+    if loan is None:
+        raise CannotGive(f"None of our bases has room for {count} {aircraft}.")
+    game.high_command.loans.append(loan)
+    squadron = loan.squadron
+    return (
+        f"{squadron.name} joins us at {squadron.location.name} with "
+        f"{squadron.owned_aircraft} {aircraft}, until turn {loan.until}."
+    )
+
+
+def _support_aircraft(game: Game, task: FlightType) -> Any:
+    faction = game.coalition_for(PLAYER).faction
+    fleet = faction.awacs if task is FlightType.AEWC else faction.tankers
+    types = _support_types(fleet, task)
+    if not types:
+        raise CannotGive("Our side has no aircraft for it.")
+    return types[0]
+
+
+@_gives("awacs")
+def _give_awacs(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    aircraft = _support_aircraft(game, FlightType.AEWC)
+    return _lend(game, aircraft, 1, prize.term("turns"), FlightType.AEWC, False)
+
+
+@_gives("tanker")
+def _give_tanker(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    aircraft = _support_aircraft(game, FlightType.REFUELING)
+    return _lend(game, aircraft, 1, prize.term("turns"), FlightType.REFUELING, False)
+
+
+@_gives("squadron")
+def _give_squadron(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    wanted = prize.term("type")
+    aircraft = next(
+        (
+            a
+            for a in game.coalition_for(PLAYER).faction.aircraft
+            if a.display_name == wanted
+        ),
+        None,
+    )
+    if aircraft is None:
+        raise CannotGive(f"Our side no longer flies the {wanted}.")
+    task = next(
+        (task for task in COMBAT_TASKS if task in aircraft.task_priorities),
+        FlightType.BARCAP,
+    )
+    return _lend(
+        game, aircraft, prize.term("aircraft"), prize.term("turns"), task, True
+    )

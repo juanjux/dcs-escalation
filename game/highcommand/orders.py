@@ -32,6 +32,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional, Sequence
 
 from game.highcommand.campaign import Task
+from game.highcommand.loans import Loan, return_loans
 from game.highcommand.prizes import Prize, kind_of
 from game.squadrons.experience import SaveCompatible
 from game.theater.player import Player
@@ -122,6 +123,8 @@ class HighCommand(SaveCompatible):
 
     orders: list[Order] = field(default_factory=list)
     tickets: list[Ticket] = field(default_factory=list)
+    #: The squadrons lent to the player, until each loan runs out.
+    loans: list[Loan] = field(default_factory=list)
 
     def refresh(self, game: Game, rng: Optional[random.Random] = None) -> list[Closed]:
         """Close the orders that are over and make new ones for the tiers left
@@ -173,9 +176,14 @@ class HighCommand(SaveCompatible):
                 lines.append(f"{done.order.objective}: {kind.give(game, prize, ())}")
         return lines
 
+    def return_loans(self, game: Game) -> list[str]:
+        """Take back the squadrons whose loan has run out, and say which."""
+        return list(return_loans(game, self.loans))
+
     def spend(self, game: Game, ticket: Ticket, picked: tuple[str, ...]) -> str:
         """Spend a ticket on what the player picked for each of its steps, and say
-        what it gave. The ticket is gone once spent."""
+        what it gave. The ticket is gone once spent; one that cannot be given now
+        raises CannotGive and stays."""
         kind = kind_of(ticket.prize)
         if kind is None or kind.give is None:
             raise ValueError(f"The game cannot give {ticket.prize.kind} any more")
