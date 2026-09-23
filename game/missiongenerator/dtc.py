@@ -120,6 +120,11 @@ class Cartridge(ABC):
         """How many points the front line can have beside this many boxes."""
         return self.max_line_points
 
+    def optional_sections(self, game: Game) -> dict[str, Any]:
+        """What this aircraft's cartridge carries only when a setting asks for it,
+        merged into the sections of the same name."""
+        return {}
+
     @abstractmethod
     def sections(
         self,
@@ -299,6 +304,12 @@ class ViperCartridge(Cartridge):
     def front_points(self, boxes: int) -> int:
         return self.max_line_points - BOX_POINTS * boxes
 
+    def optional_sections(self, game: Game) -> dict[str, Any]:
+        mpd: dict[str, Any] = {}
+        if game.settings.dtc_viper_countermeasures:
+            mpd["CMDS"] = countermeasure_programs()
+        return {"MPD": mpd} if mpd else {}
+
     @staticmethod
     def _nav_point(point: NavPoint) -> dict[str, Any]:
         """Every field ``MPD/NAV_PTS.lua`` writes when it adds one by hand."""
@@ -372,6 +383,76 @@ class SuperHornetCartridge(HornetCartridge):
 
     def __init__(self, aircraft: str) -> None:
         self.aircraft = aircraft
+
+
+#: A dispenser's program: burst quantity, burst interval (s), salvo quantity, salvo
+#: interval (s).
+Dispense = tuple[int, float, int, float]
+
+#: The Viper's own programs, from ``F-16C/DTC/MPD/CMDS_defs.lua``, as (chaff, flare).
+#: The OTHER1 and OTHER2 dispensers are the same on every program, and unused.
+STOCK_CMDS_PROGRAMS: dict[str, tuple[Dispense, Dispense]] = {
+    "MAN1": ((1, 0.02, 10, 1.0), (1, 0.02, 10, 1.0)),
+    "MAN2": ((1, 0.02, 10, 0.5), (1, 0.02, 10, 0.5)),
+    "MAN3": ((2, 0.1, 5, 1.0), (2, 0.1, 5, 1.0)),
+    "MAN4": ((2, 0.1, 5, 0.5), (2, 0.1, 5, 0.5)),
+    "MAN5": ((2, 0.05, 20, 0.75), (2, 0.05, 20, 0.75)),
+    "MAN6": ((1, 0.02, 1, 0.5), (1, 0.02, 1, 0.5)),
+    "AUTO1": ((1, 0.02, 4, 1.5), (0, 0.0, 0, 0.0)),
+    "AUTO2": ((1, 0.02, 6, 1.0), (0, 0.0, 0, 0.0)),
+    "AUTO3": ((1, 0.02, 8, 0.5), (0, 0.0, 0, 0.0)),
+    "BYP": ((1, 0.02, 1, 0.5), (1, 0.02, 1, 0.5)),
+}
+STOCK_OTHER: Dispense = (0, 0.02, 0, 0.5)
+NO_DISPENSE: Dispense = (0, 0.0, 0, 0.0)
+
+#: MAN 1, fired with CMS forward and the program knob on 1, dispenses flares only,
+#: and MAN 6, fired with CMS left, chaff only: one answers an infrared shot and the
+#: other a radar one, both from the stick. (MAN 5 is the button on the cockpit wall.)
+CMDS_PROGRAMS = {
+    **STOCK_CMDS_PROGRAMS,
+    "MAN1": (NO_DISPENSE, (5, 0.5, 1, 0.0)),
+    "MAN6": ((2, 0.1, 5, 0.75), NO_DISPENSE),
+}
+
+
+def countermeasure_programs() -> dict[str, Any]:
+    """The Viper's CMDS section: the bingo counts and every program, whole.
+
+    The per-threat choice of automatic program is left out, so the module keeps its
+    own: DCS's loader merges a cartridge field by field, and its own sample cartridges
+    carry these two tables and nothing else.
+    """
+
+    def dispense(values: Dispense) -> dict[str, float]:
+        burst, burst_interval, salvo, salvo_interval = values
+        return {
+            "BurstQuantity": burst,
+            "BurstInterval": burst_interval,
+            "SalvoQuantity": salvo,
+            "SalvoInterval": salvo_interval,
+        }
+
+    return {
+        "CMDSBingoSettings": {
+            "ChaffNum": 10,
+            "FlaresNum": 10,
+            "Other1Num": 0,
+            "Other2Num": 0,
+            "FDBK": True,
+            "REQCTR": True,
+            "BINGO": True,
+        },
+        "CMDSProgramSettings": {
+            name: {
+                "Chaff": dispense(chaff),
+                "Flare": dispense(flare),
+                "Other1": dispense(STOCK_OTHER),
+                "Other2": dispense(STOCK_OTHER),
+            }
+            for name, (chaff, flare) in CMDS_PROGRAMS.items()
+        },
+    }
 
 
 #: One per aircraft that can be handed any of this. An airframe missing from here
@@ -655,6 +736,8 @@ def cartridge(
     room = profile.front_points(len(boxes))
     fronts = [_fit(profile, line, room)] if line is not None else []
     data.update(profile.sections(fronts, navigation, boxes))
+    for section, content in profile.optional_sections(game).items():
+        data.setdefault(section, {}).update(content)
     return {"name": name, "type": aircraft, "data": data}
 
 
