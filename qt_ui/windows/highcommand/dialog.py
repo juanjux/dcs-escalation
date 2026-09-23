@@ -666,6 +666,21 @@ class HighCommandWindow(QDialog):
             self.reload()
 
 
+def main_window() -> Optional[QWidget]:
+    """The application's main window, to parent the High Command window on when it
+    is opened from a window that has no parent of its own."""
+    from PySide6.QtWidgets import QApplication
+
+    return next(
+        (
+            widget
+            for widget in QApplication.topLevelWidgets()
+            if type(widget).__name__ == "QLiberationWindow"
+        ),
+        None,
+    )
+
+
 def open_high_command(
     game_model: Any, parent: Optional[QWidget], objective: Optional[str] = None
 ) -> HighCommandWindow:
