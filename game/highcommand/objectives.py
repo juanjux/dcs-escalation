@@ -22,8 +22,8 @@ everything would otherwise rate nearly everything the same; the effort and the w
 themselves stay on the objective for whatever needs a number that means the same in
 every campaign.
 
-The line is the objective's reason worth the most. The least important fifth gets
-COMICAL, for a later step to replace with a humorous one.
+The line is the objective's reason worth the most. The least important fifth gets a
+comical one instead (``comical.py``).
 """
 
 from __future__ import annotations
@@ -36,6 +36,7 @@ from dcs import Point
 
 from game.data.units import UnitClass
 from game.highcommand.campaign import Campaign
+from game.highcommand.comical import comical_lines
 from game.highcommand.importance import Reason, Worth, by_worth
 from game.highcommand.wording import alive, system_name
 from game.theater import Airfield, MissionTarget, Player
@@ -52,7 +53,8 @@ from game.utils import nautical_miles
 if TYPE_CHECKING:
     from game import Game
 
-#: The justification of an objective too unimportant to have a serious one.
+#: The justification of an objective too unimportant to have a serious one, until
+#: a comical line is picked for it.
 COMICAL = "XXX comical"
 
 #: Miles of route, counted outside every ring, that make a point of effort. Low
@@ -169,11 +171,18 @@ def enemy_objectives(game: Game, player: Player = Player.BLUE) -> list[Objective
             )
         )
     shared = worth.shared(found)
+    found = ranked(
+        [
+            replace(o, reasons=by_worth([*o.reasons, *shared.get(o.name, ())]))
+            for o in found
+        ]
+    )
+    comical = comical_lines([o for o in found if o.importance == 1], seed=game.turn)
     found = [
-        replace(o, reasons=by_worth([*o.reasons, *shared.get(o.name, ())]))
+        replace(o, justification=comical[o.name]) if o.name in comical else o
         for o in found
     ]
-    return sorted(ranked(found), key=lambda o: (o.effort.total, o.name))
+    return sorted(found, key=lambda o: (o.effort.total, o.name))
 
 
 def ranked(objectives: Sequence[Objective]) -> list[Objective]:

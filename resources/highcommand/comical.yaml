@@ -1,0 +1,184 @@
+# Comical justifications for the High Command's least important objectives.
+#
+# Lines are grouped by the objectives they fit: a tag, or several separated by commas.
+# "any" fits every objective. The other tags are:
+#
+#   air-defence  anything that shoots at aircraft, a gun included
+#   radar        early-warning radars and the sites that carry a search radar
+#   antenna      communications towers and GPS jammers
+#   command      command centres
+#   power        power plants
+#   factory      factories
+#   business     anything that makes money: factories, oil, power, fuel, warehouses
+#   storage      warehouses, ammo and fuel depots, motorpools
+#   ammo         ammo depots
+#   fuel         fuel depots
+#   oil          oil platforms and derricks
+#   ship         ships and carrier groups
+#   runway       bases, FARPs and carriers
+#   vehicles     anything on wheels or tracks
+#   armour       armour groups
+#   troops       armour groups, bases, FARPs and camps
+#
+# {name} is replaced by the objective's name, and {base} by the base it belongs to.
+# A line that fits what the objective is comes up more often than one for any.
+
+lines:
+  any:
+    - To show the enemy we are strong enough to waste a strike on something worthless.
+    - Because we can.
+    - Their commander replied "OK" to a seventeen-page communiqué.
+    - They called our flagship "floating scrap".
+    - Their weather forecaster got it right. Ours considers it a provocation.
+    - It has been on the list for six months. Destroying it is simpler than getting it taken off.
+    - This budget line has to be spent before Friday.
+    - The report already says it is destroyed. Reality is requested to match the report.
+    - The general pointed at it while wiping a smudge off the screen. The order was unequivocal.
+    - The name {name} crashes our computer systems, so IT has advised destroying it.
+    - It is listed as a priority because someone sorted the spreadsheet by the wrong column.
+    - We do not know what is there, but they cover it up when we fly over.
+    - The absence of suspicious activity is extraordinarily suspicious.
+    - We intercepted the message "nothing important here". A confirmation that explicit cannot be ignored.
+    - It is out of focus in a reconnaissance photo. Intelligence considers it a stealth facility.
+    - The algorithm recommends it with 97% confidence. Nobody remembers which algorithm.
+    - A reliable source says it would be very funny.
+    - We cannot reveal the reason for this operation because we have lost it.
+    - 'They gave our last offensive two stars: "Lots of noise. Would defend again."'
+    - They answered our demand for surrender in Comic Sans.
+    - They suggested our camouflage makes our aircraft look fat.
+    - It has no strategic value. We are counting on the element of surprise.
+    - Its canteen has better reviews on Google Maps than ours.
+    - The nine o'clock news needs footage, and the real target is under cloud.
+    - Logistics needs room in the magazine for the bombs arriving on Monday.
+    - Some of our bombs are about to expire.
+    - Its coordinates are wrong in our systems. Correcting them takes three signatures; striking them takes none.
+    - Nobody objected at the meeting. Nobody was listening either.
+    - The map of destroyed targets looked empty around there.
+    - The junior analyst highlighted it in yellow. Nobody dared ask why.
+    - Its name does not fit in the box on the form. Shortening it by kinetic means is proposed.
+    - Their WhatsApp group is called "The Invincibles".
+    - They shared our weather report without crediting us.
+    - Their unit mascot has more followers on Instagram than ours.
+    - Our inventory and our magazine do not match. Destroying the target reconciles the two figures.
+    - The wind blows that way. We take it as a suggestion.
+    - We mistook it for another target. Since we have already taken off, the order stands.
+    - It is exactly where we said it would be. Our prediction needs proof, and the proof is that it stops being there.
+    - The President pointed at it and said "this one, destroy this one". No further justification was given.
+
+  antenna:
+    - It broadcasts a reggaeton station.
+    - It plays its adverts louder than its programmes.
+    - Its wifi password is OUR_AIR_DEFENSE_IS_BETTER.
+    - It has been broadcasting the same song for three days. Our operators have requested a strike.
+    - It interferes with the Sunday match on the officers' mess TV.
+    - It interferes with the microwave in our mess. The microwave is critical infrastructure.
+    - It has been playing their switchboard's hold music since Tuesday.
+
+  storage:
+    - It holds the "war winners" T-shirts they ordered in advance.
+    - We intercepted an order of socks for it. They are better than ours.
+    - There is a table football inside. Morale that high cannot be allowed.
+
+  factory:
+    - It turned down the general's nephew's CV.
+    - It delivers faster than our contractors. This threatens our way of life.
+    - It does not pay overtime.
+    - It dropships from Alibaba.
+    - It gives its workers no lunch break.
+    - It times its workers' toilet breaks.
+
+  business:
+    - Some of our top brass own shares in a rival company.
+
+  radar:
+    - It classified the general's aircraft as a "slow target".
+    - It turns anticlockwise. Nobody knows why, but we do not like it.
+
+  fuel:
+    - It has 98-octane petrol. We do not.
+
+  troops:
+    - They play reveille out of tune, and our trenches can hear it.
+
+  command:
+    - They have air conditioning. We have a fan.
+    - Their coffee is better than ours.
+    - The light in the chief's office is still on at three in the morning. Either they work or they show off.
+    - Their printer works. Ours has been asking for toner since the last offensive.
+    - They say membrane keyboards are better than mechanical ones.
+    - They say Windows is better than Linux.
+    - They say Emacs is better than Vim.
+
+  runway:
+    - They land better than we do and post it on YouTube.
+
+  ship:
+    - It has anchored in our admiral's fishing spot.
+    - One of its ships is named after an admiral ours cannot stand.
+
+  vehicles:
+    - One of its trucks has a "How's my driving?" sticker, and we would like to give our opinion.
+
+  armour:
+    - They have put a cover on one of their tanks. A cover means affection. Affection is a force multiplier.
+
+  power:
+    - Its generators are quieter than ours.
+
+  power, oil:
+    - It runs on non-renewable energy.
+
+  ammo:
+    - It stores ammunition, and its secondary explosions are lovely.
+
+  air-defence:
+    - It shot down the general's nephew's kite.
+
+# Some of their people, grouped the same way, and what any of them may have done. A
+# line is one of each: "One of their drivers puts ketchup on steak."
+people:
+  any:
+    - Their commander
+    - One of their NCOs
+    - One of their cooks
+  vehicles:
+    - One of their drivers
+    - One of their mechanics
+  armour:
+    - One of their tank commanders
+  air-defence:
+    - One of their gunners
+  radar:
+    - One of their radar operators
+  antenna:
+    - One of their signallers
+  command:
+    - Their chief of staff
+  ship:
+    - One of their sailors
+    - Their captain
+  runway:
+    - One of their pilots
+    - One of their air traffic controllers
+  factory:
+    - Their foreman
+  storage:
+    - Their quartermaster
+  oil:
+    - One of their roughnecks
+  power:
+    - One of their engineers
+  troops:
+    - One of their sentries
+
+deeds:
+  - posted something ugly about us on social media.
+  - puts pineapple on pizza.
+  - puts ketchup on steak.
+  - makes paella with chorizo.
+  - says Mexican churros are the real ones.
+  - thinks the A-10 is ugly.
+  - caught a bigger fish than the one our fleet admiral landed last week.
+  - beat our general's time on Strava. An electric motor is suspected.
+  - posted that our landings are "technically accidents".
+  - says air-to-air refuelling is easy.
