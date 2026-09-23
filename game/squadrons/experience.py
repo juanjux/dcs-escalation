@@ -7,8 +7,8 @@ home. The rank that buys is defined in :mod:`game.dcs.skills`.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional
+from dataclasses import MISSING, dataclass, field, fields
+from typing import Any, TYPE_CHECKING, Optional
 
 from dcs.unit import Skill
 
@@ -103,8 +103,29 @@ def survival_chance(skill: Skill, settings: Optional["Settings"] = None) -> floa
     return getattr(settings, SURVIVAL_SETTINGS[rung]) / 100
 
 
+class SaveCompatible:
+    """A record that is pickled into a save and may outlive its own field list.
+
+    Pickle restores ``__dict__`` verbatim, so a field added after a save was written is
+    simply absent from the object it rebuilds and the first read of it raises
+    AttributeError -- which is what a debriefing from an older save did the day it
+    gained its experience awards. Filling the dataclass defaults on the way in means a
+    new field only has to have a default, which every field in this module does.
+    """
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        for member in fields(self):  # type: ignore[arg-type]
+            if member.name in state:
+                continue
+            if member.default_factory is not MISSING:
+                setattr(self, member.name, member.default_factory())
+            elif member.default is not MISSING:
+                setattr(self, member.name, member.default)
+
+
 @dataclass
-class PilotDeath:
+class PilotDeath(SaveCompatible):
     """A pilot who did not come back, and what is known about who did it."""
 
     pilot_name: str
@@ -128,7 +149,7 @@ def turns_phrase(turns: int) -> str:
 
 
 @dataclass
-class PilotWound:
+class PilotWound(SaveCompatible):
     """A pilot the medics reached in time, and for how long they keep him."""
 
     pilot_name: str
@@ -144,7 +165,7 @@ class PilotWound:
 
 
 @dataclass
-class PilotPromotion:
+class PilotPromotion(SaveCompatible):
     pilot_name: str
     squadron: str
     from_rank: str
@@ -166,7 +187,7 @@ class PilotPromotion:
 
 
 @dataclass
-class MoraleShift:
+class MoraleShift(SaveCompatible):
     """A pilot the turn moved a long way, in either direction."""
 
     pilot_name: str
@@ -233,7 +254,7 @@ XP_REASON_ORDER = (
 
 
 @dataclass
-class XpAward:
+class XpAward(SaveCompatible):
     """What one pilot was paid this mission, and for what.
 
     The reasons are the point: a number on its own says a pilot gained 1,400 and
@@ -280,7 +301,7 @@ class XpAward:
 
 
 @dataclass
-class PilotOutcomes:
+class PilotOutcomes(SaveCompatible):
     """What became of the aircrew this mission, for the debriefing to read.
 
     Built where the decisions are made -- promotions as experience is awarded, the other
