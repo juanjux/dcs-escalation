@@ -23,6 +23,7 @@ from game.data.groups import GroupTask
 from game.data.units import UnitClass
 from game.highcommand.wording import counted, joined, money
 from game.income import Income
+from game.squadrons.experience import SaveCompatible
 
 if TYPE_CHECKING:
     from game import Game
@@ -77,8 +78,8 @@ ARMOUR_CLASSES = frozenset(
 
 
 @dataclass(frozen=True)
-class Prize:
-    """A prize as worked out for one objective."""
+class Prize(SaveCompatible):
+    """A prize as worked out for one objective. Kept in the save with its order."""
 
     #: Which of KINDS it is, by key.
     kind: str

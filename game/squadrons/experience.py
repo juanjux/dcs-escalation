@@ -110,7 +110,8 @@ class SaveCompatible:
     simply absent from the object it rebuilds and the first read of it raises
     AttributeError -- which is what a debriefing from an older save did the day it
     gained its experience awards. Filling the dataclass defaults on the way in means a
-    new field only has to have a default, which every field in this module does.
+    new field only has to have a default, which every field in this module does. The
+    defaults go in past __setattr__, so a frozen record can use this too.
     """
 
     def __setstate__(self, state: dict[str, Any]) -> None:
@@ -119,9 +120,9 @@ class SaveCompatible:
             if member.name in state:
                 continue
             if member.default_factory is not MISSING:
-                setattr(self, member.name, member.default_factory())
+                object.__setattr__(self, member.name, member.default_factory())
             elif member.default is not MISSING:
-                setattr(self, member.name, member.default)
+                object.__setattr__(self, member.name, member.default)
 
 
 @dataclass
