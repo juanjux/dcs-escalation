@@ -32,10 +32,27 @@ if TYPE_CHECKING:
 class FormationAttackFlightPlan(FormationFlightPlan, ABC):
     @property
     def package_speed_waypoints(self) -> set[FlightWaypoint]:
+        """The waypoints the package flies together, at one speed.
+
+        The run-in from the join to the ingress belongs here: it was the one leg of the
+        route every flight priced on its own, so nothing held the package together
+        across it and an escort with a faster airframe arrived at the ingress ahead of
+        the striker it was escorting.
+        """
         return {
             self.layout.join,
+            self.layout.ingress,
             self.layout.split,
         } | set(self.layout.targets)
+
+    @property
+    def combat_speed_waypoints(self) -> set[FlightWaypoint]:
+        """Package speed is not combat burn: the run-in is still cruise.
+
+        `fuel_rate_to_between_points` charges the combat rate for a leg that ends on
+        one of these, so leaving the ingress out keeps the fuel model where it was.
+        """
+        return self.package_speed_waypoints - {self.layout.ingress}
 
     def can_delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
         """One of several target points can go; the last one cannot.
