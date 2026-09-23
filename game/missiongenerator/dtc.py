@@ -116,13 +116,20 @@ class Cartridge(ABC):
     max_boxes: int
     refuels_from: str
 
+    #: Whether the points the player saves for it go into its cartridge. When they
+    #: do not, they are on the kneeboard only.
+    takes_saved_points = True
+
     def front_points(self, boxes: int) -> int:
         """How many points the front line can have beside this many boxes."""
         return self.max_line_points
 
-    def optional_sections(self, game: Game) -> dict[str, Any]:
-        """What this aircraft's cartridge carries only when a setting asks for it,
-        merged into the sections of the same name."""
+    def campaign_sections(
+        self, game: Game, flight: Optional[Any] = None
+    ) -> dict[str, Any]:
+        """What the cartridge takes from the campaign rather than from the lines:
+        the settings the player chose, and what the campaign knows. Merged into the
+        sections of the same name, at any depth."""
         return {}
 
     @abstractmethod
@@ -304,7 +311,9 @@ class ViperCartridge(Cartridge):
     def front_points(self, boxes: int) -> int:
         return self.max_line_points - BOX_POINTS * boxes
 
-    def optional_sections(self, game: Game) -> dict[str, Any]:
+    def campaign_sections(
+        self, game: Game, flight: Optional[Any] = None
+    ) -> dict[str, Any]:
         mpd: dict[str, Any] = {}
         if game.settings.dtc_viper_countermeasures:
             mpd["CMDS"] = countermeasure_programs()
@@ -385,6 +394,226 @@ class SuperHornetCartridge(HornetCartridge):
 
     def __init__(self, aircraft: str) -> None:
         self.aircraft = aircraft
+
+
+#: The type of a TSD line that is the forward line of own troops, the fourth in the
+#: list ``AH-64D/DTC/NAV/Lines.lua`` numbers them by.
+APACHE_FLOT_LINE = 4
+
+#: How many target points the TSD holds (``NAV/Points.lua``).
+APACHE_MAX_TARGETS = 50
+
+#: The symbols the TSD has for the air defence it knows by name, from the TGT list
+#: of ``NAV/Points.lua``, keyed by the DCS type of the system's launcher or gun.
+APACHE_THREAT_SYMBOLS: dict[str, int] = {
+    "S_75M_Volhov": 4,  # SA-2
+    "5p73 s-125 ln": 5,  # SA-3
+    "S-200_Launcher": 7,  # SA-5
+    "Kub 2P25 ln": 8,  # SA-6
+    "Osa 9A33 ln": 10,  # SA-8
+    "Strela-1 9P31": 11,  # SA-9
+    "S-300PS 5P85C ln": 12,  # SA-10
+    "S-300PS 5P85D ln": 12,
+    "SA-11 Buk LN 9A310M1": 13,  # SA-11
+    "Strela-10M3": 15,  # SA-13
+    "Tor 9A331": 17,  # SA-15
+    # The TSD has no SA-18: the SA-16 it does have is the same Igla family.
+    "SA-18 Igla manpad": 18,
+    "SA-18 Igla-S manpad": 18,
+    "Igla manpad INS": 18,
+    "SA-17 Buk M1-2 LN 9A310M1-2": 19,  # SA-17
+    "2S6 Tunguska": 20,  # 2S6
+    "ZSU-23-4 Shilka": 21,  # ZSU-23-4
+    "Hawk ln": 24,  # Hawk
+    "Roland ADS": 25,  # Roland
+    # The HQ-7 is a copy of the Crotale.
+    "HQ-7_LN_SP": 28,
+    "HQ-7_LN_P": 28,
+    "rapier_fsa_launcher": 29,  # Rapier
+    "Patriot ln": 43,  # Patriot
+    "M1097 Avenger": 44,  # Stinger
+    "Soldier stinger": 44,
+    "M48 Chaparral": 46,  # Chaparral
+    "Gepard": 56,  # Gepard
+}
+#: What the rest are: a generic air defence unit, a gun, or a warship.
+APACHE_GENERIC_AIR_DEFENCE = 2
+APACHE_AIR_DEFENCE_GUN = 26
+APACHE_NAVAL_AIR_DEFENCE = 38
+
+#: The editor's ten route names, two of them padded to five characters.
+APACHE_ROUTES = (
+    "ALPHA", "BRAVO", "DELTA", "ECHO ", "HOTEL",
+    "INDIA", "LIMA ", "OSCAR", "ROMEO", "TANGO",
+)  # fmt: skip
+
+
+def apache_mission_file() -> dict[str, Any]:
+    """An empty mission file, every partition present and none of them uploaded.
+
+    The shape ``NAV/NAV.lua`` starts from. Each point partition, each route and the
+    ADF carry an ``isEnabled`` that is the editor's "do not upload" box: off, the
+    aircraft keeps what it already has, which for the waypoints and the routes is the
+    flight plan the mission gives it.
+    """
+    return {
+        "Points": {
+            "WPTHZ": {"isEnabled": False, "POINTS": []},
+            "CTRLM": {"isEnabled": False, "POINTS": []},
+            "TGT": {"isEnabled": False, "POINTS": []},
+        },
+        "Lines": [],
+        "Areas": [],
+        "Zones": {"PFZ": [], "NFZ": []},
+        "Routes": [
+            {"isEnabled": False, "Name": name, "POINTS": []} for name in APACHE_ROUTES
+        ],
+        "ADF": {
+            **{f"Preset_{n}": {"ID": "", "Freq": 100.0} for n in range(1, 11)},
+            "isEnabled": False,
+        },
+    }
+
+
+def _shooters(ground_object: Any) -> list[Any]:
+    """The units at a site that shoot at aircraft: a missile or a gun, not a radar."""
+    from game.mfd import GUN_CLASSES
+
+    return [
+        unit
+        for unit in ground_object.units
+        if unit.alive
+        and unit.is_anti_air
+        and (
+            unit.threat_range.meters > 0
+            or getattr(unit.unit_type, "unit_class", None) in GUN_CLASSES
+        )
+    ]
+
+
+def _apache_symbol(ground_object: Any) -> int:
+    from game.mfd import GUN_CLASSES
+    from game.theater.theatergroundobject import NavalGroundObject
+
+    if isinstance(ground_object, NavalGroundObject):
+        return APACHE_NAVAL_AIR_DEFENCE
+    shooters = _shooters(ground_object)
+    for unit in shooters:
+        if unit.type.id in APACHE_THREAT_SYMBOLS:
+            return APACHE_THREAT_SYMBOLS[unit.type.id]
+    if shooters and all(
+        getattr(unit.unit_type, "unit_class", None) in GUN_CLASSES for unit in shooters
+    ):
+        return APACHE_AIR_DEFENCE_GUN
+    return APACHE_GENERIC_AIR_DEFENCE
+
+
+def apache_targets(game: Game, flight: Optional[Any] = None) -> list[dict[str, Any]]:
+    """The enemy air defence the displays may show, as the TSD's target points.
+
+    The same sites the Hornet and the Viper show (``game/mfd.py``), less the ones
+    with nothing that shoots -- an early warning radar is no threat to a helicopter --
+    nearest the flight's target first, as many as the TSD holds. Their elevation is
+    left at zero: the campaign does not know the height of the ground, and these are
+    for seeing a threat, not for aiming at it.
+    """
+    from game.mfd import shows_on_mfd
+
+    sites = [
+        ground_object
+        for ground_object in game.theater.ground_objects
+        if ground_object.control_point.captured.is_red
+        and not ground_object.is_dead
+        and _shooters(ground_object)
+        and shows_on_mfd(ground_object, game.settings)
+    ]
+    target = _target_of(flight) if flight is not None else None
+    if target is not None:
+        sites.sort(
+            key=lambda site: math.dist((site.position.x, site.position.y), target)
+        )
+    return [
+        {
+            "num": number,
+            "id": _apache_symbol(site),
+            "note": site.name[:40],
+            "text": f"T{number:02d}",
+            "x": site.position.x,
+            "y": site.position.y,
+            "alt": 0,
+        }
+        for number, site in enumerate(sites[:APACHE_MAX_TARGETS], start=1)
+    ]
+
+
+class ApacheCartridge(Cartridge):
+    """AH-64D: the TSD, from ``AH-64D/DTC/NAV``.
+
+    The cartridge is a mission file of points, routes, lines and areas. The front line
+    goes on its lines as FLOT, and the enemy air defence on its target points under
+    the TSD's own symbols. Its waypoints and routes are left alone, so the aircraft
+    keeps the flight plan the mission gives it and the points the player saves stay on
+    the kneeboard. It takes no fuel in the air, so it gets no tanker boxes.
+    """
+
+    aircraft = "AH-64D_BLK_II"
+    #: Fifteen lines of two to four points (``NAV/Lines.lua``).
+    max_lines = 15
+    max_line_points = 4
+    first_point = 1
+    last_point = 50
+    max_boxes = 0
+    refuels_from = ""
+    takes_saved_points = False
+
+    def front_points(self, boxes: int) -> int:
+        # A line longer than four points carries on in the next, from the point the
+        # last one ended on.
+        return self.max_lines * (self.max_line_points - 1) + 1
+
+    def sections(
+        self,
+        fronts: Sequence[Front],
+        navigation: Sequence[NavPoint],
+        boxes: Sequence[Box] = (),
+    ) -> dict[str, Any]:
+        mission = apache_mission_file()
+        step = self.max_line_points - 1
+        for front in fronts:
+            points = list(front.points)
+            for start in range(0, len(points) - 1, step):
+                if len(mission["Lines"]) >= self.max_lines:
+                    break
+                mission["Lines"].append(
+                    {
+                        "type_num": APACHE_FLOT_LINE,
+                        "text": "",
+                        "note": front.name[:40],
+                        "vertices": [
+                            {"x": x, "y": y}
+                            for x, y in points[start : start + self.max_line_points]
+                        ],
+                    }
+                )
+        return {
+            "NAV": {
+                "MissionFile": 1,
+                "Mission_1": mission,
+                "Mission_2": apache_mission_file(),
+            }
+        }
+
+    def campaign_sections(
+        self, game: Game, flight: Optional[Any] = None
+    ) -> dict[str, Any]:
+        targets = apache_targets(game, flight)
+        if not targets:
+            return {}
+        return {
+            "NAV": {
+                "Mission_1": {"Points": {"TGT": {"isEnabled": True, "POINTS": targets}}}
+            }
+        }
 
 
 #: A dispenser's program: burst quantity, burst interval (s), salvo quantity, salvo
@@ -582,8 +811,9 @@ def countermeasure_programs() -> dict[str, Any]:
 #: gets no cartridge, and the reason is always the module rather than the campaign.
 #: Of everything that has a DTC -- the Hornet, the Viper, the Tomcat, the Apache, the
 #: Chinook, the full-cockpit Fulcrum, and the CJS Super Hornets -- only the Hornet
-#: family and the Viper keep a threat ring and a map line at all: the Tomcat and the
-#: Apache carry lines but no rings, the Fulcrum and the Chinook neither. The A-10 has
+#: family and the Viper keep a threat ring and a map line at all: the Tomcat carries
+#: lines but no rings, the Apache lines and target points, the Fulcrum and the Chinook
+#: neither. The A-10 has
 #: no .dtc of any kind; its DTS database is a Lua file beside the mission
 #: (``game/missiongenerator/dts.py``) and carries waypoints only. The JF-17's
 #: cartridge is Deka's own, loaded from the special options tab, not one of these.
@@ -599,6 +829,7 @@ CARTRIDGES: dict[str, Cartridge] = {
         # lists them, so they read a cartridge like the E and the F they are.
         SuperHornetCartridge("FA-18ET"),
         SuperHornetCartridge("FA-18FT"),
+        ApacheCartridge(),
     )
 }
 
@@ -769,7 +1000,7 @@ def steerpoint_numbers(aircraft: str, route_length: int, count: int) -> list[int
     if aircraft in A10:
         return numbers_for(route_length, count)
     profile = CARTRIDGES.get(aircraft)
-    if profile is None:
+    if profile is None or not profile.takes_saved_points:
         return list(range(route_length + 1, route_length + 1 + count))
     numbers = list(range(profile.first_point + route_length, profile.last_point + 1))
     return numbers[:count]
@@ -859,9 +1090,17 @@ def cartridge(
     room = profile.front_points(len(boxes))
     fronts = [_fit(profile, line, room)] if line is not None else []
     data.update(profile.sections(fronts, navigation, boxes))
-    for section, content in profile.optional_sections(game).items():
-        data.setdefault(section, {}).update(content)
+    _merge(data, profile.campaign_sections(game, flight))
     return {"name": name, "type": aircraft, "data": data}
+
+
+def _merge(into: dict[str, Any], extra: dict[str, Any]) -> None:
+    """Put ``extra`` into ``into``, key by key down to the values."""
+    for key, value in extra.items():
+        if isinstance(value, dict) and isinstance(into.get(key), dict):
+            _merge(into[key], value)
+        else:
+            into[key] = value
 
 
 def player_aircraft(game: Game) -> set[str]:
@@ -988,12 +1227,17 @@ def write_into_mission(game: Game, mission_data: Any, mission: Path) -> list[str
     for flight in cartridges_of(mission_data):
         aircraft = flight.aircraft_type.dcs_unit_type.id
         name = cartridge_name(mission.stem, flight.callsign)
+        profile = CARTRIDGES[aircraft]
         card = cartridge(
             game,
             Player.BLUE,
             aircraft,
             name,
-            navigation_set(CARTRIDGES[aircraft], flight.waypoints, flight.saved_points),
+            (
+                navigation_set(profile, flight.waypoints, flight.saved_points)
+                if profile.takes_saved_points
+                else []
+            ),
             mission_data=mission_data,
             flight=flight,
         )
