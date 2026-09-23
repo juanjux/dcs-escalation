@@ -263,7 +263,8 @@ def buy(
     )
     coalition = ground_object.coalition
     coalition.budget -= selection.price - refund
-    ground_object.groups = []
+    # Clearing drops the cached threat ring too, which the combat simulation reads.
+    ground_object.clear()
 
     for group_name, slots in selection.groups:
         for slot in slots:
