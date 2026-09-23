@@ -12,7 +12,13 @@ import sys
 from types import SimpleNamespace
 from typing import Any
 
-from qt_ui.main import APP_ID, claim_taskbar_identity
+from qt_ui.main import (
+    APP_ID,
+    GCLP_HICON,
+    GCLP_HICONSM,
+    claim_class_icon,
+    claim_taskbar_identity,
+)
 
 
 class _Shell:
@@ -59,3 +65,56 @@ def test_a_shell_that_refuses_does_not_stop_the_application(monkeypatch: Any) ->
 def test_the_id_is_one_nothing_else_will_claim() -> None:
     assert APP_ID.count(".") >= 2
     assert APP_ID.islower()
+
+
+def _window() -> Any:
+    return SimpleNamespace(winId=lambda: 1234)
+
+
+def _user32(handle: int) -> Any:
+    loaded: list[str] = []
+    set_on_class: list[tuple[int, int, int]] = []
+
+    def load_image(
+        instance: Any, path: str, kind: int, width: int, height: int, flags: int
+    ) -> int:
+        loaded.append(path)
+        return handle
+
+    def set_class(hwnd: int, index: int, value: int) -> int:
+        set_on_class.append((hwnd, index, value))
+        return 0
+
+    return SimpleNamespace(
+        LoadImageW=load_image,
+        GetSystemMetrics=lambda index: 32,
+        SetClassLongPtrW=set_class,
+        loaded=loaded,
+        set_on_class=set_on_class,
+    )
+
+
+def test_the_class_gets_the_application_icon(monkeypatch: Any) -> None:
+    """Both of the class's icons, big and small, on the window's own class."""
+    user32 = _user32(handle=77)
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr("ctypes.windll", SimpleNamespace(user32=user32), raising=False)
+
+    assert claim_class_icon(_window()) is True
+    assert user32.set_on_class == [(1234, GCLP_HICON, 77), (1234, GCLP_HICONSM, 77)]
+    assert all(path.endswith("icon.ico") for path in user32.loaded)
+
+
+def test_an_icon_that_does_not_load_leaves_the_class_alone(monkeypatch: Any) -> None:
+    user32 = _user32(handle=0)
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr("ctypes.windll", SimpleNamespace(user32=user32), raising=False)
+
+    assert claim_class_icon(_window()) is False
+    assert user32.set_on_class == []
+
+
+def test_the_class_icon_is_left_alone_anywhere_else(monkeypatch: Any) -> None:
+    monkeypatch.setattr(sys, "platform", "linux")
+
+    assert claim_class_icon(_window()) is False
