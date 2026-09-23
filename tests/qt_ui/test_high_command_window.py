@@ -236,3 +236,48 @@ def test_the_command_bar_cell_shows_the_last_turn_or_when_the_next_ends(
     cell.set_state(3, 0, 2, 0)
     assert cell.last_turn.isHidden() and cell.next_ends.text() == "· next ends in 2"
     assert cell.tickets.isHidden() and cell.tickets_words.text() == "no tickets"
+
+
+class _Aircraft:
+    dcs_unit_type = SimpleNamespace(id="FA-18C_hornet")
+
+    def __str__(self) -> str:
+        return "F/A-18C Hornet (Lot 20)"
+
+
+def _loan(name: str, until: int) -> Any:
+    from game.highcommand.loans import Loan
+
+    squadron: Any = SimpleNamespace(
+        name=name,
+        aircraft=_Aircraft(),
+        owned_aircraft=12,
+        location=SimpleNamespace(name="Mount Pleasant"),
+    )
+    return Loan(squadron, until)
+
+
+def test_the_loans_go_back_soonest_first() -> None:
+    game = _game()
+    game.high_command.loans = [_loan("VFA-2", TURN + 3), _loan("VAW-1", TURN + 1)]
+
+    loans = data.loan_views(game)
+
+    assert [(loan.squadron, loan.turns_left) for loan in loans] == [
+        ("VAW-1", 1),
+        ("VFA-2", 3),
+    ]
+    assert loans[0].last_turn and loans[0].dcs_id == "FA-18C_hornet"
+
+
+def test_the_on_loan_tab_lists_them_or_says_there_are_none(qt_app: Any) -> None:
+    from qt_ui.windows.highcommand.dialog import HighCommandWindow
+
+    game = _game()
+    game.high_command.loans = [_loan("VAW-1", TURN + 1)]
+    window = HighCommandWindow(SimpleNamespace(game=game))
+
+    assert window.loans.rows.count() == 1 and window.loans.empty.isHidden()
+    game.high_command.loans = []
+    window.reload()
+    assert window.loans.list.isHidden() and not window.loans.empty.isHidden()
