@@ -35,7 +35,7 @@ from game.weather.clouds import Clouds
 from game.weather.fog import Fog
 from game.weather.weather import Weather as GameWeather
 from game.weather.weatherarchetype import WeatherArchetype, WeatherArchetypes
-from game.weather.wind import WindConditions
+from game.weather.wind import capped, WindConditions
 
 CLI_NAME = "atmosx-cli.exe"
 
@@ -392,7 +392,12 @@ def fetch_preset(cli: Path, icao: str, timeout: int = 60) -> Optional[dict[str, 
 def _wind(data: Any) -> Optional[Wind]:
     if not isinstance(data, dict):
         return None
-    return Wind(int(round(float(data.get("dir", 0)))), float(data.get("speed", 0)))
+    # A real observation is not bound by what the sim can fly: a jet stream at FL260
+    # beats the DCS ceiling routinely, and an uncapped one is written into the mission,
+    # ignored, and then briefed on the kneeboard as if it were there.
+    return capped(
+        Wind(int(round(float(data.get("dir", 0)))), float(data.get("speed", 0)))
+    )
 
 
 def _cloud_preset(key: Any) -> Optional[CloudPreset]:

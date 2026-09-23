@@ -2,6 +2,7 @@
 
 ## Features/Improvements
 * **[Live Pilots]** The debriefing says what each pilot's experience was paid for, on a line of its own: kills by kind, damage, the sortie, a wound, and the three things that move the multiplier. Biggest gain first.
+* **[Campaign AI]** The auto-planner frags the detectors covering a sector before the SAMs behind them: a DEAD sent at a SAM the network holds dark has nothing to shoot at. The OPFOR briefing carries the same tactic. (adapted from the RetLab fork)
 * **[Mods]** Support for the CurrentHill German Military Assets pack (1.5.0), behind a New Game checkbox: 25 units from the Leopard 2A7V to the Sachsen frigate, with the combat ones in the modern NATO faction. The Patriot KAT1 battery moved here from the USA pack. Two batteries can be generated and bought: Skyshield C-RAM, and FlaRakRad with IRIS-T SLS.
 * **[Mods]** F-22A 2.1.0: the IRST pod moved to station 6 and the combined AMRAAM-plus-pod stores are gone, so every shipped loadout was rebuilt around them. The mod's own smoke, the GBU-32 and the anti-radiation Mako are offered in the pylon editor.
 * **[Mods]** Frenchpack 5.0: the FELIN riflemen, LRAC gunner and PGM marksman are selectable. The mod's own VAB Mephisto is gone, which DCS now ships, and campaigns in progress move to it.
@@ -181,6 +182,8 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
+* **[FIX]** The leg from the join to the ingress is flown at the package's speed, like the rest of the formation route. It was priced per flight, so an escort on a faster airframe arrived first. (adapted from the RetLab fork)
+* **[FIX]** Live weather could brief a wind DCS will not fly. A real jet stream beats the sim's 97-knot ceiling, and only the generated wind was held to it. (found in the RetLab fork)
 * **[FIX]** TIC stopped recognising the BMP-3 when DCS renamed it to "IFV BMP-3 [CH]", so it fired six rounds a burst with a 100 mm gun instead of one. (adapted from the RetLab fork)
 * **[FIX]** The theatre AEW&C station could land on a boat, so a squadron flew two racetracks beside the carrier while an airfield with an E-3A parked on it was skipped. It is a land base now, and never a station already planned. (found in the RetLab fork)
 * **[FIX]** A supply route or shipping lane whose two ends are the same base is skipped and named in the log. Five shipped campaigns carried one. (adapted from the RetLab fork)

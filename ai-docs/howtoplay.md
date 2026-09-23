@@ -94,6 +94,25 @@ Sequence and combined arms matter:
    first** to clear or suppress them. Do **not** send strikers into a live SAM ring —
    they'll be turned back or shot down. A DEAD that can't actually reach a SAM hidden
    behind another live SAM won't clear it; deal with the outer belt first.
+
+   **Kill the detectors before the SAMs they cover.** A SAM inside a working IADS
+   stays dark until something enters its kill zone, and your flights are AI: the DCS
+   AI fires an anti-radiation missile only at a radar that is *already emitting*. So a
+   DEAD sent at a covered SAM arrives, finds nothing radiating, and comes home with
+   its missiles — the package is spent for nothing. Frag the EWR feeding that sector
+   first. Losing its network makes the SAM go autonomous, which for a SAM means it
+   switches itself **on**, and the next DEAD can service it.
+
+   Two things that break that, both worth checking before you spend a package:
+   - **A site with no power stays dark whatever else you do.** If you have already
+     flattened the power station feeding it, cutting its network changes nothing and
+     a DEAD against it is wasted. Take the detectors first and leave the power for
+     afterwards, or accept the site is already neutralised and spend the package
+     elsewhere.
+   - **An EWR does the opposite of a SAM.** Isolated from its network it goes
+     **dark**, not live. That is true of radar AAA sites too, which the engine treats
+     as detectors: they emit from mission start and can be serviced at any time, but
+     bomb their comms node and they stop emitting — and stop being shootable.
 2. **Win the air**: if blue has fighters/CAP over the target, add **ESCORT/TARCAP**.
 3. **Then strike**: STRIKE/OCA/BAI flights hit the actual objective.
 4. **Support**: add **AEW&C** and a **tanker** for range/awareness on deep or large
