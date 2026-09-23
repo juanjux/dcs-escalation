@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[High Command]** Each turn the High Command orders three enemy objectives taken, one from each third of them by difficulty plus importance, for two to five turns and each with its prize. No window shows them yet, and the prizes are not paid yet.
 * **[Mission Generator]** Blue tanker and AEW&C orbits are drawn on the F10 map, labelled with callsign, type, frequency and TACAN, and each CAP station as a thinner racetrack. (adapted from the RetLab fork)
 * **[Live Pilots]** The debriefing says what each pilot's experience was paid for, on a line of its own: kills by kind, damage, the sortie, a wound, and the three things that move the multiplier. Biggest gain first.
 * **[Campaign AI]** The auto-planner frags the detectors covering a sector before the SAMs behind them: a DEAD sent at a SAM the network holds dark has nothing to shoot at. The OPFOR briefing carries the same tactic. (adapted from the RetLab fork)
