@@ -456,6 +456,8 @@ class MissionResultsProcessor:
     def note_high_command_orders(self, debriefing: Debriefing) -> None:
         """Mark the High Command's orders the mission achieved. A fault here must not
         lose the mission's results, so it is logged and the orders wait."""
+        if not self.game.settings.high_command_enabled:
+            return
         try:
             self.game.high_command.note_results(self.game, debriefing)
         except Exception:

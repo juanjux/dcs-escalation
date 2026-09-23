@@ -15,9 +15,6 @@ from game.highcommand import objectives as listing
 from game.highcommand.campaign import Task
 from game.highcommand.objectives import Effort, Objective
 from game.highcommand.orders import (
-    LONGEST,
-    ORDERS,
-    SHORTEST,
     HighCommand,
     Order,
     Outcome,
@@ -64,14 +61,25 @@ BOARD = [
 ENEMY_BASE = SimpleNamespace(captured=Player.RED)
 
 
+def _settings(orders: int = 3, shortest: int = 2, longest: int = 5) -> Any:
+    return SimpleNamespace(
+        high_command_enabled=True,
+        high_command_orders=orders,
+        high_command_shortest_order=shortest,
+        high_command_longest_order=longest,
+    )
+
+
 def _game(
     turn: int,
     dead: tuple[str, ...] = (),
     bases: tuple[Any, ...] = (),
     ground_objects: tuple[Any, ...] = (),
+    settings: Any = None,
 ) -> Any:
     return SimpleNamespace(
         turn=turn,
+        settings=settings or _settings(),
         theater=SimpleNamespace(
             ground_objects=[
                 SimpleNamespace(name=name, is_dead=True, control_point=ENEMY_BASE)
@@ -91,14 +99,14 @@ def board(monkeypatch: pytest.MonkeyPatch) -> list[Objective]:
 
 
 def test_the_objectives_split_into_tiers_of_score() -> None:
-    split = tiers(BOARD, ORDERS)
+    split = tiers(BOARD, 3)
 
     assert [[o.name for o in tier] for tier in split] == [
         ["L1", "L2", "L3"],
         ["M1", "M2", "M3"],
         ["H1", "H2", "H3"],
     ]
-    assert [len(tier) for tier in tiers(BOARD[:8], ORDERS)] == [2, 3, 3]
+    assert [len(tier) for tier in tiers(BOARD[:8], 3)] == [2, 3, 3]
 
 
 def test_one_order_for_each_tier_with_its_prize_and_a_lifetime(
@@ -112,7 +120,7 @@ def test_one_order_for_each_tier_with_its_prize_and_a_lifetime(
     assert [order.tier for order in command.orders] == [2, 1, 0]
     for order in command.orders:
         assert order.objective[0] == "LMH"[order.tier]
-        assert SHORTEST <= order.expires_on - 10 <= LONGEST
+        assert 2 <= order.expires_on - 10 <= 5
         assert order.prize == Prize(
             "cash", order.score, False, f"Cash for {order.objective}."
         )
@@ -195,6 +203,7 @@ def test_a_fault_in_the_orders_does_not_stop_the_turn(
     game: Any = SimpleNamespace(
         check_win_loss=lambda: TurnState.CONTINUE,
         high_command=SimpleNamespace(refresh=fail),
+        settings=_settings(),
     )
 
     with caplog.at_level(logging.ERROR):
@@ -358,3 +367,38 @@ def test_an_aircraft_lost_before_take_off_died_on_the_ground() -> None:
     assert Debriefing.died_on_the_ground(debriefing, cold)
     assert not Debriefing.died_on_the_ground(debriefing, airborne)
     assert not Debriefing.died_on_the_ground(debriefing, spawned)
+
+
+def test_fewer_orders_set_closes_the_tiers_past_them(board: list[Objective]) -> None:
+    command = HighCommand()
+    command.refresh(_game(10), random.Random(1))
+
+    closed = command.refresh(_game(11, settings=_settings(orders=2)), random.Random(2))
+
+    assert [(c.order.tier, c.outcome) for c in closed] == [(2, Outcome.GONE)]
+    assert sorted(order.tier for order in command.orders) == [0, 1]
+
+
+def test_a_lifetime_range_set_backwards_still_works(board: list[Objective]) -> None:
+    command = HighCommand()
+
+    command.refresh(
+        _game(10, settings=_settings(shortest=4, longest=3)), random.Random(1)
+    )
+
+    assert all(3 <= order.expires_on - 10 <= 4 for order in command.orders)
+
+
+def test_a_high_command_switched_off_gives_no_orders() -> None:
+    refreshed: list[Any] = []
+    settings = _settings()
+    settings.high_command_enabled = False
+    game: Any = SimpleNamespace(
+        check_win_loss=lambda: TurnState.CONTINUE,
+        high_command=SimpleNamespace(refresh=lambda game: refreshed.append(game)),
+        settings=settings,
+    )
+
+    Game.refresh_high_command(game)
+
+    assert refreshed == []
