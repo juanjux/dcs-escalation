@@ -19,6 +19,9 @@ An order is achieved when what it asks is done, at the latest on its last turn:
 
 Motorpool vehicles and a base's aircraft leave nothing behind to count afterwards, so
 those two are noted from the mission's results as they come in (note_results).
+
+An achieved order pays its prize (pay): at once, or as a ticket kept in the save for
+whoever plays the campaign, to spend later (spend).
 """
 
 from __future__ import annotations
@@ -29,7 +32,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional, Sequence
 
 from game.highcommand.campaign import Task
-from game.highcommand.prizes import Prize
+from game.highcommand.prizes import Prize, kind_of
 from game.squadrons.experience import SaveCompatible
 from game.theater.player import Player
 from game.theater.theatergroundobject import MotorpoolGroundObject
@@ -104,10 +107,21 @@ class Closed:
 
 
 @dataclass
+class Ticket(SaveCompatible):
+    """A prize kept to be spent when the player chooses."""
+
+    prize: Prize
+    #: The objective that earned it, and when.
+    earned_by: str
+    earned_on: int
+
+
+@dataclass
 class HighCommand(SaveCompatible):
-    """The orders open now."""
+    """The orders open now, and the tickets earned and not yet spent."""
 
     orders: list[Order] = field(default_factory=list)
+    tickets: list[Ticket] = field(default_factory=list)
 
     def refresh(self, game: Game, rng: Optional[random.Random] = None) -> list[Closed]:
         """Close the orders that are over and make new ones for the tiers left
@@ -142,6 +156,32 @@ class HighCommand(SaveCompatible):
             )
         self.orders.sort(key=lambda order: -order.tier)
         return closed
+
+    def pay(self, game: Game, closed: Sequence[Closed]) -> list[str]:
+        """Give the prizes of the orders achieved, at once or as a ticket. What was
+        given, a line each."""
+        lines = []
+        for done in closed:
+            prize = done.order.prize
+            if done.outcome is not Outcome.ACHIEVED or prize is None:
+                continue
+            kind = kind_of(prize)
+            if prize.ticket:
+                self.tickets.append(Ticket(prize, done.order.objective, game.turn))
+                lines.append(f"{done.order.objective}: {prize.line}")
+            elif kind is not None and kind.give is not None:
+                lines.append(f"{done.order.objective}: {kind.give(game, prize, ())}")
+        return lines
+
+    def spend(self, game: Game, ticket: Ticket, picked: tuple[str, ...]) -> str:
+        """Spend a ticket on what the player picked for each of its steps, and say
+        what it gave. The ticket is gone once spent."""
+        kind = kind_of(ticket.prize)
+        if kind is None or kind.give is None:
+            raise ValueError(f"The game cannot give {ticket.prize.kind} any more")
+        line = kind.give(game, ticket.prize, picked)
+        self.tickets.remove(ticket)
+        return line
 
     def note_results(self, game: Game, debriefing: Debriefing) -> None:
         """Mark the orders a mission achieved that its aftermath cannot show. To be
