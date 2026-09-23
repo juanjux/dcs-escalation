@@ -107,6 +107,7 @@ class QTopPanel(QFrame):
         self.factions_cell = commandbar.FactionsCell()
         self.budget_cell = commandbar.BudgetCell(self.open_finances)
         self.intel_cell = commandbar.IntelCell(self.open_intel)
+        self.high_command_cell = commandbar.HighCommandCell(self.open_high_command)
 
         pass_turn_text = "Pass Turn"
         if not self.game or self.game.turn == 0:
@@ -206,15 +207,19 @@ class QTopPanel(QFrame):
         # Status on the left, in the order you read a turn: when, then who, then what
         # you have to spend it on.
         self._intel_divider = commandbar.Divider()
+        self._high_command_divider = commandbar.Divider()
         for cell in (
             self.turn_cell,
             self.weather_cell,
             self.factions_cell,
             self.budget_cell,
             self.intel_cell,
+            self.high_command_cell,
         ):
             if cell is self.intel_cell:
                 divider: Optional[commandbar.Divider] = self._intel_divider
+            elif cell is self.high_command_cell:
+                divider = self._high_command_divider
             elif cell is self.turn_cell:
                 divider = None
             else:
@@ -311,6 +316,7 @@ class QTopPanel(QFrame):
             commandbar.intel_ratios(game), gathering=game.turn == 0
         )
         self.intel_cell.set_enabled(True)
+        self.refresh_high_command_cell(game)
         self._fit_cells()
 
         self.setControls(True)
@@ -890,10 +896,31 @@ class QTopPanel(QFrame):
         super().resizeEvent(event)
         self._fit_cells()
 
+    def refresh_high_command_cell(self, game: Game) -> None:
+        """Orders and tickets at a glance. With the High Command off the cell goes,
+        unless tickets earned before are still there to spend."""
+        from qt_ui.windows.highcommand.model import headline
+
+        figures = headline(game)
+        self._high_command_wanted = (
+            game.settings.high_command_enabled or figures.tickets > 0
+        )
+        self.high_command_cell.set_state(
+            figures.orders, figures.last_turn, figures.soonest, figures.tickets
+        )
+        self.high_command_cell.set_enabled(True)
+
     def _fit_cells(self) -> None:
-        """Narrow windows give up Intel first, then the winds."""
+        """Narrow windows give up Intel first, then the High Command, then the
+        winds."""
         width = self.width()
-        shows_intel = width >= commandbar.MIN_WIDTH_FOR_INTEL
+        shows_high_command = getattr(self, "_high_command_wanted", False) and (
+            width >= commandbar.MIN_WIDTH_FOR_HIGH_COMMAND
+        )
+        self.high_command_cell.setVisible(shows_high_command)
+        self._high_command_divider.setVisible(shows_high_command)
+        room = commandbar.HIGH_COMMAND_ROOM if shows_high_command else 0
+        shows_intel = width >= commandbar.MIN_WIDTH_FOR_INTEL + room
         self.intel_cell.setVisible(shows_intel)
         self._intel_divider.setVisible(shows_intel)
         self.weather_cell.show_winds(width >= commandbar.MIN_WIDTH_FOR_WINDS)
@@ -912,6 +939,11 @@ class QTopPanel(QFrame):
     def open_intel(self) -> None:
         self.intel_dialog = IntelWindow(self.game)
         self.intel_dialog.show()
+
+    def open_high_command(self) -> None:
+        from qt_ui.windows.highcommand.dialog import open_high_command
+
+        self.high_command_dialog = open_high_command(self.game_model, self.window())
 
     def setControls(self, enabled: bool):
         for controller in self.controls:
