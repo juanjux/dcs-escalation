@@ -8,30 +8,39 @@ worked out to that score when the objective is marked, so the player knows what 
 it pays before trying.
 
 Most prizes take effect when the objective falls. A ticket is kept instead, and spent
-whenever the player chooses.
+whenever the player chooses, on what its steps ask the player to pick. How a kind is
+given is registered with it (``_gives``), and a kind the game cannot give yet is not
+drawn.
 """
 
 from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from dataclasses import dataclass, replace
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional
 
 from game.ato.flighttype import FlightType
 from game.data.groups import GroupTask
 from game.data.units import UnitClass
-from game.highcommand.wording import counted, joined, money
+from game.highcommand.wording import counted, joined, listed, money, system_name
 from game.income import Income
 from game.squadrons.experience import SaveCompatible
+from game.squadrons.morale import clamp
+from game.squadrons.pilot import PilotStatus
+from game.theater import Airfield, Player
+from game.theater.theatergroundobject import IadsGroundObject
 
 if TYPE_CHECKING:
     from game import Game
     from game.factions.faction import Faction
-    from game.theater import Player
+    from game.squadrons.pilot import Pilot
 
 MIN_SCORE = 2
 MAX_SCORE = 10
+
+#: Who the prizes are for: the side the High Command gives its orders to.
+PLAYER = Player.BLUE
 
 #: The five rungs of pilot skill, as the mission editor names them.
 RUNGS = ("Cadet", "Rookie", "Trained", "Veteran", "Ace")
@@ -105,11 +114,48 @@ class Context:
     #: The player's income per turn, in millions.
     income: float
     rng: random.Random
+    #: What the player's side can field, by task; None when it cannot field anything.
+    armed_forces: Any = None
 
 
 #: A prize's line and terms at a score, or None when it cannot be given at that score.
 Worked = Optional[tuple[str, dict[str, Any]]]
 WorkOut = Callable[[int, Context], Worked]
+
+
+@dataclass(frozen=True)
+class Choice:
+    """One thing a ticket can be spent on."""
+
+    #: What the prize reads back when it is given.
+    key: str
+    #: What the player sees.
+    label: str
+    detail: str = ""
+
+
+#: The options for a step, given the keys picked in the steps before it.
+Options = Callable[["Game", Prize, tuple[str, ...]], list[Choice]]
+
+
+@dataclass(frozen=True)
+class Step:
+    """One thing a ticket asks the player to pick before it is spent. With nothing to
+    pick from, the ticket cannot be spent yet."""
+
+    question: str
+    options: Options
+    #: Picked without asking when there is only one option.
+    auto: bool = False
+
+
+#: Gives a prize, with what was picked for each of its steps, and says what it gave.
+Give = Callable[["Game", Prize, tuple[str, ...]], str]
+
+
+class CannotGive(Exception):
+    """The prize cannot be given now, for the reason the message says. A ticket
+    stays unspent."""
 
 
 def _always(settings: Any) -> bool:
@@ -127,6 +173,10 @@ class PrizeKind:
     ticket: bool = False
     #: Whether a campaign's settings have what it needs.
     needs: Callable[[Any], bool] = _always
+    #: How it is given; None while the game cannot give it, and it is not drawn.
+    give: Optional[Give] = None
+    #: What spending it asks the player to pick, in order.
+    steps: tuple[Step, ...] = ()
 
     def prize(self, score: int, context: Context) -> Optional[Prize]:
         worked = self.work_out(score, context)
@@ -153,20 +203,45 @@ def _kind(
     return register
 
 
+def _gives(key: str, *steps: Step) -> Callable[[Give], Give]:
+    """How the kind registered as ``key`` is given, and what spending it asks first."""
+
+    def register(give: Give) -> Give:
+        at = next(n for n, kind in enumerate(KINDS) if kind.key == key)
+        KINDS[at] = replace(KINDS[at], give=give, steps=steps)
+        return give
+
+    return register
+
+
+def kind_of(prize: Prize) -> Optional[PrizeKind]:
+    """The kind a prize was drawn as; None if the game no longer has it."""
+    return next((kind for kind in KINDS if kind.key == prize.kind), None)
+
+
 class Prizes:
     """Draws the prizes of one side's objectives."""
 
-    def __init__(self, settings: Any, faction: Faction, income: float) -> None:
+    def __init__(
+        self,
+        settings: Any,
+        faction: Faction,
+        income: float,
+        armed_forces: Any = None,
+    ) -> None:
         self.settings = settings
         self.faction = faction
         self.income = income
+        self.armed_forces = armed_forces
 
     @classmethod
     def of(cls, game: Game, player: Player) -> Prizes:
+        coalition = game.coalition_for(player)
         return cls(
             game.settings,
-            game.coalition_for(player).faction,
+            coalition.faction,
             Income(game, player).total,
+            coalition.armed_forces,
         )
 
     def draw(self, score: int, seed: object) -> Optional[Prize]:
@@ -175,10 +250,14 @@ class Prizes:
         kinds = [
             kind
             for kind in KINDS
-            if kind.min_score <= score and kind.needs(self.settings)
+            if kind.min_score <= score
+            and kind.needs(self.settings)
+            and kind.give is not None
         ]
         rng.shuffle(kinds)
-        context = Context(self.settings, self.faction, self.income, rng)
+        context = Context(
+            self.settings, self.faction, self.income, rng, self.armed_forces
+        )
         for kind in kinds:
             prize = kind.prize(score, context)
             if prize is not None:
@@ -323,9 +402,11 @@ def _loaned_aircraft(score: int, context: Context) -> Worked:
 
 @_kind("sam", ticket=True)
 def _sam(score: int, context: Context) -> Worked:
-    has = {task for group in context.faction.preset_groups for task in group.tasks}
+    forces = context.armed_forces
+    if forces is None:
+        return None
     for lowest, task, reach in SAM_BANDS:
-        if score >= lowest and task in has:
+        if score >= lowest and any(True for _ in forces.groups_for_task(task)):
             return (
                 f"A ticket for a {reach} SAM battery where we choose, or one of ours "
                 "rebuilt or converted for free.",
@@ -363,7 +444,7 @@ def _runway(score: int, context: Context) -> Worked:
     return "A ticket for an instant repair of one of our runways.", {}
 
 
-@_kind("squadron")
+@_kind("squadron", ticket=True)
 def _squadron(score: int, context: Context) -> Worked:
     fleet = sorted(
         (
@@ -381,7 +462,8 @@ def _squadron(score: int, context: Context) -> Worked:
     count = 2 * score
     turns = half_up(score)
     return (
-        f"A squadron of {count} {aircraft.display_name} on loan for {_turns(turns)}.",
+        f"A ticket for a squadron of {count} {aircraft.display_name} on loan for "
+        f"{_turns(turns)}.",
         {"aircraft": count, "type": aircraft.display_name, "turns": turns},
     )
 
@@ -395,12 +477,28 @@ def _ace(score: int, context: Context) -> Worked:
     )
 
 
-@_kind("support", ticket=True)
-def _support(score: int, context: Context) -> Worked:
+@_kind("awacs", ticket=True)
+def _awacs(score: int, context: Context) -> Worked:
+    if not _support_types(context.faction.awacs, FlightType.AEWC):
+        return None
     turns = half_up(score)
-    return (
-        f"A ticket for an extra AWACS or tanker for {_turns(turns)}.",
-        {"turns": turns},
+    return f"A ticket for an extra AWACS for {_turns(turns)}.", {"turns": turns}
+
+
+@_kind("tanker", ticket=True)
+def _tanker(score: int, context: Context) -> Worked:
+    if not _support_types(context.faction.tankers, FlightType.REFUELING):
+        return None
+    turns = half_up(score)
+    return f"A ticket for an extra tanker for {_turns(turns)}.", {"turns": turns}
+
+
+def _support_types(aircraft: Iterable[Any], task: FlightType) -> list[Any]:
+    """The faction's aircraft for a support task, the best at it first. A faction
+    keeps its AWACS and its tankers in lists of their own."""
+    return sorted(
+        aircraft,
+        key=lambda a: (-a.task_priorities.get(task, 0), a.display_name),
     )
 
 
@@ -470,4 +568,214 @@ def _enemy_repairs(score: int, context: Context) -> Worked:
         f"Enemy repairs take {percent}% more turns, at least one more, for "
         f"{_turns(turns)}.",
         {"percent": percent, "turns": turns},
+    )
+
+
+# ---------------------------------------------------------------- giving them
+
+
+def _our_pilots(game: Game) -> list[tuple[Any, Pilot]]:
+    """Every pilot of ours still in the war, with his squadron."""
+    gone = (PilotStatus.Dead, PilotStatus.Deserted, PilotStatus.Discharged)
+    return [
+        (squadron, pilot)
+        for squadron in game.coalition_for(PLAYER).air_wing.iter_squadrons()
+        for pilot in squadron.current_roster
+        if pilot.status not in gone
+    ]
+
+
+def _broken_runways(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[Choice]:
+    return [
+        Choice(cp.name, cp.name, str(cp.runway_status))
+        for cp in game.theater.controlpoints
+        if cp.captured == PLAYER
+        and isinstance(cp, Airfield)
+        and cp.runway_status.damaged
+    ]
+
+
+def _wounded_pilots(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[Choice]:
+    return [
+        Choice(
+            str(pilot.id),
+            pilot.name,
+            f"{squadron.name}, {squadron.aircraft}: "
+            f"{_turns(pilot.wounded_turns)} in hospital",
+        )
+        for squadron, pilot in _our_pilots(game)
+        if pilot.status is PilotStatus.Wounded
+    ]
+
+
+@_gives("cash")
+def _give_cash(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    amount = Income(game, PLAYER).total * prize.term("income_share")
+    game.coalition_for(PLAYER).adjust_budget(amount)
+    return f"{money(amount)} added to our budget."
+
+
+@_gives("morale")
+def _give_morale(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    points = prize.term("points")
+    pilots = _our_pilots(game)
+    for _, pilot in pilots:
+        pilot.morale = clamp(pilot.morale + points)
+    return f"+{points} morale for our {counted(len(pilots), 'pilot')}."
+
+
+@_gives("hospital")
+def _give_hospital(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    turns = prize.term("turns")
+    wounded = [p for _, p in _our_pilots(game) if p.status is PilotStatus.Wounded]
+    if not wounded:
+        return "None of our pilots was in hospital."
+    for pilot in wounded:
+        pilot.wounded_turns -= turns
+        if pilot.wounded_turns <= 0:
+            pilot.recover()
+    back = sum(1 for pilot in wounded if pilot.status is PilotStatus.Active)
+    return (
+        f"{counted(len(wounded), 'wounded pilot')} out of hospital {_turns(turns)} "
+        f"early, {back} of them at once."
+    )
+
+
+@_gives("runway", Step("Which runway?", _broken_runways))
+def _give_runway(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    base = next(cp for cp in game.theater.controlpoints if cp.name == picked[0])
+    base.runway_status.repair()
+    return f"The runway at {base.name} is repaired."
+
+
+@_gives("heal", Step("Which pilot?", _wounded_pilots))
+def _give_heal(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    squadron, pilot = next(
+        (squadron, pilot)
+        for squadron, pilot in _our_pilots(game)
+        if str(pilot.id) == picked[0]
+    )
+    pilot.recover()
+    return f"{pilot.name}, of {squadron.name}, is back on duty."
+
+
+def _air_defence_sites(
+    game: Game, prize: Prize, picked: tuple[str, ...]
+) -> list[Choice]:
+    """Every air defence site of ours, whatever stands there now: a battery, a radar
+    and a jammer can each take the others' place."""
+    sites = sorted(
+        (
+            tgo
+            for tgo in game.theater.ground_objects
+            if isinstance(tgo, IadsGroundObject)
+            and tgo.control_point.captured == PLAYER
+        ),
+        key=lambda tgo: tgo.name,
+    )
+    return [
+        Choice(str(tgo.id), tgo.name, f"{_standing(tgo)}, at {tgo.control_point.name}")
+        for tgo in sites
+    ]
+
+
+def _standing(tgo: IadsGroundObject) -> str:
+    if not tgo.groups or not any(True for _ in tgo.units):
+        return "Empty"
+    if tgo.is_dead:
+        return "Destroyed"
+    return system_name(tgo)
+
+
+def _air_defence_types(
+    game: Game, prize: Prize, picked: tuple[str, ...]
+) -> list[Choice]:
+    return [
+        Choice(group.name, group.name, listed(sorted({str(u) for u in group.units})))
+        for group in _band_groups(game, prize)
+    ]
+
+
+def _band_groups(game: Game, prize: Prize) -> list[Any]:
+    band = GroupTask[prize.term("band")]
+    forces = game.coalition_for(PLAYER).armed_forces
+    return sorted(forces.groups_for_task(band), key=lambda group: group.name)
+
+
+@_gives(
+    "sam",
+    Step("Where?", _air_defence_sites),
+    Step("Which system?", _air_defence_types, auto=True),
+)
+def _give_sam(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    from game.highcommand.placing import place
+    from game.server import EventStream
+
+    site = next(tgo for tgo in game.theater.ground_objects if str(tgo.id) == picked[0])
+    force_group = next(g for g in _band_groups(game, prize) if g.name == picked[1])
+    EventStream.put_nowait(place(game, site, force_group))
+    return f"{force_group.name} set up at {site.name}."
+
+
+def _lend(
+    game: Game,
+    aircraft: Any,
+    count: int,
+    turns: int,
+    task: FlightType,
+    front: bool,
+) -> str:
+    from game.highcommand.loans import lend
+
+    loan = lend(game, PLAYER, aircraft, count, turns, task, front)
+    if loan is None:
+        raise CannotGive(f"None of our bases has room for {count} {aircraft}.")
+    game.high_command.loans.append(loan)
+    squadron = loan.squadron
+    return (
+        f"{squadron.name} joins us at {squadron.location.name} with "
+        f"{squadron.owned_aircraft} {aircraft}, until turn {loan.until}."
+    )
+
+
+def _support_aircraft(game: Game, task: FlightType) -> Any:
+    faction = game.coalition_for(PLAYER).faction
+    fleet = faction.awacs if task is FlightType.AEWC else faction.tankers
+    types = _support_types(fleet, task)
+    if not types:
+        raise CannotGive("Our side has no aircraft for it.")
+    return types[0]
+
+
+@_gives("awacs")
+def _give_awacs(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    aircraft = _support_aircraft(game, FlightType.AEWC)
+    return _lend(game, aircraft, 1, prize.term("turns"), FlightType.AEWC, False)
+
+
+@_gives("tanker")
+def _give_tanker(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    aircraft = _support_aircraft(game, FlightType.REFUELING)
+    return _lend(game, aircraft, 1, prize.term("turns"), FlightType.REFUELING, False)
+
+
+@_gives("squadron")
+def _give_squadron(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    wanted = prize.term("type")
+    aircraft = next(
+        (
+            a
+            for a in game.coalition_for(PLAYER).faction.aircraft
+            if a.display_name == wanted
+        ),
+        None,
+    )
+    if aircraft is None:
+        raise CannotGive(f"Our side no longer flies the {wanted}.")
+    task = next(
+        (task for task in COMBAT_TASKS if task in aircraft.task_priorities),
+        FlightType.BARCAP,
+    )
+    return _lend(
+        game, aircraft, prize.term("aircraft"), prize.term("turns"), task, True
     )

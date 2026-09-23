@@ -442,9 +442,13 @@ class Pilot:
             return
         self.wounded_turns -= 1
         if self.wounded_turns <= 0:
-            self.wounded_turns = 0
-            self.wounded_on_turn = -1
-            self.status = PilotStatus.Active
+            self.recover()
+
+    def recover(self) -> None:
+        """Out of hospital and back on the roster, whatever was left of the wound."""
+        self.wounded_turns = 0
+        self.wounded_on_turn = -1
+        self.status = PilotStatus.Active
 
     def kill(self) -> None:
         self.status = PilotStatus.Dead
