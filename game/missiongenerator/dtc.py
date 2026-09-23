@@ -308,6 +308,8 @@ class ViperCartridge(Cartridge):
         mpd: dict[str, Any] = {}
         if game.settings.dtc_viper_countermeasures:
             mpd["CMDS"] = countermeasure_programs()
+        if game.settings.dtc_viper_roe:
+            mpd["ROE"] = roe_section(game)
         return {"MPD": mpd} if mpd else {}
 
     @staticmethod
@@ -414,6 +416,127 @@ CMDS_PROGRAMS = {
     "MAN1": (NO_DISPENSE, (5, 0.5, 1, 0.0)),
     "MAN6": ((2, 0.1, 5, 0.75), NO_DISPENSE),
 }
+
+
+#: The families on the Viper's ROE tab, in the order ``F-16C/DTC/MPD/ROE_defs.lua``
+#: lists them, with the unit types ``threat_base.lua`` puts in each. The module knows
+#: some of them by DCS world type rather than by unit; those are named here by the
+#: units the family's hint lists.
+ROE_FAMILIES: dict[str, tuple[str, ...]] = {
+    "A-6": ("A6E",),
+    "A-10": ("A-10A", "A-10C", "A-10C_2"),
+    "AJS37": ("AJS37",),
+    "An-26": ("An-26B",),
+    "An-30": ("An-30M",),
+    "AV-8B": ("AV8BNA",),
+    "B-1": ("B-1B",),
+    "B-52": ("B-52H",),
+    "C-17": ("C-17A",),
+    "C-130": ("C-130", "C-130J-30", "KC130"),
+    "E-2": ("E-2C",),
+    "E-3": ("E-3A",),
+    "F-4": ("F-4E", "F-4E-45MC", "QF-4E"),
+    "F-5": ("F-5E", "F-5E-3", "F-5E-3_FC"),
+    "F-14": (
+        "F-14A",
+        "F-14A-135-GR",
+        "F-14A-135-GR-Early",
+        "F-14A-95-GR",
+        "F-14B",
+        "F-14BU",
+        "F-14D",
+    ),
+    "F-15": ("F-15C", "F-15E", "F-15ESE"),
+    "F-16": ("F-16A", "F-16A MLU", "F-16C bl.50", "F-16C bl.52d", "F-16C_50"),
+    "F/A-18": ("F/A-18A", "F/A-18C", "FA-18C_hornet"),
+    "Il-76": ("A-50", "IL-76MD"),
+    "Il-78": ("IL-78M",),
+    "JF-17": ("JF-17",),
+    "KC-135": ("KC-135", "KC135MPRS"),
+    "KJ-2000": ("KJ-2000",),
+    "L-39": ("L-39C", "L-39ZA"),
+    "MiG-19": ("MiG-19P",),
+    "MiG-21": ("MiG-21Bis",),
+    "MiG-23": ("MiG-23MLD",),
+    "MiG-25": ("MiG-25PD", "MiG-25RBT"),
+    "MiG-27": ("MiG-27K",),
+    "MiG-29": ("MiG-29 Fulcrum", "MiG-29A", "MiG-29G", "MiG-29S"),
+    "MiG-31": ("MiG-31",),
+    "Mirage 2000": ("M-2000C", "Mirage 2000-5"),
+    "Mirage F1": (
+        "Mirage-F1AD",
+        "Mirage-F1AZ",
+        "Mirage-F1B",
+        "Mirage-F1BD",
+        "Mirage-F1BE",
+        "Mirage-F1BQ",
+        "Mirage-F1C",
+        "Mirage-F1C-200",
+        "Mirage-F1CE",
+        "Mirage-F1CG",
+        "Mirage-F1CH",
+        "Mirage-F1CJ",
+        "Mirage-F1CK",
+        "Mirage-F1CR",
+        "Mirage-F1CT",
+        "Mirage-F1CZ",
+        "Mirage-F1DDA",
+        "Mirage-F1ED",
+        "Mirage-F1EDA",
+        "Mirage-F1EE",
+        "Mirage-F1EH",
+        "Mirage-F1EQ",
+        "Mirage-F1JA",
+        "Mirage-F1M-CE",
+        "Mirage-F1M-EE",
+    ),
+    "S-3": ("S-3B", "S-3B Tanker"),
+    "Su-17": ("Su-17M4",),
+    "Su-24": ("Su-24M", "Su-24MR"),
+    "Su-25": ("Su-25", "Su-25T", "Su-25TM"),
+    "Su-27": ("Su-27", "J-11A"),
+    "Su-30": ("Su-30",),
+    "Su-33": ("Su-33",),
+    "Su-34": ("Su-34",),
+    "Tornado GR1": ("Tornado IDS",),
+    "Tornado GR4": ("Tornado GR4",),
+    "Tu-16": ("H-6J",),
+    "Tu-22": ("Tu-22M3",),
+    # The module names the CurrentHill unit; the stock one is the same aircraft.
+    "Tu-95": ("Tu-95MS", "Tu-95MS_CHAP"),
+    "Tu-142": ("Tu-142",),
+    "Tu-160": ("Tu-160",),
+}
+FRIENDLY = 1
+HOSTILE = 2
+UNKNOWN = 3
+
+
+def roe_section(game: Game) -> dict[str, Any]:
+    """The Viper's ROE tab, with every family's side taken from the two air wings.
+
+    A family only the player's side flies is friendly and one only the enemy flies
+    hostile. One both sides fly stays unknown, which is where the module starts every
+    row, so one side's variant never makes the other side's look friendly. Every row
+    is written: the loader replaces the list whole.
+    """
+    flown: dict[Player, set[str]] = {Player.BLUE: set(), Player.RED: set()}
+    for player, coalition in ((Player.BLUE, game.blue), (Player.RED, game.red)):
+        for squadron in coalition.air_wing.iter_squadrons():
+            flown[player].add(squadron.aircraft.dcs_unit_type.id)
+
+    rows = []
+    for family, members in ROE_FAMILIES.items():
+        blue = not flown[Player.BLUE].isdisjoint(members)
+        red = not flown[Player.RED].isdisjoint(members)
+        if blue and not red:
+            sovereignty = FRIENDLY
+        elif red and not blue:
+            sovereignty = HOSTILE
+        else:
+            sovereignty = UNKNOWN
+        rows.append({"group_name": family, "sovereignty": sovereignty})
+    return {"Settings": {"TypeSovereignty": True, "Mode4Status": True}, "List": rows}
 
 
 def countermeasure_programs() -> dict[str, Any]:

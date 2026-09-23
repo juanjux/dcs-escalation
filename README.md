@@ -392,7 +392,10 @@ and it is longer than this section.
     and #1015);
   - optionally, the Viper's MAN 1 as flares only and MAN 6 as chaff only, both on the
     stick ([#417](https://github.com/juanjux/dcs-escalation/pull/417), porting RetLab
-    #1008).
+    #1008);
+  - the Viper's ROE tab filled from the campaign: a family only one side flies is that
+    side's ([#418](https://github.com/juanjux/dcs-escalation/pull/418), porting RetLab
+    #992).
 
 ## Removed from upstream
 
