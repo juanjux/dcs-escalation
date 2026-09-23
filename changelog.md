@@ -163,7 +163,7 @@
 * **[FIX]** OPFOR-AI: a package refused for being out of range told the caller to pass a field it had already passed.
 * **[FIX]** Cancelling a flight threw away the points saved for it; they belong to the squadron now.
 * **[FIX]** Dragging a ship group or a carrier on the map let go on its own: the marker was being put back, or rebuilt, mid-drag.
-* **[FIX]** Run from source, the taskbar showed Python's icon instead of the application's.
+* **[FIX]** Run from source, the taskbar showed Python's icon, or Windows' generic one, instead of the application's.
 * **[FIX]** The word under a squadron's task chip in the Air Wing says what it measures: its cohesion.
 * **[FIX]** The saved-points list cut the coordinates; it is a table with columns the player can widen.
 * **[FIX]** The kneeboard numbered a saved point 1; the aircraft numbers it after the flight plan.

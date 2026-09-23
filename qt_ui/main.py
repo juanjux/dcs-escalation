@@ -12,7 +12,7 @@ import yaml
 from PySide6 import QtWidgets
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import QApplication, QCheckBox, QSplashScreen
+from PySide6.QtWidgets import QApplication, QCheckBox, QSplashScreen, QWidget
 from dcs.liveries.liverycache import LiveryCache
 from dcs.payloads import PayloadDirectories
 
@@ -69,6 +69,67 @@ def claim_taskbar_identity(app_id: str = APP_ID) -> bool:
         # A missing shell32, an older Windows, a locked-down host: the icon is not
         # worth failing to start over.
         logging.info("Could not claim the taskbar identity", exc_info=True)
+        return False
+    return True
+
+
+#: The Win32 constants claim_class_icon needs.
+GCLP_HICON = -14
+GCLP_HICONSM = -34
+SM_CXICON, SM_CYICON = 11, 12
+SM_CXSMICON, SM_CYSMICON = 49, 50
+IMAGE_ICON = 1
+LR_LOADFROMFILE = 0x10
+
+
+def claim_class_icon(window: QWidget, icon: str = "./resources/icon.ico") -> bool:
+    """Give the window's class the application's icon. True if it took.
+
+    Windows falls back to the class icon when it cannot read the window's own, and Qt
+    registers its window classes with the executable's IDI_ICON1 resource or, when
+    there is none, as in python.exe, the generic application icon. The class is
+    shared by every top-level window of the process.
+    """
+    if sys.platform != "win32":
+        return False
+    try:
+        import ctypes
+
+        user32 = ctypes.windll.user32
+        user32.LoadImageW.restype = ctypes.c_void_p
+        user32.LoadImageW.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_wchar_p,
+            ctypes.c_uint,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_uint,
+        ]
+        user32.SetClassLongPtrW.restype = ctypes.c_size_t
+        user32.SetClassLongPtrW.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_int,
+            ctypes.c_ssize_t,
+        ]
+        path = str(Path(icon).resolve())
+        hwnd = int(window.winId())
+        for index, width, height in (
+            (GCLP_HICON, SM_CXICON, SM_CYICON),
+            (GCLP_HICONSM, SM_CXSMICON, SM_CYSMICON),
+        ):
+            handle = user32.LoadImageW(
+                None,
+                path,
+                IMAGE_ICON,
+                user32.GetSystemMetrics(width),
+                user32.GetSystemMetrics(height),
+                LR_LOADFROMFILE,
+            )
+            if not handle:
+                return False
+            user32.SetClassLongPtrW(hwnd, index, handle)
+    except Exception:
+        logging.info("Could not set the window class icon", exc_info=True)
         return False
     return True
 
@@ -214,6 +275,7 @@ def run_ui(game: Optional[Game], ui_flags: UiFlags) -> None:
 
     # Start window
     window = QLiberationWindow(game, ui_flags)
+    claim_class_icon(window)
     window.showMaximized()
     splash.finish(window)
     qt_execution_code = app.exec()
