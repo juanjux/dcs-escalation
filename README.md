@@ -85,6 +85,14 @@ Still to come:
   worth a warning.
 
   
+## High Command
+
+- **Each turn the High Command orders enemy objectives taken, each with a prize**
+  paid at once or as a ticket to spend later. Its window, opened from the command
+  bar, lists the orders open.
+  ([#421](https://github.com/juanjux/dcs-escalation/pull/421),
+  [#432](https://github.com/juanjux/dcs-escalation/pull/432))
+
 ## Interface
 
 - **The interface has been rebuilt.** Dialogs, lists and panels were redrawn to one

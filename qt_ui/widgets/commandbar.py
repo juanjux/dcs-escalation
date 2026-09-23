@@ -63,6 +63,13 @@ CELL_HEIGHT = 52
 #: Below this the strip has to give something up; Intel goes first, then the winds.
 MIN_WIDTH_FOR_INTEL = 1880
 MIN_WIDTH_FOR_WINDS = 1660
+#: The High Command cell goes with Intel, and Intel needs this much more beside it.
+MIN_WIDTH_FOR_HIGH_COMMAND = MIN_WIDTH_FOR_INTEL
+HIGH_COMMAND_ROOM = 250
+
+#: The High Command orange, and the text on it (qt_ui.windows.highcommand.palette).
+HIGH_COMMAND = "#F29A4A"
+ON_HIGH_COMMAND = "#0F1922"
 
 
 def _font(
@@ -427,6 +434,64 @@ class IntelCell(ClickableCell):
             track.set_state(ratio / 2, colour)
             word.setText(text)
             word.setStyleSheet(f"color: {colour}; background: transparent;")
+
+
+class HighCommandCell(ClickableCell):
+    """Orders open, the last-turn chip or when the next order ends, and tickets."""
+
+    def __init__(self, on_click: Callable[[], None]) -> None:
+        super().__init__("High Command", on_click)
+        column = QVBoxLayout()
+        column.setContentsMargins(0, 1, 0, 0)
+        column.setSpacing(4)
+
+        orders = QHBoxLayout()
+        orders.setContentsMargins(0, 0, 0, 0)
+        orders.setSpacing(8)
+        self.orders = _label("0", 13, VALUE, QFont.Weight.DemiBold, mono=True)
+        orders.addWidget(self.orders)
+        orders.addWidget(_label("orders", 12, "#B7C6D2"))
+        self.last_turn = QLabel()
+        font = _font(9.5, QFont.Weight.Bold)
+        font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 0.6)
+        self.last_turn.setFont(font)
+        self.last_turn.setStyleSheet(
+            f"background: {HIGH_COMMAND}; color: {ON_HIGH_COMMAND};"
+            " border-radius: 3px; padding: 1px 6px;"
+        )
+        orders.addWidget(self.last_turn)
+        self.next_ends = _label("", 11.5, "#7C8B99")
+        orders.addWidget(self.next_ends)
+        orders.addStretch()
+        column.addLayout(orders)
+
+        tickets = QHBoxLayout()
+        tickets.setContentsMargins(0, 0, 0, 0)
+        tickets.setSpacing(6)
+        self.tickets = _label("", 12, HIGH_COMMAND, mono=True)
+        tickets.addWidget(self.tickets)
+        self.tickets_words = _label("", 11.5, TERTIARY)
+        tickets.addWidget(self.tickets_words)
+        tickets.addStretch()
+        column.addLayout(tickets)
+        self.body.addLayout(column)
+
+    def set_state(
+        self, orders: int, last_turn: int, soonest: Optional[int], tickets: int
+    ) -> None:
+        self.orders.setText(str(orders))
+        self.last_turn.setText(f"{last_turn} LAST TURN")
+        self.last_turn.setVisible(last_turn > 0)
+        self.next_ends.setText(
+            f"· next ends in {soonest}" if soonest is not None and not last_turn else ""
+        )
+        self.next_ends.setVisible(soonest is not None and not last_turn)
+        self.tickets.setText(str(tickets))
+        self.tickets.setVisible(tickets > 0)
+        self.tickets_words.setText("tickets to spend" if tickets else "no tickets")
+        self.tickets_words.setStyleSheet(
+            f"color: {TERTIARY if tickets else CAPTION}; background: transparent;"
+        )
 
 
 def force_ratio(own: int, enemy: int) -> float:
