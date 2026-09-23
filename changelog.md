@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mission Generator]** New setting under MFD, off by default: the Viper's data cartridge makes MAN 1 flares only and MAN 6 chaff only, so both are on the stick. (adapted from the RetLab fork)
 * **[Mission Generator]** Blue tanker and AEW&C orbits are drawn on the F10 map, labelled with callsign, type, frequency and TACAN, and each CAP station as a thinner racetrack. (adapted from the RetLab fork)
 * **[Live Pilots]** The debriefing says what each pilot's experience was paid for, on a line of its own: kills by kind, damage, the sortie, a wound, and the three things that move the multiplier. Biggest gain first.
 * **[Campaign AI]** The auto-planner frags the detectors covering a sector before the SAMs behind them: a DEAD sent at a SAM the network holds dark has nothing to shoot at. The OPFOR briefing carries the same tactic. (adapted from the RetLab fork)

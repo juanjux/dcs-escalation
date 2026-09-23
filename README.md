@@ -389,7 +389,10 @@ and it is longer than this section.
     ([#415](https://github.com/juanjux/dcs-escalation/pull/415), porting RetLab #1008);
   - a box round each tanker the aircraft can refuel from, nearest its target first
     ([#416](https://github.com/juanjux/dcs-escalation/pull/416), porting RetLab #1008
-    and #1015).
+    and #1015);
+  - optionally, the Viper's MAN 1 as flares only and MAN 6 as chaff only, both on the
+    stick ([#417](https://github.com/juanjux/dcs-escalation/pull/417), porting RetLab
+    #1008).
 
 ## Removed from upstream
 

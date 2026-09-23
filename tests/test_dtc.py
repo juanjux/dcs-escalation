@@ -25,7 +25,7 @@ from game.missiongenerator import dtc
 from game.theater import Player
 
 
-def _game(*, fronts: int = 0) -> Any:
+def _game(*, fronts: int = 0, countermeasures: bool = False) -> Any:
     names = [SimpleNamespace(name=f"Front {n}") for n in range(1, fronts + 1)]
     return SimpleNamespace(
         theater=SimpleNamespace(
@@ -33,7 +33,7 @@ def _game(*, fronts: int = 0) -> Any:
             terrain=SimpleNamespace(name="Falklands"),
             conflicts=lambda: iter(names),
         ),
-        settings=SimpleNamespace(),
+        settings=SimpleNamespace(dtc_viper_countermeasures=countermeasures),
         campaign_name="A Campaign",
         blue=SimpleNamespace(ato=SimpleNamespace(packages=[])),
     )
@@ -748,3 +748,70 @@ def test_the_viper_s_boxes_leave_the_front_the_rest_of_its_points(
     assert len(front) == 25 - 2 * dtc.BOX_POINTS
     assert [point["note"] for point in points if point["L2"]] == ["Shell 1"] * 5
     assert [point["note"] for point in points if point["L3"]] == ["Shell 2"] * 5
+
+
+# ------------------------------------------------------- the Viper's countermeasures
+
+
+def test_the_countermeasure_programs_are_only_written_when_asked_for() -> None:
+    viper = dtc.cartridge(_game(), Player.BLUE, "F-16C_50", "Escalation")
+    assert "CMDS" not in viper["data"]["MPD"]
+
+    hornet = dtc.cartridge(
+        _game(countermeasures=True), Player.BLUE, "FA-18C_hornet", "Escalation"
+    )
+    assert "CMDS" not in json.dumps(hornet)
+
+
+def test_man_1_is_flares_and_man_6_chaff_both_from_the_stick() -> None:
+    built = dtc.cartridge(
+        _game(countermeasures=True), Player.BLUE, "F-16C_50", "Escalation"
+    )
+    cmds = built["data"]["MPD"]["CMDS"]
+    programs = cmds["CMDSProgramSettings"]
+
+    assert list(programs) == [
+        "MAN1", "MAN2", "MAN3", "MAN4", "MAN5", "MAN6", "AUTO1", "AUTO2", "AUTO3", "BYP"
+    ]  # fmt: skip
+    assert programs["MAN1"]["Chaff"]["BurstQuantity"] == 0
+    assert programs["MAN1"]["Flare"]["BurstQuantity"] > 0
+    assert programs["MAN6"]["Flare"]["BurstQuantity"] == 0
+    assert programs["MAN6"]["Chaff"]["BurstQuantity"] > 0
+    # Every other program is the module's own, written whole.
+    assert programs["MAN5"]["Chaff"]["SalvoQuantity"] == 20
+    assert set(programs["AUTO2"]) == {"Chaff", "Flare", "Other1", "Other2"}
+    # The per-threat choice of automatic program stays the module's.
+    assert set(cmds) == {"CMDSBingoSettings", "CMDSProgramSettings"}
+
+
+@installed
+def test_the_stock_programs_are_the_module_s_own() -> None:
+    """A DCS update that retunes a program fails here rather than in the cockpit."""
+    import re
+
+    text = (VIPER / "CMDS_defs.lua").read_text(encoding="utf-8")
+    block = text[text.index("CMDSProgramSettings") : text.index("CMDSPrograms =")]
+    found = re.findall(
+        r"(\w+) = \{\s*BurstQuantity = ([\d.]+),\s*BurstInterval = ([\d.]+),"
+        r"\s*SalvoQuantity = ([\d.]+),\s*SalvoInterval = ([\d.]+),?\s*\}",
+        block,
+    )
+    values = [tuple(float(v) for v in match[1:]) for match in found]
+    # Four dispensers a program, in the order the file lists the programs.
+    assert [match[0] for match in found[:4]] == ["Chaff", "Flare", "Other1", "Other2"]
+    ours = [
+        dispenser
+        for chaff, flare in dtc.STOCK_CMDS_PROGRAMS.values()
+        for dispenser in (chaff, flare, dtc.STOCK_OTHER, dtc.STOCK_OTHER)
+    ]
+    assert values == [tuple(float(v) for v in dispenser) for dispenser in ours]
+
+
+@installed
+def test_the_loader_reads_the_programs_where_they_are_written() -> None:
+    """DCS's sample cartridges keep them at data.CMDS, where the loader does not look:
+    it reads them inside the MPD section."""
+    loader = (VIPER.parent / "F-16C_50_DTC.lua").read_text(encoding="utf-8")
+
+    mpd = loader.index('if i == "MPD"')
+    assert loader.index("tbl[i].CMDS.CMDSProgramSettings") > mpd
