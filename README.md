@@ -384,6 +384,10 @@ and it is longer than this section.
   ([#414](https://github.com/juanjux/dcs-escalation/pull/414), porting RetLab #442,
   #678 and #1032)
 
+- **More in the player aircraft's data cartridge:**
+  - every front joined into one line, the only one the Hornet's SA page shows
+    ([#415](https://github.com/juanjux/dcs-escalation/pull/415), porting RetLab #1008).
+
 ## Removed from upstream
 
 - **Anubis' C-130J-30 Super Hercules mod**, unsupported here and by its own authors. It
