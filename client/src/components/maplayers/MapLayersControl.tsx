@@ -28,6 +28,7 @@ import FlightPlansLayer, {
   SelectedFlightPlanLayer,
 } from "../flightplanslayer";
 import FrontLinesLayer from "../frontlineslayer";
+import HighCommandLayer from "../highcommandlayer";
 import Iadsnetworklayer from "../iadsnetworklayer";
 import NavMeshLayer from "../navmesh/NavMeshLayer";
 import SupplyRoutesLayer from "../supplyrouteslayer";
@@ -52,6 +53,7 @@ type LayerId =
   | "combat"
   | "supplyRoutes"
   | "frontLines"
+  | "highCommand"
   | "factories"
   | "ships"
   | "otherGround"
@@ -94,6 +96,7 @@ const OVERLAYS: Record<LayerId, { label: string; node: ReactNode }> = {
   combat: { label: "Active combat", node: <CombatLayer /> },
   supplyRoutes: { label: "Supply routes", node: <SupplyRoutesLayer /> },
   frontLines: { label: "Front lines", node: <FrontLinesLayer /> },
+  highCommand: { label: "High Command orders", node: <HighCommandLayer /> },
   factories: { label: "Factories", node: <TgosLayer categories={["factory"]} /> },
   ships: { label: "Ships", node: <TgosLayer categories={["ship"]} /> },
   otherGround: {
@@ -218,6 +221,7 @@ const GROUPS: GroupDef[] = [
     title: "Enemy intel",
     defaultOpen: true,
     rows: [
+      { id: "highCommand" },
       { id: "enemySamThreat" },
       { id: "enemySamDetection" },
       { id: "enemyIads" },
@@ -278,6 +282,7 @@ const DEFAULT_ON: LayerId[] = [
   "otherGround",
   "supplyRoutes",
   "frontLines",
+  "highCommand",
   "enemySamThreat",
   "emitterHighlight",
   "blueDestroyed",
@@ -293,6 +298,7 @@ const PRESETS: Record<string, LayerId[]> = {
   SEAD: [
     "controlPoints",
     "frontLines",
+    "highCommand",
     "airDefenses",
     "enemySamThreat",
     "enemySamDetection",
@@ -302,6 +308,7 @@ const PRESETS: Record<string, LayerId[]> = {
   Recon: [
     "controlPoints",
     "frontLines",
+    "highCommand",
     "airDefenses",
     "factories",
     "ships",

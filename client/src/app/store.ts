@@ -3,6 +3,7 @@ import combatReducer from "../api/combatSlice";
 import controlPointsReducer from "../api/controlPointsSlice";
 import flightsReducer from "../api/flightsSlice";
 import frontLinesReducer from "../api/frontLinesSlice";
+import highCommandReducer from "../api/highCommandSlice";
 import iadsNetworkReducer from "../api/iadsNetworkSlice";
 import mapReducer from "../api/mapSlice";
 import navMeshReducer from "../api/navMeshSlice";
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
   controlPoints: controlPointsReducer,
   flights: flightsReducer,
   frontLines: frontLinesReducer,
+  highCommand: highCommandReducer,
   map: mapReducer,
   navmeshes: navMeshReducer,
   supplyRoutes: supplyRoutesReducer,

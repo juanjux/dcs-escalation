@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from game.server.controlpoints.models import ControlPointJs
 from game.server.flights.models import FlightJs
 from game.server.frontlines.models import FrontLineJs
+from game.server.highcommand.models import HighCommandMarkJs
 from game.server.iadsnetwork.models import IadsNetworkJs
 from game.server.leaflet import LeafletPoint
 from game.server.mapzones.models import (
@@ -44,6 +45,7 @@ class GameJs(BaseModel):
     map_center: LeafletPoint | None
     unculled_zones: list[UnculledZoneJs]
     map_zones: MapZonesJs
+    high_command: list[HighCommandMarkJs]
 
     class Config:
         title = "Game"
@@ -64,4 +66,5 @@ class GameJs(BaseModel):
             ),
             unculled_zones=UnculledZoneJs.from_game(game),
             map_zones=MapZonesJs.from_game(game),
+            high_command=HighCommandMarkJs.all_in_game(game),
         )
