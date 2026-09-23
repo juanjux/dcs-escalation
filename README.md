@@ -378,6 +378,12 @@ and it is longer than this section.
   ([#105](https://github.com/juanjux/dcs-escalation/pull/105), porting the
   capability-weighted half of 414Ret #68)
 
+- **Tanker, AEW&C and CAP orbits on the F10 map** — each blue tanker and AEW&C
+  racetrack is drawn with its callsign, type, frequency and TACAN, as wide as the AI
+  actually flies it, and each CAP station once as a thinner racetrack.
+  ([#414](https://github.com/juanjux/dcs-escalation/pull/414), porting RetLab #442,
+  #678 and #1032)
+
 ## Removed from upstream
 
 - **Anubis' C-130J-30 Super Hercules mod**, unsupported here and by its own authors. It

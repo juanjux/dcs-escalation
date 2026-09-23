@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mission Generator]** Blue tanker and AEW&C orbits are drawn on the F10 map, labelled with callsign, type, frequency and TACAN, and each CAP station as a thinner racetrack. (adapted from the RetLab fork)
 * **[Live Pilots]** The debriefing says what each pilot's experience was paid for, on a line of its own: kills by kind, damage, the sortie, a wound, and the three things that move the multiplier. Biggest gain first.
 * **[Campaign AI]** The auto-planner frags the detectors covering a sector before the SAMs behind them: a DEAD sent at a SAM the network holds dark has nothing to shoot at. The OPFOR briefing carries the same tactic. (adapted from the RetLab fork)
 * **[Mods]** Support for the CurrentHill German Military Assets pack (1.5.0), behind a New Game checkbox: 25 units from the Leopard 2A7V to the Sachsen frigate, with the combat ones in the modern NATO faction. The Patriot KAT1 battery moved here from the USA pack. Two batteries can be generated and bought: Skyshield C-RAM, and FlaRakRad with IRIS-T SLS.
