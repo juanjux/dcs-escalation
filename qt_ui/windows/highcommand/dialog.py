@@ -33,7 +33,9 @@ from qt_ui.windows.groundobject.header import KIND_FILL
 from qt_ui.windows.highcommand import model as data
 from qt_ui.windows.highcommand import palette as ink
 from qt_ui.windows.highcommand.model import OrderView
+from qt_ui.windows.highcommand.model import TicketView
 from qt_ui.windows.highcommand.rows import OrderDelegate, OrdersModel
+from qt_ui.windows.highcommand.tickets import TicketsPage
 from qt_ui.windows.pilot.common import RED, chip, label
 
 #: How close the map goes on "Show on map": the site and its rings in view.
@@ -562,7 +564,8 @@ class OrdersPage(QWidget):
 class HighCommandWindow(QDialog):
     """The High Command's orders, one tab per kind of thing it keeps."""
 
-    TABS = ["Orders"]
+    TABS = ["Orders", "Tickets"]
+    ORDERS, TICKETS = 0, 1
 
     def __init__(self, game_model: Any, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -575,8 +578,10 @@ class HighCommandWindow(QDialog):
         self.headline = Headline()
         self.tabs = TabStrip(self.TABS)
         self.orders = OrdersPage(self.show_on_map)
+        self.tickets = TicketsPage(self.spend, self.ticket_spent, self.show_site)
         self.pages = QStackedWidget()
         self.pages.addWidget(self.orders)
+        self.pages.addWidget(self.tickets)
         self.tabs.changed.connect(self.pages.setCurrentIndex)
 
         layout = QVBoxLayout()
@@ -613,10 +618,12 @@ class HighCommandWindow(QDialog):
             return
         figures = data.headline(game)
         self.headline.show_figures(figures)
-        self.tabs.set_count(0, figures.orders, warm=figures.last_turn > 0)
+        self.tabs.set_count(self.ORDERS, figures.orders, warm=figures.last_turn > 0)
+        self.tabs.set_count(self.TICKETS, figures.tickets)
         self.orders.show_orders(
             data.order_views(game), game.settings.high_command_enabled
         )
+        self.tickets.show_tickets(game, data.ticket_views(game))
 
     def open_order(self, objective: Optional[str]) -> None:
         """Show this order, on the Orders tab."""
@@ -627,14 +634,31 @@ class HighCommandWindow(QDialog):
 
     def show_on_map(self, order: OrderView) -> None:
         """The map goes to the objective. This window stays where it is."""
-        if order.position is None:
-            return
+        if order.position is not None:
+            self._look_at(order.position)
+
+    def show_site(self, site: Any) -> None:
+        if site is not None:
+            self._look_at(site.position)
+
+    @staticmethod
+    def _look_at(position: Any) -> None:
         from game.server import EventStream
         from game.sim import GameUpdateEvents
 
         EventStream.put_nowait(
-            GameUpdateEvents().look_at(order.position.latlng(), OBJECTIVE_ZOOM)
+            GameUpdateEvents().look_at(position.latlng(), OBJECTIVE_ZOOM)
         )
+
+    def spend(self, ticket: TicketView, picked: tuple[str, ...]) -> str:
+        """Spend a ticket and say what it gave; CannotGive when it cannot be."""
+        return self.game.high_command.spend(self.game, ticket.ticket, picked)
+
+    def ticket_spent(self, line: str) -> None:
+        """What a ticket gave shows in the rest of the application too."""
+        GameUpdateSignal.get_instance().updateGame(self.game)
+        if not self.isVisible():
+            self.reload()
 
 
 def open_high_command(
