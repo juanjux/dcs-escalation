@@ -691,7 +691,10 @@ class Game:
         A fault here must not stop the turn, so it is logged and the orders wait for
         the next one.
         """
-        if self.check_win_loss() is not TurnState.CONTINUE:
+        if (
+            not self.settings.high_command_enabled
+            or self.check_win_loss() is not TurnState.CONTINUE
+        ):
             return
         try:
             with logged_duration("High Command orders"):

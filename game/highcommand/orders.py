@@ -1,9 +1,10 @@
 """The objectives the High Command orders taken.
 
-There are always ORDERS of them, one from each tier of the enemy's objectives ranked
-by score (difficulty plus importance): with three, one from the top third, one from the
-middle third and one from the bottom. An order is given a lifetime of SHORTEST to
-LONGEST turns, and its objective's prize, when it is made. When the lifetime runs out,
+There are as many open as the settings say, one from each tier of the enemy's
+objectives ranked by score (difficulty plus importance): with three, one from the top
+third, one from the middle third and one from the bottom. An order is given a lifetime
+of between the shortest and the longest the settings allow, and its objective's prize,
+when it is made. When the lifetime runs out,
 or the objective is gone, the order closes, with nothing lost, and another objective
 from the same tier takes its place. The player cannot turn an order down.
 
@@ -45,13 +46,6 @@ if TYPE_CHECKING:
 
 #: The High Command gives its orders to the player, against the other side.
 ENEMY = Player.RED
-
-#: How many orders the High Command keeps open, each from its own tier.
-ORDERS = 3
-
-#: How many turns an order stays open, drawn when it is made.
-SHORTEST = 2
-LONGEST = 5
 
 #: What the tiers are called when there are three of them, lowest first.
 TIER_NAMES = ("low", "medium", "high")
@@ -141,12 +135,23 @@ class HighCommand(SaveCompatible):
                 self.orders.remove(order)
                 closed.append(Closed(order, outcome))
 
+        count = game.settings.high_command_orders
+        # Fewer orders set than there were: the tiers past the new count are gone.
+        for order in [order for order in self.orders if order.tier >= count]:
+            self.orders.remove(order)
+            closed.append(Closed(order, Outcome.GONE))
+        shortest, longest = sorted(
+            (
+                game.settings.high_command_shortest_order,
+                game.settings.high_command_longest_order,
+            )
+        )
         busy = {order.tier for order in self.orders}
         # Nor the objective an order has just closed on: its replacement is another.
         taken = {order.objective for order in self.orders} | {
             c.order.objective for c in closed
         }
-        for tier, candidates in enumerate(tiers(objectives, ORDERS)):
+        for tier, candidates in enumerate(tiers(objectives, count)):
             if tier in busy:
                 continue
             choices = [o for o in candidates if o.name not in taken]
@@ -155,7 +160,7 @@ class HighCommand(SaveCompatible):
             chosen = rng.choice(choices)
             taken.add(chosen.name)
             self.orders.append(
-                _order(chosen, tier, game.turn, rng.randint(SHORTEST, LONGEST))
+                _order(chosen, tier, game.turn, rng.randint(shortest, longest))
             )
         self.orders.sort(key=lambda order: -order.tier)
         return closed
@@ -210,7 +215,7 @@ def tiers(objectives: Sequence[Objective], count: int) -> list[list[Objective]]:
     ]
 
 
-def tier_name(tier: int, count: int = ORDERS) -> str:
+def tier_name(tier: int, count: int) -> str:
     if count == len(TIER_NAMES):
         return TIER_NAMES[tier]
     return f"tier {tier + 1} of {count}"

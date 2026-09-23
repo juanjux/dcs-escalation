@@ -71,6 +71,7 @@ GENERAL_SECTION = "General"
 PILOTS_AND_SQUADRONS_SECTION = "Pilots and Squadrons"
 HQ_AUTOMATION_SECTION = "HQ Automation"
 OPFOR_AI_SECTION = "OPFOR AI commander"
+HIGH_COMMAND_SECTION = "High Command"
 FLIGHT_PLANNER_AUTOMATION = "Flight Planner Automation"
 GROUND_OBJECT_REPAIR_TUNING_SECTION = "Ground Object Repairs"
 BUILDING_REPAIR_TUNING_SECTION = "Building Repairs"
@@ -242,6 +243,44 @@ class Settings:
             "commander. Check the toolbar OPFOR AI button for more info when enabling "
             "this."
         ),
+    )
+    high_command_enabled: bool = boolean_option(
+        "Enable the High Command",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=HIGH_COMMAND_SECTION,
+        default=True,
+        detail=(
+            "Each turn the High Command orders enemy objectives taken, each with a "
+            "prize for taking it before the order runs out."
+        ),
+    )
+    high_command_orders: int = bounded_int_option(
+        "Orders open at once",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=HIGH_COMMAND_SECTION,
+        default=3,
+        min=1,
+        max=6,
+        detail=(
+            "One from each tier of the enemy's objectives ranked by difficulty plus "
+            "importance: with three, a hard, a middling and an easy one."
+        ),
+    )
+    high_command_shortest_order: int = bounded_int_option(
+        "Shortest order, in turns",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=HIGH_COMMAND_SECTION,
+        default=2,
+        min=1,
+        max=10,
+    )
+    high_command_longest_order: int = bounded_int_option(
+        "Longest order, in turns",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=HIGH_COMMAND_SECTION,
+        default=5,
+        min=1,
+        max=10,
     )
     external_views_allowed: bool = boolean_option(
         "Allow external views",
