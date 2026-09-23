@@ -1,5 +1,6 @@
 """The enemy objectives the High Command can order attacked: how hard each one is to
-get at, how much it matters, and one line on why it is worth attacking.
+get at, how much it matters, one line on why it is worth attacking, and what taking it
+pays.
 
 What getting at an objective takes, its effort, adds up three things, each in points:
 
@@ -24,13 +25,16 @@ every campaign.
 
 The line is the objective's reason worth the most. The least important fifth gets a
 comical one instead (``comical.py``).
+
+The prize is drawn for the objective's score, its difficulty plus its importance
+(``prizes.py``).
 """
 
 from __future__ import annotations
 
 from bisect import bisect_left
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from dcs import Point
 
@@ -38,6 +42,7 @@ from game.data.units import UnitClass
 from game.highcommand.campaign import Campaign
 from game.highcommand.comical import comical_lines
 from game.highcommand.importance import Reason, Worth, by_worth
+from game.highcommand.prizes import Prize, Prizes
 from game.highcommand.wording import alive, system_name
 from game.theater import Airfield, MissionTarget, Player
 from game.theater.theatergroundobject import (
@@ -129,10 +134,17 @@ class Objective:
     importance: int = 0
     #: Why it is worth attacking, in one line, or COMICAL.
     justification: str = ""
+    #: What taking it pays; None when no prize fits.
+    prize: Optional[Prize] = None
 
     @property
     def position(self) -> Point:
         return self.targets[0].position
+
+    @property
+    def score(self) -> int:
+        """What the prize is worked out for, from 2 to 10."""
+        return self.difficulty + self.importance
 
     @property
     def worth(self) -> float:
@@ -178,8 +190,13 @@ def enemy_objectives(game: Game, player: Player = Player.BLUE) -> list[Objective
         ]
     )
     comical = comical_lines([o for o in found if o.importance == 1], seed=game.turn)
+    prizes = Prizes.of(game, player)
     found = [
-        replace(o, justification=comical[o.name]) if o.name in comical else o
+        replace(
+            o,
+            justification=comical.get(o.name, o.justification),
+            prize=prizes.draw(o.score, seed=f"{game.turn}:{o.name}"),
+        )
         for o in found
     ]
     return sorted(found, key=lambda o: (o.effort.total, o.name))
