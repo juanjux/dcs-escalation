@@ -25,7 +25,24 @@ from game.missiongenerator import dtc
 from game.theater import Player
 
 
-def _game(*, fronts: int = 0, countermeasures: bool = False) -> Any:
+def _air_wing(*aircraft: str) -> Any:
+    squadrons = [
+        SimpleNamespace(
+            aircraft=SimpleNamespace(dcs_unit_type=SimpleNamespace(id=unit_id))
+        )
+        for unit_id in aircraft
+    ]
+    return SimpleNamespace(iter_squadrons=lambda: iter(squadrons))
+
+
+def _game(
+    *,
+    fronts: int = 0,
+    countermeasures: bool = False,
+    roe: bool = False,
+    blue: Sequence[str] = (),
+    red: Sequence[str] = (),
+) -> Any:
     names = [SimpleNamespace(name=f"Front {n}") for n in range(1, fronts + 1)]
     return SimpleNamespace(
         theater=SimpleNamespace(
@@ -33,9 +50,14 @@ def _game(*, fronts: int = 0, countermeasures: bool = False) -> Any:
             terrain=SimpleNamespace(name="Falklands"),
             conflicts=lambda: iter(names),
         ),
-        settings=SimpleNamespace(dtc_viper_countermeasures=countermeasures),
+        settings=SimpleNamespace(
+            dtc_viper_countermeasures=countermeasures, dtc_viper_roe=roe
+        ),
         campaign_name="A Campaign",
-        blue=SimpleNamespace(ato=SimpleNamespace(packages=[])),
+        blue=SimpleNamespace(
+            ato=SimpleNamespace(packages=[]), air_wing=_air_wing(*blue)
+        ),
+        red=SimpleNamespace(air_wing=_air_wing(*red)),
     )
 
 
@@ -815,3 +837,54 @@ def test_the_loader_reads_the_programs_where_they_are_written() -> None:
 
     mpd = loader.index('if i == "MPD"')
     assert loader.index("tbl[i].CMDS.CMDSProgramSettings") > mpd
+
+
+# ------------------------------------------------------------ the Viper's ROE tab
+
+
+def test_a_family_takes_the_side_of_whoever_alone_flies_it() -> None:
+    game = _game(
+        roe=True,
+        blue=("F-16C_50", "KC-135", "FA-18C_hornet"),
+        red=("MiG-29S", "F-16A", "Tu-95MS"),
+    )
+
+    built = dtc.cartridge(game, Player.BLUE, "F-16C_50", "Escalation")
+    roe = built["data"]["MPD"]["ROE"]
+    sides = {row["group_name"]: row["sovereignty"] for row in roe["List"]}
+
+    assert sides["KC-135"] == sides["F/A-18"] == dtc.FRIENDLY
+    assert sides["MiG-29"] == sides["Tu-95"] == dtc.HOSTILE
+    # Both fly an F-16, so an F-16 is nobody's until it is identified otherwise.
+    assert sides["F-16"] == dtc.UNKNOWN
+    # Nobody flies a Tornado: it stays where the module starts it.
+    assert sides["Tornado GR4"] == dtc.UNKNOWN
+    # Every row, in the module's order, since the loader replaces the list whole.
+    assert [row["group_name"] for row in roe["List"]] == list(dtc.ROE_FAMILIES)
+    assert roe["Settings"] == {"TypeSovereignty": True, "Mode4Status": True}
+
+
+def test_the_roe_table_is_left_to_the_module_when_switched_off() -> None:
+    built = dtc.cartridge(_game(), Player.BLUE, "F-16C_50", "Escalation")
+
+    assert "ROE" not in built["data"]["MPD"]
+
+
+@installed
+def test_the_families_are_the_module_s_own() -> None:
+    """The rows and their order are ROE_defs.lua's, and every unit threat_base.lua
+    puts in a family is in ours: a DCS update that adds a variant fails here."""
+    import re
+
+    rows = re.findall(
+        r'group_name = "([^"]+)"', (VIPER / "ROE_defs.lua").read_text(encoding="utf-8")
+    )
+    assert rows == list(dtc.ROE_FAMILIES)
+
+    base = (VIPER.parent / "threat_base.lua").read_text(encoding="utf-8")
+    for chunk in base.split('group_name = "')[1:]:
+        family = chunk[: chunk.index('"')]
+        if family not in dtc.ROE_FAMILIES:
+            continue
+        units = {unit for unit in re.findall(r'unit_type = "([^"]*)"', chunk) if unit}
+        assert units <= set(dtc.ROE_FAMILIES[family]), (family, units)

@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mission Generator]** The Viper's data cartridge fills its ROE tab from the campaign: an aircraft family only one side flies is marked as that side's, one both sides fly stays unknown. New setting under MFD, on by default. (adapted from the RetLab fork)
 * **[Mission Generator]** New setting under MFD, off by default: the Viper's data cartridge makes MAN 1 flares only and MAN 6 chaff only, so both are on the stick. (adapted from the RetLab fork)
 * **[Mission Generator]** Blue tanker and AEW&C orbits are drawn on the F10 map, labelled with callsign, type, frequency and TACAN, and each CAP station as a thinner racetrack. (adapted from the RetLab fork)
 * **[Live Pilots]** The debriefing says what each pilot's experience was paid for, on a line of its own: kills by kind, damage, the sortie, a wound, and the three things that move the multiplier. Biggest gain first.

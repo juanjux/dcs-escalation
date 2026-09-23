@@ -1775,6 +1775,17 @@ class Settings:
             "a cartridge is loaded. Not flown yet."
         ),
     )
+    dtc_viper_roe: bool = boolean_option(
+        "Viper ROE table",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=True,
+        detail=(
+            "The Viper's cartridge fills its ROE tab from the campaign: an aircraft "
+            "family only your side flies is friendly, one only the enemy flies is "
+            "hostile, and one both sides fly stays unknown."
+        ),
+    )
     mfd_front: bool = boolean_option(
         "Front line",
         page=MISSION_GENERATOR_PAGE,
