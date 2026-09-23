@@ -123,3 +123,46 @@ def test_a_group_that_cannot_field_what_is_there_is_not_it() -> None:
     site: Any = SimpleNamespace(units=[SimpleNamespace(type="something else")])
 
     assert here_now(site, [_battery()]) is None
+
+
+def test_buying_drops_the_cached_threat_ring_of_what_stood_there() -> None:
+    from qt_ui.windows.groundobject.buymodel import buy
+
+    cleared: list[str] = []
+    site: Any = SimpleNamespace(
+        position=None,
+        heading="south",
+        coalition=SimpleNamespace(budget=100),
+        clear=lambda: cleared.append("site"),
+        units=[],
+    )
+    game: Any = SimpleNamespace(
+        theater=SimpleNamespace(heading_to_conflict_from=lambda position: "north"),
+        settings=SimpleNamespace(ground_object_repair_turns=0),
+        turn=3,
+    )
+    nothing: Any = _ForceGroup("Nothing", {}, _layout("Nothing", []))
+    empty = Selection(nothing, _layout("Nothing", []))
+
+    buy(empty, site, game, refund=0)
+
+    assert cleared == ["site"]
+
+
+def test_a_changed_site_replans_the_enemy_only_when_it_was_a_target() -> None:
+    from qt_ui.windows.groundobject.QGroundObjectMenu import replan_opfor_if_targeted
+
+    site = object()
+    replanned: list[dict[str, Any]] = []
+
+    def game(targets: list[Any]) -> Any:
+        packages = [SimpleNamespace(target=target) for target in targets]
+        return SimpleNamespace(
+            ato_for=lambda player: SimpleNamespace(packages=packages),
+            initialize_turn=lambda events, **sides: replanned.append(sides),
+        )
+
+    replan_opfor_if_targeted(game([object()]), site, None)  # type: ignore[arg-type]
+    assert replanned == []
+    replan_opfor_if_targeted(game([site]), site, None)  # type: ignore[arg-type]
+    assert replanned == [{"for_red": True, "for_blue": False}]

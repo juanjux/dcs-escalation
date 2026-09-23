@@ -534,7 +534,7 @@ class QGroundObjectMenu(QDialog):
     def _sell_all(self) -> None:
         self._update_total_value()
         self.ground_object.coalition.budget += self.total_value
-        self.ground_object.groups = []
+        self.ground_object.clear()
         self._update_game()
 
     def _buy_group(self) -> None:
@@ -548,18 +548,26 @@ class QGroundObjectMenu(QDialog):
         events = GameUpdateEvents()
         events.update_tgo(self.ground_object)
         self.game.theater.iads_network.update_tgo(self.ground_object, events)
-        if any(
-            package.target == self.ground_object
-            for package in self.game.ato_for(player=Player.RED).packages
-        ):
-            # Replan if the tgo was a target of the redfor.
-            coalition = self.ground_object.coalition
-            self.game.initialize_turn(
-                events, for_red=coalition.player, for_blue=coalition.player.opponent
-            )
+        replan_opfor_if_targeted(self.game, self.ground_object, events)
         EventStream.put_nowait(events)
         GameUpdateSignal.get_instance().updateGame(self.game)
         self._rebuild()
+
+
+def replan_opfor_if_targeted(
+    game: Game, ground_object: TheaterGroundObject, events: GameUpdateEvents
+) -> None:
+    """Replan the enemy if one of its packages was aimed at the site that changed.
+
+    Only the enemy: the player's own plan is theirs to keep, and buying or selling at a
+    site is no reason to throw it away. Passing the coalitions themselves here, which
+    are always true, replanned both sides and emptied the player's ATO.
+    """
+    if any(
+        package.target == ground_object
+        for package in game.ato_for(player=Player.RED).packages
+    ):
+        game.initialize_turn(events, for_red=True, for_blue=False)
 
 
 def _right_of(caption: QWidget, widget: QWidget) -> None:
