@@ -24,6 +24,7 @@ from game.theater import ControlPoint
 #: set is checked exactly: adding or removing a commit sub-step without updating
 #: this list fails ``test_battle_impact_scored_before_captures_flip_ownership``.
 COMMIT_STEPS = [
+    "note_high_command_orders",
     "commit_air_losses",
     "commit_pilot_experience",
     "commit_front_line_losses",
@@ -61,6 +62,18 @@ def _record_steps(processor: MissionResultsProcessor, calls: list[str]) -> None:
         if name == "commit" or name.startswith("__"):
             continue
         setattr(processor, name, recorder(name))
+
+
+def test_the_high_command_reads_the_results_before_they_are_committed() -> None:
+    """A capture moves a base's squadrons away and the motorpools are redrawn; the
+    High Command's orders need both as they were in the mission."""
+    processor = MissionResultsProcessor(cast(Any, MagicMock()))
+    calls: list[str] = []
+    _record_steps(processor, calls)
+
+    processor.commit(cast(Any, MagicMock()), cast(Any, MagicMock()))
+
+    assert calls[0] == "note_high_command_orders"
 
 
 def test_casualty_count_is_side_agnostic() -> None:

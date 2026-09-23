@@ -6,6 +6,19 @@ middle third and one from the bottom. An order is given a lifetime of SHORTEST t
 LONGEST turns, and its objective's prize, when it is made. When the lifetime runs out,
 or the objective is gone, the order closes, with nothing lost, and another objective
 from the same tier takes its place. The player cannot turn an order down.
+
+An order is achieved when what it asks is done, at the latest on its last turn:
+
+* a ground object: every unit in it destroyed, while it is still the enemy's. A base
+  taken clears what it cannot keep, and that is not destroying it;
+* a motorpool: at least one of its vehicles destroyed;
+* a base's aircraft: at least one of them destroyed on the ground there;
+* a base's runway: cratered;
+* a base: taken. A base taken on an order for its aircraft or its runway only closes
+  the order.
+
+Motorpool vehicles and a base's aircraft leave nothing behind to count afterwards, so
+those two are noted from the mission's results as they come in (note_results).
 """
 
 from __future__ import annotations
@@ -18,11 +31,16 @@ from typing import TYPE_CHECKING, Optional, Sequence
 from game.highcommand.campaign import Task
 from game.highcommand.prizes import Prize
 from game.squadrons.experience import SaveCompatible
+from game.theater.player import Player
 from game.theater.theatergroundobject import MotorpoolGroundObject
 
 if TYPE_CHECKING:
     from game import Game
+    from game.debriefing import Debriefing
     from game.highcommand.objectives import Objective
+
+#: The High Command gives its orders to the player, against the other side.
+ENEMY = Player.RED
 
 #: How many orders the High Command keeps open, each from its own tier.
 ORDERS = 3
@@ -36,12 +54,12 @@ TIER_NAMES = ("low", "medium", "high")
 
 
 class Outcome(Enum):
+    #: What it asked was done.
+    ACHIEVED = "achieved"
     #: Its turns ran out.
     EXPIRED = "expired"
-    #: Everything in it was destroyed.
-    DESTROYED = "destroyed"
-    #: It is no longer an enemy objective for some other reason: captured, or with
-    #: nothing left there worth attacking.
+    #: It is no longer an enemy objective for some other reason: its base taken on an
+    #: order that did not ask for it, or nothing left there worth attacking.
     GONE = "gone"
 
 
@@ -65,6 +83,9 @@ class Order(SaveCompatible):
     #: What is asked of a base, and which base; None and empty for a ground object.
     task: Optional[Task] = None
     base: str = ""
+    #: The turn a mission's results achieved it, for what the state after them
+    #: cannot show.
+    achieved_on: Optional[int] = None
 
     @property
     def score(self) -> int:
@@ -122,6 +143,13 @@ class HighCommand(SaveCompatible):
         self.orders.sort(key=lambda order: -order.tier)
         return closed
 
+    def note_results(self, game: Game, debriefing: Debriefing) -> None:
+        """Mark the orders a mission achieved that its aftermath cannot show. To be
+        called before its results are committed."""
+        for order in self.orders:
+            if order.achieved_on is None and _achieved_by(order, game, debriefing):
+                order.achieved_on = game.turn
+
 
 def tiers(objectives: Sequence[Objective], count: int) -> list[list[Objective]]:
     """The objectives in ``count`` tiers of score as near equal in size as can be, the
@@ -158,23 +186,69 @@ def _order(objective: Objective, tier: int, turn: int, lifetime: int) -> Order:
 
 
 def _outcome(order: Order, game: Game, standing: set[str]) -> Optional[Outcome]:
-    """Why the order closes this turn, if it does. Destroying the objective counts
-    even on the turn the order would have run out."""
-    tgos = (
-        [tgo for tgo in game.theater.ground_objects if tgo.name == order.objective]
-        if order.task is None
-        else []
-    )
-    # A motorpool's vehicles are drawn afresh for every mission: an empty one has not
-    # been destroyed, and it closes when it is no longer worth attacking.
-    if (
-        tgos
-        and not any(isinstance(tgo, MotorpoolGroundObject) for tgo in tgos)
-        and all(tgo.is_dead for tgo in tgos)
-    ):
-        return Outcome.DESTROYED
+    """Why the order closes this turn, if it does. What was achieved on its last turn
+    counts."""
+    if order.achieved_on is not None:
+        return Outcome.ACHIEVED
+    if order.task is None:
+        tgos = [
+            tgo for tgo in game.theater.ground_objects if tgo.name == order.objective
+        ]
+        if any(tgo.control_point.captured != ENEMY for tgo in tgos):
+            return Outcome.GONE
+        # A motorpool's vehicles are drawn afresh for every mission: an empty one has
+        # not been destroyed. Its losses come in through note_results.
+        if (
+            tgos
+            and not any(isinstance(tgo, MotorpoolGroundObject) for tgo in tgos)
+            and all(tgo.is_dead for tgo in tgos)
+        ):
+            return Outcome.ACHIEVED
+    else:
+        base = next(
+            (cp for cp in game.theater.controlpoints if cp.name == order.base), None
+        )
+        if base is None:
+            return Outcome.GONE
+        if base.captured != ENEMY:
+            return Outcome.ACHIEVED if order.task is Task.CAPTURE else Outcome.GONE
+        if order.task is Task.RUNWAY and not base.runway_is_operational():
+            return Outcome.ACHIEVED
     if order.objective not in standing:
         return Outcome.GONE
     if game.turn >= order.expires_on:
         return Outcome.EXPIRED
     return None
+
+
+def _achieved_by(order: Order, game: Game, debriefing: Debriefing) -> bool:
+    """Whether the mission destroyed one of the aircraft on the ground at the order's
+    base, or one of the vehicles of its motorpool."""
+    if order.task is Task.AIRCRAFT:
+        return any(
+            loss.flight.departure.name == order.base
+            and debriefing.died_on_the_ground(loss)
+            for loss in debriefing.air_losses.enemy
+        )
+    if order.task is not None:
+        return False
+    motorpools = [
+        tgo
+        for tgo in game.theater.ground_objects
+        if tgo.name == order.objective and isinstance(tgo, MotorpoolGroundObject)
+    ]
+    if not motorpools:
+        return False
+    from game.missiongenerator.motorpoolpopulator import motorpools_at
+
+    base = motorpools[0].control_point
+    if not any(
+        loss.origin is base for loss in debriefing.ground_losses.enemy_motorpool
+    ):
+        return False
+    if len(motorpools_at(base)) == 1:
+        return True
+    # The base's losses are its motorpools' together: which one lost the vehicle is in
+    # the name DCS reports, which is the name the unit was drawn with.
+    dead = set(debriefing.state_data.killed_ground_units)
+    return any(unit.unit_name in dead for tgo in motorpools for unit in tgo.units)

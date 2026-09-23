@@ -22,6 +22,7 @@ from game.theater.presetlocation import PresetLocation
 from game.theater.theatergroundobject import (
     BuildingGroundObject,
     IadsBuildingGroundObject,
+    MotorpoolGroundObject,
     SamGroundObject,
     ShipGroundObject,
     TheaterGroundObject,
@@ -165,6 +166,18 @@ def armour(name: str, x_nm: float, units: Sequence[Any], base: Any = None) -> An
         name,
         x_nm,
         units,
+        base,
+        0.0,
+        None,
+    )
+
+
+def motorpool(name: str, base: Any = None) -> Any:
+    return _placed(
+        lambda location, cp: MotorpoolGroundObject(name, location, cp, None),
+        name,
+        0.0,
+        [unit("BMP-2")],
         base,
         0.0,
         None,

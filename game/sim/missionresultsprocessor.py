@@ -411,6 +411,9 @@ class MissionResultsProcessor:
 
     def commit(self, debriefing: Debriefing, events: GameUpdateEvents) -> None:
         with logged_duration("Committing mission results"):
+            # First: a capture moves a base's squadrons away and the motorpools are
+            # redrawn, and the High Command needs both as they were in the mission.
+            self.note_high_command_orders(debriefing)
             with logged_duration("commit_air_losses"):
                 self.commit_air_losses(debriefing)
             with logged_duration("commit_pilot_experience"):
@@ -449,6 +452,14 @@ class MissionResultsProcessor:
             with logged_duration("record_carcasses"):
                 self.record_carcasses(debriefing)
             self.game.record_debrief(debriefing)
+
+    def note_high_command_orders(self, debriefing: Debriefing) -> None:
+        """Mark the High Command's orders the mission achieved. A fault here must not
+        lose the mission's results, so it is logged and the orders wait."""
+        try:
+            self.game.high_command.note_results(self.game, debriefing)
+        except Exception:
+            logging.exception("Could not check the High Command's orders")
 
     def commit_air_losses(self, debriefing: Debriefing) -> None:
         for loss in debriefing.air_losses.losses:
