@@ -144,6 +144,23 @@ def motorpool_rendered_unit_count(
     return projected_motorpool_count(tgo, spawn_cap)
 
 
+def motorpool_rendered_units(
+    tgo: MotorpoolGroundObject, motorpool_enabled: bool, spawn_cap: int
+) -> list[GroundUnitType]:
+    """What the renderer will park at this motorpool in its next snapshot, one entry
+    per vehicle."""
+    if not motorpool_enabled or spawn_cap <= 0:
+        return []
+    motorpools = motorpools_at(tgo.control_point)
+    if tgo not in motorpools:
+        return []
+    return [
+        unit_type
+        for motorpool, unit_type in _projected_motorpool_units(motorpools, spawn_cap)
+        if motorpool is tgo
+    ]
+
+
 class MotorpoolPopulator:
     """Reconcile the persisted motorpool cache with each CP's current reserve."""
 
