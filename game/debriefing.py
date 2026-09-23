@@ -433,6 +433,20 @@ class Debriefing:
             logging.exception("Failed to compute indirect-kill losses")
         return indirect
 
+    def died_on_the_ground(self, loss: FlyingUnit) -> bool:
+        """Whether the aircraft was destroyed before it took off: parked, or starting
+        up on the ground. One lost in Escalation's own simulation of the air war never
+        was, since it has no name to look up."""
+        flight = loss.flight
+        if getattr(flight, "parked_reserve", False):
+            return True
+        name = self._loss_name_by_id.get(id(loss))
+        if name is None:
+            return False
+        return flight.start_type is not StartType.IN_FLIGHT and name not in set(
+            self.state_data.took_off or []
+        )
+
     def is_indirect_kill(self, flying_unit: "FlyingUnit") -> bool:
         """True if this loss is counted as combat via inference (no direct DCS
         shooter): destroyed parked, or the same attack as a confirmed kill."""

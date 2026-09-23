@@ -25,6 +25,8 @@ from game.highcommand.orders import (
     tiers,
 )
 from game.highcommand.prizes import Prize
+from game.theater.player import Player
+from tests.highcommand.stubs import Base, motorpool
 
 
 def _objective(name: str, score: int) -> Objective:
@@ -59,11 +61,24 @@ BOARD = [
 ]
 
 
-def _game(turn: int, dead: tuple[str, ...] = ()) -> Any:
+ENEMY_BASE = SimpleNamespace(captured=Player.RED)
+
+
+def _game(
+    turn: int,
+    dead: tuple[str, ...] = (),
+    bases: tuple[Any, ...] = (),
+    ground_objects: tuple[Any, ...] = (),
+) -> Any:
     return SimpleNamespace(
         turn=turn,
         theater=SimpleNamespace(
-            ground_objects=[SimpleNamespace(name=name, is_dead=True) for name in dead]
+            ground_objects=[
+                SimpleNamespace(name=name, is_dead=True, control_point=ENEMY_BASE)
+                for name in dead
+            ]
+            + list(ground_objects),
+            controlpoints=list(bases),
         ),
     )
 
@@ -139,7 +154,7 @@ def test_destroying_the_objective_closes_it_even_on_its_last_turn(
 
     closed = command.refresh(_game(12, dead=("H1",)), random.Random(3))
 
-    assert [c.outcome for c in closed] == [Outcome.DESTROYED]
+    assert [c.outcome for c in closed] == [Outcome.ACHIEVED]
 
 
 def test_an_objective_that_is_no_longer_there_closes_its_order(
@@ -206,3 +221,140 @@ def test_an_order_on_a_base_keeps_what_is_asked_of_it() -> None:
         Task.RUNWAY,
         "Kutaisi",
     )
+
+
+def _base_order(task: Task, base: str = "Kutaisi", expires_on: int = 14) -> Order:
+    return Order(
+        f"{base} ({task.value})",
+        2,
+        ordered_on=10,
+        expires_on=expires_on,
+        prize=None,
+        task=task,
+        base=base,
+    )
+
+
+def _field(captured: Player = Player.RED, runway: bool = True) -> Any:
+    return SimpleNamespace(
+        name="Kutaisi",
+        captured=captured,
+        runway_is_operational=lambda: runway,
+    )
+
+
+@pytest.mark.parametrize(
+    ("task", "outcome"),
+    [
+        (Task.CAPTURE, Outcome.ACHIEVED),
+        (Task.AIRCRAFT, Outcome.GONE),
+        (Task.RUNWAY, Outcome.GONE),
+    ],
+)
+def test_taking_a_base_achieves_only_an_order_to_take_it(
+    board: list[Objective], task: Task, outcome: Outcome
+) -> None:
+    command = HighCommand([_base_order(task)])
+
+    closed = command.refresh(
+        _game(12, bases=(_field(captured=Player.BLUE),)), random.Random(3)
+    )
+
+    assert [c.outcome for c in closed] == [outcome]
+
+
+def test_a_cratered_runway_achieves_its_order(board: list[Objective]) -> None:
+    command = HighCommand([_base_order(Task.RUNWAY)])
+
+    closed = command.refresh(_game(12, bases=(_field(runway=False),)), random.Random(3))
+
+    assert [c.outcome for c in closed] == [Outcome.ACHIEVED]
+
+
+def test_a_site_cleared_by_taking_its_base_was_not_destroyed(
+    board: list[Objective],
+) -> None:
+    board.remove(next(o for o in board if o.name == "H1"))
+    cleared = SimpleNamespace(
+        name="H1", is_dead=True, control_point=SimpleNamespace(captured=Player.BLUE)
+    )
+    command = _single(2, "H1", expires_on=14)
+
+    closed = command.refresh(_game(12, ground_objects=(cleared,)), random.Random(3))
+
+    assert [c.outcome for c in closed] == [Outcome.GONE]
+
+
+def _debriefing(**parts: Any) -> Any:
+    return SimpleNamespace(
+        air_losses=SimpleNamespace(enemy=parts.get("aircraft", [])),
+        ground_losses=SimpleNamespace(enemy_motorpool=parts.get("vehicles", [])),
+        state_data=SimpleNamespace(killed_ground_units=parts.get("names", [])),
+        died_on_the_ground=lambda loss: loss.parked,
+    )
+
+
+def _aircraft_loss(base: str, parked: bool) -> Any:
+    return SimpleNamespace(
+        flight=SimpleNamespace(departure=SimpleNamespace(name=base)), parked=parked
+    )
+
+
+def test_an_aircraft_destroyed_on_the_ground_achieves_the_order_on_its_base() -> None:
+    command = HighCommand([_base_order(Task.AIRCRAFT)])
+    game = _game(12)
+
+    command.note_results(game, _debriefing(aircraft=[_aircraft_loss("Kutaisi", False)]))
+    assert command.orders[0].achieved_on is None
+    command.note_results(game, _debriefing(aircraft=[_aircraft_loss("Senaki", True)]))
+    assert command.orders[0].achieved_on is None
+    command.note_results(game, _debriefing(aircraft=[_aircraft_loss("Kutaisi", True)]))
+    assert command.orders[0].achieved_on == 12
+
+
+def test_a_vehicle_destroyed_in_a_motorpool_achieves_its_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from game.missiongenerator import motorpoolpopulator
+
+    home = Base("Kutaisi")
+    depot = motorpool("HERRING", base=home)
+    monkeypatch.setattr(motorpoolpopulator, "motorpools_at", lambda base: [depot])
+    command = _single(0, "HERRING", expires_on=14)
+    game = _game(12, ground_objects=(depot,))
+
+    command.note_results(game, _debriefing())
+    assert command.orders[0].achieved_on is None
+    lost = SimpleNamespace(origin=home)
+    command.note_results(game, _debriefing(vehicles=[lost]))
+    assert command.orders[0].achieved_on == 12
+
+
+def test_an_aircraft_lost_before_take_off_died_on_the_ground() -> None:
+    from game.ato.starttype import StartType
+    from game.debriefing import Debriefing
+
+    def loss(start: StartType, parked: bool = False) -> Any:
+        return SimpleNamespace(
+            flight=SimpleNamespace(start_type=start, parked_reserve=parked)
+        )
+
+    parked, cold, airborne, spawned = (
+        loss(StartType.COLD, parked=True),
+        loss(StartType.COLD),
+        loss(StartType.COLD),
+        loss(StartType.IN_FLIGHT),
+    )
+    debriefing: Any = SimpleNamespace(
+        _loss_name_by_id={
+            id(cold): "Cold 1",
+            id(airborne): "Airborne 1",
+            id(spawned): "Spawned 1",
+        },
+        state_data=SimpleNamespace(took_off=["Airborne 1"]),
+    )
+
+    assert Debriefing.died_on_the_ground(debriefing, parked)
+    assert Debriefing.died_on_the_ground(debriefing, cold)
+    assert not Debriefing.died_on_the_ground(debriefing, airborne)
+    assert not Debriefing.died_on_the_ground(debriefing, spawned)
