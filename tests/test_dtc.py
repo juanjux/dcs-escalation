@@ -47,6 +47,7 @@ def _game(
     return SimpleNamespace(
         theater=SimpleNamespace(
             controlpoints=[],
+            ground_objects=[],
             terrain=SimpleNamespace(name="Falklands"),
             conflicts=lambda: iter(names),
         ),
@@ -888,3 +889,148 @@ def test_the_families_are_the_module_s_own() -> None:
             continue
         units = {unit for unit in re.findall(r'unit_type = "([^"]*)"', chunk) if unit}
         assert units <= set(dtc.ROE_FAMILIES[family]), (family, units)
+
+
+# ---------------------------------------------------------------------- the Apache
+
+
+def _site(
+    name: str,
+    x: float,
+    *types: str,
+    side: Player = Player.RED,
+    shown: bool = True,
+    dead: bool = False,
+    gun: bool = False,
+) -> Any:
+    from game.data.units import UnitClass
+
+    units = [
+        SimpleNamespace(
+            alive=True,
+            is_anti_air=True,
+            type=SimpleNamespace(id=unit_type),
+            # A radar reaches nothing; everything else here does.
+            threat_range=SimpleNamespace(meters=0.0 if "EWR" in unit_type else 9000.0),
+            unit_type=SimpleNamespace(
+                unit_class=UnitClass.AAA if gun else UnitClass.LAUNCHER
+            ),
+        )
+        for unit_type in types
+    ]
+    return SimpleNamespace(
+        name=name,
+        position=SimpleNamespace(x=x, y=0.0),
+        control_point=SimpleNamespace(captured=side),
+        is_dead=dead,
+        has_aa=bool(units),
+        units=units,
+        shown=shown,
+    )
+
+
+def _with_sites(monkeypatch: pytest.MonkeyPatch, *sites: Any) -> Any:
+    import game.mfd
+
+    monkeypatch.setattr(game.mfd, "shows_on_mfd", lambda site, settings: site.shown)
+    built = _game()
+    built.theater.ground_objects = list(sites)
+    return built
+
+
+def test_the_apache_keeps_the_flight_plan_the_mission_gives_it() -> None:
+    built = dtc.cartridge(_game(), Player.BLUE, "AH-64D_BLK_II", "Escalation")
+    mission = built["data"]["NAV"]["Mission_1"]
+
+    assert built["data"]["NAV"]["MissionFile"] == 1
+    assert mission["Points"]["WPTHZ"] == {"isEnabled": False, "POINTS": []}
+    assert mission["Points"]["CTRLM"]["isEnabled"] is False
+    assert not any(route["isEnabled"] for route in mission["Routes"])
+    assert mission["ADF"]["isEnabled"] is False
+    # And the points the player saves stay on the kneeboard, numbered from the route.
+    assert dtc.steerpoint_numbers("AH-64D_BLK_II", 9, 2) == [10, 11]
+
+
+def test_the_apache_s_front_carries_on_from_line_to_line(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A TSD line holds four points; the front goes on in the next one."""
+    bars = [
+        _bar(f"Front {n}", (n * 20.0, 0.0), (n * 20.0 + 10.0, float(n)))
+        for n in range(5)
+    ]
+    monkeypatch.setattr(dtc, "fronts_of", lambda theater: bars)
+
+    built = dtc.cartridge(_game(), Player.BLUE, "AH-64D_BLK_II", "Escalation")
+    lines = built["data"]["NAV"]["Mission_1"]["Lines"]
+
+    assert [len(line["vertices"]) for line in lines] == [4, 4, 4]
+    assert all(line["type_num"] == dtc.APACHE_FLOT_LINE for line in lines)
+    for before, after in zip(lines, lines[1:]):
+        assert before["vertices"][-1] == after["vertices"][0]
+
+
+def test_the_apache_is_shown_the_enemy_air_defence_the_displays_may_show(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    game = _with_sites(
+        monkeypatch,
+        _site("SA-6 far", 90_000.0, "Kub 2P25 ln", "Kub 1S91 str"),
+        _site("Guns", 10_000.0, "ZU-23 Emplacement", gun=True),
+        _site("Unknown SAM", 50_000.0, "a mod launcher"),
+        _site("Ours", 20_000.0, "Hawk ln", side=Player.BLUE),
+        _site("Not on the displays", 30_000.0, "Osa 9A33 ln", shown=False),
+        _site("Destroyed", 40_000.0, "Tor 9A331", dead=True),
+        _site("Radar", 95_000.0, "55G6 EWR"),
+    )
+    flight = SimpleNamespace(
+        waypoints=[
+            SimpleNamespace(
+                waypoint_type=SimpleNamespace(name="TARGET_POINT"),
+                position=SimpleNamespace(x=100_000.0, y=0.0),
+            )
+        ]
+    )
+
+    built = dtc.cartridge(
+        game, Player.BLUE, "AH-64D_BLK_II", "Escalation", flight=flight
+    )
+    targets = built["data"]["NAV"]["Mission_1"]["Points"]["TGT"]
+
+    assert targets["isEnabled"] is True
+    # Nearest the target first, each under the TSD's own symbol when it has one.
+    assert [(p["note"], p["id"], p["text"]) for p in targets["POINTS"]] == [
+        ("SA-6 far", 8, "T01"),
+        ("Unknown SAM", dtc.APACHE_GENERIC_AIR_DEFENCE, "T02"),
+        ("Guns", dtc.APACHE_AIR_DEFENCE_GUN, "T03"),
+    ]
+
+
+APACHE = DCS / "AH-64D/DTC/NAV"
+
+
+@installed
+def test_the_apache_symbols_are_the_module_s_own() -> None:
+    import re
+
+    points = (APACHE / "Points.lua").read_text(encoding="utf-8")
+    start = points.index("TGT = {")
+    # The list ends where the table of point kinds does, at the first closing brace
+    # in the first column.
+    targets = points[start : points.index("\n}", start)]
+    symbols = {
+        int(number): text
+        for text, number in re.findall(r'text = "([^"]+)",\s*id = (\d+)', targets)
+    }
+    assert symbols[8].startswith("6 (SA-6")
+    assert symbols[dtc.APACHE_GENERIC_AIR_DEFENCE].startswith("GU ")
+    assert symbols[dtc.APACHE_AIR_DEFENCE_GUN].startswith("AA ")
+    assert symbols[dtc.APACHE_NAVAL_AIR_DEFENCE].startswith("NV ")
+    assert set(dtc.APACHE_THREAT_SYMBOLS.values()) <= set(symbols)
+
+    lines = (APACHE / "Lines.lua").read_text(encoding="utf-8")
+    kinds = re.findall(r'name = "(\w+)",\s*caption', lines)
+    assert kinds[dtc.APACHE_FLOT_LINE - 1] == "FLOT"
+
+    routes = (APACHE / "Routes.lua").read_text(encoding="utf-8")
+    assert re.findall(r'Name = "([^"]+)"', routes)[:10] == list(dtc.APACHE_ROUTES)
