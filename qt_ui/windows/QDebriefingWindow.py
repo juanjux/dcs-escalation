@@ -29,6 +29,18 @@ from PySide6.QtWidgets import (
 from game.debriefingreport import DebriefingReport
 from game.squadrons.experience import (
     MoraleShift,
+    XP_AIR,
+    XP_BUILDINGS,
+    XP_COMPANY,
+    XP_DAMAGE,
+    XP_GROUND,
+    XP_HELD_BACK,
+    XP_LEARNING,
+    XP_MISSION,
+    XP_MORALE,
+    XP_SHIPS,
+    XP_WOUND,
+    XpAward,
     PilotDeath,
     PilotPromotion,
     PilotWound,
@@ -289,6 +301,9 @@ class PilotRow(QWidget):
 
     """
 
+    #: Two lines of identity. A row with more to say raises it.
+    row_height = PILOT_ROW_HEIGHT
+
     def __init__(self, name: str, rank: str, level: int, aircraft: str, squadron: str):
         super().__init__()
         self.name = name
@@ -297,13 +312,13 @@ class PilotRow(QWidget):
         self.aircraft = aircraft
         self.squadron = squadron
         self.player = False
-        self.setFixedHeight(PILOT_ROW_HEIGHT)
+        self.setFixedHeight(self.row_height)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def paintEvent(self, event: object) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.fillRect(0, PILOT_ROW_HEIGHT - 1, self.width(), 1, QColor(LINE))
+        painter.fillRect(0, self.row_height - 1, self.width(), 1, QColor(LINE))
         self._paint_identity(painter)
         self.paint_detail(painter, DETAIL_X)
         self.paint_outcome(painter, self.width() - MARGIN)
@@ -501,6 +516,122 @@ class PromotionRow(PilotRow):
         painter.drawText(
             int(cursor), 27, self.record.to_rank_full or self.record.to_rank
         )
+
+
+#: How tall an experience row is: the two identity lines plus one for the reasons.
+XP_ROW_HEIGHT = PILOT_ROW_HEIGHT + 22
+
+#: The reason lines, coloured by what kind of thing earned them, so a glance separates
+#: what he shot at from what the sortie and the company he kept were worth.
+XP_REASON_COLOURS: dict[str, str] = {
+    XP_AIR: ACCENT,
+    XP_GROUND: ACCENT,
+    XP_SHIPS: ACCENT,
+    XP_BUILDINGS: ACCENT,
+    XP_DAMAGE: SUBDUED,
+    XP_MISSION: UNHURT,
+    XP_WOUND: WOUNDED,
+    XP_MORALE: AMBER,
+    XP_LEARNING: AMBER,
+    XP_COMPANY: AMBER,
+    XP_HELD_BACK: OURS,
+}
+
+
+class XpRow(PilotRow):
+    """What a pilot was paid, and the reasons on a line of their own.
+
+    A total says a man gained 1,400 and nothing about whether that was two MiGs or a
+    long afternoon of trucks, and the multipliers do not show up in it at all. Each
+    reason is drawn as its own chip; when they do not fit, the ones that are left are
+    counted rather than truncated, so the line never lies about what it is showing.
+    """
+
+    row_height = XP_ROW_HEIGHT
+
+    def __init__(self, record: XpAward):
+        super().__init__(
+            record.pilot_name,
+            record.rank,
+            record.level,
+            record.aircraft,
+            record.squadron,
+        )
+        self.record = record
+
+    def paint_detail(self, painter: QPainter, x: int) -> None:
+        """Nothing in the middle column: the reasons get the width instead."""
+
+    def paint_outcome(self, painter: QPainter, right: int) -> None:
+        gained = self.record.gained
+        self._right(
+            painter,
+            right,
+            27,
+            [
+                (
+                    f"{gained:+,}",
+                    UNHURT if gained >= 0 else OURS,
+                    _font(15, QFont.Weight.DemiBold),
+                ),
+                (" XP", MUTED, _font(11)),
+            ],
+        )
+        self._right(
+            painter,
+            right,
+            43,
+            [(f"{self.record.after:,} total", FAINT, _font(10.5))],
+        )
+
+    def paintEvent(self, event: object) -> None:
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self._paint_reasons(painter)
+        painter.end()
+
+    def _paint_reasons(self, painter: QPainter) -> None:
+        baseline = PILOT_ROW_HEIGHT + 11
+        limit = self.width() - MARGIN
+        cursor = float(MARGIN)
+        reasons = self.record.ordered_reasons
+        for index, (reason, xp) in enumerate(reasons):
+            width = self._chip_width(painter, reason, xp)
+            remaining = len(reasons) - index
+            if cursor + width > limit and index:
+                self._paint_overflow(painter, cursor, baseline, remaining)
+                return
+            cursor = self._paint_chip(painter, cursor, baseline, reason, xp)
+
+    @staticmethod
+    def _chip_width(painter: QPainter, reason: str, xp: int) -> float:
+        painter.setFont(_font(11))
+        width = painter.fontMetrics().horizontalAdvance(reason) + 6
+        painter.setFont(_font(11, QFont.Weight.DemiBold))
+        return width + painter.fontMetrics().horizontalAdvance(f"{xp:+,}") + 14
+
+    @staticmethod
+    def _paint_chip(
+        painter: QPainter, x: float, baseline: int, reason: str, xp: int
+    ) -> float:
+        painter.setFont(_font(11))
+        painter.setPen(QColor(MUTED))
+        painter.drawText(int(x), baseline, reason)
+        x += painter.fontMetrics().horizontalAdvance(reason) + 6
+        painter.setFont(_font(11, QFont.Weight.DemiBold))
+        painter.setPen(QColor(XP_REASON_COLOURS.get(reason, SUBDUED)))
+        amount = f"{xp:+,}"
+        painter.drawText(int(x), baseline, amount)
+        return x + painter.fontMetrics().horizontalAdvance(amount) + 14
+
+    @staticmethod
+    def _paint_overflow(
+        painter: QPainter, x: float, baseline: int, remaining: int
+    ) -> None:
+        painter.setFont(_font(11))
+        painter.setPen(QColor(FAINT))
+        painter.drawText(int(x), baseline, f"+{remaining} more")
 
 
 class MoraleRow(PilotRow):
@@ -772,6 +903,19 @@ class QDebriefingWindow(QDialog):
             ("WOUNDED", [WoundedRow(w) for w in shown(outcomes.wounded)]),
             ("PROMOTIONS", [PromotionRow(p) for p in shown(outcomes.promotions)]),
             ("MORALE CHANGES", [MoraleRow(m) for m in shown(outcomes.morale_shifts)]),
+            # Every man who flew is paid, so this is the one group that is routinely
+            # long. Biggest gain first, because the turn's story is at the top of it.
+            (
+                "EXPERIENCE",
+                [
+                    XpRow(a)
+                    for a in sorted(
+                        shown(outcomes.xp_awards),
+                        key=lambda award: award.gained,
+                        reverse=True,
+                    )
+                ],
+            ),
         ]
         drawn = 0
         for title, rows in groups:
