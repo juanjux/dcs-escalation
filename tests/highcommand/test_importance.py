@@ -9,7 +9,8 @@ import pytest
 
 from game.data.units import UnitClass
 from game.highcommand.approach import Ring
-from game.highcommand.campaign import RING_WEIGHT
+from game.config import RUNWAY_REPAIR_COST
+from game.highcommand.campaign import RING_WEIGHT, Task
 from game.highcommand.importance import (
     AIRCRAFT_SHARE,
     COVER_SHARE,
@@ -130,7 +131,7 @@ def test_a_garrison_counts_for_more_close_to_its_base_and_on_a_front() -> None:
     )
 
 
-def test_a_base_is_worth_part_of_its_aircraft_and_its_squadrons() -> None:
+def test_a_bases_aircraft_are_worth_part_of_what_they_cost() -> None:
     field: Any = Base("Kutaisi")
     worth = Worth(
         campaign(
@@ -141,13 +142,40 @@ def test_a_base_is_worth_part_of_its_aircraft_and_its_squadrons() -> None:
         )
     )
 
-    assert worth.own_base(field) == (
+    assert worth.own_base(field, Task.AIRCRAFT) == (
         Reason(
             "aircraft",
-            AIRCRAFT_SHARE * 240 + 2 * SQUADRON_WORTH,
+            AIRCRAFT_SHARE * 240,
             "Home to 2 squadrons: 12 aircraft, 8 of them fighters.",
         ),
     )
+
+
+def test_a_runway_is_worth_its_repair_and_the_squadrons_it_grounds() -> None:
+    field: Any = Base("Kutaisi")
+    worth = Worth(campaign(squadrons={field: 2}))
+
+    assert worth.own_base(field, Task.RUNWAY) == (
+        Reason(
+            "runway",
+            RUNWAY_REPAIR_COST + 2 * SQUADRON_WORTH,
+            "Cratering its runway grounds 2 squadrons until the enemy pays $100M to "
+            "repair it.",
+        ),
+    )
+
+
+def test_taking_a_base_costs_the_enemy_its_income_and_the_sites_around_it() -> None:
+    works = building("DRAGON", "factory", 0, standing=2)
+    battery = sam("GRUMBLE", 0, [launcher("SAM SA-10 LN", 40, price=30)])
+    field: Any = SimpleNamespace(ground_objects=[works, battery], income_per_turn=20)
+
+    (reason,) = Worth(campaign()).own_base(field, Task.CAPTURE)
+
+    # The base earns 20 and the factory's two buildings 2.5 each; the battery is
+    # cleared when the base falls, the factory changes hands.
+    assert reason.worth == 25 * INCOME_TURNS + 30
+    assert reason.line == "Taking it costs the enemy $25M a turn and 1 site around it."
 
 
 def test_a_sam_reaching_one_of_our_bases_counts_part_of_what_is_there() -> None:

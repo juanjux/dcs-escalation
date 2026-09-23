@@ -7,12 +7,20 @@ from typing import Any
 
 import pytest
 
-from game.highcommand.campaign import RING_WEIGHT, releases
+from game.highcommand.campaign import RING_WEIGHT, Task, releases
 from game.mfd import Band
-from game.theater import Player
+from game.theater import Airfield, Fob, Player
 from game.theater.iadsnetwork.iadsstate import IadsState, IadsStatus
 from game.utils import nautical_miles
-from tests.highcommand.stubs import NM, campaign, launcher, sam
+from tests.highcommand.stubs import (
+    NM,
+    armour,
+    building,
+    campaign,
+    launcher,
+    sam,
+    unit,
+)
 
 
 def test_a_switched_off_or_destroyed_site_has_no_ring() -> None:
@@ -60,3 +68,39 @@ def test_anti_ship_missiles_only_reach_ships(monkeypatch: pytest.MonkeyPatch) ->
 
     assert [r.radius / NM for r in land] == pytest.approx([10, 40])
     assert [r.radius / NM for r in sea] == pytest.approx([10, 60])
+
+
+def _airfield(name: str, runway: bool = True, front: bool = False) -> Any:
+    field: Any = Airfield.__new__(Airfield)
+    field.name = name
+    field._runway_status = SimpleNamespace(damaged=not runway)
+    field.front_lines = {"a front": object()} if front else {}
+    return field
+
+
+def test_a_base_is_asked_for_what_it_has() -> None:
+    busy = _airfield("Kutaisi", front=True)
+    empty = _airfield("Sukhumi")
+    cratered = _airfield("Senaki", runway=False)
+    helipads: Any = Fob.__new__(Fob)
+    helipads.front_lines = {}
+    measured = campaign(
+        aircraft={busy: 10, cratered: 4, helipads: 2},
+        squadrons={busy: 2, cratered: 1, helipads: 1},
+    )
+
+    assert measured.tasks_at(busy) == [Task.AIRCRAFT, Task.RUNWAY, Task.CAPTURE]
+    assert measured.tasks_at(empty) == []
+    assert measured.tasks_at(cratered) == [Task.AIRCRAFT]
+    assert measured.tasks_at(helipads) == [Task.AIRCRAFT]
+
+
+def test_taking_a_base_means_beating_its_armour() -> None:
+    garrison = armour("BABOON", 1, [unit("T-72B"), unit("T-72B")])
+    depot = building("DEPOT", "ammo", 0, standing=1)
+    field: Any = SimpleNamespace(
+        base=SimpleNamespace(total_armor=6), ground_objects=[garrison, depot]
+    )
+
+    assert campaign().defenders(field, Task.CAPTURE) == 8
+    assert campaign().defenders(field, Task.AIRCRAFT) == 0

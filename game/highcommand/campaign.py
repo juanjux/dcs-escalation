@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter, defaultdict
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Iterator, Optional
 
 from dcs import Point
@@ -17,6 +18,7 @@ from game.theater.iadsnetwork.iadsstate import IadsState
 from game.theater.theatergroundobject import (
     MotorpoolGroundObject,
     TheaterGroundObject,
+    VehicleGroupGroundObject,
 )
 from game.utils import nautical_miles
 
@@ -42,6 +44,17 @@ ANTI_SHIP = re.compile(
     r"RBS-15|^RB-15|LRASM|Kormoran"
 )
 AGAINST_SHIPS_TOO = re.compile(r"SLAM|BrahMos")
+
+
+class Task(Enum):
+    """What an order on a base asks for. A ground object is simply destroyed.
+
+    The value is the save format, since orders keep it: never rename one.
+    """
+
+    AIRCRAFT = "OCA/Aircraft"
+    RUNWAY = "OCA/Runway"
+    CAPTURE = "Capture"
 
 
 class Campaign:
@@ -160,12 +173,44 @@ class Campaign:
         )
 
     def enemy_bases(self) -> Iterator[ControlPoint]:
-        """The enemy's airfields and FOBs with aircraft on them."""
+        """The enemy's airfields and FOBs."""
         for cp in self.game.theater.controlpoints:
-            if cp.captured != self.enemy or not isinstance(cp, (Airfield, Fob)):
-                continue
-            if self.aircraft[cp] > 0:
+            if cp.captured == self.enemy and isinstance(cp, (Airfield, Fob)):
                 yield cp
+
+    def tasks_at(self, cp: ControlPoint) -> list[Task]:
+        """What can be asked of an enemy base: its aircraft while it has some, its
+        runway while squadrons fly from it, and the base itself when our troops can
+        reach it."""
+        tasks = []
+        if self.aircraft[cp] > 0:
+            tasks.append(Task.AIRCRAFT)
+        if (
+            isinstance(cp, Airfield)
+            and self.squadrons[cp] > 0
+            and cp.runway_is_operational()
+        ):
+            tasks.append(Task.RUNWAY)
+        if self.capturable(cp):
+            tasks.append(Task.CAPTURE)
+        return tasks
+
+    def capturable(self, cp: ControlPoint) -> bool:
+        """Whether the base faces one of ours across a front, as the next the ground
+        war would take."""
+        return bool(cp.front_lines)
+
+    def defenders(self, cp: ControlPoint, task: Task) -> int:
+        """What has to be beaten for the task: the armour holding the base, for a
+        capture, and nothing to destroy for the rest."""
+        if task is not Task.CAPTURE:
+            return 0
+        garrisons = sum(
+            tgo.alive_unit_count
+            for tgo in cp.ground_objects
+            if isinstance(tgo, VehicleGroupGroundObject)
+        )
+        return cp.base.total_armor + garrisons
 
     def enemy_bases_within(self, position: Point, reach: float) -> list[ControlPoint]:
         return sorted(
