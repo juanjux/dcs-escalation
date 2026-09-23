@@ -24,10 +24,16 @@ class DegradeIads(CompoundTask[TheaterState]):
             - x.max_threat_range().meters,
         )
 
-        for air_defense in prioritized_air_defenses:
-            yield [self.plan_against(air_defense)]
+        # The detectors first. A Skynet-held SAM stays dark until its target is inside
+        # its kill zone, and the DCS AI fires a HARM only at something emitting, so a
+        # DEAD flight sent at a covered site arrives with nothing to shoot at and turns
+        # around with its missiles. Kill the EWR covering it and Skynet runs the site
+        # autonomous and live from mission start, which the next DEAD can service.
+        # A SAM that threatens a planned strike is still handled first, above.
         for detector in state.detecting_air_defenses:
             yield [self.plan_against(detector)]
+        for air_defense in prioritized_air_defenses:
+            yield [self.plan_against(air_defense)]
 
     @staticmethod
     def plan_against(
