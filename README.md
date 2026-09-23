@@ -386,7 +386,10 @@ and it is longer than this section.
 
 - **More in the player aircraft's data cartridge:**
   - every front joined into one line, the only one the Hornet's SA page shows
-    ([#415](https://github.com/juanjux/dcs-escalation/pull/415), porting RetLab #1008).
+    ([#415](https://github.com/juanjux/dcs-escalation/pull/415), porting RetLab #1008);
+  - a box round each tanker the aircraft can refuel from, nearest its target first
+    ([#416](https://github.com/juanjux/dcs-escalation/pull/416), porting RetLab #1008
+    and #1015).
 
 ## Removed from upstream
 

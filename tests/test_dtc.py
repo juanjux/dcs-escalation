@@ -17,6 +17,8 @@ from types import SimpleNamespace
 from typing import Any, Sequence, cast
 
 import pytest
+from dcs import Point
+from dcs.terrain import Caucasus
 
 from game.ato.savedpoints import capacity_for
 from game.missiongenerator import dtc
@@ -49,7 +51,10 @@ class _Unit:
 
 
 def _waypoint(name: str, x: float, y: float, alt_m: float = 6096.0) -> Any:
+    from game.ato.flightwaypointtype import FlightWaypointType
+
     return SimpleNamespace(
+        waypoint_type=FlightWaypointType.NAV,
         display_name=name,
         position=SimpleNamespace(x=x, y=y),
         alt=SimpleNamespace(meters=alt_m),
@@ -67,8 +72,12 @@ def _flight_data(
     route: int = 4,
     saved: Sequence[Any] = (),
 ) -> Any:
+    from game.ato.flighttype import FlightType
+
     units = [_Unit(aircraft) for _ in range(crewed)]
     return SimpleNamespace(
+        flight_type=FlightType.STRIKE,
+        friendly=Player.BLUE,
         aircraft_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id=aircraft)),
         callsign=callsign,
         client_units=units,
@@ -617,3 +626,125 @@ def test_the_numbering_stops_where_the_module_does() -> None:
 def test_an_airframe_with_no_cartridge_is_numbered_from_one() -> None:
     """Which is what the A-10's own database does."""
     assert dtc.steerpoint_numbers("A-10C_2", 6, 2) == [7, 8]
+
+
+# ------------------------------------------------------------------ the tanker boxes
+
+
+TERRAIN = Caucasus()
+
+
+def _orbiting(
+    dcs_id: str, callsign: str, start: tuple[float, float], end: tuple[float, float]
+) -> Any:
+    from game.ato.flighttype import FlightType
+    from game.ato.flightwaypointtype import FlightWaypointType
+
+    def at(kind: Any, x: float, y: float) -> Any:
+        return SimpleNamespace(waypoint_type=kind, position=Point(x, y, TERRAIN))
+
+    return SimpleNamespace(
+        flight_type=FlightType.REFUELING,
+        friendly=Player.BLUE,
+        callsign=callsign,
+        aircraft_type=SimpleNamespace(dcs_id=dcs_id),
+        patrol_speed=None,
+        waypoints=[
+            at(FlightWaypointType.PATROL_TRACK, *start),
+            at(FlightWaypointType.PATROL, *end),
+        ],
+    )
+
+
+def _striking(target: tuple[float, float]) -> Any:
+    from game.ato.flightwaypointtype import FlightWaypointType
+
+    return SimpleNamespace(
+        waypoints=[
+            SimpleNamespace(
+                waypoint_type=FlightWaypointType.TARGET_POINT,
+                position=Point(*target, TERRAIN),
+            )
+        ]
+    )
+
+
+def _tankers() -> Any:
+    return SimpleNamespace(
+        flights=[
+            _orbiting("KC-135", "Shell 1", (0.0, 0.0), (40_000.0, 0.0)),
+            _orbiting("KC135MPRS", "Texaco 1", (0.0, 100_000.0), (40_000.0, 100_000.0)),
+            _orbiting("S-3B Tanker", "Arco 1", (0.0, 300_000.0), (40_000.0, 300_000.0)),
+        ]
+    )
+
+
+def test_each_aircraft_is_shown_only_the_tankers_it_can_use() -> None:
+    """A Hornet has a probe and a Viper a receptacle for the boom."""
+    hornet = dtc.tanker_boxes(dtc.HornetCartridge(), _tankers())
+    viper = dtc.tanker_boxes(dtc.ViperCartridge(), _tankers())
+
+    assert [box.name for box in hornet] == ["Texaco 1", "Arco 1"]
+    assert [box.name for box in viper] == ["Shell 1"]
+
+
+def test_the_tanker_nearest_the_target_comes_first() -> None:
+    boxes = dtc.tanker_boxes(
+        dtc.HornetCartridge(), _tankers(), _striking((20_000.0, 290_000.0))
+    )
+
+    assert [box.name for box in boxes] == ["Arco 1", "Texaco 1"]
+
+
+def test_a_box_is_closed_and_encloses_the_orbit() -> None:
+    (box,) = dtc.tanker_boxes(dtc.ViperCartridge(), _tankers())
+
+    assert len(box.points) == dtc.BOX_POINTS
+    assert box.points[0] == box.points[-1]
+    xs = [x for x, _ in box.points]
+    ys = [y for _, y in box.points]
+    # The leg runs north from 0 to 40 km; the box stands off it by the orbit's width
+    # on every side.
+    assert min(xs) < 0 < 40_000 < max(xs)
+    assert min(ys) < 0 < max(ys)
+
+
+def test_the_hornet_takes_the_boxes_on_its_faor_lines() -> None:
+    boxes = dtc.tanker_boxes(dtc.HornetCartridge(), _tankers())
+    sa = dtc.HornetCartridge().sections([], [], boxes)["SA"]
+
+    faor = sa["FAOR_FLOT"]["FAOR"]
+    assert [line["note"] for line in faor] == ["Texaco 1", "Arco 1"]
+    assert [point["id"] for point in faor[0]["points"]] == [
+        f"FAOR_1_PT_{n}" for n in range(1, 6)
+    ]
+    # The page draws the selected line only, so the first one has to be selected.
+    assert sa["Default_FAOR_Line"] == 1
+    assert dtc.HornetCartridge().sections([], [])["SA"]["Default_FAOR_Line"] == (
+        dtc.NONE
+    )
+
+
+def test_the_viper_s_boxes_leave_the_front_the_rest_of_its_points(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    long_front = [
+        dtc.Front(f"Front {n}", ((n * 30_000.0, 0.0), (n * 30_000.0 + 10_000.0, 5.0)))
+        for n in range(20)
+    ]
+    monkeypatch.setattr(dtc, "fronts_of", lambda theater: long_front)
+    tankers = _tankers()
+    tankers.flights.append(
+        _orbiting("KC_10_Extender", "Shell 2", (0.0, 50_000.0), (40_000.0, 50_000.0))
+    )
+
+    built = dtc.cartridge(
+        _game(), Player.BLUE, "F-16C_50", "Escalation", mission_data=tankers
+    )
+    points = built["data"]["MPD"]["GEO_LINES"]
+
+    assert len(points) == dtc.ViperCartridge.max_line_points
+    front = [point for point in points if point["L1"]]
+    assert len(front) == 25 - 2 * dtc.BOX_POINTS
+    assert [point["note"] for point in points if point["L2"]] == ["Shell 1"] * 5
+    assert [point["note"] for point in points if point["L3"]] == ["Shell 2"] * 5
