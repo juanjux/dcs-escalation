@@ -677,8 +677,9 @@ class Game:
         persistency.autosave(self)
 
     def refresh_high_command(self) -> None:
-        """Close the High Command's orders that are over and make new ones. Only at the
-        start of a turn: a turn re-initialised for a purchase is the same turn.
+        """Close the High Command's orders that are over, pay the prizes of those
+        achieved, and make new ones. Only at the start of a turn: a turn re-initialised
+        for a purchase is the same turn.
 
         A fault here must not stop the turn, so it is logged and the orders wait for
         the next one.
@@ -687,7 +688,9 @@ class Game:
             return
         try:
             with logged_duration("High Command orders"):
-                self.high_command.refresh(self)
+                closed = self.high_command.refresh(self)
+                for line in self.high_command.pay(self, closed):
+                    self.message("High Command", line)
         except Exception:
             logging.exception("Could not refresh the High Command's orders")
 

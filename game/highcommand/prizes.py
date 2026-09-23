@@ -8,14 +8,16 @@ worked out to that score when the objective is marked, so the player knows what 
 it pays before trying.
 
 Most prizes take effect when the objective falls. A ticket is kept instead, and spent
-whenever the player chooses.
+whenever the player chooses, on what its steps ask the player to pick. How a kind is
+given is registered with it (``_gives``), and a kind the game cannot give yet is not
+drawn.
 """
 
 from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from game.ato.flighttype import FlightType
@@ -24,14 +26,20 @@ from game.data.units import UnitClass
 from game.highcommand.wording import counted, joined, money
 from game.income import Income
 from game.squadrons.experience import SaveCompatible
+from game.squadrons.morale import clamp
+from game.squadrons.pilot import PilotStatus
+from game.theater import Airfield, Player
 
 if TYPE_CHECKING:
     from game import Game
     from game.factions.faction import Faction
-    from game.theater import Player
+    from game.squadrons.pilot import Pilot
 
 MIN_SCORE = 2
 MAX_SCORE = 10
+
+#: Who the prizes are for: the side the High Command gives its orders to.
+PLAYER = Player.BLUE
 
 #: The five rungs of pilot skill, as the mission editor names them.
 RUNGS = ("Cadet", "Rookie", "Trained", "Veteran", "Ace")
@@ -112,6 +120,34 @@ Worked = Optional[tuple[str, dict[str, Any]]]
 WorkOut = Callable[[int, Context], Worked]
 
 
+@dataclass(frozen=True)
+class Choice:
+    """One thing a ticket can be spent on."""
+
+    #: What the prize reads back when it is given.
+    key: str
+    #: What the player sees.
+    label: str
+    detail: str = ""
+
+
+#: The options for a step, given the keys picked in the steps before it.
+Options = Callable[["Game", Prize, tuple[str, ...]], list[Choice]]
+
+
+@dataclass(frozen=True)
+class Step:
+    """One thing a ticket asks the player to pick before it is spent. With nothing to
+    pick from, the ticket cannot be spent yet."""
+
+    question: str
+    options: Options
+
+
+#: Gives a prize, with what was picked for each of its steps, and says what it gave.
+Give = Callable[["Game", Prize, tuple[str, ...]], str]
+
+
 def _always(settings: Any) -> bool:
     return True
 
@@ -127,6 +163,10 @@ class PrizeKind:
     ticket: bool = False
     #: Whether a campaign's settings have what it needs.
     needs: Callable[[Any], bool] = _always
+    #: How it is given; None while the game cannot give it, and it is not drawn.
+    give: Optional[Give] = None
+    #: What spending it asks the player to pick, in order.
+    steps: tuple[Step, ...] = ()
 
     def prize(self, score: int, context: Context) -> Optional[Prize]:
         worked = self.work_out(score, context)
@@ -153,6 +193,22 @@ def _kind(
     return register
 
 
+def _gives(key: str, *steps: Step) -> Callable[[Give], Give]:
+    """How the kind registered as ``key`` is given, and what spending it asks first."""
+
+    def register(give: Give) -> Give:
+        at = next(n for n, kind in enumerate(KINDS) if kind.key == key)
+        KINDS[at] = replace(KINDS[at], give=give, steps=steps)
+        return give
+
+    return register
+
+
+def kind_of(prize: Prize) -> Optional[PrizeKind]:
+    """The kind a prize was drawn as; None if the game no longer has it."""
+    return next((kind for kind in KINDS if kind.key == prize.kind), None)
+
+
 class Prizes:
     """Draws the prizes of one side's objectives."""
 
@@ -175,7 +231,9 @@ class Prizes:
         kinds = [
             kind
             for kind in KINDS
-            if kind.min_score <= score and kind.needs(self.settings)
+            if kind.min_score <= score
+            and kind.needs(self.settings)
+            and kind.give is not None
         ]
         rng.shuffle(kinds)
         context = Context(self.settings, self.faction, self.income, rng)
@@ -363,7 +421,7 @@ def _runway(score: int, context: Context) -> Worked:
     return "A ticket for an instant repair of one of our runways.", {}
 
 
-@_kind("squadron")
+@_kind("squadron", ticket=True)
 def _squadron(score: int, context: Context) -> Worked:
     fleet = sorted(
         (
@@ -381,7 +439,8 @@ def _squadron(score: int, context: Context) -> Worked:
     count = 2 * score
     turns = half_up(score)
     return (
-        f"A squadron of {count} {aircraft.display_name} on loan for {_turns(turns)}.",
+        f"A ticket for a squadron of {count} {aircraft.display_name} on loan for "
+        f"{_turns(turns)}.",
         {"aircraft": count, "type": aircraft.display_name, "turns": turns},
     )
 
@@ -395,13 +454,16 @@ def _ace(score: int, context: Context) -> Worked:
     )
 
 
-@_kind("support", ticket=True)
-def _support(score: int, context: Context) -> Worked:
+@_kind("awacs", ticket=True)
+def _awacs(score: int, context: Context) -> Worked:
     turns = half_up(score)
-    return (
-        f"A ticket for an extra AWACS or tanker for {_turns(turns)}.",
-        {"turns": turns},
-    )
+    return f"A ticket for an extra AWACS for {_turns(turns)}.", {"turns": turns}
+
+
+@_kind("tanker", ticket=True)
+def _tanker(score: int, context: Context) -> Worked:
+    turns = half_up(score)
+    return f"A ticket for an extra tanker for {_turns(turns)}.", {"turns": turns}
 
 
 @_kind("heal", min_score=6, ticket=True, needs=_live_pilots)
@@ -471,3 +533,91 @@ def _enemy_repairs(score: int, context: Context) -> Worked:
         f"{_turns(turns)}.",
         {"percent": percent, "turns": turns},
     )
+
+
+# ---------------------------------------------------------------- giving them
+
+
+def _our_pilots(game: Game) -> list[tuple[Any, Pilot]]:
+    """Every pilot of ours still in the war, with his squadron."""
+    gone = (PilotStatus.Dead, PilotStatus.Deserted, PilotStatus.Discharged)
+    return [
+        (squadron, pilot)
+        for squadron in game.coalition_for(PLAYER).air_wing.iter_squadrons()
+        for pilot in squadron.current_roster
+        if pilot.status not in gone
+    ]
+
+
+def _broken_runways(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[Choice]:
+    return [
+        Choice(cp.name, cp.name, str(cp.runway_status))
+        for cp in game.theater.controlpoints
+        if cp.captured == PLAYER
+        and isinstance(cp, Airfield)
+        and cp.runway_status.damaged
+    ]
+
+
+def _wounded_pilots(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[Choice]:
+    return [
+        Choice(
+            str(pilot.id),
+            pilot.name,
+            f"{squadron.name}, {squadron.aircraft}: "
+            f"{_turns(pilot.wounded_turns)} in hospital",
+        )
+        for squadron, pilot in _our_pilots(game)
+        if pilot.status is PilotStatus.Wounded
+    ]
+
+
+@_gives("cash")
+def _give_cash(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    amount = Income(game, PLAYER).total * prize.term("income_share")
+    game.coalition_for(PLAYER).adjust_budget(amount)
+    return f"{money(amount)} added to our budget."
+
+
+@_gives("morale")
+def _give_morale(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    points = prize.term("points")
+    pilots = _our_pilots(game)
+    for _, pilot in pilots:
+        pilot.morale = clamp(pilot.morale + points)
+    return f"+{points} morale for our {counted(len(pilots), 'pilot')}."
+
+
+@_gives("hospital")
+def _give_hospital(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    turns = prize.term("turns")
+    wounded = [p for _, p in _our_pilots(game) if p.status is PilotStatus.Wounded]
+    if not wounded:
+        return "None of our pilots was in hospital."
+    for pilot in wounded:
+        pilot.wounded_turns -= turns
+        if pilot.wounded_turns <= 0:
+            pilot.recover()
+    back = sum(1 for pilot in wounded if pilot.status is PilotStatus.Active)
+    return (
+        f"{counted(len(wounded), 'wounded pilot')} out of hospital {_turns(turns)} "
+        f"early, {back} of them at once."
+    )
+
+
+@_gives("runway", Step("Which runway?", _broken_runways))
+def _give_runway(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    base = next(cp for cp in game.theater.controlpoints if cp.name == picked[0])
+    base.runway_status.repair()
+    return f"The runway at {base.name} is repaired."
+
+
+@_gives("heal", Step("Which pilot?", _wounded_pilots))
+def _give_heal(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    squadron, pilot = next(
+        (squadron, pilot)
+        for squadron, pilot in _our_pilots(game)
+        if str(pilot.id) == picked[0]
+    )
+    pilot.recover()
+    return f"{pilot.name}, of {squadron.name}, is back on duty."
