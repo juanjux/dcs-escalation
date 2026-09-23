@@ -384,6 +384,22 @@ and it is longer than this section.
   ([#414](https://github.com/juanjux/dcs-escalation/pull/414), porting RetLab #442,
   #678 and #1032)
 
+- **More in the player aircraft's data cartridge:**
+  - every front joined into one line, the only one the Hornet's SA page shows
+    ([#415](https://github.com/juanjux/dcs-escalation/pull/415), porting RetLab #1008);
+  - a box round each tanker the aircraft can refuel from, nearest its target first
+    ([#416](https://github.com/juanjux/dcs-escalation/pull/416), porting RetLab #1008
+    and #1015);
+  - optionally, the Viper's MAN 1 as flares only and MAN 6 as chaff only, both on the
+    stick ([#417](https://github.com/juanjux/dcs-escalation/pull/417), porting RetLab
+    #1008);
+  - the Viper's ROE tab filled from the campaign: a family only one side flies is that
+    side's ([#418](https://github.com/juanjux/dcs-escalation/pull/418), porting RetLab
+    #992);
+  - a cartridge for the Apache: the front line on its TSD and the enemy air defence as
+    target points under the TSD's own symbols, its route left as the mission gives it
+    ([#419](https://github.com/juanjux/dcs-escalation/pull/419), porting RetLab #992).
+
 ## Removed from upstream
 
 - **Anubis' C-130J-30 Super Hercules mod**, unsupported here and by its own authors. It

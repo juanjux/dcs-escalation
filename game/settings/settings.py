@@ -1763,6 +1763,29 @@ class Settings:
             "front line. Load it from the DTC page of the rearm window in the cockpit."
         ),
     )
+    dtc_viper_countermeasures: bool = boolean_option(
+        "Viper countermeasure programs",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=False,
+        detail=(
+            "The Viper's cartridge makes MAN 1 (CMS forward, program knob on 1) flares "
+            "only and MAN 6 (CMS left) chaff only; the other programs keep the "
+            "module's values. The F-16C guide asks for the CMDS mode knob in STBY when "
+            "a cartridge is loaded. Not flown yet."
+        ),
+    )
+    dtc_viper_roe: bool = boolean_option(
+        "Viper ROE table",
+        page=MISSION_GENERATOR_PAGE,
+        section=MFD_SECTION,
+        default=True,
+        detail=(
+            "The Viper's cartridge fills its ROE tab from the campaign: an aircraft "
+            "family only your side flies is friendly, one only the enemy flies is "
+            "hostile, and one both sides fly stays unknown."
+        ),
+    )
     mfd_front: bool = boolean_option(
         "Front line",
         page=MISSION_GENERATOR_PAGE,

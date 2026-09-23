@@ -2,6 +2,9 @@
 
 ## Features/Improvements
 * **[High Command]** Each turn the High Command orders three enemy objectives taken, one from each third of them by difficulty plus importance, for two to five turns and each with its prize. No window shows them yet, and the prizes are not paid yet.
+* **[Mission Generator]** The Apache gets a data cartridge: the front line on its TSD, and the enemy air defence the MFD settings allow as target points under the TSD's own symbols. Its route stays the one the mission gives it. (adapted from the RetLab fork)
+* **[Mission Generator]** The Viper's data cartridge fills its ROE tab from the campaign: an aircraft family only one side flies is marked as that side's, one both sides fly stays unknown. New setting under MFD, on by default. (adapted from the RetLab fork)
+* **[Mission Generator]** New setting under MFD, off by default: the Viper's data cartridge makes MAN 1 flares only and MAN 6 chaff only, so both are on the stick. (adapted from the RetLab fork)
 * **[Mission Generator]** Blue tanker and AEW&C orbits are drawn on the F10 map, labelled with callsign, type, frequency and TACAN, and each CAP station as a thinner racetrack. (adapted from the RetLab fork)
 * **[Live Pilots]** The debriefing says what each pilot's experience was paid for, on a line of its own: kills by kind, damage, the sortie, a wound, and the three things that move the multiplier. Biggest gain first.
 * **[Campaign AI]** The auto-planner frags the detectors covering a sector before the SAMs behind them: a DEAD sent at a SAM the network holds dark has nothing to shoot at. The OPFOR briefing carries the same tactic. (adapted from the RetLab fork)
@@ -26,7 +29,7 @@
 * **[Aircraft]** Anubis' C-130J-30 Super Hercules mod is gone: code, unit, payloads, art, and its entries in 46 factions and 26 campaigns. Saves that flew it read the stock C-130J-30.
 * **[Factions]** Every faction of 1990 or later can field a GPS jamming site.
 * **[UI]** Points read from the map can be saved to a player aircraft as waypoints or markpoints, on a kneeboard page of their own.
-* **[Mission Generator]** Threat rings and the front line are written to the player aircraft's data cartridge. New setting under MFD, on by default.
+* **[Mission Generator]** Threat rings, the front line and a box round each tanker the aircraft can refuel from are written to the player aircraft's data cartridge, every front joined into one line, since the Hornet's SA page shows only one. New setting under MFD, on by default.
 * **[Mission Generator]** The cockpit displays only show the enemy air defence the campaign settings allow.
 * **[UI]** The buy / replace dialog of a location was redrawn.
 * **[UI]** The F-16 application icon now has a blue/yellow Ukrainian flag background for better visibility at desktop and taskbar sizes.

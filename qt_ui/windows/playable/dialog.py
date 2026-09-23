@@ -533,7 +533,7 @@ class PlayableAircraftDialog(QDialog):
         from game.missiongenerator.dtc import CARTRIDGES
         from game.missiongenerator.a10cdu import AIRCRAFT as DTS_AIRCRAFT
 
-        if one.dcs_id in CARTRIDGES:
+        if one.dcs_id in CARTRIDGES and CARTRIDGES[one.dcs_id].takes_saved_points:
             return (
                 "Loaded from the data cartridge, numbered after the flight plan and"
                 " on route sequence 2 — SEQ1 is still the route."
