@@ -613,6 +613,15 @@ export type Game = {
   map_center?: LatLng;
   unculled_zones: UnculledZone[];
   map_zones: MapZones;
+  high_command: HighCommandMark[];
+};
+export type HighCommandMark = {
+  name: string;
+  position: LatLng;
+  orders: number;
+  soonest: number;
+  last_turn: boolean;
+  tooltip: string;
 };
 export type MapZones = {
   inclusion: LatLng[][][];
