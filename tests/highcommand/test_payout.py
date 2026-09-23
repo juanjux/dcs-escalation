@@ -12,8 +12,10 @@ from game.highcommand.orders import Closed, HighCommand, Order, Outcome, Ticket
 from game.highcommand.prizes import KINDS, Prize, Step, kind_of
 from game.squadrons.morale import MORALE_MAX
 from game.squadrons.pilot import Pilot, PilotStatus
+from game.data.groups import GroupTask
 from game.theater import Airfield, Player
 from game.theater.controlpoint import RunwayStatus
+from tests.highcommand.stubs import Base, launcher, sam
 
 
 def _give(game: Any, prize: Prize) -> str:
@@ -184,3 +186,74 @@ def test_what_asks_for_a_choice_is_a_ticket() -> None:
         if kind.steps:
             assert kind.ticket, kind.key
             assert kind.give is not None, kind.key
+
+
+def _sites_game(*sites: Any, groups: tuple[Any, ...] = ()) -> Any:
+    game = _game()
+    game.theater.ground_objects = list(sites)
+    game.blue.armed_forces = SimpleNamespace(
+        groups_for_task=lambda task: [g for g in groups if task in g.tasks]
+    )
+    return game
+
+
+def test_a_sam_ticket_offers_every_air_defence_site_of_ours() -> None:
+    home, away = Base("Batumi", side=Player.BLUE), Base("Sukhumi")
+    battery = sam("GRUMBLE", 0, [launcher("SAM SA-10 LN", 40)], base=home)
+    wreck = sam("WRECK", 0, [launcher("SAM SA-10 LN", 40)], base=home)
+    for unit_ in wreck.units:
+        unit_.alive = False
+    empty = sam("EMPTY", 0, [], base=home)
+    empty.groups = []
+    theirs = sam("THEIRS", 0, [launcher("SAM SA-10 LN", 40)], base=away)
+    prize = Prize("sam", 6, True, "A ticket for a SAM.", (("band", "MERAD"),))
+    where, _ = _steps(prize)
+
+    options = where.options(_sites_game(battery, wreck, empty, theirs), prize, ())
+
+    assert [(o.label, o.detail) for o in options] == [
+        ("EMPTY", "Empty, at Batumi"),
+        ("GRUMBLE", "SA-10, at Batumi"),
+        ("WRECK", "Destroyed, at Batumi"),
+    ]
+
+
+def test_a_sam_ticket_offers_the_systems_of_its_band_and_picks_a_lone_one() -> None:
+    hawk = SimpleNamespace(
+        name="Hawk", tasks=[GroupTask.MERAD], units=["Hawk ln", "Hawk sr"]
+    )
+    patriot = SimpleNamespace(name="Patriot", tasks=[GroupTask.LORAD], units=[])
+    prize = Prize("sam", 6, True, "A ticket for a SAM.", (("band", "MERAD"),))
+    _, which = _steps(prize)
+
+    options = which.options(_sites_game(groups=(hawk, patriot)), prize, ())
+
+    assert [(o.label, o.detail) for o in options] == [("Hawk", "Hawk ln and Hawk sr")]
+    assert which.auto
+
+
+def test_a_sam_ticket_places_the_system_picked_where_it_was_picked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from game.highcommand import placing
+    from game.server import EventStream
+
+    home = Base("Batumi", side=Player.BLUE)
+    battery = sam("GRUMBLE", 0, [launcher("SAM SA-10 LN", 40)], base=home)
+    hawk = SimpleNamespace(name="Hawk", tasks=[GroupTask.MERAD])
+    placed: list[tuple[Any, Any]] = []
+    monkeypatch.setattr(
+        placing, "place", lambda game, site, group: placed.append((site, group))
+    )
+    monkeypatch.setattr(EventStream, "put_nowait", lambda events: None)
+    prize = Prize("sam", 6, True, "A ticket for a SAM.", (("band", "MERAD"),))
+    command = HighCommand(tickets=[Ticket(prize, "DEPOT", 11)])
+
+    line = command.spend(
+        _sites_game(battery, groups=(hawk,)),
+        command.tickets[0],
+        (str(battery.id), "Hawk"),
+    )
+
+    assert placed == [(battery, hawk)]
+    assert line == "Hawk set up at GRUMBLE."

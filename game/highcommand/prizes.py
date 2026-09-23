@@ -23,12 +23,13 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 from game.ato.flighttype import FlightType
 from game.data.groups import GroupTask
 from game.data.units import UnitClass
-from game.highcommand.wording import counted, joined, money
+from game.highcommand.wording import counted, joined, listed, money, system_name
 from game.income import Income
 from game.squadrons.experience import SaveCompatible
 from game.squadrons.morale import clamp
 from game.squadrons.pilot import PilotStatus
 from game.theater import Airfield, Player
+from game.theater.theatergroundobject import IadsGroundObject
 
 if TYPE_CHECKING:
     from game import Game
@@ -113,6 +114,8 @@ class Context:
     #: The player's income per turn, in millions.
     income: float
     rng: random.Random
+    #: What the player's side can field, by task; None when it cannot field anything.
+    armed_forces: Any = None
 
 
 #: A prize's line and terms at a score, or None when it cannot be given at that score.
@@ -142,6 +145,8 @@ class Step:
 
     question: str
     options: Options
+    #: Picked without asking when there is only one option.
+    auto: bool = False
 
 
 #: Gives a prize, with what was picked for each of its steps, and says what it gave.
@@ -212,17 +217,26 @@ def kind_of(prize: Prize) -> Optional[PrizeKind]:
 class Prizes:
     """Draws the prizes of one side's objectives."""
 
-    def __init__(self, settings: Any, faction: Faction, income: float) -> None:
+    def __init__(
+        self,
+        settings: Any,
+        faction: Faction,
+        income: float,
+        armed_forces: Any = None,
+    ) -> None:
         self.settings = settings
         self.faction = faction
         self.income = income
+        self.armed_forces = armed_forces
 
     @classmethod
     def of(cls, game: Game, player: Player) -> Prizes:
+        coalition = game.coalition_for(player)
         return cls(
             game.settings,
-            game.coalition_for(player).faction,
+            coalition.faction,
             Income(game, player).total,
+            coalition.armed_forces,
         )
 
     def draw(self, score: int, seed: object) -> Optional[Prize]:
@@ -236,7 +250,9 @@ class Prizes:
             and kind.give is not None
         ]
         rng.shuffle(kinds)
-        context = Context(self.settings, self.faction, self.income, rng)
+        context = Context(
+            self.settings, self.faction, self.income, rng, self.armed_forces
+        )
         for kind in kinds:
             prize = kind.prize(score, context)
             if prize is not None:
@@ -381,9 +397,11 @@ def _loaned_aircraft(score: int, context: Context) -> Worked:
 
 @_kind("sam", ticket=True)
 def _sam(score: int, context: Context) -> Worked:
-    has = {task for group in context.faction.preset_groups for task in group.tasks}
+    forces = context.armed_forces
+    if forces is None:
+        return None
     for lowest, task, reach in SAM_BANDS:
-        if score >= lowest and task in has:
+        if score >= lowest and any(True for _ in forces.groups_for_task(task)):
             return (
                 f"A ticket for a {reach} SAM battery where we choose, or one of ours "
                 "rebuilt or converted for free.",
@@ -621,3 +639,61 @@ def _give_heal(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
     )
     pilot.recover()
     return f"{pilot.name}, of {squadron.name}, is back on duty."
+
+
+def _air_defence_sites(
+    game: Game, prize: Prize, picked: tuple[str, ...]
+) -> list[Choice]:
+    """Every air defence site of ours, whatever stands there now: a battery, a radar
+    and a jammer can each take the others' place."""
+    sites = sorted(
+        (
+            tgo
+            for tgo in game.theater.ground_objects
+            if isinstance(tgo, IadsGroundObject)
+            and tgo.control_point.captured == PLAYER
+        ),
+        key=lambda tgo: tgo.name,
+    )
+    return [
+        Choice(str(tgo.id), tgo.name, f"{_standing(tgo)}, at {tgo.control_point.name}")
+        for tgo in sites
+    ]
+
+
+def _standing(tgo: IadsGroundObject) -> str:
+    if not tgo.groups or not any(True for _ in tgo.units):
+        return "Empty"
+    if tgo.is_dead:
+        return "Destroyed"
+    return system_name(tgo)
+
+
+def _air_defence_types(
+    game: Game, prize: Prize, picked: tuple[str, ...]
+) -> list[Choice]:
+    return [
+        Choice(group.name, group.name, listed(sorted({str(u) for u in group.units})))
+        for group in _band_groups(game, prize)
+    ]
+
+
+def _band_groups(game: Game, prize: Prize) -> list[Any]:
+    band = GroupTask[prize.term("band")]
+    forces = game.coalition_for(PLAYER).armed_forces
+    return sorted(forces.groups_for_task(band), key=lambda group: group.name)
+
+
+@_gives(
+    "sam",
+    Step("Where?", _air_defence_sites),
+    Step("Which system?", _air_defence_types, auto=True),
+)
+def _give_sam(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    from game.highcommand.placing import place
+    from game.server import EventStream
+
+    site = next(tgo for tgo in game.theater.ground_objects if str(tgo.id) == picked[0])
+    force_group = next(g for g in _band_groups(game, prize) if g.name == picked[1])
+    EventStream.put_nowait(place(game, site, force_group))
+    return f"{force_group.name} set up at {site.name}."
