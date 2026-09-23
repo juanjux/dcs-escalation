@@ -395,7 +395,10 @@ and it is longer than this section.
     #1008);
   - the Viper's ROE tab filled from the campaign: a family only one side flies is that
     side's ([#418](https://github.com/juanjux/dcs-escalation/pull/418), porting RetLab
-    #992).
+    #992);
+  - a cartridge for the Apache: the front line on its TSD and the enemy air defence as
+    target points under the TSD's own symbols, its route left as the mission gives it
+    ([#419](https://github.com/juanjux/dcs-escalation/pull/419), porting RetLab #992).
 
 ## Removed from upstream
 
