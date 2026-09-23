@@ -175,12 +175,70 @@ def test_the_super_hornets_carry_the_hornet_s_cartridge(aircraft: str) -> None:
     assert profile.max_lines == hornet.max_lines
 
 
-def test_a_long_front_stops_the_next_one_rather_than_overflowing() -> None:
-    class Narrow(dtc.HornetCartridge):
-        max_lines = 3
-        max_line_points = 3
+def _bar(name: str, *points: tuple[float, float]) -> dtc.Front:
+    return dtc.Front(name, tuple(points))
 
-    assert [front.name for front in dtc._trim(Narrow(), _fronts(3))] == ["Front 1"]
+
+def test_the_fronts_are_joined_into_one_line_across_the_theater() -> None:
+    """Drawn apart they are stubs that do not say which side is hostile."""
+    line = dtc.join_fronts(
+        [
+            _bar("Middle", (30.0, 0.0), (20.0, 0.0)),
+            _bar("East", (40.0, 0.0), (50.0, 0.0)),
+            _bar("West", (0.0, 0.0), (10.0, 0.0)),
+        ]
+    )
+
+    assert line is not None
+    assert line.name == "FLOT"
+    # From one end of the theater to the other, each front turned to continue it.
+    assert list(line.points) in (
+        [(0.0, 0.0), (10.0, 0.0), (20.0, 0.0), (30.0, 0.0)]
+        + [(40.0, 0.0), (50.0, 0.0)],
+        [(50.0, 0.0), (40.0, 0.0), (30.0, 0.0), (20.0, 0.0)]
+        + [(10.0, 0.0), (0.0, 0.0)],
+    )
+
+
+def test_a_single_front_keeps_its_name() -> None:
+    line = dtc.join_fronts([_bar("Front 1", (0.0, 0.0), (10.0, 0.0))])
+
+    assert line == _bar("Front 1", (0.0, 0.0), (10.0, 0.0))
+    assert dtc.join_fronts([]) is None
+
+
+def test_a_line_too_long_for_the_aircraft_loses_its_flattest_points() -> None:
+    wavy = [(float(x), 0.0 if x != 4 else 5.0) for x in range(9)]
+
+    kept = dtc.simplified(wavy, 3)
+
+    # Both ends stay, and the one point that bends the line is the one kept.
+    assert kept == [(0.0, 0.0), (4.0, 5.0), (8.0, 0.0)]
+
+
+def test_the_hornet_draws_the_whole_front_on_the_one_line_it_shows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The SA page draws only the selected FLOT line, so a front split over three
+    would show a third of itself."""
+    bars = [
+        _bar(f"Front {n}", (0.0, n * 20.0), (10.0, n * 20.0 + 5.0)) for n in range(5)
+    ]
+    monkeypatch.setattr(dtc, "fronts_of", lambda theater: bars)
+
+    built = dtc.cartridge(_game(), Player.BLUE, "FA-18C_hornet", "Escalation")
+    flot = built["data"]["SA"]["FAOR_FLOT"]["FLOT"]
+
+    assert len(flot) == 1
+    assert len(flot[0]["points"]) == dtc.HornetCartridge.max_line_points
+    ends = {(p["x"], p["y"]) for p in (flot[0]["points"][0], flot[0]["points"][-1])}
+    assert ends == {(0.0, 0.0), (10.0, 85.0)}
+
+    viper = dtc.cartridge(_game(), Player.BLUE, "F-16C_50", "Escalation")
+    points = viper["data"]["MPD"]["GEO_LINES"]
+    # The Viper has room for all ten, on the first line.
+    assert len(points) == 10
+    assert all(point["L1"] for point in points)
 
 
 # ------------------------------------------------------------------ the whole file

@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -114,9 +115,11 @@ class Cartridge(ABC):
 class HornetCartridge(Cartridge):
     """The Hornet family: the SA page.
 
-    Limits from ``FA-18C/DTC/SA``: three FLOT lines of seven points. The CJS Super
-    Hornet mod ships the same cartridge, section for section, for the E, the F and
-    the Growler, so they are the same profile under another type name.
+    Limits from ``FA-18C/DTC/SA``: three FLOT lines of seven points. The page draws
+    one of them, the selected one -- its script has room for a single FLOT line --
+    so the whole front goes on line 1. The CJS Super Hornet mod ships the same
+    cartridge, section for section, for the E, the F and the Growler, so they are
+    the same profile under another type name.
     """
 
     aircraft = "FA-18C_hornet"
@@ -355,49 +358,114 @@ CARTRIDGES: dict[str, Cartridge] = {
 
 
 def fronts_of(theater: ConflictTheater) -> list[Front]:
-    """Each front as the points that draw it, longest first.
+    """Each front as the points that draw it.
 
     Two points is all a front needs: it is a straight contact line on the map already.
-    Longest first because a cartridge takes a few and the one worth carrying is the
-    one the fighting is on.
     """
-    found: list[tuple[float, Front]] = []
+    found: list[Front] = []
     for front_line in theater.conflicts():
         bounds = FrontLineConflictDescription.frontline_bounds(front_line, theater)
         end = bounds.left_position.point_from_heading(
             bounds.heading_from_left_to_right.degrees, bounds.length
         )
         found.append(
-            (
-                bounds.length,
-                Front(
-                    front_line.name,
-                    (
-                        (bounds.left_position.x, bounds.left_position.y),
-                        (end.x, end.y),
-                    ),
-                ),
+            Front(
+                front_line.name,
+                ((bounds.left_position.x, bounds.left_position.y), (end.x, end.y)),
             )
         )
-    found.sort(key=lambda pair: -pair[0])
-    return [front for _length, front in found]
+    return found
 
 
-def _trim(profile: Cartridge, fronts: Sequence[Front]) -> list[Front]:
-    """As many fronts as this aircraft will take, and a word about the rest."""
-    kept: list[Front] = []
-    points = 0
-    for front in fronts[: profile.max_lines]:
-        if points + len(front.points) > profile.max_line_points:
-            logging.info("DTC %s: no room left for %s", profile.aircraft, front.name)
-            break
-        kept.append(front)
-        points += len(front.points)
-    if len(kept) < len(fronts):
-        logging.info(
-            "DTC %s: %d fronts, carrying %d", profile.aircraft, len(fronts), len(kept)
+def join_fronts(fronts: Sequence[Front]) -> Optional[Front]:
+    """Every front as one line, in the order a line through all of them runs.
+
+    A front is a bar across the road the two sides contest, so a theater with several
+    fronts has several stubs with uncontested border between them, and drawn apart
+    they do not say which side of them is hostile. The gaps are joined straight:
+    nothing in the campaign says where an uncontested border runs.
+
+    The line starts at the end farthest from the middle of them all, so it runs
+    across the theater rather than out from its centre, and each next front is the
+    one with an end nearest the last point, turned to start from that end.
+    """
+    bars = [list(front.points) for front in fronts if len(front.points) >= 2]
+    if not bars:
+        return None
+    ends = [point for bar in bars for point in (bar[0], bar[-1])]
+    middle = (
+        sum(x for x, _ in ends) / len(ends),
+        sum(y for _, y in ends) / len(ends),
+    )
+    first = max(
+        bars, key=lambda bar: max(math.dist(bar[0], middle), math.dist(bar[-1], middle))
+    )
+    bars.remove(first)
+    if math.dist(first[-1], middle) > math.dist(first[0], middle):
+        first.reverse()
+    line = first
+    while bars:
+        last = line[-1]
+        following = min(
+            bars, key=lambda bar: min(math.dist(last, bar[0]), math.dist(last, bar[-1]))
         )
-    return kept
+        bars.remove(following)
+        if math.dist(last, following[-1]) < math.dist(last, following[0]):
+            following.reverse()
+        line.extend(following)
+    name = fronts[0].name if len(fronts) == 1 else "FLOT"
+    return Front(name, tuple(line))
+
+
+def simplified(
+    points: Sequence[tuple[float, float]], count: int
+) -> list[tuple[float, float]]:
+    """The line cut down to ``count`` points, keeping both ends.
+
+    Starting from the two ends, each pass adds back the point farthest from the line
+    kept so far, so a bend survives however narrow it is.
+    """
+    if len(points) <= max(count, 2):
+        return list(points)
+
+    def distance(index: int, start: int, end: int) -> float:
+        """From the point to the segment between two kept points."""
+        (px, py), (ax, ay), (bx, by) = points[index], points[start], points[end]
+        dx, dy = bx - ax, by - ay
+        squared = dx * dx + dy * dy
+        along = 0.0
+        if squared > 0:
+            along = min(1.0, max(0.0, ((px - ax) * dx + (py - ay) * dy) / squared))
+        return math.dist((px, py), (ax + along * dx, ay + along * dy))
+
+    kept = [0, len(points) - 1]
+    while len(kept) < count:
+        farthest = max(
+            (
+                (distance(index, start, end), index)
+                for start, end in zip(kept, kept[1:])
+                for index in range(start + 1, end)
+            ),
+            default=None,
+        )
+        if farthest is None:
+            break
+        kept.append(farthest[1])
+        kept.sort()
+    return [points[index] for index in kept]
+
+
+def _fit(profile: Cartridge, line: Front) -> Front:
+    """The front line with no more points than this aircraft's line can hold."""
+    if len(line.points) <= profile.max_line_points:
+        return line
+    logging.info(
+        "DTC %s: front line of %d points cut to %d",
+        profile.aircraft,
+        len(line.points),
+        profile.max_line_points,
+    )
+    return Front(line.name, tuple(simplified(line.points, profile.max_line_points)))
 
 
 def steerpoint_numbers(aircraft: str, route_length: int, count: int) -> list[int]:
@@ -495,7 +563,9 @@ def cartridge(
         "type": aircraft,
         "terrain": game.theater.terrain.name,
     }
-    data.update(profile.sections(_trim(profile, fronts_of(game.theater)), navigation))
+    line = join_fronts(fronts_of(game.theater))
+    fronts = [_fit(profile, line)] if line is not None else []
+    data.update(profile.sections(fronts, navigation))
     return {"name": name, "type": aircraft, "data": data}
 
 
