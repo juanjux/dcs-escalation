@@ -152,6 +152,9 @@ def test_a_lapsed_order_gives_way_to_another_from_its_tier(
     assert [(c.order.objective, c.outcome) for c in closed] == [("L1", Outcome.EXPIRED)]
     low = next(order for order in command.orders if order.tier == 0)
     assert low.objective in {"L2", "L3"}
+    assert [(e.turn, e.outcome, e.name, e.line) for e in command.history] == [
+        (12, "expired", "L1", "ran out after 2 turns")
+    ]
 
 
 def test_destroying_the_objective_closes_it_even_on_its_last_turn(
@@ -402,3 +405,23 @@ def test_a_high_command_switched_off_gives_no_orders() -> None:
     Game.refresh_high_command(game)
 
     assert refreshed == []
+
+
+def test_the_history_keeps_the_latest_entries() -> None:
+    from game.highcommand.orders import HISTORY_KEPT
+
+    command = HighCommand()
+    for turn in range(HISTORY_KEPT + 5):
+        command.note(turn, "expired", f"O{turn}", "ran out")
+
+    assert len(command.history) == HISTORY_KEPT
+    assert command.history[0].turn == 5
+
+
+def test_a_save_written_before_the_history_has_an_empty_one() -> None:
+    import pickle
+
+    command = HighCommand()
+    del command.__dict__["history"]
+
+    assert pickle.loads(pickle.dumps(command)).history == []

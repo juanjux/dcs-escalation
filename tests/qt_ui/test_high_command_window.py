@@ -281,3 +281,20 @@ def test_the_on_loan_tab_lists_them_or_says_there_are_none(qt_app: Any) -> None:
     game.high_command.loans = []
     window.reload()
     assert window.loans.list.isHidden() and not window.loans.empty.isHidden()
+
+
+def test_the_history_lists_the_newest_first(qt_app: Any) -> None:
+    from qt_ui.windows.highcommand.dialog import HighCommandWindow
+
+    game = _game()
+    window = HighCommandWindow(SimpleNamespace(game=game))
+    assert window.history.list.isHidden() and not window.history.empty.isHidden()
+
+    game.high_command.note(12, "gone", "SEALION", "no longer an objective")
+    game.high_command.note(13, "spent", "Ticket spent", "Hawk set up at BEETLE.")
+    window.reload()
+
+    assert [entry.name for entry in window.history.model.entries] == [
+        "Ticket spent",
+        "SEALION",
+    ]

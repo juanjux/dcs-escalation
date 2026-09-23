@@ -95,6 +95,10 @@ def test_an_achieved_order_pays_its_prize_and_a_ticket_is_kept(income: None) -> 
     assert [ticket.prize for ticket in command.tickets] == [runway]
     assert command.tickets[0].earned_on == 12
     assert len(lines) == 2
+    assert [(e.outcome, e.line) for e in command.history][1:] == [
+        ("achieved", "A ticket for a runway repair.")
+    ]
+    assert [e.outcome for e in command.history] == ["achieved", "achieved"]
 
 
 def test_cash_is_a_share_of_the_income_when_it_is_paid(income: None) -> None:
@@ -154,6 +158,7 @@ def test_a_runway_ticket_is_spent_on_one_of_our_broken_runways() -> None:
     assert not broken.runway_status.damaged
     assert command.tickets == []
     assert line == "The runway at Kutaisi is repaired."
+    assert [(e.outcome, e.line) for e in command.history] == [("spent", line)]
 
 
 def test_with_no_broken_runway_there_is_nothing_to_spend_it_on() -> None:
