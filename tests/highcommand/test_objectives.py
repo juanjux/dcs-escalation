@@ -9,11 +9,17 @@ from typing import Any
 from dcs import Point
 from dcs.terrain import Caucasus
 
+import pytest
+
 from game.data.units import UnitClass
 from game.highcommand import objectives
+from game.highcommand.approach import Approach, Release, Ring
 from game.highcommand.objectives import (
     COMICAL,
+    DIRECT_RELEASE,
     RING_WEIGHT,
+    ROUTE_MILES_PER_POINT,
+    STANDOFF_PENALTY,
     Effort,
     Objective,
     ranked,
@@ -21,6 +27,7 @@ from game.highcommand.objectives import (
 )
 from game.mfd import Band
 from game.theater import Player
+from game.theater.iadsnetwork.iadsstate import IadsState, IadsStatus
 from game.utils import meters, nautical_miles
 
 TERRAIN = Caucasus()
@@ -87,16 +94,37 @@ def _site(
     )
 
 
+def _ring(site: Any) -> Ring:
+    return Ring(
+        site=site,
+        x=site.position.x,
+        y=site.position.y,
+        reach=site.max_threat_range().meters,
+        weight=RING_WEIGHT[Band.LONG],
+    )
+
+
 def _campaign(**parts: Any) -> Any:
-    """The measuring context without a game behind it."""
+    """The measuring context without a game behind it.
+
+    ``points`` are where objectives will be measured, for the approach grid to reach.
+    """
     campaign: Any = objectives._Campaign.__new__(objectives._Campaign)
     bases = parts.pop("enemy_bases", [])
     campaign.game = SimpleNamespace(theater=SimpleNamespace(controlpoints=bases))
     campaign.player = Player.BLUE
     campaign.enemy = Player.RED
     campaign.groups = parts.pop("groups", {})
-    campaign.defences = parts.pop("defences", [])
+    campaign.rings = parts.pop("rings", [])
     campaign.bases = parts.pop("our_bases", [])
+    campaign.land_releases = [Release(DIRECT_RELEASE.meters)]
+    campaign.sea_releases = [Release(DIRECT_RELEASE.meters)]
+    points = parts.pop("points", [])
+    campaign.approach = (
+        Approach(campaign.rings, [(b, b.position) for b in campaign.bases], points)
+        if campaign.bases
+        else None
+    )
     campaign.aircraft = Counter(parts.pop("aircraft", {}))
     campaign.fighters = Counter(parts.pop("fighters", {}))
     campaign.enemy_income = parts.pop("enemy_income", 100.0)
@@ -112,7 +140,7 @@ def _objective(name: str, total: float) -> Objective:
         name=name,
         kind="Factory",
         targets=(),
-        effort=Effort(air_defence=total, fighters=0, distance=0, size=0),
+        effort=Effort(route=total, fighters=0, size=0),
         justification="",
         hazards=(),
     )
@@ -137,37 +165,106 @@ def test_equal_efforts_share_a_difficulty() -> None:
     assert difficulties[-1] == 5
 
 
-def test_a_ring_weighs_most_over_its_site_and_nothing_past_its_edge() -> None:
-    sam = _site("GRUMBLE", 0, [_shooter("SAM SA-10 LN", 40)])
-    ring = objectives._Defence(sam, reach=40 * NM, band=Band.LONG)
-
-    assert ring.weight_at(_at(0)) == RING_WEIGHT[Band.LONG]
-    assert abs(ring.weight_at(_at(20)) - RING_WEIGHT[Band.LONG] / 2) < 1e-9
-    assert ring.weight_at(_at(41)) == 0
-
-
-def test_effort_adds_the_rings_the_fighters_the_distance_and_the_size() -> None:
-    sam = _site("GRUMBLE", 0, [_shooter("SAM SA-10 LN", 40)])
+def test_effort_adds_the_route_the_fighters_and_the_size() -> None:
     enemy_field = _base("Kutaisi", 50)
     campaign = _campaign(
-        defences=[objectives._Defence(sam, 40 * NM, Band.LONG)],
         our_bases=[_base("Batumi", 300, Player.BLUE)],
         fighters={enemy_field: 24},
+        points=[_at(10)],
     )
 
-    effort, hazards = campaign._effort("FACTORY", _at(10), units=12)
+    effort, hazards = campaign._effort("FACTORY", _at(10), units=16, at_sea=False)
 
-    assert effort.air_defence == RING_WEIGHT[Band.LONG] * 30 / 40
+    # Bombs from 10 nm out: 280 nm from Batumi, all of it in the open.
+    assert effort.route == pytest.approx(280 / ROUTE_MILES_PER_POINT)
     assert effort.fighters == 2.0
-    # 290 nm out: a point for each hundred past the first.
-    assert abs(effort.distance - 1.9) < 1e-9
     assert effort.size == 1.0
     assert hazards == (
-        "SA-10 at GRUMBLE",
+        "280 nm from Batumi",
         "24 fighters within 150 nm",
-        "290 nm from Batumi",
-        "12 units to destroy",
+        "16 units to destroy",
     )
+
+
+def test_the_rings_that_make_an_objective_hard_are_named() -> None:
+    sam = _site("GRUMBLE", 100, [_shooter("SAM SA-10 LN", 40)])
+    campaign = _campaign(
+        rings=[_ring(sam)],
+        our_bases=[_base("Batumi", 300, Player.BLUE)],
+        points=[_at(100), _at(100, 5)],
+    )
+
+    _, own = campaign._effort("GRUMBLE", _at(100), units=0, at_sea=False)
+    # Too close to the battery to reach from anywhere outside its ring.
+    _, covered = campaign._effort("DEPOT", _at(100, 5), units=0, at_sea=False)
+
+    assert own[0] == "its own SA-10"
+    assert covered[0] == "SA-10 at GRUMBLE"
+
+
+def test_a_stand_off_weapon_costs_its_penalty_and_names_no_weapon() -> None:
+    sam = _site("GRUMBLE", 100, [_shooter("SAM SA-10 LN", 40)])
+    campaign = _campaign(
+        rings=[_ring(sam)],
+        our_bases=[_base("Batumi", 300, Player.BLUE)],
+        points=[_at(100)],
+    )
+    close_in, _ = campaign._effort("GRUMBLE", _at(100), units=0, at_sea=False)
+    campaign.land_releases.append(Release(60 * NM, STANDOFF_PENALTY))
+
+    effort, hazards = campaign._effort("GRUMBLE", _at(100), units=0, at_sea=False)
+
+    assert effort.route < close_in.route
+    # The weapon's flight over the ring costs something, too little to name.
+    assert effort.route > (140 + STANDOFF_PENALTY) / ROUTE_MILES_PER_POINT
+    assert hazards == ("140 nm from Batumi",)
+
+
+def test_a_switched_off_or_destroyed_site_has_no_ring() -> None:
+    sam = _site("GRUMBLE", 0, [_shooter("SAM SA-10 LN", 40)])
+    campaign = _campaign()
+    status: dict[str, Any] = {"now": None}
+    campaign.network = SimpleNamespace(
+        state_map=SimpleNamespace(status_for=lambda tgo: status["now"])
+    )
+
+    ring = campaign._ring(sam)
+    assert ring is not None and ring.weight == RING_WEIGHT[Band.LONG]
+    for state in (IadsState.DARK, IadsState.DESTROYED):
+        status["now"] = IadsStatus(state, "", False)
+        assert campaign._ring(sam) is None
+    status["now"] = IadsStatus(IadsState.AUTONOMOUS, "", False)
+    assert campaign._ring(sam) is not None
+
+
+def _weapon(name: str, reach_nm: float) -> Any:
+    return SimpleNamespace(
+        launch_range=nautical_miles(reach_nm),
+        weapon_group=SimpleNamespace(name=name),
+    )
+
+
+def test_anti_ship_missiles_only_reach_ships(monkeypatch: pytest.MonkeyPatch) -> None:
+    from game.data.weapons import Pylon
+
+    pylon = SimpleNamespace(
+        allowed=[_weapon("AGM-84D Harpoon", 60), _weapon("AGM-154C JSOW", 40)]
+    )
+    monkeypatch.setattr(Pylon, "iter_pylons", staticmethod(lambda aircraft: [pylon]))
+    squadron = SimpleNamespace(aircraft="Hornet", owned_aircraft=4)
+    coalition = SimpleNamespace(
+        air_wing=SimpleNamespace(iter_squadrons=lambda: [squadron]), faction=None
+    )
+    game = SimpleNamespace(
+        coalition_for=lambda player: coalition,
+        settings=SimpleNamespace(restrict_weapons_by_date=False),
+        date=None,
+    )
+
+    land, sea = objectives._releases(game, Player.BLUE)  # type: ignore[arg-type]
+
+    assert [r.radius / NM for r in land] == pytest.approx([10, 40])
+    assert [r.radius / NM for r in sea] == pytest.approx([10, 60])
 
 
 # --------------------------------------------------------------- the reasons

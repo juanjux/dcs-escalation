@@ -1,13 +1,16 @@
 """The enemy objectives the High Command can order attacked, how hard each one is to
 get at, and one line on why it is worth attacking.
 
-What getting at an objective takes, its effort, adds up four things, each in points:
+What getting at an objective takes, its effort, adds up three things, each in points:
 
-* the enemy air defence over it: every site whose ring it stands in, weighted by how
-  far that site reaches and by how deep inside the ring the objective is, so an
-  objective under a long-range SAM counts for more the closer it is to it;
+* the route, which weighs the most: the cheapest way from one of our bases to a point
+  a weapon can reach the objective from, a mile inside an enemy ring costing more than
+  a mile outside, and more the further that site reaches and the closer the route
+  passes to it (``approach.py``). Our aircraft release bombs and Mavericks close in,
+  and whatever longer-reaching weapon they carry from further out, so a battery on the
+  coast is hit from outside its ring, and an objective behind two rings costs the
+  detour or the rings;
 * the enemy fighters based within reach of it;
-* how far it is from our nearest base with aircraft;
 * how much of it there is to destroy.
 
 Difficulty, from 1 to 5, is where that effort falls among all of the enemy's
@@ -27,13 +30,14 @@ import re
 from bisect import bisect_left
 from collections import Counter, defaultdict
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Iterable, Iterator, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, Optional, Sequence
 
 from dcs import Point
 
 from game.ato.flighttype import FlightType
 from game.config import REWARDS
 from game.data.units import UnitClass
+from game.highcommand.approach import Approach, Release, Ring
 from game.income import Income
 from game.mfd import GUN_CLASSES, Band, band_of
 from game.theater import Airfield, ControlPoint, Fob, MissionTarget, Player
@@ -69,27 +73,44 @@ COMICAL = "XXX comical"
 #: at all.
 RING_WEIGHT = {Band.LONG: 4.0, Band.MEDIUM: 2.5, Band.SHORT: 1.0}
 
-#: A ring counting for less than this over an objective is not named among what makes
-#: it hard.
-NAMED_RING = 0.75
+#: Miles of route, counted outside every ring, that make a point of effort. Low
+#: enough for the route to outweigh the fighters and the size: how far an objective is
+#: and what stands in the way decide most of how hard it is.
+ROUTE_MILES_PER_POINT = 60.0
+
+#: How close bombs, rockets and Mavericks have to be brought.
+DIRECT_RELEASE = nautical_miles(10)
+
+#: What needing a stand-off weapon adds to a route, in miles: fewer aircraft carry
+#: one.
+STANDOFF_PENALTY = 50.0
+
+#: A ring adding less than this to a route, in miles, is not named among what makes an
+#: objective hard.
+NAMED_RING_COST = 50.0
+
+#: A route shorter than this is not worth naming either.
+NAMED_LENGTH = 100.0
 
 #: Fighters based this close to an objective can be over it before a package is.
 FIGHTER_REACH = nautical_miles(150)
 FIGHTERS_PER_POINT = 12
 MAX_FIGHTER_POINTS = 2.0
 
-#: Up to this far from one of our bases distance adds nothing, and every hundred miles
-#: past it adds a point.
-FREE_DISTANCE = nautical_miles(100)
-DISTANCE_PER_POINT = nautical_miles(100)
-MAX_DISTANCE_POINTS = 2.0
+#: The anti-ship missiles, which have nothing to aim at on land, by weapon group name.
+#: A SLAM reaches a ship as well as a building.
+ANTI_SHIP = re.compile(
+    r"^(8x)?AGM-84[AD]\b|Exocet|Sea Eagle|^Kh-(22|35|41)\b|^KSR-|^C-802AK$|^YJ-|"
+    r"RBS-15|^RB-15|LRASM|Kormoran"
+)
+AGAINST_SHIPS_TOO = re.compile(r"SLAM|BrahMos")
 
 #: What one flight takes care of, and how many units more make a point. A warship
 #: counts as several.
 FREE_UNITS = 4
-UNITS_PER_POINT = 8
+UNITS_PER_POINT = 12
 WARSHIP_UNITS = 3
-MAX_SIZE_POINTS = 1.5
+MAX_SIZE_POINTS = 1.0
 
 #: How many difficulties there are.
 DIFFICULTIES = 5
@@ -121,14 +142,13 @@ UNIT_CLASSES_AT_SEA = frozenset(
 class Effort:
     """What getting at an objective takes, in points."""
 
-    air_defence: float
+    route: float
     fighters: float
-    distance: float
     size: float
 
     @property
     def total(self) -> float:
-        return self.air_defence + self.fighters + self.distance + self.size
+        return self.route + self.fighters + self.size
 
 
 @dataclass(frozen=True)
@@ -182,21 +202,6 @@ def ranked(objectives: Sequence[Objective]) -> list[Objective]:
     ]
 
 
-@dataclass(frozen=True)
-class _Defence:
-    """A site with a ring the enemy's objectives can stand in."""
-
-    ground_object: TheaterGroundObject
-    reach: float
-    band: Band
-
-    def weight_at(self, position: Point) -> float:
-        distance = self.ground_object.position.distance_to_point(position)
-        if distance > self.reach:
-            return 0.0
-        return RING_WEIGHT[self.band] * (self.reach - distance) / self.reach
-
-
 class _Campaign:
     """What every objective is measured against, worked out once."""
 
@@ -213,17 +218,18 @@ class _Campaign:
         #: runs on radars and batteries alone.
         self.advanced = self.skynet and network.advanced_iads
         self.groups = self._standing_objectives()
-        self.defences = [
-            defence
+        self.rings = [
+            ring
             for tgo in game.theater.ground_objects
             if tgo.control_point.captured == self.enemy
-            and (defence := self._defence(tgo)) is not None
+            and (ring := self._ring(tgo)) is not None
         ]
         our_squadrons = game.coalition_for(player).air_wing.iter_squadrons()
         self.bases = sorted(
             {s.location for s in our_squadrons if s.owned_aircraft > 0},
             key=lambda cp: cp.name,
         )
+        self.land_releases, self.sea_releases = _releases(game, player)
         self.aircraft: Counter[ControlPoint] = Counter()
         self.fighters: Counter[ControlPoint] = Counter()
         for squadron in game.coalition_for(self.enemy).air_wing.iter_squadrons():
@@ -235,6 +241,14 @@ class _Campaign:
         income = Income(game, self.enemy)
         self.income_multiplier = income.multiplier
         self.enemy_income = income.total
+        self.approach: Optional[Approach] = None
+        if self.bases:
+            self.approach = Approach(
+                self.rings,
+                [(cp, cp.position) for cp in self.bases],
+                [tgos[0].position for tgos in self.groups.values()]
+                + [cp.position for cp in game.theater.controlpoints],
+            )
 
     # ------------------------------------------------------------ what there is
 
@@ -261,7 +275,8 @@ class _Campaign:
             or not all(t.is_dead for t in tgos)
         }
 
-    def _defence(self, tgo: TheaterGroundObject) -> Optional[_Defence]:
+    def _ring(self, tgo: TheaterGroundObject) -> Optional[Ring]:
+        """The ring of a site that shoots, unless it is switched off or destroyed."""
         if tgo.is_dead:
             return None
         reach = tgo.max_threat_range().meters
@@ -273,7 +288,13 @@ class _Campaign:
             IadsState.DESTROYED,
         ):
             return None
-        return _Defence(tgo, reach, band_of(tgo))
+        return Ring(
+            site=tgo,
+            x=tgo.position.x,
+            y=tgo.position.y,
+            reach=reach,
+            weight=RING_WEIGHT[band_of(tgo)],
+        )
 
     def enemy_bases(self) -> Iterator[ControlPoint]:
         """The enemy's airfields and FOBs with aircraft on them."""
@@ -372,7 +393,8 @@ class _Campaign:
 
     def objective(self, name: str, tgos: list[TheaterGroundObject]) -> Objective:
         position = tgos[0].position
-        effort, hazards = self._effort(name, position, _size(tgos))
+        at_sea = isinstance(tgos[0], NavalGroundObject)
+        effort, hazards = self._effort(name, position, _size(tgos), at_sea)
         return Objective(
             name=name,
             kind=_kind(tgos[0]),
@@ -383,7 +405,7 @@ class _Campaign:
         )
 
     def base_objective(self, cp: ControlPoint) -> Objective:
-        effort, hazards = self._effort(cp.name, cp.position, 0)
+        effort, hazards = self._effort(cp.name, cp.position, 0, at_sea=False)
         return Objective(
             name=cp.name,
             kind="Airfield" if isinstance(cp, Airfield) else "FOB",
@@ -394,23 +416,26 @@ class _Campaign:
         )
 
     def _effort(
-        self, name: str, position: Point, units: int
+        self, name: str, position: Point, units: int, at_sea: bool
     ) -> tuple[Effort, tuple[str, ...]]:
         hazards: list[str] = []
 
-        rings = sorted(
-            ((d.weight_at(position), d) for d in self.defences),
-            key=lambda ring: -ring[0],
-        )
-        air_defence = sum(weight for weight, _ in rings)
-        for weight, defence in rings[:2]:
-            if weight < NAMED_RING:
-                break
-            system = system_name(defence.ground_object)
-            site = defence.ground_object.name
-            hazards.append(
-                f"its own {system}" if site == name else f"{system} at {site}"
+        route_points = 0.0
+        if self.approach is not None:
+            route = self.approach.route(
+                position, self.sea_releases if at_sea else self.land_releases
             )
+            route_points = (route.cost + route.release.penalty) / ROUTE_MILES_PER_POINT
+            for cost, ring in route.rings[:2]:
+                if cost < NAMED_RING_COST:
+                    break
+                system = system_name(ring.site)
+                site = ring.site.name
+                hazards.append(
+                    f"its own {system}" if site == name else f"{system} at {site}"
+                )
+            if route.base is not None and route.length >= NAMED_LENGTH:
+                hazards.append(f"{route.length:.0f} nm from {route.base.name}")
 
         fighters = sum(
             count
@@ -422,21 +447,6 @@ class _Campaign:
                 f"{fighters} fighters within {FIGHTER_REACH.nautical_miles:.0f} nm"
             )
 
-        distance_points = 0.0
-        if self.bases:
-            base = min(
-                self.bases, key=lambda cp: cp.position.distance_to_point(position)
-            )
-            distance = base.position.distance_to_point(position)
-            distance_points = min(
-                MAX_DISTANCE_POINTS,
-                max(0.0, (distance - FREE_DISTANCE.meters) / DISTANCE_PER_POINT.meters),
-            )
-            if distance_points > 0:
-                hazards.append(
-                    f"{meters(distance).nautical_miles:.0f} nm from {base.name}"
-                )
-
         size_points = min(
             MAX_SIZE_POINTS, max(0.0, (units - FREE_UNITS) / UNITS_PER_POINT)
         )
@@ -444,9 +454,8 @@ class _Campaign:
             hazards.append(f"{units} units to destroy")
 
         effort = Effort(
-            air_defence=air_defence,
+            route=route_points,
             fighters=min(MAX_FIGHTER_POINTS, fighters / FIGHTERS_PER_POINT),
-            distance=distance_points,
             size=size_points,
         )
         return effort, tuple(hazards)
@@ -655,6 +664,55 @@ class _Campaign:
 
 
 # ------------------------------------------------------------------- helpers
+
+
+def _releases(game: Game, player: Player) -> tuple[list[Release], list[Release]]:
+    """How close our aircraft have to get to an objective on land, and to a ship.
+
+    Close enough for bombs and Mavericks always, and, when one of our aircraft carries
+    something that reaches further, as far out as the longest-reaching of those.
+    """
+    from game.data.weapons import Pylon, Weapon
+
+    coalition = game.coalition_for(player)
+    by_date = game.settings.restrict_weapons_by_date
+    best: dict[bool, Weapon] = {}
+    for aircraft in {
+        s.aircraft for s in coalition.air_wing.iter_squadrons() if s.owned_aircraft
+    }:
+        for pylon in Pylon.iter_pylons(aircraft):
+            weapons = (
+                pylon.available_on(game.date, coalition.faction)
+                if by_date
+                else pylon.allowed
+            )
+            for weapon in weapons:
+                reach = weapon.launch_range
+                if reach is None:
+                    continue
+                name = weapon.weapon_group.name
+                anti_ship = bool(ANTI_SHIP.search(name))
+                for at_sea in (False, True):
+                    if anti_ship != at_sea and not AGAINST_SHIPS_TOO.search(name):
+                        continue
+                    held = best.get(at_sea)
+                    if held is None or reach.meters > _reach(held):
+                        best[at_sea] = weapon
+
+    def releases(at_sea: bool) -> list[Release]:
+        found = [Release(DIRECT_RELEASE.meters)]
+        weapon = best.get(at_sea)
+        if weapon is not None and _reach(weapon) > DIRECT_RELEASE.meters:
+            found.append(Release(_reach(weapon), STANDOFF_PENALTY))
+        return found
+
+    return releases(False), releases(True)
+
+
+def _reach(weapon: Any) -> float:
+    reach = weapon.launch_range
+    return reach.meters if reach is not None else 0.0
+
 
 #: The designations the unit names carry, SA-10 or HQ-7 or SS-N-2.
 _DESIGNATION = re.compile(r"\b(SA-\d+[A-Z]?|HQ-\d+[A-Z]?|SS-[NC]-\d+)\b")
