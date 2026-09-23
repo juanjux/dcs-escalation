@@ -57,17 +57,27 @@ def _faction(*bands: GroupTask) -> Any:
     )
 
 
+def _forces(faction: Any) -> Any:
+    """What the faction can field, by task, as its armed forces answer it."""
+    return SimpleNamespace(
+        groups_for_task=lambda task: [
+            group for group in faction.preset_groups if task in group.tasks
+        ]
+    )
+
+
+def _side(*bands: GroupTask) -> tuple[Any, float, Any]:
+    faction = _faction(*bands)
+    return faction, 100.0, _forces(faction)
+
+
 def _kind(key: str) -> PrizeKind:
     return next(kind for kind in KINDS if kind.key == key)
 
 
 def _prize(key: str, score: int, faction: Any = None) -> Prize:
-    context = Context(
-        _settings(),
-        faction or _faction(GroupTask.SHORAD, GroupTask.MERAD),
-        100.0,
-        random.Random(1),
-    )
+    faction = faction or _faction(GroupTask.SHORAD, GroupTask.MERAD)
+    context = Context(_settings(), faction, 100.0, random.Random(1), _forces(faction))
     prize = _kind(key).prize(score, context)
     assert prize is not None
     return prize
@@ -97,7 +107,7 @@ def test_every_kind_works_out_at_every_score_it_can_be_won_with() -> None:
 
 
 def test_a_kind_is_drawn_only_from_its_lowest_score_up() -> None:
-    prizes = Prizes(_settings(), _faction(GroupTask.SHORAD), 100.0)
+    prizes = Prizes(_settings(), *_side(GroupTask.SHORAD))
 
     at_five = {prize.kind for s in range(300) if (prize := prizes.draw(5, s))}
     at_ten = {prize.kind for s in range(300) if (prize := prizes.draw(10, s))}
@@ -107,7 +117,7 @@ def test_a_kind_is_drawn_only_from_its_lowest_score_up() -> None:
 
 
 def test_a_kind_the_game_cannot_give_yet_is_never_drawn() -> None:
-    prizes = Prizes(_settings(), _faction(GroupTask.SHORAD), 100.0)
+    prizes = Prizes(_settings(), *_side(GroupTask.SHORAD))
     cannot = {kind.key for kind in KINDS if kind.give is None}
 
     drawn = {prize.kind for s in range(300) if (prize := prizes.draw(10, s))}
@@ -116,7 +126,7 @@ def test_a_kind_the_game_cannot_give_yet_is_never_drawn() -> None:
 
 
 def test_kinds_the_campaign_cannot_give_are_never_drawn() -> None:
-    prizes = Prizes(_settings(live_pilots=False), _faction(GroupTask.SHORAD), 100.0)
+    prizes = Prizes(_settings(live_pilots=False), *_side(GroupTask.SHORAD))
 
     drawn = {prize.kind for s in range(300) if (prize := prizes.draw(10, s))}
 
@@ -135,7 +145,7 @@ def test_kinds_the_campaign_cannot_give_are_never_drawn() -> None:
 
 
 def test_the_same_seed_draws_the_same_prize() -> None:
-    prizes = Prizes(_settings(), _faction(GroupTask.SHORAD), 100.0)
+    prizes = Prizes(_settings(), *_side(GroupTask.SHORAD))
 
     assert prizes.draw(7, "13:TURKEY") == prizes.draw(7, "13:TURKEY")
 
