@@ -8,7 +8,7 @@ home. The rank that buys is defined in :mod:`game.dcs.skills`.
 from __future__ import annotations
 
 from dataclasses import MISSING, dataclass, field, fields
-from typing import Any, TYPE_CHECKING, Optional
+from typing import Any, TYPE_CHECKING, Optional, Sequence
 
 from dcs.unit import Skill
 
@@ -205,22 +205,32 @@ class MoraleShift(SaveCompatible):
     #: debriefing is a record of the turn, not a view of the current rules.
     before_state: str = ""
     after_state: str = ""
+    #: How far each reason moved him. Empty in a debriefing recorded before it was
+    #: kept, which has the reasons alone.
+    amounts: dict[str, int] = field(default_factory=dict)
 
     @property
-    def reason(self) -> str:
-        """The one line of it, for a column with room for a phrase and not a list.
+    def ordered_reasons(self) -> Sequence[tuple[str, Optional[int]]]:
+        """The reasons with how far each moved him, the biggest first; a reason that
+        moved nothing is left out.
 
-        Repeats are counted rather than repeated: three dead squadron mates is one
+        A record without the amounts has its reasons in the order they were recorded,
+        with a repeat counted rather than repeated: three dead squadron mates is one
         thing that happened three times, not three things.
         """
+        if self.amounts:
+            moved = [
+                (reason, amount) for reason, amount in self.amounts.items() if amount
+            ]
+            moved.sort(key=lambda item: (-abs(item[1]), item[0]))
+            return moved
         tally: dict[str, int] = {}
         for reason in self.reasons:
             tally[reason] = tally.get(reason, 0) + 1
-        parts = [
-            reason if count == 1 else f"{reason} x{count}"
+        return [
+            (reason if count == 1 else f"{reason} x{count}", None)
             for reason, count in tally.items()
         ]
-        return ", ".join(parts)
 
 
 #: The reason labels an award is broken into, in the order a debriefing reads them:

@@ -305,13 +305,16 @@ class MissionResultsProcessor:
                     if not events:
                         continue
                     before = pilot.morale
+                    amounts: dict[str, int] = {}
                     for event in events:
-                        pilot.move_morale(
+                        moved = pilot.move_morale(
                             event,
                             squadron.pilot_skill(pilot),
                             self.game.settings,
                             self.game.turn,
                         )
+                        if moved:
+                            amounts[event.reason] = amounts.get(event.reason, 0) + moved
                     if pilot.morale != before:
                         reasons = [e.reason for e in events]
                         self.xp_log.morale(
@@ -337,6 +340,7 @@ class MissionResultsProcessor:
                                         pilot.morale, self.game.settings
                                     ).name,
                                     reasons=sorted(set(reasons)),
+                                    amounts=amounts,
                                 )
                             )
         self._morale_events = {}

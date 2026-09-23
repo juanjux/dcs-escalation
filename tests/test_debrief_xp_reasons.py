@@ -100,11 +100,15 @@ def qt_app() -> Any:
 
 
 def test_the_row_is_taller_than_a_two_line_one(qt_app: Any) -> None:
-    from qt_ui.windows.QDebriefingWindow import PILOT_ROW_HEIGHT, XP_ROW_HEIGHT, XpRow
+    from qt_ui.windows.QDebriefingWindow import (
+        PILOT_ROW_HEIGHT,
+        REASONS_ROW_HEIGHT,
+        XpRow,
+    )
 
     row = XpRow(_award(**{XP_AIR: 500}))
-    assert XP_ROW_HEIGHT > PILOT_ROW_HEIGHT
-    assert row.height() == XP_ROW_HEIGHT
+    assert REASONS_ROW_HEIGHT > PILOT_ROW_HEIGHT
+    assert row.height() == REASONS_ROW_HEIGHT
 
 
 def test_an_ordinary_row_keeps_its_height(qt_app: Any) -> None:
