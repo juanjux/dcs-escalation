@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[High Command]** Each turn the High Command orders three enemy objectives taken, one from each third of them by difficulty plus importance, for two to five turns and each with its prize. No window shows them yet, and the prizes are not paid yet.
 * **[Mission Generator]** The Apache gets a data cartridge: the front line on its TSD, and the enemy air defence the MFD settings allow as target points under the TSD's own symbols. Its route stays the one the mission gives it. (adapted from the RetLab fork)
 * **[Mission Generator]** The Viper's data cartridge fills its ROE tab from the campaign: an aircraft family only one side flies is marked as that side's, one both sides fly stays unknown. New setting under MFD, on by default. (adapted from the RetLab fork)
 * **[Mission Generator]** New setting under MFD, off by default: the Viper's data cartridge makes MAN 1 flares only and MAN 6 chaff only, so both are on the stick. (adapted from the RetLab fork)

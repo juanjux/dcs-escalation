@@ -20,6 +20,7 @@ from game.missiongenerator.motorpoolpopulator import (
     MotorpoolPopulator,
     _select_capped,
     motorpool_rendered_unit_count,
+    motorpool_rendered_units,
 )
 from game.theater.base import Base
 from game.theater.controlpoint import ControlPoint
@@ -160,6 +161,19 @@ def test_rendered_unit_count_uses_current_reserve_after_consuming_snapshot() -> 
     cp.base.commit_losses({gut: 3})
 
     assert motorpool_rendered_unit_count(tgo, motorpool_enabled=True, spawn_cap=10) == 0
+
+
+def test_rendered_units_are_the_types_behind_the_count() -> None:
+    gut = _gut()
+    tgo, cp = _motorpool({gut: 3})
+    cp.base = Base()
+    cp.base.armor = {gut: 3}
+
+    units = motorpool_rendered_units(tgo, motorpool_enabled=True, spawn_cap=10)
+
+    assert units == [gut] * 3
+    assert len(units) == motorpool_rendered_unit_count(tgo, True, 10)
+    assert motorpool_rendered_units(tgo, motorpool_enabled=False, spawn_cap=10) == []
 
 
 def test_planner_count_matches_next_renderer_after_reserve_replenishment() -> None:

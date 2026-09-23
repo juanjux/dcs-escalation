@@ -36,6 +36,7 @@ from .campaignloader import CampaignAirWingConfig
 from .coalition import Coalition
 from .db.gamedb import GameDb
 from .dcs.countries import country_with_name
+from .highcommand.orders import HighCommand
 from .infos.information import Information
 from .lasercodes.lasercoderegistry import LaserCodeRegistry
 from .profiling import logged_duration
@@ -157,6 +158,8 @@ class Game:
         # (de)serialization; the game just stores it so the choices travel with the
         # save instead of being lost on reload.
         self.client_map_layers: Optional[str] = None
+        # The objectives the High Command has ordered taken, with their prizes.
+        self.high_command = HighCommand()
         # OPFOR-AI API token, persisted so a campaign keeps the same connect URL across
         # restarts of this save (an LLM reconnects without a new token each session).
         self.opfor_ai_token: str = secrets.token_urlsafe()
@@ -227,6 +230,8 @@ class Game:
             self.last_debriefing_report = None
         if not hasattr(self, "client_map_layers"):
             self.client_map_layers = None
+        if not hasattr(self, "high_command"):
+            self.high_command = HighCommand()
         if not hasattr(self, "cruise_missile_magazines"):
             self.cruise_missile_magazines = {}
         if not hasattr(self, "naval_magazines"):
@@ -636,6 +641,7 @@ class Game:
         self.initialize_turn(
             GameUpdateEvents(), squadrons_start_full=squadrons_start_full
         )
+        self.refresh_high_command()
 
     def pass_turn(self, no_action: bool = False) -> None:
         """Ends the current turn and initializes the new turn.
@@ -663,11 +669,27 @@ class Game:
 
         with logged_duration("Turn initialization"):
             self.initialize_turn(events)
+        self.refresh_high_command()
 
         EventStream.put_nowait(events)
 
         # Autosave progress
         persistency.autosave(self)
+
+    def refresh_high_command(self) -> None:
+        """Close the High Command's orders that are over and make new ones. Only at the
+        start of a turn: a turn re-initialised for a purchase is the same turn.
+
+        A fault here must not stop the turn, so it is logged and the orders wait for
+        the next one.
+        """
+        if self.check_win_loss() is not TurnState.CONTINUE:
+            return
+        try:
+            with logged_duration("High Command orders"):
+                self.high_command.refresh(self)
+        except Exception:
+            logging.exception("Could not refresh the High Command's orders")
 
     def check_win_loss(self) -> TurnState:
         if not self.theater.player_points(state_check=True):

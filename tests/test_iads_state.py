@@ -244,6 +244,31 @@ def test_a_destroyed_site_says_so_rather_than_dark() -> None:
     assert not status.notable  # the map and the API already say it is gone
 
 
+def test_what_losing_a_substation_would_do_leaves_the_game_alone() -> None:
+    power = _group("SUBSTATION", IadsRole.POWER_SOURCE, _unit())
+    ewr = _group("MOOSE", IadsRole.EWR, _unit(detection=100_000))
+    sam = _group("BADGER", IadsRole.SAM, _unit(detection=50_000))
+    network = SimpleNamespace(nodes=[_node(ewr, power), _node(sam), _node(power)])
+
+    what_if = IadsStateMap(network, destroyed={power.ground_object})  # type: ignore[arg-type]
+    now = IadsStateMap(network)  # type: ignore[arg-type]
+
+    # The EWR goes dark, and the SAM it was feeding is left on its own.
+    assert _status(what_if, ewr).state is IadsState.DARK
+    assert _status(what_if, sam).state is IadsState.AUTONOMOUS
+    assert _status(now, sam).state is IadsState.NETWORKED
+    assert power.alive_units == 1
+
+
+def test_a_site_counted_as_destroyed_is_destroyed() -> None:
+    sam = _group("BADGER", IadsRole.SAM, _unit(detection=50_000))
+    network = SimpleNamespace(nodes=[_node(sam)])
+
+    what_if = IadsStateMap(network, destroyed={sam.ground_object})  # type: ignore[arg-type]
+
+    assert _status(what_if, sam).state is IadsState.DESTROYED
+
+
 def test_infrastructure_has_no_state_of_its_own() -> None:
     """A power station has no radar to switch on or off; what matters about it is what
     it feeds."""

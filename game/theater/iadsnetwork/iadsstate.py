@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Iterator, Optional
+from typing import TYPE_CHECKING, Collection, Iterator, Optional
 
 from game.data.units import UnitClass
 from game.theater.iadsnetwork.iadsrole import IadsRole
@@ -110,7 +110,17 @@ def _goes_dark_when_autonomous(group: IadsGroundGroup) -> bool:
     return False
 
 
-def mains_are_up(node: IadsNetworkNode) -> bool:
+def standing(
+    group: IadsGroundGroup, destroyed: Collection[TheaterGroundObject] = ()
+) -> bool:
+    """Whether anything of the group is left, counting the ground objects in
+    ``destroyed`` as gone."""
+    return group.alive_units > 0 and group.ground_object not in destroyed
+
+
+def mains_are_up(
+    node: IadsNetworkNode, destroyed: Collection[TheaterGroundObject] = ()
+) -> bool:
     """Whether the grid still reaches this site. Nothing to do with its own generator:
     an empty list of power sources is what Skynet reads as powered."""
     sources = [
@@ -118,17 +128,19 @@ def mains_are_up(node: IadsNetworkNode) -> bool:
         for group in node.connections.values()
         if group.iads_role is IadsRole.POWER_SOURCE
     ]
-    return not sources or any(group.alive_units > 0 for group in sources)
+    return not sources or any(standing(group, destroyed) for group in sources)
 
 
-def comms_up(node: IadsNetworkNode) -> bool:
+def comms_up(
+    node: IadsNetworkNode, destroyed: Collection[TheaterGroundObject] = ()
+) -> bool:
     """Whether a connection node still stands between this site and the network."""
     comms = [
         group
         for group in node.connections.values()
         if group.iads_role is IadsRole.CONNECTION_NODE
     ]
-    return not comms or any(group.alive_units > 0 for group in comms)
+    return not comms or any(standing(group, destroyed) for group in comms)
 
 
 def covers(parent: IadsNetworkNode, child: IadsNetworkNode) -> bool:
@@ -142,10 +154,19 @@ def covers(parent: IadsNetworkNode, child: IadsNetworkNode) -> bool:
 
 
 class IadsStateMap:
-    """The state of every site in one network, worked out in one pass."""
+    """The state of every site in one network, worked out in one pass.
 
-    def __init__(self, network: IadsNetwork) -> None:
+    ``destroyed`` are ground objects to count as gone, to see what losing them would do
+    to the rest of the network without touching the game.
+    """
+
+    def __init__(
+        self,
+        network: IadsNetwork,
+        destroyed: Collection[TheaterGroundObject] = (),
+    ) -> None:
         self._by_tgo: dict[TheaterGroundObject, IadsStatus] = {}
+        self._destroyed = frozenset(destroyed)
         self._build(network)
 
     def status_for(self, tgo: TheaterGroundObject) -> Optional[IadsStatus]:
@@ -166,13 +187,14 @@ class IadsStateMap:
             self._build_side(nodes)
 
     def _build_side(self, nodes: list[IadsNetworkNode]) -> None:
-        mains = {id(node): mains_are_up(node) for node in nodes}
+        destroyed = self._destroyed
+        mains = {id(node): mains_are_up(node, destroyed) for node in nodes}
         generators = {id(node): own_generator(node.group) for node in nodes}
         powered = {
             id(node): mains[id(node)] or generators[id(node)] is not None
             for node in nodes
         }
-        connected = {id(node): comms_up(node) for node in nodes}
+        connected = {id(node): comms_up(node, destroyed) for node in nodes}
 
         command_centres = [
             node for node in nodes if node.group.iads_role is IadsRole.COMMAND_CENTER
@@ -180,7 +202,9 @@ class IadsStateMap:
         # No command centre at all reads as "command is fine": an empty table is what
         # isCommandCenterUsable() answers true to.
         has_command = not command_centres or any(
-            node.group.alive_units > 0 and powered[id(node)] and connected[id(node)]
+            standing(node.group, destroyed)
+            and powered[id(node)]
+            and connected[id(node)]
             for node in command_centres
         )
 
@@ -188,7 +212,7 @@ class IadsStateMap:
             node
             for node in nodes
             if node.group.iads_role in (IadsRole.EWR, IadsRole.SAM_AS_EWR)
-            and node.group.alive_units > 0
+            and standing(node.group, destroyed)
             and powered[id(node)]
             and connected[id(node)]
         ]
@@ -222,7 +246,7 @@ class IadsStateMap:
     ) -> IadsStatus:
         role = node.group.iads_role
 
-        if node.group.alive_units == 0:
+        if not standing(node.group, self._destroyed):
             # Nothing left to be blind with, and nothing to switch on. What the map
             # shows about a wreck is that it is a wreck.
             return IadsStatus(IadsState.DESTROYED, "Destroyed.", False)
