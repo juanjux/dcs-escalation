@@ -50,6 +50,11 @@ ENEMY = Player.RED
 #: What the tiers are called when there are three of them, lowest first.
 TIER_NAMES = ("low", "medium", "high")
 
+#: How many entries the history keeps; the oldest go first.
+HISTORY_KEPT = 200
+#: What the history says a spent ticket was.
+SPENT = "spent"
+
 
 class Outcome(Enum):
     #: What it asked was done.
@@ -111,6 +116,18 @@ class Ticket(SaveCompatible):
     earned_on: int
 
 
+@dataclass(frozen=True)
+class HistoryEntry(SaveCompatible):
+    """An order that closed or a ticket spent, and on which turn."""
+
+    turn: int
+    #: The Outcome's value, or SPENT.
+    outcome: str
+    #: The objective, or "Ticket spent".
+    name: str
+    line: str
+
+
 @dataclass
 class HighCommand(SaveCompatible):
     """The orders open now, and the tickets earned and not yet spent."""
@@ -119,6 +136,12 @@ class HighCommand(SaveCompatible):
     tickets: list[Ticket] = field(default_factory=list)
     #: The squadrons lent to the player, until each loan runs out.
     loans: list[Loan] = field(default_factory=list)
+    #: What closed and what was given, oldest first.
+    history: list[HistoryEntry] = field(default_factory=list)
+
+    def note(self, turn: int, outcome: str, name: str, line: str) -> None:
+        self.history.append(HistoryEntry(turn, outcome, name, line))
+        del self.history[:-HISTORY_KEPT]
 
     def refresh(self, game: Game, rng: Optional[random.Random] = None) -> list[Closed]:
         """Close the orders that are over and make new ones for the tiers left
@@ -140,6 +163,22 @@ class HighCommand(SaveCompatible):
         for order in [order for order in self.orders if order.tier >= count]:
             self.orders.remove(order)
             closed.append(Closed(order, Outcome.GONE))
+        for done in closed:
+            if done.outcome is Outcome.EXPIRED:
+                lifetime = done.order.expires_on - done.order.ordered_on
+                self.note(
+                    game.turn,
+                    done.outcome.value,
+                    done.order.objective,
+                    f"ran out after {lifetime} turn{'s' if lifetime != 1 else ''}",
+                )
+            elif done.outcome is Outcome.GONE:
+                self.note(
+                    game.turn,
+                    done.outcome.value,
+                    done.order.objective,
+                    "no longer an objective",
+                )
         shortest, longest = sorted(
             (
                 game.settings.high_command_shortest_order,
@@ -170,15 +209,23 @@ class HighCommand(SaveCompatible):
         given, a line each."""
         lines = []
         for done in closed:
-            prize = done.order.prize
-            if done.outcome is not Outcome.ACHIEVED or prize is None:
+            if done.outcome is not Outcome.ACHIEVED:
                 continue
-            kind = kind_of(prize)
-            if prize.ticket:
-                self.tickets.append(Ticket(prize, done.order.objective, game.turn))
-                lines.append(f"{done.order.objective}: {prize.line}")
+            prize = done.order.prize
+            name = done.order.objective
+            kind = kind_of(prize) if prize is not None else None
+            if prize is None:
+                given = "no prize"
+            elif prize.ticket:
+                self.tickets.append(Ticket(prize, name, game.turn))
+                given = prize.line
+                lines.append(f"{name}: {given}")
             elif kind is not None and kind.give is not None:
-                lines.append(f"{done.order.objective}: {kind.give(game, prize, ())}")
+                given = kind.give(game, prize, ())
+                lines.append(f"{name}: {given}")
+            else:
+                given = prize.line
+            self.note(game.turn, Outcome.ACHIEVED.value, name, given)
         return lines
 
     def return_loans(self, game: Game) -> list[str]:
@@ -194,6 +241,7 @@ class HighCommand(SaveCompatible):
             raise ValueError(f"The game cannot give {ticket.prize.kind} any more")
         line = kind.give(game, ticket.prize, picked)
         self.tickets.remove(ticket)
+        self.note(game.turn, SPENT, "Ticket spent", line)
         return line
 
     def note_results(self, game: Game, debriefing: Debriefing) -> None:
