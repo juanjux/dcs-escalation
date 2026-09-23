@@ -4,12 +4,13 @@ drawn."""
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Sequence
+from typing import TYPE_CHECKING, Callable, Optional, Sequence
 
 from dcs.mapping import Point
 
 from game.highcommand.campaign import Task
-from game.highcommand.orders import ENEMY, TIER_NAMES, Order
+from game.highcommand.orders import ENEMY, TIER_NAMES, Order, Ticket
+from game.highcommand.prizes import PrizeKind, Step, kind_of
 from game.highcommand.wording import counted, money
 from game.theater.theatergroundobject import MotorpoolGroundObject
 
@@ -219,3 +220,87 @@ def _units_standing(tgos: Sequence[object]) -> int:
 
 def enemy_side() -> str:
     return "RED" if ENEMY.is_red else "BLUE"
+
+
+# --------------------------------------------------------------------- tickets
+
+READY = "READY"
+NOT_NOW = "NOT NOW"
+
+#: What a ticket that asks nothing says it does when spent, by prize kind.
+AT_ONCE = {
+    "awacs": "Nothing to pick. It joins at once as a squadron on loan.",
+    "tanker": "Nothing to pick. It joins at once as a squadron on loan.",
+    "squadron": "Nothing to pick. It joins at once as a squadron on loan.",
+}
+
+#: What spending gives, from the labels of what was picked, by prize kind. It has to
+#: say what the prize's own give says afterwards.
+PREVIEWS: dict[str, Callable[[Sequence[str]], str]] = {
+    "sam": lambda picked: f"{picked[1]} set up at {picked[0]}.",
+    "runway": lambda picked: f"The runway at {picked[0]} is repaired.",
+    "heal": lambda picked: f"{picked[0]} is back on duty.",
+}
+
+
+@dataclass(frozen=True)
+class TicketView:
+    ticket: Ticket
+    #: The prize line, as the list shows it.
+    line: str
+    #: What spending it gives, as the spend pane's title.
+    title: str
+    earned: str
+    #: READY, NOT NOW, or how many picks spending it asks.
+    state: str
+
+    @property
+    def kind(self) -> Optional[PrizeKind]:
+        return kind_of(self.ticket.prize)
+
+    @property
+    def steps(self) -> tuple[Step, ...]:
+        kind = self.kind
+        return kind.steps if kind is not None else ()
+
+
+def ticket_views(game: Game) -> list[TicketView]:
+    return [
+        TicketView(
+            ticket=ticket,
+            line=ticket.prize.line,
+            title=spending_title(ticket.prize.line),
+            earned=f"earned by {ticket.earned_by} · turn {ticket.earned_on}",
+            state=ticket_state(game, ticket),
+        )
+        for ticket in game.high_command.tickets
+    ]
+
+
+def ticket_state(game: Game, ticket: Ticket) -> str:
+    """READY, NOT NOW when its first pick has nothing to pick from, or how many
+    picks spending it asks."""
+    kind = kind_of(ticket.prize)
+    steps = kind.steps if kind is not None else ()
+    if not steps:
+        return READY
+    if not steps[0].options(game, ticket.prize, ()):
+        return NOT_NOW
+    return f"{len(steps)} PICK" + ("S" if len(steps) > 1 else "")
+
+
+def spending_title(line: str) -> str:
+    """The prize line without its "A ticket for" or "A ticket to"."""
+    for prefix in ("A ticket for ", "A ticket to "):
+        if line.startswith(prefix):
+            rest = line[len(prefix) :]
+            return rest[:1].upper() + rest[1:]
+    return line
+
+
+def preview(kind: str, picked: Sequence[str]) -> str:
+    """What spending gives, said before it is spent."""
+    if kind in AT_ONCE:
+        return AT_ONCE[kind]
+    say = PREVIEWS.get(kind)
+    return say(picked) if say is not None and picked else ""
