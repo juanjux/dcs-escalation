@@ -304,3 +304,43 @@ def preview(kind: str, picked: Sequence[str]) -> str:
         return AT_ONCE[kind]
     say = PREVIEWS.get(kind)
     return say(picked) if say is not None and picked else ""
+
+
+# ----------------------------------------------------------------------- loans
+
+
+@dataclass(frozen=True)
+class LoanView:
+    squadron: str
+    aircraft: str
+    #: The aircraft's DCS type id, which its banner is filed under.
+    dcs_id: str
+    count: int
+    base: str
+    #: The first turn the squadron is no longer the player's.
+    until: int
+    turns_left: int
+
+    @property
+    def last_turn(self) -> bool:
+        return self.turns_left <= 1
+
+
+def loan_views(game: Game) -> list[LoanView]:
+    """The squadrons on loan, the soonest to go back first."""
+    views = []
+    for loan in game.high_command.loans:
+        squadron = loan.squadron
+        aircraft = squadron.aircraft
+        views.append(
+            LoanView(
+                squadron=squadron.name,
+                aircraft=str(aircraft),
+                dcs_id=str(aircraft.dcs_unit_type.id),
+                count=squadron.owned_aircraft,
+                base=squadron.location.name,
+                until=loan.until,
+                turns_left=loan.until - game.turn,
+            )
+        )
+    return sorted(views, key=lambda view: (view.until, view.squadron))

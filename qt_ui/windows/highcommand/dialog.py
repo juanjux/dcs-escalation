@@ -35,6 +35,7 @@ from qt_ui.windows.highcommand import palette as ink
 from qt_ui.windows.highcommand.model import OrderView
 from qt_ui.windows.highcommand.model import TicketView
 from qt_ui.windows.highcommand.rows import OrderDelegate, OrdersModel
+from qt_ui.windows.highcommand.loans import LoansPage
 from qt_ui.windows.highcommand.tickets import TicketsPage
 from qt_ui.windows.pilot.common import RED, chip, label
 
@@ -564,8 +565,8 @@ class OrdersPage(QWidget):
 class HighCommandWindow(QDialog):
     """The High Command's orders, one tab per kind of thing it keeps."""
 
-    TABS = ["Orders", "Tickets"]
-    ORDERS, TICKETS = 0, 1
+    TABS = ["Orders", "Tickets", "On loan"]
+    ORDERS, TICKETS, LOANS = 0, 1, 2
 
     def __init__(self, game_model: Any, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -582,6 +583,8 @@ class HighCommandWindow(QDialog):
         self.pages = QStackedWidget()
         self.pages.addWidget(self.orders)
         self.pages.addWidget(self.tickets)
+        self.loans = LoansPage()
+        self.pages.addWidget(self.loans)
         self.tabs.changed.connect(self.pages.setCurrentIndex)
 
         layout = QVBoxLayout()
@@ -624,6 +627,8 @@ class HighCommandWindow(QDialog):
             data.order_views(game), game.settings.high_command_enabled
         )
         self.tickets.show_tickets(game, data.ticket_views(game))
+        self.tabs.set_count(self.LOANS, figures.loans)
+        self.loans.show_loans(data.loan_views(game))
 
     def open_order(self, objective: Optional[str]) -> None:
         """Show this order, on the Orders tab."""
