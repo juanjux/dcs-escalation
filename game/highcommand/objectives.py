@@ -39,7 +39,7 @@ from typing import TYPE_CHECKING, Optional, Sequence
 from dcs import Point
 
 from game.data.units import UnitClass
-from game.highcommand.campaign import Campaign
+from game.highcommand.campaign import Campaign, Task
 from game.highcommand.comical import comical_lines
 from game.highcommand.importance import Reason, Worth, by_worth
 from game.highcommand.prizes import Prize, Prizes
@@ -136,6 +136,8 @@ class Objective:
     justification: str = ""
     #: What taking it pays; None when no prize fits.
     prize: Optional[Prize] = None
+    #: What is asked of a base; None for a ground object.
+    task: Optional[Task] = None
 
     @property
     def position(self) -> Point:
@@ -171,17 +173,22 @@ def enemy_objectives(game: Game, player: Player = Player.BLUE) -> list[Objective
             )
         )
     for cp in campaign.enemy_bases():
-        effort, hazards = _effort(campaign, cp.name, cp.position, 0, at_sea=False)
-        found.append(
-            Objective(
-                name=cp.name,
-                kind="Airfield" if isinstance(cp, Airfield) else "FOB",
-                targets=(cp,),
-                effort=effort,
-                hazards=hazards,
-                reasons=worth.own_base(cp),
+        for task in campaign.tasks_at(cp):
+            name = base_objective_name(cp.name, task)
+            effort, hazards = _effort(
+                campaign, name, cp.position, campaign.defenders(cp, task), False
             )
-        )
+            found.append(
+                Objective(
+                    name=name,
+                    kind="Airfield" if isinstance(cp, Airfield) else "FOB",
+                    targets=(cp,),
+                    effort=effort,
+                    hazards=hazards,
+                    reasons=worth.own_base(cp, task),
+                    task=task,
+                )
+            )
     shared = worth.shared(found)
     found = ranked(
         [
@@ -200,6 +207,11 @@ def enemy_objectives(game: Game, player: Player = Player.BLUE) -> list[Objective
         for o in found
     ]
     return sorted(found, key=lambda o: (o.effort.total, o.name))
+
+
+def base_objective_name(base: str, task: Task) -> str:
+    """A base is an objective once for each thing asked of it."""
+    return f"{base} ({task.value})"
 
 
 def ranked(objectives: Sequence[Objective]) -> list[Objective]:

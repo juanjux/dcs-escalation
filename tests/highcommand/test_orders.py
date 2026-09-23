@@ -12,6 +12,7 @@ import pytest
 
 from game.game import Game, TurnState
 from game.highcommand import objectives as listing
+from game.highcommand.campaign import Task
 from game.highcommand.objectives import Effort, Objective
 from game.highcommand.orders import (
     LONGEST,
@@ -20,6 +21,7 @@ from game.highcommand.orders import (
     HighCommand,
     Order,
     Outcome,
+    _order,
     tiers,
 )
 from game.highcommand.prizes import Prize
@@ -184,3 +186,23 @@ def test_a_fault_in_the_orders_does_not_stop_the_turn(
         Game.refresh_high_command(game)
 
     assert "High Command" in caplog.text
+
+
+def test_an_order_on_a_base_keeps_what_is_asked_of_it() -> None:
+    field = SimpleNamespace(name="Kutaisi")
+    runway = Objective(
+        name="Kutaisi (OCA/Runway)",
+        kind="Airfield",
+        targets=(field,),  # type: ignore[arg-type]
+        effort=Effort(route=0, fighters=0, size=0),
+        hazards=(),
+        task=Task.RUNWAY,
+    )
+
+    order = _order(runway, tier=2, turn=10, lifetime=3)
+
+    assert (order.objective, order.task, order.base) == (
+        "Kutaisi (OCA/Runway)",
+        Task.RUNWAY,
+        "Kutaisi",
+    )

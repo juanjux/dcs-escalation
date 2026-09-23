@@ -10,8 +10,12 @@ by itself adds up:
   which the game prices off that income.
 * front: the units an ammo depot keeps in the line of a front, at what the base's
   armour costs.
-* aircraft: a share of what the enemy aircraft based there cost, and a sum for each
-  squadron an attack on the base grounds.
+* aircraft: a share of what the enemy aircraft based there cost; for a carrier, a sum
+  for each squadron sinking it grounds as well.
+* runway: what repairing an airfield's runway costs, and a sum for each squadron a
+  cratered runway grounds.
+* capture: what the base earns, with its buildings, over INCOME_TURNS turns, and what
+  the sites around it are worth, since taking a base clears all but its buildings.
 * reserve: what the vehicles parked in a motorpool cost.
 * garrison: what an armour group costs, and more the closer it stands to its base,
   which it holds against any assault; more again when that base is on a front.
@@ -40,7 +44,7 @@ from typing import TYPE_CHECKING, Iterable, Optional, Sequence
 from game.config import REWARDS, RUNWAY_REPAIR_COST
 from game.data.units import UnitClass
 from game.highcommand.approach import Ring
-from game.highcommand.campaign import RING_WEIGHT, Campaign
+from game.highcommand.campaign import RING_WEIGHT, Campaign, Task
 from game.highcommand.wording import (
     LAUNCHER_CLASSES,
     NAMES_SHOWN,
@@ -137,8 +141,8 @@ SHARED = frozenset({"cover", "jamming", "network"})
 class Reason:
     """One thing that makes an objective worth attacking."""
 
-    #: One of rebuild, income, front, aircraft, reserve, garrison, threat, cover,
-    #: jamming and network.
+    #: One of rebuild, income, front, aircraft, runway, capture, reserve, garrison,
+    #: threat, cover, jamming and network.
     kind: str
     #: In millions.
     worth: float
@@ -178,22 +182,52 @@ class Worth:
         if isinstance(tgo, MotorpoolGroundObject):
             found.append(self._reserve(tgo))
         if isinstance(tgo, GenericCarrierGroundObject):
-            found.append(self._aircraft("Carries", tgo.control_point))
+            found.append(self._aircraft("Carries", tgo.control_point, grounds=True))
         found.append(self._threat(tgos))
         return _kept(found)
 
-    def own_base(self, cp: ControlPoint) -> tuple[Reason, ...]:
-        found = [self._aircraft("Home to", cp)]
-        if isinstance(cp, Airfield) and cp.runway_is_operational():
-            found.append(
-                Reason(
-                    "rebuild",
-                    RUNWAY_REPAIR_COST,
-                    f"Its runway costs the enemy {money(RUNWAY_REPAIR_COST)} to "
-                    "repair.",
-                )
+    def own_base(self, cp: ControlPoint, task: Task) -> tuple[Reason, ...]:
+        """What the task asked of a base costs the enemy."""
+        if task is Task.AIRCRAFT:
+            return _kept([self._aircraft("Home to", cp, grounds=False)])
+        if task is Task.RUNWAY:
+            return _kept([self._runway(cp)])
+        return _kept([self._capture(cp)])
+
+    def _capture(self, cp: ControlPoint) -> Optional[Reason]:
+        buildings = [
+            t for t in cp.ground_objects if isinstance(t, BuildingGroundObject)
+        ]
+        income = self.campaign.income_multiplier * (
+            cp.income_per_turn
+            + sum(
+                REWARDS.get(t.category, 0) * sum(1 for s in t.statics if s.alive)
+                for t in buildings
             )
-        return _kept(found)
+        )
+        cleared = [
+            t
+            for t in cp.ground_objects
+            if not isinstance(t, BuildingGroundObject) and not t.is_dead
+        ]
+        worth = income * INCOME_TURNS + sum(rebuild_worth([t]) for t in cleared)
+        if worth <= 0:
+            return None
+        line = f"Taking it costs the enemy {money(income)} a turn"
+        if cleared:
+            line += f" and {counted(len(cleared), 'site')} around it"
+        return Reason("capture", worth, line + ".")
+
+    def _runway(self, cp: ControlPoint) -> Optional[Reason]:
+        squadrons = self.campaign.squadrons[cp]
+        if not squadrons:
+            return None
+        return Reason(
+            "runway",
+            RUNWAY_REPAIR_COST + SQUADRON_WORTH * squadrons,
+            f"Cratering its runway grounds {counted(squadrons, 'squadron')} until the "
+            f"enemy pays {money(RUNWAY_REPAIR_COST)} to repair it.",
+        )
 
     def _rebuild(self, tgos: Sequence[TheaterGroundObject]) -> Optional[Reason]:
         units = alive(tgos)
@@ -256,7 +290,7 @@ class Worth:
             f"Supplies the front at {cp.name}: {lost} more units in the line.",
         )
 
-    def _aircraft(self, verb: str, cp: ControlPoint) -> Optional[Reason]:
+    def _aircraft(self, verb: str, cp: ControlPoint, grounds: bool) -> Optional[Reason]:
         campaign = self.campaign
         aircraft = campaign.aircraft[cp]
         if not aircraft:
@@ -268,11 +302,10 @@ class Worth:
             line += ", all of them fighters"
         elif fighters:
             line += f", {fighters} of them fighters"
-        return Reason(
-            "aircraft",
-            AIRCRAFT_SHARE * campaign.aircraft_worth[cp] + SQUADRON_WORTH * squadrons,
-            line + ".",
-        )
+        worth = AIRCRAFT_SHARE * campaign.aircraft_worth[cp]
+        if grounds:
+            worth += SQUADRON_WORTH * squadrons
+        return Reason("aircraft", worth, line + ".")
 
     def _reserve(self, tgo: MotorpoolGroundObject) -> Optional[Reason]:
         from game.missiongenerator.motorpoolpopulator import motorpool_rendered_units

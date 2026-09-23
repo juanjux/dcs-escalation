@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Optional, Sequence
 
+from game.highcommand.campaign import Task
 from game.highcommand.prizes import Prize
 from game.squadrons.experience import SaveCompatible
 from game.theater.theatergroundobject import MotorpoolGroundObject
@@ -61,6 +62,9 @@ class Order(SaveCompatible):
     difficulty: int = 0
     importance: int = 0
     justification: str = ""
+    #: What is asked of a base, and which base; None and empty for a ground object.
+    task: Optional[Task] = None
+    base: str = ""
 
     @property
     def score(self) -> int:
@@ -137,6 +141,7 @@ def tier_name(tier: int, count: int = ORDERS) -> str:
 
 
 def _order(objective: Objective, tier: int, turn: int, lifetime: int) -> Order:
+    target = objective.targets[0] if objective.targets else None
     return Order(
         objective=objective.name,
         tier=tier,
@@ -147,13 +152,19 @@ def _order(objective: Objective, tier: int, turn: int, lifetime: int) -> Order:
         difficulty=objective.difficulty,
         importance=objective.importance,
         justification=objective.justification,
+        task=objective.task,
+        base=target.name if objective.task is not None and target else "",
     )
 
 
 def _outcome(order: Order, game: Game, standing: set[str]) -> Optional[Outcome]:
     """Why the order closes this turn, if it does. Destroying the objective counts
     even on the turn the order would have run out."""
-    tgos = [tgo for tgo in game.theater.ground_objects if tgo.name == order.objective]
+    tgos = (
+        [tgo for tgo in game.theater.ground_objects if tgo.name == order.objective]
+        if order.task is None
+        else []
+    )
     # A motorpool's vehicles are drawn afresh for every mission: an empty one has not
     # been destroyed, and it closes when it is no longer worth attacking.
     if (
