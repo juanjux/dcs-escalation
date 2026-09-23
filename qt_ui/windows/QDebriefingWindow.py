@@ -8,7 +8,7 @@ The palette and the vocabulary (stars for a rank, a coloured dot for morale) are
 Wing's.
 """
 
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 from PySide6.QtCore import QRectF, Qt, QTimer
 from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter
@@ -518,8 +518,8 @@ class PromotionRow(PilotRow):
         )
 
 
-#: How tall an experience row is: the two identity lines plus one for the reasons.
-XP_ROW_HEIGHT = PILOT_ROW_HEIGHT + 22
+#: How tall a row with reasons is: the two identity lines plus one for the reasons.
+REASONS_ROW_HEIGHT = PILOT_ROW_HEIGHT + 22
 
 #: The reason lines, coloured by what kind of thing earned them, so a glance separates
 #: what he shot at from what the sortie and the company he kept were worth.
@@ -538,16 +538,88 @@ XP_REASON_COLOURS: dict[str, str] = {
 }
 
 
-class XpRow(PilotRow):
+class ReasonsRow(PilotRow):
+    """A pilot with what moved him on a line of its own.
+
+    Each reason is drawn as its own chip, with its amount when the record has one; when
+    they do not fit, the ones that are left are counted rather than truncated, so the
+    line never lies about what it is showing.
+    """
+
+    row_height = REASONS_ROW_HEIGHT
+
+    def reasons(self) -> Sequence[tuple[str, Optional[int]]]:
+        """The chips, in the order they are drawn."""
+        return ()
+
+    def amount_colour(self, reason: str, amount: int) -> str:
+        return SUBDUED
+
+    def paintEvent(self, event: object) -> None:
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self._paint_reasons(painter)
+        painter.end()
+
+    def _paint_reasons(self, painter: QPainter) -> None:
+        baseline = PILOT_ROW_HEIGHT + 11
+        limit = self.width() - MARGIN
+        cursor = float(MARGIN)
+        reasons = self.reasons()
+        for index, (reason, amount) in enumerate(reasons):
+            width = self._chip_width(painter, reason, amount)
+            remaining = len(reasons) - index
+            if cursor + width > limit and index:
+                self._paint_overflow(painter, cursor, baseline, remaining)
+                return
+            cursor = self._paint_chip(painter, cursor, baseline, reason, amount)
+
+    @staticmethod
+    def _chip_width(painter: QPainter, reason: str, amount: Optional[int]) -> float:
+        painter.setFont(_font(11))
+        width = painter.fontMetrics().horizontalAdvance(reason)
+        if amount is not None:
+            painter.setFont(_font(11, QFont.Weight.DemiBold))
+            width += 6 + painter.fontMetrics().horizontalAdvance(f"{amount:+,}")
+        return width + 14
+
+    def _paint_chip(
+        self,
+        painter: QPainter,
+        x: float,
+        baseline: int,
+        reason: str,
+        amount: Optional[int],
+    ) -> float:
+        painter.setFont(_font(11))
+        painter.setPen(QColor(MUTED))
+        painter.drawText(int(x), baseline, reason)
+        x += painter.fontMetrics().horizontalAdvance(reason)
+        if amount is not None:
+            x += 6
+            painter.setFont(_font(11, QFont.Weight.DemiBold))
+            painter.setPen(QColor(self.amount_colour(reason, amount)))
+            text = f"{amount:+,}"
+            painter.drawText(int(x), baseline, text)
+            x += painter.fontMetrics().horizontalAdvance(text)
+        return x + 14
+
+    @staticmethod
+    def _paint_overflow(
+        painter: QPainter, x: float, baseline: int, remaining: int
+    ) -> None:
+        painter.setFont(_font(11))
+        painter.setPen(QColor(FAINT))
+        painter.drawText(int(x), baseline, f"+{remaining} more")
+
+
+class XpRow(ReasonsRow):
     """What a pilot was paid, and the reasons on a line of their own.
 
     A total says a man gained 1,400 and nothing about whether that was two MiGs or a
-    long afternoon of trucks, and the multipliers do not show up in it at all. Each
-    reason is drawn as its own chip; when they do not fit, the ones that are left are
-    counted rather than truncated, so the line never lies about what it is showing.
+    long afternoon of trucks, and the multipliers do not show up in it at all.
     """
-
-    row_height = XP_ROW_HEIGHT
 
     def __init__(self, record: XpAward):
         super().__init__(
@@ -558,6 +630,12 @@ class XpRow(PilotRow):
             record.squadron,
         )
         self.record = record
+
+    def reasons(self) -> Sequence[tuple[str, Optional[int]]]:
+        return self.record.ordered_reasons
+
+    def amount_colour(self, reason: str, amount: int) -> str:
+        return XP_REASON_COLOURS.get(reason, SUBDUED)
 
     def paint_detail(self, painter: QPainter, x: int) -> None:
         """Nothing in the middle column: the reasons get the width instead."""
@@ -584,58 +662,10 @@ class XpRow(PilotRow):
             [(f"{self.record.after:,} total", FAINT, _font(10.5))],
         )
 
-    def paintEvent(self, event: object) -> None:
-        super().paintEvent(event)
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self._paint_reasons(painter)
-        painter.end()
 
-    def _paint_reasons(self, painter: QPainter) -> None:
-        baseline = PILOT_ROW_HEIGHT + 11
-        limit = self.width() - MARGIN
-        cursor = float(MARGIN)
-        reasons = self.record.ordered_reasons
-        for index, (reason, xp) in enumerate(reasons):
-            width = self._chip_width(painter, reason, xp)
-            remaining = len(reasons) - index
-            if cursor + width > limit and index:
-                self._paint_overflow(painter, cursor, baseline, remaining)
-                return
-            cursor = self._paint_chip(painter, cursor, baseline, reason, xp)
-
-    @staticmethod
-    def _chip_width(painter: QPainter, reason: str, xp: int) -> float:
-        painter.setFont(_font(11))
-        width = painter.fontMetrics().horizontalAdvance(reason) + 6
-        painter.setFont(_font(11, QFont.Weight.DemiBold))
-        return width + painter.fontMetrics().horizontalAdvance(f"{xp:+,}") + 14
-
-    @staticmethod
-    def _paint_chip(
-        painter: QPainter, x: float, baseline: int, reason: str, xp: int
-    ) -> float:
-        painter.setFont(_font(11))
-        painter.setPen(QColor(MUTED))
-        painter.drawText(int(x), baseline, reason)
-        x += painter.fontMetrics().horizontalAdvance(reason) + 6
-        painter.setFont(_font(11, QFont.Weight.DemiBold))
-        painter.setPen(QColor(XP_REASON_COLOURS.get(reason, SUBDUED)))
-        amount = f"{xp:+,}"
-        painter.drawText(int(x), baseline, amount)
-        return x + painter.fontMetrics().horizontalAdvance(amount) + 14
-
-    @staticmethod
-    def _paint_overflow(
-        painter: QPainter, x: float, baseline: int, remaining: int
-    ) -> None:
-        painter.setFont(_font(11))
-        painter.setPen(QColor(FAINT))
-        painter.drawText(int(x), baseline, f"+{remaining} more")
-
-
-class MoraleRow(PilotRow):
-    """Old state to new, with only the new one coloured."""
+class MoraleRow(ReasonsRow):
+    """Old state to new, with only the new one coloured, and what moved him on a line
+    of its own."""
 
     def __init__(self, record: MoraleShift):
         super().__init__(
@@ -661,6 +691,12 @@ class MoraleRow(PilotRow):
         cursor += painter.fontMetrics().horizontalAdvance("→") + 8
         self._paint_state(painter, cursor, now, colour, colour, medium=True)
 
+    def reasons(self) -> Sequence[tuple[str, Optional[int]]]:
+        return self.record.ordered_reasons
+
+    def amount_colour(self, reason: str, amount: int) -> str:
+        return UNHURT if amount > 0 else OURS
+
     @staticmethod
     def _paint_state(
         painter: QPainter,
@@ -682,15 +718,24 @@ class MoraleRow(PilotRow):
         return x + painter.fontMetrics().horizontalAdvance(text) + 8
 
     def paint_outcome(self, painter: QPainter, right: int) -> None:
-        blocking = self.record.after <= 0
-        text = "will refuse to fly" if blocking else self.record.reason
-        if not text:
-            return
-        parts = []
-        if blocking:
-            parts.append(("▲ ", OURS, _font(11.5)))
-        parts.append((text, OURS if blocking else DIM, _font(11.5)))
-        self._right(painter, right, 27, parts)
+        change = self.record.after - self.record.before
+        self._right(
+            painter,
+            right,
+            27,
+            [
+                (
+                    f"{change:+}",
+                    UNHURT if change >= 0 else OURS,
+                    _font(15, QFont.Weight.DemiBold),
+                ),
+                (" morale", MUTED, _font(11)),
+            ],
+        )
+        if self.record.after <= 0:
+            self._right(
+                painter, right, 43, [("▲ will refuse to fly", OURS, _font(10.5))]
+            )
 
 
 # --- the ledgers ------------------------------------------------------------

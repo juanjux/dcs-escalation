@@ -73,6 +73,7 @@ def test_each_old_debriefing_gets_its_own_list() -> None:
         (PilotWound("Raul", "VFA-113", 2), "killed_by", None),
         (PilotPromotion("Raul", "VFA-113", "Lt", "Capt"), "to_rank_full", ""),
         (MoraleShift("Raul", "VFA-113", 5, 3, []), "after_state", ""),
+        (MoraleShift("Raul", "VFA-113", 5, 3, []), "amounts", {}),
         (XpAward("Raul", "VFA-113"), "reasons", {}),
     ],
 )
