@@ -146,6 +146,9 @@ class QGroundObjectMenu(QDialog):
             if self.ground_object.is_iads and not self._friendly:
                 body.addWidget(self._mfd_switch())
         body.addStretch()
+        order_line = self._high_command_line()
+        if order_line is not None:
+            body.addWidget(order_line)
 
         holder = QWidget()
         make_transparent(holder)
@@ -194,6 +197,24 @@ class QGroundObjectMenu(QDialog):
         column.addWidget(self._scrollable(units))
         holder.setLayout(column)
         return holder
+
+    def _high_command_line(self) -> Optional[QWidget]:
+        """The line saying this is an order's objective, if it is."""
+        from qt_ui.windows.highcommand.pointline import (
+            objective_line,
+            orders_at_ground_object,
+        )
+
+        return objective_line(
+            self.game,
+            orders_at_ground_object(self.game, self.ground_object.name),
+            self._open_order,
+        )
+
+    def _open_order(self, objective: str) -> None:
+        from qt_ui.windows.highcommand.dialog import open_high_command
+
+        open_high_command(self.game_model, self.parentWidget(), objective)
 
     def _iads_card(self, iads: IadsPicture) -> QWidget:
         return captioned("IADS network", IadsCard(iads, self._open_site))

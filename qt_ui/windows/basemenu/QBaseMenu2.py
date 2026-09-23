@@ -92,6 +92,12 @@ class QBaseMenu2(QDialog):
         tabs_holder.setContentsMargins(16, 0, 16, 0)
         tabs_holder.addWidget(QBaseMenuTabs(cp, self.game_model))
         main_layout.addLayout(tabs_holder, 1)
+        order_line = self._high_command_line()
+        if order_line is not None:
+            line_holder = QHBoxLayout()
+            line_holder.setContentsMargins(16, 10, 16, 0)
+            line_holder.addWidget(order_line)
+            main_layout.addLayout(line_holder)
         main_layout.addLayout(self._footer())
         self.setLayout(main_layout)
 
@@ -106,6 +112,25 @@ class QBaseMenu2(QDialog):
             self.resize(self.size().expandedTo(floor))
         else:
             self.resize(DEFAULT_SIZE.expandedTo(floor))
+
+    def _high_command_line(self) -> Optional[QWidget]:
+        """The line saying this base is an order's objective, if it is."""
+        from qt_ui.windows.highcommand.pointline import objective_line, orders_at_base
+
+        game = self.game_model.game
+        if game is None:
+            return None
+        return objective_line(
+            game, orders_at_base(game, self.cp.name), self._open_order, base=True
+        )
+
+    def _open_order(self, objective: str) -> None:
+        """This menu is modal and would keep the High Command window from being
+        used, so it closes first."""
+        from qt_ui.windows.highcommand.dialog import main_window, open_high_command
+
+        self.close()
+        open_high_command(self.game_model, main_window(), objective)
 
     def _comms_rows(self) -> list:
         """The radio, TACAN, ICLS and Link 4 editors this base actually has.
