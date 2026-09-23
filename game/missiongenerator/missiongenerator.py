@@ -155,7 +155,7 @@ class MissionGenerator:
         LuaGenerator(
             self.game, self.mission, self.mission_data, self.unit_map
         ).generate()
-        DrawingsGenerator(self.mission, self.game).generate()
+        DrawingsGenerator(self.mission, self.game, self.mission_data).generate()
 
         # The cockpit's own copy of the threat rings and the front line. Not part of
         # the mission: the player loads it from the DTC page in the rearm window.

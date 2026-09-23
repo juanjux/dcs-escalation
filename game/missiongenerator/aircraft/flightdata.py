@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from game.radio.radios import RadioFrequency
     from game.runways import RunwayData
     from game.theater.player import Player
+    from game.utils import Speed
 
 
 @dataclass(frozen=True)
@@ -80,6 +81,12 @@ class FlightData:
     #: Points the player wrote down for this aircraft from the map. They are not part
     #: of the flight plan: they get a kneeboard page of their own.
     saved_points: list[SavedPoint] = field(default_factory=list)
+
+    #: The DCS group's name, which is what the tanker and AEW&C records go by.
+    group_name: str = ""
+
+    #: The speed the flight orbits at, when its flight plan has an orbit.
+    patrol_speed: Optional[Speed] = None
 
     callsign: str = field(init=False)
 

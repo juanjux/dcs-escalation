@@ -155,6 +155,7 @@ class FlightGroupConfigurator:
             self.flight.flight_plan.waypoints,
         )
 
+        flight_plan = self.flight.flight_plan
         flight_data = FlightData(
             package=self.flight.package,
             aircraft_type=self.flight.unit_type,
@@ -179,6 +180,10 @@ class FlightGroupConfigurator:
             laser_codes=laser_codes,
             start_type=self.flight.start_type,
             saved_points=list(points_of(self.flight)),
+            group_name=str(self.group.name),
+            patrol_speed=(
+                flight_plan.patrol_speed if flight_plan.is_patrol(flight_plan) else None
+            ),
         )
 
         self.register_escort_leash()
