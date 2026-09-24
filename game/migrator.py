@@ -43,6 +43,7 @@ class Migrator:
         self._update_factions()
         self._update_flights()
         self._update_squadrons()
+        self._cancel_relocations_off_damaged_runways()
         self._update_transfers()
         self._release_untasked_flights()
         self._reconcile_available_pilots()
@@ -297,6 +298,25 @@ class Migrator:
                             "returned"
                         )
                     squadron.available_pilots = pool
+
+    def _cancel_relocations_off_damaged_runways(self) -> None:
+        """A squadron with aircraft could be ordered off a damaged runway. Its ferry
+        flights were left out of the mission and it arrived at the end of the turn
+        all the same, so an order like that still in a save is cancelled."""
+        for coalition in (self.game.blue, self.game.red):
+            for squadron in coalition.air_wing.iter_squadrons():
+                if (
+                    squadron.destination is None
+                    or not squadron.owned_aircraft
+                    or squadron.location.runway_is_operational()
+                ):
+                    continue
+                squadron.cancel_ferry_flights()
+                squadron.destination = None
+                logging.info(
+                    f"Cancelled the relocation of {squadron}: the runway at "
+                    f"{squadron.location} is damaged"
+                )
 
     def _update_squadrons(self) -> None:
         country_dict = {

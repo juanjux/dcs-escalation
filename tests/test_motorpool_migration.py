@@ -190,6 +190,7 @@ def test_migrate_game_rehomes_motorpools_after_all_migrations() -> None:
         "_update_factions",
         "_update_flights",
         "_update_squadrons",
+        "_cancel_relocations_off_damaged_runways",
         "_update_transfers",
         "_release_untasked_flights",
         # Fork-only migration steps, mocked for the same reason as the rest: this
@@ -288,6 +289,7 @@ def test_loaded_migration_rehomes_without_persisting_ephemeral_groups(
         "_update_factions",
         "_update_flights",
         "_update_squadrons",
+        "_cancel_relocations_off_damaged_runways",
         "_update_transfers",
         "_release_untasked_flights",
         # Fork-only migration steps, mocked like the rest.
