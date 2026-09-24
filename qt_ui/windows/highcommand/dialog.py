@@ -35,6 +35,7 @@ from qt_ui.windows.highcommand import palette as ink
 from qt_ui.windows.highcommand.model import OrderView
 from qt_ui.windows.highcommand.model import TicketView
 from qt_ui.windows.highcommand.rows import OrderDelegate, OrdersModel
+from qt_ui.windows.highcommand.effects import EffectsPage
 from qt_ui.windows.highcommand.history import HistoryPage
 from qt_ui.windows.highcommand.loans import LoansPage
 from qt_ui.windows.highcommand.tickets import TicketsPage
@@ -568,8 +569,8 @@ class OrdersPage(QWidget):
 class HighCommandWindow(QDialog):
     """The High Command's orders, one tab per kind of thing it keeps."""
 
-    TABS = ["Requests", "Tickets", "On loan", "History"]
-    ORDERS, TICKETS, LOANS, HISTORY = 0, 1, 2, 3
+    TABS = ["Requests", "Tickets", "On loan", "Active Effects", "History"]
+    ORDERS, TICKETS, LOANS, EFFECTS, HISTORY = 0, 1, 2, 3, 4
 
     def __init__(self, game_model: Any, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -588,6 +589,8 @@ class HighCommandWindow(QDialog):
         self.pages.addWidget(self.tickets)
         self.loans = LoansPage()
         self.pages.addWidget(self.loans)
+        self.effects = EffectsPage()
+        self.pages.addWidget(self.effects)
         self.history = HistoryPage()
         self.pages.addWidget(self.history)
         self.tabs.changed.connect(self.pages.setCurrentIndex)
@@ -634,6 +637,9 @@ class HighCommandWindow(QDialog):
         self.tickets.show_tickets(game, data.ticket_views(game))
         self.tabs.set_count(self.LOANS, figures.loans)
         self.loans.show_loans(data.loan_views(game))
+        effects = data.effect_views(game)
+        self.tabs.set_count(self.EFFECTS, len(effects))
+        self.effects.show_effects(effects)
         self.history.show_history(game.high_command.history)
 
     def open_order(self, objective: Optional[str]) -> None:

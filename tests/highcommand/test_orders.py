@@ -425,3 +425,30 @@ def test_a_save_written_before_the_history_has_an_empty_one() -> None:
     del command.__dict__["history"]
 
     assert pickle.loads(pickle.dumps(command)).history == []
+
+
+def test_an_effect_ends_when_its_turns_run_out() -> None:
+    from game.highcommand.orders import Effect
+
+    command = HighCommand(
+        effects=[
+            Effect("discount", "42% off SAM batteries", "WOLF", 14),
+            Effect("enemy-income", "The enemy's income cut by 45%", "GORILLA", 16),
+        ]
+    )
+
+    lines = command.end_effects(_game(14))
+
+    assert lines == ["42% off SAM batteries is over."]
+    assert [effect.label for effect in command.effects] == [
+        "The enemy's income cut by 45%"
+    ]
+
+
+def test_a_save_written_before_the_effects_has_none() -> None:
+    import pickle
+
+    command = HighCommand()
+    del command.__dict__["effects"]
+
+    assert pickle.loads(pickle.dumps(command)).effects == []

@@ -298,3 +298,23 @@ def test_the_history_lists_the_newest_first(qt_app: Any) -> None:
         "Ticket spent",
         "SEALION",
     ]
+
+
+def test_the_active_effects_tab_lists_them_soonest_first(qt_app: Any) -> None:
+    from game.highcommand.orders import Effect
+    from qt_ui.windows.highcommand.dialog import HighCommandWindow
+
+    game = _game()
+    window = HighCommandWindow(SimpleNamespace(game=game))
+    assert window.effects.list.isHidden() and not window.effects.empty.isHidden()
+
+    game.high_command.effects = [
+        Effect("enemy-income", "The enemy's income cut by 45%", "GORILLA", TURN + 2),
+        Effect("discount", "42% off SAM batteries", "WOLF", TURN + 1),
+    ]
+    window.reload()
+
+    labels = [effect.label for effect in data.effect_views(game)]
+    assert labels == ["42% off SAM batteries", "The enemy's income cut by 45%"]
+    assert window.effects.rows.count() == 2
+    assert window.tabs.counts[window.EFFECTS] == 2

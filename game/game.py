@@ -608,9 +608,12 @@ class Game:
         if self.turn > 1:
             self.conditions = self.generate_conditions()
 
-        # Before the new turn is planned: a squadron whose loan is over flies no more.
+        # Before the new turn is planned: a squadron whose loan is over flies no more,
+        # and a prize that lasted some turns stops applying.
         try:
             for line in self.high_command.return_loans(self):
+                self.message("High Command", line)
+            for line in self.high_command.end_effects(self):
                 self.message("High Command", line)
         except Exception:
             logging.exception("Could not take back the High Command's loans")

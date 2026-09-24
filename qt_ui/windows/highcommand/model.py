@@ -306,6 +306,35 @@ def preview(kind: str, picked: Sequence[str]) -> str:
     return say(picked) if say is not None and picked else ""
 
 
+# --------------------------------------------------------------------- effects
+
+
+@dataclass(frozen=True)
+class EffectView:
+    label: str
+    earned_by: str
+    until: int
+    turns_left: int
+
+    @property
+    def last_turn(self) -> bool:
+        return self.turns_left <= 1
+
+
+def effect_views(game: Game) -> list[EffectView]:
+    """The effects running, the soonest to end first."""
+    views = [
+        EffectView(
+            label=effect.label,
+            earned_by=effect.earned_by,
+            until=effect.until,
+            turns_left=effect.turns_left(game.turn),
+        )
+        for effect in game.high_command.effects
+    ]
+    return sorted(views, key=lambda view: (view.until, view.label))
+
+
 # ----------------------------------------------------------------------- loans
 
 
