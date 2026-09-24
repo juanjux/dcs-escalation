@@ -148,7 +148,7 @@ class Reason:
     worth: float
     #: What it is, in a line for the player.
     line: str
-    #: What the worth adds up from, when it is more than one thing: (what, millions).
+    #: What the worth adds up from, when it says more than the kind: (what, millions).
     parts: tuple[tuple[str, float], ...] = ()
 
 
@@ -223,7 +223,7 @@ class Worth:
         parts = [(_turns_of(income), earned)]
         if sites > 0:
             parts.append((f"rebuild, {counted(len(cleared), 'site')} around it", sites))
-        return Reason("capture", worth, line + ".", _parts(parts))
+        return Reason("capture", worth, line + ".", tuple(parts))
 
     def _runway(self, cp: ControlPoint) -> Optional[Reason]:
         squadrons = self.campaign.squadrons[cp]
@@ -277,7 +277,7 @@ class Worth:
             "income",
             income * INCOME_TURNS + rebuild,
             f"Earns the enemy {money(income)} a turn, {share:.0%} of their income.",
-            _parts(parts),
+            tuple(parts),
         )
 
     def _front(self, tgos: Sequence[TheaterGroundObject]) -> Optional[Reason]:
@@ -626,7 +626,7 @@ def rebuild_worth(tgos: Iterable[TheaterGroundObject]) -> float:
 
 
 def _turns_of(income: float) -> str:
-    return f"income, {INCOME_TURNS} turns of {money(income)}"
+    return f"lost income, {INCOME_TURNS} turns of {money(income)}"
 
 
 def _buildings(tgos: Sequence[TheaterGroundObject]) -> str:
@@ -638,11 +638,6 @@ def _buildings(tgos: Sequence[TheaterGroundObject]) -> str:
     if len(buildings) != len(tgos) or len(costs) != 1 or not standing:
         return "what stands there"
     return f"{counted(standing, 'building')} at {money(costs.pop())}"
-
-
-def _parts(parts: list[tuple[str, float]]) -> tuple[tuple[str, float], ...]:
-    """Only worth listing when there is more than one."""
-    return tuple(parts) if len(parts) > 1 else ()
 
 
 def _kept(found: Iterable[Optional[Reason]]) -> tuple[Reason, ...]:
