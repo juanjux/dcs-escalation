@@ -64,6 +64,15 @@ def system_name(tgo: TheaterGroundObject) -> str:
     return unit_system(main)
 
 
+def site_name(tgo: TheaterGroundObject) -> str:
+    """What the site is. A GPS jammer is what its site is for, while it stands, and
+    never what shoots there: naming the site after its main weapon calls it after the
+    guns guarding it."""
+    if any(getattr(unit.unit_type, "gps_jamming", None) for unit in alive([tgo])):
+        return "GPS jammer"
+    return system_name(tgo)
+
+
 def unit_system(unit: TheaterUnit) -> str:
     """What one unit's system is called."""
     label = unit_label(unit)

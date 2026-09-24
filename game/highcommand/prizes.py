@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional
 from game.ato.flighttype import FlightType
 from game.data.groups import GroupTask
 from game.data.units import UnitClass
-from game.highcommand.wording import counted, joined, listed, money, system_name
+from game.highcommand.wording import counted, joined, listed, money, site_name
 from game.income import Income
 from game.squadrons.experience import SaveCompatible
 from game.squadrons.morale import clamp
@@ -697,7 +697,7 @@ def _standing(tgo: IadsGroundObject) -> str:
         return "Empty"
     if tgo.is_dead:
         return "Destroyed"
-    return system_name(tgo)
+    return site_name(tgo)
 
 
 def _air_defence_types(

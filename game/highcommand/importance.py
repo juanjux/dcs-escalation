@@ -53,6 +53,7 @@ from game.highcommand.wording import (
     listed,
     money,
     short,
+    site_name,
     sites,
     system_name,
     unit_class,
@@ -255,7 +256,7 @@ class Worth:
                 "cannot replace."
             )
         elif isinstance(tgo, IadsGroundObject):
-            line = f"Its {system_name(tgo)} costs the enemy {money(worth)} to rebuild."
+            line = f"Its {site_name(tgo)} costs the enemy {money(worth)} to rebuild."
         else:
             line = f"Costs the enemy {money(worth)} to rebuild."
         return Reason("rebuild", worth, line)

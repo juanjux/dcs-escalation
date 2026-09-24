@@ -13,9 +13,10 @@ from game.highcommand.prizes import KINDS, Prize, Step, kind_of
 from game.squadrons.morale import MORALE_MAX
 from game.squadrons.pilot import Pilot, PilotStatus
 from game.data.groups import GroupTask
+from game.data.units import UnitClass
 from game.theater import Airfield, Player
 from game.theater.controlpoint import RunwayStatus
-from tests.highcommand.stubs import Base, launcher, sam
+from tests.highcommand.stubs import Base, launcher, sam, unit
 
 
 def _give(game: Any, prize: Prize) -> str:
@@ -211,12 +212,23 @@ def test_a_sam_ticket_offers_every_air_defence_site_of_ours() -> None:
     empty = sam("EMPTY", 0, [], base=home)
     empty.groups = []
     theirs = sam("THEIRS", 0, [launcher("SAM SA-10 LN", 40)], base=away)
+    jammer = unit("GPS Jammer", unit_class=None)
+    jammer.unit_type.gps_jamming = object()
+    guarded = sam(
+        "BEETLE",
+        0,
+        [jammer, unit("SPAAA Vulcan M163", unit_class=UnitClass.AAA, reach_nm=1)],
+        base=home,
+    )
     prize = Prize("sam", 6, True, "A ticket for a SAM.", (("band", "MERAD"),))
     where, _ = _steps(prize)
 
-    options = where.options(_sites_game(battery, wreck, empty, theirs), prize, ())
+    options = where.options(
+        _sites_game(battery, wreck, empty, theirs, guarded), prize, ()
+    )
 
     assert [(o.label, o.detail) for o in options] == [
+        ("BEETLE", "GPS jammer, at Batumi"),
         ("EMPTY", "Empty, at Batumi"),
         ("GRUMBLE", "SA-10, at Batumi"),
         ("WRECK", "Destroyed, at Batumi"),

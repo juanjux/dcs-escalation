@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from game.data.units import UnitClass
-from game.highcommand.wording import listed, money, system_name
+from game.highcommand.wording import listed, money, site_name, system_name
 from tests.highcommand.stubs import launcher, sam, unit
 
 
@@ -26,6 +26,22 @@ def test_a_coastal_battery_is_named_after_its_launchers() -> None:
     )
 
     assert system_name(sam("OPOSSUM", 0, [radar, missiles])) == "SS-N-2"
+
+
+def test_a_jamming_site_is_named_after_its_jammer_not_its_guns() -> None:
+    jammer = unit("GPS Jammer", unit_class=None)
+    jammer.unit_type.gps_jamming = object()
+    guns = unit(
+        "SPAAA Vulcan M163", unit_class=UnitClass.AAA, reach_nm=1, anti_air=True
+    )
+    site = sam("BEETLE", 0, [jammer, guns])
+
+    assert site_name(site) == "GPS jammer"
+    # What threatens a route through it is still the guns.
+    assert system_name(site) == "Vulcan"
+
+    jammer.alive = False
+    assert site_name(site) == "Vulcan"
 
 
 def test_lines_name_two_and_count_the_rest() -> None:
