@@ -326,6 +326,53 @@ class GroupHeader(QWidget):
         painter.end()
 
 
+class RequestRow(QWidget):
+    """A request achieved: the objective, what it pays, and whether that is a ticket."""
+
+    def __init__(self, request: Any) -> None:
+        super().__init__()
+        self.request = request
+        self.setFixedHeight(PILOT_ROW_HEIGHT)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    def paintEvent(self, event: object) -> None:
+        from qt_ui.windows.highcommand import palette as hc
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.fillRect(0, self.height() - 1, self.width(), 1, QColor(LINE))
+        painter.setFont(_font(14, QFont.Weight.DemiBold))
+        painter.setPen(QColor(TITLE))
+        painter.drawText(MARGIN, 27, self.request.objective)
+        after = MARGIN + painter.fontMetrics().horizontalAdvance(self.request.objective)
+
+        word = "TICKET" if self.request.ticket else "INSTANT"
+        ink, fill = (
+            (hc.ORANGE, hc.TICKET_FILL)
+            if self.request.ticket
+            else (hc.INSTANT, hc.INSTANT_FILL)
+        )
+        painter.setFont(_font(10, QFont.Weight.Bold))
+        width = painter.fontMetrics().horizontalAdvance(word) + 16
+        right = self.width() - MARGIN
+        chip = QRectF(right - width, 13, width, 18)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(fill))
+        painter.drawRoundedRect(chip, 4, 4)
+        painter.setPen(QColor(ink))
+        painter.drawText(chip, Qt.AlignmentFlag.AlignCenter, word)
+
+        painter.setFont(_font(12))
+        painter.setPen(QColor(DIM))
+        left = max(DETAIL_X // 2, after + 16)
+        room = int(right - width - 16 - left)
+        prize = painter.fontMetrics().elidedText(
+            self.request.prize, Qt.TextElideMode.ElideRight, max(room, 0)
+        )
+        painter.drawText(left, 27, prize)
+        painter.end()
+
+
 class PilotRow(QWidget):
     """One pilot in three columns: identity, what happened, and the result.
 
@@ -922,6 +969,7 @@ class QDebriefingWindow(QDialog):
 
         for section in (
             self._pilots_section(debriefing),
+            self._high_command_section(debriefing),
             self._losses_section(debriefing),
             self._front_line_section(debriefing),
             self._missiles_section(debriefing),
@@ -1013,6 +1061,26 @@ class QDebriefingWindow(QDialog):
             # does not report their aircrew.
             return None
         return self._section("Pilots", "only groups with entries are drawn", card)
+
+    def _high_command_section(
+        self, debriefing: DebriefingReport
+    ) -> Optional[QVBoxLayout]:
+        """The High Command requests the mission achieved, and what each pays."""
+        achieved = [
+            request
+            for request in getattr(debriefing, "high_command", [])
+            if request.blue
+        ]
+        if not achieved:
+            return None
+        card = _card()
+        column = QVBoxLayout()
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(0)
+        card.setLayout(column)
+        for request in achieved:
+            column.addWidget(RequestRow(request))
+        return self._section("High Command", "requests achieved · what each pays", card)
 
     def _losses_section(self, debriefing: DebriefingReport) -> QVBoxLayout:
         """Both sides side by side: stacked, the exchange took a scroll to read."""
