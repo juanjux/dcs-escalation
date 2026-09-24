@@ -825,6 +825,9 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         """A carrier or LHA whose flight deck has gone down. Only a ship sinks."""
         return False
 
+    def sink(self, events: GameUpdateEvents) -> None:
+        """What going down does to what was aboard. Only a ship sinks."""
+
     # TODO: Should be naval specific.
     def get_carrier_group_name(self) -> Optional[str]:
         """
@@ -1663,10 +1666,89 @@ class NavalControlPoint(
         try:
             return not self.runway_is_operational()
         except RuntimeError:
-            # No carrier group to ask: read while committing a mission's results,
-            # where a raise would lose the whole mission.
+            # No carrier group to ask. Read whenever one of its ships dies, which is
+            # while a mission's results are committed: a raise would lose them all.
             logging.exception(f"Could not tell whether {self} has sunk")
             return False
+
+    def sink(self, events: GameUpdateEvents) -> None:
+        """The flight deck went down.
+
+        The aircraft no package had taken were aboard and went down with it. Those a
+        package had were in the air: they land at the nearest friendly base that can
+        take them, and the squadron moves there. The pilots are picked up either
+        way; a squadron used to be disbanded with its ship, every pilot with it.
+        """
+        game = self.coalition.game
+        for squadron in list(self.squadrons):
+            aboard = max(0, min(squadron.untasked_aircraft, squadron.owned_aircraft))
+            squadron.owned_aircraft -= aboard
+            squadron.destroyed_aircraft += aboard
+            squadron.refund_orders()
+            airborne = squadron.owned_aircraft
+            landed_at = self._divert(squadron) if airborne else None
+            said = []
+            if aboard:
+                said.append(f"{aboard} went down with it")
+            if landed_at is not None and squadron.owned_aircraft:
+                said.append(
+                    f"{squadron.owned_aircraft} in the air landed at {landed_at}"
+                )
+            if ditched := airborne - squadron.owned_aircraft:
+                said.append(f"{ditched} in the air had nowhere to land and ditched")
+            if said:
+                game.message(
+                    f"{self.name} sunk",
+                    f"{squadron} ({squadron.aircraft}): {'; '.join(said)}. Its pilots"
+                    " survived.",
+                )
+        for squadron in self.coalition.air_wing.iter_squadrons():
+            if squadron.destination == self:
+                # Nowhere to land: it stays where it is.
+                squadron.destination = None
+        events.update_control_point(self)
+
+    def _divert(self, squadron: Squadron) -> Optional[ControlPoint]:
+        """Land the squadron's aircraft at the nearest friendly base in reach that can
+        take them, with room for all of them if one has it; what finds no room ditches.
+        """
+        parking_type = ParkingType().from_squadron(squadron)
+        reach = squadron.aircraft.max_mission_range * 2
+        bases = sorted(
+            (
+                cp
+                for cp in self.coalition.game.theater.controlpoints
+                if cp is not self
+                and cp.captured == self.captured
+                and not cp.sunk
+                and cp.runway_is_operational()
+                and cp.can_operate(squadron.aircraft)
+                and cp.distance_to(self) <= reach.meters
+            ),
+            key=lambda cp: cp.distance_to(self),
+        )
+        if not bases:
+            squadron.destroyed_aircraft += squadron.owned_aircraft
+            squadron.owned_aircraft = 0
+            return None
+        roomy = [
+            cp
+            for cp in bases
+            if cp.unclaimed_parking(parking_type) >= squadron.owned_aircraft
+        ]
+        base = (
+            roomy[0]
+            if roomy
+            else max(bases, key=lambda cp: cp.unclaimed_parking(parking_type))
+        )
+        overflow = squadron.owned_aircraft - max(
+            0, base.unclaimed_parking(parking_type)
+        )
+        if overflow > 0:
+            squadron.owned_aircraft -= overflow
+            squadron.destroyed_aircraft += overflow
+        squadron.relocate_to(base)
+        return base
 
     def runway_is_operational(self) -> bool:
         # Necessary because it's possible for the carrier itself to have sunk

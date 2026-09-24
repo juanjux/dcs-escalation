@@ -8,7 +8,7 @@ from dcs.triggers import TriggerZone
 from dcs.unittype import ShipType, StaticType, UnitType as DcsUnitType, VehicleType
 
 from game.data.radar_db import LAUNCHER_TRACKER_PAIRS, TELARS, TRACK_RADARS
-from game.data.units import ANTI_AIR_UNIT_CLASSES, UnitClass
+from game.data.units import ANTI_AIR_UNIT_CLASSES
 from game.dcs.groundunittype import GroundUnitType
 from game.dcs.shipunittype import ShipUnitType
 from game.dcs.unittype import UnitType
@@ -77,24 +77,21 @@ class TheaterUnit:
         return None
 
     def kill(self, events: GameUpdateEvents) -> None:
+        deck = (
+            self.ground_object.control_point
+            if self.ground_object.is_naval_control_point
+            else None
+        )
+        afloat = deck is not None and not deck.sunk
         self.alive = False
         self.ground_object.invalidate_threat_poly()
         events.update_tgo(self.ground_object)
         if self.ground_object.is_iads:
             iads = self.ground_object.control_point.coalition.game.theater.iads_network
             iads.update_tgo(self.ground_object, events)
-        if self.ground_object.is_naval_control_point:
-            for unit in self.ground_object.units:
-                if (
-                    unit.unit_type
-                    and unit.unit_type.unit_class is UnitClass.AIRCRAFT_CARRIER
-                    and not unit.alive
-                ):
-                    cp = self.ground_object.control_point
-                    for squadron in cp.squadrons:
-                        cp.coalition.air_wing.squadrons[squadron.aircraft].remove(
-                            squadron
-                        )
+        if deck is not None and afloat and deck.sunk:
+            # This death took the flight deck down; the escorts dying after it do not.
+            deck.sink(events)
 
     def revive(self, events: GameUpdateEvents) -> None:
         self.alive = True

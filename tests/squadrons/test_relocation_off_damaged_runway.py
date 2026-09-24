@@ -14,7 +14,9 @@ from typing import Any
 import pytest
 
 from game.migrator import Migrator
+from game.theater.controlpoint import NavalControlPoint
 from game.squadrons.squadron import Squadron
+from game.utils import nautical_miles
 
 NOW = datetime(2026, 9, 21, 20, 0)
 
@@ -100,75 +102,131 @@ def test_a_squadron_left_aboard_a_sunk_ship_with_aircraft_is_told_so() -> None:
         Squadron.plan_relocation(squadron, _base("Mount Pleasant", True), NOW)
 
 
-def _processor(*squadrons: Any) -> Any:
+class _Ship(_Base):
+    """A carrier or LHA, with the real code for what sinking does."""
+
+    sink = NavalControlPoint.sink
+    _divert = NavalControlPoint._divert
+
+
+def _theater(*squadrons: Any, bases: tuple[Any, ...] = ()) -> Any:
     messages: list[tuple[str, str]] = []
     wing = SimpleNamespace(iter_squadrons=lambda: iter(squadrons))
     game = SimpleNamespace(
-        blue=SimpleNamespace(air_wing=wing),
-        red=SimpleNamespace(air_wing=SimpleNamespace(iter_squadrons=lambda: iter([]))),
+        theater=SimpleNamespace(controlpoints=list(bases)),
         message=lambda title, text: messages.append((title, text)),
     )
-    return SimpleNamespace(game=game, messages=messages)
+    return SimpleNamespace(game=game, air_wing=wing, messages=messages)
 
 
-def _aboard(base: Any, aircraft: int, pending: int = 0) -> Any:
-    squadron = _squadron(base, aircraft)
-    squadron.pending_deliveries = pending
-    squadron.destroyed_aircraft = 1
+def _ship(coalition: Any) -> Any:
+    return _Ship(name="LHA-1 Tarawa", sunk=True, captured="blue", coalition=coalition)
+
+
+def _ashore(name: str, nm: float, room: int, side: str = "blue") -> Any:
+    base = _base(name, operational=True)
+    base.captured = side
+    base.distance_to = lambda other: nm * 1852
+    base.unclaimed_parking = lambda parking_type: room
+    return base
+
+
+def _embarked(ship: Any, aircraft: int, tasked: int) -> Any:
+    squadron = _squadron(ship, aircraft)
+    squadron.untasked_aircraft = aircraft - tasked
+    squadron.pending_deliveries = 0
+    squadron.destroyed_aircraft = 0
     squadron.aircraft = _Base(
-        name="UH-1H Iroquois", helicopter=True, lha_capable=True, flyable=False
+        name="UH-1H Iroquois",
+        helicopter=True,
+        lha_capable=True,
+        flyable=False,
+        max_mission_range=nautical_miles(100),
     )
+    squadron.refund_orders = lambda: None
 
-    def refund_orders() -> None:
-        squadron.pending_deliveries = 0
+    def relocate_to(base: Any) -> None:
+        squadron.location = base
 
-    squadron.refund_orders = refund_orders
+    squadron.relocate_to = relocate_to
     return squadron
 
 
-def test_the_aircraft_aboard_a_ship_that_sinks_go_down_with_it() -> None:
-    """Its pilots swim: the squadron stays, empty, and can relocate."""
-    from game.sim.missionresultsprocessor import MissionResultsProcessor
+EVENTS: Any = SimpleNamespace(update_control_point=lambda cp: None)
 
-    deck = _base("LHA-1 Tarawa", operational=True)
-    ashore = _base("Mount Pleasant", operational=True)
-    aboard = _aboard(deck, aircraft=6, pending=2)
-    inbound = _aboard(ashore, aircraft=4)
-    inbound.destination = deck
-    stays = _aboard(ashore, aircraft=4)
-    processor = _processor(aboard, inbound, stays)
-    afloat = [deck, ashore]
 
-    deck.sunk = True
-    MissionResultsProcessor.commit_sunk_decks(processor, afloat)
+def test_a_ship_that_sinks_takes_down_only_what_no_package_had() -> None:
+    """The rest were in the air: they land ashore, and the squadron moves there."""
+    coalition = _theater()
+    ship = _ship(coalition)
+    near = _ashore("Mount Pleasant", nm=60, room=10)
+    far = _ashore("Rio Gallegos", nm=150, room=10)
+    theirs = _ashore("Stanley", nm=20, room=10, side="red")
+    coalition.game.theater.controlpoints = [ship, theirs, far, near]
+    squadron = _embarked(ship, aircraft=6, tasked=2)
+    inbound = _embarked(near, aircraft=4, tasked=0)
+    inbound.destination = ship
+    coalition.air_wing = SimpleNamespace(iter_squadrons=lambda: iter([inbound]))
+    ship.squadrons = [squadron]
 
-    assert (aboard.owned_aircraft, aboard.destroyed_aircraft) == (0, 7)
-    assert aboard.pending_deliveries == 0
-    assert inbound.destination is None and inbound.owned_aircraft == 4
-    assert stays.owned_aircraft == 4
-    assert processor.messages == [
+    ship.sink(EVENTS)
+
+    assert (squadron.owned_aircraft, squadron.destroyed_aircraft) == (2, 4)
+    assert squadron.location is near
+    assert inbound.destination is None
+    assert coalition.messages == [
         (
             "LHA-1 Tarawa sunk",
-            f"6 UH-1H Iroquois of {aboard} went down with it. Its pilots survived.",
+            f"{squadron} (UH-1H Iroquois): 4 went down with it; 2 in the air landed"
+            " at Mount Pleasant. Its pilots survived.",
         )
     ]
-    Squadron.plan_relocation(aboard, ashore, NOW)
-    assert aboard.destination is ashore
 
 
-def test_a_deck_that_was_never_afloat_does_not_sink_its_squadrons_again() -> None:
-    """A carrier DCS cannot launch from reads as sunk from the start. Only what sinks
-    during the mission takes its aircraft with it."""
-    from game.sim.missionresultsprocessor import MissionResultsProcessor
+def test_with_nowhere_to_land_the_ones_in_the_air_ditch() -> None:
+    coalition = _theater()
+    ship = _ship(coalition)
+    ship.squadrons = [squadron := _embarked(ship, aircraft=3, tasked=3)]
+    coalition.game.theater.controlpoints = [ship, _ashore("Far", nm=500, room=10)]
 
-    wreck = _base("001 Liaoning", operational=False, sunk=True)
-    aboard = _aboard(wreck, aircraft=4)
-    processor = _processor(aboard)
+    ship.sink(EVENTS)
 
-    MissionResultsProcessor.commit_sunk_decks(processor, [])
+    assert (squadron.owned_aircraft, squadron.destroyed_aircraft) == (0, 3)
+    assert squadron.location is ship
+    # Empty, with its pilots: it can relocate.
+    Squadron.plan_relocation(squadron, _base("Mount Pleasant", True), NOW)
 
-    assert aboard.owned_aircraft == 4
-    assert processor.messages == []
+
+def test_the_squadron_is_not_disbanded_when_its_carrier_is_killed() -> None:
+    """The ship dying sinks the deck once; an escort dying after it does not."""
+    from game.theater.theatergroup import TheaterUnit
+
+    class _Deck:
+        def __init__(self) -> None:
+            self.sank: list[Any] = []
+
+        @property
+        def sunk(self) -> bool:
+            return not carrier.alive
+
+        def sink(self, events: Any) -> None:
+            self.sank.append(events)
+
+    deck = _Deck()
+    group: Any = SimpleNamespace(
+        is_naval_control_point=True,
+        control_point=deck,
+        is_iads=False,
+        invalidate_threat_poly=lambda: None,
+    )
+    carrier: Any = SimpleNamespace(alive=True, ground_object=group)
+    escort: Any = SimpleNamespace(alive=True, ground_object=group)
+    events: Any = SimpleNamespace(update_tgo=lambda tgo: None)
+
+    TheaterUnit.kill(carrier, events)
+    TheaterUnit.kill(escort, events)
+
+    assert deck.sank == [events]
 
 
 def test_nothing_is_bought_for_a_ship_that_has_sunk() -> None:
@@ -177,7 +235,7 @@ def test_nothing_is_bought_for_a_ship_that_has_sunk() -> None:
     wreck = _base("LHA-1 Tarawa", operational=False, sunk=True)
     wreck.coalition = SimpleNamespace()
     adapter = AircraftPurchaseAdapter(wreck)
-    squadron = _aboard(wreck, aircraft=0)
+    squadron = _embarked(wreck, aircraft=0, tasked=0)
 
     assert not adapter.can_buy(squadron)
     assert adapter.why_cannot_buy(squadron) == "LHA-1 Tarawa has sunk"

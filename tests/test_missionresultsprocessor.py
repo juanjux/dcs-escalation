@@ -33,7 +33,6 @@ COMMIT_STEPS = [
     "commit_cargo_ship_losses",
     "commit_airlift_losses",
     "commit_ground_losses",
-    "commit_sunk_decks",
     "commit_damaged_runways",
     "commit_cruise_missiles",
     "commit_naval_magazines",
