@@ -61,6 +61,7 @@ class Migrator:
         self._register_new_tgos()
         self._wire_iads_sites_that_arrived_late()
         self._unwire_iads_ships()
+        self._renew_stale_iads_nodes()
         self._reload_terrain()
         self._update_theater()
         self._update_campaign_name()
@@ -535,6 +536,13 @@ class Migrator:
         enrolled = network.enrol_sites_that_arrived_late()
         if enrolled:
             logging.info("IADS: wired %s", ", ".join(sorted(enrolled)))
+
+    def _renew_stale_iads_nodes(self) -> None:
+        """A site rebuilt through GeneraLLM's API kept its IADS node on the group it
+        replaced."""
+        renewed = self.game.theater.iads_network.renew_stale_nodes()
+        if renewed:
+            logging.info("IADS: renewed the nodes of %s", ", ".join(renewed))
 
     def _unwire_iads_ships(self) -> None:
         """Ships were wired to the power stations and comms towers in range of where
