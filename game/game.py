@@ -724,6 +724,7 @@ class Game:
                 if self.opfor_high_command_active:
                     enemy_closed = self.opfor_high_command.refresh(self)
                     self.opfor_high_command.pay(self, enemy_closed)
+                    self._report_requests(enemy_closed, blue=False)
         except Exception:
             logging.exception("Could not refresh the High Command's orders")
 
@@ -737,8 +738,9 @@ class Game:
         if report is None or report.turn != self.turn - 1:
             return
         kept = [r for r in getattr(report, "high_command", []) if r.blue != blue]
+        side = Player.BLUE if blue else Player.RED
         report.high_command = kept + requests_achieved(
-            closed, self.high_command.history, self.turn, blue
+            closed, self.high_command_for(side).history, self.turn, blue
         )
 
     def check_win_loss(self) -> TurnState:

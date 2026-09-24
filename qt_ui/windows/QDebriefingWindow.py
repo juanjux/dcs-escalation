@@ -90,6 +90,8 @@ GROUP_COLOURS = {
     "WOUNDED": WOUNDED,
     "PROMOTIONS": ACCENT,
     "MORALE CHANGES": CAPTION,
+    "OURS": ACCENT,
+    "ENEMY": OURS,
 }
 
 MORALE_COLOURS = {
@@ -1065,21 +1067,28 @@ class QDebriefingWindow(QDialog):
     def _high_command_section(
         self, debriefing: DebriefingReport
     ) -> Optional[QVBoxLayout]:
-        """The High Command requests the mission achieved, and what each pays."""
-        achieved = [
-            request
-            for request in getattr(debriefing, "high_command", [])
-            if request.blue
-        ]
-        if not achieved:
+        """The High Command requests the mission achieved, and what each pays; the
+        enemy's too, when the campaign reports them."""
+        requests = list(getattr(debriefing, "high_command", []))
+        ours = [request for request in requests if request.blue]
+        theirs = [request for request in requests if not request.blue]
+        settings = getattr(debriefing.game, "settings", None)
+        if not getattr(settings, "high_command_report_enemy", True):
+            theirs = []
+        if not ours and not theirs:
             return None
         card = _card()
         column = QVBoxLayout()
         column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(0)
         card.setLayout(column)
-        for request in achieved:
-            column.addWidget(RequestRow(request))
+        for title, side in (("OURS", ours), ("ENEMY", theirs)):
+            if not side:
+                continue
+            if theirs:
+                column.addWidget(GroupHeader(title, len(side)))
+            for request in side:
+                column.addWidget(RequestRow(request))
         return self._section("High Command", "requests achieved · what each pays", card)
 
     def _losses_section(self, debriefing: DebriefingReport) -> QVBoxLayout:
