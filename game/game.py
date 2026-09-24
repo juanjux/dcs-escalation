@@ -720,11 +720,26 @@ class Game:
                 closed = self.high_command.refresh(self)
                 for line in self.high_command.pay(self, closed):
                     self.message("High Command", line)
+                self._report_requests(closed, blue=True)
                 if self.opfor_high_command_active:
                     enemy_closed = self.opfor_high_command.refresh(self)
                     self.opfor_high_command.pay(self, enemy_closed)
         except Exception:
             logging.exception("Could not refresh the High Command's orders")
+
+    def _report_requests(self, closed: Any, blue: bool) -> None:
+        """Add the requests the last mission achieved to its debriefing report. The
+        report was kept while the results were committed, before the turn was passed
+        and so before the requests were counted."""
+        from game.debriefingreport import requests_achieved
+
+        report = getattr(self, "last_debriefing_report", None)
+        if report is None or report.turn != self.turn - 1:
+            return
+        kept = [r for r in getattr(report, "high_command", []) if r.blue != blue]
+        report.high_command = kept + requests_achieved(
+            closed, self.high_command.history, self.turn, blue
+        )
 
     def check_win_loss(self) -> TurnState:
         if not self.theater.player_points(state_check=True):
