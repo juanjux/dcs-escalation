@@ -152,6 +152,13 @@ All headless/syntax-checked only:
 - **Detailed debrief**: after a flown mission, `prev_turns` entries gain `blue_air_lost` /
   `red_air_lost` / `blue_ground_lost` / `red_ground_lost` for that turn.
 
+- **High Command**: with the High Command and GeneraLLM on, pass a turn and ask it for
+  `high_command`: three requests against blue objectives, each with a `target_id` that
+  `POST /packages` accepts. Destroy one in a mission: the next turn it is gone from
+  `requests`, its prize is paid (a ticket in `tickets`, or the effect of an instant one),
+  and with "Report enemy completed High Command requests" on, the debriefing lists it
+  under ENEMY. Spend a ticket through `ticket_choices` + `spend`.
+
 ## Still not done
 - **Nothing is validated in a real Qt/game session yet** — all the Qt (the Take-Off
   gate/indicator §6, the settings URL block §2) is syntax/import-checked only. The dist
