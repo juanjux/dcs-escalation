@@ -32,7 +32,7 @@ const mark = {
   orders: 1,
   soonest: 3,
   last_turn: false,
-  tooltip: "High Command order · high tier",
+  tooltip: "High Command request · high tier",
 };
 
 beforeEach(() => {

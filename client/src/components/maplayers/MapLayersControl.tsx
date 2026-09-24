@@ -96,7 +96,7 @@ const OVERLAYS: Record<LayerId, { label: string; node: ReactNode }> = {
   combat: { label: "Active combat", node: <CombatLayer /> },
   supplyRoutes: { label: "Supply routes", node: <SupplyRoutesLayer /> },
   frontLines: { label: "Front lines", node: <FrontLinesLayer /> },
-  highCommand: { label: "High Command orders", node: <HighCommandLayer /> },
+  highCommand: { label: "High Command requests", node: <HighCommandLayer /> },
   factories: { label: "Factories", node: <TgosLayer categories={["factory"]} /> },
   ships: { label: "Ships", node: <TgosLayer categories={["ship"]} /> },
   otherGround: {

@@ -96,10 +96,10 @@ class ObjectiveLine(QFrame):
         row.addWidget(Ring())
         what = "base" if base else "point"
         if len(self.orders) == 1:
-            said = f"This {what} is the objective of a High Command order"
+            said = f"This {what} is the objective of a High Command request"
         else:
             number = COUNTS.get(len(self.orders), str(len(self.orders)))
-            said = f"This {what} is the objective of {number} High Command orders"
+            said = f"This {what} is the objective of {number} High Command requests"
         row.addWidget(label(said, 13, ink.TITLE))
         row.addStretch()
         if len(self.orders) == 1:
@@ -120,7 +120,7 @@ class ObjectiveLine(QFrame):
             row.addWidget(label(f"· {kind}", 12, ink.SOFT))
         else:
             row.addWidget(label(f"{tier} · {left} turns left · {kind}", 12, ink.SOFT))
-        row.addWidget(Link("Open order ›", lambda: self.open_order(order.objective)))
+        row.addWidget(Link("Open request ›", lambda: self.open_order(order.objective)))
 
     def _each(self, row: QHBoxLayout, turn: int) -> None:
         for index, order in enumerate(self.orders):

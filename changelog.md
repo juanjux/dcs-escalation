@@ -1,15 +1,15 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[High Command]** Each turn the High Command orders enemy objectives taken, three by default, one from each tier of them by difficulty plus importance, for two to five turns and each with its prize. New settings under Campaign Management. Achieving one pays it, at once or as a ticket kept to spend later. A window, opened from the command bar, lists them and spends the tickets.
+* **[High Command]** Each turn the High Command requests enemy objectives taken, three by default, one from each tier of them by difficulty plus importance, for two to five turns and each with its prize. New settings under Campaign Management. Achieving one pays it, at once or as a ticket kept to spend later. A window, opened from the command bar, lists them and spends the tickets.
 * **[Mission Generator]** The Apache gets a data cartridge: the front line on its TSD, and the enemy air defence the MFD settings allow as target points under the TSD's own symbols. Its route stays the one the mission gives it. (adapted from the RetLab fork)
 * **[Mission Generator]** The Viper's data cartridge fills its ROE tab from the campaign: an aircraft family only one side flies is marked as that side's, one both sides fly stays unknown. New setting under MFD, on by default. (adapted from the RetLab fork)
 * **[Mission Generator]** New setting under MFD, off by default: the Viper's data cartridge makes MAN 1 flares only and MAN 6 chaff only, so both are on the stick. (adapted from the RetLab fork)
 * **[Mission Generator]** Blue tanker and AEW&C orbits are drawn on the F10 map, labelled with callsign, type, frequency and TACAN, and each CAP station as a thinner racetrack. (adapted from the RetLab fork)
 * **[Live Pilots]** The debriefing says what each pilot's experience was paid for, on a line of its own: kills by kind, damage, the sortie, a wound, and the three things that move the multiplier. Biggest gain first.
-* **[High Command]** The map rings each order's objective in orange, with the turns it has left.
+* **[High Command]** The map rings each request's objective in orange, with the turns it has left.
 * **[Campaign AI]** The auto-planner frags the detectors covering a sector before the SAMs behind them: a DEAD sent at a SAM the network holds dark has nothing to shoot at. The OPFOR briefing carries the same tactic. (adapted from the RetLab fork)
-* **[High Command]** A site or base that is an order's objective says so at the bottom of its window, with a link to the order.
+* **[High Command]** A site or base that is a request's objective says so at the bottom of its window, with a link to the request.
 * **[Mods]** Support for the CurrentHill German Military Assets pack (1.5.0), behind a New Game checkbox: 25 units from the Leopard 2A7V to the Sachsen frigate, with the combat ones in the modern NATO faction. The Patriot KAT1 battery moved here from the USA pack. Two batteries can be generated and bought: Skyshield C-RAM, and FlaRakRad with IRIS-T SLS.
 * **[Mods]** F-22A 2.1.0: the IRST pod moved to station 6 and the combined AMRAAM-plus-pod stores are gone, so every shipped loadout was rebuilt around them. The mod's own smoke, the GBU-32 and the anti-radiation Mako are offered in the pylon editor.
 * **[Mods]** Frenchpack 5.0: the FELIN riflemen, LRAC gunner and PGM marksman are selectable. The mod's own VAB Mephisto is gone, which DCS now ships, and campaigns in progress move to it.

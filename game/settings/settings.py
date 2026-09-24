@@ -250,12 +250,13 @@ class Settings:
         section=HIGH_COMMAND_SECTION,
         default=True,
         detail=(
-            "Each turn the High Command orders enemy objectives taken, each with a "
-            "prize for taking it before the order runs out."
+            "Each turn the High Command requests enemy objectives taken, each with "
+            "a prize for taking it before the request runs out. Requests are "
+            "optional: ignoring one, or letting it run out, has no negative effect."
         ),
     )
     high_command_orders: int = bounded_int_option(
-        "Orders open at once",
+        "Requests open at once",
         page=CAMPAIGN_MANAGEMENT_PAGE,
         section=HIGH_COMMAND_SECTION,
         default=3,
@@ -267,20 +268,26 @@ class Settings:
         ),
     )
     high_command_shortest_order: int = bounded_int_option(
-        "Shortest order, in turns",
+        "Shortest request, in turns",
         page=CAMPAIGN_MANAGEMENT_PAGE,
         section=HIGH_COMMAND_SECTION,
         default=2,
         min=1,
         max=10,
+        detail=(
+            "The fewest turns a request stays open. Each new request is given a "
+            "number of turns between this and the longest; when they run out, the "
+            "request closes and another from the same tier takes its place."
+        ),
     )
     high_command_longest_order: int = bounded_int_option(
-        "Longest order, in turns",
+        "Longest request, in turns",
         page=CAMPAIGN_MANAGEMENT_PAGE,
         section=HIGH_COMMAND_SECTION,
         default=5,
         min=1,
         max=10,
+        detail="The most turns a request stays open.",
     )
     external_views_allowed: bool = boolean_option(
         "Allow external views",

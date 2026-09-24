@@ -87,9 +87,9 @@ Still to come:
   
 ## High Command
 
-- **Each turn the High Command orders enemy objectives taken, each with a prize**
+- **Each turn the High Command requests enemy objectives taken, each with a prize**
   paid at once or as a ticket to spend later. Its window, opened from the command
-  bar, lists the orders open and spends the tickets.
+  bar, lists the requests open and spends the tickets.
   ([#421](https://github.com/juanjux/dcs-escalation/pull/421),
   [#432](https://github.com/juanjux/dcs-escalation/pull/432),
   [#433](https://github.com/juanjux/dcs-escalation/pull/433))

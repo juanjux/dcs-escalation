@@ -58,7 +58,7 @@ def test_a_base_asked_twice_is_one_mark_with_the_soonest_turns() -> None:
     assert base.position.lat == -53.0
     turkey = marks["TURKEY"]
     assert (turkey.orders, turkey.soonest, turkey.last_turn) == (1, 3, False)
-    assert turkey.tooltip == "High Command order · high tier · Cash."
+    assert turkey.tooltip == "High Command request · high tier · Cash."
 
 
 def test_an_objective_no_longer_on_the_map_gets_no_mark() -> None:
