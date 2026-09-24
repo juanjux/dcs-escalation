@@ -18,6 +18,7 @@ from game.highcommand.describe import (  # noqa: F401 - the window's names for t
     asked,
     preview,
     spending_title,
+    tier_words,
     taken_when,
     ticket_state,
 )
@@ -126,12 +127,6 @@ def tier_colour(tier: int, count: int) -> str:
     if tier == 0:
         return "low"
     return "medium"
-
-
-def tier_words(tier: int, count: int) -> str:
-    if count == len(TIER_NAMES):
-        return f"{TIER_NAMES[tier]} tier"
-    return f"tier {tier + 1} of {count}"
 
 
 def order_views(game: Game, side: Player = Player.BLUE) -> list[OrderView]:

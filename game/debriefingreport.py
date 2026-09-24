@@ -16,10 +16,19 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Sequence, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    Optional,
+    Sequence,
+    TypeVar,
+)
 
 from game.debriefing import SideLossCounts
-from game.squadrons.experience import PilotOutcomes
+from game.squadrons.experience import PilotOutcomes, SaveCompatible
 from game.theater.player import Player
 
 if TYPE_CHECKING:
@@ -67,8 +76,9 @@ class BaseCapture:
 
 
 @dataclass
-class RequestAchieved:
-    """A High Command request the mission achieved, and what it pays."""
+class RequestAchieved(SaveCompatible):
+    """A High Command request the mission achieved, what it asked, and what it
+    pays."""
 
     objective: str
     #: The ticket kept, or what an instant prize gave.
@@ -76,13 +86,26 @@ class RequestAchieved:
     ticket: bool
     #: Whose request it was.
     blue: bool = True
+    #: Its tier, what the objective was and what achieving it took, worded as the High
+    #: Command window words them. Empty in a report saved before they were kept.
+    tier: str = ""
+    kind: str = ""
+    taken: str = ""
 
 
 def requests_achieved(
-    closed: Sequence[Any], history: Sequence[Any], turn: int, blue: bool
+    closed: Sequence[Any],
+    history: Sequence[Any],
+    turn: int,
+    blue: bool,
+    motorpools: Collection[str] = (),
+    tiers: int = 3,
 ) -> list[RequestAchieved]:
     """The requests among ``closed`` that were achieved, with what the history says
-    each paid on ``turn``."""
+    each paid on ``turn``. ``motorpools`` names the objectives that are motor pools,
+    whose requests ask for one vehicle; ``tiers`` is how many requests the campaign
+    makes, which is how a tier is worded."""
+    from game.highcommand.describe import taken_when, tier_words
     from game.highcommand.orders import Outcome
 
     paid = {
@@ -96,6 +119,11 @@ def requests_achieved(
             paid.get(done.order.objective, "no prize"),
             done.order.prize is not None and done.order.prize.ticket,
             blue,
+            tier=tier_words(done.order.tier, tiers),
+            kind=done.order.kind,
+            taken=taken_when(
+                done.order, done.order.objective in motorpools, 0, done.order.base
+            )[0],
         )
         for done in closed
         if done.outcome is Outcome.ACHIEVED

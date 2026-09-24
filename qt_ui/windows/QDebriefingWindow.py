@@ -328,8 +328,22 @@ class GroupHeader(QWidget):
         painter.end()
 
 
+#: The ACHIEVED chip, by whose request it was: good news green, bad news red.
+ACHIEVED_CHIP = {True: (THEIRS, "#1E3829"), False: (OURS, "#3D2326")}
+
+
+def request_summary(request: Any) -> str:
+    """What the request asked: "Medium tier · Oil field · Every unit destroyed".
+    Empty for a request from a report saved before that was kept."""
+    text = " · ".join(
+        part for part in (request.tier, request.kind, request.taken) if part
+    )
+    return text[:1].upper() + text[1:]
+
+
 class RequestRow(QWidget):
-    """A request achieved: the objective, what it pays, and whether that is a ticket."""
+    """A request achieved: the objective and what it asked on the first line, what it
+    pays on the second, and whether that is a ticket."""
 
     def __init__(self, request: Any) -> None:
         super().__init__()
@@ -343,10 +357,6 @@ class RequestRow(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.fillRect(0, self.height() - 1, self.width(), 1, QColor(LINE))
-        painter.setFont(_font(14, QFont.Weight.DemiBold))
-        painter.setPen(QColor(TITLE))
-        painter.drawText(MARGIN, 27, self.request.objective)
-        after = MARGIN + painter.fontMetrics().horizontalAdvance(self.request.objective)
 
         word = "TICKET" if self.request.ticket else "INSTANT"
         ink, fill = (
@@ -363,16 +373,41 @@ class RequestRow(QWidget):
         painter.drawRoundedRect(chip, 4, 4)
         painter.setPen(QColor(ink))
         painter.drawText(chip, Qt.AlignmentFlag.AlignCenter, word)
+        end = chip.left() - 16
+
+        painter.setFont(_font(14, QFont.Weight.DemiBold))
+        painter.setPen(QColor(TITLE))
+        painter.drawText(MARGIN, 19, self.request.objective)
+        x = MARGIN + painter.fontMetrics().horizontalAdvance(self.request.objective) + 8
+        x += self._paint_achieved(painter, x) + 10
 
         painter.setFont(_font(12))
-        painter.setPen(QColor(DIM))
-        left = max(DETAIL_X // 2, after + 16)
-        room = int(right - width - 16 - left)
-        prize = painter.fontMetrics().elidedText(
-            self.request.prize, Qt.TextElideMode.ElideRight, max(room, 0)
+        painter.setPen(QColor(MUTED))
+        painter.drawText(
+            int(x), 19, _elided(painter, request_summary(self.request), end - x)
         )
-        painter.drawText(left, 27, prize)
+        painter.setPen(QColor(SUBDUED))
+        painter.drawText(MARGIN, 37, _elided(painter, self.request.prize, end - MARGIN))
         painter.end()
+
+    def _paint_achieved(self, painter: QPainter, x: float) -> float:
+        ink, fill = ACHIEVED_CHIP[bool(self.request.blue)]
+        painter.setFont(_font(9.5, QFont.Weight.Bold))
+        label = "ACHIEVED"
+        width = painter.fontMetrics().horizontalAdvance(label) + 12
+        rect = QRectF(x, 5, width, 16)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(fill))
+        painter.drawRoundedRect(rect, 3, 3)
+        painter.setPen(QColor(ink))
+        painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, label)
+        return width
+
+
+def _elided(painter: QPainter, text: str, width: float) -> str:
+    return painter.fontMetrics().elidedText(
+        text, Qt.TextElideMode.ElideRight, max(int(width), 0)
+    )
 
 
 class PilotRow(QWidget):
