@@ -538,7 +538,7 @@ class Migrator:
             logging.info("IADS: wired %s", ", ".join(sorted(enrolled)))
 
     def _renew_stale_iads_nodes(self) -> None:
-        """A site rebuilt through GeneraLLM's API kept its IADS node on the group it
+        """A site rebuilt through the OPFOR AI API kept its IADS node on the group it
         replaced."""
         renewed = self.game.theater.iads_network.renew_stale_nodes()
         if renewed:

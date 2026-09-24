@@ -583,7 +583,7 @@ class IadsNetwork:
     def renew_stale_nodes(self) -> list[str]:
         """Rebuild the nodes of the sites whose groups were replaced under them.
 
-        A site rebuilt through GeneraLLM's API kept its node on the group it no longer
+        A site rebuilt through the OPFOR AI API kept its node on the group it no longer
         had: Skynet was handed a group the mission does not contain, the site read as
         standing whatever became of the new one, and the new one was left out.
         """
