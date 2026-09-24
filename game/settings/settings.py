@@ -289,6 +289,17 @@ class Settings:
         max=10,
         detail="The most turns a request stays open.",
     )
+    high_command_report_enemy: bool = boolean_option(
+        "Report enemy completed High Command requests in the debriefing",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=HIGH_COMMAND_SECTION,
+        default=True,
+        detail=(
+            "When GeneraLLM plays the enemy it gets High Command requests too. With "
+            "this on, the debriefing also lists the ones it achieved in the mission "
+            "and what each paid."
+        ),
+    )
     external_views_allowed: bool = boolean_option(
         "Allow external views",
         DIFFICULTY_PAGE,

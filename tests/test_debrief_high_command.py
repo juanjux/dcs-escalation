@@ -51,8 +51,12 @@ def test_only_the_achieved_requests_are_reported_with_what_they_paid() -> None:
 
 def test_they_are_added_to_the_report_of_the_mission_just_flown() -> None:
     report = DebriefingReport(turn=TURN - 1)
+    command = _command()
     game: Any = SimpleNamespace(
-        last_debriefing_report=report, turn=TURN, high_command=_command()
+        last_debriefing_report=report,
+        turn=TURN,
+        high_command=command,
+        high_command_for=lambda side: command,
     )
 
     Game._report_requests(game, CLOSED, blue=True)
@@ -62,8 +66,12 @@ def test_they_are_added_to_the_report_of_the_mission_just_flown() -> None:
 
 def test_a_report_from_an_older_mission_is_left_alone() -> None:
     report = DebriefingReport(turn=TURN - 3)
+    command = _command()
     game: Any = SimpleNamespace(
-        last_debriefing_report=report, turn=TURN, high_command=_command()
+        last_debriefing_report=report,
+        turn=TURN,
+        high_command=command,
+        high_command_for=lambda side: command,
     )
 
     Game._report_requests(game, CLOSED, blue=True)
@@ -90,3 +98,36 @@ def test_the_window_lists_them(qt_app: Any) -> None:
     assert card is not None
     assert len(card.findChildren(RequestRow)) == 2
     assert QDebriefingWindow._high_command_section(shell, DebriefingReport()) is None
+
+
+def test_the_enemy_s_requests_are_shown_only_when_the_campaign_reports_them(
+    qt_app: Any,
+) -> None:
+    from qt_ui.windows.QDebriefingWindow import (
+        GroupHeader,
+        QDebriefingWindow,
+        RequestRow,
+    )
+
+    report = DebriefingReport(turn=TURN - 1)
+    report.high_command = [
+        RequestAchieved("TURKEY", "Cash.", False, True),
+        RequestAchieved("MUSK", "A ticket.", True, False),
+    ]
+    shell: Any = SimpleNamespace(_section=lambda caption, hint, card: card)
+
+    report.game = SimpleNamespace(
+        settings=SimpleNamespace(high_command_report_enemy=True)
+    )
+    shown = QDebriefingWindow._high_command_section(shell, report)
+    assert shown is not None
+    assert [h.title for h in shown.findChildren(GroupHeader)] == ["OURS", "ENEMY"]
+    assert len(shown.findChildren(RequestRow)) == 2
+
+    report.game = SimpleNamespace(
+        settings=SimpleNamespace(high_command_report_enemy=False)
+    )
+    hidden = QDebriefingWindow._high_command_section(shell, report)
+    assert hidden is not None
+    assert hidden.findChildren(GroupHeader) == []
+    assert len(hidden.findChildren(RequestRow)) == 1
