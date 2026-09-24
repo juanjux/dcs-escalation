@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Sequence
 
 from game.highcommand.campaign import Task
+from game.highcommand.orders import TIER_NAMES
 from game.highcommand.prizes import kind_of
 from game.highcommand.wording import counted
 
@@ -38,6 +39,12 @@ PREVIEWS: dict[str, Callable[[Sequence[str]], str]] = {
     "runway": lambda picked: f"The runway at {picked[0]} is repaired.",
     "heal": lambda picked: f"{picked[0]} is back on duty.",
 }
+
+
+def tier_words(tier: int, count: int) -> str:
+    if count == len(TIER_NAMES) and tier < count:
+        return f"{TIER_NAMES[tier]} tier"
+    return f"tier {tier + 1} of {count}"
 
 
 def asked(order: Order, motorpool: bool) -> str:

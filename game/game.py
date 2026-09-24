@@ -46,6 +46,7 @@ from .theater import ConflictTheater, Player
 from .theater.bullseye import Bullseye
 from .theater.theatergroundobject import (
     EwrGroundObject,
+    MotorpoolGroundObject,
     SamGroundObject,
     TheaterGroundObject,
 )
@@ -731,17 +732,34 @@ class Game:
     def _report_requests(self, closed: Any, blue: bool) -> None:
         """Add the requests the last mission achieved to its debriefing report. The
         report was kept while the results were committed, before the turn was passed
-        and so before the requests were counted."""
+        and so before the requests were counted.
+
+        Best-effort: a report that cannot be written must not keep the enemy's
+        requests from being refreshed after it.
+        """
         from game.debriefingreport import requests_achieved
 
         report = getattr(self, "last_debriefing_report", None)
         if report is None or report.turn != self.turn - 1:
             return
-        kept = [r for r in getattr(report, "high_command", []) if r.blue != blue]
-        side = Player.BLUE if blue else Player.RED
-        report.high_command = kept + requests_achieved(
-            closed, self.high_command_for(side).history, self.turn, blue
-        )
+        try:
+            kept = [r for r in getattr(report, "high_command", []) if r.blue != blue]
+            side = Player.BLUE if blue else Player.RED
+            motorpools = {
+                tgo.name
+                for tgo in self.theater.ground_objects
+                if isinstance(tgo, MotorpoolGroundObject)
+            }
+            report.high_command = kept + requests_achieved(
+                closed,
+                self.high_command_for(side).history,
+                self.turn,
+                blue,
+                motorpools,
+                self.settings.high_command_orders,
+            )
+        except Exception:
+            logging.exception("Could not add the requests achieved to the debriefing")
 
     def check_win_loss(self) -> TurnState:
         if not self.theater.player_points(state_check=True):
