@@ -34,6 +34,50 @@ NO_ALTITUDE = TARGET_TYPES | {
 }
 
 
+#: Where a flight works: its track or orbit, whatever its task.
+TRACK_TYPES = {
+    FlightWaypointType.PATROL_TRACK,
+    FlightWaypointType.PATROL,
+    FlightWaypointType.RECOVERY_TANKER,
+}
+
+#: Where an attack starts its run.
+INGRESS_TYPES = {
+    FlightWaypointType.INGRESS_STRIKE,
+    FlightWaypointType.INGRESS_SEAD,
+    FlightWaypointType.INGRESS_CAS,
+    FlightWaypointType.INGRESS_ESCORT,
+    FlightWaypointType.INGRESS_DEAD,
+    FlightWaypointType.INGRESS_SWEEP,
+    FlightWaypointType.INGRESS_BAI,
+    FlightWaypointType.INGRESS_OCA_RUNWAY,
+    FlightWaypointType.INGRESS_OCA_AIRCRAFT,
+    FlightWaypointType.INGRESS_AIR_ASSAULT,
+    FlightWaypointType.INGRESS_ANTI_SHIP,
+    FlightWaypointType.INGRESS_SEAD_SWEEP,
+    FlightWaypointType.INGRESS_ARMED_RECON,
+}
+
+
+def pin_for(waypoint: FlightWaypoint) -> str:
+    """Which pin the map gives the waypoint, by what it is for: "track", "ingress",
+    "refuel" or "hold", and "" for a plain one."""
+    kind = waypoint.waypoint_type
+    # A circular orbit is a hold by type, and the station of an AEW&C or a tanker by
+    # purpose; the builder names it ORBIT.
+    if kind in TRACK_TYPES or (
+        kind is FlightWaypointType.LOITER and waypoint.name == "ORBIT"
+    ):
+        return "track"
+    if kind in INGRESS_TYPES:
+        return "ingress"
+    if kind is FlightWaypointType.REFUEL:
+        return "refuel"
+    if kind in (FlightWaypointType.LOITER, FlightWaypointType.JOIN):
+        return "hold"
+    return ""
+
+
 def target_moves_the_mission(flight: Flight) -> bool:
     """Whether dragging this flight's target waypoint changes what it does.
 
@@ -132,6 +176,8 @@ class FlightWaypointJs(BaseModel):
     target_id: UUID | None
     #: Whether its altitude is a height the flight flies at rather than the ground.
     shows_altitude: bool
+    #: Which pin the map gives it; see pin_for.
+    pin: str
 
     class Config:
         title = "Waypoint"
@@ -203,4 +249,5 @@ class FlightWaypointJs(BaseModel):
             is_target=is_target,
             target_id=target_id_of(flight) if is_target else None,
             shows_altitude=waypoint.waypoint_type not in NO_ALTITUDE,
+            pin=pin_for(waypoint),
         )

@@ -53,15 +53,17 @@ def _view(
     kind: FlightWaypointType,
     flight_type: Any = None,
     target: Any = None,
+    name: str = "WP",
 ) -> FlightWaypointJs:
     from game.ato.flighttype import FlightType
 
-    waypoint = _waypoint(kind)
+    waypoint = _waypoint(kind, name)
+    home = SimpleNamespace(position=SimpleNamespace(x=0.0, y=0.0))
     flight = cast(
         Any,
         SimpleNamespace(
             flight_plan=_Plan([waypoint]),
-            departure=SimpleNamespace(position=SimpleNamespace(x=0.0, y=0.0)),
+            departure=home,
             flight_type=flight_type or FlightType.STRIKE,
             package=SimpleNamespace(target=target or SimpleNamespace()),
         ),
@@ -206,3 +208,26 @@ def test_an_altitude_that_is_the_ground_is_not_reported(
 )
 def test_an_altitude_the_flight_flies_at_is(kind: FlightWaypointType) -> None:
     assert _view(kind).shows_altitude
+
+
+@pytest.mark.parametrize(
+    "kind, name, pin",
+    [
+        (FlightWaypointType.PATROL_TRACK, "RACETRACK START", "track"),
+        (FlightWaypointType.PATROL, "RACETRACK END", "track"),
+        (FlightWaypointType.LOITER, "ORBIT", "track"),
+        (FlightWaypointType.INGRESS_STRIKE, "INGRESS", "ingress"),
+        (FlightWaypointType.INGRESS_DEAD, "INGRESS", "ingress"),
+        (FlightWaypointType.INGRESS_ANTI_SHIP, "INGRESS", "ingress"),
+        (FlightWaypointType.REFUEL, "REFUEL", "refuel"),
+        (FlightWaypointType.LOITER, "HOLD", "hold"),
+        (FlightWaypointType.JOIN, "JOIN", "hold"),
+        (FlightWaypointType.LANDING_POINT, "LANDING", ""),
+        (FlightWaypointType.NAV, "NAV", ""),
+        (FlightWaypointType.SPLIT, "SPLIT", ""),
+    ],
+)
+def test_each_waypoint_gets_the_pin_of_what_it_is_for(
+    kind: FlightWaypointType, name: str, pin: str
+) -> None:
+    assert _view(kind, name=name).pin == pin

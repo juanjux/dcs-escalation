@@ -506,6 +506,7 @@ export type Waypoint = {
   is_target: boolean;
   target_id?: string | null;
   shows_altitude: boolean;
+  pin?: string;
 };
 export type Flight = {
   id: string;
