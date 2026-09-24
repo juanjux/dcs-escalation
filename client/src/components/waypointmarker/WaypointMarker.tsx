@@ -12,43 +12,53 @@ import iconShadow from "leaflet/dist/images/marker-shadow.png";
 import { MutableRefObject, useCallback, useEffect, useRef } from "react";
 import { Marker, Tooltip, useMap, useMapEvent } from "react-leaflet";
 
-const WAYPOINT_ICON = new Icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconAnchor: [12, 41],
-});
-
-// The same pin, lit up. A class rather than a second image: one icon to keep.
-const SELECTED_ICON = new Icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconAnchor: [12, 41],
-  className: "wp-marker-selected",
-});
-
-// The target, in red. The route no longer runs through it, so this mark is the only
-// thing that says where the flight is going -- and a strike with several aim points
-// gets one each, which the single line through them never showed.
-const TARGET_ICON = new Icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconAnchor: [12, 41],
-  className: "wp-marker-target",
-});
-
-const SELECTED_TARGET_ICON = new Icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconAnchor: [12, 41],
-  className: "wp-marker-target wp-marker-selected",
-});
-
-/** Which of the four pins this waypoint gets. */
-function iconFor(isTarget: boolean, selected: boolean): Icon {
-  if (isTarget) {
-    return selected ? SELECTED_TARGET_ICON : TARGET_ICON;
+/**
+ * The colour of a waypoint's pin, or null for Leaflet's own blue. Red where the
+ * flight works: its target, its track or orbit, the ingress of an attack. Green where
+ * it refuels, orange where it holds or joins the package.
+ */
+export function tintFor(waypoint: Waypoint): string | null {
+  if (waypoint.is_target) {
+    return "red";
   }
-  return selected ? SELECTED_ICON : WAYPOINT_ICON;
+  switch (waypoint.pin) {
+    case "track":
+    case "ingress":
+      return "red";
+    case "refuel":
+      return "green";
+    case "hold":
+      return "orange";
+    default:
+      return null;
+  }
+}
+
+// One icon per colour and selection, made the first time it is asked for. Every pin
+// is Leaflet's one marker image; the classes recolour and light it up.
+const ICONS = new Map<string, Icon>();
+
+export function iconFor(waypoint: Waypoint, selected: boolean): Icon {
+  const tint = tintFor(waypoint);
+  const key = `${tint}:${selected}`;
+  let found = ICONS.get(key);
+  if (found === undefined) {
+    const classes = ["wp-pin"];
+    if (tint !== null) {
+      classes.push(`wp-pin-${tint}`);
+    }
+    if (selected) {
+      classes.push("wp-pin-selected");
+    }
+    found = new Icon({
+      iconUrl: icon,
+      shadowUrl: iconShadow,
+      iconAnchor: [12, 41],
+      className: classes.join(" "),
+    });
+    ICONS.set(key, found);
+  }
+  return found;
 }
 
 /**
@@ -136,7 +146,7 @@ const WaypointMarker = (props: WaypointMarkerProps) => {
   return (
     <Marker
       position={waypoint.position}
-      icon={iconFor(waypoint.is_target, props.selected)}
+      icon={iconFor(waypoint, props.selected)}
       draggable={waypoint.is_movable}
       eventHandlers={{
         click: () => props.onSelect(),

@@ -1,22 +1,32 @@
-/* The selected waypoint, lit up: the same pin with a glow, so the one under the menu
-   is the one you are about to rename, move or delete. */
-.wp-marker-selected {
-  filter: drop-shadow(0 0 5px #ffff00) drop-shadow(0 0 2px #ffff00);
+/* A pin's colour and its glow are set apart and combined here: two classes that each
+   set `filter` would replace one another rather than add up. saturate(1) is the
+   filter that changes nothing. */
+.wp-pin {
+  --wp-tint: saturate(1);
+  --wp-glow: saturate(1);
+  filter: var(--wp-tint) var(--wp-glow);
 }
 
-/* The target pin, red. Leaflet ships one marker image, so this is the blue one turned
-   round the colour wheel rather than a second file to keep in step with it. The
-   saturation and the darkening are what make it a red rather than the salmon a bare
-   hue rotation gives: CSS hue-rotate is a matrix approximation, not a true rotation. */
-.wp-marker-target {
-  filter: hue-rotate(140deg) saturate(5) brightness(0.7);
+/* Leaflet ships one marker image, so the colours are the blue one turned round the
+   colour wheel rather than more files to keep in step with it. The saturation and
+   brightness correct what hue-rotate gets wrong: it is a matrix approximation, not a
+   true rotation. */
+.wp-pin-red {
+  --wp-tint: hue-rotate(140deg) saturate(5) brightness(0.7);
 }
 
-/* Selected and a target: both, in one filter, because a second rule would replace the
-   first rather than add to it. */
-.wp-marker-target.wp-marker-selected {
-  filter: hue-rotate(140deg) saturate(5) brightness(0.7)
-    drop-shadow(0 0 5px #ffff00) drop-shadow(0 0 2px #ffff00);
+.wp-pin-green {
+  --wp-tint: hue-rotate(-95deg) saturate(3) brightness(0.85);
+}
+
+.wp-pin-orange {
+  --wp-tint: hue-rotate(195deg) saturate(6) brightness(1.15);
+}
+
+/* The selected waypoint, lit up, so the one under the menu is the one you are about to
+   rename, move or delete. */
+.wp-pin-selected {
+  --wp-glow: drop-shadow(0 0 5px #ffff00) drop-shadow(0 0 2px #ffff00);
 }
 
 /* The waypoint tooltip: smaller than Leaflet's default, because at the zoom where it
