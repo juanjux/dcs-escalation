@@ -20,6 +20,10 @@ INSTANT_FILL = "#23372D"
 INSTANT = "#86C39A"
 
 WINDOW = "#2D3E50"
+#: The window and its band while it shows the enemy's High Command, as Intelligence
+#: does for the enemy.
+ENEMY_WINDOW = "#33333A"
+ENEMY_BAND = "#C08A72"
 HEADER = "#1B2732"
 CARD = "#14202B"
 CARD_BORDER = "#1D2731"

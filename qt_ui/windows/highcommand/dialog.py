@@ -30,7 +30,9 @@ from qt_ui.widgets.cards import card, make_transparent
 from qt_ui.widgets.controls import button, mono
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.groundobject.header import KIND_FILL
+from game.theater.player import Player
 from qt_ui.windows.highcommand import model as data
+from qt_ui.windows.intel.dialog import SideSwitch
 from qt_ui.windows.highcommand import palette as ink
 from qt_ui.windows.highcommand.model import OrderView
 from qt_ui.windows.highcommand.model import TicketView
@@ -39,7 +41,7 @@ from qt_ui.windows.highcommand.effects import EffectsPage
 from qt_ui.windows.highcommand.history import HistoryPage
 from qt_ui.windows.highcommand.loans import LoansPage
 from qt_ui.windows.highcommand.tickets import TicketsPage
-from qt_ui.windows.pilot.common import RED, chip, label
+from qt_ui.windows.pilot.common import ACCENT, RED, chip, label
 
 #: How close the map goes on "Show on map": the site and its rings in view.
 OBJECTIVE_ZOOM = 11
@@ -78,11 +80,7 @@ class Headline(QWidget):
         self.setFixedHeight(58)
         self.setObjectName("hcHeadline")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(
-            f"#hcHeadline {{ background: {ink.WINDOW};"
-            f" border-left: 4px solid {ink.ORANGE};"
-            f" border-bottom: 1px solid {ink.DIVIDER}; }}"
-        )
+        self.paint_side(own=True)
         row = QHBoxLayout()
         row.setContentsMargins(18, 0, 18, 0)
         row.setSpacing(12)
@@ -103,7 +101,16 @@ class Headline(QWidget):
         row.addStretch()
         self.note = label("", 12, ink.MUTED)
         row.addWidget(self.note)
+        self.row = row
         self.setLayout(row)
+
+    def paint_side(self, own: bool) -> None:
+        window = ink.WINDOW if own else ink.ENEMY_WINDOW
+        band = ink.ORANGE if own else ink.ENEMY_BAND
+        self.setStyleSheet(
+            f"#hcHeadline {{ background: {window}; border-left: 4px solid {band};"
+            f" border-bottom: 1px solid {ink.DIVIDER}; }}"
+        )
 
     @staticmethod
     def _figure(size: int) -> QLabel:
@@ -383,7 +390,14 @@ class Detail(QWidget):
 
     def show_order(self, order: OrderView) -> None:
         self.name.setText(order.name)
-        self.kind.setText(f"{order.kind.upper()} · {data.enemy_side()}")
+        self.kind.setText(f"{order.kind.upper()} · {order.owner}")
+        ours = order.owner == "BLUE"
+        self.kind.setStyleSheet(
+            f"background: {KIND_FILL['BLUE' if ours else 'RED']};"
+            f" color: {ACCENT if ours else RED}; border: none; border-radius: 3px;"
+            " padding: 2px 7px; font-size: 10px; font-weight: bold;"
+            " letter-spacing: 0.8px;"
+        )
         where = [order.base] if order.order.task is None and order.base else []
         self.subtitle.setText(
             " · ".join(
@@ -522,11 +536,19 @@ class OrdersPage(QWidget):
             lambda current, _previous: self._select(current)
         )
 
-    def show_orders(self, orders: list[OrderView], enabled: bool) -> None:
+    def show_orders(
+        self, orders: list[OrderView], enabled: bool, enemy_idle: bool = False
+    ) -> None:
         chosen = self.selected
         self.model.set_orders(orders)
         if not orders:
-            if enabled:
+            if enabled and enemy_idle:
+                self.message.say(
+                    "The enemy has no requests",
+                    "The enemy's High Command makes requests only when GeneraLLM"
+                    " plays it.",
+                )
+            elif enabled:
                 self.message.say(
                     "No requests open this turn",
                     "The enemy has nothing left worth asking for. New requests"
@@ -575,12 +597,16 @@ class HighCommandWindow(QDialog):
     def __init__(self, game_model: Any, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.game_model = game_model
+        #: Whose High Command the window shows: the player's, or the enemy's.
+        self.side = Player.BLUE
         self.setWindowTitle("High Command")
         self.setMinimumSize(1100, 720)
         self.setWindowFlag(Qt.WindowType.Tool, True)
-        self.setStyleSheet(f"QDialog {{ background: {ink.WINDOW}; }}")
 
         self.headline = Headline()
+        self.side_switch = SideSwitch(self.show_side)
+        self.headline.row.addSpacing(12)
+        self.headline.row.addWidget(self.side_switch)
         self.tabs = TabStrip(self.TABS)
         self.orders = OrdersPage(self.show_on_map)
         self.tickets = TicketsPage(self.spend, self.ticket_spent, self.show_site)
@@ -603,7 +629,7 @@ class HighCommandWindow(QDialog):
         body = QWidget()
         body.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         body.setObjectName("hcBody")
-        body.setStyleSheet(f"#hcBody {{ background: {ink.WINDOW}; }}")
+        self.body = body
         body_layout = QVBoxLayout()
         body_layout.setContentsMargins(0, 0, 0, 0)
         body_layout.addWidget(self.pages)
@@ -613,7 +639,23 @@ class HighCommandWindow(QDialog):
         self.setLayout(layout)
 
         GameUpdateSignal.get_instance().gameupdated.connect(self._game_updated)
+        self._paint_side()
         self.reload()
+
+    def show_side(self, player: Player) -> None:
+        """Show the player's High Command, or the enemy's."""
+        self.side = player
+        self._paint_side()
+        self.reload()
+
+    def _paint_side(self) -> None:
+        own = self.side.is_blue
+        window = ink.WINDOW if own else ink.ENEMY_WINDOW
+        self.setStyleSheet(f"QDialog {{ background: {window}; }}")
+        self.body.setStyleSheet(f"#hcBody {{ background: {window}; }}")
+        self.headline.paint_side(own)
+        self.side_switch.show_side(self.side)
+        self.tickets.set_read_only(not own)
 
     @property
     def game(self) -> Any:
@@ -627,20 +669,23 @@ class HighCommandWindow(QDialog):
         game = self.game
         if game is None:
             return
-        figures = data.headline(game)
+        side = self.side
+        figures = data.headline(game, side)
         self.headline.show_figures(figures)
         self.tabs.set_count(self.ORDERS, figures.orders, warm=figures.last_turn > 0)
         self.tabs.set_count(self.TICKETS, figures.tickets)
         self.orders.show_orders(
-            data.order_views(game), game.settings.high_command_enabled
+            data.order_views(game, side),
+            game.settings.high_command_enabled,
+            enemy_idle=side.is_red and not game.opfor_high_command_active,
         )
-        self.tickets.show_tickets(game, data.ticket_views(game))
+        self.tickets.show_tickets(game, data.ticket_views(game, side))
         self.tabs.set_count(self.LOANS, figures.loans)
-        self.loans.show_loans(data.loan_views(game))
-        effects = data.effect_views(game)
+        self.loans.show_loans(data.loan_views(game, side))
+        effects = data.effect_views(game, side)
         self.tabs.set_count(self.EFFECTS, len(effects))
         self.effects.show_effects(effects)
-        self.history.show_history(game.high_command.history)
+        self.history.show_history(data.command_for(game, side).history)
 
     def open_order(self, objective: Optional[str]) -> None:
         """Show this request, on the Requests tab."""
@@ -669,6 +714,8 @@ class HighCommandWindow(QDialog):
 
     def spend(self, ticket: TicketView, picked: tuple[str, ...]) -> str:
         """Spend a ticket and say what it gave; CannotGive when it cannot be."""
+        if not self.side.is_blue:
+            raise ValueError("the enemy's tickets are GeneraLLM's to spend")
         return self.game.high_command.spend(self.game, ticket.ticket, picked)
 
     def ticket_spent(self, line: str) -> None:

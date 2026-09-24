@@ -86,7 +86,7 @@ def objectives(monkeypatch: Any) -> None:
             Reason("threat", 0, "nothing"),
         ),
     )
-    monkeypatch.setattr(data, "_objectives", lambda game: [turkey])
+    monkeypatch.setattr(data, "_objectives", lambda game, *_: [turkey])
 
 
 def test_three_tiers_are_named_and_any_other_count_is_numbered() -> None:
@@ -143,7 +143,7 @@ def test_a_worth_made_of_more_than_one_thing_is_listed_by_its_parts(
             ),
         ),
     )
-    monkeypatch.setattr(data, "_objectives", lambda game: [rig])
+    monkeypatch.setattr(data, "_objectives", lambda game, *_: [rig])
 
     [order] = data.order_views(_game(_order("TURKEY", 1, TURN + 2)))
 
@@ -346,3 +346,41 @@ def test_the_active_effects_tab_lists_them_soonest_first(qt_app: Any) -> None:
     assert labels == ["42% off SAM batteries", "The enemy's income cut by 45%"]
     assert window.effects.rows.count() == 2
     assert window.tabs.counts[window.EFFECTS] == 2
+
+
+def test_the_window_shows_the_enemy_s_high_command_too(
+    qt_app: Any, objectives: None
+) -> None:
+    from game.theater.player import Player
+    from qt_ui.windows.highcommand.dialog import HighCommandWindow
+
+    game = _game(_order("TURKEY", 2, TURN + 3))
+    enemy = HighCommand(side=Player.RED, orders=[_order("TURKEY", 1, TURN + 2)])
+    enemy.tickets = [Ticket(Prize("awacs", 5, True, "A ticket.", ()), "MUSK", 12)]
+    game.opfor_high_command = enemy
+    game.opfor_high_command_active = True
+    window = HighCommandWindow(SimpleNamespace(game=game))
+
+    window.show_side(Player.RED)
+
+    shown = window.orders.selected
+    assert shown is not None and shown.owner == "BLUE" and shown.tier_chip == "MEDIUM"
+    assert "BLUE" in window.orders.detail.kind.text()
+    window.tabs.select(window.TICKETS)
+    assert window.tickets.pane.read_only and window.tickets.pane.go.isHidden()
+    window.show_side(Player.BLUE)
+    assert not window.tickets.pane.read_only
+
+
+def test_the_enemy_view_says_why_it_is_empty(qt_app: Any) -> None:
+    from game.theater.player import Player
+    from qt_ui.windows.highcommand.dialog import HighCommandWindow
+
+    game = _game()
+    game.opfor_high_command = HighCommand(side=Player.RED)
+    game.opfor_high_command_active = False
+    window = HighCommandWindow(SimpleNamespace(game=game))
+
+    window.show_side(Player.RED)
+
+    assert window.orders.message.title.text() == "The enemy has no requests"
