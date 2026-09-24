@@ -1084,23 +1084,64 @@ def set_package_tot(
 def delete_package(game: Game, side: str, index: int) -> schemas.OpResult:
     """Remove a package (by its turn_context index). Frees its aircraft/pilots."""
     try:
-        ato = views.coalition_for_side(game, side).ato
+        coalition = views.coalition_for_side(game, side)
+        ato = coalition.ato
         if index < 0 or index >= len(ato.packages):
             raise ValueError(f"no package at index {index}")
         pkg = ato.packages[index]
         target = getattr(pkg.target, "name", "?")
+        ferrying = _ferrying([pkg])
         ato.remove_package(pkg)
-        return schemas.OpResult(ok=True, detail=f"removed package {index} ({target})")
+        detail = f"removed package {index} ({target})"
+        return schemas.OpResult(
+            ok=True, detail=detail + _cancel_relocations(coalition, ferrying)
+        )
     except ValueError as exc:
         return schemas.OpResult(ok=False, error=str(exc))
 
 
 def clear_packages(game: Game, side: str) -> schemas.OpResult:
     """Remove all of ``side``'s packages (start the turn over)."""
-    ato = views.coalition_for_side(game, side).ato
+    coalition = views.coalition_for_side(game, side)
+    ato = coalition.ato
     n = len(ato.packages)
+    ferrying = _ferrying(ato.packages)
     ato.clear()
-    return schemas.OpResult(ok=True, detail=f"cleared {n} packages")
+    return schemas.OpResult(
+        ok=True,
+        detail=f"cleared {n} packages" + _cancel_relocations(coalition, ferrying),
+    )
+
+
+def _ferrying(packages: Iterable[Any]) -> set[Any]:
+    """The squadrons with a ferry flight in these packages."""
+    return {
+        flight.squadron
+        for package in packages
+        for flight in package.flights
+        if flight.flight_type is FlightType.FERRY
+    }
+
+
+def _cancel_relocations(coalition: Any, squadrons: set[Any]) -> str:
+    """Cancel the relocations whose ferry flights went with the deleted packages.
+
+    A relocation completes at the end of the turn, so with its ferries gone the
+    squadron would still arrive, having flown nothing; and ordering it again was
+    ignored as a relocation already under way. Relocate again to plan new ferries.
+    """
+    still = _ferrying(coalition.ato.packages)
+    cancelled = []
+    for squadron in squadrons:
+        if squadron.destination is not None and squadron not in still:
+            squadron.destination = None
+            cancelled.append(str(squadron))
+    if not cancelled:
+        return ""
+    return (
+        f"; cancelled the relocation of {', '.join(sorted(cancelled))}: its ferry "
+        "flights were deleted (relocate again to plan new ones)"
+    )
 
 
 def _purchase_limits(game: Game, side: str, squadron) -> str:
@@ -1492,8 +1533,17 @@ def relocate_squadron(
             raise ValueError(f"{squadron} is already at {dest.name}")
         origin = squadron.location.name
         squadron.plan_relocation(dest, game.conditions.start_time)
+        ferries = sum(
+            1
+            for package in squadron.coalition.ato.packages
+            for flight in package.flights
+            if flight.squadron is squadron and flight.flight_type is FlightType.FERRY
+        )
+        planned = f"{ferries} ferry flight{'' if ferries == 1 else 's'} planned"
+        if not ferries and squadron.owned_aircraft:
+            planned += ": every one of its aircraft is already tasked this turn"
         return schemas.OpResult(
-            ok=True, detail=f"{squadron} relocating {origin} -> {dest.name}"
+            ok=True, detail=f"{squadron} relocating {origin} -> {dest.name}; {planned}"
         )
     except Exception as exc:
         return schemas.OpResult(ok=False, error=str(exc))

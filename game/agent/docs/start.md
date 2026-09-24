@@ -131,7 +131,8 @@ tool/resource of the same name.
 
 **Air wings**
 - `POST /squadron/relocate` `{side, squadron_id, dest_cp_id}` — move a squadron to another
-  friendly base. There is no endpoint to create or delete squadrons.
+  friendly base; the answer says how many ferry flights it planned. Deleting their package
+  cancels the relocation. There is no endpoint to create or delete squadrons.
 
 **Memory**
 - `GET /stored_context` · `PUT /stored_context` (replace) · `POST /stored_context`

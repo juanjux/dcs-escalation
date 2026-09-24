@@ -1130,12 +1130,6 @@ class Squadron:
                 f"{destination}. Ignoring."
             )
             return
-        if destination == self.destination:
-            logging.warning(
-                f"Attempted to plan relocation of {self} to current destination "
-                f"{destination}. Ignoring."
-            )
-            return
         if self.owned_aircraft and not self.location.runway_is_operational():
             # The mission leaves out a flight from a damaged runway, ferries included,
             # and the squadron used to arrive at the end of the turn all the same. An
@@ -1145,6 +1139,12 @@ class Squadron:
                 f"{self} cannot relocate from {self.location}: {why} and nothing can "
                 "take off."
             )
+        if destination == self.destination:
+            # Asked again, as after its ferry flights were deleted with their package:
+            # they are planned again. Ignoring the order left the squadron with no
+            # ferries and the answer that all was well.
+            self.replan_ferry_flights(now)
+            return
 
         parking_type = ParkingType().from_squadron(self)
         if self.expected_size_next_turn > destination.unclaimed_parking(parking_type):
