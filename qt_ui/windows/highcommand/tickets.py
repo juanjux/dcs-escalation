@@ -608,7 +608,7 @@ class TicketsPage(QWidget):
         self.pane.next_ticket.connect(self._next)
 
         self.empty = label(
-            "No tickets kept. A ticket is earned by achieving an order whose prize"
+            "No tickets kept. A ticket is earned by achieving a request whose prize"
             " is one.",
             12.5,
             ink.QUIET,

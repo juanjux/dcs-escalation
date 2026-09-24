@@ -450,7 +450,7 @@ class HighCommandCell(ClickableCell):
         orders.setSpacing(8)
         self.orders = _label("0", 13, VALUE, QFont.Weight.DemiBold, mono=True)
         orders.addWidget(self.orders)
-        orders.addWidget(_label("orders", 12, "#B7C6D2"))
+        orders.addWidget(_label("requests", 12, "#B7C6D2"))
         self.last_turn = QLabel()
         font = _font(9.5, QFont.Weight.Bold)
         font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 0.6)

@@ -1,1 +1,1 @@
-"""The High Command window: the orders open, and what each asks and pays."""
+"""The High Command window: the requests open, and what each asks and pays."""

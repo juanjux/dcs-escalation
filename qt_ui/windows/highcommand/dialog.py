@@ -1,4 +1,4 @@
-"""The High Command window: the orders open, what each asks and pays.
+"""The High Command window: the requests open, what each asks and pays.
 
 Non-modal and one of a kind: "Show on map" moves the main window's map and this
 window stays where it is. Orders cannot be declined or deleted, so nothing here
@@ -86,7 +86,7 @@ class Headline(QWidget):
         row.setContentsMargins(18, 0, 18, 0)
         row.setSpacing(12)
         self.orders = self._figure(24)
-        row.addLayout(self._pair(self.orders, "orders open"))
+        row.addLayout(self._pair(self.orders, "requests open"))
         self.last_turn = chip("", ink.ON_ORANGE, ink.ORANGE)
         row.addWidget(self.last_turn)
         row.addSpacing(8)
@@ -124,7 +124,9 @@ class Headline(QWidget):
         self.last_turn.setVisible(figures.last_turn > 0)
         self.tickets.setText(str(figures.tickets))
         self.loans.setText(str(figures.loans))
-        self.note.setText(f"Turn {figures.turn} · orders are given, not chosen")
+        self.note.setText(
+            f"Turn {figures.turn} · requests are optional and not mandatory"
+        )
 
 
 class Tab(QLabel):
@@ -384,7 +386,7 @@ class Detail(QWidget):
         where = [order.base] if order.order.task is None and order.base else []
         self.subtitle.setText(
             " · ".join(
-                [*where, f"ordered turn {order.order.ordered_on}", order.tier_words]
+                [*where, f"requested turn {order.order.ordered_on}", order.tier_words]
             )
         )
         self.map_button.setEnabled(order.position is not None)
@@ -465,14 +467,14 @@ class OrdersPage(QWidget):
 
         heading = QHBoxLayout()
         heading.setContentsMargins(14, 8, 14, 8)
-        heading.addWidget(_caption("Order · highest tier first"))
+        heading.addWidget(_caption("Request · highest tier first"))
         heading.addStretch()
         heading.addWidget(_caption("Turns left"))
         head = QWidget()
         head.setLayout(heading)
         make_transparent(head)
         footnote = _wrapped(
-            "A new order replaces one that is achieved, runs out, or loses its"
+            "A new request replaces one that is achieved, runs out, or loses its"
             " objective — at the start of next turn, in the same tier.",
             11,
             ink.CAPTION,
@@ -525,14 +527,14 @@ class OrdersPage(QWidget):
         if not orders:
             if enabled:
                 self.message.say(
-                    "No orders open this turn",
-                    "The enemy has nothing left worth ordering taken. New orders"
+                    "No requests open this turn",
+                    "The enemy has nothing left worth asking for. New requests"
                     " come at the start of a turn.",
                 )
             else:
                 self.message.say(
                     "The High Command is off",
-                    "No orders are given. Tickets already earned can still be"
+                    "No requests are made. Tickets already earned can still be"
                     " spent.",
                 )
             self.stack.setCurrentWidget(self.message)
@@ -566,7 +568,7 @@ class OrdersPage(QWidget):
 class HighCommandWindow(QDialog):
     """The High Command's orders, one tab per kind of thing it keeps."""
 
-    TABS = ["Orders", "Tickets", "On loan", "History"]
+    TABS = ["Requests", "Tickets", "On loan", "History"]
     ORDERS, TICKETS, LOANS, HISTORY = 0, 1, 2, 3
 
     def __init__(self, game_model: Any, parent: Optional[QWidget] = None) -> None:
@@ -635,7 +637,7 @@ class HighCommandWindow(QDialog):
         self.history.show_history(game.high_command.history)
 
     def open_order(self, objective: Optional[str]) -> None:
-        """Show this order, on the Orders tab."""
+        """Show this request, on the Requests tab."""
         self.tabs.select(0)
         self.pages.setCurrentIndex(0)
         if objective is not None:

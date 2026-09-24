@@ -138,7 +138,7 @@ class HistoryPage(QWidget):
         self.list.setLayout(column)
 
         self.empty = label(
-            "Nothing yet. An order that closes, or a ticket spent, is listed here.",
+            "Nothing yet. A request that closes, or a ticket spent, is listed here.",
             12.5,
             ink.QUIET,
         )

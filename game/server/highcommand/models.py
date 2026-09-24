@@ -75,10 +75,10 @@ def _tooltip(orders: list[Order], count: int, turn: int) -> str:
     if len(orders) == 1:
         order = orders[0]
         prize = f" · {order.prize.line}" if order.prize is not None else ""
-        return f"High Command order · {tier_name(order.tier, count)} tier{prize}"
+        return f"High Command request · {tier_name(order.tier, count)} tier{prize}"
     asked = "; ".join(
         f"{order.task.value if order.task else order.objective}:"
         f" {order.turns_left(turn)} turns left"
         for order in orders
     )
-    return f"{len(orders)} High Command orders · {asked}"
+    return f"{len(orders)} High Command requests · {asked}"
