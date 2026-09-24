@@ -27,7 +27,7 @@ def _flight(squadron: Any, task: FlightType = FlightType.FERRY) -> Any:
 
 def _package(*flights: Any) -> Any:
     return SimpleNamespace(
-        target=SimpleNamespace(name="Ushuaia"), flights=list(flights)
+        target=SimpleNamespace(name="Kutaisi"), flights=list(flights)
     )
 
 
@@ -46,7 +46,7 @@ class _Squadron:
 
     def __init__(self, name: str) -> None:
         self.name = name
-        self.destination: Any = "Ushuaia"
+        self.destination: Any = "Kutaisi"
         self.owned_aircraft = 4
 
     def __str__(self) -> str:
@@ -70,12 +70,12 @@ def test_ordering_the_same_relocation_again_plans_its_ferries_again() -> None:
     replanned: list[datetime] = []
     squadron: Any = SimpleNamespace(
         location=SimpleNamespace(runway_is_operational=lambda: True, sunk=False),
-        destination="Ushuaia",
+        destination="Kutaisi",
         owned_aircraft=4,
         replan_ferry_flights=replanned.append,
     )
 
-    Squadron.plan_relocation(squadron, cast(Any, "Ushuaia"), NOW)
+    Squadron.plan_relocation(squadron, cast(Any, "Kutaisi"), NOW)
 
     assert replanned == [NOW]
 
@@ -91,7 +91,7 @@ def test_deleting_its_ferries_cancels_the_relocation(side: Any) -> None:
     assert result.ok and h6.destination is None
     assert "cancelled the relocation" in (result.detail or "")
     # Its relocation had no ferries in that package: it stands.
-    assert busy.destination == "Ushuaia"
+    assert busy.destination == "Kutaisi"
 
 
 def test_clearing_every_package_cancels_every_relocation_in_them(side: Any) -> None:
