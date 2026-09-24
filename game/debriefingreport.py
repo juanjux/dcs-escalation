@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Sequence, TypeVar
 
 from game.debriefing import SideLossCounts
 from game.squadrons.experience import PilotOutcomes
@@ -67,6 +67,42 @@ class BaseCapture:
 
 
 @dataclass
+class RequestAchieved:
+    """A High Command request the mission achieved, and what it pays."""
+
+    objective: str
+    #: The ticket kept, or what an instant prize gave.
+    prize: str
+    ticket: bool
+    #: Whose request it was.
+    blue: bool = True
+
+
+def requests_achieved(
+    closed: Sequence[Any], history: Sequence[Any], turn: int, blue: bool
+) -> list[RequestAchieved]:
+    """The requests among ``closed`` that were achieved, with what the history says
+    each paid on ``turn``."""
+    from game.highcommand.orders import Outcome
+
+    paid = {
+        entry.name: entry.line
+        for entry in history
+        if entry.turn == turn and entry.outcome == Outcome.ACHIEVED.value
+    }
+    return [
+        RequestAchieved(
+            done.order.objective,
+            paid.get(done.order.objective, "no prize"),
+            done.order.prize is not None and done.order.prize.ticket,
+            blue,
+        )
+        for done in closed
+        if done.outcome is Outcome.ACHIEVED
+    ]
+
+
+@dataclass
 class DebriefingReport:
     """Everything the debriefing window shows, and nothing else."""
 
@@ -87,6 +123,9 @@ class DebriefingReport:
     #: (group, fired, remaining) for the cruise missiles, worked out while the turn
     #: boundary was fresh -- "remaining" means what sailed into the next turn.
     missile_rows: list[tuple[str, int, Optional[int]]] = field(default_factory=list)
+    #: The High Command requests the mission achieved. Filled when the turn is passed,
+    #: after the report was kept, because that is when they are counted.
+    high_command: list[RequestAchieved] = field(default_factory=list)
     #: The live game, hung here so the window can read settings and ask who is waiting
     #: for leave. Not part of the report and never saved with it.
     game: Any = field(default=None, repr=False, compare=False)

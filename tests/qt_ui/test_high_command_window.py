@@ -137,7 +137,7 @@ def test_a_worth_made_of_more_than_one_thing_is_listed_by_its_parts(
                 320,
                 "Earns the enemy $40M a turn.",
                 (
-                    ("income, 4 turns of $40M", 160),
+                    ("lost income, 4 turns of $40M", 160),
                     ("rebuild, 4 buildings at $40M", 160),
                 ),
             ),
@@ -148,7 +148,7 @@ def test_a_worth_made_of_more_than_one_thing_is_listed_by_its_parts(
     [order] = data.order_views(_game(_order("TURKEY", 1, TURN + 2)))
 
     assert order.worth == (
-        ("income, 4 turns of $40M", "$160M"),
+        ("lost income, 4 turns of $40M", "$160M"),
         ("rebuild, 4 buildings at $40M", "$160M"),
     )
 
