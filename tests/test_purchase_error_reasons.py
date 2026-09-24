@@ -82,6 +82,7 @@ def _control_point(budget: float, parking: int) -> Any:
     return SimpleNamespace(
         coalition=SimpleNamespace(budget=budget, adjust_budget=lambda _: None),
         unclaimed_parking=lambda _t: parking,
+        sunk=False,
         __str__=lambda self: "Beirut-Rafic Hariri",
     )
 

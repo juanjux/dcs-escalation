@@ -1658,8 +1658,13 @@ Write bodies:
   re-close a strike corridor.
 - `POST /stances` `{side, friendly_cp_id, enemy_cp_id, stance}`
 - `POST /squadron/relocate` `{side, squadron_id, dest_cp_id}` (move a squadron to
-  another friendly base; arrives over time — also the rescue for a squadron stranded on
-  a sunk/dead carrier or LPD: relocate it out and only the ferry flight is created).
+  another friendly base; arrives over time). **Refused while its base cannot launch** —
+  runway cratered or flight deck sunk — **and it still has aircraft**; an emptied squadron
+  can always move. **When a carrier or LHA sinks**, the aircraft aboard (those no package
+  had taken) go down with it; those out on a package land at the nearest friendly base
+  with room and the squadron moves there; the pilots always survive. Relocate a squadron
+  left empty on the wreck to wherever it should rebuild — nothing can be bought for it
+  there.
   **The rescue works in the OTHER direction too**: when your runways are cratered, a
   grounded squadron relocated TO a carrier/LHA flies again — the deck cannot be
   cratered, and the ship sails wherever you need it. Helicopter squadrons especially:
