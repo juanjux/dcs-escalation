@@ -169,6 +169,12 @@ class FlightCrewRequest(BaseModel):
     pilot_name: str | None = None
 
 
+class TicketRequest(BaseModel):
+    side: str = "red"
+    ticket: int  # its `index` in high_command.tickets
+    picked: list[str] = []  # a choice `key` per step, in order
+
+
 class LeaveRequestAnswer(BaseModel):
     side: str = "red"
     squadron_id: str  # from turn_context.leave_requests

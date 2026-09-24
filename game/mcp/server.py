@@ -88,6 +88,28 @@ def map_image(side: str = "red", bbox: str | None = None) -> Image:
 
 
 @_tool()
+def high_command(side: str = "red", history: int = 20) -> dict:
+    """Your High Command: the requests it has given you (what each asks, the target
+    id to plan against, turns left, why, and the prize), your tickets with the picks
+    each asks, the effects and loans running, and the latest `history` entries."""
+    return service.high_command(side, history)
+
+
+@_tool()
+def ticket_choices(ticket: int, picked: list[str], side: str = "red") -> dict:
+    """The next pick ticket `ticket` (its index) asks for, given the choice keys picked
+    so far in order; with every step answered, what spending it gives."""
+    return service.ticket_choices(side, ticket, picked)
+
+
+@_tool()
+def spend_ticket(ticket: int, picked: list[str], side: str = "red") -> dict:
+    """Spend ticket `ticket` (its index) on the choice keys picked, one per step. It is
+    gone once spent; one that cannot be given now stays, with the reason."""
+    return _dump(service.spend_ticket(side, ticket, picked))
+
+
+@_tool()
 def aircraft_pylons(squadron_id: str, side: str = "red") -> dict:
     """Weapons each pylon of a squadron's airframe accepts (only weapons available this
     campaign), so you can build a valid custom payload. Returns

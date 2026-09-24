@@ -1056,6 +1056,38 @@ somewhere above; this is the list to re-read before you plan.
 Think like a real air commander: clear intent, combined arms, economy of force,
 and adaptation to the enemy.
 
+### Your High Command: requests, prizes and tickets
+
+When the campaign has the High Command on, your High Command gives you **requests**
+every turn: a few of the player's objectives it would like taken, one from each tier of
+them ranked by difficulty plus importance (three by default: high, medium and low).
+`GET /high_command` lists them.
+
+- **They are optional.** Ignoring a request, or letting it run out, costs you nothing.
+  Take one when it fits your plan anyway, or when its prize is worth the risk.
+- Each request says what it `asked` and what counts (`done_when`): every unit of a site
+  destroyed; one vehicle of a motorpool; one aircraft destroyed on the ground at a base;
+  a base's runway cratered; a base taken. `target_id` is the id `create_packages` takes
+  as a target, `pos` where it is, `why` why it matters, `difficulty` and `importance`
+  1-5 each, `turns_left` how long it stays open, and `prize` what achieving it pays.
+- It is counted from the mission's results and at the start of the next turn; achieving
+  it on its last turn counts. A request that closes, achieved or not, is replaced at the
+  start of the next turn by another from the same tier.
+- **Prizes.** An instant prize is given at once: cash, morale for your pilots, the
+  wounded back early. A **ticket** is kept in `tickets` for you to spend when you choose.
+- **Spending a ticket.** One with no `steps` (state `READY`) is spent with
+  `POST /high_command/spend {ticket: index}`. One with steps asks a pick per step: call
+  `POST /high_command/ticket_choices {ticket, picked: []}` for the first step's `choices`,
+  add the `key` you choose to `picked`, and call again until it answers `done: true` with
+  what it `gives`; then `spend` with the same `picked`. A step with a single choice is
+  filled in for you. State `NOT NOW` means there is nothing to pick yet (no cratered
+  runway to repair, nobody in hospital); the ticket keeps. A refusal (no room at any base
+  for a squadron on loan) leaves the ticket too. The `index` shifts once a ticket is
+  spent: read `high_command` again.
+- `loans` are squadrons lent to you by a ticket, with the turns before they go back: task
+  them like any other squadron while they last. `effects` are prizes that last some
+  turns. `history` is what closed (`achieved` / `expired` / `gone`) and what you spent.
+
 ### Keep your token use low
 
 This is a long campaign — many turns in one session. Don't let your own context bloat:
@@ -1159,8 +1191,8 @@ while you're working and goes idle once you stop, and Take Off is blocked while 
    X ago") by clicking the robot icon. **The player can cancel you** from that
    window — if you've been cancelled, `turn_status` shows it and your next write is
    rejected; **stop planning gracefully** if that happens.
-3. **Read** the situation (turn context, previous turns, your notes, optionally the
-   map image).
+3. **Read** the situation (turn context, previous turns, your notes, your High
+   Command's requests, optionally the map image).
 4. **Plan and apply**: create packages/flights (crewed), set stances, buy/sell/
    transfer, move ships or adjust waypoints as needed. **Give every package a
    one-line `rationale`** ("why this exists") — the player sees it in their review,
@@ -1185,6 +1217,19 @@ ground effort backed up, and money spent to set up the next move.
 
 Reads return frugal JSON — **an absent numeric field means 0; an absent string
 means none/empty** (stated once so the per-turn payloads stay small).
+
+`GET /high_command?side=red[&history=20]` → `enabled`, `active` (whether requests
+are being given to you), `turn`; `requests[]` {`objective`, `kind`, `base`, `asked`,
+`done_when`, `tier`, `difficulty`, `importance`, `turns_left`, `why`, `prize`
+{`line`, `ticket`}?, `target_id`?, `pos` [lat, lng]?}; `tickets[]` {`index`, `line`,
+`earned_by`, `earned_on`, `state` (READY / NOT NOW / n PICKS), `steps` [questions]};
+`effects[]` {`label`, `earned_by`, `turns_left`}; `loans[]` {`squadron`, `squadron_id`,
+`aircraft`, `count`, `base`, `turns_left`}; `history[]` {`turn`, `outcome`, `name`,
+`line`}, the latest `history` entries.
+
+`POST /high_command/ticket_choices` → `{ticket, done: false, step, question, choices
+[{key, label, detail}], blocked}` or `{ticket, done: true, picked, gives}`.
+`POST /high_command/spend` → `{ok, detail}` with what it gave, or `{ok: false, error}`.
 
 `GET /turn_context?side=red` →
 - `side`; `situation` {`turn`, `date`, `time_of_day`, `weather`, `campaign_state`?
