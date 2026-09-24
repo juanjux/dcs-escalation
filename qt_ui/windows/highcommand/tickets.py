@@ -320,6 +320,8 @@ class SpendPane(QWidget):
         self.picked: list[Choice] = []
         self.result: Optional[str] = None
         self.refusal: Optional[str] = None
+        #: The enemy's tickets are shown and not spent: GeneraLLM spends them.
+        self.read_only = False
 
         column = QVBoxLayout()
         column.setContentsMargins(16, 14, 16, 14)
@@ -402,6 +404,19 @@ class SpendPane(QWidget):
         self.title.setText(ticket.title if ticket else "")
         self.setVisible(ticket is not None)
         if ticket is None:
+            return
+        if self.read_only:
+            self.steps.addWidget(
+                _note(
+                    "The enemy's ticket. GeneraLLM spends it.",
+                    ink.CARD,
+                    ink.ENEMY_BAND,
+                    ink.SOFT,
+                )
+            )
+            self.preview.setText("")
+            self.cancel.setVisible(False)
+            self.go.setVisible(False)
             return
         steps = ticket.steps
         blocked = self._draw_steps(ticket, steps)
@@ -633,6 +648,10 @@ class TicketsPage(QWidget):
         self.view.selectionModel().currentChanged.connect(
             lambda current, _previous: self._select(current)
         )
+
+    def set_read_only(self, read_only: bool) -> None:
+        self.pane.read_only = read_only
+        self.pane.result = None
 
     def show_tickets(self, game: Any, tickets: Sequence[TicketView]) -> None:
         """The list as it stands. A pane showing what was just given keeps it until

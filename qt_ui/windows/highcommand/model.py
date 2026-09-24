@@ -22,9 +22,10 @@ from game.highcommand.describe import (  # noqa: F401 - the window's names for t
     ticket_state,
 )
 from game.highcommand.describe import units_standing as _units_standing
-from game.highcommand.orders import ENEMY, TIER_NAMES, Order, Ticket
+from game.highcommand.orders import TIER_NAMES, HighCommand, Order, Ticket
 from game.highcommand.prizes import PrizeKind, Step, kind_of
 from game.highcommand.wording import counted, money
+from game.theater.player import Player
 from game.theater.theatergroundobject import MotorpoolGroundObject
 
 if TYPE_CHECKING:
@@ -75,6 +76,8 @@ class OrderView:
     #: reason made of more than one thing is listed by its parts.
     worth: tuple[tuple[str, str], ...]
     position: Optional[Point]
+    #: Whose objective it is: RED for the player's requests, BLUE for the enemy's.
+    owner: str = "RED"
 
     @property
     def last_turn(self) -> bool:
@@ -93,8 +96,13 @@ class OrderView:
         return self.importance == COMICAL_IMPORTANCE
 
 
-def headline(game: Game) -> Headline:
-    command = game.high_command
+def command_for(game: Game, side: Player) -> HighCommand:
+    """The High Command of this side: the player's, or GeneraLLM's."""
+    return game.high_command if side.is_blue else game.opfor_high_command
+
+
+def headline(game: Game, side: Player = Player.BLUE) -> Headline:
+    command = command_for(game, side)
     left = [order.turns_left(game.turn) for order in command.orders]
     return Headline(
         orders=len(command.orders),
@@ -126,26 +134,35 @@ def tier_words(tier: int, count: int) -> str:
     return f"tier {tier + 1} of {count}"
 
 
-def order_views(game: Game) -> list[OrderView]:
+def order_views(game: Game, side: Player = Player.BLUE) -> list[OrderView]:
     """The open orders, highest tier first, as the order list keeps them."""
-    orders = list(game.high_command.orders)
+    orders = list(command_for(game, side).orders)
     if not orders:
         return []
-    by_name = {objective.name: objective for objective in _objectives(game)}
+    by_name = {objective.name: objective for objective in _objectives(game, side)}
     count = game.settings.high_command_orders
-    return [_view(game, order, by_name.get(order.objective), count) for order in orders]
+    owner = side.opponent.value.upper()
+    return [
+        _view(game, order, by_name.get(order.objective), count, owner)
+        for order in orders
+    ]
 
 
-def _objectives(game: Game) -> Sequence[Objective]:
-    """The enemy's objectives as they stand now, for what makes each hard and what
-    it is worth. An order keeps the figures it was given with; these are current."""
+def _objectives(game: Game, side: Player = Player.BLUE) -> Sequence[Objective]:
+    """The other side's objectives as they stand now, for what makes each hard and
+    what it is worth. An order keeps the figures it was given with; these are current.
+    """
     from game.highcommand.objectives import enemy_objectives
 
-    return enemy_objectives(game)
+    return enemy_objectives(game, side)
 
 
 def _view(
-    game: Game, order: Order, objective: Optional[Objective], count: int
+    game: Game,
+    order: Order,
+    objective: Optional[Objective],
+    count: int,
+    owner: str = "RED",
 ) -> OrderView:
     tgos = [tgo for tgo in game.theater.ground_objects if tgo.name == order.objective]
     motorpool = any(isinstance(tgo, MotorpoolGroundObject) for tgo in tgos)
@@ -181,6 +198,7 @@ def _view(
         hazards=objective.hazards if objective is not None else (),
         worth=_worth(objective) if objective is not None else (),
         position=position,
+        owner=owner,
     )
 
 
@@ -191,10 +209,6 @@ def _worth(objective: Objective) -> tuple[tuple[str, str], ...]:
         for what, amount in (reason.parts or ((reason.kind, reason.worth),))
         if amount > 0
     )
-
-
-def enemy_side() -> str:
-    return "RED" if ENEMY.is_red else "BLUE"
 
 
 # --------------------------------------------------------------------- tickets
@@ -221,7 +235,7 @@ class TicketView:
         return kind.steps if kind is not None else ()
 
 
-def ticket_views(game: Game) -> list[TicketView]:
+def ticket_views(game: Game, side: Player = Player.BLUE) -> list[TicketView]:
     return [
         TicketView(
             ticket=ticket,
@@ -230,7 +244,7 @@ def ticket_views(game: Game) -> list[TicketView]:
             earned=f"earned by {ticket.earned_by} · turn {ticket.earned_on}",
             state=ticket_state(game, ticket),
         )
-        for ticket in game.high_command.tickets
+        for ticket in command_for(game, side).tickets
     ]
 
 
@@ -249,7 +263,7 @@ class EffectView:
         return self.turns_left <= 1
 
 
-def effect_views(game: Game) -> list[EffectView]:
+def effect_views(game: Game, side: Player = Player.BLUE) -> list[EffectView]:
     """The effects running, the soonest to end first."""
     views = [
         EffectView(
@@ -258,7 +272,7 @@ def effect_views(game: Game) -> list[EffectView]:
             until=effect.until,
             turns_left=effect.turns_left(game.turn),
         )
-        for effect in game.high_command.effects
+        for effect in command_for(game, side).effects
     ]
     return sorted(views, key=lambda view: (view.until, view.label))
 
@@ -283,10 +297,10 @@ class LoanView:
         return self.turns_left <= 1
 
 
-def loan_views(game: Game) -> list[LoanView]:
+def loan_views(game: Game, side: Player = Player.BLUE) -> list[LoanView]:
     """The squadrons on loan, the soonest to go back first."""
     views = []
-    for loan in game.high_command.loans:
+    for loan in command_for(game, side).loans:
         squadron = loan.squadron
         aircraft = squadron.aircraft
         views.append(
