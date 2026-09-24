@@ -94,7 +94,7 @@ def _game(
 @pytest.fixture
 def board(monkeypatch: pytest.MonkeyPatch) -> list[Objective]:
     standing = list(BOARD)
-    monkeypatch.setattr(listing, "enemy_objectives", lambda game: list(standing))
+    monkeypatch.setattr(listing, "enemy_objectives", lambda game, *_: list(standing))
     return standing
 
 
@@ -452,3 +452,47 @@ def test_a_save_written_before_the_effects_has_none() -> None:
     del command.__dict__["effects"]
 
     assert pickle.loads(pickle.dumps(command)).effects == []
+
+
+def test_the_enemy_s_high_command_asks_for_our_objectives(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sides: list[Player] = []
+
+    def objectives(game: Any, side: Player) -> list[Objective]:
+        sides.append(side)
+        return list(BOARD)
+
+    monkeypatch.setattr(listing, "enemy_objectives", objectives)
+
+    HighCommand(side=Player.RED).refresh(_game(10), random.Random(3))
+
+    assert sides == [Player.RED]
+
+
+def test_the_enemy_taking_our_base_achieves_its_request(
+    board: list[Objective],
+) -> None:
+    command = HighCommand([_base_order(Task.CAPTURE)], side=Player.RED)
+
+    closed = command.refresh(
+        _game(12, bases=(_field(captured=Player.RED),)), random.Random(3)
+    )
+
+    assert [c.outcome for c in closed] == [Outcome.ACHIEVED]
+
+
+def test_the_enemy_s_aircraft_request_counts_our_losses() -> None:
+    from game.highcommand.orders import _achieved_by
+
+    order = _base_order(Task.AIRCRAFT)
+    ours = SimpleNamespace(
+        flight=SimpleNamespace(departure=SimpleNamespace(name="Kutaisi"))
+    )
+    debriefing: Any = SimpleNamespace(
+        air_losses=SimpleNamespace(player=[ours], enemy=[]),
+        died_on_the_ground=lambda loss: True,
+    )
+
+    assert _achieved_by(order, _game(12), debriefing, Player.RED)
+    assert not _achieved_by(order, _game(12), debriefing, Player.BLUE)

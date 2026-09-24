@@ -464,6 +464,8 @@ class MissionResultsProcessor:
             return
         try:
             self.game.high_command.note_results(self.game, debriefing)
+            if self.game.opfor_high_command_active:
+                self.game.opfor_high_command.note_results(self.game, debriefing)
         except Exception:
             logging.exception("Could not check the High Command's orders")
 

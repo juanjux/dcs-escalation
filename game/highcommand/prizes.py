@@ -39,9 +39,6 @@ if TYPE_CHECKING:
 MIN_SCORE = 2
 MAX_SCORE = 10
 
-#: Who the prizes are for: the side the High Command gives its orders to.
-PLAYER = Player.BLUE
-
 #: The five rungs of pilot skill, as the mission editor names them.
 RUNGS = ("Cadet", "Rookie", "Trained", "Veteran", "Ace")
 
@@ -100,6 +97,8 @@ class Prize(SaveCompatible):
     line: str
     #: The numbers it was worked out to, by name, for whatever gives it.
     terms: tuple[tuple[str, Any], ...] = ()
+    #: The side it was drawn for, and is given to.
+    side: Player = Player.BLUE
 
     def term(self, name: str) -> Any:
         return dict(self.terms)[name]
@@ -116,6 +115,8 @@ class Context:
     rng: random.Random
     #: What the player's side can field, by task; None when it cannot field anything.
     armed_forces: Any = None
+    #: The side the prize is for.
+    side: Player = Player.BLUE
 
 
 #: A prize's line and terms at a score, or None when it cannot be given at that score.
@@ -183,7 +184,14 @@ class PrizeKind:
         if worked is None:
             return None
         line, terms = worked
-        return Prize(self.key, score, self.ticket, line, tuple(sorted(terms.items())))
+        return Prize(
+            self.key,
+            score,
+            self.ticket,
+            line,
+            tuple(sorted(terms.items())),
+            context.side,
+        )
 
 
 KINDS: list[PrizeKind] = []
@@ -228,11 +236,13 @@ class Prizes:
         faction: Faction,
         income: float,
         armed_forces: Any = None,
+        side: Player = Player.BLUE,
     ) -> None:
         self.settings = settings
         self.faction = faction
         self.income = income
         self.armed_forces = armed_forces
+        self.side = side
 
     @classmethod
     def of(cls, game: Game, player: Player) -> Prizes:
@@ -242,6 +252,7 @@ class Prizes:
             coalition.faction,
             Income(game, player).total,
             coalition.armed_forces,
+            player,
         )
 
     def draw(self, score: int, seed: object) -> Optional[Prize]:
@@ -256,7 +267,7 @@ class Prizes:
         ]
         rng.shuffle(kinds)
         context = Context(
-            self.settings, self.faction, self.income, rng, self.armed_forces
+            self.settings, self.faction, self.income, rng, self.armed_forces, self.side
         )
         for kind in kinds:
             prize = kind.prize(score, context)
@@ -574,12 +585,12 @@ def _enemy_repairs(score: int, context: Context) -> Worked:
 # ---------------------------------------------------------------- giving them
 
 
-def _our_pilots(game: Game) -> list[tuple[Any, Pilot]]:
-    """Every pilot of ours still in the war, with his squadron."""
+def _our_pilots(game: Game, side: Player) -> list[tuple[Any, Pilot]]:
+    """Every pilot of the side's still in the war, with his squadron."""
     gone = (PilotStatus.Dead, PilotStatus.Deserted, PilotStatus.Discharged)
     return [
         (squadron, pilot)
-        for squadron in game.coalition_for(PLAYER).air_wing.iter_squadrons()
+        for squadron in game.coalition_for(side).air_wing.iter_squadrons()
         for pilot in squadron.current_roster
         if pilot.status not in gone
     ]
@@ -589,7 +600,7 @@ def _broken_runways(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[C
     return [
         Choice(cp.name, cp.name, str(cp.runway_status))
         for cp in game.theater.controlpoints
-        if cp.captured == PLAYER
+        if cp.captured == prize.side
         and isinstance(cp, Airfield)
         and cp.runway_status.damaged
     ]
@@ -603,22 +614,22 @@ def _wounded_pilots(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[C
             f"{squadron.name}, {squadron.aircraft}: "
             f"{_turns(pilot.wounded_turns)} in hospital",
         )
-        for squadron, pilot in _our_pilots(game)
+        for squadron, pilot in _our_pilots(game, prize.side)
         if pilot.status is PilotStatus.Wounded
     ]
 
 
 @_gives("cash")
 def _give_cash(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
-    amount = Income(game, PLAYER).total * prize.term("income_share")
-    game.coalition_for(PLAYER).adjust_budget(amount)
+    amount = Income(game, prize.side).total * prize.term("income_share")
+    game.coalition_for(prize.side).adjust_budget(amount)
     return f"{money(amount)} added to our budget."
 
 
 @_gives("morale")
 def _give_morale(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
     points = prize.term("points")
-    pilots = _our_pilots(game)
+    pilots = _our_pilots(game, prize.side)
     for _, pilot in pilots:
         pilot.morale = clamp(pilot.morale + points)
     return f"+{points} morale for our {counted(len(pilots), 'pilot')}."
@@ -627,7 +638,9 @@ def _give_morale(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
 @_gives("hospital")
 def _give_hospital(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
     turns = prize.term("turns")
-    wounded = [p for _, p in _our_pilots(game) if p.status is PilotStatus.Wounded]
+    wounded = [
+        p for _, p in _our_pilots(game, prize.side) if p.status is PilotStatus.Wounded
+    ]
     if not wounded:
         return "None of our pilots was in hospital."
     for pilot in wounded:
@@ -652,7 +665,7 @@ def _give_runway(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
 def _give_heal(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
     squadron, pilot = next(
         (squadron, pilot)
-        for squadron, pilot in _our_pilots(game)
+        for squadron, pilot in _our_pilots(game, prize.side)
         if str(pilot.id) == picked[0]
     )
     pilot.recover()
@@ -669,7 +682,7 @@ def _air_defence_sites(
             tgo
             for tgo in game.theater.ground_objects
             if isinstance(tgo, IadsGroundObject)
-            and tgo.control_point.captured == PLAYER
+            and tgo.control_point.captured == prize.side
         ),
         key=lambda tgo: tgo.name,
     )
@@ -698,7 +711,7 @@ def _air_defence_types(
 
 def _band_groups(game: Game, prize: Prize) -> list[Any]:
     band = GroupTask[prize.term("band")]
-    forces = game.coalition_for(PLAYER).armed_forces
+    forces = game.coalition_for(prize.side).armed_forces
     return sorted(forces.groups_for_task(band), key=lambda group: group.name)
 
 
@@ -719,6 +732,7 @@ def _give_sam(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
 
 def _lend(
     game: Game,
+    side: Player,
     aircraft: Any,
     count: int,
     turns: int,
@@ -727,10 +741,10 @@ def _lend(
 ) -> str:
     from game.highcommand.loans import lend
 
-    loan = lend(game, PLAYER, aircraft, count, turns, task, front)
+    loan = lend(game, side, aircraft, count, turns, task, front)
     if loan is None:
         raise CannotGive(f"None of our bases has room for {count} {aircraft}.")
-    game.high_command.loans.append(loan)
+    game.high_command_for(side).loans.append(loan)
     squadron = loan.squadron
     return (
         f"{squadron.name} joins us at {squadron.location.name} with "
@@ -738,8 +752,8 @@ def _lend(
     )
 
 
-def _support_aircraft(game: Game, task: FlightType) -> Any:
-    faction = game.coalition_for(PLAYER).faction
+def _support_aircraft(game: Game, side: Player, task: FlightType) -> Any:
+    faction = game.coalition_for(side).faction
     fleet = faction.awacs if task is FlightType.AEWC else faction.tankers
     types = _support_types(fleet, task)
     if not types:
@@ -749,14 +763,18 @@ def _support_aircraft(game: Game, task: FlightType) -> Any:
 
 @_gives("awacs")
 def _give_awacs(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
-    aircraft = _support_aircraft(game, FlightType.AEWC)
-    return _lend(game, aircraft, 1, prize.term("turns"), FlightType.AEWC, False)
+    aircraft = _support_aircraft(game, prize.side, FlightType.AEWC)
+    return _lend(
+        game, prize.side, aircraft, 1, prize.term("turns"), FlightType.AEWC, False
+    )
 
 
 @_gives("tanker")
 def _give_tanker(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
-    aircraft = _support_aircraft(game, FlightType.REFUELING)
-    return _lend(game, aircraft, 1, prize.term("turns"), FlightType.REFUELING, False)
+    aircraft = _support_aircraft(game, prize.side, FlightType.REFUELING)
+    return _lend(
+        game, prize.side, aircraft, 1, prize.term("turns"), FlightType.REFUELING, False
+    )
 
 
 @_gives("squadron")
@@ -765,7 +783,7 @@ def _give_squadron(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
     aircraft = next(
         (
             a
-            for a in game.coalition_for(PLAYER).faction.aircraft
+            for a in game.coalition_for(prize.side).faction.aircraft
             if a.display_name == wanted
         ),
         None,
@@ -777,5 +795,11 @@ def _give_squadron(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
         FlightType.BARCAP,
     )
     return _lend(
-        game, aircraft, prize.term("aircraft"), prize.term("turns"), task, True
+        game,
+        prize.side,
+        aircraft,
+        prize.term("aircraft"),
+        prize.term("turns"),
+        task,
+        True,
     )
