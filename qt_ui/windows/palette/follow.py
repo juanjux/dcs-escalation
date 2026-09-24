@@ -54,11 +54,11 @@ def _follow(window: Any, target: Follow) -> None:
     if kind == BASE:
         cp = _control_point(game, key)
         if cp is not None:
-            _look_at(cp.position, BASE_ZOOM)
+            _look_at(cp.position)
             window.open_control_point_info_dialog(cp)
     elif kind == OBJECTIVE:
         tgo = game.db.tgos.get(UUID(key))
-        _look_at(tgo.position, OBJECTIVE_ZOOM)
+        _look_at(tgo.position)
         window.open_tgo_info_dialog(tgo)
     elif kind == FLIGHT:
         flight = game.db.flights.get(UUID(key))
@@ -71,15 +71,9 @@ def _follow(window: Any, target: Follow) -> None:
         _open_pilot(window, *_pilot_and_squadron(game, key))
 
 
-#: How close to look at what was chosen. A site is a couple of hundred metres across
-#: and has to be zoomed to be found at all; an airbase is kilometres of it and wants
-#: to be seen whole.
-OBJECTIVE_ZOOM = 16
-BASE_ZOOM = 14
-
-
-def _look_at(position: Any, zoom: int) -> None:
-    """Put the map on it as well as opening its dialog.
+def _look_at(position: Any) -> None:
+    """Put the map on it as well as opening its dialog, at the zoom the player left
+    it at, as the map search does.
 
     Half of what a player wants from finding a place is to see where it is, and the
     map search on the other side of the window has always done this.
@@ -87,7 +81,7 @@ def _look_at(position: Any, zoom: int) -> None:
     from game.server import EventStream
     from game.sim import GameUpdateEvents
 
-    EventStream.put_nowait(GameUpdateEvents().look_at(position.latlng(), zoom))
+    EventStream.put_nowait(GameUpdateEvents().look_at(position.latlng()))
 
 
 def _control_point(game: Any, key: str) -> Optional[Any]:
