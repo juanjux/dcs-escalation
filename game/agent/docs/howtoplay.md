@@ -1658,7 +1658,10 @@ Write bodies:
   re-close a strike corridor.
 - `POST /stances` `{side, friendly_cp_id, enemy_cp_id, stance}`
 - `POST /squadron/relocate` `{side, squadron_id, dest_cp_id}` (move a squadron to
-  another friendly base; arrives over time). **Refused while its base cannot launch** —
+  another friendly base; arrives over time). The answer says how many ferry flights it
+  planned. **Deleting the package that holds a squadron's ferries — or clearing every
+  package — cancels that relocation**: relocate again to plan new ferries (asking again
+  for the same base re-plans them). **Refused while its base cannot launch** —
   runway cratered or flight deck sunk — **and it still has aircraft**; an emptied squadron
   can always move. **When a carrier or LHA sinks**, the aircraft aboard (those no package
   had taken) go down with it; those out on a package land at the nearest friendly base
