@@ -65,7 +65,8 @@ class OrderView:
     taken_title: str
     taken_detail: str
     hazards: tuple[str, ...]
-    #: The objective's worth by reason, the largest first, as (reason, "$393M").
+    #: The objective's worth by reason, the largest first, as (reason, "$393M"); a
+    #: reason made of more than one thing is listed by its parts.
     worth: tuple[tuple[str, str], ...]
     position: Optional[Point]
 
@@ -172,16 +173,17 @@ def _view(
         taken_title=title,
         taken_detail=detail,
         hazards=objective.hazards if objective is not None else (),
-        worth=(
-            tuple(
-                (reason.kind, money(reason.worth))
-                for reason in objective.reasons
-                if reason.worth > 0
-            )
-            if objective is not None
-            else ()
-        ),
+        worth=_worth(objective) if objective is not None else (),
         position=position,
+    )
+
+
+def _worth(objective: Objective) -> tuple[tuple[str, str], ...]:
+    return tuple(
+        (what, money(amount))
+        for reason in objective.reasons
+        for what, amount in (reason.parts or ((reason.kind, reason.worth),))
+        if amount > 0
     )
 
 

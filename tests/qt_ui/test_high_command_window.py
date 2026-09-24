@@ -125,6 +125,34 @@ def test_a_ground_object_order_carries_the_objective_s_hazards_and_worth(
     assert order.ticket and order.turns_left == 3 and not order.last_turn
 
 
+def test_a_worth_made_of_more_than_one_thing_is_listed_by_its_parts(
+    monkeypatch: Any,
+) -> None:
+    rig = SimpleNamespace(
+        name="TURKEY",
+        hazards=(),
+        reasons=(
+            Reason(
+                "income",
+                320,
+                "Earns the enemy $40M a turn.",
+                (
+                    ("income, 4 turns of $40M", 160),
+                    ("rebuild, 4 buildings at $40M", 160),
+                ),
+            ),
+        ),
+    )
+    monkeypatch.setattr(data, "_objectives", lambda game: [rig])
+
+    [order] = data.order_views(_game(_order("TURKEY", 1, TURN + 2)))
+
+    assert order.worth == (
+        ("income, 4 turns of $40M", "$160M"),
+        ("rebuild, 4 buildings at $40M", "$160M"),
+    )
+
+
 def test_a_base_order_is_named_after_the_base_and_asks_its_task(
     objectives: None,
 ) -> None:
