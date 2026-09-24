@@ -239,6 +239,8 @@ def test_show_on_map_moves_the_map(
     window.orders.detail.map_button.click()
 
     assert [events.fly_to for events in sent] == ["here"]
+    # It moves the map and leaves the zoom where the player had it.
+    assert [events.fly_to_zoom for events in sent] == [None]
 
 
 def test_with_the_high_command_off_the_window_says_so(qt_app: Any) -> None:

@@ -43,8 +43,6 @@ from qt_ui.windows.highcommand.loans import LoansPage
 from qt_ui.windows.highcommand.tickets import TicketsPage
 from qt_ui.windows.pilot.common import ACCENT, RED, chip, label
 
-#: How close the map goes on "Show on map": the site and its rings in view.
-OBJECTIVE_ZOOM = 11
 LIST_WIDTH = 420
 
 
@@ -705,12 +703,11 @@ class HighCommandWindow(QDialog):
 
     @staticmethod
     def _look_at(position: Any) -> None:
+        """Move the map there, at the zoom the player left it at."""
         from game.server import EventStream
         from game.sim import GameUpdateEvents
 
-        EventStream.put_nowait(
-            GameUpdateEvents().look_at(position.latlng(), OBJECTIVE_ZOOM)
-        )
+        EventStream.put_nowait(GameUpdateEvents().look_at(position.latlng()))
 
     def spend(self, ticket: TicketView, picked: tuple[str, ...]) -> str:
         """Spend a ticket and say what it gave; CannotGive when it cannot be."""
