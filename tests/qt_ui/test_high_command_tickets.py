@@ -135,3 +135,44 @@ def test_a_refusal_keeps_the_ticket_and_says_why(qt_app: Any) -> None:
     assert pane.result is None
     assert pane.refusal == "None of our bases has room."
     assert pane.go.text() == "Try again"
+
+
+def test_an_option_that_is_a_place_can_be_shown_on_the_map(qt_app: Any) -> None:
+    from qt_ui.windows.highcommand.tickets import ChoiceRow
+
+    here: Any = "here"
+    shown: list[Any] = []
+    picked: list[str] = []
+    row = ChoiceRow(Choice("7", "BEETLE", "GPS jammer, at Mount Pleasant", here))
+    row.show_on_map.connect(shown.append)
+    row.picked.connect(picked.append)
+
+    assert row.map_button is not None
+    row.map_button.click()
+
+    assert shown == ["here"]
+    assert picked == []
+    assert ChoiceRow(Choice("Hawk", "Hawk")).map_button is None
+
+
+def test_the_pane_passes_on_the_option_to_show(qt_app: Any, monkeypatch: Any) -> None:
+    import sys
+
+    from qt_ui.windows.highcommand.tickets import ChoiceRow
+
+    here: Any = "here"
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "SITES",
+        [Choice("7", "BEETLE", "GPS jammer, at Mount Pleasant", here)],
+    )
+    pane = _pane(lambda ticket, picked: "given")
+    shown: list[Any] = []
+    pane.show_on_map.connect(shown.append)
+    pane.show_ticket(SimpleNamespace(), _view("sam"))
+
+    [row] = pane.findChildren(ChoiceRow)
+    assert row.map_button is not None
+    row.map_button.click()
+
+    assert shown == ["here"]

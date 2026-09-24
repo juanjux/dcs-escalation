@@ -607,7 +607,7 @@ class HighCommandWindow(QDialog):
         self.headline.row.addWidget(self.side_switch)
         self.tabs = TabStrip(self.TABS)
         self.orders = OrdersPage(self.show_on_map)
-        self.tickets = TicketsPage(self.spend, self.ticket_spent, self.show_site)
+        self.tickets = TicketsPage(self.spend, self.ticket_spent, self.show_place)
         self.pages = QStackedWidget()
         self.pages.addWidget(self.orders)
         self.pages.addWidget(self.tickets)
@@ -697,9 +697,10 @@ class HighCommandWindow(QDialog):
         if order.position is not None:
             self._look_at(order.position)
 
-    def show_site(self, site: Any) -> None:
-        if site is not None:
-            self._look_at(site.position)
+    def show_place(self, position: Any) -> None:
+        """The map goes to a ticket's option, or to what a spent ticket set up."""
+        if position is not None:
+            self._look_at(position)
 
     @staticmethod
     def _look_at(position: Any) -> None:
