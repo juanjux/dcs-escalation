@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional
 
 from game.ato.flighttype import FlightType
@@ -32,6 +32,8 @@ from game.theater import Airfield, Player
 from game.theater.theatergroundobject import IadsGroundObject
 
 if TYPE_CHECKING:
+    from dcs.mapping import Point
+
     from game import Game
     from game.factions.faction import Faction
     from game.squadrons.pilot import Pilot
@@ -133,6 +135,8 @@ class Choice:
     #: What the player sees.
     label: str
     detail: str = ""
+    #: Where it is, when it is a place, for the map to be shown it.
+    position: Optional[Point] = field(default=None, compare=False)
 
 
 #: The options for a step, given the keys picked in the steps before it.
@@ -598,7 +602,7 @@ def _our_pilots(game: Game, side: Player) -> list[tuple[Any, Pilot]]:
 
 def _broken_runways(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[Choice]:
     return [
-        Choice(cp.name, cp.name, str(cp.runway_status))
+        Choice(cp.name, cp.name, str(cp.runway_status), cp.position)
         for cp in game.theater.controlpoints
         if cp.captured == prize.side
         and isinstance(cp, Airfield)
@@ -687,7 +691,12 @@ def _air_defence_sites(
         key=lambda tgo: tgo.name,
     )
     return [
-        Choice(str(tgo.id), tgo.name, f"{_standing(tgo)}, at {tgo.control_point.name}")
+        Choice(
+            str(tgo.id),
+            tgo.name,
+            f"{_standing(tgo)}, at {tgo.control_point.name}",
+            tgo.position,
+        )
         for tgo in sites
     ]
 

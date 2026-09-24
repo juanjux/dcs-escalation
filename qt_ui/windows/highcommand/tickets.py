@@ -201,9 +201,12 @@ class Disc(QWidget):
 
 
 class ChoiceRow(QWidget):
-    """One option of a step: a radio circle, its label and its detail."""
+    """One option of a step: a radio circle, its label and its detail, and a button
+    to see it on the map when it is a place."""
 
     picked = Signal(str)
+    #: Where the option is, to show on the map.
+    show_on_map = Signal(object)
 
     def __init__(self, choice: Choice) -> None:
         super().__init__()
@@ -212,6 +215,18 @@ class ChoiceRow(QWidget):
         self.setFixedHeight(CHOICE_ROW)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setToolTip(choice.detail)
+        self.map_button: Optional[QPushButton] = None
+        if choice.position is not None:
+            self.map_button = button(
+                "Show on map  ↗",
+                "normal",
+                lambda: self.show_on_map.emit(choice.position),
+            )
+            row = QHBoxLayout()
+            row.setContentsMargins(0, 0, 10, 0)
+            row.addStretch()
+            row.addWidget(self.map_button)
+            self.setLayout(row)
 
     def enterEvent(self, event: object) -> None:  # noqa: N802 - Qt naming
         self.hovered = True
@@ -239,11 +254,14 @@ class ChoiceRow(QWidget):
         end = draw(painter, 36, 23, self.choice.label, name, ink.TITLE)
         detail = font(11.5)
         left = max(110, end + 12)
+        right = self.width() - 14
+        if self.map_button is not None:
+            right = self.map_button.geometry().left() - 12
         draw(
             painter,
             left,
             23,
-            elide(detail, self.choice.detail, self.width() - left - 14),
+            elide(detail, self.choice.detail, right - left),
             detail,
             ink.MUTED,
         )
@@ -306,7 +324,8 @@ class SpendPane(QWidget):
 
     #: A ticket was spent, with the line saying what it gave.
     spent = Signal(str)
-    #: The ground object a SAM ticket was spent on, to show on the map.
+    #: A place to show on the map: an option being picked from, or the ground object
+    #: a SAM ticket was spent on.
     show_on_map = Signal(object)
     #: "Next ticket" after a spend.
     next_ticket = Signal()
@@ -353,7 +372,9 @@ class SpendPane(QWidget):
         column.addLayout(footer)
         self.setLayout(column)
         self.site: Any = None
-        self.show_site.clicked.connect(lambda: self.show_on_map.emit(self.site))
+        self.show_site.clicked.connect(
+            lambda: self.show_on_map.emit(self.site.position if self.site else None)
+        )
 
     @staticmethod
     def _orange(widget: QPushButton) -> None:
@@ -502,6 +523,7 @@ class SpendPane(QWidget):
         for choice in options:
             row = ChoiceRow(choice)
             row.picked.connect(lambda _key, chosen=choice: self._pick(chosen))
+            row.show_on_map.connect(self.show_on_map.emit)
             rows.addWidget(row)
         rows.addStretch()
         body.setLayout(rows)

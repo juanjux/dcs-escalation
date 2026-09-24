@@ -64,6 +64,7 @@ def _game(**parts: Any) -> Any:
 def _airfield(name: str, side: Player = Player.BLUE, damaged: bool = True) -> Any:
     field: Any = Airfield.__new__(Airfield)
     field.name = name
+    field.position = f"{name} position"
     field._coalition = SimpleNamespace(player=side)
     field._runway_status = RunwayStatus(damaged=damaged)
     return field
@@ -301,3 +302,18 @@ def test_prizes_are_drawn_for_the_side_asked() -> None:
     drawn = Prizes(settings, faction, 80.0, None, Player.RED).draw(5, "seed")
 
     assert drawn is not None and drawn.side is Player.RED
+
+
+def test_the_places_a_ticket_offers_can_be_shown_on_the_map() -> None:
+    home = Base("Batumi", side=Player.BLUE)
+    battery = sam("GRUMBLE", 0, [launcher("SAM SA-10 LN", 40)], base=home)
+    sam_prize = Prize("sam", 6, True, "A ticket for a SAM.", (("band", "MERAD"),))
+    runway_prize = Prize("runway", 9, True, "A ticket for a runway repair.")
+    where, _ = _steps(sam_prize)
+    (runway,) = _steps(runway_prize)
+
+    [site] = where.options(_sites_game(battery), sam_prize, ())
+    [field] = runway.options(_game(bases=[_airfield("Kutaisi")]), runway_prize, ())
+
+    assert site.position == battery.position
+    assert field.position == "Kutaisi position"
