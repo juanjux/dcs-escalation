@@ -8,9 +8,10 @@ The palette and the vocabulary (stars for a rank, a coloured dot for morale) are
 Wing's.
 """
 
+from functools import partial
 from typing import Any, Optional, Sequence
 
-from PySide6.QtCore import QRectF, Qt, QTimer
+from PySide6.QtCore import QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter
 from PySide6.QtWidgets import (
     QDialog,
@@ -155,6 +156,11 @@ def aircrew_reported(debriefing: DebriefingReport, records: list) -> list:
     return [record for record in records if getattr(record, "blue", True)]
 
 
+def _fold(rows: list[QWidget], folded: bool) -> None:
+    for row in rows:
+        row.setVisible(not folded)
+
+
 def _card() -> QWidget:
     card = QWidget()
     card.setStyleSheet(
@@ -271,25 +277,99 @@ class SummaryStrip(QWidget):
 # --- the pilots -------------------------------------------------------------
 
 
-class GroupHeader(QWidget):
-    """The name of one group of pilots, and how many are in it."""
+#: The groups that fold, folded when the window opens: gains, which can run long and
+#: would push the losses down. The dead and the wounded are always open.
+FOLDED_GROUPS = ("PROMOTIONS", "MORALE CHANGES", "EXPERIENCE")
 
-    def __init__(self, title: str, count: int) -> None:
+
+class GroupHeader(QWidget):
+    """The name of one group of pilots, and how many are in it. A group that folds
+    opens and closes on a click."""
+
+    #: Emitted with whether the group is now folded.
+    toggled = Signal(bool)
+
+    def __init__(
+        self, title: str, count: int, foldable: bool = False, folded: bool = False
+    ) -> None:
         super().__init__()
         self.title = title
         self.count = count
+        self.foldable = foldable
+        self.folded = folded
         self.setFixedHeight(GROUP_HEADER_HEIGHT)
+        if foldable:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mouseReleaseEvent(self, event: Any) -> None:  # noqa: N802 - Qt naming
+        if self.foldable and event.button() == Qt.MouseButton.LeftButton:
+            self.folded = not self.folded
+            self.update()
+            self.toggled.emit(self.folded)
 
     def paintEvent(self, event: object) -> None:
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(HEADER))
+        left = MARGIN
+        if self.foldable:
+            painter.setFont(_font(10, QFont.Weight.Bold))
+            painter.setPen(QColor(CAPTION))
+            painter.drawText(left, 16, "▸" if self.folded else "▾")
+            left += 14
         painter.setFont(_font(10, QFont.Weight.Bold))
         painter.setPen(QColor(GROUP_COLOURS.get(self.title, CAPTION)))
-        painter.drawText(MARGIN, 16, self.title)
-        after = MARGIN + painter.fontMetrics().horizontalAdvance(self.title) + 10
+        painter.drawText(left, 16, self.title)
+        after = left + painter.fontMetrics().horizontalAdvance(self.title) + 10
         painter.setFont(_font(11, mono=True))
         painter.setPen(QColor(CAPTION))
         painter.drawText(after, 16, str(self.count))
+        painter.end()
+
+
+class RequestRow(QWidget):
+    """A request achieved: the objective, what it pays, and whether that is a ticket."""
+
+    def __init__(self, request: Any) -> None:
+        super().__init__()
+        self.request = request
+        self.setFixedHeight(PILOT_ROW_HEIGHT)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    def paintEvent(self, event: object) -> None:
+        from qt_ui.windows.highcommand import palette as hc
+
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.fillRect(0, self.height() - 1, self.width(), 1, QColor(LINE))
+        painter.setFont(_font(14, QFont.Weight.DemiBold))
+        painter.setPen(QColor(TITLE))
+        painter.drawText(MARGIN, 27, self.request.objective)
+        after = MARGIN + painter.fontMetrics().horizontalAdvance(self.request.objective)
+
+        word = "TICKET" if self.request.ticket else "INSTANT"
+        ink, fill = (
+            (hc.ORANGE, hc.TICKET_FILL)
+            if self.request.ticket
+            else (hc.INSTANT, hc.INSTANT_FILL)
+        )
+        painter.setFont(_font(10, QFont.Weight.Bold))
+        width = painter.fontMetrics().horizontalAdvance(word) + 16
+        right = self.width() - MARGIN
+        chip = QRectF(right - width, 13, width, 18)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(fill))
+        painter.drawRoundedRect(chip, 4, 4)
+        painter.setPen(QColor(ink))
+        painter.drawText(chip, Qt.AlignmentFlag.AlignCenter, word)
+
+        painter.setFont(_font(12))
+        painter.setPen(QColor(DIM))
+        left = max(DETAIL_X // 2, after + 16)
+        room = int(right - width - 16 - left)
+        prize = painter.fontMetrics().elidedText(
+            self.request.prize, Qt.TextElideMode.ElideRight, max(room, 0)
+        )
+        painter.drawText(left, 27, prize)
         painter.end()
 
 
@@ -889,6 +969,7 @@ class QDebriefingWindow(QDialog):
 
         for section in (
             self._pilots_section(debriefing),
+            self._high_command_section(debriefing),
             self._losses_section(debriefing),
             self._front_line_section(debriefing),
             self._missiles_section(debriefing),
@@ -967,14 +1048,39 @@ class QDebriefingWindow(QDialog):
             if not rows:
                 continue
             drawn += len(rows)
-            column.addWidget(GroupHeader(title, len(rows)))
+            folds = title in FOLDED_GROUPS
+            header = GroupHeader(title, len(rows), foldable=folds, folded=folds)
+            column.addWidget(header)
             for row in rows:
+                row.setVisible(not folds)
                 column.addWidget(row)
+            if folds:
+                header.toggled.connect(partial(_fold, rows))
         if not drawn:
             # Everything that happened, happened to the other side, and this campaign
             # does not report their aircrew.
             return None
         return self._section("Pilots", "only groups with entries are drawn", card)
+
+    def _high_command_section(
+        self, debriefing: DebriefingReport
+    ) -> Optional[QVBoxLayout]:
+        """The High Command requests the mission achieved, and what each pays."""
+        achieved = [
+            request
+            for request in getattr(debriefing, "high_command", [])
+            if request.blue
+        ]
+        if not achieved:
+            return None
+        card = _card()
+        column = QVBoxLayout()
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(0)
+        card.setLayout(column)
+        for request in achieved:
+            column.addWidget(RequestRow(request))
+        return self._section("High Command", "requests achieved · what each pays", card)
 
     def _losses_section(self, debriefing: DebriefingReport) -> QVBoxLayout:
         """Both sides side by side: stacked, the exchange took a scroll to read."""

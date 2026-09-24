@@ -99,7 +99,7 @@ def test_an_income_building_is_worth_its_income_and_its_rebuilding(
     assert reason.worth == 30 * INCOME_TURNS + 3 * 40
     assert reason.line == "Earns the enemy $30M a turn, 10% of their income."
     assert reason.parts == (
-        ("income, 4 turns of $30M", 30 * INCOME_TURNS),
+        ("lost income, 4 turns of $30M", 30 * INCOME_TURNS),
         ("rebuild, 3 buildings at $40M", 3 * 40),
     )
 
@@ -248,3 +248,14 @@ def test_what_a_substation_powers_goes_dark_without_it() -> None:
     ]
     # Losing the battery switches nothing else off.
     assert shared["BADGER"] == []
+
+
+def test_income_with_nothing_to_rebuild_still_says_it_is_lost_income(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(BuildingGroundObject, "repair_cost", lambda self: 0.0)
+    rig = building("RIG", "oil", 0, standing=2)
+
+    (reason,) = Worth(campaign(enemy_income=300.0)).own([rig])
+
+    assert reason.parts == (("lost income, 4 turns of $20M", 20 * INCOME_TURNS),)
