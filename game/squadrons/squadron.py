@@ -1140,9 +1140,10 @@ class Squadron:
             # The mission leaves out a flight from a damaged runway, ferries included,
             # and the squadron used to arrive at the end of the turn all the same. An
             # empty squadron has nothing to take off, so it can still move.
+            why = "it has sunk" if self.location.sunk else "its runway is damaged"
             raise RuntimeError(
-                f"{self} cannot relocate from {self.location}: its runway is damaged "
-                "and nothing can take off."
+                f"{self} cannot relocate from {self.location}: {why} and nothing can "
+                "take off."
             )
 
         parking_type = ParkingType().from_squadron(self)

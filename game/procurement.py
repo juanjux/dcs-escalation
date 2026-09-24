@@ -623,6 +623,8 @@ class ProcurementAi:
         ):
             parking_type = ParkingType().from_squadron(squadron)
 
+            if squadron.location.sunk:
+                continue
             if not squadron.can_provide_pilots(request.number):
                 continue
             if squadron.location.unclaimed_parking(parking_type) < request.number:

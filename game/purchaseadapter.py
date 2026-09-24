@@ -113,6 +113,8 @@ class AircraftPurchaseAdapter(PurchaseAdapter[Squadron]):
         return item.owned_aircraft
 
     def can_buy(self, item: Squadron) -> bool:
+        if self.control_point.sunk:
+            return False
         parking_type = ParkingType().from_squadron(item)
         unclaimed_parking = self.control_point.unclaimed_parking(parking_type)
         return (
@@ -122,6 +124,8 @@ class AircraftPurchaseAdapter(PurchaseAdapter[Squadron]):
         )
 
     def why_cannot_buy(self, item: Squadron) -> str:
+        if self.control_point.sunk:
+            return f"{self.control_point} has sunk"
         price = self.price_of(item)
         if self.coalition.budget < price:
             return f"costs {price}M each, budget is {self.coalition.budget:.1f}M"

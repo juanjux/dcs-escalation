@@ -432,8 +432,11 @@ class MissionResultsProcessor:
                 self.commit_cargo_ship_losses(debriefing)
             with logged_duration("commit_airlift_losses"):
                 self.commit_airlift_losses(debriefing)
+            afloat = [cp for cp in self.game.theater.controlpoints if not cp.sunk]
             with logged_duration("commit_ground_losses"):
                 self.commit_ground_losses(debriefing, events)
+            with logged_duration("commit_sunk_decks"):
+                self.commit_sunk_decks(afloat)
             with logged_duration("commit_damaged_runways"):
                 self.commit_damaged_runways(debriefing)
             with logged_duration("commit_cruise_missiles"):
@@ -513,6 +516,35 @@ class MissionResultsProcessor:
             logging.info(f"{aircraft} destroyed from {squadron}")
             squadron.owned_aircraft -= 1
             squadron.destroyed_aircraft += 1
+
+    def commit_sunk_decks(self, afloat: list[ControlPoint]) -> None:
+        """The aircraft aboard a carrier or LHA that sank this mission went down with
+        it, and an order for more cannot be delivered to it. Its squadrons keep their
+        pilots, who can relocate with nothing left to fly out.
+
+        Only what sank this mission: a deck DCS cannot launch from was never afloat,
+        and its squadrons are not lost to it again every turn.
+        """
+        sunk = [cp for cp in afloat if cp.sunk]
+        for coalition in (self.game.blue, self.game.red):
+            for squadron in coalition.air_wing.iter_squadrons():
+                if squadron.destination in sunk:
+                    # Nowhere to land: it stays where it is.
+                    squadron.destination = None
+                if squadron.location not in sunk:
+                    continue
+                squadron.refund_orders()
+                lost = squadron.owned_aircraft
+                if not lost:
+                    continue
+                squadron.owned_aircraft = 0
+                squadron.destroyed_aircraft += lost
+                logging.info(f"{lost} aircraft of {squadron} sank with its ship")
+                self.game.message(
+                    f"{squadron.location} sunk",
+                    f"{lost} {squadron.aircraft} of {squadron} went down with it. Its"
+                    " pilots survived.",
+                )
 
     def commit_air_assault_remain(self, debriefing: Debriefing) -> None:
         """Resolve helo air-assault flights flagged to remain at the objective.

@@ -145,7 +145,7 @@
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
 
 ## Fixes
-* **[FIX]** A squadron with aircraft could relocate off a damaged runway: the mission left its ferry flights out and it arrived at its new base anyway. The move is refused now, and an order like that in a save is cancelled when it loads.
+* **[FIX]** A squadron with aircraft could relocate off a damaged runway or a sunk ship: the mission left its ferry flights out and it arrived at its new base anyway. The move is refused now (an emptied squadron can still go), and an order like that in a save is cancelled when it loads. A carrier or LHA that sinks takes the aircraft aboard down with it; its squadrons keep their pilots.
 * **[FIX]** Buying or selling at a site the enemy had targeted replanned both sides, emptying the player's ATO, and left the old threat ring behind for the combat simulation. Only the enemy is replanned now.
 * **[FIX]** The leg from the join to the ingress is flown at the package's speed, like the rest of the formation route. It was priced per flight, so an escort on a faster airframe arrived first. (adapted from the RetLab fork)
 * **[FIX]** Live weather could brief a wind DCS will not fly. A real jet stream beats the sim's 97-knot ceiling, and only the generated wind was held to it. (found in the RetLab fork)

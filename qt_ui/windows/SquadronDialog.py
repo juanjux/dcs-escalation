@@ -734,11 +734,14 @@ class SquadronDestinationComboBox(QComboBox):
         if squadron.owned_aircraft and not squadron.location.runway_is_operational():
             # Nothing takes off from a damaged runway, ferries included. An empty
             # squadron has nothing to fly out, so it can still move.
+            why = (
+                f"{squadron.location} has sunk"
+                if squadron.location.sunk
+                else f"the runway at {squadron.location} is damaged"
+            )
             for idx in range(1, self.count()):
                 self.setItemText(
-                    idx,
-                    f"Transfer to {self.itemData(idx)} not possible "
-                    f"(the runway at {squadron.location} is damaged)",
+                    idx, f"Transfer to {self.itemData(idx)} not possible ({why})"
                 )
                 self.model().item(idx).setEnabled(False)
 

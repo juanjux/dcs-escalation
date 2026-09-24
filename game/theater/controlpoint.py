@@ -820,6 +820,11 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         """
         ...
 
+    @property
+    def sunk(self) -> bool:
+        """A carrier or LHA whose flight deck has gone down. Only a ship sinks."""
+        return False
+
     # TODO: Should be naval specific.
     def get_carrier_group_name(self) -> Optional[str]:
         """
@@ -1652,6 +1657,16 @@ class NavalControlPoint(
     @property
     def runway_is_destroyable(self) -> bool:
         return False
+
+    @property
+    def sunk(self) -> bool:
+        try:
+            return not self.runway_is_operational()
+        except RuntimeError:
+            # No carrier group to ask: read while committing a mission's results,
+            # where a raise would lose the whole mission.
+            logging.exception(f"Could not tell whether {self} has sunk")
+            return False
 
     def runway_is_operational(self) -> bool:
         # Necessary because it's possible for the carrier itself to have sunk
