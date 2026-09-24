@@ -411,7 +411,7 @@ class Worth:
         return Reason(
             "threat",
             worth,
-            f"Its {system_name(tgos[0])} launchers reach {target}.",
+            f"Its {site_name(tgos[0])} launchers reach {target}.",
         )
 
     def _threat_to_sites(self, tgos: Sequence[TheaterGroundObject]) -> Optional[Reason]:
@@ -431,7 +431,7 @@ class Worth:
         return Reason(
             "threat",
             THREAT_SHARE * rebuild_worth([best]),
-            f"Its {system_name(tgos[0])} launchers can hit "
+            f"Its {site_name(tgos[0])} launchers can hit "
             f"{counted(len(targets), 'of our sites')}, {best.name} among them.",
         )
 
