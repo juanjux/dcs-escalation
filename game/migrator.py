@@ -59,6 +59,7 @@ class Migrator:
         self._ensure_motorpool_tgos()
         self._register_new_tgos()
         self._wire_iads_sites_that_arrived_late()
+        self._unwire_iads_ships()
         self._reload_terrain()
         self._update_theater()
         self._update_campaign_name()
@@ -514,6 +515,13 @@ class Migrator:
         enrolled = network.enrol_sites_that_arrived_late()
         if enrolled:
             logging.info("IADS: wired %s", ", ".join(sorted(enrolled)))
+
+    def _unwire_iads_ships(self) -> None:
+        """Ships were wired to the power stations and comms towers in range of where
+        they started, and kept those links wherever they sailed."""
+        unwired = self.game.theater.iads_network.unwire_ships()
+        if unwired:
+            logging.info("IADS: ships off the grid: %s", ", ".join(sorted(unwired)))
 
     def _relabel_formation_waypoints(self) -> None:
         """Rename join and split on flights that are their whole package.

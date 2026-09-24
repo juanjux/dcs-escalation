@@ -557,13 +557,48 @@ class IadsNetwork:
             return
         reach = iads_role.connection_range(_settings_of(tgo)).meters
         for node in self.nodes:
+            if self._is_ship(node):
+                continue
             dist = node.group.ground_object.position.distance_to_point(tgo.position)
             in_range = dist < reach
             if in_range and self._is_friendly(node, tgo):
                 node.add_connection_for_tgo(tgo)
                 events.update_iads_node(node)
 
+    @staticmethod
+    def _is_ship(node: IadsNetworkNode) -> bool:
+        """A ship: it makes its own power and carries its own radios.
+
+        Wired by range, a ship was tied to whatever plant stood on the coast where it
+        started, and stayed tied to it wherever it sailed: bombing a power station
+        ashore switched off a carrier 96 nm out.
+        """
+        return isinstance(node.group.ground_object, NavalGroundObject)
+
+    def unwire_ships(self) -> list[str]:
+        """Take the ships the campaign did not wire off the grid they were given by
+        range. What a campaign's config wires is left as it wrote it."""
+        unwired = []
+        for node in self.nodes:
+            tgo = node.group.ground_object
+            if not self._is_ship(node) or tgo.original_name in self.iads_config:
+                continue
+            grid = [
+                cid
+                for cid, group in node.connections.items()
+                if group.iads_role.is_comms_or_power
+            ]
+            for cid in grid:
+                del node.connections[cid]
+            if grid:
+                unwired.append(tgo.name)
+        if unwired:
+            self.invalidate_state_map()
+        return unwired
+
     def _make_advanced_connections_by_range(self, node: IadsNetworkNode) -> None:
+        if self._is_ship(node):
+            return
         tgo = node.group.ground_object
         # Find nearby Power or Connection
         for nearby_go in self.ground_objects.values():
