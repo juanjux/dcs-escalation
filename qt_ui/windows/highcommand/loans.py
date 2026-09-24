@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Optional, Sequence
 
 from PySide6.QtCore import QRect, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter
@@ -20,46 +20,67 @@ BANNER = QSize(91, 24)
 TEXT_LEFT = 120
 
 
-class LoanRow(QWidget):
-    """The aircraft's banner, the squadron, and the turns until it goes back."""
+class TimedRow(QWidget):
+    """Something that lasts some turns: what it is, a line under it, and the turns
+    until it ends; with the aircraft's banner when it is a squadron."""
 
-    def __init__(self, loan: LoanView) -> None:
+    def __init__(
+        self,
+        title: str,
+        line: str,
+        turns_left: int,
+        until: int,
+        dcs_id: Optional[str] = None,
+    ) -> None:
         super().__init__()
-        self.loan = loan
+        self.title = title
+        self.line = line
+        self.turns_left = turns_left
+        self.until = until
+        self.dcs_id = dcs_id
         self.setFixedHeight(LOAN_ROW)
 
+    @property
+    def last_turn(self) -> bool:
+        return self.turns_left <= 1
+
     def paintEvent(self, event: object) -> None:  # noqa: N802 - Qt naming
-        loan = self.loan
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = self.rect()
         painter.fillRect(
-            rect, QColor(ink.LAST_TURN_FILL if loan.last_turn else ink.CARD)
+            rect, QColor(ink.LAST_TURN_FILL if self.last_turn else ink.CARD)
         )
-        if loan.last_turn:
+        if self.last_turn:
             painter.fillRect(QRect(0, 0, 3, rect.height()), QColor(ink.ORANGE))
         painter.setPen(QColor(ink.DIVIDER))
         painter.drawLine(0, rect.height() - 1, rect.width(), rect.height() - 1)
 
-        where = QRect(
-            14, (rect.height() - BANNER.height()) // 2, BANNER.width(), BANNER.height()
-        )
-        pixmap = AIRCRAFT_ICONS.get(loan.dcs_id)
-        if pixmap is not None:
-            painter.drawPixmap(
-                where,
-                pixmap.scaled(
-                    BANNER,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
-                ),
+        text_left = 14
+        if self.dcs_id is not None:
+            text_left = TEXT_LEFT
+            where = QRect(
+                14,
+                (rect.height() - BANNER.height()) // 2,
+                BANNER.width(),
+                BANNER.height(),
             )
-        else:
-            painter.setPen(QColor(ink.DIVIDER))
-            painter.drawRect(where)
+            pixmap = AIRCRAFT_ICONS.get(self.dcs_id)
+            if pixmap is not None:
+                painter.drawPixmap(
+                    where,
+                    pixmap.scaled(
+                        BANNER,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation,
+                    ),
+                )
+            else:
+                painter.setPen(QColor(ink.DIVIDER))
+                painter.drawRect(where)
 
         right = rect.width() - 14
-        number = str(loan.turns_left)
+        number = str(self.turns_left)
         face = mono_font(18, QFont.Weight.DemiBold)
         width = QFontMetrics(face).horizontalAdvance(number)
         draw(
@@ -68,26 +89,33 @@ class LoanRow(QWidget):
             28,
             number,
             face,
-            ink.ORANGE if loan.last_turn else ink.BODY,
+            ink.ORANGE if self.last_turn else ink.BODY,
         )
         note = (
-            f"last turn · turn {loan.until}"
-            if loan.last_turn
-            else f"turns · turn {loan.until}"
+            f"last turn · turn {self.until}"
+            if self.last_turn
+            else f"turns · turn {self.until}"
         )
         small = font(10.5)
         note_width = QFontMetrics(small).horizontalAdvance(note)
         draw(painter, right - note_width, 48, note, small, ink.MUTED)
 
-        room = right - max(width, note_width) - 16 - TEXT_LEFT
+        room = right - max(width, note_width) - 16 - text_left
         title = font(13, QFont.Weight.DemiBold)
-        draw(
-            painter, TEXT_LEFT, 26, elide(title, loan.aircraft, room), title, ink.TITLE
-        )
-        line = f"{loan.squadron} · {loan.count} aircraft · {loan.base}"
+        draw(painter, text_left, 26, elide(title, self.title, room), title, ink.TITLE)
         body = font(11.5)
-        draw(painter, TEXT_LEFT, 46, elide(body, line, room), body, ink.MUTED)
+        draw(painter, text_left, 46, elide(body, self.line, room), body, ink.MUTED)
         painter.end()
+
+
+def loan_row(loan: LoanView) -> TimedRow:
+    return TimedRow(
+        loan.aircraft,
+        f"{loan.squadron} · {loan.count} aircraft · {loan.base}",
+        loan.turns_left,
+        loan.until,
+        loan.dcs_id,
+    )
 
 
 class LoansPage(QWidget):
@@ -147,6 +175,6 @@ class LoansPage(QWidget):
                 widget.setParent(None)
                 widget.deleteLater()
         for loan in loans:
-            self.rows.addWidget(LoanRow(loan))
+            self.rows.addWidget(loan_row(loan))
         self.list.setVisible(bool(loans))
         self.empty.setVisible(not loans)

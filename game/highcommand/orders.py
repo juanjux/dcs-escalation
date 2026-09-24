@@ -129,6 +129,24 @@ class HistoryEntry(SaveCompatible):
 
 
 @dataclass
+class Effect(SaveCompatible):
+    """A prize that lasts some turns: a discount, an experience bonus, a cut in the
+    enemy's income."""
+
+    #: The prize kind it came from.
+    kind: str
+    #: What it does, without how long for: "42% off SAM batteries".
+    label: str
+    #: The objective that earned it.
+    earned_by: str
+    #: The first turn it no longer applies.
+    until: int
+
+    def turns_left(self, turn: int) -> int:
+        return self.until - turn
+
+
+@dataclass
 class HighCommand(SaveCompatible):
     """The orders open now, and the tickets earned and not yet spent."""
 
@@ -138,6 +156,8 @@ class HighCommand(SaveCompatible):
     loans: list[Loan] = field(default_factory=list)
     #: What closed and what was given, oldest first.
     history: list[HistoryEntry] = field(default_factory=list)
+    #: The prizes that last some turns and have not run out.
+    effects: list[Effect] = field(default_factory=list)
 
     def note(self, turn: int, outcome: str, name: str, line: str) -> None:
         self.history.append(HistoryEntry(turn, outcome, name, line))
@@ -227,6 +247,13 @@ class HighCommand(SaveCompatible):
                 given = prize.line
             self.note(game.turn, Outcome.ACHIEVED.value, name, given)
         return lines
+
+    def end_effects(self, game: Game) -> list[str]:
+        """Drop the effects that have run out, and say which."""
+        over = [effect for effect in self.effects if game.turn >= effect.until]
+        for effect in over:
+            self.effects.remove(effect)
+        return [f"{effect.label} is over." for effect in over]
 
     def return_loans(self, game: Game) -> list[str]:
         """Take back the squadrons whose loan has run out, and say which."""
