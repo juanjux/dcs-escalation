@@ -158,6 +158,8 @@ class HighCommand(SaveCompatible):
     history: list[HistoryEntry] = field(default_factory=list)
     #: The prizes that last some turns and have not run out.
     effects: list[Effect] = field(default_factory=list)
+    #: The side whose High Command this is. Its requests are against the other.
+    side: Player = Player.BLUE
 
     def note(self, turn: int, outcome: str, name: str, line: str) -> None:
         self.history.append(HistoryEntry(turn, outcome, name, line))
@@ -169,11 +171,11 @@ class HighCommand(SaveCompatible):
         from game.highcommand.objectives import enemy_objectives
 
         rng = rng or random.Random()
-        objectives = enemy_objectives(game)
+        objectives = enemy_objectives(game, self.side)
         standing = {o.name for o in objectives}
         closed: list[Closed] = []
         for order in list(self.orders):
-            outcome = _outcome(order, game, standing)
+            outcome = _outcome(order, game, standing, self.side.opponent)
             if outcome is not None:
                 self.orders.remove(order)
                 closed.append(Closed(order, outcome))
@@ -275,7 +277,9 @@ class HighCommand(SaveCompatible):
         """Mark the orders a mission achieved that its aftermath cannot show. To be
         called before its results are committed."""
         for order in self.orders:
-            if order.achieved_on is None and _achieved_by(order, game, debriefing):
+            if order.achieved_on is None and _achieved_by(
+                order, game, debriefing, self.side
+            ):
                 order.achieved_on = game.turn
 
 
@@ -313,7 +317,9 @@ def _order(objective: Objective, tier: int, turn: int, lifetime: int) -> Order:
     )
 
 
-def _outcome(order: Order, game: Game, standing: set[str]) -> Optional[Outcome]:
+def _outcome(
+    order: Order, game: Game, standing: set[str], enemy: Player = ENEMY
+) -> Optional[Outcome]:
     """Why the order closes this turn, if it does. What was achieved on its last turn
     counts."""
     if order.achieved_on is not None:
@@ -322,7 +328,7 @@ def _outcome(order: Order, game: Game, standing: set[str]) -> Optional[Outcome]:
         tgos = [
             tgo for tgo in game.theater.ground_objects if tgo.name == order.objective
         ]
-        if any(tgo.control_point.captured != ENEMY for tgo in tgos):
+        if any(tgo.control_point.captured != enemy for tgo in tgos):
             return Outcome.GONE
         # A motorpool's vehicles are drawn afresh for every mission: an empty one has
         # not been destroyed. Its losses come in through note_results.
@@ -338,7 +344,7 @@ def _outcome(order: Order, game: Game, standing: set[str]) -> Optional[Outcome]:
         )
         if base is None:
             return Outcome.GONE
-        if base.captured != ENEMY:
+        if base.captured != enemy:
             return Outcome.ACHIEVED if order.task is Task.CAPTURE else Outcome.GONE
         if order.task is Task.RUNWAY and not base.runway_is_operational():
             return Outcome.ACHIEVED
@@ -349,14 +355,19 @@ def _outcome(order: Order, game: Game, standing: set[str]) -> Optional[Outcome]:
     return None
 
 
-def _achieved_by(order: Order, game: Game, debriefing: Debriefing) -> bool:
+def _achieved_by(
+    order: Order, game: Game, debriefing: Debriefing, side: Player = Player.BLUE
+) -> bool:
     """Whether the mission destroyed one of the aircraft on the ground at the order's
-    base, or one of the vehicles of its motorpool."""
+    base, or one of the vehicles of its motorpool. The losses are the other side's."""
+    air_losses = (
+        debriefing.air_losses.enemy if side.is_blue else debriefing.air_losses.player
+    )
     if order.task is Task.AIRCRAFT:
         return any(
             loss.flight.departure.name == order.base
             and debriefing.died_on_the_ground(loss)
-            for loss in debriefing.air_losses.enemy
+            for loss in air_losses
         )
     if order.task is not None:
         return False
@@ -370,9 +381,12 @@ def _achieved_by(order: Order, game: Game, debriefing: Debriefing) -> bool:
     from game.missiongenerator.motorpoolpopulator import motorpools_at
 
     base = motorpools[0].control_point
-    if not any(
-        loss.origin is base for loss in debriefing.ground_losses.enemy_motorpool
-    ):
+    motorpool_losses = (
+        debriefing.ground_losses.enemy_motorpool
+        if side.is_blue
+        else debriefing.ground_losses.player_motorpool
+    )
+    if not any(loss.origin is base for loss in motorpool_losses):
         return False
     if len(motorpools_at(base)) == 1:
         return True

@@ -160,6 +160,8 @@ class Game:
         self.client_map_layers: Optional[str] = None
         # The objectives the High Command has ordered taken, with their prizes.
         self.high_command = HighCommand()
+        # GeneraLLM's High Command, when it plays the enemy: requests against us.
+        self.opfor_high_command = HighCommand(side=Player.RED)
         # OPFOR-AI API token, persisted so a campaign keeps the same connect URL across
         # restarts of this save (an LLM reconnects without a new token each session).
         self.opfor_ai_token: str = secrets.token_urlsafe()
@@ -232,6 +234,8 @@ class Game:
             self.client_map_layers = None
         if not hasattr(self, "high_command"):
             self.high_command = HighCommand()
+        if not hasattr(self, "opfor_high_command"):
+            self.opfor_high_command = HighCommand(side=Player.RED)
         if not hasattr(self, "cruise_missile_magazines"):
             self.cruise_missile_magazines = {}
         if not hasattr(self, "naval_magazines"):
@@ -615,6 +619,9 @@ class Game:
                 self.message("High Command", line)
             for line in self.high_command.end_effects(self):
                 self.message("High Command", line)
+            # The enemy's are GeneraLLM's business: it reads them from its own API.
+            self.opfor_high_command.return_loans(self)
+            self.opfor_high_command.end_effects(self)
         except Exception:
             logging.exception("Could not take back the High Command's loans")
 
@@ -686,6 +693,15 @@ class Game:
         # Autosave progress
         persistency.autosave(self)
 
+    def high_command_for(self, player: Player) -> HighCommand:
+        return self.high_command if player.is_blue else self.opfor_high_command
+
+    @property
+    def opfor_high_command_active(self) -> bool:
+        """The enemy gets requests only when GeneraLLM plays it: the AI does not read
+        them."""
+        return bool(getattr(self.settings, "opfor_ai_enabled", False))
+
     def refresh_high_command(self) -> None:
         """Close the High Command's orders that are over, pay the prizes of those
         achieved, and make new ones. Only at the start of a turn: a turn re-initialised
@@ -705,6 +721,9 @@ class Game:
                 for line in self.high_command.pay(self, closed):
                     self.message("High Command", line)
                 self._report_requests(closed, blue=True)
+                if self.opfor_high_command_active:
+                    enemy_closed = self.opfor_high_command.refresh(self)
+                    self.opfor_high_command.pay(self, enemy_closed)
         except Exception:
             logging.exception("Could not refresh the High Command's orders")
 

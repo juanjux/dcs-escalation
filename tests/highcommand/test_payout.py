@@ -262,3 +262,30 @@ def test_a_sam_ticket_places_the_system_picked_where_it_was_picked(
 
     assert placed == [(battery, hawk)]
     assert line == "Hawk set up at GRUMBLE."
+
+
+def test_a_prize_drawn_for_the_enemy_is_given_to_the_enemy(income: None) -> None:
+    red = SimpleNamespace(budget=5.0)
+    red.adjust_budget = lambda amount: setattr(red, "budget", red.budget + amount)
+    blue = SimpleNamespace(budget=5.0)
+    game: Any = SimpleNamespace(
+        coalition_for=lambda player: red if player is Player.RED else blue
+    )
+    prize = Prize("cash", 5, False, "Cash.", (("income_share", 0.5),), Player.RED)
+
+    _give(game, prize)
+
+    assert red.budget == pytest.approx(45.0)
+    assert blue.budget == 5.0
+
+
+def test_prizes_are_drawn_for_the_side_asked() -> None:
+    from game.highcommand.prizes import Prizes
+
+    settings = SimpleNamespace(live_pilots_enabled=False, morale_enabled=False)
+    faction: Any = SimpleNamespace(
+        aircraft=[], awacs=[], tankers=[], frontline_units=[]
+    )
+    drawn = Prizes(settings, faction, 80.0, None, Player.RED).draw(5, "seed")
+
+    assert drawn is not None and drawn.side is Player.RED
