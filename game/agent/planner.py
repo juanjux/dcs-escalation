@@ -1731,6 +1731,9 @@ def rebuild_ground_object(
 
         events = _new_map_events()
         events.update_tgo(tgo)
+        # The site's IADS node was on the groups just replaced. Left there, Skynet is
+        # handed a group the mission no longer has and the new one stays out of it.
+        game.theater.iads_network.update_tgo(tgo, events)
         _push_map_events(events)
         sign = "-" if cost >= 0 else "+"
         return schemas.OpResult(

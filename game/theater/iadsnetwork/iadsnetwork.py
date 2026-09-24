@@ -580,6 +580,25 @@ class IadsNetwork:
         """
         return isinstance(node.group.ground_object, NavalGroundObject)
 
+    def renew_stale_nodes(self) -> list[str]:
+        """Rebuild the nodes of the sites whose groups were replaced under them.
+
+        A site rebuilt through the OPFOR AI API kept its node on the group it no longer
+        had: Skynet was handed a group the mission does not contain, the site read as
+        standing whatever became of the new one, and the new one was left out.
+        """
+        from game.sim.gameupdateevents import GameUpdateEvents
+
+        stale = {
+            id(node.group.ground_object): node.group.ground_object
+            for node in self.nodes
+            if not any(group is node.group for group in node.group.ground_object.groups)
+        }
+        events = GameUpdateEvents()
+        for tgo in stale.values():
+            self.update_tgo(tgo, events)
+        return sorted(tgo.name for tgo in stale.values())
+
     def unwire_ships(self) -> list[str]:
         """Take the ships the campaign did not wire off the grid they were given by
         range. What a campaign's config wires is left as it wrote it."""

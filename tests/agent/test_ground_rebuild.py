@@ -115,7 +115,13 @@ def _fake_game(
     tgo: Any, *, budget: float = 1000, turn: int = 3, repair_turns: int = 0
 ) -> Any:
     coalition = SimpleNamespace(budget=budget)
-    theater = SimpleNamespace(heading_to_conflict_from=lambda pos: None)
+    renewed: list[Any] = []
+    theater = SimpleNamespace(
+        heading_to_conflict_from=lambda pos: None,
+        iads_network=SimpleNamespace(
+            update_tgo=lambda tgo, events: renewed.append(tgo), renewed=renewed
+        ),
+    )
     return SimpleNamespace(
         turn=turn,
         settings=SimpleNamespace(ground_object_repair_turns=repair_turns),
@@ -283,6 +289,8 @@ def test_rebuild_happy_path_charges_net_and_creates_group() -> None:
     assert coalition.budget == 380.0  # 500 - 120
     assert fg.created == [("SAM Site (Battery)", object, 2)]
     assert tgo.groups == []  # cleared before create (fake create doesn't repopulate)
+    # Its IADS node is renewed on the new groups.
+    assert game.theater.iads_network.renewed == [tgo]
 
 
 def test_turn_zero_is_not_a_free_shopping_spree() -> None:
