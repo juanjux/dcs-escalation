@@ -28,6 +28,11 @@ class _Group(IadsGroundGroup):
         self.id = ground_object.name
         self.units = [cast(Any, SimpleNamespace(alive=True))]
 
+    # The network finds a node by comparing groups, and the dataclass equality reads
+    # fields this double does not have.
+    __eq__ = object.__eq__
+    __hash__ = object.__hash__
+
 
 class _Site:
     """As much of an objective as the network touches."""
@@ -137,3 +142,37 @@ def test_a_site_already_on_the_grid_is_left_alone() -> None:
     node.add_connection_for_group(power.groups[0])
 
     assert IadsNetwork._has_grid(node) is True
+
+
+def test_a_site_the_campaign_did_not_name_keeps_its_grid_when_it_changes(
+    monkeypatch: Any,
+) -> None:
+    """A unit dying or being repaired rebuilds the site's node. Rebuilt from a config
+    that never named the site, it came back with no power station and no comms tower,
+    and bombing both left it running."""
+    site = _Site("TURKEY", "aa", 0.0, IadsRole.SAM_AS_EWR)
+    power = _Site("MOA", "power", 1000.0, IadsRole.POWER_SOURCE)
+    comms = _Site("IMPALA", "comms", 2000.0, IadsRole.CONNECTION_NODE)
+    named = _Site("Ground-7", "aa", 900000.0, IadsRole.SAM)
+    network = _network(site, power, comms, named)
+    network.iads_config = {"Ground-7": ["MOA"]}
+    monkeypatch.setattr(
+        IadsNetwork,
+        "_belongs_in_the_network",
+        staticmethod(lambda go: go in (site, named)),
+    )
+    monkeypatch.setattr(IadsNetwork, "_is_friendly", lambda self, node, tgo: True)
+    _node(network, site)
+    network.enrol_sites_that_arrived_late()
+    events: Any = SimpleNamespace(
+        delete_iads_connection=lambda cid: None, update_iads_node=lambda node: None
+    )
+
+    network._update_tgo(cast(Any, site), events)
+    network._update_tgo(cast(Any, named), events)
+
+    [turkey] = [n for n in network.nodes if n.group.ground_object is site]
+    [ground_7] = [n for n in network.nodes if n.group.ground_object is named]
+    assert _wired(turkey) == ["IMPALA", "MOA"]
+    # A site the campaign named still gets what the campaign wrote, however far.
+    assert _wired(ground_7) == ["MOA"]

@@ -334,9 +334,14 @@ class IadsNetwork:
             return
         events.update_iads_node(node)
         if self.advanced_iads:
-            if self.iads_config:
+            if tgo.original_name in self.iads_config:
                 self._add_connections_from_config(node)
-            else:
+            elif not self.iads_config or self._belongs_in_the_network(tgo):
+                # A site the campaign never named was wired by range when it joined,
+                # so it is wired by range again. Read from the config, which has
+                # nothing to say about it, a unit dying or being repaired left the
+                # site with no power station and no comms tower, and Skynet reads
+                # that as a site that can lose neither.
                 self._make_advanced_connections_by_range(node)
 
     def node_for_group(self, group: IadsGroundGroup) -> IadsNetworkNode:
