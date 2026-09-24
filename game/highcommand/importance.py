@@ -53,6 +53,7 @@ from game.highcommand.wording import (
     listed,
     money,
     short,
+    site_name,
     sites,
     system_name,
     unit_class,
@@ -255,7 +256,7 @@ class Worth:
                 "cannot replace."
             )
         elif isinstance(tgo, IadsGroundObject):
-            line = f"Its {system_name(tgo)} costs the enemy {money(worth)} to rebuild."
+            line = f"Its {site_name(tgo)} costs the enemy {money(worth)} to rebuild."
         else:
             line = f"Costs the enemy {money(worth)} to rebuild."
         return Reason("rebuild", worth, line)
@@ -410,7 +411,7 @@ class Worth:
         return Reason(
             "threat",
             worth,
-            f"Its {system_name(tgos[0])} launchers reach {target}.",
+            f"Its {site_name(tgos[0])} launchers reach {target}.",
         )
 
     def _threat_to_sites(self, tgos: Sequence[TheaterGroundObject]) -> Optional[Reason]:
@@ -430,7 +431,7 @@ class Worth:
         return Reason(
             "threat",
             THREAT_SHARE * rebuild_worth([best]),
-            f"Its {system_name(tgos[0])} launchers can hit "
+            f"Its {site_name(tgos[0])} launchers can hit "
             f"{counted(len(targets), 'of our sites')}, {best.name} among them.",
         )
 

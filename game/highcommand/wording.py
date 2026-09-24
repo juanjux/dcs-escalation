@@ -48,6 +48,9 @@ _SYSTEMS = (
 #: point is not their anti-aircraft guns.
 LAUNCHER_CLASSES = (UnitClass.ANTISHIP_MISSILE, UnitClass.MISSILE)
 
+#: What fires missiles at aircraft. Guns and MANPADS are what guard a site.
+MISSILE_AIR_DEFENCE = (UnitClass.LAUNCHER, UnitClass.TELAR, UnitClass.SHORAD)
+
 
 def system_name(tgo: TheaterGroundObject) -> str:
     """What the site's main weapon is called: its designation when it has one."""
@@ -62,6 +65,40 @@ def system_name(tgo: TheaterGroundObject) -> str:
             (unit for unit in units if unit_class(unit) in LAUNCHER_CLASSES), main
         )
     return unit_system(main)
+
+
+def site_name(tgo: TheaterGroundObject) -> str:
+    """What the site is there for, where system_name says what shoots at aircraft
+    there.
+
+    The two differ wherever the point of a site is not what reaches furthest: a GPS
+    jammer, an early-warning radar or a coastal battery's launchers, each guarded by
+    guns, were all called after the guns. So are a battery whose launchers are gone
+    and its point defence, which is named after its radar instead.
+    """
+    from game.theater.iadsnetwork.iadsrole import IadsRole
+    from game.theater.theatergroundobject import RADAR_CLASSES
+
+    units = alive([tgo])
+    if not units:
+        return "site"
+    if any(getattr(unit.unit_type, "gps_jamming", None) for unit in units):
+        return "GPS jammer"
+    launchers = [unit for unit in units if unit_class(unit) in LAUNCHER_CLASSES]
+    if launchers:
+        return unit_system(launchers[0])
+    # A point-defence group is there to guard the rest.
+    own = [
+        unit
+        for group in tgo.groups
+        if getattr(group, "iads_role", None) is not IadsRole.POINT_DEFENSE
+        for unit in group.units
+        if unit.alive
+    ]
+    radars = [unit for unit in own if unit_class(unit) in RADAR_CLASSES]
+    if radars and not any(unit_class(unit) in MISSILE_AIR_DEFENCE for unit in own):
+        return unit_system(max(radars, key=lambda unit: unit.detection_range.meters))
+    return system_name(tgo)
 
 
 def unit_system(unit: TheaterUnit) -> str:
