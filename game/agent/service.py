@@ -211,6 +211,8 @@ def capabilities() -> dict:
             "turn_status",
             "stored_context",
             "human_notes",
+            "high_command (YOUR High Command: the requests it has given you, with what"
+            " each asks, turns left and prize; your tickets, effects, loans and history)",
         ],
         "writes": [
             "packages (create; each flight may set squadron_id + loadout; package may set tot_minutes)",
@@ -234,8 +236,35 @@ def capabilities() -> dict:
             "naval/move (reposition one of your ship groups or carriers, <=80nm over water)",
             "repair (pay to repair a damaged SAM/EWR unit, building, or runway)",
             "ai/status",
+            "high_command/ticket_choices (the next pick a ticket asks for, or what it"
+            " gives once every pick is made)",
+            "high_command/spend (spend a ticket on the picks made)",
         ],
     }
+
+
+@opfor_only
+def high_command(side: str, history: int = 20) -> dict:
+    """The side's High Command: requests, tickets, effects, loans and history."""
+    from game.agent import highcommand
+
+    return highcommand.high_command(_require_game(), side, history)
+
+
+@opfor_only
+def ticket_choices(side: str, ticket: int, picked: list[str]) -> dict:
+    """The next pick a ticket asks for, or what it gives once all are made."""
+    from game.agent import highcommand
+
+    return highcommand.ticket_choices(_require_game(), side, ticket, picked)
+
+
+@opfor_only
+def spend_ticket(side: str, ticket: int, picked: list[str]):
+    """Spend a ticket on the picks made."""
+    from game.agent import highcommand
+
+    return highcommand.spend_ticket(_require_game(), side, ticket, picked)
 
 
 @opfor_only

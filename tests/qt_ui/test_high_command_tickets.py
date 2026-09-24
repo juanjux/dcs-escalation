@@ -35,7 +35,10 @@ KINDS = {
 
 @pytest.fixture(autouse=True)
 def kinds(monkeypatch: Any) -> None:
+    from game.highcommand import describe
+
     monkeypatch.setattr(data, "kind_of", lambda prize: KINDS.get(prize.kind))
+    monkeypatch.setattr(describe, "kind_of", lambda prize: KINDS.get(prize.kind))
 
 
 def _ticket(kind: str, line: str = "A ticket for a SAM battery.") -> Ticket:

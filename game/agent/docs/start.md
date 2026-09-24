@@ -34,7 +34,8 @@ tool/resource of the same name.
    every call — there is no on/off to toggle. You work in parallel — the human is NOT
    blocked; only Take Off is gated while you're active (a few seconds after each call).
 2. Read: `GET /turn_context` (+ `GET /prev_turns?n=1`, `GET /stored_context`,
-   `GET /settings`, `GET /human_notes`; optionally `GET /map/image`).
+   `GET /settings`, `GET /human_notes`, `GET /high_command`; optionally
+   `GET /map/image`).
 3. Check existing plan: `GET /packages?side=red` (resume / avoid duplicates).
 4. Decide intent (concentrate on 1–3 objectives), then apply (see Plan below):
    create packages, set stances, buy/transfer, move ships / adjust waypoints. Keep
@@ -119,6 +120,14 @@ tool/resource of the same name.
 - `POST /repair` `{side, id}` — pay to repair a damaged asset (an `id` from
   `turn_context.repairs`): a SAM/EWR/armor unit group, a building, or a runway. Instant or
   over a few turns; debits your budget. (Leftover budget also auto-repairs at turn end.)
+
+**High Command** (when the campaign has it on)
+- `GET /high_command` — the requests your High Command gives you: optional objectives,
+  each with a prize, what it asks, the `target_id` to plan against and the turns left;
+  plus your tickets (with the picks each asks), effects, loans and history.
+- `POST /high_command/ticket_choices` `{ticket, picked}` — the next pick a ticket asks
+  for, given the choice keys picked so far; with every step answered, what it gives.
+- `POST /high_command/spend` `{ticket, picked}` — spend a ticket. See howtoplay.
 
 **Air wings**
 - `POST /squadron/relocate` `{side, squadron_id, dest_cp_id}` — move a squadron to another

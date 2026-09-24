@@ -141,6 +141,28 @@ def edit_waypoint(body: schemas.WaypointEditRequest) -> schemas.OpResult:
     )
 
 
+@router.get("/high_command", operation_id="ai_high_command")
+def high_command(side: str = "red", history: int = 20) -> dict:
+    """Your High Command: the requests it has given you (what each asks, the target id
+    to plan against, turns left, why, and the prize), your tickets with the picks each
+    asks, the effects and loans running, and the latest history."""
+    return service.high_command(side, history)
+
+
+@router.post("/high_command/ticket_choices", operation_id="ai_ticket_choices")
+def ticket_choices(body: schemas.TicketRequest) -> dict:
+    """The next pick a ticket asks for, given the picks so far; or, with every step
+    answered, what spending it gives."""
+    return service.ticket_choices(body.side, body.ticket, body.picked)
+
+
+@router.post("/high_command/spend", operation_id="ai_spend_ticket")
+def spend_ticket(body: schemas.TicketRequest) -> schemas.OpResult:
+    """Spend a ticket on the picks made. It is gone once spent; one that cannot be
+    given now stays, with the reason."""
+    return service.spend_ticket(body.side, body.ticket, body.picked)
+
+
 @router.get("/squadrons/{squadron_id}/pilots", operation_id="ai_get_squadron_pilots")
 def squadron_pilots(squadron_id: str, side: str = "red") -> dict:
     """A squadron's roster: each pilot's rank, experience, skill, wounds, and the flight
