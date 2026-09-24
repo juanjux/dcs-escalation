@@ -98,6 +98,10 @@ def test_an_income_building_is_worth_its_income_and_its_rebuilding(
     assert reason.kind == "income"
     assert reason.worth == 30 * INCOME_TURNS + 3 * 40
     assert reason.line == "Earns the enemy $30M a turn, 10% of their income."
+    assert reason.parts == (
+        ("income, 4 turns of $30M", 30 * INCOME_TURNS),
+        ("rebuild, 3 buildings at $40M", 3 * 40),
+    )
 
 
 def test_a_garrison_counts_for_more_close_to_its_base_and_on_a_front() -> None:
@@ -176,6 +180,7 @@ def test_taking_a_base_costs_the_enemy_its_income_and_the_sites_around_it() -> N
     # cleared when the base falls, the factory changes hands.
     assert reason.worth == 25 * INCOME_TURNS + 30
     assert reason.line == "Taking it costs the enemy $25M a turn and 1 site around it."
+    assert [amount for _, amount in reason.parts] == [25 * INCOME_TURNS, 30]
 
 
 def test_a_sam_reaching_one_of_our_bases_counts_part_of_what_is_there() -> None:
