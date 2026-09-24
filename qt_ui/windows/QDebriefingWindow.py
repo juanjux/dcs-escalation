@@ -8,9 +8,10 @@ The palette and the vocabulary (stars for a rank, a coloured dot for morale) are
 Wing's.
 """
 
+from functools import partial
 from typing import Any, Optional, Sequence
 
-from PySide6.QtCore import QRectF, Qt, QTimer
+from PySide6.QtCore import QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import QCloseEvent, QColor, QFont, QIcon, QPainter
 from PySide6.QtWidgets import (
     QDialog,
@@ -157,6 +158,11 @@ def aircrew_reported(debriefing: DebriefingReport, records: list) -> list:
     return [record for record in records if getattr(record, "blue", True)]
 
 
+def _fold(rows: list[QWidget], folded: bool) -> None:
+    for row in rows:
+        row.setVisible(not folded)
+
+
 def _card() -> QWidget:
     card = QWidget()
     card.setStyleSheet(
@@ -273,22 +279,49 @@ class SummaryStrip(QWidget):
 # --- the pilots -------------------------------------------------------------
 
 
-class GroupHeader(QWidget):
-    """The name of one group of pilots, and how many are in it."""
+#: The groups that fold, folded when the window opens: gains, which can run long and
+#: would push the losses down. The dead and the wounded are always open.
+FOLDED_GROUPS = ("PROMOTIONS", "MORALE CHANGES", "EXPERIENCE")
 
-    def __init__(self, title: str, count: int) -> None:
+
+class GroupHeader(QWidget):
+    """The name of one group of pilots, and how many are in it. A group that folds
+    opens and closes on a click."""
+
+    #: Emitted with whether the group is now folded.
+    toggled = Signal(bool)
+
+    def __init__(
+        self, title: str, count: int, foldable: bool = False, folded: bool = False
+    ) -> None:
         super().__init__()
         self.title = title
         self.count = count
+        self.foldable = foldable
+        self.folded = folded
         self.setFixedHeight(GROUP_HEADER_HEIGHT)
+        if foldable:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mouseReleaseEvent(self, event: Any) -> None:  # noqa: N802 - Qt naming
+        if self.foldable and event.button() == Qt.MouseButton.LeftButton:
+            self.folded = not self.folded
+            self.update()
+            self.toggled.emit(self.folded)
 
     def paintEvent(self, event: object) -> None:
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(HEADER))
+        left = MARGIN
+        if self.foldable:
+            painter.setFont(_font(10, QFont.Weight.Bold))
+            painter.setPen(QColor(CAPTION))
+            painter.drawText(left, 16, "▸" if self.folded else "▾")
+            left += 14
         painter.setFont(_font(10, QFont.Weight.Bold))
         painter.setPen(QColor(GROUP_COLOURS.get(self.title, CAPTION)))
-        painter.drawText(MARGIN, 16, self.title)
-        after = MARGIN + painter.fontMetrics().horizontalAdvance(self.title) + 10
+        painter.drawText(left, 16, self.title)
+        after = left + painter.fontMetrics().horizontalAdvance(self.title) + 10
         painter.setFont(_font(11, mono=True))
         painter.setPen(QColor(CAPTION))
         painter.drawText(after, 16, str(self.count))
@@ -1017,9 +1050,14 @@ class QDebriefingWindow(QDialog):
             if not rows:
                 continue
             drawn += len(rows)
-            column.addWidget(GroupHeader(title, len(rows)))
+            folds = title in FOLDED_GROUPS
+            header = GroupHeader(title, len(rows), foldable=folds, folded=folds)
+            column.addWidget(header)
             for row in rows:
+                row.setVisible(not folds)
                 column.addWidget(row)
+            if folds:
+                header.toggled.connect(partial(_fold, rows))
         if not drawn:
             # Everything that happened, happened to the other side, and this campaign
             # does not report their aircrew.
