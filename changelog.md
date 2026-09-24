@@ -8,7 +8,7 @@
 * **[Mission Generator]** Blue tanker and AEW&C orbits are drawn on the F10 map, labelled with callsign, type, frequency and TACAN, and each CAP station as a thinner racetrack. (adapted from the RetLab fork)
 * **[Live Pilots]** The debriefing says what each pilot's experience was paid for, on a line of its own: kills by kind, damage, the sortie, a wound, and the three things that move the multiplier. Biggest gain first.
 * **[High Command]** The map rings each request's objective in orange, with the turns it has left.
-* **[High Command]** When GeneraLLM plays the enemy, the enemy's High Command makes requests against our objectives and pays their prizes.
+* **[High Command]** When GeneraLLM plays the enemy, the enemy's High Command makes requests against the player's objectives and pays their prizes.
 * **[Campaign AI]** The auto-planner frags the detectors covering a sector before the SAMs behind them: a DEAD sent at a SAM the network holds dark has nothing to shoot at. The OPFOR briefing carries the same tactic. (adapted from the RetLab fork)
 * **[High Command]** A site or base that is a request's objective says so at the bottom of its window, with a link to the request.
 * **[Mods]** Support for the CurrentHill German Military Assets pack (1.5.0), behind a New Game checkbox: 25 units from the Leopard 2A7V to the Sachsen frigate, with the combat ones in the modern NATO faction. The Patriot KAT1 battery moved here from the USA pack. Two batteries can be generated and bought: Skyshield C-RAM, and FlaRakRad with IRIS-T SLS.
