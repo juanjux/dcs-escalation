@@ -543,8 +543,8 @@ class OrdersPage(QWidget):
             if enabled and enemy_idle:
                 self.message.say(
                     "The enemy has no requests",
-                    "The enemy's High Command makes requests only when GeneraLLM"
-                    " plays it.",
+                    "The enemy's High Command makes requests only with OPFOR AI"
+                    " control on.",
                 )
             elif enabled:
                 self.message.say(
@@ -713,7 +713,7 @@ class HighCommandWindow(QDialog):
     def spend(self, ticket: TicketView, picked: tuple[str, ...]) -> str:
         """Spend a ticket and say what it gave; CannotGive when it cannot be."""
         if not self.side.is_blue:
-            raise ValueError("the enemy's tickets are GeneraLLM's to spend")
+            raise ValueError("the enemy's tickets are the OPFOR AI's to spend")
         return self.game.high_command.spend(self.game, ticket.ticket, picked)
 
     def ticket_spent(self, line: str) -> None:

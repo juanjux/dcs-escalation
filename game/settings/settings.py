@@ -295,9 +295,9 @@ class Settings:
         section=HIGH_COMMAND_SECTION,
         default=True,
         detail=(
-            "When GeneraLLM plays the enemy it gets High Command requests too. With "
-            "this on, the debriefing also lists the ones it achieved in the mission "
-            "and what each paid."
+            "With OPFOR AI control on, the enemy gets High Command requests too. "
+            "With this on, the debriefing also lists the ones it achieved in the "
+            "mission and what each paid."
         ),
     )
     external_views_allowed: bool = boolean_option(
