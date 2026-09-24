@@ -98,7 +98,7 @@ class OrderView:
 
 
 def command_for(game: Game, side: Player) -> HighCommand:
-    """The High Command of this side: the player's, or GeneraLLM's."""
+    """The High Command of this side: the player's, or the OPFOR AI's."""
     return game.high_command if side.is_blue else game.opfor_high_command
 
 

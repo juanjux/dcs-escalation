@@ -429,7 +429,7 @@ class SpendPane(QWidget):
         if self.read_only:
             self.steps.addWidget(
                 _note(
-                    "The enemy's ticket. GeneraLLM spends it.",
+                    "The enemy's ticket: the OPFOR AI spends it.",
                     ink.CARD,
                     ink.ENEMY_BAND,
                     ink.SOFT,

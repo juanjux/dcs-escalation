@@ -8,7 +8,7 @@
 * **[Mission Generator]** Blue tanker and AEW&C orbits are drawn on the F10 map, labelled with callsign, type, frequency and TACAN, and each CAP station as a thinner racetrack. (adapted from the RetLab fork)
 * **[Live Pilots]** The debriefing says what each pilot's experience was paid for, on a line of its own: kills by kind, damage, the sortie, a wound, and the three things that move the multiplier. Biggest gain first.
 * **[High Command]** The map rings each request's objective in orange, with the turns it has left.
-* **[High Command]** When GeneraLLM plays the enemy, the enemy's High Command makes requests against the player's objectives and pays their prizes; GeneraLLM reads them and spends its tickets through its API, and the High Command window shows them under Enemy.
+* **[High Command]** With OPFOR AI control on, the enemy's High Command makes requests against the player's objectives and pays their prizes; the OPFOR AI reads them and spends its tickets through its API, and the High Command window shows them under Enemy.
 * **[Campaign AI]** The auto-planner frags the detectors covering a sector before the SAMs behind them: a DEAD sent at a SAM the network holds dark has nothing to shoot at. The OPFOR briefing carries the same tactic. (adapted from the RetLab fork)
 * **[High Command]** A site or base that is a request's objective says so at the bottom of its window, with a link to the request.
 * **[High Command]** The debriefing lists the requests the mission achieved and what each pays, and the enemy's when a setting says so.
@@ -103,7 +103,7 @@
 * **[UI]** Qt updated to 6.11.2.
 * **[UI]** Every task has its own chip colour in the package and Air Wing lists; CAS, Strike, DEAD and Armed Recon all painted the same brown.
 * **[UI]** Back to the native Windows file, colour and font dialogs.
-* **[Plugins]** GeneraLLM can rest a pilot who never asked for leave, or call one back early, the way the Air Wing button does; the leave endpoints are listed in `capabilities` now.
+* **[Plugins]** The OPFOR AI can rest a pilot who never asked for leave, or call one back early, the way the Air Wing button does; the leave endpoints are listed in `capabilities` now.
 * **[Settings]** GPS jamming, cruise missile strikes and naval magazines are switched on by their plugin alone, and their options live with it.
 * **[Settings]** The Skynet IADS radius moved to the Skynet plugin's options.
 * **[UI]** The jammer is called *GPS Jammer* and its map icon reads GPS.
