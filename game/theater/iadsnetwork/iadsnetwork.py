@@ -304,17 +304,31 @@ class IadsNetwork:
         try:
             self._update_tgo(tgo, events)
         finally:
-            self._push_state_changes(before, events)
+            self._push_state_changes(tgo, before, events)
 
     def _push_state_changes(
         self,
+        tgo: TheaterGroundObject,
         before: dict[TheaterGroundObject, IadsStatus],
         events: GameUpdateEvents,
     ) -> None:
         after = {obj: status for obj, status in self.state_map}
-        for obj in before.keys() | after.keys():
-            if before.get(obj) != after.get(obj):
-                events.update_tgo(obj)
+        changed = {
+            obj
+            for obj in before.keys() | after.keys()
+            if before.get(obj) != after.get(obj)
+        }
+        for obj in changed:
+            events.update_tgo(obj)
+        # A link is drawn live or cut from both of its ends, so every node touching
+        # something that changed is redrawn: a command centre going down cuts the links
+        # of the sites that report to it, which are their nodes, not its own.
+        changed.add(tgo)
+        for node in self.nodes:
+            if node.group.ground_object in changed or any(
+                group.ground_object in changed for group in node.connections.values()
+            ):
+                events.update_iads_node(node)
 
     def _update_tgo(self, tgo: TheaterGroundObject, events: GameUpdateEvents) -> None:
         if self.advanced_iads and IadsRole.for_category(tgo.category).is_comms_or_power:

@@ -458,12 +458,14 @@ class QGroundObjectMenu(QDialog):
         return holder
 
     def _cheat_destroy_all(self) -> None:
-        destroy_all(self.ground_object, GameUpdateEvents())
-        self._update_game()
+        events = GameUpdateEvents()
+        destroy_all(self.ground_object, events)
+        self._update_game(events)
 
     def _cheat_revive_all(self) -> None:
-        revive_all(self.ground_object, GameUpdateEvents())
-        self._update_game()
+        events = GameUpdateEvents()
+        revive_all(self.ground_object, events)
+        self._update_game(events)
 
     def _show_on_map(self) -> None:
         """Move the map to the site, at the zoom the player left it at."""
@@ -617,8 +619,11 @@ class QGroundObjectMenu(QDialog):
         if self.subwindow.exec_():
             self._update_game()
 
-    def _update_game(self) -> None:
-        events = GameUpdateEvents()
+    def _update_game(self, events: Optional[GameUpdateEvents] = None) -> None:
+        """Push the site to the map, with what changing it did to the IADS: the
+        ``events`` its units were killed or revived with carry the other sites."""
+        if events is None:
+            events = GameUpdateEvents()
         events.update_tgo(self.ground_object)
         self.game.theater.iads_network.update_tgo(self.ground_object, events)
         replan_opfor_if_targeted(self.game, self.ground_object, events)

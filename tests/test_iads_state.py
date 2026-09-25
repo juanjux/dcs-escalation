@@ -314,7 +314,11 @@ def test_the_map_is_told_about_the_sites_that_changed_without_being_touched() ->
 
     pushed: list[Any] = []
     network._push_state_changes(
-        before, SimpleNamespace(update_tgo=pushed.append)  # type: ignore[arg-type]
+        power.ground_object,
+        before,
+        SimpleNamespace(  # type: ignore[arg-type]
+            update_tgo=pushed.append, update_iads_node=lambda node: None
+        ),
     )
 
     assert sam.ground_object in pushed
@@ -333,8 +337,14 @@ def test_nothing_is_pushed_when_nothing_changed() -> None:
     network.invalidate_state_map()
 
     pushed: list[Any] = []
+    redrawn: list[Any] = []
     network._push_state_changes(
-        before, SimpleNamespace(update_tgo=pushed.append)  # type: ignore[arg-type]
+        sam.ground_object,
+        before,
+        SimpleNamespace(  # type: ignore[arg-type]
+            update_tgo=pushed.append, update_iads_node=redrawn.append
+        ),
     )
 
     assert pushed == []
+    assert redrawn == network.nodes
