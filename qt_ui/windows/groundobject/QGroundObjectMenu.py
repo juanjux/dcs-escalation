@@ -459,12 +459,12 @@ class QGroundObjectMenu(QDialog):
 
     def _cheat_destroy_all(self) -> None:
         events = GameUpdateEvents()
-        destroy_all(self.ground_object, events)
+        destroy_all(self.game, self.ground_object, events)
         self._update_game(events)
 
     def _cheat_revive_all(self) -> None:
         events = GameUpdateEvents()
-        revive_all(self.ground_object, events)
+        revive_all(self.game, self.ground_object, events)
         self._update_game(events)
 
     def _show_on_map(self) -> None:
