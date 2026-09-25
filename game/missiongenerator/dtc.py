@@ -1006,6 +1006,26 @@ def steerpoint_numbers(aircraft: str, route_length: int, count: int) -> list[int
     return numbers[:count]
 
 
+def above_sea_level(waypoint: Any) -> float:
+    """The waypoint's altitude as the cartridge keeps it: metres above sea level,
+    which is what the module's own editor writes, taking the ground's height.
+
+    A point the flight plan gives above the ground (a target, a low-level leg) is
+    written with the ground's height under it. Written as it stood, a target's 0 read
+    as sea level, and a weapon sent to the steerpoint went for a point under the
+    ground and struck short of it. With no elevation to be had it stays as it was.
+    """
+    if waypoint.alt_type != "RADIO":
+        return waypoint.alt.meters
+    from game.elevation import elevation_m
+
+    where = waypoint.position.latlng()
+    ground = elevation_m(where.lat, where.lng)
+    if ground is None:
+        return waypoint.alt.meters
+    return max(0.0, ground) + waypoint.alt.meters
+
+
 def navigation_set(
     profile: Cartridge, route: Sequence[Any], saved: Sequence[Any]
 ) -> list[NavPoint]:
@@ -1034,7 +1054,7 @@ def navigation_set(
             name=waypoint.display_name,
             x=waypoint.position.x,
             y=waypoint.position.y,
-            alt_m=waypoint.alt.meters,
+            alt_m=above_sea_level(waypoint),
             on_route=True,
             sequence_order=order,
         )

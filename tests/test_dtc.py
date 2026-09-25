@@ -73,14 +73,19 @@ class _Unit:
         return self.human
 
 
-def _waypoint(name: str, x: float, y: float, alt_m: float = 6096.0) -> Any:
+def _waypoint(
+    name: str, x: float, y: float, alt_m: float = 6096.0, alt_type: str = "BARO"
+) -> Any:
     from game.ato.flightwaypointtype import FlightWaypointType
 
     return SimpleNamespace(
         waypoint_type=FlightWaypointType.NAV,
         display_name=name,
-        position=SimpleNamespace(x=x, y=y),
+        position=SimpleNamespace(
+            x=x, y=y, latlng=lambda: SimpleNamespace(lat=-53.18, lng=-70.19)
+        ),
         alt=SimpleNamespace(meters=alt_m),
+        alt_type=alt_type,
     )
 
 
@@ -1034,3 +1039,36 @@ def test_the_apache_symbols_are_the_module_s_own() -> None:
 
     routes = (APACHE / "Routes.lua").read_text(encoding="utf-8")
     assert re.findall(r'Name = "([^"]+)"', routes)[:10] == list(dtc.APACHE_ROUTES)
+
+
+def test_a_point_above_the_ground_is_written_above_sea_level(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The module keeps a steerpoint's altitude above sea level. A target's 0 above the
+    ground, written as it stood, put the point under the ground, and a weapon sent to
+    the steerpoint struck short of it."""
+    from game import elevation
+
+    monkeypatch.setattr(elevation, "elevation_m", lambda lat, lng: 37.0)
+
+    target = _waypoint("TARGET", 1.0, 1.0, alt_m=0.0, alt_type="RADIO")
+    low = _waypoint("LOW", 1.0, 1.0, alt_m=150.0, alt_type="RADIO")
+    high = _waypoint("NAV", 1.0, 1.0, alt_m=6096.0)
+
+    assert [dtc.above_sea_level(w) for w in (target, low, high)] == [
+        37.0,
+        187.0,
+        6096.0,
+    ]
+
+
+def test_with_no_elevation_to_be_had_the_point_stays_as_it_was(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from game import elevation
+
+    monkeypatch.setattr(elevation, "elevation_m", lambda lat, lng: None)
+
+    target = _waypoint("TARGET", 1.0, 1.0, alt_m=0.0, alt_type="RADIO")
+
+    assert dtc.above_sea_level(target) == 0.0
