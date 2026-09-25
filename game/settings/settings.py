@@ -2963,6 +2963,8 @@ class Settings:
     enable_air_wing_adjustments: bool = False
     enable_enemy_buy_sell: bool = False
     enable_pilot_cheats: bool = False
+    #: Destroy or revive everything at a location from its window.
+    enable_location_cheat: bool = False
 
     # LUA Plugins system
     plugins: Dict[str, bool] = field(default_factory=dict)

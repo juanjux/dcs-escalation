@@ -156,6 +156,16 @@ class CheatSettingsBox(QGroupBox):
         )
         self.main_layout.addLayout(self.pilot_cheat)
 
+        # Everything at one location, destroyed or brought back from its window.
+        self.location_cheat_checkbox = QCheckBox()
+        self.location_cheat_checkbox.setChecked(sc.settings.enable_location_cheat)
+        self.location_cheat_checkbox.toggled.connect(apply_settings)
+        self.main_layout.addLayout(
+            QLabeledWidget(
+                "Enable Location Destroy/Revive Cheat:", self.location_cheat_checkbox
+            )
+        )
+
         # Buy/Sell actions for OPFOR
         self.opfor_buysell_checkbox = QCheckBox()
         self.opfor_buysell_checkbox.setChecked(sc.settings.enable_enemy_buy_sell)
@@ -192,6 +202,10 @@ class CheatSettingsBox(QGroupBox):
     @property
     def enable_redfor_buysell(self) -> bool:
         return self.opfor_buysell_checkbox.isChecked()
+
+    @property
+    def enable_location_cheat(self) -> bool:
+        return self.location_cheat_checkbox.isChecked()
 
 
 class AutoSettingsLayout(QGridLayout):
@@ -1495,6 +1509,7 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         )
         self.settings.enable_enemy_buy_sell = self.cheat_options.enable_redfor_buysell
         self.settings.enable_pilot_cheats = self.cheat_options.enable_pilot_cheats
+        self.settings.enable_location_cheat = self.cheat_options.enable_location_cheat
 
         self._publish_settings_update()
 
@@ -1566,6 +1581,9 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         )
         self.cheat_options.pilot_cheats_checkbox.setChecked(
             self.settings.enable_pilot_cheats
+        )
+        self.cheat_options.location_cheat_checkbox.setChecked(
+            self.settings.enable_location_cheat
         )
 
         self.pluginsPage.update_from_settings()

@@ -40,12 +40,14 @@ from game.theater import ControlPoint, Player, TheaterGroundObject
 from game.mfd import band_of, is_manpads, is_mobile, shows_on_mfd
 from game.theater.iadsnetwork.iadsexplain import IadsPicture, describe
 from game.theater.theatergroundobject import BuildingGroundObject
+from game.theater.locationcheat import destroy_all, revive_all
 from game.theater.theatergroup import TheaterUnit
 from game.utils import Heading
 from qt_ui.models import GameModel
 from qt_ui.uiconstants import EVENT_ICONS
 from qt_ui.widgets.cards import card, make_transparent
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
+from qt_ui.windows.airwingconfig.common import CHEAT_BORDER, CHEAT_HINT
 from qt_ui.windows.groundobject.QBuildingInfo import QBuildingInfo
 from qt_ui.windows.groundobject.QGroundObjectBuyMenu import QGroundObjectBuyMenu
 from qt_ui.widgets.controls import button
@@ -399,6 +401,9 @@ class QGroundObjectMenu(QDialog):
         row.setContentsMargins(16, 10, 16, 12)
         row.setSpacing(10)
 
+        cheats = self._cheat_block()
+        if cheats is not None:
+            row.addWidget(cheats)
         if self._can_trade and self.total_value > 0:
             row.addWidget(
                 two_tone_button(
@@ -419,6 +424,46 @@ class QGroundObjectMenu(QDialog):
         row.addWidget(button("Close", "primary", handler=self._close))
         holder.setLayout(row)
         return holder
+
+    def _cheat_block(self) -> Optional[QWidget]:
+        """Destroy or revive everything here, when the cheat is on."""
+        if not self.game.settings.enable_location_cheat:
+            return None
+        units = list(self.ground_object.units)
+        if not units:
+            return None
+        row = QHBoxLayout()
+        row.setContentsMargins(10, 6, 10, 6)
+        row.setSpacing(8)
+        tag = QLabel("CHEAT")
+        tag.setStyleSheet(
+            f"color: {CHEAT_HINT}; font-size: 11px; font-weight: bold;"
+            " letter-spacing: 1px; background: transparent; border: none;"
+        )
+        row.addWidget(tag)
+        destroy = button("Destroy all", handler=self._cheat_destroy_all)
+        destroy.setEnabled(any(unit.alive for unit in units))
+        row.addWidget(destroy)
+        revive = button("Revive all", handler=self._cheat_revive_all)
+        revive.setEnabled(any(not unit.alive for unit in units))
+        row.addWidget(revive)
+        holder = QWidget()
+        holder.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        holder.setObjectName(f"locationCheats{id(self)}")
+        holder.setStyleSheet(
+            f"#{holder.objectName()} {{ background: transparent;"
+            f" border: 1px dashed {CHEAT_BORDER}; border-radius: 3px; }}"
+        )
+        holder.setLayout(row)
+        return holder
+
+    def _cheat_destroy_all(self) -> None:
+        destroy_all(self.ground_object, GameUpdateEvents())
+        self._update_game()
+
+    def _cheat_revive_all(self) -> None:
+        revive_all(self.ground_object, GameUpdateEvents())
+        self._update_game()
 
     def _show_on_map(self) -> None:
         """Move the map to the site, at the zoom the player left it at."""

@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Cheats]** Location Destroy/Revive cheat: a site's window destroys or revives everything there.
 * **[UI]** A flight's waypoint pins are coloured by what each is for: red where it works (track, orbit, ingress, target), green where it refuels, orange where it holds or joins the package.
 * **[High Command]** Each turn the High Command requests enemy objectives taken, three by default, one from each tier of them by difficulty plus importance, for two to five turns and each with its prize. New settings under Campaign Management. Achieving one pays it, at once or as a ticket kept to spend later. A window, opened from the command bar, lists them and spends the tickets.
 * **[Mission Generator]** The Apache gets a data cartridge: the front line on its TSD, and the enemy air defence the MFD settings allow as target points under the TSD's own symbols. Its route stays the one the mission gives it. (adapted from the RetLab fork)
