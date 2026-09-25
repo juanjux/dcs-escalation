@@ -184,6 +184,21 @@ def test_a_standing_command_centre_is_directing() -> None:
     assert command.title == "Indian Springs"
 
 
+def test_a_site_with_its_comms_cut_is_cut_off_from_its_command_centre() -> None:
+    """Skynet reaches a site only through its comms, so a live command centre does not
+    hear a radar whose tower is down."""
+    ewr = _group("Tonopah", IadsRole.EWR, _unit(detection=100_000))
+    comms = _group("Beatty", IadsRole.CONNECTION_NODE, _unit(alive=False))
+    centre = _group("Indian Springs", IadsRole.COMMAND_CENTER)
+    network = _network(_node(ewr, comms), _node(centre))
+
+    command = _link(describe(ewr.ground_object, network), "COMMAND")
+
+    assert command.chip == "CUT OFF"
+    assert command.tone is LinkTone.WARN
+    assert "does not reach the command centre" in command.note
+
+
 def test_a_network_without_command_centres_needs_none() -> None:
     sam = _group("KAKAPO", IadsRole.SAM)
     network = _network(_node(sam))

@@ -7,6 +7,9 @@ from pydantic import BaseModel
 from game.server.leaflet import LeafletPoint
 from game.theater.player import Player
 from game.theater.iadsnetwork.iadsnetwork import IadsNetworkNode, IadsNetwork
+from game.theater.iadsnetwork.iadsrole import IadsRole
+from game.theater.iadsnetwork.iadsstate import comms_up, mains_are_up, own_generator
+from game.theater.theatergroup import IadsGroundGroup
 
 
 class IadsConnectionJs(BaseModel):
@@ -27,11 +30,13 @@ class IadsConnectionJs(BaseModel):
     ) -> list[IadsConnectionJs]:
         for node in network.nodes:
             if node.group.ground_object.id == tgo_id:
-                return IadsConnectionJs.connections_for_node(node)
+                return IadsConnectionJs.connections_for_node(node, network)
         return []
 
     @staticmethod
-    def connections_for_node(network_node: IadsNetworkNode) -> list[IadsConnectionJs]:
+    def connections_for_node(
+        network_node: IadsNetworkNode, network: IadsNetwork
+    ) -> list[IadsConnectionJs]:
         iads_connections = []
         tgo = network_node.group.ground_object
         for id, connection in network_node.connections.items():
@@ -57,6 +62,10 @@ class IadsConnectionJs(BaseModel):
                     active=(
                         network_node.group.alive_units > 0
                         and connection.alive_units > 0
+                        and (
+                            connection.iads_role is not IadsRole.COMMAND_CENTER
+                            or _reaches_command(network_node, connection, network)
+                        )
                     ),
                     blue=blue,
                     is_power="power"
@@ -64,6 +73,20 @@ class IadsConnectionJs(BaseModel):
                 )
             )
         return iads_connections
+
+
+def _reaches_command(
+    node: IadsNetworkNode, centre: IadsGroundGroup, network: IadsNetwork
+) -> bool:
+    """Whether the link to a command centre works. A site reaches it only through its
+    own comms, and a command centre with no power or no comms directs nobody."""
+    if not comms_up(node):
+        return False
+    for other in network.nodes:
+        if other.group is centre:
+            powered = mains_are_up(other) or own_generator(other.group) is not None
+            return powered and comms_up(other)
+    return True
 
 
 class IadsNetworkJs(BaseModel):
@@ -79,7 +102,9 @@ class IadsNetworkJs(BaseModel):
         for connection in network.nodes:
             if not connection.group.iads_role.participate:
                 continue  # Skip
-            iads_connections.extend(IadsConnectionJs.connections_for_node(connection))
+            iads_connections.extend(
+                IadsConnectionJs.connections_for_node(connection, network)
+            )
         return IadsNetworkJs(
             advanced=network.advanced_iads, connections=iads_connections
         )

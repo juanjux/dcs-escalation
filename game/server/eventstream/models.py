@@ -98,7 +98,11 @@ class GameUpdateEventsJs(BaseModel):
             }
             updated_unculled_zones = UnculledZoneJs.from_game(game)
             for node in events.updated_iads:
-                updated_iads.extend(IadsConnectionJs.connections_for_node(node))
+                updated_iads.extend(
+                    IadsConnectionJs.connections_for_node(
+                        node, game.theater.iads_network
+                    )
+                )
             if events.updated_supply_routes:
                 updated_supply_routes = SupplyRouteJs.all_in_game(game)
             for route in updated_supply_routes:
