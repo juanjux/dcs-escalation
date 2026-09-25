@@ -145,6 +145,7 @@
 * **[UX]** Bulk-set altitude across a flight's en-route waypoints, step the per-waypoint altitude editor by 1000 ft, and set the altitude scatter band and the patrol floor.
 * **[Cleanup]** Removed DCS: Pretense support entirely -- the exporter, its Lua, the toolbar actions, the settings page, the `Cargo Transport` flight type and the four Pretense-tuned campaigns. An old save reads its cargo flights back as ordinary transports.
 * **[UI]** Cruise missile strikes are visible outside the F10 menu: the briefing gets a CRUISE MISSILES section with the tasked raid and each launcher's magazine, a friendly naval group's info dialog shows what it has left, and the debriefing reports what each group expended. Enemy stock is never shown.
+* **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
 * **[FIX]** The map drew a site's link to its command centre as working while the site's comms were cut or the command centre had no power.
