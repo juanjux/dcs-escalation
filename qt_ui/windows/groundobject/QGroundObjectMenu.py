@@ -415,9 +415,16 @@ class QGroundObjectMenu(QDialog):
         )
         if self._can_trade:
             row.addWidget(button("Buy / replace…", handler=self._buy_group))
+        row.addWidget(button("Show on map  ↗", handler=self._show_on_map))
         row.addWidget(button("Close", "primary", handler=self._close))
         holder.setLayout(row)
         return holder
+
+    def _show_on_map(self) -> None:
+        """Move the map to the site, at the zoom the player left it at."""
+        EventStream.put_nowait(
+            GameUpdateEvents().look_at(self.ground_object.position.latlng())
+        )
 
     # ---------------------------------------------------------------------- data
 

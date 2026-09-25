@@ -58,6 +58,7 @@
 * **[Live Pilots]** Optional pilot cheats (Settings, Cheats page): rename, set rank, heal and revive.
 * **[Live Pilots]** A pilot's kills are kept individually as well as counted -- what, when and with what -- and his ground kills are grouped by class.
 * **[UI]** Command palette: Ctrl+P finds settings, bases, objectives, squadrons, pilots, flights and every command in the menus, and opens what is chosen.
+* **[UI]** A site's window has Show on map, which moves the map to the site without zooming.
 * **[Live Pilots]** A pilot's record now keeps what he has shot down and destroyed by type, the missions he came home from, the aircraft he has lost and walked away from, his wounds, and who finally got him.
 * **[UI]** A flight plan is no longer drawn through its target: the targets are marked in red, a dashed run joins the ingress to each of them, and every leg is labelled in nautical miles.
 * **[UI]** Base menu papercuts: sortable buy lists, a squadron that opens from anywhere on its row, a FARP that counts its helipads instead of claiming a runway, and pills that explain what they do.
