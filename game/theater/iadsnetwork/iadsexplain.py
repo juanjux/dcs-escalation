@@ -422,6 +422,22 @@ def _command_link(
             tone=LinkTone.INFO,
         )
 
+    if not comms_up(node):
+        # Skynet reaches a site only through its own comms: with them cut, the command
+        # centre neither hears it nor directs it, however live the centre is.
+        return IadsLink(
+            places=_places_of([other.group.ground_object for other in centres]),
+            caption=caption,
+            title=" · ".join(sorted(_name(other) for other in centres)),
+            note=(
+                "its comms are cut, so what it sees does not reach the command centre"
+                if node.group.iads_role is IadsRole.EWR
+                else "its comms are cut, so the command centre cannot reach it"
+            ),
+            chip="CUT OFF",
+            tone=LinkTone.WARN,
+        )
+
     live = [other for other in centres if _is_live(other)]
     if live:
         return IadsLink(
