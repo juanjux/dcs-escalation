@@ -44,6 +44,20 @@ LossRow = tuple[str, int, str]
 
 
 @dataclass
+class LossCosts(SaveCompatible):
+    """What one side's losses cost it, in millions."""
+
+    #: Buying back the aircraft counted as lost.
+    aircraft: float = 0.0
+    #: Buying back the ground units and rebuilding the buildings.
+    ground: float = 0.0
+    #: What the destroyed buildings do not earn while they are rebuilt.
+    income: float = 0.0
+    #: Ships lost, which cannot be bought or repaired and so are not in ``ground``.
+    ships: int = 0
+
+
+@dataclass
 class MissionState:
     """The one thing the window asks of the mission's state file."""
 
@@ -131,7 +145,7 @@ def requests_achieved(
 
 
 @dataclass
-class DebriefingReport:
+class DebriefingReport(SaveCompatible):
     """Everything the debriefing window shows, and nothing else."""
 
     #: The turn the mission was flown in. Note the turn has already been advanced by
@@ -148,6 +162,8 @@ class DebriefingReport:
     losses: Dict[bool, SideLossCounts] = field(default_factory=dict)
     air: Dict[bool, list[LossRow]] = field(default_factory=dict)
     ground: Dict[bool, list[LossRow]] = field(default_factory=dict)
+    #: What each side's losses cost it. Empty in a report saved before it was kept.
+    costs: Dict[bool, LossCosts] = field(default_factory=dict)
     #: (group, fired, remaining) for the cruise missiles, worked out while the turn
     #: boundary was fresh -- "remaining" means what sailed into the next turn.
     missile_rows: list[tuple[str, int, Optional[int]]] = field(default_factory=list)
@@ -171,6 +187,9 @@ class DebriefingReport:
 
     def ground_rows(self, player: Player) -> list[LossRow]:
         return self.ground.get(player.is_blue, [])
+
+    def loss_costs(self, player: Player) -> Optional[LossCosts]:
+        return self.costs.get(player.is_blue)
 
     @property
     def damaged_runways(self) -> list[Named]:
@@ -199,6 +218,9 @@ class DebriefingReport:
             report.losses[player.is_blue] = debriefing.loss_counts(player)
             report.air[player.is_blue] = air_rows(debriefing, player)
             report.ground[player.is_blue] = ground_rows(debriefing, player)
+            costs = _costs_if_known(debriefing, player)
+            if costs is not None:
+                report.costs[player.is_blue] = costs
         report.missile_rows = missile_rows(debriefing)
         return report
 
@@ -234,6 +256,79 @@ def air_rows(debriefing: Debriefing, player: Player) -> list[LossRow]:
         note = f"{nc} not counted — crashed-do-not-count" if nc else ""
         rows.append((name, count - nc, note))
     return rows
+
+
+def _costs_if_known(debriefing: Debriefing, player: Player) -> Optional[LossCosts]:
+    """The costs, or None when they cannot be worked out: the report goes without
+    its totals rather than without the rest."""
+    try:
+        return loss_costs(debriefing, player)
+    except Exception:
+        logging.exception("Could not work out what the losses cost")
+        return None
+
+
+def loss_costs(debriefing: Debriefing, player: Player) -> LossCosts:
+    """What the side's losses cost it, at the prices the game charges.
+
+    Aircraft and ground units at what buying them back costs; a destroyed building at
+    what repairing it costs, and the income it stops earning for the turns the repair
+    takes. The aircraft left out of the count under crashed-do-not-count are left out
+    of the cost too.
+    """
+    from game.config import REWARDS
+    from game.theater.theatergroundobject import BuildingGroundObject
+
+    settings = debriefing.game.settings
+    blue = player.is_blue
+    gl = debriefing.ground_losses
+    costs = LossCosts()
+
+    doctrine_on = bool(getattr(settings, "ignore_non_combat_air_losses", False))
+    for loss in debriefing.air_losses.player if blue else debriefing.air_losses.enemy:
+        if doctrine_on and debriefing.is_non_combat_loss(loss):
+            continue
+        costs.aircraft += loss.flight.unit_type.price
+
+    units = [
+        loss.unit_type
+        for loss in (gl.player_front_line if blue else gl.enemy_front_line)
+        + (gl.player_motorpool if blue else gl.enemy_motorpool)
+    ]
+    units.extend(
+        loss.unit_type for loss in (gl.player_convoy if blue else gl.enemy_convoy)
+    )
+    for ship in gl.player_cargo_ships if blue else gl.enemy_cargo_ships:
+        for unit_type, count in ship.units.items():
+            units.extend([unit_type] * count)
+    for airlift in gl.player_airlifts if blue else gl.enemy_airlifts:
+        units.extend(airlift.cargo)
+    costs.ground += sum(unit_type.price for unit_type in units)
+
+    multiplier = (
+        settings.player_income_multiplier if blue else settings.enemy_income_multiplier
+    )
+    lost = [
+        mapping.theater_unit
+        for mapping in (gl.player_ground_objects if blue else gl.enemy_ground_objects)
+    ] + [
+        mapping.ground_unit
+        for mapping in (gl.player_scenery if blue else gl.enemy_scenery)
+    ]
+    for unit in lost:
+        tgo = unit.ground_object
+        if unit.is_ship:
+            costs.ships += 1
+        elif unit.unit_type is not None:
+            costs.ground += unit.unit_type.price
+        elif isinstance(tgo, BuildingGroundObject):
+            costs.ground += tgo.repair_cost()
+            costs.income += (
+                REWARDS.get(tgo.category, 0.0)
+                * multiplier
+                * settings.building_repair_turns
+            )
+    return costs
 
 
 def ground_rows(debriefing: Debriefing, player: Player) -> list[LossRow]:

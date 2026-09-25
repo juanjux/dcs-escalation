@@ -27,7 +27,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from game.debriefingreport import DebriefingReport
+from game.debriefingreport import DebriefingReport, LossCosts
+from game.highcommand.wording import counted, money
 from game.squadrons.experience import (
     MoraleShift,
     XP_AIR,
@@ -858,6 +859,10 @@ class MoraleRow(ReasonsRow):
 # --- the ledgers ------------------------------------------------------------
 
 
+#: What a total says, how much, and a note when there is something to add.
+Total = tuple[str, float, str]
+
+
 class FactionLosses(QWidget):
     """One side's losses: aircraft over ground, with the total in the header."""
 
@@ -900,12 +905,15 @@ class FactionLosses(QWidget):
 
         air = self._air_rows(debriefing, player)
         ground = self._ground_rows(debriefing, player)
-        self._add_group(body, "AIRCRAFT", air)
-        self._add_group(body, "GROUND", ground)
+        costs = debriefing.loss_costs(player)
+        self._add_group(body, "AIRCRAFT", air, self._air_totals(costs))
+        self._add_group(body, "GROUND", ground, self._ground_totals(costs))
         if not air and not ground:
             body.addWidget(self._row("Nothing lost", "", FAINT, ""))
 
-    def _add_group(self, body: QVBoxLayout, title: str, rows: list) -> None:
+    def _add_group(
+        self, body: QVBoxLayout, title: str, rows: list, totals: list[Total]
+    ) -> None:
         if not rows:
             return
         head = QWidget()
@@ -927,6 +935,70 @@ class FactionLosses(QWidget):
             body.addWidget(
                 self._row(name, str(number), BODY if number else CAPTION, note)
             )
+        if totals:
+            body.addWidget(self._divider())
+        for words, amount, note in totals:
+            body.addWidget(self._total(words, amount, note))
+        if totals:
+            body.addSpacing(6)
+
+    @staticmethod
+    def _divider() -> QWidget:
+        holder = QWidget()
+        holder.setFixedHeight(7)
+        holder.setStyleSheet("border: none;")
+        row = QHBoxLayout()
+        row.setContentsMargins(MARGIN, 3, MARGIN, 3)
+        holder.setLayout(row)
+        line = QWidget()
+        line.setFixedHeight(1)
+        line.setStyleSheet(f"background: {LINE}; border: none;")
+        row.addWidget(line)
+        return holder
+
+    @staticmethod
+    def _air_totals(costs: Optional[LossCosts]) -> list[Total]:
+        # A report kept before the costs were has none to show.
+        if costs is None or costs.aircraft <= 0:
+            return []
+        return [("Cost to replace", costs.aircraft, "")]
+
+    @staticmethod
+    def _ground_totals(costs: Optional[LossCosts]) -> list[Total]:
+        if costs is None:
+            return []
+        totals: list[Total] = []
+        if costs.ground > 0 or costs.ships:
+            note = (
+                f"not counting {counted(costs.ships, 'ship')}, which cannot be replaced"
+                if costs.ships
+                else ""
+            )
+            totals.append(("Cost to replace", costs.ground, note))
+        if costs.income > 0:
+            totals.append(("Income lost while repairing", costs.income, ""))
+        return totals
+
+    @staticmethod
+    def _total(words: str, amount: float, note: str) -> QWidget:
+        holder = QWidget()
+        holder.setFixedHeight(24)
+        holder.setStyleSheet("border: none;")
+        row = QHBoxLayout()
+        row.setContentsMargins(MARGIN, 0, MARGIN, 0)
+        row.setSpacing(8)
+        holder.setLayout(row)
+        row.addWidget(_label(words, 11.5, DIM))
+        if note:
+            row.addWidget(_label(note, 11, CAPTION))
+        row.addStretch()
+        figure = QLabel(money(amount))
+        figure.setStyleSheet(
+            "font-family: Consolas, monospace; font-size: 12.5px; font-weight: 600;"
+            f" color: {BODY}; border: none;"
+        )
+        row.addWidget(figure)
+        return holder
 
     @staticmethod
     def _row(name: str, number: str, colour: str, note: str) -> QWidget:
