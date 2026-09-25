@@ -2,12 +2,18 @@ from datetime import datetime
 from typing import Optional
 
 from dcs.mission import Mission
+from dcs.weather import Weather, Wind
 
 from game.weather.atmosphericconditions import AtmosphericConditions
 from game.weather.clouds import Clouds
 from game.weather.conditions import Conditions
 from game.weather.fog import Fog
 from game.weather.wind import WindConditions
+
+
+def calm_surface(weather: Weather) -> None:
+    """No wind at ground level. The winds at 2000 and 8000 m are left as they are."""
+    weather.wind_at_ground = Wind(weather.wind_at_ground.direction, 0)
 
 
 class EnvironmentGenerator:
