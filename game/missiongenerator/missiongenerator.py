@@ -35,7 +35,7 @@ from .cargoshipgenerator import CargoShipGenerator
 from .convoygenerator import ConvoyGenerator
 from .drawingsgenerator import DrawingsGenerator
 from game.weather.atmosxliveweather import LiveWeather, apply_weather
-from .environmentgenerator import EnvironmentGenerator
+from .environmentgenerator import EnvironmentGenerator, calm_surface
 from .flotgenerator import FlotGenerator
 from .forcedoptionsgenerator import ForcedOptionsGenerator
 from .frontlineconflictdescription import FrontLineConflictDescription
@@ -125,6 +125,8 @@ class MissionGenerator:
         weather = self.game.conditions.weather
         if isinstance(weather, LiveWeather):
             apply_weather(self.mission.weather, weather.vdata)
+        if self.game.settings.no_surface_wind:
+            calm_surface(self.mission.weather)
 
         tgo_generator = TgoGenerator(
             self.mission,
