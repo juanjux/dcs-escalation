@@ -39,6 +39,7 @@ import {
 } from "../terrainzones/TerrainZonesLayers";
 import { ThreatZoneFilter, ThreatZonesLayer } from "../threatzones";
 import TgosLayer from "../tgoslayer/TgosLayer";
+import WindLayer from "../windlayer/WindLayer";
 import "./MapLayersControl.css";
 
 // A custom, dark-themed replacement for the two stock Leaflet layer controls.
@@ -86,7 +87,10 @@ type LayerId =
   | "inclusionZones"
   | "exclusionZones"
   | "seaZones"
-  | "cullingZones";
+  | "cullingZones"
+  | "windSurface"
+  | "wind2000"
+  | "wind8000";
 
 type BaseMap = "clarity" | "firefly" | "topo";
 
@@ -171,6 +175,9 @@ const OVERLAYS: Record<LayerId, { label: string; node: ReactNode }> = {
   exclusionZones: { label: "Exclusion zones", node: <ExclusionZonesLayer /> },
   seaZones: { label: "Sea zones", node: <SeaZonesLayer /> },
   cullingZones: { label: "Culling exclusion zones", node: <CullingExclusionLayer /> },
+  windSurface: { label: "Wind at the surface", node: <WindLayer altitude={0} /> },
+  wind2000: { label: "Wind at 2000 m", node: <WindLayer altitude={2000} /> },
+  wind8000: { label: "Wind at 8000 m", node: <WindLayer altitude={8000} /> },
 };
 
 const ALL_IDS = Object.keys(OVERLAYS) as LayerId[];
@@ -268,6 +275,9 @@ const GROUPS: GroupDef[] = [
       { id: "exclusionZones" },
       { id: "seaZones" },
       { id: "cullingZones" },
+      { id: "windSurface" },
+      { id: "wind2000" },
+      { id: "wind8000" },
     ],
   },
 ];
