@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
 
 from game import Game
 from game.infos.information import Information
+from game.infos.places import place_named_in
 
 ROW_HEIGHT = 26
 TURN_X = 14
@@ -197,7 +198,21 @@ class EventList(QListView):
         self.setUniformItemSizes(True)
         self.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self.setStyleSheet(f"QListView {{ background: {PANEL_BG}; border: none; }}")
+        self.doubleClicked.connect(self.show_place)
         self.update_list()
+
+    def show_place(self, index: QModelIndex) -> None:
+        """Move the map to the base or site the entry names, at the zoom the player
+        left it at. An entry that names none does nothing."""
+        from game.server import EventStream
+        from game.sim import GameUpdateEvents
+
+        item = self.entries.itemFromIndex(index)
+        if self.game is None or not isinstance(item, EventItem):
+            return
+        place = place_named_in(self.game, item.info)
+        if place is not None:
+            EventStream.put_nowait(GameUpdateEvents().look_at(place.position.latlng()))
 
     def set_filter(self, categories: Optional[set[str]]) -> None:
         self.categories = categories
