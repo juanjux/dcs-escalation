@@ -151,8 +151,8 @@ class Settings:
             "ground land tens of metres downwind of their target, and miss buildings "
             "they would hit in calm air. With this on, the mission has no wind at "
             "ground level, generated or live; the winds at 6000 and 24000 feet stay. "
-            "Kneeboards and the turn display still show the surface wind the turn was "
-            "given."
+            "The command bar, kneeboards, runway in use and carrier course use the same "
+            "calm surface."
         ),
     )
     version: Optional[str] = None
