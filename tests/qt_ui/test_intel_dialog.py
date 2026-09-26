@@ -285,3 +285,59 @@ def test_the_fold_state_is_kept_per_side(qt_app: Any) -> None:
 
     window.player = Player.BLUE
     assert window.fold_state(AIR) == {"Groom Lake"}
+
+
+@pytest.mark.parametrize("with_transfers", [False, True])
+def test_statistics_and_transfers_share_the_intel_side_switch(
+    qt_app: Any, monkeypatch: pytest.MonkeyPatch, with_transfers: bool
+) -> None:
+    from PySide6.QtGui import QIcon, QStandardItem, QStandardItemModel
+
+    from qt_ui.models import TransferModel
+    from qt_ui.windows.intel.dialog import ICONS, IntelWindow
+
+    monkeypatch.setitem(ICONS, "Statistics", QIcon())
+    _income(
+        monkeypatch,
+        multiplier=1.0,
+        control_points=[],
+        buildings=[],
+        from_bases=0,
+        total_buildings=0,
+        total=0,
+    )
+    game = _game()
+    game.game_stats = SimpleNamespace(data_per_turn=[])
+    transfers = QStandardItemModel()
+    for name, side in (("Blue transfer", Player.BLUE), ("Red transfer", Player.RED)):
+        item = QStandardItem(name)
+        item.setData(
+            SimpleNamespace(player=side, description="To base"),
+            TransferModel.TransferRole,
+        )
+        transfers.appendRow(item)
+    model: Any = SimpleNamespace(transfer_model=transfers) if with_transfers else None
+    window = IntelWindow(game, model)
+    try:
+        tabs = [window.tabs.tabText(index) for index in range(window.tabs.count())]
+        assert tabs == ["Economy", "Air forces", "Ground forces", "Statistics"] + (
+            ["Transfers"] if with_transfers else []
+        )
+        for side, label in (
+            (Player.RED, "Red transfer"),
+            (Player.BLUE, "Blue transfer"),
+        ):
+            window.show_side(side)
+            window.tabs.setCurrentWidget(window.statistics)
+            assert window.statistics.player == side
+            assert window.filter.isHidden()
+            if with_transfers:
+                assert window.transfers is not None
+                window.tabs.setCurrentWidget(window.transfers)
+                assert window.transfers.proxy.rowCount() == 1
+                assert window.transfers.proxy.index(0, 0).data() == label
+                assert window.filter.isHidden()
+            else:
+                assert window.transfers is None
+    finally:
+        window.close()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, TYPE_CHECKING
+from typing import List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from game import Game
@@ -14,6 +14,10 @@ class FactionTurnMetadata:
     aircraft_count: int = 0
     vehicles_count: int = 0
     sam_count: int = 0
+    money: Optional[float] = None
+    income: Optional[float] = None
+    pilots: Optional[int] = None
+    bases: Optional[int] = None
 
     def __init__(self) -> None:
         self.aircraft_count = 0
@@ -64,5 +68,25 @@ class GameStats:
                 for squadron in cp.squadrons:
                     turn_data.enemy_units.aircraft_count += squadron.owned_aircraft
                 turn_data.enemy_units.vehicles_count += sum(cp.base.armor.values())
+
+        from game.income import Income
+        from game.theater import Player
+
+        for player, attr, units in (
+            (Player.BLUE, "blue", turn_data.allied_units),
+            (Player.RED, "red", turn_data.enemy_units),
+        ):
+            coalition = getattr(game, attr, None)
+            if coalition is None:
+                continue
+            units.money = coalition.budget
+            units.income = Income(game, player).total
+            units.pilots = sum(
+                sum(pilot.alive for pilot in squadron.current_roster)
+                for squadron in coalition.air_wing.iter_squadrons()
+            )
+            units.bases = sum(
+                cp.captured == player for cp in game.theater.controlpoints
+            )
 
         self.data_per_turn.append(turn_data)

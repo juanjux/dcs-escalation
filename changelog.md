@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Add selectable faction statistics to Intel, including budget, income, pilots and bases.
 * **[UI]** Rename the Air Wing button and dialog to Air Wings.
 * **[UI]** Integrate per-pilot aircraft notes and shared campaign notes into the
   aircraft dialog.
