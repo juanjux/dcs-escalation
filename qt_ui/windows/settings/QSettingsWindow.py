@@ -1062,8 +1062,9 @@ class AutoSettingsPage(QWidget):
         self.setLayout(row)
 
         self.stack = QStackedWidget()
+        self.preferences_index: Optional[int] = None
         self.sections: Optional[QListWidget] = None
-        if len(self.groups) > 1:
+        if len(self.groups) > 1 or page == "General":
             self.sections = QListWidget()
             self.sections.setFixedWidth(SECTION_LIST_WIDTH)
             for group in self.groups:
@@ -1095,14 +1096,34 @@ class AutoSettingsPage(QWidget):
         self._only_this_one_decides_the_height(self.stack.currentIndex())
         self.refresh_page()
 
+        if page == "General":
+            # Campaign settings must not require initialized application preferences.
+            self.preferences_index = self.stack.addWidget(QWidget())
+            if self.sections is not None:
+                self.sections.addItem("Application preferences")
+
     def _show_section(self, index: int) -> None:
         if 0 <= index < self.stack.count():
+            if index == self.preferences_index:
+                from qt_ui.windows.preferences.QLiberationPreferences import (
+                    PreferencesPane,
+                )
+
+                preferences = PreferencesPane()
+                placeholder = self.stack.widget(index)
+                assert placeholder is not None
+                self.stack.removeWidget(placeholder)
+                self.stack.insertWidget(index, preferences)
+                placeholder.deleteLater()
+                self.preferences_index = None
             self.stack.setCurrentIndex(index)
             self._only_this_one_decides_the_height(index)
             self.scroll_to_top()
 
     def _only_this_one_decides_the_height(self, index: int) -> None:
-        for i, group in enumerate(self.groups):
+        for i in range(self.stack.count()):
+            group = self.stack.widget(i)
+            assert group is not None
             group.setSizePolicy(
                 QSizePolicy.Policy.Preferred,
                 (
@@ -1207,11 +1228,19 @@ class QSettingsWindow(QDialog):
     #: ``TransferModel.sync_game_and_visibility``.
     settings_applied = Signal()
 
-    def __init__(self, game: Game):
+    def __init__(self, game: Optional[Game]):
         super().__init__()
         self.game = game
-        self.settings_widget = QSettingsWidget(game.settings, game)
-        self.setLayout(self.settings_widget.layout)
+        self.settings_widget = QSettingsWidget(
+            game.settings if game else Settings(), game
+        )
+        if game is None:
+            from qt_ui.windows.preferences.QLiberationPreferences import PreferencesPane
+
+            layout = QVBoxLayout(self)
+            layout.addWidget(PreferencesPane())
+        else:
+            self.setLayout(self.settings_widget.layout)
         # Forward successful settings completion to the outer window signal.
         self.settings_widget.settings_applied.connect(self.settings_applied)
 
@@ -1249,6 +1278,8 @@ class QSettingsWindow(QDialog):
         super().closeEvent(event)
 
     def _handle_mod_settings(self) -> None:
+        if self.game is None:
+            return
         # Applied again on every weather generation, so this is only about the choice
         # taking effect the moment the dialog is closed rather than a turn later.
         apply_cloud_preset_pack(self.game.settings)
@@ -1544,6 +1575,15 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         page = AutoSettingsPage(name, self, self.applySettings, self.refresh_all_pages)
         self.pages[name] = page
         scroll.setWidget(page)
+
+    def show_preferences(self) -> None:
+        index = self._page_names.index("General")
+        self.show_page(index)
+        page = self.pages["General"]
+        if page.sections is not None:
+            page.sections.setCurrentRow(page.stack.count() - 1)
+        else:
+            page.stack.setCurrentIndex(page.stack.count() - 1)
 
     def onSelectionChanged(self) -> None:
         index = self.categoryList.selectionModel().currentIndex().row()
