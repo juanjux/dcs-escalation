@@ -3,8 +3,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Optional
 
-from PySide6.QtCore import Qt, QTimer, QSize
-from PySide6.QtGui import QAction, QColor, QIcon, QMovie, QPainter, QPixmap
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QDialog,
@@ -19,8 +19,8 @@ from PySide6.QtWidgets import (
 )
 
 import qt_ui.uiconstants as CONST
-from qt_ui.liberation_theme import get_theme_icons
-from qt_ui.widgets.controls import VALUE, style_button
+from qt_ui.widgets.controls import style_button
+from qt_ui.windows.opforai import CommanderButton, OpforAiDialog
 from game import Game, persistency
 from game.ato.flight import Flight
 from game.ato.flightstate import Uninitialized
@@ -54,24 +54,7 @@ from qt_ui.windows.AirWingDialog import AirWingDialog
 from qt_ui.windows.finances.QFinancesMenu import QFinancesMenu
 from qt_ui.windows.intel import IntelWindow
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
-from qt_ui.windows.PendingTransfersDialog import PendingTransfersDialog
 from qt_ui.windows.QWaitingForMissionResultWindow import DebriefingFileWrittenSignal
-
-
-#: Every other icon on this bar is drawn in white. The OPFOR commander is drawn in
-#: near-black, so on a dark bar it reads as a smudge; it is repainted in the button's
-#: own ink instead, which also covers the frames of its animation.
-def _tinted(pixmap: QPixmap, colour: str = VALUE) -> QPixmap:
-    if pixmap.isNull():
-        return pixmap
-    tinted = QPixmap(pixmap.size())
-    tinted.fill(Qt.GlobalColor.transparent)
-    painter = QPainter(tinted)
-    painter.drawPixmap(0, 0, pixmap)
-    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
-    painter.fillRect(tinted.rect(), QColor(colour))
-    painter.end()
-    return tinted
 
 
 class QTopPanel(QFrame):
@@ -156,27 +139,9 @@ class QTopPanel(QFrame):
         # OPFOR-AI commander indicator (only shown when the setting is on); lights up for
         # a few seconds on each API call the LLM makes (no manual on/off), and Take Off
         # is blocked while it's lit.
-        self.ai_status_button = QPushButton("OPFOR AI: idle")
-        style_button(self.ai_status_button)
-        self.ai_status_button.setToolTip("LLM OPFOR commander — click for status")
+        self.ai_status_button = CommanderButton(self)
         self.ai_status_button.clicked.connect(self._show_ai_status)
         self.ai_status_button.setVisible(False)
-        # Robot-general icon, with a looping "thinking" animation while the LLM plans.
-        theme = get_theme_icons()
-        self._ai_idle_icon = QIcon(
-            _tinted(QPixmap(f"./resources/ui/misc/{theme}/opfor-commander.png"))
-        )
-        self.ai_status_button.setIcon(self._ai_idle_icon)
-        self.ai_status_button.setIconSize(QSize(20, 20))
-        self._ai_thinking_movie = QMovie(
-            f"./resources/ui/misc/{theme}/opfor-commander-thinking.gif"
-        )
-        self._ai_thinking_movie.setScaledSize(QSize(20, 20))
-        self._ai_thinking_movie.frameChanged.connect(
-            lambda: self.ai_status_button.setIcon(
-                QIcon(_tinted(self._ai_thinking_movie.currentPixmap()))
-            )
-        )
 
         self._ai_status_timer = QTimer(self)
         self._ai_status_timer.timeout.connect(self._refresh_ai_status)
@@ -233,7 +198,8 @@ class QTopPanel(QFrame):
         dialogs = QHBoxLayout()
         dialogs.setContentsMargins(0, 0, 0, 0)
         dialogs.setSpacing(8)
-        for widget in (self.air_wing, self.playable, self.transfers, self.debriefing):
+        self.transfers.hide()
+        for widget in (self.air_wing, self.playable, self.debriefing):
             dialogs.addWidget(widget)
         dialogs.addWidget(self.ai_status_button)
         self.layout.addLayout(dialogs)
@@ -343,9 +309,9 @@ class QTopPanel(QFrame):
         )
 
     def open_transfers(self) -> None:
-        self.transfers_dialog = open_once(
-            "transfers", lambda: PendingTransfersDialog(self.game_model)
-        )
+        self.open_intel()
+        if self.intel_dialog.transfers is not None:
+            self.intel_dialog.tabs.setCurrentWidget(self.intel_dialog.transfers)
 
     def refresh_debriefing_button(self) -> None:
         """Offer the last mission's report whenever there is one.
@@ -373,53 +339,10 @@ class QTopPanel(QFrame):
         if not enabled:
             return
         snap = AI_SESSION.snapshot()
-        if snap["active"]:
-            self.ai_status_button.setText(
-                f"OPFOR AI: {snap['status'] or 'planning...'}"
-            )
-            self.ai_status_button.setStyleSheet(
-                # red so the button contrasts with the green "thinking" animation balls
-                "color: white; background-color: #c62828; font-weight: bold;"
-            )
-            if self._ai_thinking_movie.state() != QMovie.MovieState.Running:
-                self._ai_thinking_movie.start()
-        else:
-            self.ai_status_button.setText("OPFOR AI: idle")
-            self.ai_status_button.setStyleSheet("color: gray;")
-            if self._ai_thinking_movie.state() == QMovie.MovieState.Running:
-                self._ai_thinking_movie.stop()
-                self.ai_status_button.setIcon(self._ai_idle_icon)
+        self.ai_status_button.set_snapshot(snap)
 
     def _show_ai_status(self) -> None:
-        from game.agent import service
-        from game.agent.session import AI_SESSION
-
-        snap = AI_SESSION.snapshot()
-        try:
-            rest = service.connect_url()
-            mcp = service.mcp_url()
-        except Exception:
-            rest = mcp = "(unavailable)"
-        box = QMessageBox(self)
-        box.setWindowTitle("OPFOR AI commander")
-        box.setText(
-            f"Active: {snap['active']}\n"
-            f"Status: {snap['status'] or '(none)'}\n"
-            f"Last update: {snap['updated_at'] or '(never)'}\n\n"
-            f"Connect an LLM —\n"
-            f"REST (any HTTP/REST client or curl): {rest}\n"
-            f"MCP (any MCP-compatible client): {mcp}"
-        )
-        cancel_btn = None
-        if snap["active"]:
-            cancel_btn = box.addButton(
-                "Cancel AI turn", QMessageBox.ButtonRole.DestructiveRole
-            )
-            style_button(cancel_btn, "danger")
-        style_button(box.addButton(QMessageBox.StandardButton.Close))
-        box.exec()
-        if cancel_btn is not None and box.clickedButton() == cancel_btn:
-            AI_SESSION.cancel()
+        self.ai_dialog = open_once("opfor-ai", lambda: OpforAiDialog(self.window()))
 
     def passTurn(self):
         with logged_duration("Skipping turn"):
@@ -937,7 +860,9 @@ class QTopPanel(QFrame):
         self.finances_dialog.show()
 
     def open_intel(self) -> None:
-        self.intel_dialog = IntelWindow(self.game)
+        if self.game is None:
+            return
+        self.intel_dialog = IntelWindow(self.game, self.game_model)
         self.intel_dialog.show()
 
     def open_high_command(self) -> None:
