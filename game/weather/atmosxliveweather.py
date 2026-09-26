@@ -732,6 +732,7 @@ def refresh_live_weather(game: Any) -> Optional[str]:
     except LiveWeatherUnavailable as exc:
         logging.warning("ATMOS-X live weather: refresh failed: %s", exc)
         return str(exc)
+    weather.calm_surface(game.settings.no_surface_wind)
     game.conditions.weather = weather
     logging.info("ATMOS-X live weather: %s applied on refresh", weather.station)
     return None
