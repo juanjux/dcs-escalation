@@ -163,6 +163,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Compare BLUFOR and OPFOR history with independent faction and metric toggles.
 * **[UI]** Save application preferences automatically when changed in Settings.
 * **[UI]** Keep GitHub and Discord links in Help, without toolbar buttons.
 * **[FIX]** The map drew a site's link to its command centre as working while the site's comms were cut or the command centre had no power.
