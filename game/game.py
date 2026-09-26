@@ -146,6 +146,12 @@ class Game:
         self.date = date(start_date.year, start_date.month, start_date.day)
         self.game_stats = GameStats()
         self.notes = ""
+        self.intel_statistics_metrics = [
+            "aircraft_count",
+            "vehicles_count",
+            "money",
+            "income",
+        ]
         # Free-form scratchpad for the OPFOR-AI commander (persisted per campaign).
         self.stored_context: dict[str, str] = {}
         # Per-turn loss summaries for the OPFOR-AI prev_turns after-action.

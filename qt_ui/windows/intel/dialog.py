@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 
 from game.game import Game
 from game.theater import Player
+from qt_ui.models import GameModel
 from qt_ui.uiconstants import ICONS
 from qt_ui.widgets.cards import CARD_BG, CARD_BORDER, card, make_transparent
 from qt_ui.widgets.controls import mono, style_button, styled_input
@@ -385,14 +386,14 @@ def _divider() -> QWidget:
 
 
 class IntelWindow(QDialog):
-    def __init__(self, game: Game) -> None:
+    def __init__(self, game: Game, game_model: Optional[GameModel] = None) -> None:
         super().__init__()
         self.game = game
         self.player = Player.BLUE
         self.setModal(True)
         self.setWindowTitle("Intelligence")
         self.setWindowIcon(ICONS["Statistics"])
-        self.setMinimumSize(720, 640)
+        self.setMinimumSize(900, 640)
 
         #: Folded groups, per side and per tab: switching sides and coming back
         #: should find the window as it was left.
@@ -428,6 +429,10 @@ class IntelWindow(QDialog):
         self.tabs.addTab(self.economy, TAB_NAMES[ECONOMY])
         self.tabs.addTab(self.air, TAB_NAMES[AIR])
         self.tabs.addTab(self.ground, TAB_NAMES[GROUND])
+        from qt_ui.windows.intel.statistics import StatisticsPane
+
+        self.statistics = StatisticsPane(game)
+        self.tabs.addTab(self.statistics, "Statistics")
         # Three tabs always fit; the scroll arrows only ever appeared because the
         # selected tab's border made the bar ask for a few pixels more than it had.
         self.tabs.tabBar().setUsesScrollButtons(False)
@@ -512,6 +517,7 @@ class IntelWindow(QDialog):
         ground = self._forces(GROUND)
         self.air.refresh(accent, air, self.fold_state(AIR))
         self.ground.refresh(accent, ground, self.fold_state(GROUND))
+        self.statistics.show_side(self.player)
 
         needle = self.filter.text().strip()
         current = self.tabs.currentIndex()
@@ -521,4 +527,4 @@ class IntelWindow(QDialog):
             self.match_count.setText(f"{rows} row" + ("s" if rows != 1 else ""))
         else:
             self.match_count.setText("")
-        self.filter.setEnabled(current != ECONOMY)
+        self.filter.setVisible(current in (AIR, GROUND))

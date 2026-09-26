@@ -58,7 +58,6 @@ from qt_ui.windows.palette import CommandPalette
 from qt_ui.windows.settings.QSettingsWindow import QSettingsWindow
 from game.squadrons.pilot import Pilot
 from qt_ui.windows.pilot import PilotDialog
-from qt_ui.windows.stats.QStatsWindow import QStatsWindow
 
 
 class QLiberationWindow(QMainWindow):
@@ -272,7 +271,7 @@ class QLiberationWindow(QMainWindow):
                 self.openGithubAction,
                 self.ukraineAction,
             ),
-            (self.openSettingsAction, self.openStatsAction, self.openNotesAction),
+            (self.openSettingsAction, self.openNotesAction),
         )
 
         # Held on the window: PySide does not take ownership of a corner widget, so a
@@ -675,9 +674,14 @@ class QLiberationWindow(QMainWindow):
         )
         self.dialog.show()
 
-    def showStatsDialog(self):
-        self.dialog = QStatsWindow(self.game)
-        self.dialog.show()
+    def showStatsDialog(self) -> None:
+        from qt_ui.windows.intel import IntelWindow
+
+        if self.game is None:
+            return
+        self.stats_dialog = IntelWindow(self.game, self.game_model)
+        self.stats_dialog.tabs.setCurrentWidget(self.stats_dialog.statistics)
+        self.stats_dialog.show()
 
     def showNotesDialog(self):
         self.dialog = QNotesWindow(self.game)
