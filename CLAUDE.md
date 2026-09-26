@@ -14,6 +14,7 @@
 - New features always go to a new branch and publish to an internal PR so I can review stuff easily. Bugfixes can go to an existing branch (the one that is being fixed) but also go to a PR. Never merge to master directly unless explicitly stated.
 - Always work on a git worktreee. No need to do a new one for each bugfix or feature, you can keep one for the full session.
 - Never reply to PR comments from other people yourself. If I tell you "handle this comment", it means to handle what the comments tell to fix or do, not to reply to the comment.
+- Always check with black and mypy before pushing the PR.
 
 ## Troubleshooting and debugging
 - Theories are Ok but they must be tested, typically by generating test missions to validate or falsify them.
