@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from PySide6.QtWidgets import QComboBox, QLabel, QPlainTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QPlainTextEdit, QScrollArea, QVBoxLayout, QWidget
 
 from qt_ui.windows.playable.model import Aircraft
 
@@ -13,51 +13,67 @@ class AircraftNotesPane(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.aircraft: Optional[Aircraft] = None
-        self.pilot: Any = None
+        self.editors: list[QPlainTextEdit] = []
         layout = QVBoxLayout(self)
-        self.players = QComboBox()
-        self.players.currentIndexChanged.connect(self._select_pilot)
-        layout.addWidget(self.players)
-        self.editor = QPlainTextEdit()
-        self.editor.setPlaceholderText("Checklists, radio frequencies, reminders…")
-        self.editor.textChanged.connect(self._save)
-        layout.addWidget(self.editor, 1)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        layout.addWidget(self.scroll, 1)
         note = QLabel(
             "Saved automatically with the campaign, per pilot and aircraft type. Included on the kneeboard; DCS shares pages between aircraft of the same type."
         )
         note.setWordWrap(True)
         note.setStyleSheet("color: #B7C6D2; font-size: 11px;")
         layout.addWidget(note)
+        self.show_aircraft(None)
 
     def show_aircraft(self, aircraft: Optional[Aircraft]) -> None:
         self.aircraft = aircraft
-        self.players.blockSignals(True)
-        self.players.clear()
-        if aircraft is not None:
-            for member in aircraft.flight.iter_members():
-                if member.is_player and member.pilot is not None:
-                    self.players.addItem(member.pilot.name, member.pilot)
-        self.players.blockSignals(False)
-        self._select_pilot()
-
-    def _select_pilot(self) -> None:
-        self.pilot = self.players.currentData()
-        self.editor.blockSignals(True)
-        text = ""
-        if self.pilot is not None and self.aircraft is not None:
-            text = getattr(self.pilot, "aircraft_notes", {}).get(
-                self.aircraft.dcs_id, ""
+        self.editors = []
+        content = QWidget()
+        fields = QVBoxLayout(content)
+        fields.setContentsMargins(0, 0, 0, 0)
+        pilots = (
+            [
+                member.pilot
+                for member in aircraft.flight.iter_members()
+                if member.is_player and member.pilot is not None
+            ]
+            if aircraft is not None
+            else []
+        )
+        airframe = aircraft.dcs_id if aircraft is not None else ""
+        for pilot in pilots or [None]:
+            if len(pilots) > 1:
+                fields.addWidget(QLabel(pilot.name))
+            editor = QPlainTextEdit()
+            editor.setMinimumHeight(120)
+            editor.setPlaceholderText(
+                "Checklists, radio frequencies, reminders…"
+                if pilot is not None
+                else "Select an aircraft to edit its notes."
             )
-        self.editor.setPlainText(text)
-        self.editor.setEnabled(self.pilot is not None)
-        self.editor.blockSignals(False)
+            editor.setAccessibleName(
+                f"Aircraft notes for {pilot.name}"
+                if pilot is not None
+                else "Aircraft notes"
+            )
+            editor.setPlainText(getattr(pilot, "aircraft_notes", {}).get(airframe, ""))
+            editor.setEnabled(pilot is not None)
+            editor.textChanged.connect(
+                lambda p=pilot, kind=airframe, field=editor: self._save(p, kind, field)
+            )
+            fields.addWidget(editor, 1)
+            self.editors.append(editor)
+        self.scroll.setWidget(content)
 
-    def _save(self) -> None:
-        if self.pilot is None or self.aircraft is None:
+    @staticmethod
+    def _save(pilot: Any, airframe: str, editor: QPlainTextEdit) -> None:
+        if pilot is None:
             return
-        if not hasattr(self.pilot, "aircraft_notes"):
-            self.pilot.aircraft_notes = {}
-        self.pilot.aircraft_notes[self.aircraft.dcs_id] = self.editor.toPlainText()
+        if not hasattr(pilot, "aircraft_notes"):
+            pilot.aircraft_notes = {}
+        pilot.aircraft_notes[airframe] = editor.toPlainText()
 
 
 class CampaignNotesPane(QWidget):
