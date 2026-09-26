@@ -508,6 +508,7 @@ class Game:
         )
         LuaPluginManager.load_settings(self.settings)
         ObjectiveDistanceCache.set_theater(self.theater)
+        self.conditions.weather.calm_surface(self.settings.no_surface_wind)
         self.compute_unculled_zones(GameUpdateEvents())
         # Apply mod settings again so mod properties get injected again,
         # in case mods like CJS F/A-18E/F/G or IDF F-16I are selected by the player

@@ -5,9 +5,10 @@ import logging
 import math
 import random
 from abc import ABC, abstractmethod
+from dataclasses import replace
 from typing import Optional, TYPE_CHECKING
 
-from dcs.weather import Weather as PydcsWeather
+from dcs.weather import Weather as PydcsWeather, Wind
 
 from game.timeofday import TimeOfDay
 from game.utils import (
@@ -27,6 +28,10 @@ if TYPE_CHECKING:
 
 
 class Weather(ABC):
+    #: The surface wind the turn was given, kept while the "No wind at the surface"
+    #: setting has the surface calm, so that turning the setting off gives it back.
+    forecast_surface_wind: Optional[Wind] = None
+
     def __init__(
         self,
         seasonal_conditions: SeasonalConditions,
@@ -41,6 +46,21 @@ class Weather(ABC):
         self.clouds = self.generate_clouds()
         self.fog = self.generate_fog()
         self.wind = self.generate_wind()
+
+    def calm_surface(self, calm: bool) -> bool:
+        """Make the surface wind calm, or give back the one the turn was given, and
+        say whether it changed. Everything that reads the turn's wind -- the command
+        bar, the kneeboards, the runway in use, the carrier's course -- then agrees
+        with the mission DCS is given."""
+        if calm and self.forecast_surface_wind is None:
+            self.forecast_surface_wind = self.wind.at_0m
+            self.wind = replace(self.wind, at_0m=Wind(self.wind.at_0m.direction, 0))
+            return True
+        if not calm and self.forecast_surface_wind is not None:
+            self.wind = replace(self.wind, at_0m=self.forecast_surface_wind)
+            self.forecast_surface_wind = None
+            return True
+        return False
 
     def generate_atmospheric(
         self,

@@ -75,6 +75,7 @@ class QConditionsDialog(QDialog):
             preset=preset,
         )
 
+        new_weather.calm_surface(game.settings.no_surface_wind)
         self.weather.conditions.weather = new_weather
 
         self.weather.update_forecast()

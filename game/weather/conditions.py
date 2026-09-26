@@ -51,6 +51,7 @@ class Conditions:
         weather = live_weather_for(theater, settings) or cls.generate_weather(
             theater.seasonal_conditions, day, time_of_day
         )
+        weather.calm_surface(settings.no_surface_wind)
 
         return cls(
             time_of_day=time_of_day,

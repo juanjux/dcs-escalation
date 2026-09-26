@@ -1252,6 +1252,10 @@ class QSettingsWindow(QDialog):
         # Applied again on every weather generation, so this is only about the choice
         # taking effect the moment the dialog is closed rather than a turn later.
         apply_cloud_preset_pack(self.game.settings)
+        if self.game.conditions.weather.calm_surface(
+            self.game.settings.no_surface_wind
+        ):
+            GameUpdateSignal.get_instance().updateGame(self.game)
 
 
 class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
