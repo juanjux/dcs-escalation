@@ -269,7 +269,6 @@ class QLiberationWindow(QMainWindow):
             (self.newGameAction, self.openAction, self.saveGameAction),
             (
                 self.openDiscordAction,
-                self.openGithubAction,
                 self.ukraineAction,
             ),
             (self.openSettingsAction, self.openStatsAction, self.openNotesAction),
