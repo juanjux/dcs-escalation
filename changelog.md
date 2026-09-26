@@ -1,6 +1,8 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Integrate per-pilot aircraft notes and shared campaign notes into the
+  aircraft dialog.
 * **[UI]** Map layers for the wind at the surface, 2000 m and 8000 m, under Navmesh & terrain, off by default.
 * **[Mission Generator]** No wind at the surface, keeping the winds at 2000 and 8000 m: long-range cruise missiles in DCS miss downwind of their target in a surface wind. On by default, under General.
 * **[UI]** The debriefing totals what each side's losses cost: aircraft and ground units to replace, and the income lost while the buildings are repaired.

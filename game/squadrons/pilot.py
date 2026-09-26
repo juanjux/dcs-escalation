@@ -201,6 +201,9 @@ class PilotStatus(Enum):
 class Pilot:
     name: str
     player: bool = field(default=False)
+    aircraft_notes: dict[str, str] = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
     status: PilotStatus = field(default=PilotStatus.Active)
     record: PilotRecord = field(default_factory=PilotRecord)
 
@@ -288,6 +291,7 @@ class Pilot:
         state.setdefault("morale_log", [])
         state.setdefault("sorties_by_turn", [])
         state.setdefault("friendships", {})
+        state.setdefault("aircraft_notes", {})
         if "id" not in state:
             # A plain if rather than setdefault: a default_factory field has no class
             # attribute to fall back on, and setdefault would build a UUID on every

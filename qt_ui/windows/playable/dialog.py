@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSplitter,
+    QTabWidget,
     QTreeView,
     QVBoxLayout,
     QWidget,
@@ -431,7 +432,14 @@ class PlayableAircraftDialog(QDialog):
         )
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(left)
-        splitter.addWidget(self.points_caption)
+        from qt_ui.windows.playable.notes import AircraftNotesPane, CampaignNotesPane
+
+        self.notes = AircraftNotesPane()
+        self.detail_tabs = QTabWidget()
+        self.detail_tabs.addTab(self.points_caption, "Saved points")
+        self.detail_tabs.addTab(self.notes, "Aircraft notes")
+        self.detail_tabs.addTab(CampaignNotesPane(self.game), "Campaign notes")
+        splitter.addWidget(self.detail_tabs)
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
         self.splitter = splitter
@@ -502,7 +510,7 @@ class PlayableAircraftDialog(QDialog):
                 f"Turn {game.turn} · {game.conditions.start_time:%H:%M}Z"
             )
         flying = bool(aircraft)
-        self.splitter.setVisible(flying)
+        self.splitter.setVisible(True)
         self.empty.setVisible(not flying)
         if flying:
             self.aircraft_view.setCurrentIndex(self.aircraft_model.index(0, 0))
@@ -514,6 +522,7 @@ class PlayableAircraftDialog(QDialog):
 
     def show_points(self) -> None:
         one = self.selected
+        self.notes.show_aircraft(one)
         self.points_model.show(one, self._coordinates)
         for row in self.points_model.header_rows():
             self.points_view.setFirstColumnSpanned(row, QModelIndex(), True)

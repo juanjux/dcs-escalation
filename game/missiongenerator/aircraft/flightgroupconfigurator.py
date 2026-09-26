@@ -155,6 +155,8 @@ class FlightGroupConfigurator:
             self.flight.flight_plan.waypoints,
         )
 
+        from game.ato.aircraftnotes import notes_for_flight
+
         flight_plan = self.flight.flight_plan
         flight_data = FlightData(
             package=self.flight.package,
@@ -180,6 +182,7 @@ class FlightGroupConfigurator:
             laser_codes=laser_codes,
             start_type=self.flight.start_type,
             saved_points=list(points_of(self.flight)),
+            aircraft_notes=notes_for_flight(self.flight),
             group_name=str(self.group.name),
             patrol_speed=(
                 flight_plan.patrol_speed if flight_plan.is_patrol(flight_plan) else None
