@@ -333,7 +333,7 @@ class PlayableAircraftDialog(QDialog):
         self.slots = _label("", f"font-size: 11px; color: {QUIET_INK};")
         self.carried = _label("", f"font-size: 11px; color: {FAINT_INK};")
         self.empty = _label(
-            "Pick a squadron in the Air Wing and convert a pilot to player, or set"
+            "Pick a squadron in Air Wings and convert a pilot to player, or set"
             " client slots on a flight in the ATO.",
             f"font-size: 12px; color: {QUIET_INK};",
         )

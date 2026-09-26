@@ -127,7 +127,7 @@ class QTopPanel(QFrame):
         if not self.game or self.game.turn == 0:
             self.proceedButton.setEnabled(False)
 
-        self.air_wing = QPushButton("Air Wing")
+        self.air_wing = QPushButton("Air Wings")
         self.air_wing.setDisabled(True)
         style_button(self.air_wing)
         self.air_wing.clicked.connect(self.open_air_wing)
