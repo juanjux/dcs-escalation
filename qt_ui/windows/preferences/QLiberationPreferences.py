@@ -38,16 +38,23 @@ class PreferencesPane(QFrame):
         )
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
-        apply = style_button(QPushButton("Apply preferences"), "primary")
-        apply.clicked.connect(self.apply)
-        layout.addWidget(apply)
+        self.preferences.themeSelect.currentIndexChanged.connect(self.apply)
+        self.preferences.payloads_cb.toggled.connect(self.apply)
+        self.preferences.setup_every_start_cb.toggled.connect(self.apply)
+        self.preferences.port_input.valueChanged.connect(self.apply)
+        self.preferences.edit_saved_game_dir.textChanged.connect(self.apply)
+        self.preferences.edit_dcs_install_dir.textChanged.connect(self.apply)
         outer.addWidget(holder)
         outer.addStretch()
 
     def apply(self) -> None:
-        if self.preferences.apply():
+        if self.preferences.apply(silent=True):
             self.status.setText(
                 "Saved. Theme and server port changes require a restart."
+            )
+        else:
+            self.status.setText(
+                "Not saved: enter valid Saved Games and DCS installation directories."
             )
 
 
@@ -172,12 +179,23 @@ class QLiberationPreferences(QFrame):
             self.dcs_install_dir = install_dir
             self.edit_dcs_install_dir.setText(install_dir)
 
-    def apply(self) -> bool:
+    def apply(self, *, silent: bool = False) -> bool:
         self.saved_game_dir = self.edit_saved_game_dir.text()
         self.dcs_install_dir = self.edit_dcs_install_dir.text()
         self.prefer_liberation_payloads = self.payloads_cb.isChecked()
         self.setup_preferences_on_every_start = self.setup_every_start_cb.isChecked()
         self.port = self.port_input.value()
+
+        # Inline editing must not open modal warnings for incomplete paths.
+        if silent and (
+            not os.path.isdir(self.saved_game_dir)
+            or not os.path.isdir(self.dcs_install_dir)
+            or (
+                not os.path.isdir(os.path.join(self.dcs_install_dir, "Scripts"))
+                and os.path.isfile(os.path.join(self.dcs_install_dir, "bin", "DCS.exe"))
+            )
+        ):
+            return False
 
         if not os.path.isdir(self.saved_game_dir):
             error_dialog = QMessageBox.critical(
