@@ -1627,6 +1627,12 @@ class KneeboardGenerator(MissionInfoGenerator):
         # Only create the notes page if there are notes to show.
         if notes := self.game.notes:
             pages.append(NotesPage(notes, self.dark_kneeboard))
+        for pilot_name, notes in flight.aircraft_notes:
+            pages.append(
+                NotesPage(
+                    f"{pilot_name} · {flight.callsign}\n\n{notes}", self.dark_kneeboard
+                )
+            )
 
         if (target_page := self.generate_task_page(flight)) is not None:
             pages.append(target_page)

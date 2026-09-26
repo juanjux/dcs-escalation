@@ -49,10 +49,10 @@ from qt_ui.windows.groundobject.QGroundObjectMenu import QGroundObjectMenu
 from qt_ui.windows.infos.eventlist import EventsPanel
 from qt_ui.windows.logs.QLogsWindow import QLogsWindow
 from qt_ui.windows.newgame.QNewGameWizard import NewGameWizard
-from qt_ui.windows.notes.QNotesWindow import QNotesWindow
 from qt_ui.windows.preferences.QLiberationPreferencesWindow import (
     QLiberationPreferencesWindow,
 )
+from qt_ui.windows.notes.QNotesWindow import QNotesWindow
 from game.search.index import GameIndex
 from qt_ui.windows.palette import CommandPalette
 from qt_ui.windows.settings.QSettingsWindow import QSettingsWindow
@@ -246,7 +246,7 @@ class QLiberationWindow(QMainWindow):
         self.enable_game_actions(False)
 
     def enable_game_actions(self, enabled: bool):
-        self.openSettingsAction.setVisible(enabled)
+        self.openSettingsAction.setEnabled(enabled)
         self.openStatsAction.setVisible(enabled)
         self.openNotesAction.setVisible(enabled)
 
@@ -328,9 +328,13 @@ class QLiberationWindow(QMainWindow):
         file_menu.addAction(self.saveGameAction)
         file_menu.addAction(self.saveAsAction)
         file_menu.addSeparator()
-        file_menu.addAction(self.showLiberationPrefDialogAction)
-        file_menu.addSeparator()
         file_menu.addAction("E&xit", self.close)
+
+        settings_menu = self.menu.addMenu("&Settings")
+        self.showLiberationPrefDialogAction.setText("&General")
+        settings_menu.addAction(self.showLiberationPrefDialogAction)
+        self.openSettingsAction.setText("&Campaign settings")
+        settings_menu.addAction(self.openSettingsAction)
 
         help_menu = self.menu.addMenu("&Help")
         help_menu.addAction(self.openDiscordAction)
@@ -662,7 +666,12 @@ class QLiberationWindow(QMainWindow):
         about.exec_()
 
     def showLiberationDialog(self):
-        self.subwindow = QLiberationPreferencesWindow()
+        self.subwindow = QSettingsWindow(self.game)
+        if self.game is not None:
+            self.subwindow.settings_widget.show_preferences()
+            self.subwindow.settings_applied.connect(
+                self.game_model.transfer_model.sync_game_and_visibility
+            )
         self.subwindow.show()
 
     def showSettingsDialog(self) -> None:
@@ -683,9 +692,12 @@ class QLiberationWindow(QMainWindow):
         self.stats_dialog.tabs.setCurrentWidget(self.stats_dialog.statistics)
         self.stats_dialog.show()
 
-    def showNotesDialog(self):
-        self.dialog = QNotesWindow(self.game)
-        self.dialog.show()
+    def showNotesDialog(self) -> None:
+        from qt_ui.windows.playable import PlayableAircraftDialog
+
+        self.player_notes_dialog = PlayableAircraftDialog(self.game_model, self)
+        self.player_notes_dialog.detail_tabs.setCurrentIndex(1)
+        self.player_notes_dialog.show()
 
     def showLogsDialog(self):
         self.dialog = QLogsWindow(self)

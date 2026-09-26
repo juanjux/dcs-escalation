@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSplitter,
+    QTabWidget,
     QTreeView,
     QVBoxLayout,
     QWidget,
@@ -315,7 +316,7 @@ class PlayableAircraftDialog(QDialog):
         super().__init__(parent)
         self.game_model = game_model
         self.clipboard = data.Clipboard()
-        self.setWindowTitle("Playable aircraft")
+        self.setWindowTitle("Player Aircrafts")
         self.setMinimumSize(1120, 640)
         self.setWindowFlag(Qt.WindowType.Tool, True)
         self.setStyleSheet(f"QDialog {{ background: #202B36; }}")
@@ -333,7 +334,7 @@ class PlayableAircraftDialog(QDialog):
         self.slots = _label("", f"font-size: 11px; color: {QUIET_INK};")
         self.carried = _label("", f"font-size: 11px; color: {FAINT_INK};")
         self.empty = _label(
-            "Pick a squadron in the Air Wing and convert a pilot to player, or set"
+            "Pick a squadron in Air Wings and convert a pilot to player, or set"
             " client slots on a flight in the ATO.",
             f"font-size: 12px; color: {QUIET_INK};",
         )
@@ -431,7 +432,14 @@ class PlayableAircraftDialog(QDialog):
         )
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.addWidget(left)
-        splitter.addWidget(self.points_caption)
+        from qt_ui.windows.playable.notes import AircraftNotesPane, CampaignNotesPane
+
+        self.notes = AircraftNotesPane()
+        self.detail_tabs = QTabWidget()
+        self.detail_tabs.addTab(self.points_caption, "Saved points")
+        self.detail_tabs.addTab(self.notes, "Aircraft notes")
+        self.detail_tabs.addTab(CampaignNotesPane(self.game), "Campaign notes")
+        splitter.addWidget(self.detail_tabs)
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
         self.splitter = splitter
@@ -502,7 +510,7 @@ class PlayableAircraftDialog(QDialog):
                 f"Turn {game.turn} · {game.conditions.start_time:%H:%M}Z"
             )
         flying = bool(aircraft)
-        self.splitter.setVisible(flying)
+        self.splitter.setVisible(True)
         self.empty.setVisible(not flying)
         if flying:
             self.aircraft_view.setCurrentIndex(self.aircraft_model.index(0, 0))
@@ -514,6 +522,7 @@ class PlayableAircraftDialog(QDialog):
 
     def show_points(self) -> None:
         one = self.selected
+        self.notes.show_aircraft(one)
         self.points_model.show(one, self._coordinates)
         for row in self.points_model.header_rows():
             self.points_view.setFirstColumnSpanned(row, QModelIndex(), True)

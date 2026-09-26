@@ -433,8 +433,14 @@ class IntelWindow(QDialog):
 
         self.statistics = StatisticsPane(game)
         self.tabs.addTab(self.statistics, "Statistics")
-        # Three tabs always fit; the scroll arrows only ever appeared because the
-        # selected tab's border made the bar ask for a few pixels more than it had.
+        from qt_ui.windows.intel.transfers import TransfersPane
+
+        self.transfers = (
+            TransfersPane(game_model.transfer_model) if game_model else None
+        )
+        if self.transfers is not None:
+            self.tabs.addTab(self.transfers, "Transfers")
+        # All tabs fit at the window's minimum width.
         self.tabs.tabBar().setUsesScrollButtons(False)
         self.tabs.currentChanged.connect(lambda _i: self.redraw())
 
@@ -518,6 +524,8 @@ class IntelWindow(QDialog):
         self.air.refresh(accent, air, self.fold_state(AIR))
         self.ground.refresh(accent, ground, self.fold_state(GROUND))
         self.statistics.show_side(self.player)
+        if self.transfers is not None:
+            self.transfers.show_side(self.player)
 
         needle = self.filter.text().strip()
         current = self.tabs.currentIndex()

@@ -197,6 +197,17 @@ class QGroundObjectMenu(QDialog):
         column.setSpacing(5)
         column.addWidget(caption)
         column.addWidget(self._scrollable(units))
+        total = sum(
+            price_of(unit) for unit in self.ground_object.units if unit.repairable
+        )
+        due = sum(price_of(unit) for unit in repairable_units(self.ground_object))
+        column.addWidget(
+            label(
+                f"Repair value · ${total:g}M total · ${due:g}M for destroyed units awaiting repair",
+                10.5,
+                TEXT_LABEL,
+            )
+        )
         holder.setLayout(column)
         return holder
 
@@ -350,6 +361,16 @@ class QGroundObjectMenu(QDialog):
         column.setSpacing(5)
         column.addWidget(caption)
         column.addWidget(card)
+        cost = self.ground_object.repair_cost()
+        total = cost * len(buildings_of(self.ground_object))
+        due = cost * len(repairable_buildings(self.ground_object))
+        column.addWidget(
+            label(
+                f"Repair value · ${total:g}M total · ${due:g}M for destroyed buildings awaiting repair",
+                10.5,
+                TEXT_LABEL,
+            )
+        )
         holder.setLayout(column)
         return holder
 
