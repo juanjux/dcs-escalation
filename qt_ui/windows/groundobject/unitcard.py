@@ -244,16 +244,21 @@ class UnitCard(QWidget):
         if state:
             row.add(chip(state, ink))
         row.stretch()
-        row.add(
-            label(
-                f"Repair ${price_of(unit):g}M" if unit.repairable else "Not repairable",
-                10.5,
-                TEXT_LABEL,
-            )
-        )
         button = self._repair_button(unit)
         if button is not None:
             row.add(button)
+        else:
+            row.add(
+                label(
+                    (
+                        f"Repair ${price_of(unit):g}M"
+                        if unit.repairable
+                        else "Not repairable"
+                    ),
+                    10.5,
+                    TEXT_LABEL,
+                )
+            )
         row.add(
             CoordinateLabel(
                 unit.position,

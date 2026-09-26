@@ -166,16 +166,18 @@ class BuildingCard(QWidget):
         row.add(holder)
         row.stretch()
 
-        cost = self.ground_object.repair_cost()
-        row.add(
-            label(
-                f"Repair ${cost:g}M" if cost > 0 else "Not repairable", 10.5, TEXT_LABEL
-            )
-        )
-
         button = self._repair_button(building)
         if button is not None:
             row.add(button)
+        else:
+            cost = self.ground_object.repair_cost()
+            row.add(
+                label(
+                    f"Repair ${cost:g}M" if cost > 0 else "Not repairable",
+                    10.5,
+                    TEXT_LABEL,
+                )
+            )
         row.add(
             CoordinateLabel(
                 building.position,
