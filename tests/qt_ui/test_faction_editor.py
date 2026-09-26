@@ -2,6 +2,8 @@
 
 import os
 from copy import deepcopy
+from pathlib import Path
+from typing import Any, Iterator
 
 import pytest
 
@@ -9,14 +11,14 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 @pytest.fixture(scope="module")
-def qt_app():
+def qt_app() -> Any:
     from PySide6.QtWidgets import QApplication
 
     return QApplication.instance() or QApplication([])
 
 
 @pytest.fixture
-def editor(qt_app, tmp_path):
+def editor(qt_app: Any, tmp_path: Path) -> Iterator[Any]:
     from game import persistency
     from game.factions import FACTIONS
     from qt_ui.widgets.factioneditor import FactionEditor
@@ -29,7 +31,7 @@ def editor(qt_app, tmp_path):
     qt_app.processEvents()
 
 
-def test_all_pools_show_the_correct_collection_and_add_catalogue(editor):
+def test_all_pools_show_the_correct_collection_and_add_catalogue(editor: Any) -> None:
     from qt_ui.widgets.factioneditor import POOLS
 
     for index, (_, attribute, combo_name, _) in enumerate(POOLS):
@@ -41,7 +43,7 @@ def test_all_pools_show_the_correct_collection_and_add_catalogue(editor):
         assert all(combo.itemData(i) not in collection for i in range(combo.count()))
 
 
-def test_remove_and_add_preserve_filter_category_and_emit_changes(editor):
+def test_remove_and_add_preserve_filter_category_and_emit_changes(editor: Any) -> None:
     from PySide6.QtCore import Qt
 
     editor.categories.setCurrentItem(editor.categories.topLevelItem(2))
@@ -50,7 +52,7 @@ def test_remove_and_add_preserve_filter_category_and_emit_changes(editor):
     name = item.text(0)
     editor.search.setText(name)
     editor.units.setCurrentItem(item)
-    changes = []
+    changes: list[Any] = []
     editor.faction_changed.connect(changes.append)
     editor.remove_button.click()
     assert unit not in editor.faction.tankers
@@ -65,7 +67,7 @@ def test_remove_and_add_preserve_filter_category_and_emit_changes(editor):
     assert editor.search.text() == name
 
 
-def test_in_use_rows_explain_why_removal_is_disabled(editor):
+def test_in_use_rows_explain_why_removal_is_disabled(editor: Any) -> None:
     editor.in_use = lambda unit: "2 squadrons fly it"
     editor.updateFaction(editor.faction)
     item = editor.units.topLevelItem(0)
@@ -75,7 +77,7 @@ def test_in_use_rows_explain_why_removal_is_disabled(editor):
     assert "2 squadrons" in editor.selection_hint.text()
 
 
-def test_filter_clears_hidden_selection_and_has_empty_state(editor):
+def test_filter_clears_hidden_selection_and_has_empty_state(editor: Any) -> None:
     editor.units.setCurrentItem(editor.units.topLevelItem(0))
     editor.search.setText("no such aircraft zzz")
     assert not editor.units.selectedItems()
@@ -89,8 +91,8 @@ def test_filter_clears_hidden_selection_and_has_empty_state(editor):
     )
 
 
-def test_settings_update_faction_and_notify_campaign(editor):
-    changes = []
+def test_settings_update_faction_and_notify_campaign(editor: Any) -> None:
+    changes: list[Any] = []
     editor.faction_changed.connect(changes.append)
     editor.jtac.click()
     assert editor.faction.has_jtac == editor.jtac.isChecked()
