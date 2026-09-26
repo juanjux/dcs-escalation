@@ -163,6 +163,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Show repair prices once per row when a Repair button is available.
 * **[UI]** Aircraft notes follow the aircraft list selection without another selector.
 * **[UI]** Compare BLUFOR and OPFOR history with independent faction and metric toggles.
 * **[UI]** Save application preferences automatically when changed in Settings.
