@@ -82,5 +82,49 @@ def test_statistics_preserve_missing_history_and_toggle(app: Any) -> None:
 def test_empty_statistics_are_supported(app: Any) -> None:
     game: Any = SimpleNamespace(game_stats=SimpleNamespace(data_per_turn=[]))
     pane = StatisticsPane(game)
-    pane.compare.setChecked(False)
+    pane.sides[Player.RED].setChecked(False)
+    pane.close()
+
+
+def test_factions_can_be_compared_and_toggled_independently(app: Any) -> None:
+    from PySide6.QtCharts import QChartView, QLineSeries
+    from PySide6.QtWidgets import QCheckBox, QLabel
+
+    record = GameTurnMetadata()
+    record.allied_units.money = 123
+    record.enemy_units.money = 45
+    game: Any = SimpleNamespace(
+        game_stats=SimpleNamespace(data_per_turn=[record]),
+        intel_statistics_metrics=["money"],
+    )
+    pane = StatisticsPane(game)
+
+    def series() -> dict[str, list[float]]:
+        item = pane.charts.itemAt(0)
+        assert item is not None
+        chart = item.widget()
+        assert isinstance(chart, QChartView)
+        result = {}
+        for line in chart.chart().series():
+            assert isinstance(line, QLineSeries)
+            result[line.name()] = [point.y() for point in line.points()]
+        return result
+
+    assert not pane.findChildren(QCheckBox)
+    assert series() == {"BLUFOR": [123], "OPFOR": [45]}
+    pane.sides[Player.BLUE].click()
+    assert series() == {"OPFOR": [45]}
+    pane.show_side(Player.BLUE)
+    assert series() == {"OPFOR": [45]}
+    pane.sides[Player.BLUE].click()
+    pane.sides[Player.RED].click()
+    assert series() == {"BLUFOR": [123]}
+    pane.sides[Player.BLUE].click()
+    item = pane.charts.itemAt(0)
+    assert item is not None
+    empty = item.widget()
+    assert isinstance(empty, QLabel)
+    assert "Select BLUFOR or OPFOR" in empty.text()
+    pane.sides[Player.RED].click()
+    assert series() == {"OPFOR": [45]}
     pane.close()
