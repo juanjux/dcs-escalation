@@ -81,6 +81,7 @@ class FlightData:
     #: Points the player wrote down for this aircraft from the map. They are not part
     #: of the flight plan: they get a kneeboard page of their own.
     saved_points: list[SavedPoint] = field(default_factory=list)
+    aircraft_notes: list[tuple[str, str]] = field(default_factory=list)
 
     #: The DCS group's name, which is what the tanker and AEW&C records go by.
     group_name: str = ""

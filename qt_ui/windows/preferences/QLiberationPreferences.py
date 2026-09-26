@@ -20,8 +20,39 @@ from qt_ui.widgets.controls import style_button
 from qt_ui.liberation_theme import THEMES, get_theme_index, set_theme_index
 
 
+class PreferencesPane(QFrame):
+    """Application preferences embedded in Settings > General."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        from qt_ui.widgets.cards import card
+
+        outer = QVBoxLayout(self)
+        holder = card()
+        layout = QVBoxLayout(holder)
+        layout.addWidget(QLabel("Application preferences"))
+        self.preferences = QLiberationPreferences()
+        layout.addWidget(self.preferences)
+        self.status = QLabel(
+            "Changes apply to this installation, not only this campaign."
+        )
+        self.status.setWordWrap(True)
+        layout.addWidget(self.status)
+        apply = style_button(QPushButton("Apply preferences"), "primary")
+        apply.clicked.connect(self.apply)
+        layout.addWidget(apply)
+        outer.addWidget(holder)
+        outer.addStretch()
+
+    def apply(self) -> None:
+        if self.preferences.apply():
+            self.status.setText(
+                "Saved. Theme and server port changes require a restart."
+            )
+
+
 class QLiberationPreferences(QFrame):
-    def __init__(self):
+    def __init__(self) -> None:
         super(QLiberationPreferences, self).__init__()
         self.saved_game_dir = ""
         self.dcs_install_dir = ""
@@ -60,7 +91,7 @@ class QLiberationPreferences(QFrame):
 
         self.initUi()
 
-    def initUi(self):
+    def initUi(self) -> None:
         main_layout = QVBoxLayout()
         layout = QGridLayout()
         layout.addWidget(
@@ -125,7 +156,7 @@ class QLiberationPreferences(QFrame):
 
         self.setLayout(main_layout)
 
-    def on_browse_saved_games(self):
+    def on_browse_saved_games(self) -> None:
         saved_game_dir = str(
             QFileDialog.getExistingDirectory(self, "Select DCS Saved Game Directory")
         )
@@ -133,7 +164,7 @@ class QLiberationPreferences(QFrame):
             self.saved_game_dir = saved_game_dir
             self.edit_saved_game_dir.setText(saved_game_dir)
 
-    def on_browse_installation_dir(self):
+    def on_browse_installation_dir(self) -> None:
         install_dir = str(
             QFileDialog.getExistingDirectory(self, "Select DCS Installation Directory")
         )
@@ -141,13 +172,12 @@ class QLiberationPreferences(QFrame):
             self.dcs_install_dir = install_dir
             self.edit_dcs_install_dir.setText(install_dir)
 
-    def apply(self):
+    def apply(self) -> bool:
         self.saved_game_dir = self.edit_saved_game_dir.text()
         self.dcs_install_dir = self.edit_dcs_install_dir.text()
         self.prefer_liberation_payloads = self.payloads_cb.isChecked()
         self.setup_preferences_on_every_start = self.setup_every_start_cb.isChecked()
         self.port = self.port_input.value()
-        set_theme_index(self.themeSelect.currentIndex())
 
         if not os.path.isdir(self.saved_game_dir):
             error_dialog = QMessageBox.critical(
@@ -156,7 +186,6 @@ class QLiberationPreferences(QFrame):
                 self.saved_game_dir + " is not a valid directory",
                 QMessageBox.StandardButton.Ok,
             )
-            error_dialog.exec_()
             return False
 
         if self.install_dir_ignore_warning and self.dcs_install_dir == "":
@@ -199,9 +228,9 @@ class QLiberationPreferences(QFrame):
                 self.dcs_install_dir + " is not a valid DCS installation directory",
                 QMessageBox.StandardButton.Ok,
             )
-            error_dialog.exec_()
             return False
 
+        set_theme_index(self.themeSelect.currentIndex())
         liberation_install.setup(
             self.saved_game_dir,
             self.dcs_install_dir,

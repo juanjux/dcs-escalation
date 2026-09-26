@@ -54,7 +54,6 @@ from qt_ui.windows.AirWingDialog import AirWingDialog
 from qt_ui.windows.finances.QFinancesMenu import QFinancesMenu
 from qt_ui.windows.intel import IntelWindow
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
-from qt_ui.windows.PendingTransfersDialog import PendingTransfersDialog
 from qt_ui.windows.QWaitingForMissionResultWindow import DebriefingFileWrittenSignal
 
 
@@ -127,12 +126,12 @@ class QTopPanel(QFrame):
         if not self.game or self.game.turn == 0:
             self.proceedButton.setEnabled(False)
 
-        self.air_wing = QPushButton("Air Wing")
+        self.air_wing = QPushButton("Air Wings")
         self.air_wing.setDisabled(True)
         style_button(self.air_wing)
         self.air_wing.clicked.connect(self.open_air_wing)
 
-        self.playable = QPushButton("Playable aircraft")
+        self.playable = QPushButton("Player Aircrafts")
         self.playable.setDisabled(True)
         style_button(self.playable)
         self.playable.setToolTip(
@@ -233,7 +232,8 @@ class QTopPanel(QFrame):
         dialogs = QHBoxLayout()
         dialogs.setContentsMargins(0, 0, 0, 0)
         dialogs.setSpacing(8)
-        for widget in (self.air_wing, self.playable, self.transfers, self.debriefing):
+        self.transfers.hide()
+        for widget in (self.air_wing, self.playable, self.debriefing):
             dialogs.addWidget(widget)
         dialogs.addWidget(self.ai_status_button)
         self.layout.addLayout(dialogs)
@@ -343,9 +343,9 @@ class QTopPanel(QFrame):
         )
 
     def open_transfers(self) -> None:
-        self.transfers_dialog = open_once(
-            "transfers", lambda: PendingTransfersDialog(self.game_model)
-        )
+        self.open_intel()
+        if self.intel_dialog.transfers is not None:
+            self.intel_dialog.tabs.setCurrentWidget(self.intel_dialog.transfers)
 
     def refresh_debriefing_button(self) -> None:
         """Offer the last mission's report whenever there is one.
@@ -937,7 +937,9 @@ class QTopPanel(QFrame):
         self.finances_dialog.show()
 
     def open_intel(self) -> None:
-        self.intel_dialog = IntelWindow(self.game)
+        if self.game is None:
+            return
+        self.intel_dialog = IntelWindow(self.game, self.game_model)
         self.intel_dialog.show()
 
     def open_high_command(self) -> None:
