@@ -267,7 +267,7 @@ class QLiberationWindow(QMainWindow):
         groups = (
             (self.newGameAction, self.openAction, self.saveGameAction),
             (self.ukraineAction,),
-            (self.openSettingsAction, self.openNotesAction),
+            (self.openSettingsAction,),
         )
 
         # Held on the window: PySide does not take ownership of a corner widget, so a
