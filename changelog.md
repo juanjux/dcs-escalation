@@ -1,7 +1,8 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[Mission Generator]** No wind at the surface, keeping the winds at 2000 and 8000 m: long-range cruise missiles in DCS miss their target by tens of metres in a surface wind. On by default, under General.
+* **[UI]** Map layers for the wind at the surface, 2000 m and 8000 m, under Navmesh & terrain, off by default.
+* **[Mission Generator]** No wind at the surface, keeping the winds at 2000 and 8000 m: long-range cruise missiles in DCS miss downwind of their target in a surface wind. On by default, under General.
 * **[UI]** The debriefing totals what each side's losses cost: aircraft and ground units to replace, and the income lost while the buildings are repaired.
 * **[Cheats]** Location Destroy/Revive cheat: a site's window destroys or revives everything there.
 * **[UI]** A flight's waypoint pins are coloured by what each is for: red where it works (track, orbit, ingress, target), green where it refuels, orange where it holds or joins the package.

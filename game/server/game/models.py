@@ -33,6 +33,35 @@ class MapLayersJs(BaseModel):
     state: str | None = None
 
 
+class WindLevelJs(BaseModel):
+    """The turn's wind at one of the three levels DCS models. It is the same
+    everywhere on the map at that level."""
+
+    altitude_m: int
+    #: Where the wind blows to, in degrees, as DCS keeps it.
+    blows_to: float
+    speed_mps: float
+
+    class Config:
+        title = "WindLevel"
+
+    @staticmethod
+    def for_game(game: Game) -> list[WindLevelJs]:
+        wind = game.conditions.weather.wind
+        return [
+            WindLevelJs(
+                altitude_m=altitude,
+                blows_to=at.direction or 0,
+                speed_mps=at.speed or 0,
+            )
+            for altitude, at in (
+                (0, wind.at_0m),
+                (2000, wind.at_2000m),
+                (8000, wind.at_8000m),
+            )
+        ]
+
+
 class GameJs(BaseModel):
     control_points: list[ControlPointJs]
     tgos: list[TgoJs]

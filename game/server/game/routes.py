@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 
 from game import Game
 from game.server import GameContext
-from .models import GameJs, MapLayersJs
+from .models import GameJs, MapLayersJs, WindLevelJs
 
 router: APIRouter = APIRouter(prefix="/game")
 
@@ -12,6 +12,13 @@ def game_state(game: Game | None = Depends(GameContext.get)) -> GameJs | None:
     if game is None:
         return None
     return GameJs.from_game(game)
+
+
+@router.get("/wind", operation_id="get_wind", response_model=list[WindLevelJs])
+def get_wind(game: Game | None = Depends(GameContext.get)) -> list[WindLevelJs]:
+    if game is None:
+        return []
+    return WindLevelJs.for_game(game)
 
 
 @router.get("/map-layers", operation_id="get_map_layers", response_model=MapLayersJs)
