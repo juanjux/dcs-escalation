@@ -7,7 +7,7 @@ from typing import Any
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QComboBox
 
 
 @pytest.fixture(scope="module")
@@ -35,13 +35,17 @@ def test_notes_follow_pilot_airframe_and_survive_save(app: Any) -> None:
     first, second = Pilot("One", player=True), Pilot("Two", player=True)
     pane = AircraftNotesPane()
     pane.show_aircraft(Aircraft(flight(first, second)))
-    pane.editor.setPlainText("Hornet checklist")
-    pane.players.setCurrentIndex(1)
-    assert pane.editor.toPlainText() == ""
-    pane.editor.setPlainText("Second pilot notes")
+    assert not pane.findChildren(QComboBox)
+    assert len(pane.editors) == 2
+    pane.editors[0].setPlainText("Hornet checklist")
+    assert pane.editors[1].toPlainText() == ""
+    pane.editors[1].setPlainText("Second pilot notes")
     pane.show_aircraft(Aircraft(flight(first, kind="F-16C_50")))
-    assert pane.editor.toPlainText() == ""
-    pane.editor.setPlainText("Viper checklist")
+    assert len(pane.editors) == 1
+    assert pane.editors[0].toPlainText() == ""
+    pane.editors[0].setPlainText("Viper checklist")
+    pane.show_aircraft(Aircraft(flight(first)))
+    assert pane.editors[0].toPlainText() == "Hornet checklist"
     restored = pickle.loads(pickle.dumps(first))
     assert notes_for_flight(flight(restored)) == [("One", "Hornet checklist")]
     assert notes_for_flight(flight(restored, kind="F-16C_50")) == [
@@ -49,7 +53,7 @@ def test_notes_follow_pilot_airframe_and_survive_save(app: Any) -> None:
     ]
     assert second.aircraft_notes == {"FA-18C_hornet": "Second pilot notes"}
     pane.show_aircraft(None)
-    assert not pane.editor.isEnabled()
+    assert not pane.editors[0].isEnabled()
     pane.close()
 
 
