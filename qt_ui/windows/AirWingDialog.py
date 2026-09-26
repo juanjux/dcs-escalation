@@ -354,7 +354,7 @@ class AirWingDialog(QDialog):
         # 440 fitted nine of the old 40px rows; the taller rows plus the
         # toolbar and column header need the room back.
         self.setMinimumSize(1000, 700)
-        self.setWindowTitle(f"Air Wing")
+        self.setWindowTitle("Air Wings")
         # TODO: self.setWindowIcon()
 
         layout = QVBoxLayout()

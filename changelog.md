@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Rename the Air Wing button and dialog to Air Wings.
 * **[UI]** Integrate per-pilot aircraft notes and shared campaign notes into the
   aircraft dialog.
 * **[UI]** Remove the GitHub toolbar button; the link remains in Help.
