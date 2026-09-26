@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Move transfers into Intel with faction filtering, search and styled transfer rows.
 * **[UI]** Move application preferences to Settings > General and remove the settings toolbar shortcut.
 * **[UI]** OPFOR AI has an animated status button and a live commander dialog with recent activity, connection controls and turn cancellation.
 * **[UI]** Show individual repair prices and total repair costs in location dialogs.
