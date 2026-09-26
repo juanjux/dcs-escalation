@@ -163,6 +163,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Save application preferences automatically when changed in Settings.
 * **[UI]** Keep GitHub and Discord links in Help, without toolbar buttons.
 * **[FIX]** The map drew a site's link to its command centre as working while the site's comms were cut or the command centre had no power.
 * **[FIX]** Ordering a squadron's relocation again, after its ferry flights were deleted, was ignored and left it with none: it plans them again now.
