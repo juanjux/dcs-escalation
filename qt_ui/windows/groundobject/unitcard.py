@@ -203,6 +203,14 @@ class UnitCard(QWidget):
         if described:
             parent.add(label(described, 11, TEXT_LABEL))
         parent.stretch()
+        if units[0].repairable:
+            parent.add(
+                label(
+                    f"Repair ${price_of(units[0]):g}M each · ${sum(price_of(unit) for unit in units):g}M total",
+                    10.5,
+                    TEXT_LABEL,
+                )
+            )
         parent.add(_tally(alive, hurt))
 
         children = [self._unit_row(unit, indent=40) for unit in units]
@@ -236,6 +244,13 @@ class UnitCard(QWidget):
         if state:
             row.add(chip(state, ink))
         row.stretch()
+        row.add(
+            label(
+                f"Repair ${price_of(unit):g}M" if unit.repairable else "Not repairable",
+                10.5,
+                TEXT_LABEL,
+            )
+        )
         button = self._repair_button(unit)
         if button is not None:
             row.add(button)

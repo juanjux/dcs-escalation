@@ -316,7 +316,7 @@ class PlayableAircraftDialog(QDialog):
         super().__init__(parent)
         self.game_model = game_model
         self.clipboard = data.Clipboard()
-        self.setWindowTitle("Playable aircraft")
+        self.setWindowTitle("Player Aircrafts")
         self.setMinimumSize(1120, 640)
         self.setWindowFlag(Qt.WindowType.Tool, True)
         self.setStyleSheet(f"QDialog {{ background: #202B36; }}")
