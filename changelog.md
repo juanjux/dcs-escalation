@@ -1,6 +1,8 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Integrate per-pilot aircraft notes and shared campaign notes into the
+  aircraft dialog.
 * **[UI]** Remove the GitHub toolbar button; the link remains in Help.
 * **[UI]** Rename the Playable Aircraft button and dialog to Player Aircrafts.
 * **[UI]** Move transfers into Intel with faction filtering, search and styled transfer rows.

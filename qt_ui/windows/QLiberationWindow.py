@@ -49,6 +49,9 @@ from qt_ui.windows.groundobject.QGroundObjectMenu import QGroundObjectMenu
 from qt_ui.windows.infos.eventlist import EventsPanel
 from qt_ui.windows.logs.QLogsWindow import QLogsWindow
 from qt_ui.windows.newgame.QNewGameWizard import NewGameWizard
+from qt_ui.windows.preferences.QLiberationPreferencesWindow import (
+    QLiberationPreferencesWindow,
+)
 from qt_ui.windows.notes.QNotesWindow import QNotesWindow
 from game.search.index import GameIndex
 from qt_ui.windows.palette import CommandPalette
@@ -269,6 +272,7 @@ class QLiberationWindow(QMainWindow):
                 self.openGithubAction,
                 self.ukraineAction,
             ),
+            (self.openSettingsAction, self.openStatsAction),
             (self.openStatsAction, self.openNotesAction),
         )
 
@@ -685,9 +689,12 @@ class QLiberationWindow(QMainWindow):
         self.dialog = QStatsWindow(self.game)
         self.dialog.show()
 
-    def showNotesDialog(self):
-        self.dialog = QNotesWindow(self.game)
-        self.dialog.show()
+    def showNotesDialog(self) -> None:
+        from qt_ui.windows.playable import PlayableAircraftDialog
+
+        self.player_notes_dialog = PlayableAircraftDialog(self.game_model, self)
+        self.player_notes_dialog.detail_tabs.setCurrentIndex(1)
+        self.player_notes_dialog.show()
 
     def showLogsDialog(self):
         self.dialog = QLogsWindow(self)
