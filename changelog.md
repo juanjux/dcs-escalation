@@ -163,6 +163,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Remove the Notes toolbar icon; notes remain in Player Aircrafts.
 * **[UI]** Use an animated robot icon for OPFOR AI and display connection URLs openly.
 * **[UI]** Show repair prices once per row when a Repair button is available.
 * **[UI]** Aircraft notes follow the aircraft list selection without another selector.

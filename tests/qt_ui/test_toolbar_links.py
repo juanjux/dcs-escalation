@@ -45,5 +45,6 @@ def test_community_links_are_only_in_help() -> None:
         assert action not in toolbar_actions
         assert action in help_menu.actions()
     assert window.openStatsAction not in toolbar_actions
+    assert window.openNotesAction not in toolbar_actions
     window.close()
     app.processEvents()
