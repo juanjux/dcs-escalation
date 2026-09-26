@@ -8,7 +8,7 @@ from typing import Any
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtWidgets import QApplication, QLineEdit
+from PySide6.QtWidgets import QApplication, QCheckBox, QLineEdit
 
 from game.agent.session import _AiSession
 from qt_ui.windows import opforai
@@ -27,6 +27,10 @@ def test_animation_runs_only_when_visible_and_active(app: Any) -> None:
     button.show()
     app.processEvents()
     assert button._animation.isActive()
+    normal = button.icon().pixmap(20, 20).toImage()
+    button._angle = 180
+    button._paint_icon()
+    assert button.icon().pixmap(20, 20).toImage() != normal
     button._advance()
     assert button._angle > 0
     button.hide()
@@ -50,7 +54,16 @@ def test_live_status_cancel_and_connections(app: Any, monkeypatch: Any) -> None:
     monkeypatch.setattr(service, "mcp_url", lambda: "http://localhost/mcp?token=test")
     dialog = opforai.OpforAiDialog()
     assert not dialog.cancel.isEnabled()
-    assert dialog.fields[0].echoMode() == QLineEdit.EchoMode.Password
+    assert all(field.echoMode() == QLineEdit.EchoMode.Normal for field in dialog.fields)
+    assert not dialog.findChildren(QCheckBox)
+    assert dialog.fields[0].displayText() == "http://localhost/start?token=test"
+    assert dialog.fields[1].displayText() == "http://localhost/mcp?token=test"
+    previous_clipboard = app.clipboard().text()
+    try:
+        dialog.copy_buttons[1].click()
+        assert app.clipboard().text() == dialog.fields[1].text()
+    finally:
+        app.clipboard().setText(previous_clipboard)
     session.touch()
     session.set_status("Planning <CAP> packages")
     dialog.refresh()
@@ -63,8 +76,6 @@ def test_live_status_cancel_and_connections(app: Any, monkeypatch: Any) -> None:
     assert session.snapshot()["cancelled"]
     assert dialog.state.text() == "CANCEL REQUESTED"
     assert not dialog.cancel.isEnabled()
-    dialog._show_urls(True)
-    assert dialog.fields[0].echoMode() == QLineEdit.EchoMode.Normal
     dialog.close()
 
 
