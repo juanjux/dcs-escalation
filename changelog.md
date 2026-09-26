@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** OPFOR AI has an animated status button and a live commander dialog with recent activity, connection controls and turn cancellation.
 * **[UI]** Show individual repair prices and total repair costs in location dialogs.
 * **[UI]** Remove the Discord toolbar button; the link remains in Help.
 * **[UI]** Map layers for the wind at the surface, 2000 m and 8000 m, under Navmesh & terrain, off by default.
