@@ -50,7 +50,12 @@ class PluginSettings:
 
     @property
     def get_value(self) -> Any:
-        return self.settings.plugin_option(self.identifier)
+        try:
+            return self.settings.plugin_option(self.identifier)
+        except KeyError:
+            # Settings can be replaced after the plugin was first initialized.
+            self.initialize_settings()
+            return self.settings.plugin_option(self.identifier)
 
     def set_value(self, value: Any) -> None:
         self.settings.set_plugin_option(self.identifier, value)

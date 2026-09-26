@@ -483,6 +483,7 @@ class QTopPanel(QFrame):
             )
             return
 
+        LuaPluginManager.load_settings(self.game.settings)
         try:
             validate_compatibility(LuaPluginManager.plugins())
         except RealisticCASConfigurationError as ex:

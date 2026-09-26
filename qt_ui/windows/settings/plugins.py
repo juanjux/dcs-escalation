@@ -278,6 +278,7 @@ class PluginsPage(QWidget):
     def __init__(self, sc: SettingsContainer) -> None:
         super().__init__()
         self.sc = sc
+        LuaPluginManager.load_settings(sc.settings)
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -299,7 +300,10 @@ class PluginsPage(QWidget):
                 return
 
     def update_from_settings(self) -> None:
+        LuaPluginManager.load_settings(self.sc.settings)
         enabled = self.sc.settings.plugins
         for row in self.rows:
             if row.plugin.identifier in enabled:
+                blocked = row.checkbox.blockSignals(True)
                 row.checkbox.setChecked(enabled[row.plugin.identifier])
+                row.checkbox.blockSignals(blocked)
