@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime
+import math
 from typing import Any, Optional
 
 from PySide6.QtCore import QRectF, QSize, Qt, QTimer
 from PySide6.QtGui import QColor, QHideEvent, QIcon, QPainter, QPen, QPixmap, QShowEvent
 from PySide6.QtWidgets import (
     QApplication,
-    QCheckBox,
     QDialog,
     QHBoxLayout,
     QLabel,
@@ -33,7 +33,7 @@ def status_label(snapshot: dict[str, Any]) -> str:
 
 
 class CommanderButton(QPushButton):
-    """A compact status button with a vector radar sweep while active."""
+    """A robot status icon with a pulsing antenna and blinking eyes while active."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__("OPFOR AI · Idle", parent)
@@ -89,15 +89,23 @@ class CommanderButton(QPushButton):
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(QPen(QColor("#52697C"), 1.2))
-        painter.drawEllipse(QRectF(2, 2, 16, 16))
-        painter.drawEllipse(QRectF(6, 6, 8, 8))
-        painter.translate(10, 10)
-        painter.rotate(self._angle if self._active else -35)
-        painter.setPen(QPen(QColor(self._ink), 1.8))
-        painter.drawLine(0, 0, 0, -7)
-        painter.setBrush(QColor(self._ink))
-        painter.drawEllipse(QRectF(-1.5, -1.5, 3, 3))
+        ink = QColor(self._ink)
+        painter.setPen(QPen(ink, 1.3))
+        painter.setBrush(QColor("#16232D"))
+        painter.drawRoundedRect(QRectF(3, 6, 14, 11), 3, 3)
+        painter.drawLine(10, 3, 10, 6)
+        painter.drawLine(1, 10, 3, 10)
+        painter.drawLine(17, 10, 19, 10)
+        painter.drawLine(7, 14, 13, 14)
+        eye_height = 0.8 if self._active and 180 <= self._angle < 210 else 2.5
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(ink)
+        for x in (6, 12):
+            painter.drawRoundedRect(QRectF(x, 9, 2.5, eye_height), 0.6, 0.6)
+        if self._active:
+            ink.setAlpha(round(160 + 95 * math.sin(math.radians(self._angle)) ** 2))
+        painter.setBrush(ink)
+        painter.drawEllipse(QRectF(8.5, 1, 3, 3))
         painter.end()
         self.setIcon(QIcon(pixmap))
 
@@ -112,7 +120,6 @@ class OpforAiDialog(QDialog):
         self.setStyleSheet(
             "QDialog { background: #202B36; }"
             " QLabel { color: #B7C6D2; background: transparent; border: none; }"
-            " QCheckBox { color: #B7C6D2; background: transparent; }"
         )
         self._last_activity: Optional[tuple[str, str]] = None
         layout = QVBoxLayout(self)
@@ -158,7 +165,6 @@ class OpforAiDialog(QDialog):
             row.addWidget(label)
             field = QLineEdit()
             field.setReadOnly(True)
-            field.setEchoMode(QLineEdit.EchoMode.Password)
             field.setAccessibleName(f"{caption} connection URL")
             row.addWidget(field, 1)
             copy = style_button(QPushButton("Copy"))
@@ -171,10 +177,7 @@ class OpforAiDialog(QDialog):
             self.fields.append(field)
             self.copy_buttons.append(copy)
             connection_layout.addLayout(row)
-        reveal = QCheckBox("Show connection URLs")
-        reveal.toggled.connect(self._show_urls)
         connection_actions = QHBoxLayout()
-        connection_actions.addWidget(reveal)
         connection_actions.addStretch()
         refresh = style_button(QPushButton("Refresh connections"))
         refresh.clicked.connect(self._read_connections)
@@ -226,12 +229,6 @@ class OpforAiDialog(QDialog):
             field.setText(url)
             field.setPlaceholderText("Unavailable")
             button.setEnabled(bool(url))
-
-    def _show_urls(self, show: bool) -> None:
-        for field in self.fields:
-            field.setEchoMode(
-                QLineEdit.EchoMode.Normal if show else QLineEdit.EchoMode.Password
-            )
 
     def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
