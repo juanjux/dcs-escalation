@@ -163,6 +163,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Compare BLUFOR and OPFOR history with independent faction and metric toggles.
 * **[FIX]** The map drew a site's link to its command centre as working while the site's comms were cut or the command centre had no power.
 * **[FIX]** Ordering a squadron's relocation again, after its ferry flights were deleted, was ignored and left it with none: it plans them again now.
 * **[FIX]** A squadron with aircraft could relocate off a damaged runway or a sunk ship: the mission left its ferry flights out and it arrived at its new base anyway. The move is refused now (an emptied squadron can still go), and an order like that in a save is cancelled when it loads. A carrier or LHA that sinks no longer disbands its squadrons: the aircraft no package had go down with it, those in the air land at the nearest base with room, and the pilots survive.
