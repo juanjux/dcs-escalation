@@ -38,7 +38,7 @@ from qt_ui.models import AirWingModel, AtoModel, GameModel, SquadronModel
 from qt_ui.simcontroller import SimController
 from qt_ui.windows.AirWingConfigurationDialog import AirWingConfigurationDialog
 from qt_ui.windows.SquadronDialog import SquadronDialog
-from qt_ui.windows.newgame.WizardPages.QFactionSelection import QFactionUnits
+from qt_ui.widgets.factioneditor import FactionEditor
 
 
 class SquadronList(QListView):
@@ -270,12 +270,10 @@ class AirWingTabs(QTabWidget):
             w = QWidget(layout=layout)
             self.addTab(w, "Cheats")
 
-        qfu_ownfor = QFactionUnits(
+        qfu_ownfor = FactionEditor(
             game_model.game.coalition_for(Player.BLUE).faction,
             self,
-            show_jtac=True,
-            show_doctrine=True,
-            editable=True,
+            side="OWNFOR",
             in_use=lambda unit: self._in_use_by(unit, Player.BLUE),
         )
         qfu_ownfor.faction_changed.connect(self.faction_updated_ownfor)
@@ -283,12 +281,10 @@ class AirWingTabs(QTabWidget):
             qfu_ownfor,
             "Faction OWNFOR",
         )
-        qfu_opfor = QFactionUnits(
+        qfu_opfor = FactionEditor(
             game_model.game.coalition_for(Player.RED).faction,
             self,
-            show_jtac=True,
-            show_doctrine=True,
-            editable=True,
+            side="OPFOR",
             in_use=lambda unit: self._in_use_by(unit, Player.RED),
         )
         qfu_opfor.faction_changed.connect(self.faction_updated_opfor)
