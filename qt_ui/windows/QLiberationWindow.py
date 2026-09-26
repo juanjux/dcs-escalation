@@ -265,6 +265,7 @@ class QLiberationWindow(QMainWindow):
         groups = (
             (self.newGameAction, self.openAction, self.saveGameAction),
             (
+                self.openDiscordAction,
                 self.openGithubAction,
                 self.ukraineAction,
             ),
