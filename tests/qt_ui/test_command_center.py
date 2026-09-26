@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QApplication
 
 from game.ato.aircraftnotes import notes_for_flight
 from game.models.game_stats import FactionTurnMetadata, GameTurnMetadata
-from game.squadrons.pilot import Pilot
+from game.squadrons.pilot import Pilot, PilotStatus
 from game.theater import Player
 from qt_ui.windows.intel.statistics import StatisticsPane, history
 from qt_ui.windows.playable.model import Aircraft
@@ -63,6 +63,53 @@ def test_old_pilot_save_gets_independent_notes() -> None:
     state.pop("aircraft_notes")
     pilot.__setstate__(state)
     assert pilot.aircraft_notes == {}
+
+
+def test_notes_preserve_pilot_constructor_and_identity() -> None:
+    pilot = Pilot("Old", False, PilotStatus.OnLeave)
+    assert pilot.status == PilotStatus.OnLeave
+    assert pilot.aircraft_notes == {}
+
+
+def test_financial_and_pilot_statistics_are_recorded(monkeypatch: Any) -> None:
+    from game.models.game_stats import GameStats
+    from game import income
+
+    monkeypatch.setattr(
+        income,
+        "Income",
+        lambda game, player: SimpleNamespace(total=12 if player.is_blue else 8),
+    )
+
+    def coalition(budget: float) -> Any:
+        return SimpleNamespace(
+            budget=budget,
+            air_wing=SimpleNamespace(
+                iter_squadrons=lambda: iter(
+                    [
+                        SimpleNamespace(
+                            current_roster=[
+                                SimpleNamespace(alive=True),
+                                SimpleNamespace(alive=False),
+                            ]
+                        )
+                    ]
+                )
+            ),
+        )
+
+    game: Any = SimpleNamespace(
+        turn=0,
+        theater=SimpleNamespace(controlpoints=[]),
+        blue=coalition(90),
+        red=coalition(70),
+    )
+    stats = GameStats()
+    stats.update(game)
+    blue = stats.data_per_turn[0].allied_units
+    red = stats.data_per_turn[0].enemy_units
+    assert (blue.money, blue.income, blue.pilots, blue.bases) == (90, 12, 1, 0)
+    assert (red.money, red.income) == (70, 8)
 
 
 def test_statistics_preserve_missing_history_and_toggle(app: Any) -> None:

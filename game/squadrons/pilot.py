@@ -201,7 +201,9 @@ class PilotStatus(Enum):
 class Pilot:
     name: str
     player: bool = field(default=False)
-    aircraft_notes: dict[str, str] = field(default_factory=dict, repr=False)
+    aircraft_notes: dict[str, str] = field(
+        default_factory=dict, init=False, repr=False, compare=False
+    )
     status: PilotStatus = field(default=PilotStatus.Active)
     record: PilotRecord = field(default_factory=PilotRecord)
 
