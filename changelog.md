@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Redesign Create Flight and Package with grouped controls, crew counts, clear timing states and direct flight editing.
 * **[UI]** Add selectable faction statistics to Intel, including budget, income, pilots and bases.
 * **[UI]** Rename the Air Wing button and dialog to Air Wings.
 * **[UI]** Integrate per-pilot aircraft notes and shared campaign notes into the

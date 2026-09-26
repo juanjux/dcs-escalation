@@ -10,10 +10,10 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMessageBox,
-    QPushButton,
     QTimeEdit,
     QVBoxLayout,
     QLineEdit,
+    QStackedWidget,
 )
 
 from game.ato.flight import Flight
@@ -28,6 +28,14 @@ from qt_ui.models import GameModel, PackageModel
 from qt_ui.uiconstants import EVENT_ICONS
 from qt_ui.widgets.QFrequencyWidget import QFrequencyWidget
 from qt_ui.widgets.ato import QFlightList
+from qt_ui.widgets.cards import card, caption, make_transparent
+from qt_ui.widgets.controls import (
+    button,
+    key_value,
+    styled_input,
+    style_button,
+    value_label,
+)
 from qt_ui.windows.QRadioFrequencyDialog import QRadioFrequencyDialog
 from qt_ui.windows.mission.QAutoCreateDialog import QAutoCreateDialog
 from qt_ui.windows.mission.refueloffer import offer_for_package
@@ -50,53 +58,83 @@ class QPackageDialog(QDialog):
         self.package_model = model
         self.add_flight_dialog: Optional[QFlightCreator] = None
 
-        self.setMinimumSize(1000, 440)
+        self.setMinimumSize(1000, 600)
+        self.resize(1100, 700)
         self.setWindowTitle(
             f"Mission Package: {self.package_model.mission_target.name}"
         )
         self.setWindowIcon(EVENT_ICONS["strike"])
 
         self.layout = QVBoxLayout()
-
-        self.summary_row = QHBoxLayout()
-        self.layout.addLayout(self.summary_row)
-
-        self.package_type_column = QVBoxLayout()
-        self.summary_row.addLayout(self.package_type_column)
-
-        package_type_row = QHBoxLayout()
-        self.package_type_label = QLabel("Package Type:")
-        self.package_type_text = QLabel(self.package_model.description)
-        # noinspection PyUnresolvedReferences
+        self.layout.setContentsMargins(16, 16, 16, 16)
+        self.layout.setSpacing(12)
+        headline = card()
+        headline_layout = QVBoxLayout(headline)
+        headline_layout.setContentsMargins(14, 10, 14, 10)
+        headline_layout.setSpacing(6)
+        headline_layout.addWidget(make_transparent(caption("Mission package")))
+        title_row = QHBoxLayout()
+        target = value_label(self.package_model.mission_target.name)
+        target.setTextFormat(Qt.TextFormat.PlainText)
+        target.setWordWrap(True)
+        target.setStyleSheet(
+            "color: #F2F7FA; font-size: 20px; background: transparent; border: none;"
+        )
+        title_row.addWidget(target, 1)
+        self.package_type_text = value_label(self.package_model.description)
+        title_row.addWidget(self.package_type_text)
+        headline_layout.addLayout(title_row)
         self.package_changed.connect(self.on_package_changed)
-        package_type_row.addWidget(self.package_type_label)
-        package_type_row.addWidget(self.package_type_text)
-        self.package_type_column.addLayout(package_type_row)
+        self.package_context = value_label("")
+        self.package_context.setWordWrap(True)
+        self.package_context.setTextFormat(Qt.TextFormat.PlainText)
+        self.package_context.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        headline_layout.addWidget(self.package_context)
+        self.layout.addWidget(headline)
 
-        self.summary_row.addStretch(1)
-
-        self.package_name_column = QHBoxLayout()
-        self.summary_row.addLayout(self.package_name_column)
-        self.package_name_label = QLabel("Package Name:")
-        self.package_name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        settings_row = QHBoxLayout()
+        settings_row.setSpacing(12)
+        identity = card()
+        identity_layout = QVBoxLayout(identity)
+        identity_layout.setContentsMargins(0, 6, 0, 6)
+        identity_layout.setSpacing(4)
         self.package_name_text = QLineEdit(self.package_model.package.custom_name)
+        self.package_name_text.setPlaceholderText("Optional package name")
         self.package_name_text.textChanged.connect(self.on_change_name)
-        self.package_name_column.addWidget(self.package_name_label)
-        self.package_name_column.addWidget(self.package_name_text)
+        identity_layout.addWidget(
+            key_value("Name", styled_input(self.package_name_text), key_width=84)
+        )
+        self.freq_widget = QFrequencyWidget(self.package_model.package, game_model)
+        make_transparent(self.freq_widget)
+        self.freq_widget.layout().setContentsMargins(14, 0, 14, 0)
+        for control, text in (
+            (self.freq_widget.set_freq_btn, "Set radio"),
+            (self.freq_widget.reset_freq_btn, "Reset"),
+        ):
+            style_button(control)
+            control.setText(text)
+            control.setAutoDefault(False)
+        identity_layout.addWidget(self.freq_widget)
+        settings_row.addWidget(identity, 1)
 
-        self.summary_row.addStretch(1)
-
+        timing = card()
+        timing_layout = QVBoxLayout(timing)
+        timing_layout.setContentsMargins(14, 6, 14, 6)
+        timing_layout.setSpacing(6)
+        timing_layout.addWidget(make_transparent(caption("Time over target")))
         self.tot_column = QHBoxLayout()
-        self.summary_row.addLayout(self.tot_column)
-
-        self.tot_label = QLabel("Time Over Target:")
-        self.tot_column.addWidget(self.tot_label)
+        timing_layout.addLayout(self.tot_column)
 
         self.tot_spinner = QTimeEdit(self.tot_qtime())
         self.tot_spinner.setMinimumTime(QTime(0, 0))
         self.tot_spinner.setDisplayFormat("hh:mm:ss")
         self.tot_spinner.timeChanged.connect(self.save_tot)
-        self.tot_spinner.setToolTip("Package TOT relative to mission TOT")
+        self.tot_spinner.setToolTip(
+            "Mission clock time at which the package reaches its target."
+        )
+        styled_input(self.tot_spinner, 130)
         self.tot_spinner.setEnabled(
             not self.package_model.package.auto_asap
             and self.package_model.package.all_flights_waiting_for_start()
@@ -104,6 +142,9 @@ class QPackageDialog(QDialog):
         self.tot_column.addWidget(self.tot_spinner)
 
         self.auto_asap = QCheckBox("ASAP")
+        self.auto_asap.setStyleSheet(
+            "QCheckBox { color: #D3DFE8; font-size: 12px; background: transparent; }"
+        )
         self.auto_asap.setToolTip(
             "Sets the package TOT to the earliest time that all flights can "
             "arrive at the target."
@@ -114,57 +155,92 @@ class QPackageDialog(QDialog):
         )
         self.auto_asap.toggled.connect(self.set_asap)
         self.tot_column.addWidget(self.auto_asap)
+        self.tot_column.addStretch()
 
         self.tot_help_label = QLabel(
-            '<a href="https://github.com/dcs-retribution/dcs-retribution/wiki/Mission-planning"><span style="color:#FFFFFF;">Help</span></a>'
+            '<a href="https://github.com/dcs-retribution/dcs-retribution/wiki/Mission-planning" style="color:#8FC3F0;">Planning help</a>'
         )
         self.tot_help_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tot_help_label.setOpenExternalLinks(True)
+        self.tot_help_label.setStyleSheet(
+            "font-size: 12px; background: transparent; border: none;"
+        )
         self.tot_column.addWidget(self.tot_help_label)
 
-        self.package_context = QLabel()
-        self.package_context.setWordWrap(True)
-        self.package_context.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
+        self.timing_hint = value_label("")
+        self.timing_hint.setWordWrap(True)
+        timing_layout.addWidget(self.timing_hint)
+        settings_row.addWidget(timing, 1)
+        self.layout.addLayout(settings_row)
+
+        toolbar = QHBoxLayout()
+        toolbar.addWidget(caption("Flights"))
+        toolbar.addStretch()
+        self.add_flight_button = button("Add flight", "primary", self.on_add_flight)
+        toolbar.addWidget(self.add_flight_button)
+        self.edit_flight_button = button("Edit selected", handler=self.on_edit_flight)
+        toolbar.addWidget(self.edit_flight_button)
+        self.delete_flight_button = button(
+            "Delete selected", handler=self.on_delete_flight
         )
-        self.layout.addWidget(self.package_context)
+        toolbar.addWidget(self.delete_flight_button)
+        self.auto_create_button = button("Auto create", handler=self.on_auto_create)
+        self.auto_create_button.setToolTip(
+            "Automatically plan flights for an empty package."
+        )
+        toolbar.addWidget(self.auto_create_button)
+        for control in (
+            self.add_flight_button,
+            self.edit_flight_button,
+            self.delete_flight_button,
+            self.auto_create_button,
+        ):
+            control.setAutoDefault(False)
+        self.layout.addLayout(toolbar)
 
         self.package_view = QFlightList(self.game_model, self.package_model)
         self.package_view.flight_deleted.connect(self.on_flight_deleted)
         self.package_view.selectionModel().selectionChanged.connect(
             self.on_selection_changed
         )
-        self.layout.addWidget(self.package_view)
+        self.flight_stack = QStackedWidget()
+        self.flight_stack.addWidget(self.package_view)
+        empty_card = card()
+        empty_layout = QVBoxLayout(empty_card)
+        empty_layout.addStretch()
+        empty_title = value_label("No flights assigned")
+        empty_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.addWidget(empty_title)
+        empty_hint = value_label(
+            "Add a flight or use Auto create to plan this package."
+        )
+        empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.addWidget(empty_hint)
+        empty_layout.addStretch()
+        self.flight_stack.addWidget(empty_card)
+        self.layout.addWidget(self.flight_stack, 1)
+
+        self.departures_label = value_label("")
+        self.departures_label.setTextFormat(Qt.TextFormat.PlainText)
+        self.departures_label.setWordWrap(True)
+        self.layout.addWidget(self.departures_label)
 
         self.button_layout = QHBoxLayout()
         self.layout.addLayout(self.button_layout)
 
-        self.add_flight_button = QPushButton("Add Flight")
-        self.add_flight_button.clicked.connect(self.on_add_flight)
-        self.button_layout.addWidget(self.add_flight_button)
-
-        self.delete_flight_button = QPushButton("Delete Selected")
-        self.delete_flight_button.setProperty("style", "btn-danger")
-        self.delete_flight_button.clicked.connect(self.on_delete_flight)
-        self.delete_flight_button.setEnabled(model.rowCount() > 0)
-        self.button_layout.addWidget(self.delete_flight_button)
-
-        self.auto_create_button = QPushButton("Auto Create")
-        self.auto_create_button.setDisabled(len(list(self.package_model.flights)) > 0)
-        self.auto_create_button.clicked.connect(self.on_auto_create)
-        self.button_layout.addWidget(self.auto_create_button)
-
-        self.button_layout.addStretch()
-
-        self.freq_widget = QFrequencyWidget(self.package_model.package, game_model)
-        self.button_layout.addWidget(self.freq_widget)
-
+        self.footer_hint = value_label(
+            "Double-click a flight to edit its plan and loadout."
+        )
+        self.button_layout.addWidget(self.footer_hint)
         self.button_layout.addStretch()
 
         self.setLayout(self.layout)
 
         self.package_model.tot_changed.connect(self.update_tot)
         self.package_model.tot_changed.connect(self.update_package_context)
+        self.package_model.rowsInserted.connect(self.update_package_context)
+        self.package_model.rowsRemoved.connect(self.update_package_context)
+        self.package_model.dataChanged.connect(self.update_package_context)
 
         self.accepted.connect(self.on_save)
         self.finished.connect(self.on_close)
@@ -215,6 +291,11 @@ class QPackageDialog(QDialog):
     ) -> None:
         """Updates the state of the delete button."""
         self.delete_flight_button.setEnabled(not selected.empty())
+        self.edit_flight_button.setEnabled(not selected.empty())
+
+    def on_edit_flight(self) -> None:
+        if self.package_view.selected_item is not None:
+            self.package_view.edit_flight(self.package_view.currentIndex())
 
     def on_add_flight(self) -> None:
         """Opens the new flight dialog."""
@@ -317,29 +398,41 @@ class QPackageDialog(QDialog):
     def update_package_context(self) -> None:
         package = self.package_model.package
         flights = list(package.flights)
-        if not flights:
-            self.package_context.setText(
-                "No flights are assigned yet. Add flights manually or use Auto Create "
-                "to let the planner build a package for this target."
+        self.package_type_text.setText(self.package_model.description)
+        self.flight_stack.setCurrentIndex(0 if flights else 1)
+        self.auto_create_button.setEnabled(not flights)
+        selected = self.package_view.selected_item is not None
+        self.edit_flight_button.setEnabled(selected)
+        self.delete_flight_button.setEnabled(selected)
+        waiting = package.all_flights_waiting_for_start()
+        self.tot_spinner.setEnabled(waiting and not package.auto_asap)
+        self.auto_asap.setEnabled(waiting)
+        self.timing_hint.setText(
+            "Timing is locked while flights are active."
+            if not waiting
+            else (
+                "Earliest arrival shared by all flights."
+                if package.auto_asap
+                else "Manual arrival time for this package."
             )
+        )
+        if not flights:
+            self.package_context.setText("0 flights  ·  0 aircraft  ·  0 player slots")
+            self.departures_label.setText("")
             return
 
         player_slots = sum(f.client_count for f in flights)
         missing_pilots = sum(f.missing_pilots for f in flights)
         departures = sorted({f.departure.name for f in flights})
-        primary_task = package.primary_task.value if package.primary_task else "Unknown"
-        timing_mode = "ASAP timing" if package.auto_asap else "Manual TOT"
-
         summary = [
-            f"Primary task: {primary_task}",
-            f"Flights: {len(flights)}",
-            f"Player slots: {player_slots}",
-            f"Timing: {timing_mode}",
-            f"Departures: {', '.join(departures)}",
+            f"{len(flights)} flight{'' if len(flights) == 1 else 's'}",
+            f"{sum(f.count for f in flights)} aircraft",
+            f"{player_slots} player slot{'' if player_slots == 1 else 's'}",
         ]
         if missing_pilots:
             summary.append(f"Missing pilots: {missing_pilots}")
-        self.package_context.setText(" | ".join(summary))
+        self.package_context.setText("  ·  ".join(summary))
+        self.departures_label.setText(f"Departures: {', '.join(departures)}")
 
     def on_reset_radio(self):
         self.package_model.package.frequency = None
@@ -404,9 +497,11 @@ class QNewPackageDialog(QPackageDialog):
         # other UI elements until the new package has either been finalized or canceled.
         self.setModal(True)
 
-        self.save_button = QPushButton("Save")
-        self.save_button.setProperty("style", "start-button")
-        self.save_button.clicked.connect(self.accept)
+        self.cancel_button = button("Cancel", handler=self.reject)
+        self.cancel_button.setAutoDefault(False)
+        self.button_layout.addWidget(self.cancel_button)
+        self.save_button = button("Save package", "primary", self.accept)
+        self.save_button.setAutoDefault(False)
         self.button_layout.addWidget(self.save_button)
 
     def on_save(self) -> None:
@@ -436,14 +531,12 @@ class QEditPackageDialog(QPackageDialog):
         super().__init__(gm, package)
         self.ato_model = gm.ato_model if gm.is_ownfor else gm.red_ato_model
 
-        self.delete_button = QPushButton("Delete package")
-        self.delete_button.setProperty("style", "btn-danger")
-        self.delete_button.clicked.connect(self.on_delete)
+        self.delete_button = button("Delete package", "danger", self.on_delete)
+        self.delete_button.setAutoDefault(False)
         self.button_layout.addWidget(self.delete_button)
 
-        self.done_button = QPushButton("Done")
-        self.done_button.setProperty("style", "start-button")
-        self.done_button.clicked.connect(self.accept)
+        self.done_button = button("Done", "primary", self.accept)
+        self.done_button.setAutoDefault(False)
         self.button_layout.addWidget(self.done_button)
 
     def on_delete(self) -> None:
