@@ -13,7 +13,7 @@
 - Dont put line breaks on changelog entries. If they are too long, make them shorter.
 
 ## Questions
-- When asked something about Escalation or DCS, don't guess, reply based on data files or code. If this doesn't work, search on the web. Try to keep your allucinations and guesses in check by using the code and data.
+- When asked something about Escalation or DCS, don't guess, reply based on data files or code. If this doesn't work, search on the web. Try to keep allucinations and guesses in check by using the code and data.
 
 ## Coding
 - New features always go to a new branch and publish to an internal PR so I can review stuff easily. Bugfixes can go to an existing branch (the one that is being fixed) but also go to a PR. Never merge to master directly unless explicitly stated.
