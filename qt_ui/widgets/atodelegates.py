@@ -282,8 +282,7 @@ class FlightRowDelegate(AtoRowDelegate):
                 separator_y=FLIGHT_SEPARATOR_Y,
             )
 
-            # The chip sits on the right here: the aircraft is what you scan for in a
-            # package whose task you already know from the row above.
+            # The task sits at the right of the aircraft name.
             painter.setFont(_font(10, QFont.Weight.Bold))
             chip_width = (
                 painter.fontMetrics().horizontalAdvance(str(flight.flight_type))
@@ -306,24 +305,40 @@ class FlightRowDelegate(AtoRowDelegate):
             painter.setPen(TEXT_LABEL)
             painter.drawText(after + 7, LINE_1, f"×{flight.count}")
 
+            # The start type sits below the task, with room reserved for both
+            # second-line badges before eliding the squadron and departure.
+            painter.setFont(_font(10, QFont.Weight.Bold))
+            start_text = flight.start_type.value
+            start_width = (
+                painter.fontMetrics().horizontalAdvance(start_text) + 2 * CHIP_PADDING
+            )
+            start_x = width - MARGIN - start_width
+            self._paint_player_chip(painter, start_x, start_text, selected)
+            clients = flight.client_count
+            seats = "seat" if clients == 1 else "seats"
+            player_text = f"{clients} player {seats}"
+            player_width = (
+                painter.fontMetrics().horizontalAdvance(player_text) + 2 * CHIP_PADDING
+                if clients
+                else 0
+            )
+            where_room = start_x - CHIP_X - CHIP_PADDING
+            if clients:
+                where_room -= player_width + CHIP_PADDING
+
             painter.setFont(_font(11.5))
             painter.setPen(TEXT_TERTIARY)
             where = f"{flight.squadron.name} · {flight.departure.name}"
-            painter.drawText(
-                CHIP_X, LINE_2, self._elided(painter, where, width - CHIP_X - 110)
-            )
+            where = self._elided(painter, where, where_room)
+            painter.drawText(CHIP_X, LINE_2, where)
 
             # The package row says the package has player slots; this says which
             # flight they are in, which is the question you ask next.
-            clients = flight.client_count
             if clients:
-                seats = "seat" if clients == 1 else "seats"
-                after_where = CHIP_X + painter.fontMetrics().horizontalAdvance(
-                    self._elided(painter, where, width - CHIP_X - 110)
-                )
+                after_where = CHIP_X + painter.fontMetrics().horizontalAdvance(where)
                 painter.setFont(_font(10, QFont.Weight.Bold))
                 self._paint_player_chip(
-                    painter, after_where + 8, f"{clients} player {seats}", selected
+                    painter, after_where + CHIP_PADDING, player_text, selected
                 )
 
             self._paint_times(painter, flight, width)
