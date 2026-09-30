@@ -35,6 +35,7 @@ class RunwayData:
     tacan_callsign: Optional[str] = None
     ils: Optional[RadioFrequency] = None
     icls: Optional[int] = None
+    link4: Optional[RadioFrequency] = None
 
     @classmethod
     def for_pydcs_runway_runway(

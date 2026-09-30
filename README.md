@@ -394,6 +394,9 @@ and it is longer than this section.
   #678 and #1032)
 
 - **More in the player aircraft's data cartridge:**
+  - the Hornet family's recovery-base TACAN, ICLS and Link4/ACLS, when available;
+    each flight uses its arrival base, normally also its departure base. This uses
+    carrier ICLS, not terrestrial ILS, and leaves unsupported cartridges unchanged;
   - every front joined into one line, the only one the Hornet's SA page shows
     ([#415](https://github.com/juanjux/dcs-escalation/pull/415), porting RetLab #1008);
   - a box round each tanker the aircraft can refuel from, nearest its target first
