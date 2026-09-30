@@ -49,6 +49,7 @@ from typing import TYPE_CHECKING, Any, Optional, Sequence
 from game.missiongenerator.frontlineconflictdescription import (
     FrontLineConflictDescription,
 )
+from game.radio.tacan import TacanBand
 from game.theater import Player
 
 if TYPE_CHECKING:
@@ -169,6 +170,32 @@ class HornetCartridge(Cartridge):
     # selected one, as with FLOT, so the tanker that matters most goes first.
     max_boxes = 3
     refuels_from = "drogue"
+
+    def campaign_sections(
+        self, game: Game, flight: Optional[Any] = None
+    ) -> dict[str, Any]:
+        """Preset the recovery base's navigation aids without changing the route."""
+        if flight is None:
+            return {}
+        runway = flight.arrival or flight.departure
+        if runway is None:
+            return {}
+        settings: dict[str, Any] = {}
+        # Field names and enum values come from FA-18C/DTC/WYPT/NAV_SETTINGS_defs.lua.
+        if runway.tacan is not None:
+            settings["TACAN"] = {
+                "Mode": 1,  # T/R, not receive-only or air-to-air.
+                "Channel": runway.tacan.number,
+                "ChannelMode": 1 if runway.tacan.band is TacanBand.X else 2,
+                "OnOff": True,
+            }
+        if runway.icls is not None:
+            settings["ICLS"] = {"Channel": runway.icls, "OnOff": True}
+        if runway.link4 is not None:
+            settings["ACLS"] = {"Frequency": runway.link4.mhz, "OnOff": True}
+        # ILS frequencies are not ICLS channels; this module only supports ICLS.
+        # Omit route fields so this also merges with saved navigation points.
+        return {"WYPT": {"NAV_SETTINGS": settings}} if settings else {}
 
     def navigation(self, points: Sequence[NavPoint]) -> dict[str, Any]:
         """The WYPT section.

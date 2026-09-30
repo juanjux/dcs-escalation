@@ -22,7 +22,11 @@ from dcs.terrain import Caucasus
 
 from game.ato.savedpoints import capacity_for
 from game.missiongenerator import dtc
+from game.radio.radios import MHz
+from game.radio.tacan import TacanBand, TacanChannel
+from game.runways import RunwayData
 from game.theater import Player
+from game.utils import Heading
 
 
 def _air_wing(*aircraft: str) -> Any:
@@ -111,6 +115,8 @@ def _flight_data(
         client_units=units,
         waypoints=_route(route),
         saved_points=list(saved),
+        departure=None,
+        arrival=None,
     )
 
 
@@ -145,6 +151,133 @@ def _crewed(game: Any, *seats: tuple[str, int]) -> None:
 
 
 # ----------------------------------------------------------------- the one switch
+
+
+def _recovery_runway(
+    name: str = "Carrier", band: TacanBand = TacanBand.X
+) -> RunwayData:
+    return RunwayData(
+        name,
+        Heading.from_degrees(270),
+        "27",
+        tacan=TacanChannel(74, band),
+        icls=11,
+        link4=MHz(336, 125),
+    )
+
+
+@pytest.mark.parametrize(
+    "aircraft", ["FA-18C_hornet", "FA-18E", "FA-18F", "EA-18G", "FA-18ET", "FA-18FT"]
+)
+@pytest.mark.parametrize("band,mode", [(TacanBand.X, 1), (TacanBand.Y, 2)])
+def test_hornet_recovery_navigation_presets(
+    aircraft: str, band: TacanBand, mode: int
+) -> None:
+    flight = _flight_data(aircraft=aircraft)
+    flight.departure = flight.arrival = _recovery_runway(band=band)
+    data = dtc.cartridge(_game(), Player.BLUE, aircraft, "Test", flight=flight)["data"]
+    assert data["WYPT"]["NAV_SETTINGS"] == {
+        "TACAN": {"Mode": 1, "Channel": 74, "ChannelMode": mode, "OnOff": True},
+        "ICLS": {"Channel": 11, "OnOff": True},
+        "ACLS": {"Frequency": 336.125, "OnOff": True},
+    }
+    # No saved points: do not replace the mission route with an empty point list.
+    assert "NAV_PTS" not in data["WYPT"]
+    assert "mirror_NAV_PTS" not in data["WYPT"]
+    assert data["SA"]["mirror_MEZ_THRTS"] is True
+
+
+def test_recovery_base_takes_priority_without_using_departure_aids() -> None:
+    flight = _flight_data()
+    flight.departure = _recovery_runway()
+    flight.arrival = RunwayData(
+        "Land base", Heading.from_degrees(90), "09", tacan=TacanChannel(32, TacanBand.Y)
+    )
+    settings = dtc.HornetCartridge().campaign_sections(_game(), flight)["WYPT"][
+        "NAV_SETTINGS"
+    ]
+    assert settings == {
+        "TACAN": {"Mode": 1, "Channel": 32, "ChannelMode": 2, "OnOff": True}
+    }
+
+
+def test_missing_arrival_uses_departure() -> None:
+    flight = _flight_data()
+    flight.departure = _recovery_runway()
+    assert (
+        dtc.HornetCartridge().campaign_sections(_game(), flight)["WYPT"][
+            "NAV_SETTINGS"
+        ]["TACAN"]["Channel"]
+        == 74
+    )
+
+
+def test_ils_is_not_written_as_an_icls_channel() -> None:
+    flight = _flight_data()
+    flight.departure = _recovery_runway()
+    flight.arrival = RunwayData(
+        "Land base", Heading.from_degrees(90), "09", ils=MHz(110, 300)
+    )
+    assert dtc.HornetCartridge().campaign_sections(_game(), flight) == {}
+
+
+def test_no_flight_does_not_guess_navigation_presets() -> None:
+    assert dtc.HornetCartridge().campaign_sections(_game()) == {}
+    assert dtc.HornetCartridge().campaign_sections(_game(), _flight_data()) == {}
+
+
+def test_mission_cartridges_preserve_points_and_use_each_flights_base(
+    tmp_path: Path,
+) -> None:
+    first = _flight_data(saved=[_saved("waypoint", "Saved", 20.0, 30.0)])
+    first.arrival = _recovery_runway()
+    second = _flight_data(callsign="SPRINGFIELD11")
+    second.arrival = RunwayData(
+        "Other base",
+        Heading.from_degrees(90),
+        "09",
+        tacan=TacanChannel(12, TacanBand.Y),
+    )
+    mission = tmp_path / "navigation.miz"
+    with zipfile.ZipFile(mission, "w") as archive:
+        archive.writestr("mission", "-- fixture")
+    dtc.write_into_mission(_game(), _mission_data(first, second), mission)
+    with zipfile.ZipFile(mission) as archive:
+        a = json.loads(archive.read("DTC/navigation ENFIELD11.dtc"))["data"]["WYPT"]
+        b = json.loads(archive.read("DTC/navigation SPRINGFIELD11.dtc"))["data"]["WYPT"]
+    assert a["NAV_SETTINGS"]["TACAN"]["Channel"] == 74
+    assert b["NAV_SETTINGS"]["TACAN"]["Channel"] == 12
+    assert "ACLS" not in b["NAV_SETTINGS"]
+    assert a["mirror_NAV_PTS"] is False
+    assert a["NAV_PTS"][-1]["text_note"] == "Saved"
+    assert len(a["NAV_PTS"]) == len(first.waypoints) + 1
+
+
+def test_carrier_runway_keeps_generated_link4_frequency() -> None:
+    from game.missiongenerator.tgogenerator import GenericCarrierGenerator
+
+    generator: Any = object.__new__(GenericCarrierGenerator)
+    generator.control_point = SimpleNamespace(name="Carrier", full_name="Carrier CVN")
+    generator.runways = {}
+    frequency = MHz(336, 125)
+    generator.add_runway_data(
+        Heading.from_degrees(270),
+        MHz(250),
+        TacanChannel(74, TacanBand.X),
+        "CVN",
+        11,
+        frequency,
+    )
+    runway = generator.runways["Carrier CVN"]
+    assert runway.link4 == frequency
+    flight = _flight_data()
+    flight.arrival = runway
+    assert (
+        dtc.HornetCartridge().campaign_sections(_game(), flight)["WYPT"][
+            "NAV_SETTINGS"
+        ]["ACLS"]["Frequency"]
+        == frequency.mhz
+    )
 
 
 def test_the_rings_are_mirrored_rather_than_drawn() -> None:
@@ -359,6 +492,28 @@ DCS = Path("D:/SteamLibrary/steamapps/common/DCSWorld/CoreMods/aircraft")
 HORNET = DCS / "FA-18C/DTC/SA"
 VIPER = DCS / "F-16C/DTC/MPD"
 installed = pytest.mark.skipif(not DCS.is_dir(), reason="DCS is not installed here")
+
+
+@installed
+def test_recovery_settings_match_the_installed_hornet_schema() -> None:
+    root = DCS / "FA-18C/DTC"
+    definitions = (root / "WYPT/NAV_SETTINGS_defs.lua").read_text(encoding="utf-8")
+    loader = (root / "WYPT/NAV_SETTINGS.lua").read_text(encoding="utf-8")
+    importer = (root / "FA-18C_hornet_DTC.lua").read_text(encoding="utf-8")
+    assert "T_R = 1" in definitions
+    assert "X = 1" in definitions
+    assert "Y = 2" in definitions
+    flight = _flight_data()
+    flight.arrival = _recovery_runway()
+    settings = dtc.HornetCartridge().campaign_sections(_game(), flight)["WYPT"][
+        "NAV_SETTINGS"
+    ]
+    for section, values in settings.items():
+        for field in values:
+            assert f"data.WYPT.NAV_SETTINGS.{section}.{field}" in loader
+    # Partial WYPT data leaves the default mirrored mission route enabled.
+    assert "mirror_NAV_PTS = true" in importer
+    assert "if tbl.WYPT.mirror_NAV_PTS ~= nil then" in importer
 
 
 @installed

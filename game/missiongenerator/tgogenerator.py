@@ -814,7 +814,12 @@ class GenericCarrierGenerator(GroundObjectGenerator):
                     ship_group, tacan, tacan_callsign, icls, icls_name, link4
                 )
                 self.add_runway_data(
-                    brc or Heading.from_degrees(0), atc, tacan, tacan_callsign, icls
+                    brc or Heading.from_degrees(0),
+                    atc,
+                    tacan,
+                    tacan_callsign,
+                    icls,
+                    link4,
                 )
                 self.mission_data.carriers.append(
                     CarrierInfo(
@@ -890,6 +895,7 @@ class GenericCarrierGenerator(GroundObjectGenerator):
         tacan: TacanChannel,
         callsign: str,
         icls: Optional[int],
+        link4: Optional[RadioFrequency] = None,
     ) -> None:
         # This relies on one control point mapping exactly
         # to one LHA, carrier, or other usable "runway".
@@ -906,6 +912,7 @@ class GenericCarrierGenerator(GroundObjectGenerator):
             tacan=tacan,
             tacan_callsign=callsign,
             icls=icls,
+            link4=link4,
         )
 
 
