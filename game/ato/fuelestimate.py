@@ -156,9 +156,9 @@ def altitude_factor(altitude_ft: float, helicopter: bool = False) -> float:
 class FuelEstimate:
     """Pounds of fuel this flight plan asks for, and what the flight is carrying."""
 
-    #: Taxi, the whole route and the landing reserve, with the margin applied.
+    #: Route or segment requirement, including reserve and margin.
     required: Mass
-    #: What the flight takes off with: the internal quantity plus its drop tanks.
+    #: Available at departure or after refuelling, including fitted drop tanks.
     carried: Mass
 
     @property
@@ -203,7 +203,21 @@ def burn_for(
 
 
 def estimate_fuel(flight: Flight) -> Optional[FuelEstimate]:
-    """Never None in practice: an unmeasured airframe falls back to a guess."""
+    """Whole-route requirement without refuelling, for tanker planning decisions."""
+    return _estimate_fuel_segments(flight, refuel=False)[0]
+
+
+def estimate_fuel_segments(flight: Flight) -> list[FuelEstimate]:
+    """Split at each REFUEL, assuming full internal and fitted external tanks.
+
+    Taxi is charged only before the first refuel. Every segment keeps the safe
+    reserve and margin, including arrival at a tanker. This does not confirm that
+    a tanker is available, or model tank jettison or partial transfers.
+    """
+    return _estimate_fuel_segments(flight, refuel=True)
+
+
+def _estimate_fuel_segments(flight: Flight, *, refuel: bool) -> list[FuelEstimate]:
     consumption = flight.unit_type.fuel_consumption or assumed_consumption(
         flight.unit_type
     )
@@ -224,27 +238,41 @@ def estimate_fuel(flight: Flight) -> Optional[FuelEstimate]:
     # fuel_consumption_between_points, which returns None for an unmeasured airframe.
     # Only the DISTANCE comes from the plan, which is what knows a racetrack flies its
     # laps rather than one crossing.
-    legs = []
+    legs: list[Leg] = []
+    segments: list[FuelEstimate] = []
+    carried = carried_fuel(flight)
+    taxi = consumption.taxi
+
+    def finish_segment() -> FuelEstimate:
+        burn = burn_for(consumption, legs, flight.unit_type.helicopter)
+        required = (taxi + burn + consumption.min_safe) * MARGIN
+        return FuelEstimate(required=pounds(required), carried=carried)
+
     for a, b in pairwise(waypoints):
         distance = plan.fuel_burn_distance_between_points(a, b).nautical_miles
         if a.waypoint_type is FlightWaypointType.TAKEOFF:
             legs.append(Leg(distance, a.alt.feet, climb=True))
-            continue
         # Combat rate for the attack itself. The plan also flags the join and the
         # split, which are flown at the package's cruise speed rather than in
         # combat -- charging those at the combat rate put a strike's egress leg,
         # eighty miles of it, at over twice the right figure.
-        legs.append(
-            Leg(
-                distance,
-                (a.alt.feet + b.alt.feet) / 2,
-                attack=b.waypoint_type in ATTACK_WAYPOINTS,
+        else:
+            legs.append(
+                Leg(
+                    distance,
+                    (a.alt.feet + b.alt.feet) / 2,
+                    attack=b.waypoint_type in ATTACK_WAYPOINTS,
+                )
             )
-        )
+        if refuel and b.waypoint_type is FlightWaypointType.REFUEL:
+            segments.append(finish_segment())
+            legs = []
+            taxi = 0
+            external = loadout_fuel(flight.roster.members[0].loadout)
+            carried = kgs(flight.unit_type.dcs_unit_type.fuel_max + external.kgs)
 
-    burn = burn_for(consumption, legs, flight.unit_type.helicopter)
-    required = (consumption.taxi + burn + consumption.min_safe) * MARGIN
-    return FuelEstimate(required=pounds(required), carried=carried_fuel(flight))
+    segments.append(finish_segment())
+    return segments
 
 
 def carried_fuel(flight: Flight) -> Mass:

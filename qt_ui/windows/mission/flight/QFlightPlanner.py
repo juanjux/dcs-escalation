@@ -92,3 +92,5 @@ class QFlightPlanner(QTabWidget):
     def on_tab_changed(self, index: int) -> None:
         if self.widget(index) is self.waypoint_tab:
             self.waypoint_tab.refresh_fuel()
+        elif self.widget(index) is self.payload_tab:
+            self.payload_tab.fuel_selector._show_verdict()

@@ -2,8 +2,6 @@ import logging
 from typing import Iterable, List, Optional
 
 from PySide6.QtCore import Signal, Qt, QModelIndex
-from PySide6.QtCore import QRect, Qt
-from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -28,7 +26,8 @@ from game.ato.flightplans.waypointbuilder import WaypointBuilder
 from game.ato.flighttype import FlightType
 from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
-from game.ato.fuelestimate import estimate_fuel
+from game.ato.fuelestimate import estimate_fuel_segments
+from qt_ui.windows.mission.flight.fuelsummary import FuelSummary
 from game.utils import feet
 from game.ato.loadouts import Loadout
 from game.ato.package import Package
@@ -50,59 +49,6 @@ def _footer_caption(text: str) -> QLabel:
     return label
 
 
-class FuelBar(QWidget):
-    """What the plan asks for against what the flight carries, as a bar.
-
-    "Fuel: ~10,057 of 13,033" is two numbers you have to divide in your head to know
-    whether it is close. The bar is the division: the fill is what the route needs, the
-    tick is what the aircraft has, and the fill turns red when it goes past the tick.
-    """
-
-    WIDTH = 220
-    HEIGHT = 6
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.setFixedSize(self.WIDTH, self.HEIGHT + 6)
-        self.required = 0.0
-        self.carried = 0.0
-        make_transparent(self)
-
-    def show_fuel(self, required: float, carried: float) -> None:
-        self.required, self.carried = required, carried
-        self.update()
-
-    def paintEvent(self, event: object) -> None:  # noqa: N802 (Qt naming)
-        painter = QPainter(self)
-        try:
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-            top = (self.height() - self.HEIGHT) // 2
-            track = QRect(0, top, self.WIDTH, self.HEIGHT)
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor("#1D2731"))
-            painter.drawRoundedRect(track, 3, 3)
-
-            if self.carried <= 0:
-                return
-            # The scale runs to whichever is larger, so an overrun has somewhere to be
-            # drawn rather than being clipped at full.
-            top_of_scale = max(self.carried, self.required)
-            enough = self.required <= self.carried
-            fill_width = int(self.WIDTH * self.required / top_of_scale)
-            painter.setBrush(QColor("#86C39A" if enough else "#D9645E"))
-            painter.drawRoundedRect(
-                QRect(0, top, max(2, fill_width), self.HEIGHT), 3, 3
-            )
-
-            tick_x = int(self.WIDTH * self.carried / top_of_scale)
-            painter.setBrush(QColor("#F2F7FA"))
-            painter.drawRect(
-                QRect(min(tick_x, self.WIDTH - 2), top - 2, 2, self.HEIGHT + 4)
-            )
-        finally:
-            painter.end()
-
-
 class QFlightWaypointTab(QFrame):
     loadout_changed = Signal()
 
@@ -115,8 +61,6 @@ class QFlightWaypointTab(QFrame):
     #   * Pickup / dropoff zones are ground-level helo landing zones.
     #   * Refuel / recovery-tanker points are tied to the tanker's orbit altitude.
     #   * Bullseye is a fixed map reference, not a flown waypoint.
-    #: Over the fuel carried by no more than this reads as tight rather than short.
-    TIGHT_OVERRUN = 1.15
 
     BULK_ALTITUDE_SKIP_TYPES = frozenset(
         {
@@ -168,16 +112,7 @@ class QFlightWaypointTab(QFrame):
         self.route_length.setStyleSheet(
             "color: #D3DFE8; background: transparent; border: none;"
         )
-        self.fuel_bar = FuelBar()
-        self.fuel_numbers = QLabel()
-        self.fuel_numbers.setFont(mono(13))
-        self.fuel_numbers.setStyleSheet(
-            "color: #D3DFE8; background: transparent; border: none;"
-        )
-        self.fuel_note = QLabel()
-        self.fuel_note.setStyleSheet(
-            "font-size: 11px; color: #D9645E; background: transparent; border: none;"
-        )
+        self.fuel_summary = FuelSummary(show_bars=True)
 
         footer = QHBoxLayout()
         footer.setContentsMargins(14, 0, 14, 0)
@@ -185,13 +120,9 @@ class QFlightWaypointTab(QFrame):
         footer.addWidget(_footer_caption("ROUTE"))
         footer.addWidget(self.route_length)
         footer.addSpacing(18)
-        footer.addWidget(_footer_caption("FUEL"))
-        footer.addWidget(self.fuel_bar)
-        footer.addWidget(self.fuel_numbers)
-        footer.addWidget(self.fuel_note)
-        footer.addStretch()
+        footer.addWidget(self.fuel_summary, 1)
         footer_holder = QWidget()
-        footer_holder.setFixedHeight(48)
+        footer_holder.setMinimumHeight(48)
         footer_holder.setStyleSheet(
             "background: #1B2732; border: 1px solid #1D2731; border-radius: 3px;"
         )
@@ -565,37 +496,7 @@ class QFlightWaypointTab(QFrame):
         self._route_length_nm = nautical_miles
         self.route_length.setText(f"{nautical_miles:.0f} nm")
 
-        fuel = estimate_fuel(self.flight)
-        if fuel is None:
-            self.fuel_bar.hide()
-            self.fuel_numbers.setText("")
-            self.fuel_note.setText("")
-            return
-
-        self.fuel_bar.show()
-        self.fuel_bar.show_fuel(fuel.required.pounds, fuel.carried.pounds)
-        self.fuel_numbers.setText(
-            f"~{fuel.required.pounds:,.0f} of {fuel.carried.pounds:,.0f} lb"
-        )
-        if fuel.enough:
-            self.fuel_note.setText("")
-            return
-        # Loud on purpose: the estimate errs high, so it saying no is still worth a
-        # look before you launch. Being over by a tenth and being over by half are not
-        # the same news, so they do not read alike.
-        short = fuel.required.pounds - fuel.carried.pounds
-        if fuel.required.pounds <= fuel.carried.pounds * self.TIGHT_OVERRUN:
-            self.fuel_note.setText("tight")
-            self.fuel_note.setStyleSheet(
-                "font-size: 11px; color: #E0A86B; background: transparent;"
-                " border: none;"
-            )
-        else:
-            self.fuel_note.setText(f"short by {short:,.0f} lb")
-            self.fuel_note.setStyleSheet(
-                "font-size: 11px; color: #D9645E; background: transparent;"
-                " border: none;"
-            )
+        self.fuel_summary.show_estimates(estimate_fuel_segments(self.flight))
 
     def on_change(self):
         self.flight_waypoint_list.update_list()

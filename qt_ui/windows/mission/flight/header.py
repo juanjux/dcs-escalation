@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from game.ato.flight import Flight
-from game.ato.fuelestimate import estimate_fuel
+from game.ato.fuelestimate import estimate_fuel_segments
 from game.ato.starttype import StartType
 from game.utils import meters
 from qt_ui.uiconstants import AIRCRAFT_ICONS
@@ -357,9 +357,9 @@ class FlightHeader(QFrame):
             seats = "seat" if missing == 1 else "seats"
             found.append((f"{missing} {seats} unassigned", "warn", GENERAL_TAB))
 
-        estimate = estimate_fuel(self.flight)
-        if estimate is not None and not estimate.enough:
-            short = estimate.required.pounds - estimate.carried.pounds
+        estimates = estimate_fuel_segments(self.flight)
+        short = max(e.required.pounds - e.carried.pounds for e in estimates)
+        if short > 0:
             found.append((f"short {short:,.0f} lb of fuel", "bad", WAYPOINTS_TAB))
 
         if self.flight.start_type is not StartType.COLD:
