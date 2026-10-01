@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Split flight fuel estimates at refuel waypoints in Waypoints and Payload, assuming full tanks after each refuel and checking each segment separately.
 * **[DTC]** Preset the Hornet family's recovery-base TACAN, ICLS and Link4/ACLS when available.
 * **[UI]** Redesign Create Flight and Package with grouped controls, crew counts, clear timing states and direct flight editing.
 * **[UI]** Add selectable faction statistics to Intel, including budget, income, pilots and bases.

@@ -17,7 +17,8 @@ from game import Game
 from game.ato.flight import Flight
 from game.ato.flightmember import FlightMember
 from game.ato.loadouts import Loadout
-from game.ato.fuelestimate import estimate_fuel
+from game.ato.fuelestimate import estimate_fuel_segments
+from qt_ui.windows.mission.flight.fuelsummary import FuelSummary
 from game.data.fueltanks import loadout_fuel
 from game.utils import kgs
 from qt_ui.widgets.QLabeledWidget import QLabeledWidget
@@ -169,19 +170,12 @@ class DcsFuelSelector(QWidget):
         self.tanks.setStyleSheet(
             "color: #8E9DAA; background: transparent; border: none;"
         )
-        self.verdict = QLabel()
-        self.verdict.setStyleSheet(
-            "font-size: 12px; background: transparent; border: none;"
-        )
-        self.verdict.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-        )
-        second = QHBoxLayout()
+        self.fuel_summary = FuelSummary()
+        second = QVBoxLayout()
         second.setContentsMargins(14, 2, 14, 8)
-        second.setSpacing(10)
+        second.setSpacing(4)
         second.addWidget(self.tanks)
-        second.addStretch()
-        second.addWidget(self.verdict)
+        second.addWidget(self.fuel_summary)
 
         column = QVBoxLayout()
         column.setContentsMargins(0, 0, 0, 0)
@@ -221,35 +215,9 @@ class DcsFuelSelector(QWidget):
         self._show_verdict()
 
     def _show_verdict(self) -> None:
-        """What the plan asks for, against what it is carrying.
-
-        The figure is on the waypoint tab as well, but this is where you change the
-        answer, and a number you have to go to another tab to check is a number you do
-        not check.
-        """
-        estimate = estimate_fuel(self.flight)
-        if estimate is None:
-            self.verdict.setText("")
-            return
-        needed = estimate.required.pounds
-        carried = estimate.carried.pounds
-        if self.unit.currentIndex() == 0:
-            shown = f"{estimate.required.kgs:,.0f} kg"
-        else:
-            shown = f"{needed:,.0f} lb"
-        margin = (carried - needed) / needed * 100 if needed else 0.0
-        if estimate.enough:
-            self.verdict.setText(f"plan needs ~{shown}  ·  {margin:+.0f}%")
-            self.verdict.setStyleSheet(
-                "font-size: 12px; color: #86C39A; background: transparent;"
-                " border: none;"
-            )
-        else:
-            self.verdict.setText(f"plan needs ~{shown}  ·  {margin:+.0f}%")
-            self.verdict.setStyleSheet(
-                "font-size: 12px; color: #D9645E; background: transparent;"
-                " border: none;"
-            )
+        self.fuel_summary.show_estimates(
+            estimate_fuel_segments(self.flight), kg=self.unit.currentIndex() == 0
+        )
 
     def on_fuel_change(self, value: int) -> None:
         self.flight.fuel = value
@@ -278,6 +246,8 @@ class DcsFuelSelector(QWidget):
             self.fuel_spinner.setMaximum(self.kg2lbs(self.max_fuel))
             self.fuel_spinner.setValue(self.kg2lbs(self.fuel.value()))
         self.unit_changing = False
+        if hasattr(self, "fuel_summary"):
+            self.show_tanks(self._loadout())
 
     def kg2lbs(self, value: int) -> int:
         return round(value / self.LBS2KGS_FACTOR)
