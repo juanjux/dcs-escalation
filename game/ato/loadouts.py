@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
 # Default-loadout overrides: the payload editor's "Set as default" button lets a
 # user mark a specific named payload as the default for an aircraft + flight type.
+# Applies only to the player's side, including its AI flights.
 # Stored globally (all campaigns) next to the DCS payload files, keyed by aircraft
 # id then FlightType name. default_for_task_and_aircraft consults these before the
 # "Escalation <task>" name conventions. This only changes WHICH named payload is
@@ -374,7 +375,10 @@ class Loadout:
     @classmethod
     def default_for(cls, flight: Flight) -> Loadout:
         return cls.default_for_task_and_aircraft(
-            flight.flight_type, flight.unit_type.dcs_unit_type, flight.package.target
+            flight.flight_type,
+            flight.unit_type.dcs_unit_type,
+            flight.package.target,
+            use_player_override=flight.blue.is_blue,
         )
 
     @classmethod
@@ -383,6 +387,8 @@ class Loadout:
         task: FlightType,
         dcs_unit_type: Type[FlyingType],
         target: Optional[MissionTarget] = None,
+        *,
+        use_player_override: bool = False,
     ) -> Loadout:
         # This is cached, but must be called before loadout_by_name will work. A
         # malformed or unsupported payload .lua (e.g. from a third-party mod)
@@ -403,7 +409,11 @@ class Loadout:
         # button) takes priority over the "Escalation <task>" name conventions.
         # If its payload is missing or invalid we fall through to the conventions.
         names = list(cls.default_loadout_names_for(task))
-        override = get_default_loadout_override(dcs_unit_type.id, task)
+        override = (
+            get_default_loadout_override(dcs_unit_type.id, task)
+            if use_player_override
+            else None
+        )
         if override:
             names = [override] + [n for n in names if n != override]
 

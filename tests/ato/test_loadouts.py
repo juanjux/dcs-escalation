@@ -1,12 +1,92 @@
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
 from game.ato.flighttype import FlightType
-from game.ato.loadouts import Loadout
+from game.ato.loadouts import Loadout, set_default_loadout_override
+from game.theater.player import Player
 from game.dcs.payload_loading import install_resilient_payload_loading
+
+
+@pytest.mark.parametrize("side", [Player.BLUE, Player.RED, Player.NEUTRAL])
+def test_saved_default_is_only_used_by_player_side(
+    side: Player, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("game.ato.loadouts.payloads_dir", lambda: tmp_path)
+    monkeypatch.setattr(
+        Loadout,
+        "default_loadout_names_for",
+        classmethod(lambda cls, task: iter(["Built-in"])),
+    )
+    set_default_loadout_override("TestJet", FlightType.BARCAP, "Player preset")
+    unit_type: Any = MagicMock(id="TestJet")
+    unit_type.loadout_by_name.side_effect = lambda name: []
+    flight: Any = SimpleNamespace(
+        blue=side,
+        flight_type=FlightType.BARCAP,
+        unit_type=SimpleNamespace(dcs_unit_type=unit_type),
+        package=SimpleNamespace(target=None),
+    )
+
+    result = Loadout.default_for(flight)
+
+    assert result.name == ("Player preset" if side.is_blue else "Built-in")
+    if not side.is_blue:
+        assert all(
+            call.args[0] != "Player preset"
+            for call in unit_type.loadout_by_name.call_args_list
+        )
+
+
+@pytest.mark.parametrize("invalid", [False, True])
+def test_unavailable_player_default_falls_back(
+    invalid: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "game.ato.loadouts.get_default_loadout_override", lambda *_: "Unavailable"
+    )
+    monkeypatch.setattr(
+        Loadout,
+        "default_loadout_names_for",
+        classmethod(lambda cls, task: iter(["Built-in"])),
+    )
+    unit_type: Any = MagicMock(id="TestJet")
+    unit_type.loadout_by_name.side_effect = lambda name: (
+        ([(1, {"clsid": "unknown"})] if invalid else None)
+        if name == "Unavailable"
+        else []
+    )
+    monkeypatch.setattr(
+        Loadout, "valid_payload", classmethod(lambda cls, pylons: not pylons)
+    )
+    result = Loadout.default_for_task_and_aircraft(
+        FlightType.BARCAP, unit_type, use_player_override=True
+    )
+    assert result.name == "Built-in"
+
+
+def test_unscoped_default_does_not_read_player_preferences(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    lookup = MagicMock(
+        side_effect=AssertionError("Unscoped lookup read player settings")
+    )
+    monkeypatch.setattr("game.ato.loadouts.get_default_loadout_override", lookup)
+    monkeypatch.setattr(
+        Loadout,
+        "default_loadout_names_for",
+        classmethod(lambda cls, task: iter(["Built-in"])),
+    )
+    unit_type: Any = MagicMock(id="TestJet")
+    unit_type.loadout_by_name.return_value = []
+    assert (
+        Loadout.default_for_task_and_aircraft(FlightType.BARCAP, unit_type).name
+        == "Built-in"
+    )
+    lookup.assert_not_called()
 
 
 def test_default_loadout_falls_back_when_payloads_fail_to_load() -> None:
