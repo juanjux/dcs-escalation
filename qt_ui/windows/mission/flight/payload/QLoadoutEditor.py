@@ -227,6 +227,9 @@ class QLoadoutEditor(QWidget):
         """
         from game.ato.loadouts import set_default_loadout_override
 
+        if not self.flight.blue.is_blue:
+            return
+
         if self.isChecked() or self.flight_member.loadout.is_custom:
             QMessageBox.warning(
                 QWidget(),
@@ -245,8 +248,8 @@ class QLoadoutEditor(QWidget):
             f"{task.value} missions?\n\n"
             f"It applies to NEW {task.value} flights only — flights already in the "
             f"ATO keep what they have.\n"
-            f"It applies to BOTH sides: enemy {ac_id} flights on {task.value} get it "
-            f"too.\n"
+            "It applies only to your side, including AI flights. Enemy flights "
+            "keep their own loadouts.\n"
             f"It applies to every campaign until you clear it.\n\n"
             f"No payload file is modified — this only records which named payload "
             f"is picked.",
@@ -259,11 +262,14 @@ class QLoadoutEditor(QWidget):
             QWidget(),
             "Default loadout set",
             f'"{payload_name}" is now the default loadout for {ac_id} on '
-            f"{task.value} missions.",
+            f"{task.value} missions on your side.",
         )
 
     def clear_task_default(self) -> None:
         """Drop the default payload for this aircraft + flight type, if any."""
+        if not self.flight.blue.is_blue:
+            return
+
         from game.ato.loadouts import (
             clear_default_loadout_override,
             get_default_loadout_override,
@@ -284,7 +290,7 @@ class QLoadoutEditor(QWidget):
             QWidget(),
             "Clear default loadout",
             f'Stop using "{current}" as the default for {ac_id} on {task.value} '
-            f"missions?\n\nNew flights will go back to the built-in choice. No "
+            f"missions on your side?\n\nNew flights will go back to the built-in choice. No "
             f"payload is deleted.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )

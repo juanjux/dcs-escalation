@@ -49,6 +49,7 @@ class QFlightCreator(QDialog):
         self.resize(960, 700)
 
         self.game = game
+        self.is_ownfor = is_ownfor
         self.package = package
         self.custom_name_text = None
 
@@ -498,7 +499,11 @@ class QFlightCreator(QDialog):
         # A user-set default (per aircraft + task, set with the payload editor's
         # "Set as default" button) wins over the "Escalation <task>" name
         # conventions, mirroring Loadout.default_for_task_and_aircraft.
-        override = get_default_loadout_override(ac_type.dcs_unit_type.id, task)
+        override = (
+            get_default_loadout_override(ac_type.dcs_unit_type.id, task)
+            if self.is_ownfor
+            else None
+        )
         candidates = ([override] if override else []) + list(
             Loadout.default_loadout_names_for(task)
         )

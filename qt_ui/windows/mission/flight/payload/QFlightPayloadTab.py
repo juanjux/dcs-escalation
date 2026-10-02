@@ -388,13 +388,13 @@ class QFlightPayloadTab(QFrame):
         self.set_default_btn = QPushButton("Set as default")
         self.set_default_btn.setToolTip(
             "Save the selected loadout as the default for this aircraft and mission "
-            "type, so future flights of this type use it."
+            "type on your side only, including AI flights. Enemy flights are unaffected."
         )
         self.set_default_btn.clicked.connect(self.on_set_default)
 
         self.clear_default_btn = QPushButton("Clear")
         self.clear_default_btn.setToolTip(
-            "Stop using a saved default for this aircraft and mission type, so new "
+            "Stop using your side's saved default for this aircraft and mission type, so new "
             "flights go back to the built-in choice. No payload is deleted."
         )
         self.clear_default_btn.clicked.connect(self.on_clear_default)
@@ -405,6 +405,7 @@ class QFlightPayloadTab(QFrame):
         preset.addWidget(styled_input(self.loadout_selector), 1)
         for button in (self.set_default_btn, self.clear_default_btn):
             button.setFixedHeight(26)
+            button.setEnabled(self.flight.blue.is_blue)
             preset.addWidget(button)
         preset_holder = QWidget()
         preset_holder.setFixedHeight(44)

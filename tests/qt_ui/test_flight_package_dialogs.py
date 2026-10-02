@@ -144,6 +144,40 @@ def test_loadout_search_and_task_changes_preserve_roster(creator: Any) -> None:
     assert creator.verify_form() is None
 
 
+@pytest.mark.parametrize("is_ownfor", [True, False])
+def test_creator_only_uses_player_default_for_own_side(
+    creator: Any, monkeypatch: Any, is_ownfor: bool
+) -> None:
+    from game.ato.loadouts import Loadout
+
+    creator.is_ownfor = is_ownfor
+    lookup = Mock(return_value="Alternative preset")
+    monkeypatch.setattr(
+        "qt_ui.windows.mission.flight.QFlightCreator.get_default_loadout_override",
+        lookup,
+    )
+    monkeypatch.setattr(
+        Loadout,
+        "default_loadout_names_for",
+        classmethod(lambda cls, task: iter(["Strike preset"])),
+    )
+    creator._init_loadout_selector()
+    assert creator.current_loadout().name == (
+        "Alternative preset" if is_ownfor else "Strike preset"
+    )
+    assert lookup.call_count == int(is_ownfor)
+
+
+@pytest.mark.parametrize("method", ["save_as_task_default", "clear_task_default"])
+def test_enemy_payload_editor_cannot_change_player_defaults(method: str) -> None:
+    from game.theater import Player
+    from qt_ui.windows.mission.flight.payload.QLoadoutEditor import QLoadoutEditor
+
+    # Only the coalition is available: accessing dialogs or persistence would fail.
+    editor: Any = SimpleNamespace(flight=SimpleNamespace(blue=Player.RED))
+    getattr(QLoadoutEditor, method)(editor)
+
+
 def test_creator_required_start_and_empty_air_wing(
     creator: Any, qt_app: Any, monkeypatch: Any
 ) -> None:
