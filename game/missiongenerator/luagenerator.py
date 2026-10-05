@@ -135,10 +135,11 @@ class LuaGenerator:
             name = escape_string_for_lua(unit_name)
             pilot = escape_string_for_lua(self._addressed(flying_unit))
             rows.append(f'  ["{name}"] = "{pilot}",')
-        if not rows:
-            return
-
-        preamble = "ESCALATION_PILOTS = {\n" + "\n".join(rows) + "\n}\n"
+        show_names = str(self.game.settings.live_pilots_enabled).lower()
+        preamble = (
+            f"ESCALATION_SHOW_PILOT_NAMES = {show_names}\n"
+            "ESCALATION_PILOTS = {\n" + "\n".join(rows) + "\n}\n"
+        )
         trigger = TriggerStart(comment="Mission Log (pilot roster)")
         trigger.add_action(DoScript(String(preamble)))
         self.mission.triggerrules.triggers.append(trigger)
