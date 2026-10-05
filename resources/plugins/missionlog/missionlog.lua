@@ -4,7 +4,7 @@
 -- it happened to. A kill event names a unit "STAG BARCAP|2|14|F-15C Eagle| Pilot
 -- #2", which is unreadable mid-flight, and says nothing about the pilot flying
 -- it. Retribution knows the pilot, so the mission generator seeds
--- RETRIBUTION_PILOTS with the name behind every unit and this script turns the
+-- ESCALATION_PILOTS with the name behind every unit and this script turns the
 -- raw events into sentences.
 --
 -- Every message goes to one coalition only: the side it is news for. A kill is
@@ -155,8 +155,8 @@ local function fields_of(name)
 end
 
 local function pilot_of(unit, name)
-    if type(RETRIBUTION_PILOTS) == "table" and RETRIBUTION_PILOTS[name] then
-        return RETRIBUTION_PILOTS[name]
+    if type(ESCALATION_PILOTS) == "table" and ESCALATION_PILOTS[name] then
+        return ESCALATION_PILOTS[name]
     end
     -- A human in the seat outranks the roster: the slot may be flown by anyone.
     local player
@@ -202,7 +202,7 @@ local function describe_bare(unit)
         aircraft = kind or "aircraft"
     end
     local pilot = pilot_of(unit, name)
-    if pilot then
+    if pilot and ESCALATION_SHOW_PILOT_NAMES ~= false then
         return string.format("%s flown by %s", aircraft, pilot), true
     end
     return aircraft, false
@@ -293,7 +293,7 @@ local function describe_flight(group, enemy)
         pcall(function() aircraft = leader:getTypeName() end)
     end
     local pilot = pilot_of(leader, name)
-    if pilot then
+    if pilot and ESCALATION_SHOW_PILOT_NAMES ~= false then
         return string.format("%s of %d %s led by %s", herd, size, aircraft or "aircraft", pilot)
     end
     return string.format("%s of %d %s", herd, size, aircraft or "aircraft")
@@ -895,10 +895,10 @@ timer.scheduleFunction(function(_, time)
 end, nil, timer.getTime() + GROUND_FLUSH_SECONDS)
 
 if logger then
-    -- RETRIBUTION_PILOTS is keyed by unit name, so # would report 0.
+    -- ESCALATION_PILOTS is keyed by unit name, so # would report 0.
     local roster = 0
-    if type(RETRIBUTION_PILOTS) == "table" then
-        for _ in pairs(RETRIBUTION_PILOTS) do
+    if type(ESCALATION_PILOTS) == "table" then
+        for _ in pairs(ESCALATION_PILOTS) do
             roster = roster + 1
         end
     end
