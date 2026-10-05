@@ -166,6 +166,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Mission Generator]** Restore scenery objective matching after the rename.
 * **[Mission Log]** Restore pilot names in messages and respect Live Pilots.
 * **[Loadouts]** Limit player-selected default payloads to the player's side; enemy flights retain their built-in or explicitly assigned loadouts.
 * **[UI]** Restore start-type badges in the sidebar and package dialog flight lists.

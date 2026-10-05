@@ -49,18 +49,30 @@ SCENERY_INDESTRUCTIBLE_LIFE = 1e37
 scenery_zone_reported = {} -- zone name -> true, so a building is only counted once
 scenery_zones_primed = false
 
+local function scenery_zones()
+    if type(ESCALATION_SCENERY_ZONES) == "table" then
+        return ESCALATION_SCENERY_ZONES
+    end
+    -- Support missions generated before the application rename.
+    if type(RETRIBUTION_SCENERY_ZONES) == "table" then
+        return RETRIBUTION_SCENERY_ZONES
+    end
+    return nil
+end
+
 -- Objectives that were already destroyed on previous turns count as reported, so
 -- they are never scored twice. They stay in the list all the same: the
 -- destruction zone that replays their rubble at mission start kills their
 -- scenery, and those deaths have to land on them rather than on a live
 -- neighbour.
 local function prime_scenery_zones()
-    if scenery_zones_primed or type(RETRIBUTION_SCENERY_ZONES) ~= "table" then
+    local zones = scenery_zones()
+    if scenery_zones_primed or zones == nil then
         return
     end
     scenery_zones_primed = true
     local dead = 0
-    for _, zone in ipairs(RETRIBUTION_SCENERY_ZONES) do
+    for _, zone in ipairs(zones) do
         if zone.dead then
             scenery_zone_reported[zone.name] = true
             dead = dead + 1
@@ -68,14 +80,15 @@ local function prime_scenery_zones()
     end
     logger:info(string.format(
         "Scenery objectives: %d known, %d already destroyed, match radius %d m",
-        #RETRIBUTION_SCENERY_ZONES, dead, SCENERY_MATCH_RADIUS))
+        #zones, dead, SCENERY_MATCH_RADIUS))
 end
 
 -- Nearest objective zone to a dead scenery object, or nil if none is close
--- enough. Reads RETRIBUTION_SCENERY_ZONES lazily so it does not care whether the
+-- enough. Reads the generated zones lazily so it does not care whether the
 -- generator seeded it before or after this script loaded.
 function scenery_zone_for(obj)
-    if type(RETRIBUTION_SCENERY_ZONES) ~= "table" then
+    local zones = scenery_zones()
+    if zones == nil then
         return nil, nil
     end
     prime_scenery_zones()
@@ -84,7 +97,7 @@ function scenery_zone_for(obj)
         return nil, nil
     end
     local best, best_distance = nil, nil
-    for _, zone in ipairs(RETRIBUTION_SCENERY_ZONES) do
+    for _, zone in ipairs(zones) do
         local dx, dy = point.x - zone.x, point.z - zone.y
         local distance = math.sqrt(dx * dx + dy * dy)
         if best_distance == nil or distance < best_distance then
