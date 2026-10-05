@@ -167,6 +167,7 @@
 
 ## Fixes
 * **[Mission Log]** Restore pilot names in messages and respect Live Pilots.
+* **[Debriefing]** Align export paths and update setup messages after the rename.
 * **[Loadouts]** Limit player-selected default payloads to the player's side; enemy flights retain their built-in or explicitly assigned loadouts.
 * **[UI]** Restore start-type badges in the sidebar and package dialog flight lists.
 * **[UI]** Restore missing plugin defaults and bind active settings before opening Settings or taking off.
