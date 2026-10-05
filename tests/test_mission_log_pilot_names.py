@@ -110,6 +110,80 @@ def test_empty_roster_falls_back_to_aircraft(enabled: bool) -> None:
     assert lua.globals().ESCALATION_SHOW_PILOT_NAMES is enabled
 
 
+@pytest.mark.parametrize("enabled", [True, False])
+@pytest.mark.parametrize("side", [1, 2])
+@pytest.mark.parametrize("hide", [None, True, False])
+@pytest.mark.parametrize("player", [None, "", "Human pilot"])
+def test_defending_player_filter(
+    enabled: bool, side: int, hide: bool | None, player: str | None
+) -> None:
+    lua = mission_log(enabled)
+    lua.globals().player_name = player
+    lua.globals().victim_side = side
+    lua.execute("""
+        blue.getPlayerName = function() return player_name end
+        blue.getCoalition = function() return victim_side end
+        red.getCoalition = function() return 3 - victim_side end
+        dcsRetribution = {plugins={missionlog={}}}
+        """)
+    if hide is not None:
+        lua.globals().dcsRetribution.plugins.missionlog.hideplayerdefending = hide
+    lua.execute("shot(red, blue)")
+    messages = list(lua.globals().messages.values())
+    defending = [m for m in messages if m.side == side]
+    hidden = bool(player) and hide is not False
+    assert len(defending) == (0 if hidden else 1)
+    assert any("is engaging" in m.text for m in messages if m.side != side)
+    assert any("is defending" in text for text in lua.globals().logs.values())
+    events = list(lua.globals().mission_log_events.values())
+    assert any(e.kind == "defending" and e.side == side for e in events)
+
+
+def test_hidden_defending_does_not_consume_message_budget() -> None:
+    lua = mission_log(False)
+    lua.execute("""
+        dcsRetribution = {plugins={missionlog={maxmessages=3}}}
+        blue.getPlayerName = function() return 'Human pilot' end
+        shot(red, blue)
+        for i=1,3 do shot(red, aircraft('wingman' .. i, 2)) end
+        timer.getTime = function() return 80 end
+        shot(red, aircraft('another wingman', 2))
+        """)
+    messages = [m.text for m in lua.globals().messages.values() if m.side == 2]
+    assert len(messages) == 4
+    assert all("is defending" in text for text in messages)
+
+
+@pytest.mark.parametrize("getter", ["nil", "function() error('unit unavailable') end"])
+def test_defending_handles_unavailable_player_name(getter: str) -> None:
+    lua = mission_log(False)
+    lua.execute(f"blue.getPlayerName = {getter}; shot(red, blue)")
+    assert any(
+        m.side == 2 and "is defending" in m.text
+        for m in lua.globals().messages.values()
+    )
+
+
+def test_player_defending_option_defaults_and_saved_override() -> None:
+    from game.plugins.luaplugin import LuaPluginDefinition
+    from game.settings import Settings
+
+    definition = LuaPluginDefinition.from_json(
+        "missionlog", Path("resources/plugins/missionlog/plugin.json")
+    )
+    option = next(
+        o
+        for o in definition.options
+        if o.identifier == "missionlog.hideplayerdefending"
+    )
+    settings = Settings()
+    option.set_settings(settings)
+    assert option.get_value is True
+    option.set_value(False)
+    option.set_settings(settings)
+    assert option.get_value is False
+
+
 def test_pilot_roster_survives_miz_export(tmp_path: Path) -> None:
     from dcs import Mission
     from dcs.action import DoScript

@@ -54,6 +54,12 @@
             "defaultValue": true
         },
         {
+            "nameInUI": "Hide \"is defending\" messages for players",
+            "descriptionInUI": "Hide incoming-missile commentary about human-controlled aircraft to avoid revealing threats that their sensors or wingmen have not detected. AI aircraft messages and debriefing records are unchanged.",
+            "mnemonic": "hideplayerdefending",
+            "defaultValue": true
+        },
+        {
             "nameInUI": "Said before a kill of ours (empty for none)",
             "mnemonic": "goodnews",
             "defaultValue": "YEAH!"

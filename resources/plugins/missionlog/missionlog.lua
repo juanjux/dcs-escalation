@@ -21,6 +21,7 @@ MISSION_LOG_DEFAULTS = {
     intercepts = true,
     monitoring = true,
     defending = true,
+    hideplayerdefending = true,
     engaging = true,
     duration = 20,
     maxmessages = 12,
@@ -110,11 +111,11 @@ MESSAGE_WINDOW_SECONDS = 60
 
 local budget_state = {}
 
-local function announce(side, category, text)
+local function announce(side, category, text, hidden)
     if logger then
         logger:info(string.format("[%s] %s", category, text))
     end
-    if not option(category) then
+    if hidden or not option(category) then
         return
     end
 
@@ -164,6 +165,12 @@ local function pilot_of(unit, name)
         return player
     end
     return nil
+end
+
+local function is_player(unit)
+    local player
+    return pcall(function() player = unit:getPlayerName() end)
+        and type(player) == "string" and player ~= ""
 end
 
 local function name_of(unit)
@@ -590,7 +597,8 @@ function handler:onEvent(event)
                     end
                     announce(victim, "defending", string.format(
                         "%s is defending against %s from %s", describe(target),
-                        incoming, describe(event.initiator, hostile)))
+                        incoming, describe(event.initiator, hostile)),
+                        option("hideplayerdefending") and is_player(target))
                 end
                 if shooter ~= nil then
                     record({kind = "engaging", side = shooter,
