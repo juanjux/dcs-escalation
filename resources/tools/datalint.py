@@ -92,7 +92,7 @@ class Linter(LinterBase):
             self.reporter.write(report)
 
     def stream_reports(self) -> ReportStream:
-        yield H1("Retribution data report")
+        yield H1("Escalation data report")
         yield self.describe_version()
         yield Paragraph(
             "This report documents missing supplemental data in Escalation. This is "

@@ -249,7 +249,7 @@ def run_ui(game: Optional[Game], ui_flags: UiFlags) -> None:
                 "following file:"
                 "<br/><br/><strong>&lt;dcs_installation_directory&gt;/Scripts/MissionScripting.lua</strong>"
                 "<br/><br/>The easiest way to do it is to replace the original file with the file in dcs-escalation "
-                "distribution (&lt;dcs_retribution_installation&gt;/resources/scripts/MissionScripting.lua)."
+                "distribution (&lt;dcs_escalation_installation&gt;/resources/scripts/MissionScripting.lua)."
                 "<br/><br/>You can find more information on how to manually change this file in the Escalation Wiki "
                 "(Page: Dedicated Server Guide) on GitHub.</p>"
             )

@@ -251,11 +251,11 @@ end
 function write_state()
     local _debriefing_file_location = debriefing_file_location
     if not debriefing_file_location or debriefing_file_location == "" then
-        error("Unable to save DCS Retribution state: debriefing file path is unavailable")
+        error("Unable to save DCS Escalation state: debriefing file path is unavailable")
     end
 
     if not json then
-        error("Unable to save DCS Retribution state, JSON library is not loaded")
+        error("Unable to save DCS Escalation state, JSON library is not loaded")
     end
 
     local fp, open_error = io.open(_debriefing_file_location, 'w')
@@ -324,37 +324,37 @@ local function testDebriefingFilePath(folderPath, folderName, useCurrentStamping
     return nil
 end
 
-local function discoverDebriefingFilePath()   
-    -- establish a search pattern into the following modes
-    -- 1. Environment variable RETRIBUTION_EXPORT_DIR, to support dedicated server hosting
-    -- 2. Embedded DCS Retribution dcsRetribution.installPath (set by the app to its install path), to support locally hosted single player
-    -- 3. System temporary folder, as set in the TEMP environment variable
-    -- 4. Working directory.
-    
-    local useCurrentStamping = nil
-    if os then  
-        useCurrentStamping = os.getenv("RETRIBUTION_EXPORT_STAMPED_STATE")
+local function exportEnvironment(name)
+    if os and os.getenv then
+        local value = os.getenv(name)
+        if value ~= "" then return value end
     end
+    return nil
+end
+
+local function discoverDebriefingFilePath()
+    -- Keep this order aligned with Python's _candidate_state_dirs().
+    -- Retain legacy environment names for existing dedicated-server setups.
+    local useCurrentStamping = exportEnvironment("ESCALATION_EXPORT_STAMPED_STATE")
+        or exportEnvironment("RETRIBUTION_EXPORT_STAMPED_STATE")
 
     local installPath = nil
     if dcsRetribution then
         installPath = dcsRetribution.installPath
     end
     
-    if os then
-        local result = nil
-        -- try using the RETRIBUTION_EXPORT_DIR environment variable
-        result = testDebriefingFilePath(os.getenv("RETRIBUTION_EXPORT_DIR"), "RETRIBUTION_EXPORT_DIR", useCurrentStamping)
+    for _, name in ipairs({"ESCALATION_EXPORT_DIR", "RETRIBUTION_EXPORT_DIR"}) do
+        local result = testDebriefingFilePath(exportEnvironment(name), name, useCurrentStamping)
         if result then
             return result
         end
-        -- no joy ? maybe there is a valid path in the mission ?
-        result = testDebriefingFilePath(installPath, "the DCS Retribution install folder", useCurrentStamping)
-        if result then
-            return result
-        end
-        -- there's always the possibility of using the system temporary folder
-        result = testDebriefingFilePath(os.getenv("TEMP"), "TEMP", useCurrentStamping)
+    end
+    local result = testDebriefingFilePath(installPath, "the DCS Escalation install folder", useCurrentStamping)
+    if result then
+        return result
+    end
+    for _, name in ipairs({"TEMP", "TMP"}) do
+        result = testDebriefingFilePath(exportEnvironment(name), name, useCurrentStamping)
         if result then
             return result
         end
@@ -375,7 +375,7 @@ write_state_error_handling = function()
     local _debriefing_file_location = debriefing_file_location
     if not debriefing_file_location then 
         _debriefing_file_location = "[nil]"
-        logger:error("Unable to find where to write DCS Retribution state")
+        logger:error("Unable to find where to write DCS Escalation state")
     end
 
     -- Only write if state has changed since last write
@@ -385,11 +385,11 @@ write_state_error_handling = function()
             error_message_shown = false
         else
             if not error_message_shown then
-                messageAll("Unable to write DCS Retribution state to ".._debriefing_file_location..
-                        "\nYou can abort the mission in DCS Retribution.\n"..
-                        "\n\nPlease fix your setup in DCS Retribution, make sure you are pointing to the right installation directory from the File/Preferences menu. Then after fixing the path restart DCS Retribution, and then restart DCS."..
-                        "\n\nYou can also try to fix the issue manually by replacing the file <dcs_installation_directory>/Scripts/MissionScripting.lua by the one provided there : <dcs_retribution_folder>/resources/scripts/MissionScripting.lua. And then restart DCS. (This will also have to be done again after each DCS update)"..
-                        "\n\nIt's not worth playing, the state of the mission will not be recorded.")
+                messageAll("Unable to write DCS Escalation state to ".._debriefing_file_location..
+                        "\nYou can abort the mission in DCS Escalation.\n"..
+                        "\n\nCheck the DCS installation directory in Settings > General > Application preferences. Then restart DCS Escalation and DCS."..
+                        "\n\nAlternatively, replace <dcs_installation_directory>/Scripts/MissionScripting.lua with <escalation_folder>/resources/scripts/MissionScripting.lua and restart DCS. This may need repeating after DCS updates."..
+                        "\n\nMission progress cannot be recorded until this is fixed.")
                 error_message_shown = true
             end
         end
