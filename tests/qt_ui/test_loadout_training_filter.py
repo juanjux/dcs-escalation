@@ -60,6 +60,16 @@ def store(name: str, clsid: str = "test", year: int | None = None) -> Weapon:
         "2 LUU-2",
         "SAB-100MN",
         "LGTR",
+        "LAU-117 - TGM-65D - Trg Round for Mav D (IIR)",
+        "TGM-65G",
+        "TGM-65H",
+        "MXU-648 Travel Pod",
+        "LAU-131 M156 WP",
+        '2x LAU-3 pod - 19 x 2.75" FFAR, UnGd Rkts M156, Wht Phos (TER)',
+        "B-8M1 - 20 x UnGd Rkts, 80 mm S-8OM IL",
+        "B-8V20A - 20 x UnGd Rkts, 80 mm S-8TsM SM Orange",
+        "MATRA F1 - 36 x UnGd Rkts, 68 mm SNEB Type 250 F1B TP-SM",
+        "Telson 8 - 8 x UnGd Rkts, 68 mm SNEB Type 252 H1 TP",
     ],
 )
 def test_training_and_non_combat_names(name: str) -> None:
@@ -80,7 +90,14 @@ def test_training_and_non_combat_names(name: str) -> None:
         "ALE-40 Dispensers (30 Flares)",
         "Eclair-M 6/0 : 48 flares",
         "KB Flare/Chaff dispenser pod",
-        "LAU-131 M156 WP",
+        "Mk-84 AIR TP * 2",
+        "Mk-84 AIR (BSU-50) - 2000 lb TP Chute Retarded Bomb HD",
+        "SM-2 Standard Missile",
+        "APU-68 - S-24B - 240mm UnGd Rkt, 235kg, HE/Frag, (Low Smk)",
+        "APU-6 - 6 x 9M127 Vikhr - ATGM, LOSBR, Tandem HEAT/Frag",
+        "LAU-131 - 7 x UnGd Rkts, 70 mm Hydra 70 M151 HE",
+        "LAU-68 - 7 x UnGd Rkts, 70 mm Hydra 70 Mk 5 HEAT",
+        "LAU-131 - 7 x Laser Guided Rkts, 70 mm Hydra 70 M282 MPP APKWS",
         "Clean",
         "Unknown mod store",
     ],
@@ -91,6 +108,41 @@ def test_combat_and_support_stores_stay_visible(name: str) -> None:
 
 def test_clsid_identifies_short_mod_names() -> None:
     assert store("Sidewinder", "{MOD_LAU127_CATM-9M}").is_training_or_non_combat
+
+
+@pytest.mark.parametrize("pod", ["LAU-131", "LAU-68"])
+@pytest.mark.parametrize(
+    "round_name",
+    ["M156 SM", "M257 IL", "M274 TP-SM", "Mk 1 HE", "Mk 61 TP", "WTU-1/B TP"],
+)
+@pytest.mark.parametrize("rack", ["", "BRU-42: 2 x ", "BRU-42: 3 x "])
+def test_hydra_rocket_roles(pod: str, round_name: str, rack: str) -> None:
+    name = f"{rack}{pod} - 7 x UnGd Rkts, 70 mm Hydra 70 {round_name}"
+    assert store(name).is_training_or_non_combat
+
+
+def test_real_a10_rocket_choices_are_filtered(app: Any) -> None:
+    from dcs.planes import A_10C_2
+    from qt_ui.windows.mission.flight.payload.QPylonEditor import QPylonEditor
+
+    aircraft: Any = SimpleNamespace(dcs_unit_type=A_10C_2)
+    flight: Any = SimpleNamespace(unit_type=aircraft)
+    game: Any = SimpleNamespace(
+        settings=SimpleNamespace(restrict_weapons_by_date=False)
+    )
+    member = FlightMember(None, Loadout("Empty", {}, None))
+    pylon = Pylon.for_aircraft(aircraft, 2)
+    editor = QPylonEditor(game, flight, member, pylon)
+    roles = ("M156 SM", "M257 IL", "M274 TP-SM", "Mk 1 HE", "Mk 61 TP", "WTU-1/B TP")
+    for role in roles:
+        weapons = [w for w in pylon.allowed if role in w.name]
+        assert weapons, role
+        for weapon in weapons:
+            assert editor.weapon_combo.findData(weapon) == -1, weapon.name
+    editor.set_show_training(True)
+    for weapon in pylon.allowed:
+        assert editor.weapon_combo.findData(weapon) >= 0, weapon.name
+    assert member.loadout.pylons == {}
 
 
 @pytest.fixture
