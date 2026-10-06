@@ -167,6 +167,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[IADS]** Retain empty air-defence sites and dashed infrastructure links after capture, including in existing saves.
 * **[Mission Generator]** Restore scenery objective matching after the rename.
 * **[Mission Log]** Restore pilot names in messages and respect Live Pilots.
 * **[Debriefing]** Align export paths and update setup messages after the rename.

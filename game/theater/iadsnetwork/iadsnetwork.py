@@ -19,6 +19,7 @@ from game.theater.theatergroundobject import (
 )
 from game.theater.theatergroup import IadsGroundGroup
 from game.theater.player import Player
+from game.point_with_heading import PointWithHeading
 
 if TYPE_CHECKING:
     from game.game import Game
@@ -129,6 +130,11 @@ class IadsNetworkNode:
 
     def __str__(self) -> str:
         return self.group.group_name
+
+    @property
+    def is_empty_site(self) -> bool:
+        """A topology-only node, with no deployed group or units."""
+        return not self.group.units and not self.group.ground_object.groups
 
     def add_connection_for_tgo(self, tgo: TheaterGroundObject) -> None:
         """Add all possible connections for the given TGO to the node"""
@@ -407,6 +413,20 @@ class IadsNetwork:
                 node.add_connection_for_group(group)
 
         if node is None:
+            if isinstance(tgo, IadsGroundObject) and not tgo.groups:
+                # Keep the emplacement in the graph without creating equipment.
+                # This group is not added to the TGO or exported to a mission.
+                group = IadsGroundGroup(
+                    0,
+                    tgo.name,
+                    PointWithHeading.from_point(tgo.position, tgo.heading),
+                    [],
+                    tgo,
+                )
+                group.iads_role = (
+                    IadsRole.EWR if tgo.category == "ewr" else IadsRole.SAM
+                )
+                return self.node_for_group(group)
             logging.debug(f"TGO {tgo.name} not participating to IADS")
         return node
 
@@ -606,12 +626,31 @@ class IadsNetwork:
         stale = {
             id(node.group.ground_object): node.group.ground_object
             for node in self.nodes
-            if not any(group is node.group for group in node.group.ground_object.groups)
+            if not node.is_empty_site
+            and not any(
+                group is node.group for group in node.group.ground_object.groups
+            )
         }
         events = GameUpdateEvents()
         for tgo in stale.values():
             self.update_tgo(tgo, events)
         return sorted(tgo.name for tgo in stale.values())
+
+    def restore_empty_sites(self) -> list[str]:
+        """Restore topology for empty air-defence sites in existing saves."""
+        from game.sim.gameupdateevents import GameUpdateEvents
+
+        restored = []
+        present = {id(node.group.ground_object) for node in self.nodes}
+        for tgo in self.ground_objects.values():
+            if (
+                isinstance(tgo, IadsGroundObject)
+                and not tgo.groups
+                and id(tgo) not in present
+            ):
+                self.update_tgo(tgo, GameUpdateEvents())
+                restored.append(tgo.name)
+        return sorted(restored)
 
     def unwire_ships(self) -> list[str]:
         """Take the ships the campaign did not wire off the grid they were given by

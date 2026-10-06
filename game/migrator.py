@@ -59,6 +59,7 @@ class Migrator:
         try_set_attr(self.game.settings, "motorpool_spawn_cap", 10)
         self._ensure_motorpool_tgos()
         self._register_new_tgos()
+        self.game.theater.iads_network.restore_empty_sites()
         self._wire_iads_sites_that_arrived_late()
         self._unwire_iads_ships()
         self._renew_stale_iads_nodes()

@@ -246,6 +246,13 @@ class IadsStateMap:
     ) -> IadsStatus:
         role = node.group.iads_role
 
+        if node.is_empty_site:
+            return IadsStatus(
+                IadsState.DESTROYED,
+                "Empty site: IADS connections are retained for future deployment.",
+                False,
+            )
+
         if not standing(node.group, self._destroyed):
             # Nothing left to be blind with, and nothing to switch on. What the map
             # shows about a wreck is that it is a wreck.

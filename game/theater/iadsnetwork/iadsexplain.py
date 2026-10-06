@@ -169,6 +169,20 @@ def describe(
         return IadsPicture(None, off=NoNetwork.STANDALONE)
 
     status = network.state_map.status_for(tgo)
+    if node.is_empty_site:
+        links = tuple(
+            IadsLink(
+                caption="RESERVED CONNECTION",
+                title=group.ground_object.name,
+                note="inactive until units are deployed at this site",
+                chip="INACTIVE",
+                tone=LinkTone.INFO,
+                places=_places_of([group.ground_object]),
+            )
+            for group in node.connections.values()
+            if group.ground_object.control_point.captured == tgo.control_point.captured
+        )
+        return IadsPicture(status, gets=links)
     siblings = _same_side(node, network)
     role = node.group.iads_role
     gives: list[IadsLink] = []

@@ -12,6 +12,7 @@ from typing import Any
 from game.data.units import UnitClass
 from game.theater.iadsnetwork.iadsexplain import LinkTone, NoNetwork, describe
 from game.theater.iadsnetwork.iadsrole import IadsRole
+from game.theater.iadsnetwork.iadsnetwork import IadsNetworkNode
 
 BLUE = True
 
@@ -63,9 +64,10 @@ def _group(
 
 
 def _node(group: Any, *connections: Any) -> Any:
-    return SimpleNamespace(
-        group=group, connections={i: c for i, c in enumerate(connections)}
-    )
+    node = IadsNetworkNode(group)
+    for connection in connections:
+        node.add_connection_for_group(connection)
+    return node
 
 
 def _network(*nodes: Any) -> Any:
