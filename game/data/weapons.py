@@ -26,9 +26,19 @@ PydcsWeaponAssignment = tuple[int, PydcsWeapon]
 # Short designations are needed where a rack omits the descriptive suffix.
 _TRAINING_OR_NON_COMBAT = re.compile(
     r"\b(training|practice|captive|inert|dummy|smoke|smokewinder|"
-    r"illumination|illum|ACMI|TCTS|CATM|BDU|LGTR|LUU|SAB)\b",
+    r"illumination|illum|ACMI|TCTS|CATM|TGM|Trg|BDU|LGTR|LUU|SAB|travel\s+pod)\b",
     re.IGNORECASE,
 )
+# SM (smoke), IL (illumination) and TP (target practice) are used by DCS
+# rocket pods, including multi-pod racks. Scope these to rockets: TP also
+# describes the live Mk-84 AIR's parachute, and SM appears in missile names.
+_ROCKET_STORE = re.compile(
+    r"\b(rkts?|rockets?|hydra|FFAR|SNEB|LAU[- ](?:3|61|68|131))\b",
+    re.IGNORECASE,
+)
+_NON_COMBAT_ROCKET_ROLE = re.compile(r"\b(SM|IL|TP|WP)\b|\bWht\s+Phos\b", re.IGNORECASE)
+# The A-10's Mk 1 practice round is labelled "Mk 1 HE" in pydcs.
+_HYDRA_MK1_PRACTICE = re.compile(r"\bHydra\s+70\s+Mk\s*1\b", re.IGNORECASE)
 
 
 def weapons_migrator(name: str) -> str:
@@ -134,7 +144,14 @@ class Weapon:
         Defensive flare/chaff dispensers, tanks and combat support pods stay visible.
         """
         text = f"{self.name} {self.clsid}".replace("_", " ")
-        return _TRAINING_OR_NON_COMBAT.search(text) is not None
+        return (
+            _TRAINING_OR_NON_COMBAT.search(text) is not None
+            or _HYDRA_MK1_PRACTICE.search(self.name) is not None
+            or (
+                _ROCKET_STORE.search(self.name) is not None
+                and _NON_COMBAT_ROCKET_ROLE.search(self.name) is not None
+            )
+        )
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         # Update any existing models with new data on load.
