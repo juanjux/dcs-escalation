@@ -29,12 +29,12 @@ NOT_NOW = "NOT NOW"
 AT_ONCE = {
     "awacs": "Nothing to pick. It joins at once as a squadron on loan.",
     "tanker": "Nothing to pick. It joins at once as a squadron on loan.",
-    "squadron": "Nothing to pick. It joins at once as a squadron on loan.",
 }
 
 #: What spending gives, from the labels of what was picked, by prize kind. It has to
 #: say what the prize's own give says afterwards.
 PREVIEWS: dict[str, Callable[[Sequence[str]], str]] = {
+    "squadron": lambda picked: f"The squadron joins on loan at {picked[0]}.",
     "sam": lambda picked: f"{picked[1]} set up at {picked[0]}.",
     "runway": lambda picked: f"The runway at {picked[0]} is repaired.",
     "heal": lambda picked: f"{picked[0]} is back on duty.",

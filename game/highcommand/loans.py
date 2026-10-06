@@ -1,10 +1,10 @@
 """Squadrons lent to the player for a few turns: an extra AWACS, an extra tanker, or a
 squadron of combat aircraft.
 
-A loan is a new squadron of the player's, at a base the game picks: the rearmost that
-can take it for support aircraft, the one nearest the enemy for combat ones. It comes
-with its aircraft and pilots, and it is gone again at the end of the turn its loan
-runs out, before the next turn is planned.
+A loan is a new squadron at a selected eligible base. Without a selection, the game
+picks the rearmost base for support aircraft or the nearest to the enemy for combat.
+It comes with aircraft and pilots, and leaves when the loan expires, before the
+next turn is planned.
 """
 
 from __future__ import annotations
@@ -40,13 +40,18 @@ def lend(
     turns: int,
     task: FlightType,
     front: bool,
+    base: Optional[ControlPoint] = None,
 ) -> Optional[Loan]:
-    """Raise a squadron of ``count`` aircraft for ``turns`` turns, at the rearmost base
-    that can take it, or the one nearest the enemy when ``front``. None when no base
-    of the player's can."""
+    """Raise a loan at the selected base, or choose one when none is supplied.
+
+    Reject a selected base if it is no longer eligible.
+    """
     from game.squadrons.squadron import Squadron
 
-    base = loan_base(game, player, aircraft, count, front)
+    if base is None:
+        base = loan_base(game, player, aircraft, count, front)
+    elif base not in loan_bases(game, player, aircraft, count):
+        return None
     if base is None:
         return None
     coalition = game.coalition_for(player)
@@ -64,19 +69,25 @@ def lend(
     return Loan(squadron, game.turn + turns)
 
 
-def loan_base(
-    game: Game, player: Player, aircraft: AircraftType, count: int, front: bool
-) -> Optional[ControlPoint]:
-    """Where a loan of ``count`` aircraft can go: a base of the player's that can
-    operate them and has room for all of them."""
+def loan_bases(
+    game: Game, player: Player, aircraft: AircraftType, count: int
+) -> list[ControlPoint]:
+    """Friendly bases that can operate and accommodate the complete loan."""
     parking = ParkingType().from_aircraft(
         aircraft, game.settings.ground_start_ai_planes
     )
-    bases = [
+    return [
         cp
         for cp in game.theater.control_points_for(player)
         if cp.can_operate(aircraft) and cp.unclaimed_parking(parking) >= count
     ]
+
+
+def loan_base(
+    game: Game, player: Player, aircraft: AircraftType, count: int, front: bool
+) -> Optional[ControlPoint]:
+    """Choose an eligible base by distance to the enemy."""
+    bases = loan_bases(game, player, aircraft, count)
     if not bases:
         return None
     enemies = list(game.theater.control_points_for(player.opponent))
