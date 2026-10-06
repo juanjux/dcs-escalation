@@ -29,6 +29,7 @@ from game.highcommand.importance import (
 from game.highcommand.objectives import Effort, Objective
 from game.mfd import Band
 from game.theater import Player
+from game.theater.iadsnetwork.iadsnetwork import IadsNetworkNode
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsstate import IadsStateMap
 from game.theater.theatergroundobject import BuildingGroundObject
@@ -229,11 +230,9 @@ def test_what_a_substation_powers_goes_dark_without_it() -> None:
     battery = sam(
         "BADGER", 20, [launcher("SAM SA-10 LN", 40, price=0)], role=IadsRole.SAM
     )
-    network: Any = SimpleNamespace(
-        nodes=[
-            SimpleNamespace(group=battery.groups[0], connections={0: power.groups[0]})
-        ]
-    )
+    node = IadsNetworkNode(battery.groups[0])
+    node.add_connection_for_group(power.groups[0])
+    network: Any = SimpleNamespace(nodes=[node])
     network.state_map = IadsStateMap(network)
     objectives = [_objective(power, 15), _objective(battery, 300)]
 
