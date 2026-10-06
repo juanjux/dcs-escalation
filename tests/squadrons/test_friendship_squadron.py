@@ -12,7 +12,7 @@ from typing import Any
 
 from dcs.unit import Skill
 
-from game.dcs.skills import SKILL_LADDER
+from game.dcs.skills import SKILL_LADDER, experience_for_skill
 from game.settings import Settings
 from game.squadrons import friendship
 from game.squadrons import morale as morale_rules
@@ -70,7 +70,7 @@ def test_a_flight_that_gets_on_flies_a_rung_better() -> None:
     squadron = _squadron(_settings())
     lead, wingman = Pilot("Lead"), Pilot("Wingman")
     for pilot in (lead, wingman):
-        pilot.record.xp = 2000
+        pilot.record.xp = experience_for_skill(Skill.Good)
     flight = _flight(lead, wingman)
 
     assert squadron.mission_skill(lead) is Skill.Good  # on his own merits
@@ -82,7 +82,7 @@ def test_a_formation_of_strangers_flies_at_the_rank_it_holds() -> None:
     squadron = _squadron(_settings())
     lead, wingman = Pilot("Lead"), Pilot("Wingman")
     for pilot in (lead, wingman):
-        pilot.record.xp = 2000
+        pilot.record.xp = experience_for_skill(Skill.Good)
     assert squadron.mission_skill(lead, _flight(lead, wingman)) is Skill.Good
 
 
@@ -92,7 +92,7 @@ def test_the_rung_is_earned_once_however_it_was_earned() -> None:
     squadron = _squadron(_settings())
     lead, wingman, escort = Pilot("Lead"), Pilot("Wingman"), Pilot("Escort")
     for pilot in (lead, wingman, escort):
-        pilot.record.xp = 2000
+        pilot.record.xp = experience_for_skill(Skill.Good)
     _close(lead, wingman, escort)
     package: Any = SimpleNamespace(flights=[])
     flight = _flight(lead, wingman, package=package)
@@ -106,7 +106,7 @@ def test_a_single_ship_can_still_earn_it_from_its_package() -> None:
     squadron = _squadron(_settings())
     alone, escort = Pilot("Alone"), Pilot("Escort")
     for pilot in (alone, escort):
-        pilot.record.xp = 2000
+        pilot.record.xp = experience_for_skill(Skill.Good)
     _close(alone, escort)
     package: Any = SimpleNamespace(flights=[])
     flight = _flight(alone, package=package)
@@ -120,7 +120,7 @@ def test_it_sits_on_top_of_what_morale_did() -> None:
     squadron = _squadron(_settings())
     lead, wingman = Pilot("Lead"), Pilot("Wingman")
     for pilot in (lead, wingman):
-        pilot.record.xp = 2000
+        pilot.record.xp = experience_for_skill(Skill.Good)
         pilot.morale = 95
     _close(lead, wingman)
     assert squadron.mission_skill(lead) is Skill.High  # morale alone
@@ -133,7 +133,7 @@ def test_asked_about_the_man_alone_it_says_nothing_about_the_formation() -> None
     squadron = _squadron(_settings())
     lead, wingman = Pilot("Lead"), Pilot("Wingman")
     for pilot in (lead, wingman):
-        pilot.record.xp = 2000
+        pilot.record.xp = experience_for_skill(Skill.Good)
     _close(lead, wingman)
     assert squadron.mission_skill(lead) is Skill.Good
 
@@ -142,7 +142,7 @@ def test_switched_off_nobody_flies_above_his_rank() -> None:
     squadron = _squadron(_settings(friendship_enabled=False))
     lead, wingman = Pilot("Lead"), Pilot("Wingman")
     for pilot in (lead, wingman):
-        pilot.record.xp = 2000
+        pilot.record.xp = experience_for_skill(Skill.Good)
     _close(lead, wingman)
     assert squadron.mission_skill(lead, _flight(lead, wingman)) is Skill.Good
 

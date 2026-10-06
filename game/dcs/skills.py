@@ -60,10 +60,8 @@ def ground_skill(skill: Skill) -> Skill:
 
 
 # Experience needed to reach each rung, in the same order as SKILL_LADDER. A pilot flies
-# at the highest rung whose threshold he has passed. The steps double, so the climb out of
-# cadet is a couple of good sorties and the last one is a campaign. A campaign can set
-# its own prices; these are what it starts from.
-SKILL_XP_THRESHOLDS: tuple[int, ...] = (0, 1000, 2000, 4000, 8000)
+# at the highest rung whose threshold he has passed. Campaigns can override these defaults.
+SKILL_XP_THRESHOLDS: tuple[int, ...] = (0, 1500, 4000, 8000, 16000)
 
 #: The setting each rung's price lives in. Cadet has none: it is where everyone starts,
 #: so it costs nothing by definition.
@@ -111,8 +109,8 @@ def one_promotion_at_most(
     """Cap a mission's experience at one rung, and at the rung's own price.
 
     A pilot who is promoted arrives at his new rank with nothing banked towards the
-    next: a cadet who earns 2500 in one sortie makes First Lieutenant, not Captain,
-    and holds the 1000 it costs. Double promotions do happen in life and are
+    next: a cadet who earns 5000 in one sortie makes First Lieutenant, not Captain,
+    and holds the 1500 it costs. Double promotions do happen in life and are
     extraordinary; a campaign would hand them out whenever a good SEAD sortie paid
     two rungs at once, which is most of them.
 

@@ -2023,7 +2023,7 @@ class Settings:
         "Average",
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_RANKS_SECTION,
-        default=1000,
+        default=1500,
         min=0,
         max=1000000,
     )
@@ -2044,7 +2044,7 @@ class Settings:
         "Good",
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_RANKS_SECTION,
-        default=2000,
+        default=4000,
         min=0,
         max=1000000,
     )
@@ -2065,7 +2065,7 @@ class Settings:
         "High",
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_RANKS_SECTION,
-        default=4000,
+        default=8000,
         min=0,
         max=1000000,
     )
@@ -2086,7 +2086,7 @@ class Settings:
         "Excellent",
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_RANKS_SECTION,
-        default=8000,
+        default=16000,
         min=0,
         max=1000000,
     )

@@ -40,7 +40,7 @@ from game.squadrons.pilot import Pilot, PilotRecord
 
 
 def test_a_rung_costs_what_it_says() -> None:
-    assert SKILL_XP_THRESHOLDS == (0, 1000, 2000, 4000, 8000)
+    assert SKILL_XP_THRESHOLDS == (0, 1500, 4000, 8000, 16000)
     assert len(SKILL_XP_THRESHOLDS) == len(SKILL_LADDER)
 
 
@@ -48,14 +48,14 @@ def test_a_rung_costs_what_it_says() -> None:
     "xp,expected",
     [
         (0, CADET_SKILL),
-        (999, CADET_SKILL),
-        (1000, Skill.Average),
-        (1999, Skill.Average),
-        (2000, Skill.Good),
-        (3999, Skill.Good),
-        (4000, Skill.High),
-        (7999, Skill.High),
-        (8000, Skill.Excellent),
+        (1499, CADET_SKILL),
+        (1500, Skill.Average),
+        (3999, Skill.Average),
+        (4000, Skill.Good),
+        (7999, Skill.Good),
+        (8000, Skill.High),
+        (15999, Skill.High),
+        (16000, Skill.Excellent),
         (99999, Skill.Excellent),
     ],
 )
@@ -67,7 +67,7 @@ def test_the_threshold_is_the_boundary(xp: int, expected: Skill) -> None:
 def test_the_coalition_setting_is_a_floor_not_a_start() -> None:
     """Raising the difficulty lifts the wing; it never demotes a veteran."""
     assert skill_for_experience(0, Skill.High) is Skill.High
-    assert skill_for_experience(8000, Skill.High) is Skill.Excellent
+    assert skill_for_experience(16000, Skill.High) is Skill.Excellent
 
 
 def test_seeding_a_veteran_costs_what_his_rank_costs() -> None:
@@ -263,7 +263,7 @@ def _live_settings() -> Settings:
 
 def test_the_air_wing_lists_the_senior_pilot_first() -> None:
     squadron = _ranked_squadron(_live_settings())
-    pilots = [_pilot("Cadet", 0), _pilot("Ace", 8000), _pilot("Captain", 2000)]
+    pilots = [_pilot("Cadet", 0), _pilot("Ace", 16000), _pilot("Captain", 4000)]
     assert [p.name for p in sorted(pilots, key=squadron.rank_order)] == [
         "Ace",
         "Captain",
@@ -273,7 +273,7 @@ def test_the_air_wing_lists_the_senior_pilot_first() -> None:
 
 def test_pilots_of_one_rank_are_sorted_by_what_they_have_flown() -> None:
     squadron = _ranked_squadron(_live_settings())
-    pilots = [_pilot("Junior", 2000), _pilot("Senior", 3999)]
+    pilots = [_pilot("Junior", 4000), _pilot("Senior", 7999)]
     assert [p.name for p in sorted(pilots, key=squadron.rank_order)] == [
         "Senior",
         "Junior",
@@ -525,12 +525,12 @@ def test_an_ai_promotion_is_recorded_but_not_the_players() -> None:
 @pytest.mark.parametrize(
     "before,after,expected,why",
     [
-        (0, 2500, 1000, "a cadet who earns two rungs makes one, and holds its price"),
+        (0, 5000, 1500, "a cadet who earns two rungs makes one, and holds its price"),
         (0, 900, 900, "experience that promotes nobody is kept in full"),
-        (0, 1500, 1000, "promotion leaves nothing banked towards the next rung"),
-        (1000, 1200, 1200, "no promotion, no cap"),
-        (1500, 9000, 2000, "from Average, one rung is Good however good the sortie"),
-        (8000, 20000, 20000, "the top rung cannot be jumped past"),
+        (0, 2500, 1500, "promotion leaves nothing banked towards the next rung"),
+        (1500, 1700, 1700, "no promotion, no cap"),
+        (1500, 17000, 4000, "from Average, one rung is Good however good the sortie"),
+        (16000, 20000, 20000, "the top rung cannot be jumped past"),
     ],
 )
 def test_a_pilot_climbs_one_rung_a_mission(
