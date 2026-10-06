@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import inspect
 import logging
+import re
 from dataclasses import dataclass, field
 from enum import unique, Enum
 from functools import cached_property, lru_cache
@@ -20,6 +21,14 @@ from game.utils import Distance, nautical_miles
 
 PydcsWeapon = Any
 PydcsWeaponAssignment = tuple[int, PydcsWeapon]
+
+# Display names cover both stock stores and mod-specific rack combinations.
+# Short designations are needed where a rack omits the descriptive suffix.
+_TRAINING_OR_NON_COMBAT = re.compile(
+    r"\b(training|practice|captive|inert|dummy|smoke|smokewinder|"
+    r"illumination|illum|ACMI|TCTS|CATM|BDU|LGTR|LUU|SAB)\b",
+    re.IGNORECASE,
+)
 
 
 def weapons_migrator(name: str) -> str:
@@ -116,6 +125,16 @@ class Weapon:
     @property
     def name(self) -> str:
         return self.pydcs_data["name"]
+
+    @property
+    def is_training_or_non_combat(self) -> bool:
+        """Whether this store should be hidden by the loadout UI filter.
+
+        Do not classify by weapon group: captive and live missiles can share one.
+        Defensive flare/chaff dispensers, tanks and combat support pods stay visible.
+        """
+        text = f"{self.name} {self.clsid}".replace("_", " ")
+        return _TRAINING_OR_NON_COMBAT.search(text) is not None
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         # Update any existing models with new data on load.

@@ -11,6 +11,7 @@ from game.ato.flight import Flight
 from game.ato.flightmember import FlightMember
 from game.ato.loadouts import Loadout
 from game.data.weapons import Pylon, Weapon
+from qt_ui.blocksignals import block_signals
 from qt_ui.widgets.searchablecombo import SearchableComboBox
 from .QWeaponSettingsDialog import QWeaponSettingsDialog
 
@@ -25,6 +26,7 @@ class QPylonEditor(QWidget):
         self.pylon = pylon
         self.game = game
         self.has_added_clean_item = False
+        self.show_training = False
 
         # Create layout
         layout = QHBoxLayout(self)
@@ -37,18 +39,14 @@ class QPylonEditor(QWidget):
         self.weapon_combo = SearchableComboBox(placeholder="Type to find a weapon…")
         current = self.flight_member.loadout.pylons.get(self.pylon.number)
 
-        self.weapon_combo.addItem("None", None)
         if self.game.settings.restrict_weapons_by_date:
             weapons = pylon.available_on(
                 self.game.date, flight.squadron.coalition.faction
             )
         else:
             weapons = pylon.allowed
-        allowed = sorted(weapons, key=operator.attrgetter("name"))
-        for i, weapon in enumerate(allowed):
-            self.weapon_combo.addItem(weapon.name, weapon)
-            if current == weapon:
-                self.weapon_combo.setCurrentIndex(i + 1)
+        self.allowed_weapons = sorted(weapons, key=operator.attrgetter("name"))
+        self._populate_weapons(current)
 
         self.weapon_combo.currentIndexChanged.connect(self.on_pylon_change)
         layout.addWidget(self.weapon_combo, 1)
@@ -64,6 +62,27 @@ class QPylonEditor(QWidget):
         layout.addWidget(self.settings_button)
 
         self.update_settings_button_visibility()
+
+    def _populate_weapons(self, current: Optional[Weapon]) -> None:
+        # Rebuilding only changes the choices, never the loadout or its settings.
+        with block_signals(self.weapon_combo):
+            self.weapon_combo.clear()
+            self.weapon_combo.addItem("None", None)
+            for weapon in self.allowed_weapons:
+                if self.show_training or not weapon.is_training_or_non_combat:
+                    self.weapon_combo.addItem(weapon.name, weapon)
+            if self.has_added_clean_item:
+                self.weapon_combo.addItem("Clean", Weapon.with_clsid("<CLEAN>"))
+            if current is not None:
+                index = self.weapon_combo.findData(current)
+                if index < 0:
+                    self.weapon_combo.addItem(current.name, current)
+                    index = self.weapon_combo.count() - 1
+                self.weapon_combo.setCurrentIndex(index)
+
+    def set_show_training(self, show: bool) -> None:
+        self.show_training = show
+        self._populate_weapons(self.weapon_combo.currentData())
 
     def update_settings_button_visibility(self) -> None:
         """Show/hide settings button based on whether current weapon has settings."""
@@ -110,6 +129,7 @@ class QPylonEditor(QWidget):
             logging.debug(f"Pylon {self.pylon.number} emptied")
         else:
             logging.debug(f"Pylon {self.pylon.number} changed to {selected.name}")
+        self._populate_weapons(selected)
         self.pylon_changed.emit()
 
     def weapon_from_loadout(self, loadout: Loadout) -> Optional[Weapon]:
@@ -130,6 +150,9 @@ class QPylonEditor(QWidget):
             if not self.has_added_clean_item:
                 self.weapon_combo.addItem("Clean", weapon)
                 self.has_added_clean_item = True
+        elif weapon.is_training_or_non_combat:
+            if self.weapon_combo.findData(weapon) < 0:
+                self.weapon_combo.addItem(weapon.name, weapon)
         return weapon
 
     def matching_weapon_name(self, loadout: Loadout) -> str:
@@ -157,4 +180,5 @@ class QPylonEditor(QWidget):
 
     def set_from(self, loadout: Loadout) -> None:
         self.weapon_combo.setCurrentText(self.matching_weapon_name(loadout))
+        self._populate_weapons(self.weapon_combo.currentData())
         self.update_settings_button_visibility()
