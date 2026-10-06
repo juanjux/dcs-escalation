@@ -203,7 +203,33 @@ def test_every_rung_but_the_first_has_a_price_that_can_be_set() -> None:
     settings = Settings()
     assert xp_thresholds(settings) == xp_thresholds()
     settings.live_pilots_rank_good_xp = 2500
-    assert xp_thresholds(settings) == (0, 1000, 2500, 4000, 8000)
+    assert xp_thresholds(settings) == (0, 1500, 2500, 8000, 16000)
+
+
+@pytest.mark.parametrize(
+    "saved_prices", [(0, 1000, 2000, 4000, 8000), (0, 2000, 5000, 10000, 20000)]
+)
+def test_loading_saved_rank_prices_preserves_them(
+    saved_prices: tuple[int, ...],
+) -> None:
+    from game.dcs.skills import SKILL_XP_SETTINGS, xp_thresholds
+
+    state = {
+        key: value
+        for key, value in zip(SKILL_XP_SETTINGS, saved_prices)
+        if key is not None
+    }
+    settings = Settings()
+    settings.__setstate__(state)
+    assert xp_thresholds(settings) == saved_prices
+
+
+def test_loading_settings_without_rank_prices_uses_defaults() -> None:
+    from game.dcs.skills import xp_thresholds
+
+    settings = Settings()
+    settings.__setstate__({})
+    assert xp_thresholds(settings) == (0, 1500, 4000, 8000, 16000)
 
 
 def test_only_the_abbreviation_boxes_are_capped() -> None:

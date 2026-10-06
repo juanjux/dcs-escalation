@@ -15,6 +15,7 @@ from game.dcs.groundunittype import GroundUnitType
 from game.db.gamedb import GameDb
 from game.migrator import Migrator
 from game.theater.controlpoint import ControlPointType
+from game.theater.iadsnetwork.iadsnetwork import IadsNetwork
 from game.theater.presetlocation import PresetLocation
 from game.theater.theatergroundobject import MotorpoolGroundObject
 from game.utils import Heading
@@ -177,7 +178,9 @@ def test_migrate_game_rehomes_motorpools_after_all_migrations() -> None:
     events: list[str] = []
     game = SimpleNamespace(
         settings=SimpleNamespace(),
-        theater=SimpleNamespace(controlpoints=[]),
+        theater=SimpleNamespace(
+            controlpoints=[], iads_network=IadsNetwork(advanced=False, iads_data=[])
+        ),
         db=GameDb(),
     )
     migrator = Migrator.__new__(Migrator)
@@ -264,7 +267,10 @@ def test_loaded_migration_rehomes_without_persisting_ephemeral_groups(
     next_group_id = _IdAllocator()
     next_unit_id = _IdAllocator()
     game = SimpleNamespace(
-        theater=SimpleNamespace(controlpoints=[owner, farp]),
+        theater=SimpleNamespace(
+            controlpoints=[owner, farp],
+            iads_network=IadsNetwork(advanced=False, iads_data=[]),
+        ),
         db=GameDb(),
         settings=SimpleNamespace(motorpool_enabled=True, motorpool_spawn_cap=10),
         current_group_id=20,
