@@ -35,8 +35,10 @@ if TYPE_CHECKING:
     from dcs.mapping import Point
 
     from game import Game
+    from game.dcs.aircrafttype import AircraftType
     from game.factions.faction import Faction
     from game.squadrons.pilot import Pilot
+    from game.theater import ControlPoint
 
 MIN_SCORE = 2
 MAX_SCORE = 10
@@ -747,10 +749,11 @@ def _lend(
     turns: int,
     task: FlightType,
     front: bool,
+    base: Optional[ControlPoint] = None,
 ) -> str:
     from game.highcommand.loans import lend
 
-    loan = lend(game, side, aircraft, count, turns, task, front)
+    loan = lend(game, side, aircraft, count, turns, task, front, base)
     if loan is None:
         raise CannotGive(f"None of our bases has room for {count} {aircraft}.")
     game.high_command_for(side).loans.append(loan)
@@ -786,10 +789,9 @@ def _give_tanker(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
     )
 
 
-@_gives("squadron")
-def _give_squadron(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+def _squadron_aircraft(game: Game, prize: Prize) -> Optional[AircraftType]:
     wanted = prize.term("type")
-    aircraft = next(
+    return next(
         (
             a
             for a in game.coalition_for(prize.side).faction.aircraft
@@ -797,8 +799,39 @@ def _give_squadron(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
         ),
         None,
     )
+
+
+def _squadron_bases(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[Choice]:
+    from game.highcommand.loans import loan_bases
+
+    aircraft = _squadron_aircraft(game, prize)
     if aircraft is None:
-        raise CannotGive(f"Our side no longer flies the {wanted}.")
+        return []
+    return [
+        Choice(str(base.id), base.name, position=base.position)
+        for base in loan_bases(game, prize.side, aircraft, prize.term("aircraft"))
+    ]
+
+
+@_gives("squadron", Step("Which base?", _squadron_bases))
+def _give_squadron(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    from game.highcommand.loans import loan_bases
+
+    aircraft = _squadron_aircraft(game, prize)
+    if aircraft is None:
+        raise CannotGive(f"Our side no longer flies the {prize.term('type')}.")
+    if len(picked) != 1:
+        raise CannotGive("Choose a base for the squadron.")
+    base = next(
+        (
+            base
+            for base in loan_bases(game, prize.side, aircraft, prize.term("aircraft"))
+            if str(base.id) == picked[0]
+        ),
+        None,
+    )
+    if base is None:
+        raise CannotGive("The selected base can no longer take this squadron.")
     task = next(
         (task for task in COMBAT_TASKS if task in aircraft.task_priorities),
         FlightType.BARCAP,
@@ -811,4 +844,5 @@ def _give_squadron(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
         prize.term("turns"),
         task,
         True,
+        base,
     )

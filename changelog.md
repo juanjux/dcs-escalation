@@ -167,6 +167,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[High Command]** Choose a base when redeeming squadron tickets; sunk flight decks no longer accept loans or aircraft transfers.
 * **[IADS]** Retain empty air-defence sites and dashed infrastructure links after capture, including in existing saves.
 * **[Mission Generator]** Restore scenery objective matching after the rename.
 * **[Mission Log]** Restore pilot names in messages and respect Live Pilots.

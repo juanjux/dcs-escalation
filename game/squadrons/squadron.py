@@ -1139,6 +1139,8 @@ class Squadron:
                 f"{self} cannot relocate from {self.location}: {why} and nothing can "
                 "take off."
             )
+        if not destination.can_operate(self.aircraft):
+            raise RuntimeError(f"{self} cannot operate at {destination}.")
         if destination == self.destination:
             # Asked again, as after its ferry flights were deleted with their package:
             # they are planned again. Ignoring the order left the squadron with no
@@ -1149,8 +1151,6 @@ class Squadron:
         parking_type = ParkingType().from_squadron(self)
         if self.expected_size_next_turn > destination.unclaimed_parking(parking_type):
             raise RuntimeError(f"Not enough parking for {self} at {destination}.")
-        if not destination.can_operate(self.aircraft):
-            raise RuntimeError(f"{self} cannot operate at {destination}.")
         self.destination = destination
         self.replan_ferry_flights(now)
 

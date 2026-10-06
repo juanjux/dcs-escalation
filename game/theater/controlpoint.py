@@ -1657,6 +1657,15 @@ class NavalControlPoint(
                 return g
         raise RuntimeError(f"Found no carrier/LHA group for {self.name}")
 
+    def _has_usable_flight_deck(self) -> bool:
+        # Initial squadron assignment precedes ship generation. Once the fleet is
+        # populated, surviving escorts cannot substitute for its flight deck.
+        if not any(
+            isinstance(tgo, GenericCarrierGroundObject) for tgo in self.ground_objects
+        ):
+            return True
+        return self.runway_is_operational()
+
     @property
     def runway_is_destroyable(self) -> bool:
         return False
@@ -1849,7 +1858,7 @@ class Carrier(NavalControlPoint):
         return True
 
     def can_operate(self, aircraft: AircraftType) -> bool:
-        return aircraft.carrier_capable
+        return aircraft.carrier_capable and self._has_usable_flight_deck()
 
     def total_aircraft_parking(self, parking_type: ParkingType) -> int:
         return 90
@@ -1861,7 +1870,7 @@ class Carrier(NavalControlPoint):
 
 class EssexCarrier(Carrier):
     def can_operate(self, aircraft: AircraftType) -> bool:
-        return aircraft.lha_capable
+        return aircraft.lha_capable and self._has_usable_flight_deck()
 
 
 class Lha(NavalControlPoint):
@@ -1884,7 +1893,7 @@ class Lha(NavalControlPoint):
         return True
 
     def can_operate(self, aircraft: AircraftType) -> bool:
-        return aircraft.lha_capable
+        return aircraft.lha_capable and self._has_usable_flight_deck()
 
     def total_aircraft_parking(self, parking_type: ParkingType) -> int:
         return 20
