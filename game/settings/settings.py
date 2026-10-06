@@ -17,6 +17,12 @@ from .skilloption import pilot_skill_option, skill_option
 from .textoption import text_option
 from ..ato.starttype import StartType
 from game.coordinates import CoordinateFormat
+from game.dcs.skills import (
+    DEFAULT_RANK_AVERAGE_XP,
+    DEFAULT_RANK_GOOD_XP,
+    DEFAULT_RANK_HIGH_XP,
+    DEFAULT_RANK_EXCELLENT_XP,
+)
 from game.mfd import MfdIntel
 
 Views = ForcedOptions.Views
@@ -2023,7 +2029,7 @@ class Settings:
         "Average",
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_RANKS_SECTION,
-        default=1000,
+        default=DEFAULT_RANK_AVERAGE_XP,
         min=0,
         max=1000000,
     )
@@ -2044,7 +2050,7 @@ class Settings:
         "Good",
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_RANKS_SECTION,
-        default=2000,
+        default=DEFAULT_RANK_GOOD_XP,
         min=0,
         max=1000000,
     )
@@ -2065,7 +2071,7 @@ class Settings:
         "High",
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_RANKS_SECTION,
-        default=4000,
+        default=DEFAULT_RANK_HIGH_XP,
         min=0,
         max=1000000,
     )
@@ -2086,7 +2092,7 @@ class Settings:
         "Excellent",
         page=LIVE_PILOTS_PAGE,
         section=LIVE_PILOTS_RANKS_SECTION,
-        default=8000,
+        default=DEFAULT_RANK_EXCELLENT_XP,
         min=0,
         max=1000000,
     )

@@ -15,7 +15,7 @@ import pytest
 
 from dcs.unit import Skill
 
-from game.dcs.skills import CADET_SKILL
+from game.dcs.skills import CADET_SKILL, experience_for_skill
 from game.settings import Settings
 from game.squadrons import friendship
 from game.squadrons.pilot import Pilot, PilotRecord, PilotStatus, KilledBy
@@ -113,12 +113,15 @@ def test_the_next_rank_is_named_with_what_it_costs() -> None:
 
     squadron = _squadron(skill=Skill.Good)
     pilot = _pilot()
-    pilot.record.xp = 2400
+    pilot.record.xp = experience_for_skill(Skill.Good) + 400
     name, price, held = next_rung(squadron, pilot)
     # Good is the third rung, so the one above it is High -- Major in the generic
-    # ladder -- at 4,000, and the one he holds cost 2,000.
+    # ladder. Read both prices from the shared rank defaults.
     assert name == "Maj"
-    assert (price, held) == (4000, 2000)
+    assert (price, held) == (
+        experience_for_skill(Skill.High),
+        experience_for_skill(Skill.Good),
+    )
 
 
 def test_the_top_of_the_ladder_has_nothing_above_it() -> None:
@@ -146,7 +149,7 @@ def test_the_bottom_rung_counts_from_nothing() -> None:
 
     name, price, held = next_rung(_squadron(skill=CADET_SKILL), _pilot())
     assert name is not None
-    assert (price, held) == (1000, 0)
+    assert (price, held) == (experience_for_skill(Skill.Average), 0)
 
 
 # --- the kills --------------------------------------------------------------

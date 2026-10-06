@@ -15,7 +15,7 @@ import pytest
 from dcs.task import OptReactOnThreat
 from dcs.unit import Skill
 
-from game.dcs.skills import CADET_SKILL, SKILL_LADDER
+from game.dcs.skills import CADET_SKILL, SKILL_LADDER, experience_for_skill
 from game.settings import Settings
 from game.squadrons import morale as morale_rules
 from game.squadrons.pilot import Pilot, PilotStatus
@@ -263,7 +263,7 @@ def test_morale_moves_what_he_flies_at_and_not_what_he_has_earned() -> None:
     """Or a bad week would demote a Major, and a good one would promote him back."""
     squadron = _squadron(_live_settings())
     pilot = Pilot("Vega")
-    pilot.record.xp = 2000  # Good, on his own merits
+    pilot.record.xp = experience_for_skill(Skill.Good)
 
     rank_at_50 = squadron.pilot_rank(pilot).abbreviation
     assert squadron.mission_skill(pilot) is Skill.Good
