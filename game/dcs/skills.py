@@ -61,7 +61,17 @@ def ground_skill(skill: Skill) -> Skill:
 
 # Experience needed to reach each rung, in the same order as SKILL_LADDER. A pilot flies
 # at the highest rung whose threshold he has passed. Campaigns can override these defaults.
-SKILL_XP_THRESHOLDS: tuple[int, ...] = (0, 1500, 4000, 8000, 16000)
+DEFAULT_RANK_AVERAGE_XP = 1500
+DEFAULT_RANK_GOOD_XP = 4000
+DEFAULT_RANK_HIGH_XP = 8000
+DEFAULT_RANK_EXCELLENT_XP = 16000
+SKILL_XP_THRESHOLDS: tuple[int, ...] = (
+    0,
+    DEFAULT_RANK_AVERAGE_XP,
+    DEFAULT_RANK_GOOD_XP,
+    DEFAULT_RANK_HIGH_XP,
+    DEFAULT_RANK_EXCELLENT_XP,
+)
 
 #: The setting each rung's price lives in. Cadet has none: it is where everyone starts,
 #: so it costs nothing by definition.
