@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Show loan status and remaining turns in the squadron list and details.
 * **[Mission Log]** Hide incoming-missile commentary about human players by default, with an option to show it.
 * **[UI]** Split flight fuel estimates at refuel waypoints in Waypoints and Payload, assuming full tanks after each refuel and checking each segment separately.
 * **[DTC]** Preset the Hornet family's recovery-base TACAN, ICLS and Link4/ACLS when available.

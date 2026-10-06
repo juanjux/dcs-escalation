@@ -86,6 +86,7 @@ from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.pilot import PilotDialog
 from qt_ui.widgets.combos.QSquadronLiverySelector import SquadronLiverySelector
 from qt_ui.widgets.combos.primarytaskselector import PrimaryTaskSelector
+from qt_ui.widgets.squadronloan import squadron_loan_text
 
 #: Everything the redesign paints. The rest of the palette comes from the Air Wing
 #: list, which these rows have to sit beside without looking like a different program.
@@ -1117,6 +1118,16 @@ class SquadronDialog(QDialog):
             second.addWidget(nickname)
         second.addStretch()
         identity.addLayout(second)
+
+        loan_text = squadron_loan_text(squadron)
+        if loan_text:
+            loan = QLabel(loan_text)
+            loan.setObjectName("squadronLoanStatus")
+            loan.setStyleSheet(
+                "font-size: 12px; font-weight: 600; color: #E0A86B;"
+                " background: #3B2D21; border-radius: 3px; padding: 3px 8px;"
+            )
+            identity.addWidget(loan, alignment=Qt.AlignmentFlag.AlignLeft)
 
         context = QVBoxLayout()
         context.setSpacing(2)

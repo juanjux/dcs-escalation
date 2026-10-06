@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 from game.ato.flighttype import FlightType
 from game.squadrons import Squadron, friendship
 from qt_ui.models import AirWingModel
+from qt_ui.widgets.squadronloan import squadron_loan_text
 
 ROW_HEIGHT = 48
 SEPARATOR_Y = 47
@@ -27,6 +28,7 @@ SEPARATOR_Y = 47
 #: A grouped row loses the column its group already names, so it can be shorter.
 GROUPED_ROW_HEIGHT = 44
 GROUP_HEADER_HEIGHT = 28
+LOAN_LINE_HEIGHT = 20
 
 #: Set by the model on its group-header rows: (label, member count).
 GroupHeaderRole = Qt.ItemDataRole.UserRole + 1
@@ -201,9 +203,11 @@ class SquadronDelegate(QStyledItemDelegate):
     def row_height(self, index: QModelIndex) -> int:
         if index.data(GroupHeaderRole) is not None:
             return GROUP_HEADER_HEIGHT
-        if self.grouping is not None:
-            return GROUPED_ROW_HEIGHT
-        return ROW_HEIGHT
+        height = GROUPED_ROW_HEIGHT if self.grouping is not None else ROW_HEIGHT
+        squadron = self.squadron(index)
+        if squadron is not None and squadron_loan_text(squadron):
+            height += LOAN_LINE_HEIGHT
+        return height
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
         return QSize(option.rect.width(), self.row_height(index))
@@ -223,8 +227,9 @@ class SquadronDelegate(QStyledItemDelegate):
 
         height = self.row_height(index)
         # Both baselines shift up together on the shorter grouped row.
-        self._line_1 = LINE_1 - (ROW_HEIGHT - height) // 2
-        self._line_2 = LINE_2 - (ROW_HEIGHT - height)
+        base_height = GROUPED_ROW_HEIGHT if self.grouping is not None else ROW_HEIGHT
+        self._line_1 = LINE_1 - (ROW_HEIGHT - base_height) // 2
+        self._line_2 = LINE_2 - (ROW_HEIGHT - base_height)
 
         selected = bool(option.state & QStyle.StateFlag.State_Selected)
         hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
@@ -249,6 +254,11 @@ class SquadronDelegate(QStyledItemDelegate):
         self._paint_task_chip(painter, option, squadron, selected, depleted)
         self._paint_cohesion(painter, option, squadron)
         self._paint_strength(painter, option, squadron, width, selected, depleted)
+        loan = squadron_loan_text(squadron)
+        if loan:
+            painter.setFont(self._font(option, 11.5, QFont.Weight.DemiBold))
+            painter.setPen(AMBER)
+            painter.drawText(COL_TYPE_X, height - 8, loan)
 
         painter.restore()
 
