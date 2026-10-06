@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 import pytest
 
@@ -68,14 +68,18 @@ def side(monkeypatch: pytest.MonkeyPatch) -> Any:
 
 def test_ordering_the_same_relocation_again_plans_its_ferries_again() -> None:
     replanned: list[datetime] = []
+    destination: Any = SimpleNamespace(
+        name="Kutaisi", can_operate=lambda aircraft: True
+    )
     squadron: Any = SimpleNamespace(
         location=SimpleNamespace(runway_is_operational=lambda: True, sunk=False),
-        destination="Kutaisi",
+        destination=destination,
+        aircraft=object(),
         owned_aircraft=4,
         replan_ferry_flights=replanned.append,
     )
 
-    Squadron.plan_relocation(squadron, cast(Any, "Kutaisi"), NOW)
+    Squadron.plan_relocation(squadron, destination, NOW)
 
     assert replanned == [NOW]
 
