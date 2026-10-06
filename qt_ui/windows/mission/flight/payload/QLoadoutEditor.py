@@ -96,6 +96,14 @@ class QLoadoutEditor(QWidget):
         header.setContentsMargins(14, 6, 14, 6)
         header.addWidget(self.custom_check)
         header.addStretch()
+        self.show_training_check = QCheckBox("Show training and non-combat")
+        self.show_training_check.setToolTip(
+            "Show practice, captive and inert weapons, smoke and illumination stores. "
+            "Stores already fitted remain visible."
+        )
+        self.show_training_check.setStyleSheet(self.custom_check.styleSheet())
+        self.show_training_check.toggled.connect(self._show_training_changed)
+        header.addWidget(self.show_training_check)
         header_holder = QWidget()
         make_transparent(header_holder)
         header_holder.setLayout(header)
@@ -177,6 +185,10 @@ class QLoadoutEditor(QWidget):
 
     def iter_pylon_editors(self) -> Iterator[QPylonEditor]:
         yield from self.findChildren(QPylonEditor)
+
+    def _show_training_changed(self, show: bool) -> None:
+        for pylon_editor in self.iter_pylon_editors():
+            pylon_editor.set_show_training(show)
 
     def set_flight_member(self, flight_member: FlightMember) -> None:
         self.flight_member = flight_member
