@@ -12,6 +12,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from game.theater.iadsnetwork.iadsrole import IadsRole
+from game.theater.iadsnetwork.iadsnetwork import IadsNetworkNode
 from game.theater.iadsnetwork.iadsstate import IadsState, IadsStateMap
 
 BLUE = True
@@ -70,9 +71,10 @@ def _group(
 
 
 def _node(group: Any, *connections: Any) -> Any:
-    return SimpleNamespace(
-        group=group, connections={i: c for i, c in enumerate(connections)}
-    )
+    node = IadsNetworkNode(group)
+    for connection in connections:
+        node.add_connection_for_group(connection)
+    return node
 
 
 def _map(*nodes: Any) -> IadsStateMap:
