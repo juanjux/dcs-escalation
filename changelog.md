@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Flight Plans]** Helicopters use separate ALIGN and departure hold distances, both configurable and defaulting to 2 NM.
 * **[UI]** Hide training, smoke and illumination stores in Loadout by default, with a checkbox to show them.
 * **[Live Pilots]** Set default promotion thresholds to 1,500, 4,000, 8,000 and 16,000 XP; saved campaign settings are unchanged.
 * **[UI]** Show loan status and remaining turns in the squadron list and details.

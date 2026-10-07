@@ -52,6 +52,7 @@ if TYPE_CHECKING:
 #: marshal altitude, which is what 50 nm on the slope works out to.
 DEFAULT_DISTANCE_NM = 15.0
 DEFAULT_CARRIER_DISTANCE_NM = 50.0
+DEFAULT_HELICOPTER_DISTANCE_NM = 2.0
 FEET_PER_NAUTICAL_MILE = 300.0
 MIN_ALTITUDE_FT = 1500.0
 MAX_ALTITUDE_FT = 6000.0
@@ -94,6 +95,14 @@ def carrier_distance_from(settings: object) -> Distance:
     )
 
 
+def helicopter_distance_from(settings: object, *, departure: bool = False) -> Distance:
+    """Helicopters use short legs independent of fixed-wing distances."""
+    setting = "align_helo_hold_distance_nm" if departure else "align_helo_distance_nm"
+    return nautical_miles(
+        float(getattr(settings, setting, DEFAULT_HELICOPTER_DISTANCE_NM))
+    )
+
+
 def base_recovery_course(conditions: Any) -> Optional[Heading]:
     """The ship's course: into the wind, so the reciprocal of the wind vector.
 
@@ -129,7 +138,11 @@ def _airfield_waypoint(
         # A stub, which is what a field with no runways in its data returns.
         return None
 
-    distance = distance_from(settings)
+    distance = (
+        helicopter_distance_from(settings)
+        if flight.is_helo
+        else distance_from(settings)
+    )
     # The approach course is the runway heading, so the waypoint goes that distance
     # back along its reciprocal.
     origin, course = _airfield_axis(arrival, runway)
@@ -188,7 +201,11 @@ def _carrier_waypoint(
     )
     recovery = arrival.position.point_from_heading(course.degrees, steamed.meters)
 
-    distance = carrier_distance_from(settings)
+    distance = (
+        helicopter_distance_from(settings)
+        if flight.is_helo
+        else carrier_distance_from(settings)
+    )
     position = recovery.point_from_heading(course.opposite.degrees, distance.meters)
     return FlightWaypoint(
         "ALIGN",
@@ -251,7 +268,11 @@ def hold_point(flight: Flight, doctrine: Any) -> Optional[Point]:
     else:
         return None
 
-    distance = hold_distance_from(settings, doctrine)
+    distance = (
+        helicopter_distance_from(settings, departure=True)
+        if flight.is_helo
+        else hold_distance_from(settings, doctrine)
+    )
     return origin.point_from_heading(runway_course, distance.meters)
 
 
