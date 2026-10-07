@@ -41,6 +41,7 @@ from tabulate import tabulate
 
 from game.ato.flighttype import FlightType
 from game.ato.savedpoints import PointKind, SavedPoint
+from game.missiongenerator.a10cdu import route_numbers
 from game.missiongenerator.dtc import steerpoint_numbers
 from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
@@ -421,7 +422,7 @@ class BriefingPage(KneeboardPage):
         units = self.flight.aircraft_type.kneeboard_units
 
         flight_plan_builder = FlightPlanBuilder(self.start_time, units)
-        for num, waypoint in enumerate(self.flight.waypoints):
+        for num, waypoint in zip(route_numbers(self.flight), self.flight.waypoints):
             flight_plan_builder.add_waypoint(num, waypoint)
 
         uom_row = [
@@ -1060,12 +1061,12 @@ class SeadTaskPage(KneeboardPage):
         DEAD/SEAD flights get one TARGET_POINT waypoint per target, built at the
         target's position, so each listed target can show its assigned waypoint
         number — the same "STPT" the strike task page shows. The number is the
-        index into the flight's waypoint list, matching the flight-plan page.
+        cockpit number, matching the flight-plan page and the CDU database.
         Targets without a matching waypoint (e.g. an old flight plan generated
         before per-target waypoints existed) simply show a blank STPT.
         """
         numbers: Dict[Tuple[float, float], int] = {}
-        for idx, waypoint in enumerate(self.flight.waypoints):
+        for idx, waypoint in zip(route_numbers(self.flight), self.flight.waypoints):
             if waypoint.waypoint_type == FlightWaypointType.TARGET_POINT:
                 numbers.setdefault((waypoint.position.x, waypoint.position.y), idx)
         return numbers
@@ -1127,7 +1128,7 @@ class StrikeTaskPage(KneeboardPage):
 
     @property
     def targets(self) -> Iterator[NumberedWaypoint]:
-        for idx, waypoint in enumerate(self.flight.waypoints):
+        for idx, waypoint in zip(route_numbers(self.flight), self.flight.waypoints):
             if waypoint.waypoint_type == FlightWaypointType.TARGET_POINT:
                 yield NumberedWaypoint(idx, waypoint)
 

@@ -170,6 +170,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[A-10C]** Store CDU waypoint elevations explicitly and match kneeboard numbering to the custom CDU database.
 * **[UI]** Filter abbreviated training, smoke and illumination rockets, TGM missiles and travel pods from loadout choices.
 * **[High Command]** Choose a base when redeeming squadron tickets; sunk flight decks no longer accept loans or aircraft transfers.
 * **[IADS]** Retain empty air-defence sites and dashed infrastructure links after capture, including in existing saves.

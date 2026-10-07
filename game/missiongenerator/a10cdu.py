@@ -12,12 +12,11 @@ is read exactly the same, which gives the saved points everything they need:
 * they go in the **waypoint database** rather than on the flight plan, so the mission
   route is untouched and the MSN flight plan draws no line to them;
 * they get a **flight plan of their own**, so stepping through them is a switch;
-* and the aircraft works out **how high the ground is under each one** itself.
+* elevations are stored explicitly, without depending on the CDU's terrain ranging.
 
-That last one took finding. The elevation written into the file is ignored -- the CDU
-recomputes it from the terrain -- but only when the digital terrain system is on, and
-that is a switch in this same file. Without ``dtsas_func`` every waypoint in the
-aircraft reads ``EL: *****``, which is what a file with only the waypoints in it gets.
+Terrain ranging is not always available at cockpit initialization. Enabling DTSAS
+alone can leave every point at ``EL: *****``, making the steerpoint an invalid SPI.
+Route points use ground elevations; saved points keep their entered MSL elevations.
 
 Measured against DCS's own output rather than guessed: elevations are metres, the
 number a waypoint ends up with is its position in the table rather than the
@@ -34,10 +33,12 @@ from typing import TYPE_CHECKING, Any, Iterable, Sequence
 from dcs.mapping import Point
 
 from game.ato.savedpoints import SavedPoint, points_of
+from game.elevation import elevation_m
 
 if TYPE_CHECKING:
     from game import Game
     from game.ato.flight import Flight
+    from game.missiongenerator.aircraft.flightdata import FlightData
 
 #: The aircraft whose cockpit keeps its navigation computer here.
 AIRCRAFT = {"A-10C", "A-10C_2"}
@@ -76,11 +77,25 @@ def numbers_for(route_length: int, count: int) -> list[int]:
 
     The aircraft numbers a waypoint by where it sits in the table, not by the
     ``wpt_num`` beside it, so the route fills the first places and the saved points
-    follow. The route counts from 0, which puts the first saved point one past the
-    end of it rather than on it.
+    follow. Table slots start at 1; CDU point 0 is the aircraft's initial position.
     """
     first = route_length + 1
     return list(range(first, first + count))
+
+
+def uses_custom_cdu(flight: FlightData) -> bool:
+    """Whether this flight receives a replacement CDU waypoint database."""
+    return bool(
+        flight.client_units
+        and flight.aircraft_type.dcs_unit_type.id in AIRCRAFT
+        and flight.saved_points
+    )
+
+
+def route_numbers(flight: FlightData) -> range:
+    """Cockpit route numbers, including the custom CDU's one-based table slots."""
+    first = 1 if uses_custom_cdu(flight) else 0
+    return range(first, first + len(flight.waypoints))
 
 
 def _identifier(point: SavedPoint, number: int) -> str:
@@ -124,24 +139,20 @@ def _position(latlng: Any) -> list[str]:
     ]
 
 
-def _waypoint(slot: int, number: int, name: str, latlng: Any) -> list[str]:
-    """One entry of the waypoint database.
-
-    No elevation is written: the aircraft recomputes it from the terrain, which is
-    DCS's own height for the spot rather than the real world's, and that is the
-    number a weapon wants.
-    """
+def _waypoint(slot: int, name: str, latlng: Any, elevation: float | None) -> list[str]:
+    """One CDU entry, with an explicit MSL elevation in metres when available."""
     return (
         [
             f"{TAB * 2}[{slot}]=",
             TAB * 2 + "{",
-            f'{TAB * 3}["wpt_cr"]=1,',
-            f'{TAB * 3}["wpt_elev_present"]=1,',
-            f'{TAB * 3}["wpt_num"]={number},',
+            f'{TAB * 3}["wpt_cr"]={int(elevation is None)},',
+            f'{TAB * 3}["wpt_elev_present"]={int(elevation is not None)},',
+            f'{TAB * 3}["wpt_num"]={slot},',
             f'{TAB * 3}["wpt_dtot_present"]=0,',
             f'{TAB * 3}["div_present"]=0,',
             f'{TAB * 3}["wpt_id"]="{name}",',
         ]
+        + ([f'{TAB * 3}["wpt_elev"]={elevation:.6f},'] if elevation is not None else [])
         + _attributes(3)
         + _position(latlng)
         + [f'{TAB * 3}["wpt_type"]={UNKNOWN},', TAB * 2 + "},"]
@@ -178,20 +189,24 @@ def settings(flight: Any, terrain: Any) -> str:
     numbers = numbers_for(len(route), len(saved))
 
     entries: list[str] = []
-    for slot, (number, waypoint) in enumerate(enumerate(route), start=1):
-        name = "INIT POSIT" if number == 0 else str(waypoint.display_name)
+    for slot, waypoint in enumerate(route, start=1):
+        name = "INIT POSIT" if slot == 1 else str(waypoint.display_name)
+        latlng = Point(waypoint.position.x, waypoint.position.y, terrain).latlng()
+        elevation = elevation_m(latlng.lat, latlng.lng)
+        if elevation is None:
+            logging.warning("No ground elevation for A-10 CDU waypoint %s", slot)
         entries += _waypoint(
             slot,
-            number,
             name.upper()[:NAME_LENGTH],
-            Point(waypoint.position.x, waypoint.position.y, terrain).latlng(),
+            latlng,
+            max(0.0, elevation) if elevation is not None else None,
         )
     for place, (number, point) in enumerate(zip(numbers, saved)):
         entries += _waypoint(
             len(route) + place + 1,
-            number,
             _identifier(point, number),
             Point(point.x, point.y, terrain).latlng(),
+            point.altitude_ft * 0.3048,
         )
 
     return "\n".join(
@@ -200,8 +215,7 @@ def settings(flight: Any, terrain: Any) -> str:
             "{",
             f'{TAB}["coords_format"]=0,',
             f'{TAB}["initial_number"]=0,',
-            "\t-- The digital terrain system, which is what gives every waypoint the",
-            "\t-- height of the ground under it. Without it the CDU shows EL: *****.",
+            "\t-- Keep terrain ranging available for points edited in the cockpit.",
             f'{TAB}["dtsas_func"]=1,',
             f'{TAB}["dtsas_cr"]=1,',
             f'{TAB}["dtsas_owc"]=100,',
@@ -224,11 +238,7 @@ def write_into_mission(game: Game, mission_data: Any, mission: Path) -> list[str
     """One navigation computer per A-10 the player is flying with points written down."""
     entries: dict[str, str] = {}
     for flight in getattr(mission_data, "flights", []):
-        if not flight.client_units:
-            continue
-        if flight.aircraft_type.dcs_unit_type.id not in AIRCRAFT:
-            continue
-        if not flight.saved_points:
+        if not uses_custom_cdu(flight):
             continue
         entries[inside_mission(flight)] = settings(flight, game.theater.terrain)
     if not entries:
