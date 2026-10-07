@@ -103,10 +103,11 @@ class FlightPlan(ABC, Generic[LayoutT]):
     def iter_waypoints(self) -> Iterator[FlightWaypoint]:
         """Iterates over all waypoints in the flight plan, in order."""
         dropped = self.layout.dropped_waypoints()
-        if not dropped:
-            yield from self.layout.iter_waypoints()
-            return
         for waypoint in self.layout.iter_waypoints():
+            # Bullseye is a coalition reference, not a leg to fly after landing.
+            # Filter here so existing saves, cockpit exports and kneeboards agree.
+            if waypoint.waypoint_type == FlightWaypointType.BULLSEYE:
+                continue
             if not any(waypoint is gone for gone in dropped):
                 yield waypoint
 
