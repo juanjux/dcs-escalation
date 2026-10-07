@@ -1470,7 +1470,7 @@ class Settings:
         default=True,
         detail=(
             "Make the last waypoint before landing one that aligns the aircraft with "
-            "the active landing runway. Airfields only."
+            "the active landing runway or a carrier's recovery course."
         ),
     )
     align_distance_nm: float = bounded_float_option(
@@ -1531,6 +1531,40 @@ class Settings:
         detail=(
             "On the base recovery course, at the position the ship will have steamed "
             "to by the time the flight lands. Fifty is where a Case III starts."
+        ),
+    )
+    align_helo_distance_nm: float = bounded_float_option(
+        "Helicopter ALIGN distance (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=2.0,
+        min=0.5,
+        max=20.0,
+        divisor=10,
+        prefix="",
+        decimals=1,
+        enabled_when=lambda settings: settings.align_before_landing,
+        detail=(
+            "Overrides the fixed-wing ALIGN distance for helicopters at airfields "
+            "and carriers. Carrier distance is measured from the projected recovery "
+            "position. Applies when the flight plan is created or regenerated."
+        ),
+    )
+    align_helo_hold_distance_nm: float = bounded_float_option(
+        "Helicopter departure hold distance (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=2.0,
+        min=0.5,
+        max=20.0,
+        divisor=10,
+        prefix="",
+        decimals=1,
+        enabled_when=lambda settings: settings.align_hold_with_runway,
+        detail=(
+            "Overrides the fixed-wing departure hold distance for helicopters at "
+            "airfields and carriers. Applies when the flight plan is created or "
+            "regenerated."
         ),
     )
     switch_baro_fix: bool = boolean_option(
