@@ -172,7 +172,7 @@
 
 ## Fixes
 * **[Mission Generator]** Keep the coalition bullseye off flight routes, removing the extra F10 route leg.
-* **[A-10C]** Store CDU waypoint elevations explicitly and match kneeboard numbering to the custom CDU database.
+* **[A-10C]** Enable 3D VNAV and align CDU, F10 and kneeboard waypoint numbers without duplicating the initial position. Navigation elevations use planned flight altitudes; targets remain at ground level.
 * **[Flight Plans]** Use precise DCS localizer geometry for runway ALIGN and departure hold points where available.
 * **[UI]** Filter abbreviated training, smoke and illumination rockets, TGM missiles and travel pods from loadout choices.
 * **[High Command]** Choose a base when redeeming squadron tickets; sunk flight decks no longer accept loans or aircraft transfers.

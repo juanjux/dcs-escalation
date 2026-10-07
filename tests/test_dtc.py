@@ -806,9 +806,9 @@ def test_the_numbering_stops_where_the_module_does() -> None:
     assert dtc.steerpoint_numbers("F-16C_50", 25, 5) == []
 
 
-def test_an_airframe_with_no_cartridge_is_numbered_from_one() -> None:
-    """Which is what the A-10's own database does."""
-    assert dtc.steerpoint_numbers("A-10C_2", 6, 2) == [7, 8]
+def test_a10_saved_points_follow_the_native_zero_based_route() -> None:
+    assert dtc.steerpoint_numbers("A-10C_2", 6, 2) == [6, 7]
+    assert dtc.steerpoint_numbers("A-10C", 6, 2) == [6, 7]
 
 
 # ------------------------------------------------------------------ the tanker boxes

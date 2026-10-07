@@ -1,5 +1,11 @@
+from datetime import timedelta
+from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock
+
+from dcs.mapping import Point
+from dcs.point import MovingPoint, PointProperties, VNav
+from dcs.terrain import Caucasus
 
 from game.missiongenerator.aircraft.waypoints.waypointgenerator import (
     WaypointGenerator,
@@ -81,3 +87,27 @@ def test_unlocks_a_run_of_trapped_speed_locked_waypoints() -> None:
     _generator(points)._resolve_locked_speed_time_conflicts()
 
     assert [p.speed_locked for p in points] == [False, False, False, False]
+
+
+def test_route_generation_enables_vnav_for_player_a10_including_spawn() -> None:
+    """The VNAV helper must run on the completed export, not only CDU extras."""
+    points = [MovingPoint(Point(i, i, Caucasus())) for i in range(3)]
+    for point in points:
+        point.properties = PointProperties(vnav=VNav.V2D)
+    route = [SimpleNamespace(tot=None, only_for_player=False) for _ in points]
+    gen: Any = _generator(points)
+    gen.flight = SimpleNamespace(
+        points=route,
+        flight_plan=SimpleNamespace(waypoints=route),
+        state=SimpleNamespace(),
+        client_count=1,
+        unit_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id="A-10C_2")),
+    )
+    gen.set_takeoff_time = MagicMock(return_value=timedelta())
+    gen.builder_for_waypoint = MagicMock()
+    gen._estimate_min_fuel_for = MagicMock()
+
+    _, kneeboard_route = gen.create_waypoints()
+
+    assert kneeboard_route == route
+    assert [p.dict()["properties"]["vnav"] for p in points] == [1, 1, 1]

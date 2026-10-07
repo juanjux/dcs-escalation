@@ -21,6 +21,7 @@ from game.ato.savedpoints import PointKind, SavedPoint
 from game.ato.flightwaypointtype import FlightWaypointType
 from game.ato.flightwaypoint import FlightWaypoint
 from dcs.mapping import Point
+from dcs.point import MovingPoint, PointProperties, Scale, Steer, VNav
 from dcs.terrain import Caucasus
 from game.missiongenerator import a10cdu
 from game.missiongenerator.kneeboard import (
@@ -46,6 +47,8 @@ def _waypoint(name: str, x: float, y: float) -> Any:
         display_name=name,
         position=SimpleNamespace(x=x, y=y),
         alt=SimpleNamespace(meters=0.0),
+        alt_type="BARO",
+        waypoint_type=FlightWaypointType.TARGET_POINT,
     )
 
 
@@ -99,17 +102,70 @@ def test_the_terrain_system_is_switched_on(monkeypatch: Any) -> None:
     assert '["dtsas_cr"]=1' in written
 
 
-def test_route_elevations_are_written_without_relying_on_terrain_ranging(
+def test_target_elevations_use_ground_not_the_flight_altitude(
     monkeypatch: Any,
 ) -> None:
     flight = _flight(saved=[_point("SMOKE")])
     flight.waypoints[1].alt = meters(6000)
     written = loads(_settings(flight, monkeypatch))["settings"]["waypoints"]
 
-    for slot in range(1, 5):
+    for slot in range(1, 4):
         assert written[slot]["wpt_elev"] == 123.5
         assert written[slot]["wpt_elev_present"] == 1
         assert written[slot]["wpt_cr"] == 0
+
+
+@pytest.mark.parametrize("kind", list(a10cdu.SURFACE_POINTS))
+def test_surface_point_types_keep_the_ground_elevation(
+    kind: FlightWaypointType,
+) -> None:
+    waypoint = _waypoint("SURFACE", 0, 0)
+    waypoint.waypoint_type = kind
+    waypoint.alt = meters(6000)
+    assert a10cdu._route_elevation(waypoint, _latlng(0, 0)) == 123.5
+
+
+@pytest.mark.parametrize(
+    "kind", [kind for kind in FlightWaypointType if kind not in a10cdu.SURFACE_POINTS]
+)
+def test_navigation_elevation_uses_planned_msl_altitude_without_terrain_lookup(
+    kind: FlightWaypointType, monkeypatch: Any
+) -> None:
+    def unexpected_lookup(lat: float, lng: float) -> None:
+        pytest.fail("BARO navigation points must not request terrain elevations")
+
+    monkeypatch.setattr(a10cdu, "elevation_m", unexpected_lookup)
+    flight = _flight(route=2)
+    waypoint = flight.waypoints[1]
+    waypoint.waypoint_type = kind
+    waypoint.alt = meters(4572)  # 15,000 ft, not the height of the ground below
+    cdu = loads(_settings(flight, monkeypatch))["settings"]["waypoints"][1]
+    assert cdu["wpt_elev"] == 4572
+    assert cdu["wpt_elev_present"] == 1
+
+
+def test_agl_navigation_elevation_adds_ground_height(monkeypatch: Any) -> None:
+    flight = _flight(route=2)
+    waypoint = flight.waypoints[1]
+    waypoint.waypoint_type = FlightWaypointType.NAV  # ALIGN is exported as NAV
+    waypoint.alt = meters(1371.6)  # 4,500 ft above ground
+    waypoint.alt_type = "RADIO"
+    cdu = loads(_settings(flight, monkeypatch))["settings"]["waypoints"][1]
+    assert cdu["wpt_elev"] == pytest.approx(1371.6 + 123.5)
+
+
+def test_unknown_agl_ground_height_does_not_claim_an_msl_elevation(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(a10cdu, "elevation_m", lambda lat, lng: None)
+    flight = _flight(route=2)
+    waypoint = flight.waypoints[1]
+    waypoint.waypoint_type = FlightWaypointType.NAV
+    waypoint.alt = meters(1371.6)
+    waypoint.alt_type = "RADIO"
+    cdu = loads(_settings(flight, monkeypatch))["settings"]["waypoints"][1]
+    assert "wpt_elev" not in cdu
+    assert cdu["wpt_elev_present"] == 0
 
 
 @pytest.mark.parametrize("height_ft", [0, 1234, -100])
@@ -119,8 +175,8 @@ def test_saved_points_keep_their_entered_msl_elevations(
     point = _point("SMOKE")
     point.altitude_ft = height_ft
     written = loads(_settings(_flight(saved=[point]), monkeypatch))["settings"]
-    assert written["waypoints"][5]["wpt_elev"] == pytest.approx(height_ft * 0.3048)
-    assert written["waypoints"][5]["wpt_elev_present"] == 1
+    assert written["waypoints"][4]["wpt_elev"] == pytest.approx(height_ft * 0.3048)
+    assert written["waypoints"][4]["wpt_elev_present"] == 1
 
 
 def test_missing_ground_height_does_not_claim_an_elevation_is_present(
@@ -149,7 +205,7 @@ def test_the_saved_points_get_a_flight_plan_of_their_own(monkeypatch: Any) -> No
     )
 
     assert '["fp_name"]="EXTRA"' in written
-    assert re.findall(r'\["wpt_number"\]=(\d+)', written) == ["6", "7"]
+    assert re.findall(r'\["wpt_number"\]=(\d+)', written) == ["5", "6"]
 
 
 def test_a_flight_with_nothing_written_down_gets_no_plan(monkeypatch: Any) -> None:
@@ -164,7 +220,8 @@ def test_a_flight_with_nothing_written_down_gets_no_plan(monkeypatch: Any) -> No
 def test_a_saved_point_follows_the_route(monkeypatch: Any) -> None:
     """The aircraft numbers a waypoint by its place in the table, not by the wpt_num
     written beside it, and the route counts from 0."""
-    assert a10cdu.numbers_for(5, 2) == [6, 7]
+    assert a10cdu.numbers_for(5, 2) == [5, 6]
+    assert a10cdu.numbers_for(1, 2) == [1, 2]
     assert a10cdu.numbers_for(0, 3) == [1, 2, 3]
 
 
@@ -172,13 +229,22 @@ def test_the_route_keeps_its_own_numbers(monkeypatch: Any) -> None:
     written = _settings(_flight(route=3, saved=[_point("SMOKE")]), monkeypatch)
     numbers = re.findall(r'\["wpt_num"\]=(\d+)', written)
 
-    assert numbers == ["1", "2", "3", "4"]
+    assert numbers == ["1", "2", "3"]
 
 
-def test_the_first_route_point_is_the_aircraft_itself(monkeypatch: Any) -> None:
-    written = _settings(_flight(route=2), monkeypatch)
+def test_dcs_owns_initial_position_and_hold_is_not_shifted(monkeypatch: Any) -> None:
+    flight = _flight(route=3, saved=[_point("OIL")])
+    flight.waypoints[0].display_name = "Takeoff"
+    flight.waypoints[1].display_name = "Hold"
+    written = _settings(flight, monkeypatch)
+    cdu = loads(written)["settings"]["waypoints"]
 
-    assert '["wpt_id"]="INIT POSIT"' in written
+    assert "INIT POSIT" not in written
+    assert "TAKEOFF" not in written
+    assert cdu[1]["wpt_id"] == "HOLD"
+    assert cdu[1]["wpt_pos"]["pos_lat"] == _latlng(1, 1).lat
+    assert cdu[3]["wpt_id"] == "OIL"
+    assert len(cdu) == len(flight.waypoints) - 1 + len(flight.saved_points)
 
 
 @pytest.mark.parametrize("aircraft", ["A-10C", "A-10C_2", "FA-18C_hornet"])
@@ -207,7 +273,7 @@ def test_kneeboard_numbers_follow_the_exported_database(
         )
         for index, kind in enumerate(kinds)
     ]
-    first = 1 if aircraft in a10cdu.AIRCRAFT and saved else 0
+    first = 0
     numbers = list(a10cdu.route_numbers(flight))
     assert numbers == list(range(first, first + len(kinds)))
 
@@ -223,12 +289,12 @@ def test_kneeboard_numbers_follow_the_exported_database(
     sead = SeadTaskPage(flight, False)._waypoint_number_by_position()
     assert list(sead.values()) == list(range(4 + first, 13 + first))
 
-    if first:
+    if aircraft in a10cdu.AIRCRAFT and saved:
         cdu = loads(_settings(flight, monkeypatch))["settings"]["waypoints"]
         for target in strike:
             assert cdu[target.number]["wpt_num"] == target.number
             assert cdu[target.number]["wpt_id"] == target.waypoint.display_name
-        assert a10cdu.numbers_for(len(kinds), 1) == [len(kinds) + 1]
+        assert a10cdu.numbers_for(len(kinds), 1) == [len(kinds)]
 
 
 # ------------------------------------------------------------------- the names
@@ -243,7 +309,59 @@ def test_a_name_is_cut_to_what_the_cdu_shows(monkeypatch: Any) -> None:
 def test_a_point_with_no_usable_name_still_gets_one(monkeypatch: Any) -> None:
     written = _settings(_flight(route=2, saved=[_point("¿¿¿")]), monkeypatch)
 
-    assert '["wpt_id"]="PT3"' in written
+    assert '["wpt_id"]="PT2"' in written
+
+
+# ------------------------------------------------------------- VNAV properties
+
+
+@pytest.mark.parametrize("aircraft", ["A-10C", "A-10C_2"])
+def test_player_a10_route_uses_3d_vnav_without_changing_altitudes(
+    aircraft: str,
+) -> None:
+    terrain = Caucasus()
+    points = [MovingPoint(Point(n, n, terrain)) for n in range(3)]
+    points[0].properties = None  # spawn point must also be configured
+    for point in points[1:]:
+        point.properties = PointProperties(scale=Scale.Terminal, steer=Steer.Direct)
+        point.alt = 4572
+        point.alt_type = "BARO"
+    flight = SimpleNamespace(
+        client_count=1,
+        unit_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id=aircraft)),
+    )
+    before = [(p.alt, p.alt_type) for p in points]
+
+    a10cdu.enable_route_vnav(flight, SimpleNamespace(points=points))
+
+    assert [p.dict()["properties"]["vnav"] for p in points] == [1, 1, 1]
+    assert [(p.alt, p.alt_type) for p in points] == before
+    for point in points[1:]:
+        assert point.properties.scale is Scale.Terminal
+        assert point.properties.steer is Steer.Direct
+
+
+@pytest.mark.parametrize("aircraft,crewed", [("A-10C_2", 0), ("FA-18C_hornet", 1)])
+def test_vnav_change_does_not_affect_ai_or_other_aircraft(
+    aircraft: str, crewed: int
+) -> None:
+    point = MovingPoint(Point(0, 0, Caucasus()))
+    point.properties = PointProperties(vnav=VNav.V2D)
+    flight = SimpleNamespace(
+        client_count=crewed,
+        unit_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id=aircraft)),
+    )
+    before = point.dict()
+    a10cdu.enable_route_vnav(flight, SimpleNamespace(points=[point]))
+    assert point.dict() == before
+
+
+def test_custom_cdu_waypoints_and_extra_plan_use_3d_vnav(monkeypatch: Any) -> None:
+    cdu = loads(_settings(_flight(saved=[_point("OIL")]), monkeypatch))["settings"]
+    for waypoint in cdu["waypoints"].values():
+        assert waypoint["wpt_attributes"]["attr_vnav"] == 1
+    extra = cdu["flight_plans"][a10cdu.EXTRA_PLAN]["waypoints"]
+    assert extra[1]["wpt_attributes"]["attr_vnav"] == 1
 
 
 # ---------------------------------------------------------- into the mission
