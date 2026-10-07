@@ -130,6 +130,11 @@ def beacons_from_terrain(dcs_path: Path, path: Path) -> Iterable[tuple[str, Beac
                     f"{BeaconType.__class__.__name__}"
                 )
             beacon_type = beacon_types_map[beacon_type_lua]
+            localizer = beacon_type in (
+                BeaconType.BEACON_TYPE_ILS_LOCALIZER,
+                BeaconType.BEACON_TYPE_PRMG_LOCALIZER,
+            )
+            position = beacon["position"] if localizer else None
 
             yield beacon["beaconId"], Beacon(
                 beacon["display_name"],
@@ -137,6 +142,9 @@ def beacons_from_terrain(dcs_path: Path, path: Path) -> Iterable[tuple[str, Beac
                 beacon_type,
                 convert_lua_frequency(beacon["frequency"]),
                 getattr(beacon, "channel", None),
+                position[1] if position is not None else None,
+                position[3] if position is not None else None,
+                beacon["direction"] if localizer else None,
             )
 
 
