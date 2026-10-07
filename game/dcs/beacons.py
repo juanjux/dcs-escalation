@@ -79,6 +79,10 @@ class Beacon:
     # stations with no VHF pairing).
     hertz: Optional[int]
     channel: Optional[int]
+    # DCS world coordinates and beam direction, not magnetic runway numbers.
+    position_x: Optional[float] = None
+    position_z: Optional[float] = None
+    direction: Optional[float] = None
 
     @property
     def frequency(self) -> RadioFrequency:
@@ -148,6 +152,9 @@ class Beacons:
                 beacon_type=BeaconType(beacon["beacon_type"]),
                 hertz=beacon["hertz"],
                 channel=beacon["channel"],
+                position_x=beacon.get("position_x"),
+                position_z=beacon.get("position_z"),
+                direction=beacon.get("direction"),
             )
         cls._by_terrain[theater.terrain.name] = beacons
 

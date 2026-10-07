@@ -116,6 +116,30 @@ def test_the_opposite_runway_puts_it_on_the_other_side() -> None:
     assert waypoint.position.y > 0
 
 
+@pytest.mark.parametrize("helicopter", [False, True])
+def test_align_and_hold_use_precise_axis_when_available(
+    monkeypatch: pytest.MonkeyPatch,
+    helicopter: bool,
+) -> None:
+    airfield = _Airfield(heading=250, runway="25")
+    airfield.dcs_airport = object()  # type: ignore[attr-defined]
+    center = Point(100, 200, cast(Any, None))
+    monkeypatch.setattr(alignpoint, "runway_centerline", lambda *_: (center, 256.89946))
+    flight = _departing(airfield)
+    flight.is_helo = helicopter
+    waypoint = alignpoint.align_waypoint(flight)
+    hold = alignpoint.hold_point(flight, DOCTRINE)
+    assert waypoint is not None and hold is not None
+    expected_align = center.point_from_heading(
+        76.89946, nautical_miles(2 if helicopter else 10).meters
+    )
+    expected_hold = center.point_from_heading(
+        256.89946, nautical_miles(2 if helicopter else 25).meters
+    )
+    assert waypoint.position.distance_to_point(expected_align) < 1e-7
+    assert hold.distance_to_point(expected_hold) < 1e-7
+
+
 def test_the_distance_is_a_setting() -> None:
     waypoint = alignpoint.align_waypoint(_flight(_Airfield(), distance=4.0))
 
