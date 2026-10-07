@@ -73,6 +73,7 @@ def _flight(
     distance: float = 10.0,
     carrier_distance: float = 50.0,
     conditions: Any = None,
+    helicopter: bool = False,
 ) -> Any:
     settings = SimpleNamespace(
         align_before_landing=on,
@@ -81,6 +82,7 @@ def _flight(
     )
     return SimpleNamespace(
         arrival=arrival,
+        is_helo=helicopter,
         coalition=SimpleNamespace(
             game=SimpleNamespace(
                 settings=settings, conditions=conditions or _conditions()
@@ -323,3 +325,78 @@ def test_without_the_setting_the_doctrine_decides() -> None:
         alignpoint.hold_distance_from(SimpleNamespace(), DOCTRINE)
         == DOCTRINE.hold_distance
     )
+
+
+@pytest.mark.parametrize("carrier", [False, True])
+@pytest.mark.parametrize("configured", [None, 0.5, 3.5])
+def test_helicopter_align_is_close_to_the_recovery_position(
+    carrier: bool, configured: float | None
+) -> None:
+    arrival = _Carrier() if carrier else _Airfield()
+    flight = _flight(arrival, helicopter=True)
+    if configured is not None:
+        flight.coalition.game.settings.align_helo_distance_nm = configured
+    waypoint = alignpoint.align_waypoint(flight, _plan())
+    assert waypoint is not None
+    recovery = (
+        arrival.position.point_from_heading(270, nautical_miles(25).meters)
+        if carrier
+        else arrival.position
+    )
+    distance = meters(waypoint.position.distance_to_point(recovery)).nautical_miles
+    expected = (
+        configured
+        if configured is not None
+        else alignpoint.DEFAULT_HELICOPTER_DISTANCE_NM
+    )
+    assert distance == pytest.approx(expected, abs=0.01)
+    assert (
+        waypoint.position.y > recovery.y
+        if carrier
+        else waypoint.position.y < recovery.y
+    )
+
+
+@pytest.mark.parametrize("carrier", [False, True])
+@pytest.mark.parametrize("configured", [None, 0.5, 3.5])
+def test_helicopter_hold_is_close_to_departure(
+    carrier: bool, configured: float | None
+) -> None:
+    departure = _Carrier() if carrier else _Airfield()
+    flight = _departing(departure)
+    flight.is_helo = True
+    flight.coalition.game.settings.align_hold_distance_nm = 40.0
+    if configured is not None:
+        flight.coalition.game.settings.align_helo_hold_distance_nm = configured
+    hold = alignpoint.hold_point(flight, DOCTRINE)
+    assert hold is not None
+    distance = meters(hold.distance_to_point(departure.position)).nautical_miles
+    expected = (
+        configured
+        if configured is not None
+        else alignpoint.DEFAULT_HELICOPTER_DISTANCE_NM
+    )
+    assert distance == pytest.approx(expected, abs=0.01)
+    assert hold.y < 0 if carrier else hold.y > 0
+
+
+def test_helicopter_settings_defaults_and_options() -> None:
+    from game.settings import Settings
+
+    settings = Settings()
+    assert settings.align_helo_distance_nm == alignpoint.DEFAULT_HELICOPTER_DISTANCE_NM
+    assert (
+        settings.align_helo_hold_distance_nm
+        == alignpoint.DEFAULT_HELICOPTER_DISTANCE_NM
+    )
+    assert settings.align_distance_nm == alignpoint.DEFAULT_DISTANCE_NM
+    assert settings.align_carrier_distance_nm == alignpoint.DEFAULT_CARRIER_DISTANCE_NM
+    assert settings.align_hold_distance_nm == alignpoint.DEFAULT_HOLD_DISTANCE_NM
+
+
+def test_disabled_options_still_apply_to_helicopters() -> None:
+    flight = _departing(_Carrier(), on=False)
+    flight.is_helo = True
+    flight.coalition.game.settings.align_before_landing = False
+    assert alignpoint.hold_point(flight, DOCTRINE) is None
+    assert alignpoint.align_waypoint(flight, _plan()) is None
