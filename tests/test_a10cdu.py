@@ -332,11 +332,14 @@ def test_player_a10_route_uses_3d_vnav_without_changing_altitudes(
     )
     before = [(p.alt, p.alt_type) for p in points]
 
-    a10cdu.enable_route_vnav(flight, SimpleNamespace(points=points))
+    a10cdu.enable_route_vnav(
+        cast(Any, flight), cast(Any, SimpleNamespace(points=points))
+    )
 
     assert [p.dict()["properties"]["vnav"] for p in points] == [1, 1, 1]
     assert [(p.alt, p.alt_type) for p in points] == before
     for point in points[1:]:
+        assert point.properties is not None
         assert point.properties.scale is Scale.Terminal
         assert point.properties.steer is Steer.Direct
 
@@ -352,7 +355,9 @@ def test_vnav_change_does_not_affect_ai_or_other_aircraft(
         unit_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id=aircraft)),
     )
     before = point.dict()
-    a10cdu.enable_route_vnav(flight, SimpleNamespace(points=[point]))
+    a10cdu.enable_route_vnav(
+        cast(Any, flight), cast(Any, SimpleNamespace(points=[point]))
+    )
     assert point.dict() == before
 
 
