@@ -1019,8 +1019,9 @@ def steerpoint_numbers(aircraft: str, route_length: int, count: int) -> list[int
 
     They go in after the flight plan, so the first one is not 1: on a Hornet whose
     route is nine points it is 9, and a kneeboard that calls it 1 is a kneeboard the
-    player cannot read off. An airframe with no cartridge at all is numbered as if it
-    counted from 1, which is what the A-10's own database does.
+    player cannot read off. The A-10 also counts its native initial position as 0;
+    its extra CDU entries follow the last route point without duplicating point 0.
+    Unmeasured airframes retain the one-based kneeboard fallback.
     """
     from game.missiongenerator.a10cdu import AIRCRAFT as A10, numbers_for
 

@@ -16,7 +16,9 @@ is read exactly the same, which gives the saved points everything they need:
 
 Terrain ranging is not always available at cockpit initialization. Enabling DTSAS
 alone can leave every point at ``EL: *****``, making the steerpoint an invalid SPI.
-Route points use ground elevations; saved points keep their entered MSL elevations.
+Navigation points use the flight-plan altitude (converted to MSL for AGL legs).
+Takeoff, landing and target points use ground elevations; saved points keep their
+entered MSL elevations.
 
 Measured against DCS's own output rather than guessed: elevations are metres, the
 number a waypoint ends up with is its position in the table rather than the
@@ -31,17 +33,29 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
 from dcs.mapping import Point
+from dcs.point import PointProperties, VNav
 
 from game.ato.savedpoints import SavedPoint, points_of
+from game.ato.flightwaypointtype import FlightWaypointType
 from game.elevation import elevation_m
 
 if TYPE_CHECKING:
     from game import Game
     from game.ato.flight import Flight
     from game.missiongenerator.aircraft.flightdata import FlightData
+    from dcs.unitgroup import FlyingGroup
 
 #: The aircraft whose cockpit keeps its navigation computer here.
 AIRCRAFT = {"A-10C", "A-10C_2"}
+
+# These points describe a surface location, not the altitude to fly over it.
+SURFACE_POINTS = {
+    FlightWaypointType.TAKEOFF,
+    FlightWaypointType.LANDING_POINT,
+    FlightWaypointType.TARGET_POINT,
+    FlightWaypointType.TARGET_GROUP_LOC,
+    FlightWaypointType.TARGET_SHIP,
+}
 
 #: As long an identifier as the CDU shows.
 NAME_LENGTH = 12
@@ -76,10 +90,10 @@ def numbers_for(route_length: int, count: int) -> list[int]:
     """The numbers the saved points end up with in the cockpit.
 
     The aircraft numbers a waypoint by where it sits in the table, not by the
-    ``wpt_num`` beside it, so the route fills the first places and the saved points
-    follow. Table slots start at 1; CDU point 0 is the aircraft's initial position.
+    ``wpt_num`` beside it. DCS creates point 0 itself, so only route points 1 onward
+    occupy table slots; saved points follow the last route point.
     """
-    first = route_length + 1
+    first = max(1, route_length)
     return list(range(first, first + count))
 
 
@@ -93,9 +107,23 @@ def uses_custom_cdu(flight: FlightData) -> bool:
 
 
 def route_numbers(flight: FlightData) -> range:
-    """Cockpit route numbers, including the custom CDU's one-based table slots."""
-    first = 1 if uses_custom_cdu(flight) else 0
-    return range(first, first + len(flight.waypoints))
+    """Route numbers agree with F10 and DCS's native point 0."""
+    return range(len(flight.waypoints))
+
+
+def enable_route_vnav(flight: Flight, group: FlyingGroup[Any]) -> None:
+    """Match the working editor-created A-10 route's VNAV 3D properties.
+
+    Apply after the whole route is built, including the initial spawn point. Keep
+    flight altitudes and all other navigation properties unchanged; this is only
+    for player A-10s, whether or not they have extra saved points.
+    """
+    if not flight.client_count or flight.unit_type.dcs_unit_type.id not in AIRCRAFT:
+        return
+    for waypoint in group.points:
+        if waypoint.properties is None:
+            waypoint.properties = PointProperties()
+        waypoint.properties.vnav = VNav.V3D
 
 
 def _identifier(point: SavedPoint, number: int) -> str:
@@ -112,7 +140,7 @@ def _attributes(depth: int) -> list[str]:
         f'{pad}{TAB}["attr_steer"]=0,',
         f'{pad}{TAB}["attr_angle3d"]=0,',
         f'{pad}{TAB}["attr_scale"]=0,',
-        f'{pad}{TAB}["attr_vnav"]=0,',
+        f'{pad}{TAB}["attr_vnav"]=1,',
         f'{pad}{TAB}["attr_vangle"]=1,',
         pad + "},",
     ]
@@ -182,6 +210,18 @@ def _flight_plan(numbers: Sequence[int]) -> list[str]:
     return lines + [TAB * 3 + "},", TAB * 2 + "},", TAB + "},"]
 
 
+def _route_elevation(waypoint: Any, latlng: Any) -> float | None:
+    """CDU MSL elevation: surface height for targets, planned height for navigation."""
+    surface = waypoint.waypoint_type in SURFACE_POINTS
+    if not surface and waypoint.alt_type == "BARO":
+        return waypoint.alt.meters
+    ground = elevation_m(latlng.lat, latlng.lng)
+    if ground is None:
+        return None
+    ground = max(0.0, ground)
+    return ground if surface else ground + waypoint.alt.meters
+
+
 def settings(flight: Any, terrain: Any) -> str:
     """The navigation computer for one aircraft, as its SETTINGS.lua."""
     route = list(flight.waypoints)
@@ -189,21 +229,23 @@ def settings(flight: Any, terrain: Any) -> str:
     numbers = numbers_for(len(route), len(saved))
 
     entries: list[str] = []
-    for slot, waypoint in enumerate(route, start=1):
-        name = "INIT POSIT" if slot == 1 else str(waypoint.display_name)
+    # DCS owns INIT POSIT at CDU 0. Including departure again in table slot 1
+    # creates INIT POSIT1 and shifts HOLD and every subsequent point by one.
+    for slot, waypoint in enumerate(route[1:], start=1):
+        name = str(waypoint.display_name)
         latlng = Point(waypoint.position.x, waypoint.position.y, terrain).latlng()
-        elevation = elevation_m(latlng.lat, latlng.lng)
+        elevation = _route_elevation(waypoint, latlng)
         if elevation is None:
             logging.warning("No ground elevation for A-10 CDU waypoint %s", slot)
         entries += _waypoint(
             slot,
             name.upper()[:NAME_LENGTH],
             latlng,
-            max(0.0, elevation) if elevation is not None else None,
+            elevation,
         )
-    for place, (number, point) in enumerate(zip(numbers, saved)):
+    for number, point in zip(numbers, saved):
         entries += _waypoint(
-            len(route) + place + 1,
+            number,
             _identifier(point, number),
             Point(point.x, point.y, terrain).latlng(),
             point.altitude_ft * 0.3048,

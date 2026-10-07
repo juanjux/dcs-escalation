@@ -74,6 +74,7 @@ def test_export_and_kneeboard_share_route_without_bullseye(custom: bool) -> None
     )
     generator = cast(Any, object.__new__(WaypointGenerator))
     generator.flight = flight
+    generator.group = SimpleNamespace(points=[])
     generator.set_takeoff_time = MagicMock(return_value=timedelta())
     generator.builder_for_waypoint = MagicMock()
     generator._resolve_locked_speed_time_conflicts = MagicMock()
