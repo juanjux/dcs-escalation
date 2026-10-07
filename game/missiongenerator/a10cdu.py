@@ -1,28 +1,12 @@
-"""The A-10's navigation computer, written into the mission.
+"""Add saved points to the A-10 CDU through cockpit settings.
 
-The A-10 has no data cartridge: it does not appear in DCS's own DTC editor, and the
-``<mission>_DTS_CDU_Database.lua`` its default database mentions is a CSV read only
-when the player goes to the DTS page and uploads it by hand.
+Saved points use ``Avionics/<type>/<unit id>/CDU/SETTINGS.lua`` and a separate
+EXTRA flight plan. Elevations in this file are stored in metres.
 
-What it does have is the state "Prepare Mission" saves. Flying a mission and saving it
-writes the whole cockpit into the .miz, one file per subsystem, and the navigation
-computer's is ``Avionics/<type>/<unit id>/CDU/SETTINGS.lua``. Written from outside it
-is read exactly the same, which gives the saved points everything they need:
-
-* they go in the **waypoint database** rather than on the flight plan, so the mission
-  route is untouched and the MSN flight plan draws no line to them;
-* they get a **flight plan of their own**, so stepping through them is a switch;
-* elevations are stored explicitly, without depending on the CDU's terrain ranging.
-
-Terrain ranging is not always available at cockpit initialization. Enabling DTSAS
-alone can leave every point at ``EL: *****``, making the steerpoint an invalid SPI.
-Navigation points use the flight-plan altitude (converted to MSL for AGL legs).
-Takeoff, landing and target points use ground elevations; saved points keep their
-entered MSL elevations.
-
-Measured against DCS's own output rather than guessed: elevations are metres, the
-number a waypoint ends up with is its position in the table rather than the
-``wpt_num`` written beside it, and the aerodromes DCS loads itself occupy 51 to 71.
+Do not write mission-route points into these settings. DCS imports their planned
+MSL/AGL altitudes correctly from the native route, but reloading them through
+cockpit settings replaces those altitudes with terrain heights. Only additional
+saved points belong here, numbered after the native route's last point.
 """
 
 from __future__ import annotations
@@ -36,8 +20,6 @@ from dcs.mapping import Point
 from dcs.point import PointProperties, VNav
 
 from game.ato.savedpoints import SavedPoint, points_of
-from game.ato.flightwaypointtype import FlightWaypointType
-from game.elevation import elevation_m
 
 if TYPE_CHECKING:
     from game import Game
@@ -47,15 +29,6 @@ if TYPE_CHECKING:
 
 #: The aircraft whose cockpit keeps its navigation computer here.
 AIRCRAFT = {"A-10C", "A-10C_2"}
-
-# These points describe a surface location, not the altitude to fly over it.
-SURFACE_POINTS = {
-    FlightWaypointType.TAKEOFF,
-    FlightWaypointType.LANDING_POINT,
-    FlightWaypointType.TARGET_POINT,
-    FlightWaypointType.TARGET_GROUP_LOC,
-    FlightWaypointType.TARGET_SHIP,
-}
 
 #: As long an identifier as the CDU shows.
 NAME_LENGTH = 12
@@ -98,7 +71,7 @@ def numbers_for(route_length: int, count: int) -> list[int]:
 
 
 def uses_custom_cdu(flight: FlightData) -> bool:
-    """Whether this flight receives a replacement CDU waypoint database."""
+    """Whether this flight receives additional saved CDU points."""
     return bool(
         flight.client_units
         and flight.aircraft_type.dcs_unit_type.id in AIRCRAFT
@@ -210,39 +183,15 @@ def _flight_plan(numbers: Sequence[int]) -> list[str]:
     return lines + [TAB * 3 + "},", TAB * 2 + "},", TAB + "},"]
 
 
-def _route_elevation(waypoint: Any, latlng: Any) -> float | None:
-    """CDU MSL elevation: surface height for targets, planned height for navigation."""
-    surface = waypoint.waypoint_type in SURFACE_POINTS
-    if not surface and waypoint.alt_type == "BARO":
-        return waypoint.alt.meters
-    ground = elevation_m(latlng.lat, latlng.lng)
-    if ground is None:
-        return None
-    ground = max(0.0, ground)
-    return ground if surface else ground + waypoint.alt.meters
-
-
 def settings(flight: Any, terrain: Any) -> str:
-    """The navigation computer for one aircraft, as its SETTINGS.lua."""
+    """Export only saved points, leaving DCS's native route database intact."""
     route = list(flight.waypoints)
     saved = list(flight.saved_points)
     numbers = numbers_for(len(route), len(saved))
 
     entries: list[str] = []
-    # DCS owns INIT POSIT at CDU 0. Including departure again in table slot 1
-    # creates INIT POSIT1 and shifts HOLD and every subsequent point by one.
-    for slot, waypoint in enumerate(route[1:], start=1):
-        name = str(waypoint.display_name)
-        latlng = Point(waypoint.position.x, waypoint.position.y, terrain).latlng()
-        elevation = _route_elevation(waypoint, latlng)
-        if elevation is None:
-            logging.warning("No ground elevation for A-10 CDU waypoint %s", slot)
-        entries += _waypoint(
-            slot,
-            name.upper()[:NAME_LENGTH],
-            latlng,
-            elevation,
-        )
+    # DCS creates INIT POSIT and all route points itself. Overriding those entries
+    # through cockpit settings discards their planned elevations on reload.
     for number, point in zip(numbers, saved):
         entries += _waypoint(
             number,

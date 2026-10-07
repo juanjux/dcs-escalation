@@ -1,9 +1,4 @@
-"""The A-10's navigation computer, written into the mission.
-
-It has no cartridge, so the saved points go where "Prepare Mission" puts the cockpit:
-Avionics/<type>/<unit>/CDU/SETTINGS.lua. Everything pinned here was measured against
-DCS's own output rather than read off a document, because there is no document.
-"""
+"""Test saved CDU points without replacing the A-10's native mission route."""
 
 from __future__ import annotations
 
@@ -80,12 +75,6 @@ def _settings(flight: Any, monkeypatch: Any) -> str:
     return a10cdu.settings(flight, _Terrain())
 
 
-@pytest.fixture(autouse=True)
-def ground_height(monkeypatch: Any) -> None:
-    """Tests must not query the public elevation service."""
-    monkeypatch.setattr(a10cdu, "elevation_m", lambda lat, lng: 123.5)
-
-
 # ------------------------------------------------- where it goes and what is in it
 
 
@@ -93,83 +82,62 @@ def test_it_goes_where_prepare_mission_puts_the_cockpit() -> None:
     assert a10cdu.inside_mission(_flight()) == "Avionics/A-10C_2/7/CDU/SETTINGS.lua"
 
 
+@pytest.mark.parametrize("aircraft", ["A-10C", "A-10C_2"])
+def test_custom_database_does_not_override_native_route_elevations(
+    aircraft: str, monkeypatch: Any
+) -> None:
+    flight = _flight(aircraft=aircraft, route=8, saved=[_point("OIL")])
+    kinds = [
+        FlightWaypointType.TAKEOFF,
+        FlightWaypointType.LOITER,
+        FlightWaypointType.NAV,
+        FlightWaypointType.INGRESS_BAI,
+        FlightWaypointType.TARGET_POINT,
+        FlightWaypointType.NAV,
+        FlightWaypointType.NAV,
+        FlightWaypointType.LANDING_POINT,
+    ]
+    altitudes = [0, 4572, 6096, 4572, 0, 4572, 1371.6, 0]
+    for waypoint, kind, altitude in zip(flight.waypoints, kinds, altitudes):
+        waypoint.waypoint_type = kind
+        waypoint.alt = meters(altitude)
+    for slot in (4, 6, 7):
+        flight.waypoints[slot].alt_type = "RADIO"
+    before = [(point.alt, point.alt_type) for point in flight.waypoints]
+
+    settings = loads(_settings(flight, monkeypatch))["settings"]
+
+    # DCS imports route elevations correctly. Replacing these entries through
+    # cockpit settings makes it recalculate them as terrain heights instead.
+    assert set(settings["waypoints"]) == {8}
+    assert settings["waypoints"][8]["wpt_id"] == "OIL"
+    assert [(point.alt, point.alt_type) for point in flight.waypoints] == before
+    extra = settings["flight_plans"][a10cdu.EXTRA_PLAN]["waypoints"]
+    assert extra[1]["wpt_number"] == 8
+
+
 def test_the_terrain_system_is_switched_on(monkeypatch: Any) -> None:
-    """Without it every waypoint in the aircraft reads EL: *****, whatever else the
-    file says. It is what gives a point the height of the ground under it."""
+    """Keep terrain ranging enabled for the additional saved CDU points."""
     written = _settings(_flight(saved=[_point("SMOKE")]), monkeypatch)
 
     assert '["dtsas_func"]=1' in written
     assert '["dtsas_cr"]=1' in written
 
 
-def test_target_elevations_use_ground_not_the_flight_altitude(
-    monkeypatch: Any,
-) -> None:
-    flight = _flight(saved=[_point("SMOKE")])
-    flight.waypoints[1].alt = meters(6000)
-    written = loads(_settings(flight, monkeypatch))["settings"]["waypoints"]
-
-    for slot in range(1, 4):
-        assert written[slot]["wpt_elev"] == 123.5
-        assert written[slot]["wpt_elev_present"] == 1
-        assert written[slot]["wpt_cr"] == 0
-
-
-@pytest.mark.parametrize("kind", list(a10cdu.SURFACE_POINTS))
-def test_surface_point_types_keep_the_ground_elevation(
-    kind: FlightWaypointType,
-) -> None:
-    waypoint = _waypoint("SURFACE", 0, 0)
-    waypoint.waypoint_type = kind
-    waypoint.alt = meters(6000)
-    assert a10cdu._route_elevation(waypoint, _latlng(0, 0)) == 123.5
-
-
-@pytest.mark.parametrize(
-    "kind", [kind for kind in FlightWaypointType if kind not in a10cdu.SURFACE_POINTS]
-)
-def test_navigation_elevation_uses_planned_msl_altitude_without_terrain_lookup(
+@pytest.mark.parametrize("kind", list(FlightWaypointType))
+def test_all_route_point_types_are_left_to_dcs(
     kind: FlightWaypointType, monkeypatch: Any
 ) -> None:
-    def unexpected_lookup(lat: float, lng: float) -> None:
-        pytest.fail("BARO navigation points must not request terrain elevations")
-
-    monkeypatch.setattr(a10cdu, "elevation_m", unexpected_lookup)
-    flight = _flight(route=2)
+    flight = _flight(route=2, saved=[_point("OIL")])
     waypoint = flight.waypoints[1]
     waypoint.waypoint_type = kind
-    waypoint.alt = meters(4572)  # 15,000 ft, not the height of the ground below
-    cdu = loads(_settings(flight, monkeypatch))["settings"]["waypoints"][1]
-    assert cdu["wpt_elev"] == 4572
-    assert cdu["wpt_elev_present"] == 1
-
-
-def test_agl_navigation_elevation_adds_ground_height(monkeypatch: Any) -> None:
-    flight = _flight(route=2)
-    waypoint = flight.waypoints[1]
-    waypoint.waypoint_type = FlightWaypointType.NAV  # ALIGN is exported as NAV
-    waypoint.alt = meters(1371.6)  # 4,500 ft above ground
-    waypoint.alt_type = "RADIO"
-    cdu = loads(_settings(flight, monkeypatch))["settings"]["waypoints"][1]
-    assert cdu["wpt_elev"] == pytest.approx(1371.6 + 123.5)
-
-
-def test_unknown_agl_ground_height_does_not_claim_an_msl_elevation(
-    monkeypatch: Any,
-) -> None:
-    monkeypatch.setattr(a10cdu, "elevation_m", lambda lat, lng: None)
-    flight = _flight(route=2)
-    waypoint = flight.waypoints[1]
-    waypoint.waypoint_type = FlightWaypointType.NAV
-    waypoint.alt = meters(1371.6)
-    waypoint.alt_type = "RADIO"
-    cdu = loads(_settings(flight, monkeypatch))["settings"]["waypoints"][1]
-    assert "wpt_elev" not in cdu
-    assert cdu["wpt_elev_present"] == 0
+    cdu = loads(_settings(flight, monkeypatch))["settings"]["waypoints"]
+    assert set(cdu) == {2}
+    assert cdu[2]["wpt_id"] == "OIL"
 
 
 @pytest.mark.parametrize("height_ft", [0, 1234, -100])
-def test_saved_points_keep_their_entered_msl_elevations(
+def test_saved_point_elevations_are_serialized_in_metres(
     monkeypatch: Any, height_ft: int
 ) -> None:
     point = _point("SMOKE")
@@ -177,24 +145,6 @@ def test_saved_points_keep_their_entered_msl_elevations(
     written = loads(_settings(_flight(saved=[point]), monkeypatch))["settings"]
     assert written["waypoints"][4]["wpt_elev"] == pytest.approx(height_ft * 0.3048)
     assert written["waypoints"][4]["wpt_elev_present"] == 1
-
-
-def test_missing_ground_height_does_not_claim_an_elevation_is_present(
-    monkeypatch: Any, caplog: Any
-) -> None:
-    monkeypatch.setattr(a10cdu, "elevation_m", lambda lat, lng: None)
-    written = loads(_settings(_flight(saved=[_point("SMOKE")]), monkeypatch))
-    waypoint = written["settings"]["waypoints"][1]
-    assert "wpt_elev" not in waypoint
-    assert waypoint["wpt_elev_present"] == 0
-    assert waypoint["wpt_cr"] == 1
-    assert "No ground elevation" in caplog.text
-
-
-def test_underwater_ground_height_is_clamped_to_sea_level(monkeypatch: Any) -> None:
-    monkeypatch.setattr(a10cdu, "elevation_m", lambda lat, lng: -30)
-    written = loads(_settings(_flight(saved=[_point("SEA")]), monkeypatch))
-    assert written["settings"]["waypoints"][1]["wpt_elev"] == 0
 
 
 def test_the_saved_points_get_a_flight_plan_of_their_own(monkeypatch: Any) -> None:
@@ -212,6 +162,7 @@ def test_a_flight_with_nothing_written_down_gets_no_plan(monkeypatch: Any) -> No
     written = _settings(_flight(), monkeypatch)
 
     assert "flight_plans" not in written
+    assert loads(written)["settings"]["waypoints"] == {}
 
 
 # ------------------------------------------------------------- the numbering
@@ -225,11 +176,25 @@ def test_a_saved_point_follows_the_route(monkeypatch: Any) -> None:
     assert a10cdu.numbers_for(0, 3) == [1, 2, 3]
 
 
+@pytest.mark.parametrize("route_length", [0, 1, 3, 8])
+def test_only_extra_points_are_written_after_each_route_length(
+    route_length: int, monkeypatch: Any
+) -> None:
+    flight = _flight(route=route_length, saved=[_point("OIL"), _point("SHIP")])
+    settings = loads(_settings(flight, monkeypatch))["settings"]
+    first = max(1, route_length)
+    assert list(settings["waypoints"]) == [first, first + 1]
+    assert settings["waypoints"][first]["wpt_id"] == "OIL"
+    assert settings["waypoints"][first + 1]["wpt_id"] == "SHIP"
+    extra = settings["flight_plans"][a10cdu.EXTRA_PLAN]["waypoints"]
+    assert [point["wpt_number"] for point in extra.values()] == [first, first + 1]
+
+
 def test_the_route_keeps_its_own_numbers(monkeypatch: Any) -> None:
     written = _settings(_flight(route=3, saved=[_point("SMOKE")]), monkeypatch)
     numbers = re.findall(r'\["wpt_num"\]=(\d+)', written)
 
-    assert numbers == ["1", "2", "3"]
+    assert numbers == ["3"]
 
 
 def test_dcs_owns_initial_position_and_hold_is_not_shifted(monkeypatch: Any) -> None:
@@ -241,10 +206,10 @@ def test_dcs_owns_initial_position_and_hold_is_not_shifted(monkeypatch: Any) -> 
 
     assert "INIT POSIT" not in written
     assert "TAKEOFF" not in written
-    assert cdu[1]["wpt_id"] == "HOLD"
-    assert cdu[1]["wpt_pos"]["pos_lat"] == _latlng(1, 1).lat
+    assert "HOLD" not in written
+    assert not set(cdu).intersection(range(len(flight.waypoints)))
     assert cdu[3]["wpt_id"] == "OIL"
-    assert len(cdu) == len(flight.waypoints) - 1 + len(flight.saved_points)
+    assert len(cdu) == len(flight.saved_points)
 
 
 @pytest.mark.parametrize("aircraft", ["A-10C", "A-10C_2", "FA-18C_hornet"])
@@ -292,8 +257,8 @@ def test_kneeboard_numbers_follow_the_exported_database(
     if aircraft in a10cdu.AIRCRAFT and saved:
         cdu = loads(_settings(flight, monkeypatch))["settings"]["waypoints"]
         for target in strike:
-            assert cdu[target.number]["wpt_num"] == target.number
-            assert cdu[target.number]["wpt_id"] == target.waypoint.display_name
+            assert target.number not in cdu
+        assert set(cdu) == {len(kinds)}
         assert a10cdu.numbers_for(len(kinds), 1) == [len(kinds)]
 
 
@@ -399,8 +364,11 @@ def test_only_a_crewed_a10_with_points_is_written(
 
     assert written == ["Avionics/A-10C_2/7/CDU/SETTINGS.lua"]
     with zipfile.ZipFile(mission) as archive:
-        assert "mission" in archive.namelist()
-        assert '["fp_name"]="EXTRA"' in archive.read(written[0]).decode("utf-8")
+        assert archive.read("mission") == b"-- a mission"
+        settings = loads(archive.read(written[0]).decode("utf-8"))["settings"]
+        assert set(settings["waypoints"]) == {4}
+        assert settings["waypoints"][4]["wpt_id"] == "SMOKE"
+        assert settings["flight_plans"][a10cdu.EXTRA_PLAN]["fp_name"] == "EXTRA"
 
 
 def test_nothing_to_write_leaves_the_mission_alone(tmp_path: Path) -> None:
