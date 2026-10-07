@@ -18,7 +18,10 @@
   "callsign": "ec",
   "beacon_type": 16640,
   "hertz": 108900000,
-  "channel": null
+  "channel": null,
+  "position_x": 135880.75,
+  "position_z": -924036.875,
+  "direction": 72.999995
  },
  "airfield14_2": {
   "name": "ECA",
@@ -53,7 +56,10 @@
   "callsign": "imp",
   "beacon_type": 16640,
   "hertz": 111900000,
-  "channel": null
+  "channel": null,
+  "position_x": 73666.453125,
+  "position_z": 45783.363281,
+  "direction": 104.099978
  },
  "airfield2_4": {
   "name": "MPA",
@@ -102,7 +108,10 @@
   "callsign": "INAS",
   "beacon_type": 16640,
   "hertz": 109900000,
-  "channel": null
+  "channel": null,
+  "position_x": -147614.546875,
+  "position_z": -781243.4375,
+  "direction": 77.637503
  },
  "airfield9_2": {
   "name": "NAS",
@@ -130,7 +139,10 @@
   "callsign": "gl",
   "beacon_type": 16640,
   "hertz": 110300000,
-  "channel": null
+  "channel": null,
+  "position_x": 25207.816406,
+  "position_z": -705419.25,
+  "direction": 75.800005
  },
  "airfield5_2": {
   "name": "RIOGALLEGOS",
@@ -144,7 +156,10 @@
   "callsign": "gr",
   "beacon_type": 16640,
   "hertz": 109500000,
-  "channel": null
+  "channel": null,
+  "position_x": -197423.84375,
+  "position_z": -560901.375,
+  "direction": 78.809318
  },
  "airfield6_1": {
   "name": "GRA",
@@ -193,7 +208,10 @@
   "callsign": "us",
   "beacon_type": 16640,
   "hertz": 111300000,
-  "channel": null
+  "channel": null,
+  "position_x": -320923.90625,
+  "position_z": -577591.8125,
+  "direction": 76.89946
  },
  "airfield7_1": {
   "name": "Ushuaia",

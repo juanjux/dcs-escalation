@@ -13,9 +13,8 @@ the wind, positioned where the ship will be when the flight lands. The ship hold
 course for the whole mission, so a late arrival still finds the waypoint on the final
 bearing, only further from the ship than planned.
 
-DCS exposes a runway's heading but no coordinates, so the waypoint is placed relative
-to the airfield's reference point. At a field with one runway that is the runway; at a
-field with several the course is correct but the waypoint can be laterally offset.
+DCS localizer geometry supplies the runway's precise centerline when available.
+Otherwise the nominal heading and airfield reference point remain the fallback.
 
 The hold works the same way at the departure end: the flight climbs out along
 the runway it took off from instead of turning straight for the target.
@@ -32,6 +31,7 @@ from dcs.mapping import Point
 
 from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
+from game.runways import runway_centerline
 from game.utils import (
     Distance,
     Heading,
@@ -132,9 +132,8 @@ def _airfield_waypoint(
     distance = distance_from(settings)
     # The approach course is the runway heading, so the waypoint goes that distance
     # back along its reciprocal.
-    position = arrival.position.point_from_heading(
-        runway.runway_heading.opposite.degrees, distance.meters
-    )
+    origin, course = _airfield_axis(arrival, runway)
+    position = origin.point_from_heading((course + 180) % 360, distance.meters)
     return FlightWaypoint(
         "ALIGN",
         FlightWaypointType.NAV,
@@ -144,6 +143,15 @@ def _airfield_waypoint(
         description=f"Established on {arrival.name} runway {runway.runway_name}",
         pretty_name="Align with the runway",
     )
+
+
+def _airfield_axis(airfield: Any, runway: Any) -> tuple[Point, float]:
+    airport = getattr(airfield, "dcs_airport", None)
+    if airport is not None:
+        axis = runway_centerline(airfield.theater, airport, runway.runway_name)
+        if axis is not None:
+            return axis
+    return airfield.position, runway.runway_heading.degrees
 
 
 def _recovery_delay(plan: Any, conditions: Any) -> timedelta:
@@ -224,6 +232,7 @@ def hold_point(flight: Flight, doctrine: Any) -> Optional[Point]:
         return None
 
     departure = flight.departure
+    origin = departure.position
     conditions = flight.coalition.game.conditions
     course: Optional[Heading]
     if isinstance(departure, Airfield):
@@ -233,16 +242,17 @@ def hold_point(flight: Flight, doctrine: Any) -> Optional[Point]:
             return None
         if not runway.runway_name:
             return None
-        course = runway.runway_heading
+        origin, runway_course = _airfield_axis(departure, runway)
     elif isinstance(departure, NavalControlPoint):
         course = base_recovery_course(conditions)
         if course is None:
             return None
+        runway_course = course.degrees
     else:
         return None
 
     distance = hold_distance_from(settings, doctrine)
-    return departure.position.point_from_heading(course.degrees, distance.meters)
+    return origin.point_from_heading(runway_course, distance.meters)
 
 
 def align_waypoint(flight: Flight, plan: Any = None) -> Optional[FlightWaypoint]:

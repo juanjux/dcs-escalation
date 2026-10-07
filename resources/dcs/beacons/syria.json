@@ -102,7 +102,10 @@
   "callsign": "IADA",
   "beacon_type": 16640,
   "hertz": 108700000,
-  "channel": null
+  "channel": null,
+  "position_x": 220391.796875,
+  "position_z": -46974.203125,
+  "direction": -124.199
  },
  "airfield2_1": {
   "name": "",
@@ -137,14 +140,20 @@
   "callsign": "KHD",
   "beacon_type": 16640,
   "hertz": 113600000,
-  "channel": null
+  "channel": null,
+  "position_x": 297197.84375,
+  "position_z": 237099.84375,
+  "direction": -130.369775
  },
  "airfield44_0": {
   "name": "",
   "callsign": "IAK",
   "beacon_type": 16640,
   "hertz": 109700000,
-  "channel": null
+  "channel": null,
+  "position_x": -35143.730469,
+  "position_z": -270549.8125,
+  "direction": 111.071989
  },
  "airfield44_1": {
   "name": "",
@@ -172,7 +181,10 @@
   "callsign": "IAMN",
   "beacon_type": 16640,
   "hertz": 109500000,
-  "channel": null
+  "channel": null,
+  "position_x": -339321.5625,
+  "position_z": -3324.462891,
+  "direction": 65.799993
  },
  "airfield67_1": {
   "name": "",
@@ -200,21 +212,30 @@
   "callsign": "IKK",
   "beacon_type": 16640,
   "hertz": 110700000,
-  "channel": null
+  "channel": null,
+  "position_x": -131222.921875,
+  "position_z": -40739.011719,
+  "direction": -145.184003
  },
  "airfield6_3": {
   "name": "",
   "callsign": "BIL",
   "beacon_type": 16640,
   "hertz": 109500000,
-  "channel": null
+  "channel": null,
+  "position_x": -133542.953125,
+  "position_z": -42243.164063,
+  "direction": -1.121999
  },
  "airfield6_4": {
   "name": "",
   "callsign": "IBB",
   "beacon_type": 16640,
   "hertz": 110100000,
-  "channel": null
+  "channel": null,
+  "position_x": -133400.578125,
+  "position_z": -42358.453125,
+  "direction": -11.107002
  },
  "airfield6_5": {
   "name": "",
@@ -242,7 +263,10 @@
   "callsign": "BG",
   "beacon_type": 16640,
   "hertz": 110300000,
-  "channel": null
+  "channel": null,
+  "position_x": -332231.78125,
+  "position_z": -104915.296875,
+  "direction": -56.203443
  },
  "airfield221_1": {
   "name": "",
@@ -277,14 +301,20 @@
   "callsign": "BA",
   "beacon_type": 16640,
   "hertz": 110900000,
-  "channel": null
+  "channel": null,
+  "position_x": -329966.59375,
+  "position_z": -104394.03125,
+  "direction": -97.951866
  },
  "airfield221_6": {
   "name": "",
   "callsign": "BN",
   "beacon_type": 16640,
   "hertz": 109700000,
-  "channel": null
+  "channel": null,
+  "position_x": -332691.5,
+  "position_z": -106088.875,
+  "direction": 30.940212
  },
  "airfield221_7": {
   "name": "",
@@ -305,21 +335,30 @@
   "callsign": "BA",
   "beacon_type": 16640,
   "hertz": 108700000,
-  "channel": null
+  "channel": null,
+  "position_x": -330605.65625,
+  "position_z": -108970.898438,
+  "direction": 82.045598
  },
  "airfield221_10": {
   "name": "",
   "callsign": "BD",
   "beacon_type": 16640,
   "hertz": 111900000,
-  "channel": null
+  "channel": null,
+  "position_x": -330206.90625,
+  "position_z": -107943.945313,
+  "direction": 124.030008
  },
  "airfield90_0": {
   "name": "",
   "callsign": "ICKR",
   "beacon_type": 16640,
   "hertz": 333950000,
-  "channel": null
+  "channel": null,
+  "position_x": 208553.5625,
+  "position_z": -68438.546875,
+  "direction": 34.096409
  },
  "airfield90_1": {
   "name": "",
@@ -354,7 +393,10 @@
   "callsign": "ICKU",
   "beacon_type": 16640,
   "hertz": 329750000,
-  "channel": null
+  "channel": null,
+  "position_x": 211879.578125,
+  "position_z": -66209.078125,
+  "direction": -146.137062
  },
  "airfield7_0": {
   "name": "",
@@ -368,7 +410,10 @@
   "callsign": "IDA",
   "beacon_type": 16640,
   "hertz": 109900000,
-  "channel": null
+  "channel": null,
+  "position_x": -180064.953125,
+  "position_z": 50398.371094,
+  "direction": 49.999989
  },
  "airfield7_2": {
   "name": "Damascus",
@@ -382,7 +427,10 @@
   "callsign": "DAML",
   "beacon_type": 16640,
   "hertz": 111100000,
-  "channel": null
+  "channel": null,
+  "position_x": -180656.640625,
+  "position_z": 52815.601563,
+  "direction": -130.000016
  },
  "airfield7_4": {
   "name": "DAMASCUS",
@@ -445,14 +493,20 @@
   "callsign": "IDD",
   "beacon_type": 16640,
   "hertz": 109400000,
-  "channel": null
+  "channel": null,
+  "position_x": 312889.71875,
+  "position_z": 389045.15625,
+  "direction": -18.160159
  },
  "airfield217_4": {
   "name": "Diyarbakir",
   "callsign": "IDI",
   "beacon_type": 16640,
   "hertz": 109200000,
-  "channel": null
+  "channel": null,
+  "position_x": 316931.21875,
+  "position_z": 387719.6875,
+  "direction": 161.823274
  },
  "airfield217_5": {
   "name": "Diyarbakir",
@@ -466,7 +520,10 @@
   "callsign": "IECR",
   "beacon_type": 16640,
   "hertz": 108300000,
-  "channel": null
+  "channel": null,
+  "position_x": 24929.355469,
+  "position_z": -219696.59375,
+  "direction": 114.991276
  },
  "airfield49_1": {
   "name": "",
@@ -487,7 +544,10 @@
   "callsign": "IGNP",
   "beacon_type": 16640,
   "hertz": 109100000,
-  "channel": null
+  "channel": null,
+  "position_x": 210811.390625,
+  "position_z": 145646.171875,
+  "direction": 105.990001
  },
  "airfield11_1": {
   "name": "",
@@ -522,7 +582,10 @@
   "callsign": "IGZP",
   "beacon_type": 16640,
   "hertz": 108500000,
-  "channel": null
+  "channel": null,
+  "position_x": 158246.25,
+  "position_z": -318055.78125,
+  "direction": -94.354002
  },
  "airfield41_2": {
   "name": "ALANYA/GAZIPASA",
@@ -564,7 +627,10 @@
   "callsign": "IHAT",
   "beacon_type": 16640,
   "hertz": 108900000,
-  "channel": null
+  "channel": null,
+  "position_x": 149019.375,
+  "position_z": 40718.835938,
+  "direction": -135.689998
  },
  "airfield15_2": {
   "name": "",
@@ -599,7 +665,10 @@
   "callsign": "HZR",
   "beacon_type": 16640,
   "hertz": 108500000,
-  "channel": null
+  "channel": null,
+  "position_x": -357218.125,
+  "position_z": -120951.023438,
+  "direction": -123.217133
  },
  "airfield222_2": {
   "name": "",
@@ -620,7 +689,10 @@
   "callsign": "IDAN",
   "beacon_type": 16640,
   "hertz": 109300000,
-  "channel": null
+  "channel": null,
+  "position_x": 222315.8125,
+  "position_z": -33655.464844,
+  "direction": -125.002995
  },
  "airfield16_2": {
   "name": "",
@@ -641,7 +713,10 @@
   "callsign": "IDNA",
   "beacon_type": 16640,
   "hertz": 111700000,
-  "channel": null
+  "channel": null,
+  "position_x": 220088.96875,
+  "position_z": -36832.261719,
+  "direction": 54.996984
  },
  "airfield65_0": {
   "name": "",
@@ -655,7 +730,10 @@
   "callsign": "",
   "beacon_type": 16640,
   "hertz": 109100000,
-  "channel": null
+  "channel": null,
+  "position_x": -334522.21875,
+  "position_z": 19490.818359,
+  "direction": 131.755428
  },
  "airfield218_0": {
   "name": "Konya",
@@ -669,7 +747,10 @@
   "callsign": "IKNY",
   "beacon_type": 16640,
   "hertz": 108900000,
-  "channel": null
+  "channel": null,
+  "position_x": 345285.625,
+  "position_z": -282339.375,
+  "direction": -159.286965
  },
  "airfield218_2": {
   "name": "Konya",
@@ -704,7 +785,10 @@
   "callsign": "ILC",
   "beacon_type": 16640,
   "hertz": 110300000,
-  "channel": null
+  "channel": null,
+  "position_x": -8990.810547,
+  "position_z": -210314.34375,
+  "direction": 48.171958
  },
  "airfield47_1": {
   "name": "Larnaca",
@@ -739,7 +823,10 @@
   "callsign": "IBA",
   "beacon_type": 16640,
   "hertz": 109100000,
-  "channel": null
+  "channel": null,
+  "position_x": 40423.035156,
+  "position_z": 5690.542969,
+  "direction": -1.456
  },
  "airfield21_2": {
   "name": "LATAKIA",
@@ -774,7 +861,10 @@
   "callsign": "LTK",
   "beacon_type": 33024,
   "hertz": null,
-  "channel": 9
+  "channel": 9,
+  "position_x": 43417.753906,
+  "position_z": 5806.485352,
+  "direction": 178.552524
  },
  "airfield21_7": {
   "name": "LATAKIA",
@@ -795,14 +885,20 @@
   "callsign": "IGHI",
   "beacon_type": 16640,
   "hertz": 108900000,
-  "channel": null
+  "channel": null,
+  "position_x": -354515.0625,
+  "position_z": 71677.59375,
+  "direction": 132.158067
  },
  "airfield68_1": {
   "name": "",
   "callsign": "IGHS",
   "beacon_type": 16640,
   "hertz": 109700000,
-  "channel": null
+  "channel": null,
+  "position_x": -357739.03125,
+  "position_z": 70990.304688,
+  "direction": 81.151936
  },
  "airfield68_2": {
   "name": "",
@@ -851,7 +947,10 @@
   "callsign": "GR",
   "beacon_type": 16640,
   "hertz": 108300000,
-  "channel": null
+  "channel": null,
+  "position_x": -419723.625,
+  "position_z": -96052.5625,
+  "direction": -101.2564
  },
  "airfield62_2": {
   "name": "",
@@ -865,7 +964,10 @@
   "callsign": "GR",
   "beacon_type": 16640,
   "hertz": 111500000,
-  "channel": null
+  "channel": null,
+  "position_x": -421906.53125,
+  "position_z": -94179.265625,
+  "direction": -101.2564
  },
  "airfield62_4": {
   "name": "",
@@ -914,7 +1016,10 @@
   "callsign": "IPA",
   "beacon_type": 16640,
   "hertz": 108900000,
-  "channel": null
+  "channel": null,
+  "position_x": -18026.191406,
+  "position_z": -315715.78125,
+  "direction": 113.966978
  },
  "airfield46_3": {
   "name": "Pafos",
@@ -942,7 +1047,10 @@
   "callsign": "ABC",
   "beacon_type": 16640,
   "hertz": 111700000,
-  "channel": null
+  "channel": null,
+  "position_x": -318862.125,
+  "position_z": 106895.179688,
+  "direction": 131.813647
  },
  "airfield64_1": {
   "name": "PrinceHussein",
@@ -977,7 +1085,10 @@
   "callsign": "RMD",
   "beacon_type": 16640,
   "hertz": 111100000,
-  "channel": null
+  "channel": null,
+  "position_x": -257897.28125,
+  "position_z": -75918.515625,
+  "direction": 146.477722
  },
  "airfield30_3": {
   "name": "",
@@ -1019,7 +1130,10 @@
   "callsign": "ISUR",
   "beacon_type": 16640,
   "hertz": 111900000,
-  "channel": null
+  "channel": null,
+  "position_x": 266417.84375,
+  "position_z": 275349.46875,
+  "direction": -137.908391
  },
  "airfield220_0": {
   "name": "TEL_NOF",
@@ -1033,7 +1147,10 @@
   "callsign": "AKR",
   "beacon_type": 16640,
   "hertz": 109100000,
-  "channel": null
+  "channel": null,
+  "position_x": -348557.15625,
+  "position_z": -112962.046875,
+  "direction": -175.175433
  },
  "airfield220_2": {
   "name": "",

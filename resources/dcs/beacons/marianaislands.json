@@ -60,35 +60,50 @@
   "callsign": "IUAM",
   "beacon_type": 16640,
   "hertz": 110100000,
-  "channel": null
+  "channel": null,
+  "position_x": 11405.985352,
+  "position_z": 16448.888672,
+  "direction": -113.620825
  },
  "airfield6_6": {
   "name": "Andersen",
   "callsign": "IAND",
   "beacon_type": 16640,
   "hertz": 109300000,
-  "channel": null
+  "channel": null,
+  "position_x": 11862.963303,
+  "position_z": 16134.421092,
+  "direction": -113.630831
  },
  "airfield6_7": {
   "name": "Andersen",
   "callsign": "IYIG",
   "beacon_type": 16640,
   "hertz": 109350000,
-  "channel": null
+  "channel": null,
+  "position_x": 10254.586245,
+  "position_z": 12456.810317,
+  "direction": 66.348484
  },
  "airfield6_8": {
   "name": "Andersen",
   "callsign": "IPMY",
   "beacon_type": 16640,
   "hertz": 110150000,
-  "channel": null
+  "channel": null,
+  "position_x": 9716.791016,
+  "position_z": 12586.375977,
+  "direction": 66.373456
  },
  "airfield4_0": {
   "name": "AntonioBWonPat",
   "callsign": "IAWD",
   "beacon_type": 16640,
   "hertz": 110900000,
-  "channel": null
+  "channel": null,
+  "position_x": 872.144714,
+  "position_z": 1873.931763,
+  "direction": -114.591552
  },
  "airfield4_1": {
   "name": "AntonioBWonPat",
@@ -102,7 +117,10 @@
   "callsign": "IGUM",
   "beacon_type": 16640,
   "hertz": 110300000,
-  "channel": null
+  "channel": null,
+  "position_x": 548.93129,
+  "position_z": 1684.219787,
+  "direction": -114.591552
  },
  "airfield4_3": {
   "name": "AntonioBWonPat",
@@ -123,7 +141,10 @@
   "callsign": "IGSN",
   "beacon_type": 16640,
   "hertz": 109900000,
-  "channel": null
+  "channel": null,
+  "position_x": 180641.455182,
+  "position_z": 103385.992131,
+  "direction": -111.80319
  },
  "airfield2_1": {
   "name": "Saipan",

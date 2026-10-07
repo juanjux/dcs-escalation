@@ -11,14 +11,20 @@
   "callsign": "ICRR",
   "beacon_type": 16640,
   "hertz": 108700000,
-  "channel": 24
+  "channel": 24,
+  "position_x": -360542.96875,
+  "position_z": -74232.171875,
+  "direction": -88.457008
  },
  "airfield1_2": {
   "name": "Creech",
   "callsign": "ICRS",
   "beacon_type": 16640,
   "hertz": 108500000,
-  "channel": 22
+  "channel": 22,
+  "position_x": -360622.4375,
+  "position_z": -74673.570313,
+  "direction": -34.860002
  },
  "airfield1_3": {
   "name": "Creech",
@@ -39,7 +45,10 @@
   "callsign": "GLRI",
   "beacon_type": 16640,
   "hertz": 109300000,
-  "channel": 30
+  "channel": 30,
+  "position_x": -286660.59375,
+  "position_z": -87720.34375,
+  "direction": 156.426878
  },
  "airfield2_1": {
   "name": "Groom-Lake",
@@ -74,14 +83,20 @@
   "callsign": "I-RLE",
   "beacon_type": 16640,
   "hertz": 111750000,
-  "channel": null
+  "channel": null,
+  "position_x": -416353.0,
+  "position_z": -28740.046875,
+  "direction": 88.846008
  },
  "airfield3_3": {
   "name": "McCarran-International",
   "callsign": "I-LAS",
   "beacon_type": 16640,
   "hertz": 110300000,
-  "channel": 40
+  "channel": 40,
+  "position_x": -416063.5,
+  "position_z": -29393.269531,
+  "direction": 88.846008
  },
  "airfield3_4": {
   "name": "McCarran-International",
@@ -109,14 +124,20 @@
   "callsign": "IDIQ",
   "beacon_type": 16640,
   "hertz": 109100000,
-  "channel": null
+  "channel": null,
+  "position_x": -399661.15625,
+  "position_z": -18468.027344,
+  "direction": 40.110013
  },
  "airfield15_0": {
   "name": "North-Las-Vegas",
   "callsign": "I-HWG",
   "beacon_type": 16640,
   "hertz": 110700000,
-  "channel": null
+  "channel": null,
+  "position_x": -401983.125,
+  "position_z": -30840.599609,
+  "direction": -46.742991
  },
  "airfield15_1": {
   "name": "North-Las-Vegas",
@@ -130,14 +151,20 @@
   "callsign": "I-RVP",
   "beacon_type": 16640,
   "hertz": 108300000,
-  "channel": null
+  "channel": null,
+  "position_x": -228754.375,
+  "position_z": -173747.390625,
+  "direction": -22.918
  },
  "airfield18_1": {
   "name": "Tonopah-Test-Range",
   "callsign": "I-UVV",
   "beacon_type": 16640,
   "hertz": 111700000,
-  "channel": null
+  "channel": null,
+  "position_x": -224471.734375,
+  "position_z": -175559.625,
+  "direction": 157.100006
  },
  "airfield18_2": {
   "name": "Tonopah-Test-Range",
