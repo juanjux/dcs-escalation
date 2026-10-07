@@ -171,6 +171,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Mission Generator]** Keep the coalition bullseye off flight routes, removing the extra F10 route leg.
 * **[A-10C]** Store CDU waypoint elevations explicitly and match kneeboard numbering to the custom CDU database.
 * **[Flight Plans]** Use precise DCS localizer geometry for runway ALIGN and departure hold points where available.
 * **[UI]** Filter abbreviated training, smoke and illumination rockets, TGM missiles and travel pods from loadout choices.
