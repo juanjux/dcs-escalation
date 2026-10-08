@@ -12,7 +12,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
-    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -24,7 +23,7 @@ from qt_ui.dialogs import Dialog
 from qt_ui.models import GameModel
 from qt_ui.uiconstants import VEHICLES_ICONS
 from qt_ui.widgets.cards import CAPTION, HINT, card, make_transparent
-from qt_ui.widgets.controls import KEY
+from qt_ui.widgets.controls import KEY, button
 from qt_ui.windows.basemenu.buylist import BRIGHT
 
 
@@ -80,9 +79,8 @@ class ConvoyCard(QWidget):
         row.addWidget(note)
         row.addStretch()
 
-        strike = QPushButton("Plan strike…")
-        strike.setProperty("style", "btn-danger")
-        strike.clicked.connect(self.on_attack)
+        strike = button("Plan strike…", "danger", self.on_attack)
+        strike.setAutoDefault(False)
         row.addWidget(strike)
         return row
 

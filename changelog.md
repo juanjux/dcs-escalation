@@ -171,6 +171,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Give the convoy Plan strike action a visible button background and border.
 * **[High Command]** Loan aircraft are available immediately; support tickets ask for a base, and base lists show loan status.
 * **[Mission Generator]** Keep the coalition bullseye off flight routes, removing the extra F10 route leg.
 * **[A-10C]** Preserve native route elevations when adding saved CDU points; cockpit settings contain only the extra points, without replacing the mission route.
