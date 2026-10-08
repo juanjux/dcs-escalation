@@ -358,7 +358,10 @@ def test_the_window_shows_the_enemy_s_high_command_too(
 
     game = _game(_order("TURKEY", 2, TURN + 3))
     enemy = HighCommand(side=Player.RED, orders=[_order("TURKEY", 1, TURN + 2)])
-    enemy.tickets = [Ticket(Prize("awacs", 5, True, "A ticket.", ()), "MUSK", 12)]
+    enemy.tickets = [
+        Ticket(Prize("awacs", 5, True, "A ticket.", (), Player.RED), "MUSK", 12)
+    ]
+    game.coalition_for = lambda side: SimpleNamespace(faction=SimpleNamespace(awacs=[]))
     game.opfor_high_command = enemy
     game.opfor_high_command_active = True
     window = HighCommandWindow(SimpleNamespace(game=game))

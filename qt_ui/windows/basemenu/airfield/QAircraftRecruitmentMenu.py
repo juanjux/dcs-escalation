@@ -23,6 +23,7 @@ from qt_ui.models import GameModel, SquadronModel
 from qt_ui.uiconstants import AIRCRAFT_ICONS
 from qt_ui.widgets.cards import CAPTION, card, make_transparent
 from qt_ui.widgets.squadrondelegate import chip_colours, split_aircraft_name
+from qt_ui.widgets.squadronloan import squadron_loan_text
 from qt_ui.windows.basemenu.buylist import (
     ICON_WIDTH,
     PRESENT_WIDTH,
@@ -157,6 +158,8 @@ class QAircraftRecruitmentMenu(UnitTransactionFrame[Squadron]):
 
     def row_subtitle(self, item: Squadron) -> str:
         text = str(item)
+        if loan := squadron_loan_text(item):
+            text += f" · {loan}"
         if item.destination is not None:
             text += f" · transfer ordered to {item.destination.name}"
         return text

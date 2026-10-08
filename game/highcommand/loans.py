@@ -65,6 +65,8 @@ def lend(
         game,
     )
     squadron.populate_for_turn_0(squadrons_start_full=True)
+    # Loans arrive during planning, after the normal turn inventory reset.
+    squadron.return_all_pilots_and_aircraft()
     air_wing.add_squadron(squadron)
     return Loan(squadron, game.turn + turns)
 
