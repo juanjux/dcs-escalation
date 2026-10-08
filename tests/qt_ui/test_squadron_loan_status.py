@@ -70,6 +70,22 @@ def test_permanent_squadron_with_the_same_name_has_no_badge() -> None:
     assert squadron_loan_text(squadron) == ""
 
 
+@pytest.mark.parametrize("on_loan", [False, True])
+def test_base_aircraft_list_shows_loan_status(on_loan: bool) -> None:
+    from qt_ui.windows.basemenu.airfield.QAircraftRecruitmentMenu import (
+        QAircraftRecruitmentMenu,
+    )
+
+    squadron = _squadron(on_loan=on_loan)
+    menu: Any = SimpleNamespace()
+    text = QAircraftRecruitmentMenu.row_subtitle(menu, squadron)
+    assert ("On loan · 3 turns remaining" in text) == on_loan
+    squadron.destination = SimpleNamespace(name="Shore")
+    text = QAircraftRecruitmentMenu.row_subtitle(menu, squadron)
+    assert "transfer ordered to Shore" in text
+    assert ("On loan · 3 turns remaining" in text) == on_loan
+
+
 @pytest.mark.parametrize("grouping", [None, "base", "type"])
 def test_loan_rows_get_their_own_line_in_every_grouping(
     app: Any, grouping: Any

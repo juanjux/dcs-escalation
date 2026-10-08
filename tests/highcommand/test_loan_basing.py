@@ -70,7 +70,7 @@ def _base(name: str, room: int = 20, operates: bool = True) -> Any:
     )
 
 
-def _game(side: Player = Player.BLUE) -> Any:
+def _game(side: Player = Player.BLUE, kind: str = "squadron") -> Any:
     aircraft = SimpleNamespace(
         display_name="AH-1W SuperCobra",
         helicopter=True,
@@ -83,7 +83,7 @@ def _game(side: Player = Player.BLUE) -> Any:
     bases = [
         _base("Shore"),
         _base("Carrier"),
-        _base("Full", 9),
+        _base("Full", 9 if kind == "squadron" else 0),
         _base("Incompatible", operates=False),
         wreck,
     ]
@@ -94,11 +94,14 @@ def _game(side: Player = Player.BLUE) -> Any:
     enemy = _base("Enemy")
     wing = SimpleNamespace(squadron_def_generator=MagicMock(), add_squadron=MagicMock())
     coalition = SimpleNamespace(
-        faction=SimpleNamespace(aircraft=[aircraft]), air_wing=wing
+        faction=SimpleNamespace(
+            aircraft=[aircraft], awacs=[aircraft], tankers=[aircraft]
+        ),
+        air_wing=wing,
     )
     command = HighCommand(side=side)
     prize = Prize(
-        "squadron",
+        kind,
         10,
         True,
         "A squadron on loan.",
@@ -121,8 +124,11 @@ def _game(side: Player = Player.BLUE) -> Any:
 
 
 @pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
-def test_ticket_offers_only_friendly_compatible_bases_with_room(side: Player) -> None:
-    game = _game(side)
+@pytest.mark.parametrize("kind_key", ["squadron", "awacs", "tanker"])
+def test_ticket_offers_only_friendly_compatible_bases_with_room(
+    side: Player, kind_key: str
+) -> None:
+    game = _game(side, kind_key)
     ticket = game.high_command.tickets[0]
     kind = kind_of(ticket.prize)
     assert kind is not None
@@ -134,8 +140,9 @@ def test_ticket_offers_only_friendly_compatible_bases_with_room(side: Player) ->
     ]
 
 
-def test_loan_uses_the_selected_base(monkeypatch: Any) -> None:
-    game = _game()
+@pytest.mark.parametrize("kind_key", ["squadron", "awacs", "tanker"])
+def test_loan_uses_the_selected_base(monkeypatch: Any, kind_key: str) -> None:
+    game = _game(kind=kind_key)
     sq = MagicMock(name="loan")
     sq.name = "Loan squadron"
     sq.owned_aircraft = 10
@@ -146,24 +153,78 @@ def test_loan_uses_the_selected_base(monkeypatch: Any) -> None:
     command.spend(game, command.tickets[0], ("Carrier",))
     assert create.call_args.args[3] is game.bases[1]
     sq.populate_for_turn_0.assert_called_once_with(squadrons_start_full=True)
+    sq.return_all_pilots_and_aircraft.assert_called_once_with()
+    assert create.call_args.args[2] == (10 if kind_key == "squadron" else 1)
+    assert (
+        create.call_args.args[1]
+        is {
+            "squadron": FlightType.CAS,
+            "awacs": FlightType.AEWC,
+            "tanker": FlightType.REFUELING,
+        }[kind_key]
+    )
     assert command.tickets == []
     assert command.loans[0].until == 13
     assert command.loans[0].squadron is sq
 
 
 @pytest.mark.parametrize(
+    "task,count",
+    [(FlightType.AEWC, 1), (FlightType.REFUELING, 1), (FlightType.CAS, 10)],
+)
+def test_new_loan_can_fly_in_the_turn_it_is_redeemed(
+    monkeypatch: Any, task: FlightType, count: int
+) -> None:
+    from dcs.countries import USA
+    from game.settings import Settings
+    from game.squadrons.pilot import Pilot
+
+    game = _game()
+    sq = Squadron.__new__(Squadron)
+    sq.settings = Settings()
+    sq.settings.enable_squadron_pilot_limits = True
+    sq.settings.live_pilots_enabled = False
+    sq.country = USA()
+    sq.pilot_pool = [
+        Pilot(f"Pilot {n}") for n in range(sq.settings.squadron_pilot_limit)
+    ]
+    sq.current_roster = []
+    sq.available_pilots = []
+    sq.coalition = game.coalition_for(Player.BLUE)
+    sq.coalition.game = game
+    sq.coalition.faction.locales = ["en_US"]
+    sq.aircraft = game.aircraft
+    sq.max_size = count
+    sq.location = game.bases[0]
+    monkeypatch.setattr(Squadron, "create_from", lambda *args: sq)
+
+    loan = lend(game, Player.BLUE, game.aircraft, count, 1, task, False, sq.location)
+
+    assert loan is not None and loan.until == game.turn + 1
+    assert sq.owned_aircraft == count
+    assert sq.untasked_crewed_aircraft == count
+    assert sq.can_fulfill_flight(count)
+    sq.claim_inventory(count)
+    assert not sq.can_fulfill_flight(1)
+
+
+@pytest.mark.parametrize(
     "picked", [(), ("Enemy",), ("Full",), ("Incompatible",), ("Shore", "Carrier")]
 )
-def test_invalid_choice_keeps_the_ticket(picked: tuple[str, ...]) -> None:
-    game = _game()
+@pytest.mark.parametrize("kind_key", ["squadron", "awacs", "tanker"])
+def test_invalid_choice_keeps_the_ticket(
+    picked: tuple[str, ...], kind_key: str
+) -> None:
+    game = _game(kind=kind_key)
     command = game.high_command
     with pytest.raises(CannotGive):
         command.spend(game, command.tickets[0], picked)
     assert len(command.tickets) == 1 and command.loans == []
 
 
-def test_selected_base_is_rechecked_when_spending() -> None:
-    game = _game()
+@pytest.mark.parametrize("kind_key", ["squadron", "awacs", "tanker"])
+def test_selected_base_is_rechecked_when_spending(kind_key: str) -> None:
+    game = _game(kind=kind_key)
     ticket = game.high_command.tickets[0]
     kind = kind_of(ticket.prize)
     assert kind is not None
@@ -180,10 +241,11 @@ def test_selected_base_is_rechecked_when_spending() -> None:
     )
 
 
-def test_empty_base_list_blocks_the_ticket() -> None:
+@pytest.mark.parametrize("kind_key", ["squadron", "awacs", "tanker"])
+def test_empty_base_list_blocks_the_ticket(kind_key: str) -> None:
     from game.highcommand.describe import NOT_NOW, ticket_state
 
-    game = _game()
+    game = _game(kind=kind_key)
     game.bases[:] = game.bases[-1:]
     assert loan_bases(game, Player.BLUE, game.aircraft, 10) == []
     assert ticket_state(game, game.high_command.tickets[0]) == NOT_NOW
@@ -232,7 +294,8 @@ def test_transfer_destination_list_excludes_the_wreck() -> None:
     ]
 
 
-def test_spending_pane_requires_a_base_selection() -> None:
+@pytest.mark.parametrize("kind_key", ["squadron", "awacs", "tanker"])
+def test_spending_pane_requires_a_base_selection(kind_key: str) -> None:
     import os
 
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -241,7 +304,7 @@ def test_spending_pane_requires_a_base_selection() -> None:
     from qt_ui.windows.highcommand.tickets import ChoiceRow, SpendPane
 
     app = QApplication.instance() or QApplication([])
-    game = _game()
+    game = _game(kind=kind_key)
     pane = SpendPane(lambda ticket, picked: "given")
     pane.show_ticket(game, ticket_views(game)[0])
     assert not pane.go.isEnabled()

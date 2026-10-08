@@ -171,6 +171,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[High Command]** Loan aircraft are available immediately; support tickets ask for a base, and base lists show loan status.
 * **[Mission Generator]** Keep the coalition bullseye off flight routes, removing the extra F10 route leg.
 * **[A-10C]** Preserve native route elevations when adding saved CDU points; cockpit settings contain only the extra points, without replacing the mission route.
 * **[A-10C]** Enable 3D VNAV and align CDU, F10 and kneeboard waypoint numbers without duplicating the initial position. Navigation elevations use planned flight altitudes; targets remain at ground level.

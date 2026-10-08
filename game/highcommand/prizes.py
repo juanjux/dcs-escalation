@@ -773,20 +773,51 @@ def _support_aircraft(game: Game, side: Player, task: FlightType) -> Any:
     return types[0]
 
 
-@_gives("awacs")
+def _support_task(prize: Prize) -> FlightType:
+    return FlightType.AEWC if prize.kind == "awacs" else FlightType.REFUELING
+
+
+def _support_bases(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[Choice]:
+    from game.highcommand.loans import loan_bases
+
+    try:
+        aircraft = _support_aircraft(game, prize.side, _support_task(prize))
+    except CannotGive:
+        return []
+    return [
+        Choice(str(base.id), base.name, position=base.position)
+        for base in loan_bases(game, prize.side, aircraft, 1)
+    ]
+
+
+def _give_support(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
+    from game.highcommand.loans import loan_bases
+
+    task = _support_task(prize)
+    aircraft = _support_aircraft(game, prize.side, task)
+    if len(picked) != 1:
+        raise CannotGive("Choose a base for the squadron.")
+    base = next(
+        (
+            base
+            for base in loan_bases(game, prize.side, aircraft, 1)
+            if str(base.id) == picked[0]
+        ),
+        None,
+    )
+    if base is None:
+        raise CannotGive("The selected base can no longer take this squadron.")
+    return _lend(game, prize.side, aircraft, 1, prize.term("turns"), task, False, base)
+
+
+@_gives("awacs", Step("Which base?", _support_bases))
 def _give_awacs(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
-    aircraft = _support_aircraft(game, prize.side, FlightType.AEWC)
-    return _lend(
-        game, prize.side, aircraft, 1, prize.term("turns"), FlightType.AEWC, False
-    )
+    return _give_support(game, prize, picked)
 
 
-@_gives("tanker")
+@_gives("tanker", Step("Which base?", _support_bases))
 def _give_tanker(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
-    aircraft = _support_aircraft(game, prize.side, FlightType.REFUELING)
-    return _lend(
-        game, prize.side, aircraft, 1, prize.term("turns"), FlightType.REFUELING, False
-    )
+    return _give_support(game, prize, picked)
 
 
 def _squadron_aircraft(game: Game, prize: Prize) -> Optional[AircraftType]:

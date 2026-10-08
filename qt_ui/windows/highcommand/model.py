@@ -11,7 +11,6 @@ from dcs.mapping import Point
 from game.highcommand.campaign import Task
 from game.highcommand.describe import (  # noqa: F401 - the window's names for them
     ASKED,
-    AT_ONCE,
     NOT_NOW,
     PREVIEWS,
     READY,

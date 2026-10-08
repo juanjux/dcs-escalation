@@ -29,7 +29,13 @@ KINDS = {
         Step("Which system?", lambda game, prize, picked: SYSTEMS[picked[0]], True),
     ),
     "runway": _kind("runway", Step("Which runway?", lambda game, prize, picked: [])),
-    "awacs": _kind("awacs"),
+    "awacs": _kind(
+        "awacs",
+        Step(
+            "Which base?",
+            lambda game, prize, picked: [Choice("base", "Mount Pleasant")],
+        ),
+    ),
 }
 
 
@@ -54,7 +60,7 @@ def _view(kind: str) -> data.TicketView:
 def test_a_ticket_says_whether_it_can_be_spent_now() -> None:
     game: Any = SimpleNamespace()
 
-    assert data.ticket_state(game, _ticket("awacs")) == data.READY
+    assert data.ticket_state(game, _ticket("awacs")) == "1 PICK"
     assert data.ticket_state(game, _ticket("sam")) == "2 PICKS"
     assert data.ticket_state(game, _ticket("runway")) == data.NOT_NOW
 
@@ -73,7 +79,15 @@ def test_the_preview_says_what_the_prize_s_give_will() -> None:
     assert data.preview("runway", ["Mount Pleasant"]) == (
         "The runway at Mount Pleasant is repaired."
     )
-    assert data.preview("awacs", []).startswith("Nothing to pick.")
+    assert data.preview("awacs", []) == ""
+    assert (
+        data.preview("awacs", ["Mount Pleasant"])
+        == "The AWACS joins on loan at Mount Pleasant."
+    )
+    assert (
+        data.preview("tanker", ["Mount Pleasant"])
+        == "The tanker joins on loan at Mount Pleasant."
+    )
 
 
 @pytest.fixture
@@ -129,7 +143,7 @@ def test_a_refusal_keeps_the_ticket_and_says_why(qt_app: Any) -> None:
 
     pane = _pane(refuse)
     pane.show_ticket(SimpleNamespace(), _view("awacs"))
-
+    pane._pick(Choice("base", "Mount Pleasant"))
     pane.go.click()
 
     assert pane.result is None

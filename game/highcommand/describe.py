@@ -25,15 +25,11 @@ ASKED = {
 READY = "READY"
 NOT_NOW = "NOT NOW"
 
-#: What a ticket that asks nothing says it does when spent, by prize kind.
-AT_ONCE = {
-    "awacs": "Nothing to pick. It joins at once as a squadron on loan.",
-    "tanker": "Nothing to pick. It joins at once as a squadron on loan.",
-}
-
 #: What spending gives, from the labels of what was picked, by prize kind. It has to
 #: say what the prize's own give says afterwards.
 PREVIEWS: dict[str, Callable[[Sequence[str]], str]] = {
+    "awacs": lambda picked: f"The AWACS joins on loan at {picked[0]}.",
+    "tanker": lambda picked: f"The tanker joins on loan at {picked[0]}.",
     "squadron": lambda picked: f"The squadron joins on loan at {picked[0]}.",
     "sam": lambda picked: f"{picked[1]} set up at {picked[0]}.",
     "runway": lambda picked: f"The runway at {picked[0]} is repaired.",
@@ -103,7 +99,5 @@ def spending_title(line: str) -> str:
 
 def preview(kind: str, picked: Sequence[str]) -> str:
     """What spending gives, said before it is spent."""
-    if kind in AT_ONCE:
-        return AT_ONCE[kind]
     say = PREVIEWS.get(kind)
     return say(picked) if say is not None and picked else ""
