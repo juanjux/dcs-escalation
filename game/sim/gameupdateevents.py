@@ -32,6 +32,7 @@ class GameUpdateEvents:
     deleted_flights: set[UUID] = field(default_factory=set)
     selected_flight: UUID | None = None
     deselected_flight: bool = False
+    saved_points_updated: bool = False
     updated_front_lines: set[FrontLine] = field(default_factory=set)
     deleted_front_lines: set[UUID] = field(default_factory=set)
     updated_tgos: set[TheaterGroundObject] = field(default_factory=set)

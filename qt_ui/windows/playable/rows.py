@@ -36,6 +36,7 @@ from PySide6.QtWidgets import (
 )
 
 from game.ato.savedpoints import PointKind
+from game.server.savedpoints.notifications import publish_points_changed
 from qt_ui.uiconstants import AIRCRAFT_ICONS
 from qt_ui.widgets.controls import mono
 from qt_ui.windows.playable.model import Aircraft, NAME_LENGTH
@@ -568,11 +569,16 @@ class PointsModel(QAbstractTableModel):
         row = self.at(index)
         if row is None or row.is_header or role != Qt.ItemDataRole.EditRole:
             return False
+        if self._aircraft is None or not any(
+            point is row.point for point in self._aircraft.points
+        ):
+            return False
         if index.column() == NAME:
             name = str(value).strip()[:NAME_LENGTH]
             if name:
                 row.point.name = name
                 self.dataChanged.emit(index, index)
+                publish_points_changed()
             return True
         if index.column() == ELEVATION:
             text = str(value).strip().replace(",", ".")
@@ -581,6 +587,7 @@ class PointsModel(QAbstractTableModel):
             except ValueError:
                 return False
             self.dataChanged.emit(index, index)
+            publish_points_changed()
             return True
         return False
 
