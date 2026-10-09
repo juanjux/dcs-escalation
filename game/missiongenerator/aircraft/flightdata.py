@@ -13,6 +13,7 @@ from game.squadrons import Squadron
 
 if TYPE_CHECKING:
     from game.ato import FlightType, FlightWaypoint, Package
+    from game.ato.flightplans.uizonedisplay import UiZone
     from game.dcs.aircrafttype import AircraftType
     from game.radio.radios import RadioFrequency
     from game.runways import RunwayData
@@ -88,6 +89,9 @@ class FlightData:
 
     #: The speed the flight orbits at, when its flight plan has an orbit.
     patrol_speed: Optional[Speed] = None
+
+    #: The engagement zone shown on the campaign map, when the plan defines one.
+    work_zone: Optional[UiZone] = None
 
     callsign: str = field(init=False)
 

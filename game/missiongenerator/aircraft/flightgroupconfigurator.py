@@ -16,6 +16,7 @@ from dcs.unitgroup import FlyingGroup
 
 from game.ato import Flight, FlightType
 from game.ato.savedpoints import points_of
+from game.ato.flightplans.uizonedisplay import UiZoneDisplay
 from game.ato.flightplans.shiprecoverytanker import RecoveryTankerFlightPlan
 from game.callsigns import callsign_for_support_unit
 from game.data.weapons import Pylon, Weapon, WeaponType
@@ -186,6 +187,11 @@ class FlightGroupConfigurator:
             group_name=str(self.group.name),
             patrol_speed=(
                 flight_plan.patrol_speed if flight_plan.is_patrol(flight_plan) else None
+            ),
+            work_zone=(
+                flight_plan.ui_zone()
+                if isinstance(flight_plan, UiZoneDisplay)
+                else None
             ),
         )
 
