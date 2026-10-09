@@ -64,6 +64,15 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
   pool drains; (4) win that exchange turn after turn and the line advances — when it
   reaches the enemy base, the base is captured. AIR_ASSAULT is the shortcut that skips
   the grind by dropping troops on the base directly.
+- **Consolidating a capture:** after a base changes ownership in turn N, neither
+  side can recapture it during turn N+1. Normal capture rules resume in turn N+2.
+  For example, a base taken in turn 5 is protected throughout turn 6 and can be
+  captured again in turn 7. Use this full turn to buy and/or transfer ground
+  forces, especially after AIR_ASSAULT leaves the base without a campaign
+  garrison. Protection does not create troops or prevent combat losses, and
+  skipping a turn still uses up the grace period. Both coalitions get the same
+  protection. Captures made before this rule was introduced have no recorded
+  capture turn and do not receive retroactive protection.
 - **Ground objects**: SAM sites, EWRs (early-warning radars), ships, and buildings
   (factories, ammo depots, fuel, etc.). SAMs/EWRs form the enemy's **IADS** (air
   defense network) and create **threat zones** your aircraft must avoid or suppress.

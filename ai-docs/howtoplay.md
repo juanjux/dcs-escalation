@@ -39,6 +39,15 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
 - **Control points**: airbases, carriers/LHAs, FOBs. Each is owned by red, blue, or
   neutral, has parking, and hosts squadrons. Bases are captured by winning the
   ground war along the **front line** that connects them.
+- **Consolidating a capture:** after a base changes ownership in turn N, neither
+  side can recapture it during turn N+1. Normal capture rules resume in turn N+2.
+  For example, a base taken in turn 5 is protected throughout turn 6 and can be
+  captured again in turn 7. Use this full turn to buy and/or transfer ground
+  forces, especially after AIR_ASSAULT leaves the base without a campaign
+  garrison. Protection does not create troops or prevent combat losses, and
+  skipping a turn still uses up the grace period. Both coalitions get the same
+  protection. Captures made before this rule was introduced have no recorded
+  capture turn and do not receive retroactive protection.
 - **Front lines**: where red and blue ground forces meet. They move based on the
   ground battle. You set a **stance** per front (defend / hold / push for a
   breakthrough / eliminate the enemy in contact / retreat) and support it from the air.

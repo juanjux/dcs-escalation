@@ -236,6 +236,8 @@ class TriggerGenerator:
         Directly appends to the global `base_capture_events` var declared by `dcs_libaration.lua`
         """
         for cp in self.game.theater.controlpoints:
+            if cp.is_capture_protected(self.game.turn):
+                continue
             attacking_coalition = str.lower(cp.captured.opponent.name)
             defending_coalition = str.lower(cp.captured.opponent.opponent.name)
             if attacking_coalition == "red":

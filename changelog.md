@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Campaign]** Protect newly captured bases from recapture for one full turn so either side can bring in ground reinforcements.
 * **[Payload]** Select GAU-8 combat mix, HEI or practice ammunition for the A-10 family and save it with the loadout.
 * **[DTC]** Add Hornet TACAN stations and attack corridors, and Viper CAS/SEAD work areas (adapted from Retribution #966).
 * **[Flight Plans]** Helicopters use separate ALIGN and departure hold distances, both configurable and defaulting to 2 NM.
