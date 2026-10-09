@@ -155,6 +155,9 @@ class CoordinateLabel(QWidget):
             flight,
             SavedPoint(kind=kind, name=self.text, x=self.position.x, y=self.position.y),
         )
+        from game.server.savedpoints.notifications import publish_points_changed
+
+        publish_points_changed()
 
 
 def _kinds(flight: Any) -> list[Any]:

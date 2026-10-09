@@ -26,6 +26,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Iterable, Optional
+from uuid import UUID, uuid4
 
 if TYPE_CHECKING:
     from game.ato.flight import Flight
@@ -52,6 +53,7 @@ class SavedPoint:
     x: float
     y: float
     altitude_ft: int = 0
+    id: UUID = field(default_factory=uuid4, compare=False)
 
 
 @dataclass(frozen=True)
@@ -136,6 +138,9 @@ def points_of(flight: Flight) -> list[SavedPoint]:
     for point in flight.__dict__.pop("saved_points", None) or []:
         if point not in points:
             points.append(point)
+    for point in points:
+        if not hasattr(point, "id"):
+            point.id = uuid4()
     return points
 
 

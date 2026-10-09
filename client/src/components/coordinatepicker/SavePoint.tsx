@@ -99,6 +99,7 @@ export default function SavePoint(props: {
         setSaid(detail);
         return;
       }
+      window.dispatchEvent(new Event("saved-points-changed"));
       const updated = body as Receiver | null;
       if (!updated || typeof updated.id !== "string") {
         setSaid("Saved");

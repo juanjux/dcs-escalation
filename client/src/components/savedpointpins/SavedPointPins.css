@@ -1,0 +1,50 @@
+.saved-point-pin {
+  background: none;
+  border: none;
+  filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.saved-point-pin svg {
+  width: 25px;
+  height: 41px;
+}
+
+.saved-point-editor {
+  font:
+    13px/1.4 system-ui,
+    sans-serif;
+  min-width: 220px;
+}
+
+.saved-point-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.saved-point-editor input {
+  font: inherit;
+}
+
+.saved-point-owner {
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.saved-point-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.saved-point-delete,
+.saved-point-editor [role="alert"] {
+  color: #b82c28;
+}
+
+.saved-point-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.75;
+}
