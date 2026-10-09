@@ -29,7 +29,7 @@ if dcsRetribution then
             splash_damage_options.cluster_enabled = dcsRetribution.plugins.splashdamage3.cluster_enabled
             splash_damage_options.cluster_bomblet_reductionmodifier = dcsRetribution.plugins.splashdamage3.cluster_bomblet_reduction_modifier
             splash_damage_options.cluster_bomblet_damage_modifier = dcsRetribution.plugins.splashdamage3.cluster_bomblet_damage_modifier
-            splash_damage_options.rocket_multiplier = dcsRetribution.plugins.splashdamage3.rocket_multiplier
+            splash_damage_options.rocket_multiplier = dcsRetribution.plugins.splashdamage3.rocket_multiplier / 100
             splash_damage_options.shipRadarDamageEnable = dcsRetribution.plugins.splashdamage3.shipRadarDamageEnable
             splash_damage_options.oca_aircraft_damage_boost = dcsRetribution.plugins.splashdamage3.oca_aircraft_damage_boost
             splash_damage_options.ordnance_protection = dcsRetribution.plugins.splashdamage3.ordnance_protection
