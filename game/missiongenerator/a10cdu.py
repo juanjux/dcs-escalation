@@ -142,11 +142,13 @@ def _position(latlng: Any) -> list[str]:
 
 def _waypoint(slot: int, name: str, latlng: Any, elevation: float | None) -> list[str]:
     """One CDU entry, with an explicit MSL elevation in metres when available."""
+    # DCS needs CR set on imported extra points to make their elevation available.
+    # wpt_elev_present alone leaves EL as asterisks, even with a nonzero elevation.
     return (
         [
             f"{TAB * 2}[{slot}]=",
             TAB * 2 + "{",
-            f'{TAB * 3}["wpt_cr"]={int(elevation is None)},',
+            f'{TAB * 3}["wpt_cr"]=1,',
             f'{TAB * 3}["wpt_elev_present"]={int(elevation is not None)},',
             f'{TAB * 3}["wpt_num"]={slot},',
             f'{TAB * 3}["wpt_dtot_present"]=0,',
