@@ -10,6 +10,7 @@ from typing import Dict, Optional, Union, Any
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QGridLayout,
     QHBoxLayout,
     QInputDialog,
@@ -24,10 +25,15 @@ from dcs import lua
 
 from game import Game
 from qt_ui.widgets.cards import make_transparent
-from qt_ui.widgets.controls import mono
+from qt_ui.widgets.controls import mono, styled_input
 from game.ato.flight import Flight
 from game.ato.flightmember import FlightMember
 from game.data.weapons import Pylon
+from game.data.gunammunition import (
+    GAU8_AIRCRAFT,
+    GAU8_AMMUNITION,
+    GAU8_DEFAULT_AMMUNITION,
+)
 from game.persistency import payloads_dir
 from qt_ui.blocksignals import block_signals
 from qt_ui.windows.mission.flight.payload.QPylonEditor import QPylonEditor
@@ -109,6 +115,26 @@ class QLoadoutEditor(QWidget):
         header_holder.setLayout(header)
         vbox.addWidget(header_holder)
 
+        self.ammunition_selector: Optional[QComboBox] = None
+        if self.flight.unit_type.dcs_unit_type.id in GAU8_AIRCRAFT:
+            ammo_row = QHBoxLayout()
+            ammo_row.setContentsMargins(14, 4, 14, 8)
+            ammo_row.setSpacing(10)
+            ammo_row.addWidget(QLabel("GAU-8 ammunition"))
+            self.ammunition_selector = QComboBox()
+            for value, label in GAU8_AMMUNITION.items():
+                self.ammunition_selector.addItem(label, value)
+            self.ammunition_selector.setToolTip(
+                "Ammunition loaded into the gun. Saved with the payload. "
+                "Enable Custom loadout to change it."
+            )
+            ammo_row.addWidget(styled_input(self.ammunition_selector), 1)
+            self._sync_ammunition()
+            self.ammunition_selector.currentIndexChanged.connect(
+                self._ammunition_changed
+            )
+            vbox.addLayout(ammo_row)
+
         layout = QGridLayout()
         layout.setContentsMargins(14, 0, 14, 0)
         layout.setHorizontalSpacing(10)
@@ -180,6 +206,8 @@ class QLoadoutEditor(QWidget):
         """Saving a payload only means anything once you have edited one."""
         self.save_btn.setEnabled(custom)
         self.hint.setVisible(not custom)
+        if self.ammunition_selector is not None:
+            self.ammunition_selector.setEnabled(custom)
         for pylon_editor in self.iter_pylon_editors():
             pylon_editor.setEnabled(custom)
 
@@ -190,12 +218,29 @@ class QLoadoutEditor(QWidget):
         for pylon_editor in self.iter_pylon_editors():
             pylon_editor.set_show_training(show)
 
+    def _sync_ammunition(self) -> None:
+        if self.ammunition_selector is not None:
+            ammo = self.flight_member.loadout.ammo_type
+            if ammo not in GAU8_AMMUNITION:
+                ammo = GAU8_DEFAULT_AMMUNITION
+            with block_signals(self.ammunition_selector):
+                self.ammunition_selector.setCurrentIndex(
+                    self.ammunition_selector.findData(ammo)
+                )
+
+    def _ammunition_changed(self, _index: int) -> None:
+        if self.ammunition_selector is not None and self.isChecked():
+            self.flight_member.loadout.ammo_type = (
+                self.ammunition_selector.currentData()
+            )
+
     def set_flight_member(self, flight_member: FlightMember) -> None:
         self.flight_member = flight_member
         with block_signals(self):
             self.setChecked(self.flight_member.use_custom_loadout)
         for pylon_editor in self.iter_pylon_editors():
             pylon_editor.set_flight_member(flight_member)
+        self._sync_ammunition()
 
     def _backup_payloads(self) -> None:
         ac_id = self.flight.unit_type.dcs_unit_type.id
@@ -396,6 +441,7 @@ class QLoadoutEditor(QWidget):
 
     def reset_pylons(self) -> None:
         self.flight_member.use_custom_loadout = self.isChecked()
+        self._sync_ammunition()
         if not self.isChecked():
             for pylon_editor in self.iter_pylon_editors():
                 pylon_editor.set_from(self.flight_member.loadout)
@@ -407,6 +453,7 @@ class DcsPayload:
     name: str
     pylons: Dict[int, Dict[str, Union[str, int, Dict[str, Any]]]]
     tasks: Dict[int, int]
+    ammo_type: Optional[int] = None
 
     @classmethod
     def from_flight_member(cls, member: FlightMember, payload_name: str):
@@ -432,12 +479,16 @@ class DcsPayload:
             f"{payload_name}",
             pylons=pylons,
             tasks={1: 31},
+            ammo_type=member.loadout.ammo_type,
         )
 
     def to_dict(self):
-        return {
+        payload = {
             "displayName": self.displayName,
             "name": self.name,
             "pylons": self.pylons,
             "tasks": self.tasks,
         }
+        if self.ammo_type is not None:
+            payload["ammo_type"] = self.ammo_type
+        return payload

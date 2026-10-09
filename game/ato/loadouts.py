@@ -89,6 +89,7 @@ class Loadout:
         date: Optional[datetime.date],
         is_custom: bool = False,
         pylon_settings: Optional[Dict[int, Dict[str, Any]]] = None,
+        ammo_type: Optional[int] = None,
     ) -> None:
         self.name = name
         # We clear unused pylon entries on initialization, but UI actions can still
@@ -100,9 +101,12 @@ class Loadout:
         self.is_custom = is_custom
         # Store weapon settings per pylon (pylon_number -> settings_dict)
         self.pylon_settings: Dict[int, Dict[str, Any]] = pylon_settings or {}
+        # None preserves the aircraft's default for old saves and payload files.
+        self.ammo_type = ammo_type if type(ammo_type) is int and ammo_type > 0 else None
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
-        """Handle loading from old save files that don't have pylon_settings."""
+        """Supply defaults for fields absent from older saves."""
+        state.setdefault("ammo_type", None)
         # Ensure pylon_settings exists for backwards compatibility
         if "pylon_settings" not in state:
             state["pylon_settings"] = {}
@@ -115,6 +119,7 @@ class Loadout:
             self.date,
             is_custom=True,
             pylon_settings=self.pylon_settings.copy(),
+            ammo_type=self.ammo_type,
         )
 
     def clone(self) -> Loadout:
@@ -124,6 +129,7 @@ class Loadout:
             copy.deepcopy(self.date),
             self.is_custom,
             copy.deepcopy(self.pylon_settings),
+            ammo_type=self.ammo_type,
         )
 
     def has_weapon_of_type(self, weapon_type: WeaponType) -> bool:
@@ -172,6 +178,7 @@ class Loadout:
                 self.date,
                 self.is_custom,
                 pylon_settings=self.pylon_settings.copy(),
+                ammo_type=self.ammo_type,
             )
 
         new_pylons = dict(self.pylons)
@@ -196,6 +203,7 @@ class Loadout:
             date,
             self.is_custom,
             pylon_settings=new_settings,
+            ammo_type=self.ammo_type,
         )
         # If this is not a custom loadout, we should replace any LGBs with iron bombs if
         # the loadout lost its TGP.
@@ -286,6 +294,7 @@ class Loadout:
                     pylon_settings={
                         p["num"]: p.get("settings", {}) for p in pylons.values()
                     },
+                    ammo_type=payload.get("ammo_type"),
                 )
             except KeyError:
                 # invalid loadout
@@ -395,7 +404,7 @@ class Loadout:
         # makes pydcs raise while parsing it; fall back to an empty loadout
         # instead of aborting mission planning for the whole turn.
         try:
-            dcs_unit_type.load_payloads()
+            raw_payloads = dcs_unit_type.load_payloads()
         except Exception:
             logging.exception(
                 "Could not load payloads for %s; using an empty loadout. This is "
@@ -435,6 +444,7 @@ class Loadout:
                     {i: Weapon.with_clsid(d["clsid"]) for i, d in payload},
                     date=None,
                     pylon_settings={i: d.get("settings", {}) for i, d in payload},
+                    ammo_type=raw_payloads.get(name, {}).get("ammo_type"),
                 )
 
         # TODO: Try group.load_task_default_loadout(loadout_for_task)

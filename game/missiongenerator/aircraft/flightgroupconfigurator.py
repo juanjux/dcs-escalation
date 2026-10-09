@@ -20,6 +20,11 @@ from game.ato.flightplans.uizonedisplay import UiZoneDisplay
 from game.ato.flightplans.shiprecoverytanker import RecoveryTankerFlightPlan
 from game.callsigns import callsign_for_support_unit
 from game.data.weapons import Pylon, Weapon, WeaponType
+from game.data.gunammunition import (
+    GAU8_AIRCRAFT,
+    GAU8_AMMUNITION,
+    GAU8_DEFAULT_AMMUNITION,
+)
 from game.lasercodes.lasercode import LaserCode
 from game.missiongenerator.logisticsgenerator import LogisticsGenerator
 from game.missiongenerator.missiondata import MissionData, AwacsInfo, TankerInfo
@@ -453,6 +458,15 @@ class FlightGroupConfigurator:
                 self.flight.squadron.coalition.faction,
                 target,
             )
+
+        if unit.type in GAU8_AIRCRAFT:
+            ammo_type = (
+                loadout.ammo_type
+                if loadout.ammo_type in GAU8_AMMUNITION
+                else GAU8_DEFAULT_AMMUNITION
+            )
+            # pydcs infers None for this field, but serializes integer DCS indices.
+            unit.ammo_type = ammo_type  # type: ignore[assignment]
 
         for pylon_number, weapon in loadout.pylons.items():
             if weapon is None:

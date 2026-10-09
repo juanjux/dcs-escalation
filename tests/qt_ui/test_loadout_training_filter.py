@@ -162,7 +162,7 @@ def setup_editor(app: Any) -> Any:
     )
     flight: Any = SimpleNamespace(
         squadron=SimpleNamespace(coalition=SimpleNamespace(faction=SimpleNamespace())),
-        unit_type=None,
+        unit_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id="Test aircraft")),
     )
     return SimpleNamespace(
         editor=QPylonEditor(game, flight, member, pylon),
