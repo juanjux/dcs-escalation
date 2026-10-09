@@ -21,6 +21,9 @@ from dcs import Point
 from dcs.terrain import Caucasus
 
 from game.ato.savedpoints import capacity_for
+from game.ato.flighttype import FlightType
+from game.ato.flightwaypointtype import FlightWaypointType
+from game.dcs.beacons import Beacon, BeaconType, Beacons
 from game.missiongenerator import dtc
 from game.radio.radios import MHz
 from game.radio.tacan import TacanBand, TacanChannel
@@ -52,7 +55,7 @@ def _game(
         theater=SimpleNamespace(
             controlpoints=[],
             ground_objects=[],
-            terrain=SimpleNamespace(name="Falklands"),
+            terrain=SimpleNamespace(name="Falklands", airports={}),
             conflicts=lambda: iter(names),
         ),
         settings=SimpleNamespace(
@@ -218,12 +221,259 @@ def test_ils_is_not_written_as_an_icls_channel() -> None:
     flight.arrival = RunwayData(
         "Land base", Heading.from_degrees(90), "09", ils=MHz(110, 300)
     )
-    assert dtc.HornetCartridge().campaign_sections(_game(), flight) == {}
+    assert "WYPT" not in dtc.HornetCartridge().campaign_sections(_game(), flight)
 
 
 def test_no_flight_does_not_guess_navigation_presets() -> None:
-    assert dtc.HornetCartridge().campaign_sections(_game()) == {}
-    assert dtc.HornetCartridge().campaign_sections(_game(), _flight_data()) == {}
+    assert "WYPT" not in dtc.HornetCartridge().campaign_sections(_game())
+    assert "WYPT" not in dtc.HornetCartridge().campaign_sections(
+        _game(), _flight_data()
+    )
+
+
+def _tacan(name: str, x: float = 0, y: float = 0) -> Beacon:
+    return Beacon(
+        name,
+        name,
+        BeaconType.BEACON_TYPE_TACAN,
+        110_350_000,
+        40,
+        position_x=x,
+        position_z=y,
+        elevation=123.5,
+    )
+
+
+def test_ground_tacan_schema_and_y_band() -> None:
+    assert dtc.ground_tacan(_tacan("TEST", 10, 20)) == {
+        "display_name": "TEST",
+        "callsign": "TEST",
+        "channel": 40,
+        "modeChannel": "Y",
+        "x": 10,
+        "y": 20,
+        "elevation": 123.5,
+        "frequency": 110_350_000,
+    }
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"position_x": None},
+        {"position_z": None},
+        {"position_x": float("nan")},
+        {"elevation": float("inf")},
+        {"name": ""},
+        {"beacon_type": BeaconType.BEACON_TYPE_ILS_LOCALIZER},
+    ],
+)
+def test_invalid_or_legacy_stations_are_not_written(changes: dict[str, Any]) -> None:
+    from dataclasses import replace
+
+    assert dtc.ground_tacan(replace(_tacan("TEST"), **changes)) is None
+
+
+def test_ground_station_priority_deduplication_and_capacity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    game, flight = _game(), _flight_data()
+    beacons = {f"b{n}": _tacan(f"Station {n:02}", n * 1000) for n in range(20)}
+    monkeypatch.setitem(Beacons._by_terrain, "Falklands", beacons)
+    game.theater.terrain.airports = {
+        1: SimpleNamespace(
+            name="Recovery",
+            beacons=[SimpleNamespace(id="missing"), SimpleNamespace(id="b19")],
+        ),
+        2: SimpleNamespace(name="Departure", beacons=[SimpleNamespace(id="b18")]),
+    }
+    flight.arrival = flight.divert = _recovery_runway("Recovery")
+    flight.departure = _recovery_runway("Departure")
+    stations = dtc.tacan_stations(game, None, flight)
+    assert [s["display_name"] for s in stations] == ["Station 19", "Station 18"] + [
+        f"Station {n:02}" for n in range(8)
+    ]
+    assert len(stations) == dtc.MAX_TACAN_STATIONS
+
+
+def test_friendly_carrier_uses_beacon_unit_and_recovery_priority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(Beacons._by_terrain, "Falklands", {})
+    game, flight = _game(), _flight_data()
+
+    def carrier(number: int, side: Player) -> Any:
+        return SimpleNamespace(
+            blue=side,
+            group_name=f"Generated group {number}",
+            unit_name=f"Carrier {number}",
+            callsign="CVN",
+            tacan=TacanChannel(number, TacanBand.Y),
+            ship_group=SimpleNamespace(
+                units=[
+                    SimpleNamespace(name="Escort", id=999),
+                    SimpleNamespace(name=f"Carrier {number}", id=number),
+                ],
+                points=[SimpleNamespace(position=SimpleNamespace(x=10, y=20))],
+            ),
+        )
+
+    mission = SimpleNamespace(
+        carriers=[
+            carrier(1, Player.BLUE),
+            carrier(2, Player.RED),
+            carrier(74, Player.BLUE),
+        ]
+    )
+    flight.arrival = RunwayData(
+        "Campaign carrier name",
+        Heading.from_degrees(270),
+        "27",
+        tacan=TacanChannel(74, TacanBand.Y),
+        tacan_callsign="CVN",
+    )
+    stations = dtc.tacan_stations(game, mission, flight)
+    assert [s["unitId"] for s in stations] == [74, 1]
+    assert stations[0] == {
+        "callsign": "CVN",
+        "channel": 74,
+        "modeChannel": "Y",
+        "display_name": "Carrier 74_P1",
+        "elevation": 0,
+        "unitId": 74,
+        "unitPointNum": 1,
+        "x": 10,
+        "y": 20,
+    }
+
+
+def _attack_flight() -> Any:
+    flight = _flight_data(route=0)
+    kinds = (
+        [FlightWaypointType.NAV, FlightWaypointType.INGRESS_STRIKE]
+        + [FlightWaypointType.TARGET_POINT] * 20
+        + [
+            FlightWaypointType.SPLIT,
+            FlightWaypointType.NAV,
+            FlightWaypointType.LANDING_POINT,
+            FlightWaypointType.BULLSEYE,
+        ]
+    )
+    for n, kind in enumerate(kinds):
+        point = _waypoint(kind.name, float(n * 1000), float((n % 3) * 1000))
+        point.waypoint_type = kind
+        flight.waypoints.append(point)
+    return flight
+
+
+def test_attack_corridor_keeps_ingress_and_split_under_native_limit() -> None:
+    flight = _attack_flight()
+    (corridor,) = dtc.attack_corridor(flight)
+    points = corridor["points"]
+    assert corridor["id"] == "CORR_1"
+    assert corridor["note"] == "ATTACK"
+    assert len(points) == dtc.MAX_CORRIDOR_POINTS
+    assert [p["id"] for p in points] == [f"CORR_1_PT_{n}" for n in range(1, 15)]
+    assert (points[0]["x"], points[0]["y"]) == (1000, 1000)
+    assert (points[-1]["x"], points[-1]["y"]) == (22000, 1000)
+    assert max(p["x"] for p in points) == 22000
+    data = dtc.cartridge(_game(), Player.BLUE, "FA-18C_hornet", "Test", flight=flight)[
+        "data"
+    ]
+    assert data["SA"]["CORRIDORS"] == [corridor]
+    assert data["SA"]["Default_CORRIDORS_Point"] == 1
+    assert data["SA"]["mirror_MEZ_THRTS"] is True
+    assert "WYPT" not in data
+
+
+@pytest.mark.parametrize(
+    "replacement",
+    [
+        FlightWaypointType.NAV,
+        FlightWaypointType.DIVERT,
+        FlightWaypointType.BULLSEYE,
+        FlightWaypointType.LANDING_POINT,
+    ],
+)
+def test_incomplete_attack_leg_does_not_draw_a_return_corridor(
+    replacement: FlightWaypointType,
+) -> None:
+    flight = _attack_flight()
+    flight.waypoints[22].waypoint_type = replacement
+    assert dtc.attack_corridor(flight) == []
+    assert dtc.attack_corridor(_flight_data()) == []
+
+
+@pytest.mark.parametrize(
+    "kind,note",
+    [
+        (FlightType.CAS, "CAS"),
+        (FlightType.SEAD, "SEAD"),
+        (FlightType.SEAD_SWEEP, "SEAD"),
+    ],
+)
+@pytest.mark.parametrize("track", [False, True])
+def test_work_area_encloses_map_zone(kind: FlightType, note: str, track: bool) -> None:
+    flight = _flight_data()
+    flight.flight_type = kind
+    flight.work_zone = SimpleNamespace(
+        points=[SimpleNamespace(x=0, y=0)], radius=SimpleNamespace(meters=1000)
+    )
+    if track:
+        flight.work_zone.points.append(SimpleNamespace(x=10000, y=0))
+    box = dtc.working_area(flight)
+    assert box is not None and box.name == note
+    assert box.points == (
+        (-1000, -1000),
+        (11000 if track else 1000, -1000),
+        (11000 if track else 1000, 1000),
+        (-1000, 1000),
+        (-1000, -1000),
+    )
+    flight.flight_type = FlightType.STRIKE
+    assert dtc.working_area(flight) is None
+
+
+def test_work_area_preserves_viper_front_and_tanker_limits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        dtc,
+        "fronts_of",
+        lambda theater: [_bar("FLOT", *((float(n), float(n % 2)) for n in range(40)))],
+    )
+    flight = _flight_data("F-16C_50")
+    flight.flight_type = FlightType.CAS
+    flight.work_zone = SimpleNamespace(
+        points=[SimpleNamespace(x=0, y=0)], radius=SimpleNamespace(meters=1000)
+    )
+    tankers = _tankers()
+    tankers.flights.extend(
+        _orbiting("KC-135", f"Shell {n}", (0, 10000 * n), (40000, 10000 * n))
+        for n in range(2, 5)
+    )
+    data = dtc.cartridge(
+        _game(), Player.BLUE, "F-16C_50", "Test", mission_data=tankers, flight=flight
+    )["data"]["MPD"]
+    points = data["GEO_LINES"]
+    assert len(points) == 25
+    assert sum(bool(p["L1"]) for p in points) == 10
+    assert [p["note"] for p in points if p["L2"]] == ["CAS"] * 5
+    assert [p["note"] for p in points if p["L3"]] == ["Shell 1"] * 5
+    assert [p["note"] for p in points if p["L4"]] == ["Shell 2"] * 5
+    assert data["mirror_THREAT_PTS"] is True
+
+
+@pytest.mark.parametrize("radius", [0, -1, float("nan"), float("inf")])
+def test_invalid_work_zone_is_omitted(radius: float) -> None:
+    flight = _flight_data()
+    flight.flight_type = FlightType.CAS
+    assert dtc.working_area(flight) is None
+    flight.work_zone = SimpleNamespace(points=[], radius=SimpleNamespace(meters=1000))
+    assert dtc.working_area(flight) is None
+    flight.work_zone.points.append(SimpleNamespace(x=0, y=0))
+    flight.work_zone.radius.meters = radius
+    assert dtc.working_area(flight) is None
 
 
 def test_mission_cartridges_preserve_points_and_use_each_flights_base(
@@ -462,6 +712,69 @@ def test_the_mission_carries_its_own_cartridges(tmp_path: Path) -> None:
     assert card["type"] == "FA-18C_hornet"
 
 
+def test_generated_mission_binds_each_flights_new_dtc_sections(tmp_path: Path) -> None:
+    from dcs import Mission
+    from dcs.lua import loads
+    from dcs.planes import FA_18C_hornet, F_16C_50
+
+    mission = Mission(Caucasus())
+    game = _game()
+    game.theater.terrain = mission.terrain
+    hornet, viper = _attack_flight(), _flight_data("F-16C_50", "VIPER11")
+    hornet.arrival = _recovery_runway("Batumi")
+    viper.flight_type = FlightType.CAS
+    viper.work_zone = SimpleNamespace(
+        points=[SimpleNamespace(x=1000, y=2000)], radius=SimpleNamespace(meters=5000)
+    )
+    for flight, aircraft in ((hornet, FA_18C_hornet), (viper, F_16C_50)):
+        group = mission.flight_group(
+            mission.country("USA"),
+            flight.callsign,
+            aircraft,
+            airport=None,
+            position=Point(-200000, 600000, mission.terrain),
+        )
+        group.units[0].set_client()
+        flight.client_units = group.units
+    data = _mission_data(hornet, viper)
+    assert dtc.bind_to_units(data, "dtc_validation") == 2
+    path = tmp_path / "dtc_validation.miz"
+    mission.save(str(path))
+    dtc.write_into_mission(game, data, path)
+    with zipfile.ZipFile(path) as archive:
+        mission_lua = loads(archive.read("mission").decode("utf-8"))["mission"]
+        cards = {
+            json.loads(archive.read(name))["name"]: json.loads(archive.read(name))[
+                "data"
+            ]
+            for name in archive.namelist()
+            if name.endswith(".dtc")
+        }
+    assert len(cards) == 2
+    units = [
+        unit
+        for country in mission_lua["coalition"]["blue"]["country"].values()
+        for group in country.get("plane", {}).get("group", {}).values()
+        for unit in group["units"].values()
+    ]
+    assert len(units) == 2
+    for unit in units:
+        assert unit["DTC"]["AutoLoad"] is True
+        binding = unit["DTC"]["Cartridges"][1]
+        assert binding["default"] is True
+        assert binding["name"] in cards
+    hornet_data = cards["dtc_validation ENFIELD11"]
+    assert hornet_data["TCN"][0]["display_name"] == "Batumi"
+    assert hornet_data["TCN"][0]["elevation"] > 0
+    assert len(hornet_data["SA"]["CORRIDORS"][0]["points"]) == 14
+    assert hornet_data["SA"]["mirror_MEZ_THRTS"] is True
+    assert hornet_data["WYPT"]["NAV_SETTINGS"]["TACAN"]["Channel"] == 74
+    assert "NAV_PTS" not in hornet_data["WYPT"]
+    assert [p["note"] for p in cards["dtc_validation VIPER11"]["MPD"]["GEO_LINES"]] == [
+        "CAS"
+    ] * 5
+
+
 def test_nothing_to_carry_leaves_the_mission_alone(tmp_path: Path) -> None:
     mission = tmp_path / "retribution_nextturn.miz"
     with zipfile.ZipFile(mission, "w") as archive:
@@ -526,6 +839,12 @@ def test_the_limits_are_the_ones_each_module_enforces() -> None:
     viper = dtc.ViperCartridge()
     lines = (VIPER / "GEO_LINES.lua").read_text(encoding="utf-8")
     assert f"#data.MPD.GEO_LINES > {viper.max_line_points - 1}" in lines
+    corridors = (HORNET / "CORRIDORS.lua").read_text(encoding="utf-8")
+    assert f"MAX_CORRIDOR_POINTS  = {dtc.MAX_CORRIDOR_POINTS}" in corridors
+    tacan = (HORNET.parent / "TCN/TACAN.lua").read_text(encoding="utf-8")
+    assert f"#data.TCN >= {dtc.MAX_TACAN_STATIONS}" in tacan
+    for field in dtc.ground_tacan(_tacan("TEST")) or {}:
+        assert f"new_tacan.{field}" in tacan
 
 
 @installed

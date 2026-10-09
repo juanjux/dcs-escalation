@@ -46,6 +46,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Sequence
 
+from game.ato.flighttype import FlightType
+from game.dcs.beacons import Beacon, Beacons
 from game.missiongenerator.frontlineconflictdescription import (
     FrontLineConflictDescription,
 )
@@ -71,7 +73,7 @@ class Front:
 
 @dataclass(frozen=True)
 class Box:
-    """A tanker's orbit as a closed outline, named for the tanker."""
+    """A tanker orbit or working area as a named closed outline."""
 
     name: str
     points: tuple[tuple[float, float], ...]
@@ -126,7 +128,10 @@ class Cartridge(ABC):
         return self.max_line_points
 
     def campaign_sections(
-        self, game: Game, flight: Optional[Any] = None
+        self,
+        game: Game,
+        flight: Optional[Any] = None,
+        mission_data: Optional[Any] = None,
     ) -> dict[str, Any]:
         """What the cartridge takes from the campaign rather than from the lines:
         the settings the player chose, and what the campaign knows. Merged into the
@@ -172,14 +177,21 @@ class HornetCartridge(Cartridge):
     refuels_from = "drogue"
 
     def campaign_sections(
-        self, game: Game, flight: Optional[Any] = None
+        self,
+        game: Game,
+        flight: Optional[Any] = None,
+        mission_data: Optional[Any] = None,
     ) -> dict[str, Any]:
         """Preset the recovery base's navigation aids without changing the route."""
+        result: dict[str, Any] = {"TCN": tacan_stations(game, mission_data, flight)}
         if flight is None:
-            return {}
+            return result
+        lane = attack_corridor(flight)
+        if lane:
+            result["SA"] = {"CORRIDORS": lane, "Default_CORRIDORS_Point": 1}
         runway = flight.arrival or flight.departure
         if runway is None:
-            return {}
+            return result
         settings: dict[str, Any] = {}
         # Field names and enum values come from FA-18C/DTC/WYPT/NAV_SETTINGS_defs.lua.
         if runway.tacan is not None:
@@ -195,7 +207,9 @@ class HornetCartridge(Cartridge):
             settings["ACLS"] = {"Frequency": runway.link4.mhz, "OnOff": True}
         # ILS frequencies are not ICLS channels; this module only supports ICLS.
         # Omit route fields so this also merges with saved navigation points.
-        return {"WYPT": {"NAV_SETTINGS": settings}} if settings else {}
+        if settings:
+            result["WYPT"] = {"NAV_SETTINGS": settings}
+        return result
 
     def navigation(self, points: Sequence[NavPoint]) -> dict[str, Any]:
         """The WYPT section.
@@ -339,7 +353,10 @@ class ViperCartridge(Cartridge):
         return self.max_line_points - BOX_POINTS * boxes
 
     def campaign_sections(
-        self, game: Game, flight: Optional[Any] = None
+        self,
+        game: Game,
+        flight: Optional[Any] = None,
+        mission_data: Optional[Any] = None,
     ) -> dict[str, Any]:
         mpd: dict[str, Any] = {}
         if game.settings.dtc_viper_countermeasures:
@@ -631,7 +648,10 @@ class ApacheCartridge(Cartridge):
         }
 
     def campaign_sections(
-        self, game: Game, flight: Optional[Any] = None
+        self,
+        game: Game,
+        flight: Optional[Any] = None,
+        mission_data: Optional[Any] = None,
     ) -> dict[str, Any]:
         targets = apache_targets(game, flight)
         if not targets:
@@ -1014,6 +1034,190 @@ def tanker_boxes(
     ]
 
 
+# Limits from FA-18C/DTC/TCN/TACAN.lua and SA/CORRIDORS.lua.
+MAX_TACAN_STATIONS = 10
+MAX_CORRIDOR_POINTS = 14
+
+
+def ground_tacan(beacon: Beacon) -> Optional[dict[str, Any]]:
+    """A terrain TACAN record in the mission editor's station format."""
+    if not beacon.is_tacan or not beacon.name:
+        return None
+    channel = beacon.tacan_channel
+    x, y = beacon.position_x, beacon.position_z
+    elevation = beacon.elevation if beacon.elevation is not None else 0.0
+    if channel is None or x is None or y is None:
+        return None
+    if not all(math.isfinite(value) for value in (x, y, elevation)):
+        return None
+    station: dict[str, Any] = {
+        "callsign": beacon.callsign,
+        "channel": channel.number,
+        "modeChannel": channel.band.value,
+        "display_name": beacon.name,
+        "elevation": elevation,
+        "x": x,
+        "y": y,
+    }
+    if beacon.hertz is not None:
+        station["frequency"] = beacon.hertz
+    return station
+
+
+def tacan_stations(
+    game: Game, mission_data: Optional[Any], flight: Optional[Any]
+) -> list[dict[str, Any]]:
+    """Recovery/home/divert stations, friendly boats, then nearby ground TACANs.
+
+    Aircraft TACANs are not supported by the Hornet editor's station list.
+    """
+    stations: list[dict[str, Any]] = []
+    seen: set[tuple[Any, ...]] = set()
+
+    def add(station: Optional[dict[str, Any]]) -> None:
+        if station is None:
+            return
+        key = (
+            (station["unitId"], station["unitPointNum"])
+            if "unitId" in station
+            else (station["display_name"],)
+        )
+        if key not in seen:
+            seen.add(key)
+            stations.append(station)
+
+    player = getattr(flight, "friendly", Player.BLUE)
+    ships: list[tuple[str, dict[str, Any]]] = []
+    for carrier in getattr(mission_data, "carriers", []):
+        if carrier.blue != player:
+            continue
+        group = carrier.ship_group
+        unit = next(
+            (unit for unit in group.units if unit.name == carrier.unit_name), None
+        )
+        if unit is None or not group.points:
+            continue
+        position = group.points[0].position
+        ships.append(
+            (
+                carrier.group_name,
+                {
+                    "callsign": carrier.callsign,
+                    "channel": carrier.tacan.number,
+                    "modeChannel": carrier.tacan.band.value,
+                    "display_name": f"{unit.name}_P1",
+                    "elevation": 0,
+                    "unitId": unit.id,
+                    "unitPointNum": 1,
+                    "x": position.x,
+                    "y": position.y,
+                },
+            )
+        )
+
+    for runway in (
+        getattr(flight, "arrival", None),
+        getattr(flight, "departure", None),
+        getattr(flight, "divert", None),
+    ):
+        if runway is None:
+            continue
+        for name, station in ships:
+            if name == runway.airfield_name or (
+                runway.tacan is not None
+                and station["channel"] == runway.tacan.number
+                and station["modeChannel"] == runway.tacan.band.value
+                and station["callsign"] == runway.tacan_callsign
+            ):
+                add(station)
+        for airport in game.theater.terrain.airports.values():
+            if airport.name != runway.airfield_name:
+                continue
+            for reference in airport.beacons:
+                try:
+                    add(ground_tacan(Beacons.with_id(reference.id, game.theater)))
+                except KeyError:
+                    continue
+    for _, station in ships:
+        add(station)
+
+    route = [
+        (w.position.x, w.position.y)
+        for w in getattr(flight, "waypoints", [])
+        if w.waypoint_type.name not in {"DIVERT", "BULLSEYE"}
+    ]
+    others = [
+        ground_station
+        for beacon in Beacons.iter_theater(game.theater)
+        if (ground_station := ground_tacan(beacon)) is not None
+    ]
+    others.sort(
+        key=lambda station: (
+            min(
+                (math.dist((station["x"], station["y"]), point) for point in route),
+                default=0.0,
+            ),
+            station["display_name"],
+        )
+    )
+    for station in others:
+        add(station)
+    return stations[:MAX_TACAN_STATIONS]
+
+
+def attack_corridor(flight: Any) -> list[dict[str, Any]]:
+    """The attack leg from ingress to split, never the return or reference points."""
+    points: list[tuple[float, float]] = []
+    for waypoint in flight.waypoints:
+        kind = waypoint.waypoint_type.name
+        if not points and not kind.startswith("INGRESS_"):
+            continue
+        if kind in {"DIVERT", "BULLSEYE", "LANDING_POINT", "DESCENT_POINT", "REFUEL"}:
+            break
+        point = (waypoint.position.x, waypoint.position.y)
+        if not points or point != points[-1]:
+            points.append(point)
+        if kind == "SPLIT":
+            if len(points) >= 2:
+                lane = Box("ATTACK", tuple(simplified(points, MAX_CORRIDOR_POINTS)))
+                return HornetCartridge._lines("CORR", [lane])
+            break
+    # Custom routes without a split do not define a complete attack lane.
+    return []
+
+
+def working_area(flight: Optional[Any]) -> Optional[Box]:
+    """Enclose the map's CAS/SEAD engagement zone in one five-point HSD box."""
+    notes = {
+        FlightType.CAS: "CAS",
+        FlightType.SEAD: "SEAD",
+        FlightType.SEAD_SWEEP: "SEAD",
+    }
+    kind = getattr(flight, "flight_type", None)
+    note = notes.get(kind) if isinstance(kind, FlightType) else None
+    zone = getattr(flight, "work_zone", None)
+    if note is None or zone is None or not zone.points:
+        return None
+    radius = zone.radius.meters
+    ax, ay = zone.points[0].x, zone.points[0].y
+    bx, by = zone.points[-1].x, zone.points[-1].y
+    if radius <= 0 or not all(math.isfinite(v) for v in (radius, ax, ay, bx, by)):
+        return None
+    length = math.hypot(bx - ax, by - ay)
+    ux, uy = ((bx - ax) / length, (by - ay) / length) if length else (1.0, 0.0)
+    nx, ny = -uy, ux
+    corners = tuple(
+        (x + along * ux + side * nx, y + along * uy + side * ny)
+        for (x, y), along, side in (
+            ((ax, ay), -radius, -radius),
+            ((bx, by), radius, -radius),
+            ((bx, by), radius, radius),
+            ((ax, ay), -radius, radius),
+        )
+    )
+    return Box(note, corners + corners[:1])
+
+
 def steerpoint_numbers(aircraft: str, route_length: int, count: int) -> list[int]:
     """The numbers these saved points will carry in the aircraft.
 
@@ -1134,11 +1338,16 @@ def cartridge(
         "terrain": game.theater.terrain.name,
     }
     boxes = tanker_boxes(profile, mission_data, flight) if mission_data else []
+    if (
+        isinstance(profile, ViperCartridge)
+        and (work := working_area(flight)) is not None
+    ):
+        boxes = [work, *boxes][: profile.max_boxes]
     line = join_fronts(fronts_of(game.theater))
     room = profile.front_points(len(boxes))
     fronts = [_fit(profile, line, room)] if line is not None else []
     data.update(profile.sections(fronts, navigation, boxes))
-    _merge(data, profile.campaign_sections(game, flight))
+    _merge(data, profile.campaign_sections(game, flight, mission_data))
     return {"name": name, "type": aircraft, "data": data}
 
 

@@ -134,7 +134,7 @@ def beacons_from_terrain(dcs_path: Path, path: Path) -> Iterable[tuple[str, Beac
                 BeaconType.BEACON_TYPE_ILS_LOCALIZER,
                 BeaconType.BEACON_TYPE_PRMG_LOCALIZER,
             )
-            position = beacon["position"] if localizer else None
+            position = beacon["position"]
 
             yield beacon["beaconId"], Beacon(
                 beacon["display_name"],
@@ -145,6 +145,7 @@ def beacons_from_terrain(dcs_path: Path, path: Path) -> Iterable[tuple[str, Beac
                 position[1] if position is not None else None,
                 position[3] if position is not None else None,
                 beacon["direction"] if localizer else None,
+                position[2] if position is not None else None,
             )
 
 

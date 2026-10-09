@@ -83,6 +83,7 @@ class Beacon:
     position_x: Optional[float] = None
     position_z: Optional[float] = None
     direction: Optional[float] = None
+    elevation: Optional[float] = None
 
     @property
     def frequency(self) -> RadioFrequency:
@@ -155,6 +156,7 @@ class Beacons:
                 position_x=beacon.get("position_x"),
                 position_z=beacon.get("position_z"),
                 direction=beacon.get("direction"),
+                elevation=beacon.get("elevation"),
             )
         cls._by_terrain[theater.terrain.name] = beacons
 

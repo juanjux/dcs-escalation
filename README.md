@@ -394,6 +394,9 @@ and it is longer than this section.
   #678 and #1032)
 
 - **More in the player aircraft's data cartridge:**
+  - the Hornet family's TACAN station list and ingress-to-split attack corridor,
+    plus CAS/SEAD work areas on the Viper's HSD, when the flight plan defines one
+    (adapted from [Retribution #966](https://github.com/dcs-retribution/dcs-retribution/pull/966));
   - the Hornet family's recovery-base TACAN, ICLS and Link4/ACLS, when available;
     each flight uses its arrival base, normally also its departure base. This uses
     carrier ICLS, not terrestrial ILS, and leaves unsupported cartridges unchanged;
