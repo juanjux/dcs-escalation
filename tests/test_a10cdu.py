@@ -147,6 +147,27 @@ def test_saved_point_elevations_are_serialized_in_metres(
     assert written["waypoints"][4]["wpt_elev_present"] == 1
 
 
+@pytest.mark.parametrize("aircraft", ["A-10C", "A-10C_2"])
+def test_extra_points_have_coordinate_ranging_even_with_explicit_elevations(
+    aircraft: str, monkeypatch: Any
+) -> None:
+    points = [_point(f"T{n}") for n in range(21, 26)]
+    for point, altitude in zip(points, [0, 69, 100, 1234, -100]):
+        point.altitude_ft = altitude
+    flight = _flight(aircraft=aircraft, route=10, saved=points)
+
+    settings = loads(_settings(flight, monkeypatch))["settings"]
+
+    # In DCS, explicit elevation and VNAV 3D alone still leave EL as asterisks.
+    # The working cockpit-tested export also sets CR on every additional point.
+    assert set(settings["waypoints"]) == set(range(10, 15))
+    for waypoint, point in zip(settings["waypoints"].values(), points):
+        assert waypoint["wpt_cr"] == 1
+        assert waypoint["wpt_elev_present"] == 1
+        assert waypoint["wpt_elev"] == pytest.approx(point.altitude_ft * 0.3048)
+        assert waypoint["wpt_attributes"]["attr_vnav"] == 1
+
+
 def test_the_saved_points_get_a_flight_plan_of_their_own(monkeypatch: Any) -> None:
     """Plan 1 is the mission route and cannot be overridden -- measured -- so what
     keeps the route clean is the points not being on it."""
@@ -368,6 +389,7 @@ def test_only_a_crewed_a10_with_points_is_written(
         settings = loads(archive.read(written[0]).decode("utf-8"))["settings"]
         assert set(settings["waypoints"]) == {4}
         assert settings["waypoints"][4]["wpt_id"] == "SMOKE"
+        assert settings["waypoints"][4]["wpt_cr"] == 1
         assert settings["flight_plans"][a10cdu.EXTRA_PLAN]["fp_name"] == "EXTRA"
 
 
