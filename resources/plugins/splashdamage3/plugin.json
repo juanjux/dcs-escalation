@@ -38,7 +38,7 @@
             "defaultValue": true
         },
         {
-            "nameInUI": "Dynamic Blast Radius Multiplier",
+            "nameInUI": "Dynamic Blast Radius Multiplier (%)",
             "mnemonic": "dynamic_blast_radius_modifier",
             "minimumValue": 1,
             "maximumValue": 5000,
@@ -57,11 +57,11 @@
             "defaultValue": 2000
         },
         {
-            "nameInUI": "Overall Scaling Multiplier",
+            "nameInUI": "Overall Explosive Power (%)",
             "mnemonic": "overall_scaling",
             "minimumValue": 1,
-            "maximumValue": 100,
-            "defaultValue": 3
+            "maximumValue": 5000,
+            "defaultValue": 100
         },
         {
             "nameInUI": "Health Value Units Movements are Disabled (%)",
@@ -128,9 +128,9 @@
         {
             "nameInUI": "Ordnance Protection Radius (m)",
             "mnemonic": "ordnance_protection_radius",
-            "minimumValue": 100,
+            "minimumValue": 1,
             "maximumValue": 2000,
-            "defaultValue": 800
+            "defaultValue": 20
         },
         {
             "nameInUI": "Detect Ordnance Destroyed by Large Explosions",
@@ -140,7 +140,8 @@
         {
             "nameInUI": "Snap Explosion to Ground if Destroyed by Large Explosion",
             "mnemonic": "snap_to_ground_if_destroyed_by_large_explosion",
-            "defaultValue": false
+            "defaultValue": false,
+            "descriptionInUI": "Escalation keeps this off by default. The script's own default is on."
         },
         {
             "nameInUI": "Maximum Height to Snap Explosions to Ground",

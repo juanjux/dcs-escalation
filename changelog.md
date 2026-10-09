@@ -173,6 +173,8 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+
+* **[Mission Plugins]** Match Splash Damage's script defaults except ground snapping, fix rocket percentage scaling, and clarify multiplier units.
 * **[UI]** Give the convoy Plan strike action a visible button background and border.
 * **[High Command]** Loan aircraft are available immediately; support tickets ask for a base, and base lists show loan status.
 * **[Mission Generator]** Keep the coalition bullseye off flight routes, removing the extra F10 route leg.
