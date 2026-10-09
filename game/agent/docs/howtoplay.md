@@ -71,8 +71,10 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
   forces, especially after AIR_ASSAULT leaves the base without a campaign
   garrison. Protection does not create troops or prevent combat losses, and
   skipping a turn still uses up the grace period. Both coalitions get the same
-  protection. Captures made before this rule was introduced have no recorded
-  capture turn and do not receive retroactive protection.
+  protection. The event log explains when an undefended base remains protected
+  and warns that protection expires next turn. Captures made before this rule
+  was introduced have no recorded capture turn and do not receive retroactive
+  protection.
 - **Ground objects**: SAM sites, EWRs (early-warning radars), ships, and buildings
   (factories, ammo depots, fuel, etc.). SAMs/EWRs form the enemy's **IADS** (air
   defense network) and create **threat zones** your aircraft must avoid or suppress.

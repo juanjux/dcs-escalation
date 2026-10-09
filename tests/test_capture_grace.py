@@ -16,6 +16,7 @@ from dcs.terrain import Caucasus
 from game.debriefing import Debriefing
 from game.missiongenerator.triggergenerator import TriggerGenerator
 from game.sim.gameupdateevents import GameUpdateEvents
+from game.sim.missionresultsprocessor import MissionResultsProcessor
 from game.theater.controlpoint import Airfield, ControlPoint, Fob, Player
 from game.transfers import TransferOrder
 
@@ -168,3 +169,45 @@ def test_exported_miz_resumes_capture_after_grace(
     with ZipFile(path) as archive:
         exported = loads(archive.read("mission").decode("utf-8"))["mission"]
     assert len(exported["trigrules"]) == expected
+
+
+@pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
+@pytest.mark.parametrize(
+    "captured_turn,turn,defenders,expected",
+    [
+        (5, 6, 0, True),
+        (5, 6, 2, False),
+        (5, 7, 0, False),
+        (5, 5, 0, False),
+        (None, 6, 0, False),
+    ],
+)
+def test_event_log_explains_empty_base_protection_without_capture_events(
+    owner: Player,
+    captured_turn: int | None,
+    turn: int,
+    defenders: int,
+    expected: bool,
+) -> None:
+    cp = _base(owner)
+    cp.last_capture_turn = captured_turn
+    if defenders:
+        cp.base.commission_units({MagicMock(): defenders})
+    game = MagicMock(turn=turn)
+    game.theater.controlpoints = [cp]
+    processor = MissionResultsProcessor(game)
+
+    processor.commit_captures(
+        cast(Any, SimpleNamespace(base_captures=[])), GameUpdateEvents()
+    )
+
+    if expected:
+        game.message.assert_called_once()
+        title, text = game.message.call_args.args
+        assert cp.name in title
+        assert "was not recaptured despite having no ground forces" in text
+        assert "first-turn protection" in text
+        assert "expires next turn" in text
+    else:
+        game.message.assert_not_called()
+    assert cp.captured == owner
