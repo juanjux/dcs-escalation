@@ -818,5 +818,10 @@ class Debriefing:
                 # recaptured in the same mission. Nothing to do.
                 continue
 
+            if control_point.is_capture_protected(self.game.turn):
+                # Also reject captures from missions generated before protection
+                # was added, before losses and rewards use the capture list.
+                continue
+
             captures.append(BaseCaptureEvent(control_point, captured_by_player))
         return captures

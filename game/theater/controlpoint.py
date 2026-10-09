@@ -478,6 +478,7 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         self.ground_spawns: List[Tuple[PointWithHeading, Point]] = []
 
         self._coalition: Optional[Coalition] = None
+        self.last_capture_turn: int | None = None
         self.captured_invert = False
         self.front_lines: dict[ControlPoint, FrontLine] = {}
         # TODO: Should be Airbase specific.
@@ -1064,6 +1065,12 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
     def release_parking_slots(self) -> None:
         pass
 
+    def is_capture_protected(self, turn: int) -> bool:
+        """Allow one full reinforcement turn after a change of ownership."""
+        # Older saves have no capture timestamp; do not invent one on load.
+        captured_turn = getattr(self, "last_capture_turn", None)
+        return captured_turn is not None and 0 <= turn - captured_turn <= 1
+
     # TODO: Should be Airbase specific.
     def capture(self, game: Game, events: GameUpdateEvents, for_player: Player) -> None:
         new_coalition = game.coalition_for(for_player)
@@ -1073,6 +1080,7 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         self.release_parking_slots()
         self.depopulate_uncapturable_tgos()
         self._coalition = new_coalition
+        self.last_capture_turn = game.turn
         from game.missiongenerator.motorpoolpopulator import MotorpoolPopulator
 
         MotorpoolPopulator(game)._rehome_motorpools(events)
