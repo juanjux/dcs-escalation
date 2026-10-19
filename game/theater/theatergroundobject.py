@@ -178,7 +178,7 @@ class TheaterGroundObject(MissionTarget, SidcDescribable, ABC):
             if self.has_pending_repairs:
                 return Status.PRESENT_DAMAGED
             return Status.PRESENT_DESTROYED
-        elif self.dead_units:
+        elif self.dead_units or any(unit.health_fraction < 1 for unit in self.units):
             return Status.PRESENT_DAMAGED
         else:
             return Status.PRESENT_FULLY_CAPABLE

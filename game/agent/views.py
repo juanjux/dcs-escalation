@@ -21,6 +21,8 @@ from dcs.weather import Weather as PydcsWeather, Wind
 from pydantic import BaseModel, Field
 
 from game.income import Income
+from game.health import HealthStatus
+from game.persistentdamage import health_report
 from game.theater.iadsnetwork.iadsstate import IadsStatus
 from game.theater.player import Player
 from game.utils import meters, mps
@@ -263,6 +265,7 @@ class RebuildView(BaseModel):
 
 
 class TargetView(BaseModel):
+    health: HealthStatus | None = None
     id: str
     name: str
     kind: str  # sam / ship / building / motorpool / front / convoy / cargo_ship
@@ -394,6 +397,8 @@ class IadsView(BaseModel):
 
 class NavalView(BaseModel):
     """One of YOUR movable naval groups — reposition it with move_ship."""
+
+    health: HealthStatus | None = None
 
     id: str  # group id — pass to move_ship (ships: a tgo id; carriers: a control-point id)
     name: str
@@ -893,7 +898,10 @@ def _damage_word(tgo) -> str | None:
         units = list(tgo.units)
         if not units:
             return None
-        alive = sum(1 for u in units if getattr(u, "alive", True))
+        alive = sum(
+            getattr(u, "health_fraction", 1.0 if getattr(u, "alive", True) else 0.0)
+            for u in units
+        )
         total = len(units)
         if alive >= total:
             return None
@@ -964,6 +972,7 @@ def _build_target(game: Game, tgo, kind: str, task: str) -> TargetView:
     iads_blind = True if status is not None and status.blind else None
     base = getattr(tgo, "control_point", None)
     return TargetView(
+        health=HealthStatus(**health_report(tgo.units, game.settings)),
         id=str(tgo.id),
         name=tgo.name,
         kind=kind,
@@ -1151,29 +1160,48 @@ def build_targets(game: Game, side: str) -> list[TargetView]:
 
 
 def build_own_ground_objects(game: Game, side: str) -> list[TargetView]:
-    """Your OWN ground objects, with their ids -- what ``ground/options`` needs.
+    """Your own sites, including building and naval health.
 
-    ``targets`` is the enemy's, always: it comes from ObjectiveFinder, which only ever
-    yields what the other side owns. So there was no way to name one of your own sites
-    to upgrade it, even though rebuilding is free on turn 0 and the player can do it
-    from the map. Kept out of the per-turn payload (a dense campaign has hundreds of
-    these) and served on request instead.
+    Listing a site does not make it eligible for ground/options: that endpoint
+    still checks which groups can be upgraded or rebuilt.
     """
     from game.theater.theatergroundobject import (
+        BuildingGroundObject,
         IadsGroundObject,
         MissileSiteGroundObject,
+        NavalGroundObject,
         VehicleGroupGroundObject,
     )
 
-    rebuildable = (IadsGroundObject, MissileSiteGroundObject, VehicleGroupGroundObject)
+    visible = (
+        IadsGroundObject,
+        MissileSiteGroundObject,
+        VehicleGroupGroundObject,
+        BuildingGroundObject,
+        NavalGroundObject,
+    )
     player = player_for_side(side)
     out: list[TargetView] = []
     for cp in game.theater.controlpoints:
         if cp.captured != player:
             continue
         for go in cp.ground_objects:
-            if isinstance(go, rebuildable):
-                out.append(_build_target(game, go, _own_kind(go), "DEAD"))
+            if isinstance(go, visible):
+                kind = (
+                    "ship"
+                    if isinstance(go, NavalGroundObject)
+                    else (
+                        "building"
+                        if isinstance(go, BuildingGroundObject)
+                        else _own_kind(go)
+                    )
+                )
+                task = (
+                    "ANTISHIP"
+                    if kind == "ship"
+                    else "STRIKE" if kind == "building" else "DEAD"
+                )
+                out.append(_build_target(game, go, kind, task))
     return out
 
 
@@ -1259,6 +1287,9 @@ def _naval_view(game: Game, obj, kind: str) -> NavalView:
                 hull_owner = sub
                 break
     return NavalView(
+        health=HealthStatus(
+            **health_report(getattr(hull_owner, "units", []), game.settings)
+        ),
         id=str(obj.id),
         name=obj.name,
         kind=kind,
@@ -1266,7 +1297,7 @@ def _naval_view(game: Game, obj, kind: str) -> NavalView:
         move_range_nm=int(obj.max_move_distance.nautical_miles),
         destination=dest,
         threat_nm=threat or None,
-        damage=_damage_word(obj),
+        damage=_damage_word(hull_owner),
         composition=comp,
         cruise_missiles_remaining=_cruise_missiles_remaining(game, hull_owner),
     )

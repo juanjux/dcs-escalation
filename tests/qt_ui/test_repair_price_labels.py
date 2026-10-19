@@ -40,6 +40,7 @@ def test_price_is_shown_once(
         name="Test unit",
         id=1,
         alive=alive,
+        health_fraction=1.0 if alive else 0.0,
         repair_turns_remaining=turns,
         repairable=True,
         position=None,

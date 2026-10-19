@@ -47,6 +47,20 @@ class TheaterUnit:
     alive: bool = True
     # Turns remaining until the unit is repaired and revived.
     repair_turns_remaining: Optional[int] = None
+    # Fraction of original health; older saves inherit full health.
+    health: float = 1.0
+
+    @property
+    def health_fraction(self) -> float:
+        return max(0.0, min(1.0, self.health)) if self.alive else 0.0
+
+    @property
+    def persistent_damage_eligible(self) -> bool:
+        from game.theater.theatergroundobject import BuildingGroundObject
+
+        return self.is_ship or (
+            isinstance(self.ground_object, BuildingGroundObject) and self.is_static
+        )
 
     @staticmethod
     def from_template(
@@ -84,6 +98,7 @@ class TheaterUnit:
         )
         afloat = deck is not None and not deck.sunk
         self.alive = False
+        self.health = 1.0
         self.ground_object.invalidate_threat_poly()
         events.update_tgo(self.ground_object)
         if self.ground_object.is_iads:
@@ -95,6 +110,7 @@ class TheaterUnit:
 
     def revive(self, events: GameUpdateEvents) -> None:
         self.alive = True
+        self.health = 1.0
         self.ground_object.threat_poly()
         events.update_tgo(self.ground_object)
         if self.ground_object.is_iads:

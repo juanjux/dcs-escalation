@@ -7,6 +7,8 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from game.dcs.groundunittype import GroundUnitType
+from game.health import HealthStatus
+from game.persistentdamage import report_for_tgo
 from game.ground_forces.ai_ground_planner import reserve_armor_for
 from game.missiongenerator.motorpoolpopulator import (
     MotorpoolPopulator,
@@ -29,6 +31,7 @@ class AggregateGroundUnitEntry(BaseModel):
 
 
 class TgoJs(BaseModel):
+    health: Optional[HealthStatus] = None
     id: UUID
     name: str
     control_point_name: str
@@ -195,6 +198,7 @@ class TgoJs(BaseModel):
                             transit[unit_type] += count
                 in_transit_units = TgoJs._aggregate_entries(dict(transit))
         return TgoJs(
+            health=HealthStatus(**report_for_tgo(tgo)),
             id=tgo.id,
             name=tgo.name,
             control_point_name=tgo.control_point.name,

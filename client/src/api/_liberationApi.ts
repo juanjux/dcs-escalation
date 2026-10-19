@@ -453,6 +453,7 @@ export type LatLng = {
   lng: number;
 };
 export type ControlPoint = {
+  health?: HealthStatus | null;
   id: string;
   name: string;
   blue: boolean;
@@ -530,7 +531,24 @@ export type AggregateGroundUnitEntry = {
   display_name: string;
   count: number;
 };
+export type UnitHealthStatus = {
+  id: number;
+  name: string;
+  health_percent: number;
+  persistent: boolean;
+  damage_repaired_per_turn_percent: number;
+  repair_next_turn_percent: number;
+  health_next_turn_percent: number;
+};
+export type HealthStatus = {
+  health_percent: number;
+  damage_repaired_per_turn_percent: number;
+  repair_next_turn_percent: number;
+  health_next_turn_percent: number;
+  units: UnitHealthStatus[];
+};
 export type Tgo = {
+  health?: HealthStatus | null;
   id: string;
   name: string;
   control_point_name: string;

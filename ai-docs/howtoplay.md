@@ -62,6 +62,34 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
 
 ## 3. Your forces
 
+### Persistent ship and building damage
+
+Campaign Management > General contains **Persistent ship and building damage**
+(enabled by default) and **Ship and building damage repaired per turn (%)**
+(default 30). Surviving naval units and buildings, including scenery objectives,
+keep their remaining health in the next mission. Armor groups and SAM units do
+not retain partial damage and continue to recover fully between turns.
+
+At each turn boundary, including a skipped turn, the configured percentage of
+the **remaining damage** is repaired: 50% health with 30% repair becomes 65%,
+then 75.5% on the following turn. Less than 0.5% remaining damage rounds up to
+full health. Set repair to 0 for no automatic recovery or 100 for full recovery.
+Destroyed units stay destroyed; their existing paid repair/rebuild rules still
+apply. Switching persistence off restores surviving units at the turn boundary.
+Partial damage does not reduce a surviving building's income or disable its IADS
+role; destruction still controls those effects.
+
+The map and location dialog show a partially filled orange health bar for
+surviving damaged units. The API exposes a `health` object on targets, your own
+ground objects and naval groups, and on map TGOs/fleet control points. It contains
+`health_percent`, `damage_repaired_per_turn_percent`, `repair_next_turn_percent`
+and `health_next_turn_percent`, plus a `units` list with the same figures and a
+`persistent` flag per unit. Repair gain is expressed in percentage points of
+original health. Group health is the average across its original units, including
+destroyed ones at zero. Use these values to judge whether a follow-up strike is
+needed before the enemy recovers. Older mission state files without health data
+leave previously recorded damage unchanged.
+
 - **Air wing → squadrons**: your aircraft live in **squadrons** based at your
   airfields/carriers. Each squadron has one **airframe** type, a number of
   **aircraft**, and **pilots**. You can only field airframes your faction allows.

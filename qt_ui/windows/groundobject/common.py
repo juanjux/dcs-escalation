@@ -44,6 +44,7 @@ from qt_ui.windows.pilot.common import (
 #: The three states a site's units can be in, in the order the bar stacks them.
 ALIVE_INK = GREEN
 REPAIRING_INK = AMBER
+DAMAGED_INK = "#FF8C00"
 DESTROYED_INK = RED
 
 #: The fill behind a chip, per tone. Dim enough to sit on a card without shouting.
@@ -65,16 +66,18 @@ class HealthBar(QWidget):
 
     def __init__(
         self,
-        alive: int,
+        alive: float,
         repairing: int,
         total: int,
         width: int = 200,
         height: int = 6,
+        damaged: bool = False,
     ) -> None:
         super().__init__()
         self.alive = alive
         self.repairing = repairing
         self.total = max(total, 1)
+        self.damaged = damaged
         self.setFixedSize(width, height)
 
     def paintEvent(self, event: object) -> None:
@@ -88,7 +91,10 @@ class HealthBar(QWidget):
         painter.fillPath(track, QColor(BAR_TRACK))
 
         left = 0.0
-        for count, ink in ((self.alive, ALIVE_INK), (self.repairing, REPAIRING_INK)):
+        for count, ink in (
+            (self.alive, DAMAGED_INK if self.damaged else ALIVE_INK),
+            (self.repairing, REPAIRING_INK),
+        ):
             if count <= 0:
                 continue
             width = self.width() * count / self.total

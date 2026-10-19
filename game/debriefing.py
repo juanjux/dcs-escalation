@@ -173,9 +173,12 @@ class StateData:
     #: disjoint from cruise_missiles_state's land-attack families, so a shot is never
     #: charged to both. Empty on pre-feature state files and when the feature is off.
     naval_magazines_state: List[Tuple[str, int]] = field(default_factory=list)
+    persistent_health: Dict[str, float] = field(default_factory=dict)
 
     @classmethod
     def from_json(cls, data: Dict[str, Any], unit_map: UnitMap) -> StateData:
+        from game.persistentdamage import parse_health
+
         def clean_unit_list(unit_list: List[Any]) -> List[str]:
             # Cleans list of units in state.json by
             # - Removing duplicates. Airfields emit a new "dead" event every time a bomb
@@ -261,6 +264,7 @@ class StateData:
                 data.get("naval_magazines_state", [])
             ),
             mission_log_events=parse_log_events(data.get("mission_log_events", [])),
+            persistent_health=parse_health(data.get("persistent_health", {})),
         )
 
 
