@@ -176,6 +176,7 @@
 
 ## Fixes
 
+* **[UI]** Show capped deployable forces and separate reserves in base front-line comparisons instead of total ground inventories.
 * **[Mission Generator]** Fix unavailable elevations on A-10 extra waypoints by setting their coordinate-ranging flag.
 * **[Mission Plugins]** Match Splash Damage's script defaults except ground snapping, fix rocket percentage scaling, and clarify multiplier units.
 * **[UI]** Give the convoy Plan strike action a visible button background and border.

@@ -64,6 +64,10 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
   pool drains; (4) win that exchange turn after turn and the line advances — when it
   reaches the enemy base, the base is captured. AIR_ASSAULT is the shortcut that skips
   the grind by dropping troops on the base directly.
+- **Deployable forces and reserves:** supply limits apply per base, shared across
+  its fronts. Base front-line comparisons show deployable pools and separate
+  reserves, not total inventories. The planner's unit-type allocation and rounding
+  can leave some deployment capacity unused.
 - **Consolidating a capture:** after a base changes ownership in turn N, neither
   side can recapture it during turn N+1. Normal capture rules resume in turn N+2.
   For example, a base taken in turn 5 is protected throughout turn 6 and can be

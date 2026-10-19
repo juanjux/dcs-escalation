@@ -1,10 +1,4 @@
-"""What the units here do about each neighbour they share a front with.
-
-It was a group box called "Frontline operations :" holding a bare base name and a
-combo of enum constants, which named neither what the decision was about nor what
-either side had to fight with. A stance is a decision about a specific enemy, so each
-row names that enemy and shows the odds.
-"""
+"""Front-line stances and each base's deployable forces and reserves."""
 
 from collections.abc import Callable
 
@@ -17,11 +11,12 @@ from PySide6.QtWidgets import (
 )
 
 from game import Game
+from game.ground_forces.ai_ground_planner import deployable_armor
 from game.server import EventStream
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater import ControlPoint
 from qt_ui.widgets.cards import HINT, card, carded, make_transparent, shrinkable
-from qt_ui.widgets.controls import KEY, mono
+from qt_ui.widgets.controls import KEY, mono, wrapped_tooltip
 from qt_ui.windows.airwingconfig.common import CHEAT_BG, CHEAT_BORDER, CHEAT_HEADER
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.basemenu.buylist import BRIGHT, QUIET
@@ -77,6 +72,21 @@ class QGroundForcesStrategy(QWidget):
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(5)
 
+        own_deployable = sum(deployable_armor(self.cp).values())
+        enemy_deployable = sum(deployable_armor(enemy).values())
+        own_reserve = self.cp.base.total_armor - own_deployable
+        enemy_reserve = enemy.base.total_armor - enemy_deployable
+        tooltip = wrapped_tooltip(
+            "Available for front-line deployment, after each base's supply limit "
+            "and the planner's unit-type allocation and rounding. These are "
+            "per-base pools, shared across all of each base's fronts; they are "
+            "not a separate allowance for every enemy neighbour.\n\n"
+            f"{self.cp.name}: {own_deployable} deployable, {own_reserve} reserve, "
+            f"{self.cp.base.total_armor} total (limit {self.cp.frontline_unit_count_limit}).\n"
+            f"{enemy.name}: {enemy_deployable} deployable, {enemy_reserve} reserve, "
+            f"{enemy.base.total_armor} total (limit {enemy.frontline_unit_count_limit})."
+        )
+
         heading = QHBoxLayout()
         heading.setContentsMargins(0, 0, 0, 0)
         heading.setSpacing(8)
@@ -92,15 +102,37 @@ class QGroundForcesStrategy(QWidget):
         odds = QLabel()
         odds.setFont(mono(12))
         odds.setStyleSheet(f"color: {KEY}; background: transparent; border: none;")
-        odds.setText(f"{self.cp.base.total_armor} vs {enemy.base.total_armor}")
+        odds.setText(f"{own_deployable} vs {enemy_deployable}")
+        odds.setToolTip(tooltip)
         heading.addWidget(odds)
 
-        units = QLabel("units")
+        units = QLabel("deployable")
+        units.setToolTip(tooltip)
         units.setStyleSheet(
             f"font-size: 11px; color: {QUIET}; background: transparent; border: none;"
         )
         heading.addWidget(units)
         row.addLayout(heading)
+
+        reserves = QLabel(f"Reserve: {own_reserve} vs {enemy_reserve}")
+        reserves.setStyleSheet(
+            f"font-size: 11px; color: {QUIET}; background: transparent; border: none;"
+        )
+        reserves.setToolTip(tooltip)
+        row.addWidget(reserves)
+
+        if (
+            len(self.neighbours()) > 1
+            or sum(
+                other.captured != enemy.captured and not other.captured.is_neutral
+                for other in enemy.connected_points
+            )
+            > 1
+        ):
+            shared = QLabel("Deployable pools shared across fronts")
+            shared.setStyleSheet(reserves.styleSheet())
+            shared.setToolTip(tooltip)
+            row.addWidget(shared)
 
         row.addWidget(QGroundForcesStrategySelector(self.cp, enemy))
         if self.game.settings.enable_frontline_cheats:
