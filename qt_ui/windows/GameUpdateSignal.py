@@ -16,6 +16,7 @@ class GameUpdateSignal(QObject):
     game_state_changed = Signal(TurnState)
     debriefingReceived = Signal(Debriefing)
     ato_changed = Signal()
+    saved_points_changed = Signal()
 
     game_loaded = Signal(Game)
 

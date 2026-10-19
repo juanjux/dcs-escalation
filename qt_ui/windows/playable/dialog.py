@@ -37,6 +37,8 @@ from PySide6.QtWidgets import (
 )
 
 from game.ato.savedpoints import PointKind, remove_point
+from game.server.savedpoints.notifications import publish_points_changed
+from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.widgets.cards import CAPTION, CARD_BG, CARD_BORDER, card
 from qt_ui.widgets.controls import mono, style_button, styled_input
 from qt_ui.windows.playable import model as data
@@ -468,6 +470,11 @@ class PlayableAircraftDialog(QDialog):
         self.setLayout(layout)
 
     def _wire(self) -> None:
+        signal = GameUpdateSignal.get_instance()
+        if signal is not None:
+            signal.saved_points_changed.connect(
+                self.refresh_points, Qt.ConnectionType.QueuedConnection
+            )
         self.aircraft_view.selectionModel().currentChanged.connect(
             lambda *_: self.show_points()
         )
@@ -529,6 +536,24 @@ class PlayableAircraftDialog(QDialog):
         self.carried.setText(self._how_it_is_carried(one))
         self._retitle()
         self._restate()
+
+    def refresh_points(self) -> None:
+        current = self.current_point()
+        point = current.point if current is not None else None
+        # Do not rebuild the notes editor or change the selected aircraft when
+        # a map edit arrives. Keep the selected point too if it still exists.
+        self.points_model.show(self.selected, self._coordinates)
+        for row in range(self.points_model.rowCount()):
+            index = self.points_model.index(row, 0)
+            entry = self.points_model.at(index)
+            if entry is not None and not entry.is_header and entry.point is point:
+                self.points_view.setCurrentIndex(index)
+        for row in self.points_model.header_rows():
+            self.points_view.setFirstColumnSpanned(row, QModelIndex(), True)
+        self._retitle()
+        self._restate()
+        self.aircraft_model.layoutChanged.emit()
+        self.headline.show_figures(*data.figures(data.aircraft_of(self.game)))
 
     def _how_it_is_carried(self, one: Optional[data.Aircraft]) -> str:
         """What this airframe does with the points, said where they are edited.
@@ -635,6 +660,7 @@ class PlayableAircraftDialog(QDialog):
         )
         self.show_points()
         self.aircraft_model.layoutChanged.emit()
+        publish_points_changed()
 
     def copy_everything(self) -> None:
         one = self.selected
@@ -650,6 +676,7 @@ class PlayableAircraftDialog(QDialog):
         self.clipboard.paste_into(one)
         self.show_points()
         self.aircraft_model.layoutChanged.emit()
+        publish_points_changed()
 
     def current_point(self) -> Optional[PointRow]:
         row = self.points_model.at(self.points_view.currentIndex())
@@ -704,9 +731,15 @@ class PlayableAircraftDialog(QDialog):
         one = self.selected
         if row is None or one is None or row.index is None:
             return
-        remove_point(one.flight, row.index)
+        # A map deletion may have shifted indices before its queued refresh.
+        index = next(
+            (i for i, point in enumerate(one.points) if point is row.point), None
+        )
+        if index is not None:
+            remove_point(one.flight, index)
         self.show_points()
         self.aircraft_model.layoutChanged.emit()
+        publish_points_changed()
 
     def point_menu_at(self, where: QPoint) -> None:
         index = self.points_view.indexAt(where)

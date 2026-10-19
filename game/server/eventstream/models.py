@@ -36,6 +36,7 @@ class GameUpdateEventsJs(BaseModel):
     deleted_flights: set[UUID]
     selected_flight: UUID | None
     deselected_flight: bool
+    saved_points_updated: bool = False
     updated_front_lines: list[FrontLineJs]
     deleted_front_lines: set[UUID]
     updated_tgos: list[TgoJs]
@@ -132,6 +133,7 @@ class GameUpdateEventsJs(BaseModel):
             deleted_flights=events.deleted_flights,
             selected_flight=events.selected_flight,
             deselected_flight=events.deselected_flight,
+            saved_points_updated=events.saved_points_updated,
             updated_front_lines=updated_front_lines,
             deleted_front_lines=events.deleted_front_lines,
             updated_tgos=[
