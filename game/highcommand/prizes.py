@@ -121,6 +121,8 @@ class Context:
     armed_forces: Any = None
     #: The side the prize is for.
     side: Player = Player.BLUE
+    #: Rewards already promised by this side's open requests.
+    offered: tuple[Prize, ...] = ()
 
 
 #: A prize's line and terms at a score, or None when it cannot be given at that score.
@@ -233,6 +235,24 @@ def kind_of(prize: Prize) -> Optional[PrizeKind]:
     return next((kind for kind in KINDS if kind.key == prize.kind), None)
 
 
+def repeats_offer(prize: Prize, offered: Iterable[Prize]) -> bool:
+    """Different scores or durations do not make a new kind of reward.
+
+    Typed aircraft loans may coexist only when the airframe types differ. Generic
+    loan tickets do not promise a type, so they cannot use that exception.
+    """
+    for other in offered:
+        if prize.kind != other.kind:
+            continue
+        if prize.kind in {"squadron", "loaned-aircraft", "awacs", "tanker"}:
+            aircraft = dict(prize.terms).get("type")
+            other_aircraft = dict(other.terms).get("type")
+            if aircraft and other_aircraft and aircraft != other_aircraft:
+                continue
+        return True
+    return False
+
+
 class Prizes:
     """Draws the prizes of one side's objectives."""
 
@@ -261,9 +281,12 @@ class Prizes:
             player,
         )
 
-    def draw(self, score: int, seed: object) -> Optional[Prize]:
+    def draw(
+        self, score: int, seed: object, offered: Iterable[Prize] = ()
+    ) -> Optional[Prize]:
         """A prize for an objective of this score. The same seed draws the same one."""
         rng = random.Random(str(seed))
+        offered = tuple(offered)
         kinds = [
             kind
             for kind in KINDS
@@ -273,11 +296,17 @@ class Prizes:
         ]
         rng.shuffle(kinds)
         context = Context(
-            self.settings, self.faction, self.income, rng, self.armed_forces, self.side
+            self.settings,
+            self.faction,
+            self.income,
+            rng,
+            self.armed_forces,
+            self.side,
+            offered,
         )
         for kind in kinds:
             prize = kind.prize(score, context)
-            if prize is not None:
+            if prize is not None and not repeats_offer(prize, offered):
                 return prize
         return None
 
@@ -475,7 +504,19 @@ def _squadron(score: int, context: Context) -> Worked:
         return None
     # The better the score, the dearer the aircraft.
     pick = round((score - MIN_SCORE) / (MAX_SCORE - MIN_SCORE) * (len(fleet) - 1))
-    aircraft = fleet[pick]
+    promised_types = {
+        dict(prize.terms).get("type")
+        for prize in context.offered
+        if prize.kind == "squadron"
+    }
+    available = [
+        index
+        for index, aircraft in enumerate(fleet)
+        if aircraft.display_name not in promised_types
+    ]
+    if not available:
+        return None
+    aircraft = fleet[min(available, key=lambda index: (abs(index - pick), index))]
     count = 2 * score
     turns = half_up(score)
     return (

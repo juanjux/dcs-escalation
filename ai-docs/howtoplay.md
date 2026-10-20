@@ -23,6 +23,15 @@ plan it. Ask them to say it **now** for the first turn if the campaign is ready 
 they may never have used this feature, so make the instruction clear and friendly.
 After that, follow the turn protocol at the end.
 
+## High Command reward variety
+
+High Command reward variety: new requests cannot repeat a reward kind already
+offered by another open request on the same side, regardless of amount or duration.
+Squadron loans may repeat only for distinct aircraft or helicopter models. Generic
+loans do not promise distinct models. Existing requests keep their promised prizes;
+completed requests, saved tickets and active effects do not block future offers.
+If no distinct reward remains available, that request slot waits.
+
 ## Aircraft damage and workshops
 
 Campaign Management > Persistent damage & repairs contains separate boxes for

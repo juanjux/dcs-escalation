@@ -28,13 +28,13 @@ whoever plays the campaign, to spend later (spend).
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import TYPE_CHECKING, Optional, Sequence
 
 from game.highcommand.campaign import Task
 from game.highcommand.loans import Loan, return_loans
-from game.highcommand.prizes import Prize, kind_of
+from game.highcommand.prizes import Prize, Prizes, kind_of, repeats_offer
 from game.squadrons.experience import SaveCompatible
 from game.theater.player import Player
 from game.theater.theatergroundobject import MotorpoolGroundObject
@@ -219,6 +219,16 @@ class HighCommand(SaveCompatible):
             if not choices:
                 continue
             chosen = rng.choice(choices)
+            offered = [order.prize for order in self.orders if order.prize is not None]
+            if chosen.prize is not None and repeats_offer(chosen.prize, offered):
+                prize = Prizes.of(game, self.side).draw(
+                    chosen.score, seed=f"{game.turn}:{chosen.name}", offered=offered
+                )
+                if prize is None:
+                    # No distinct reward remains. Keep the slot open rather than
+                    # promising a duplicate or silently issuing an unpaid request.
+                    continue
+                chosen = replace(chosen, prize=prize)
             taken.add(chosen.name)
             self.orders.append(
                 _order(chosen, tier, game.turn, rng.randint(shortest, longest))
