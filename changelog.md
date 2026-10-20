@@ -176,6 +176,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Prevent stale flight selections from crashing package editors when accepting mission results.
 
 * **[UI]** Show capped deployable forces and separate reserves in base front-line comparisons instead of total ground inventories.
 * **[Mission Generator]** Fix unavailable elevations on A-10 extra waypoints by setting their coordinate-ranging flag.

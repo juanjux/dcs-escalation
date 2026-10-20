@@ -529,6 +529,7 @@ class QEditPackageDialog(QPackageDialog):
 
     def __init__(self, gm: GameModel, package: PackageModel) -> None:
         super().__init__(gm, package)
+        self.package_model.deleted.connect(self.close)
         self.ato_model = gm.ato_model if gm.is_ownfor else gm.red_ato_model
 
         self.delete_button = button("Delete package", "danger", self.on_delete)

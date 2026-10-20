@@ -51,7 +51,7 @@ class QFlightList(QListView):
     ) -> None:
         super().__init__()
         self.game_model = game_model
-        self.package_model = package_model
+        self.package_model: Optional[PackageModel] = None
         self.set_package(package_model)
         if package_model is not None:
             self.setItemDelegate(FlightRowDelegate())
@@ -82,9 +82,8 @@ class QFlightList(QListView):
 
     def set_package(self, model: Optional[PackageModel]) -> None:
         """Sets the package model to display."""
-        if model is None:
-            self.disconnect_model()
-        else:
+        self.disconnect_model()
+        if model is not None:
             self.package_model = model
             self.setItemDelegate(FlightRowDelegate())
             self.setMouseTracking(True)
@@ -102,8 +101,10 @@ class QFlightList(QListView):
 
         Displays an empty list until set_package is called with a valid model.
         """
-        model = self.model()
-        if model is not None and isinstance(model, PackageModel):
+        model = self.package_model
+        # Reset the reference before setModel emits selection-change callbacks.
+        self.package_model = None
+        if model is not None:
             model.deleted.disconnect(self.disconnect_model)
         self.setModel(NullListModel())
 
@@ -111,7 +112,7 @@ class QFlightList(QListView):
     def selected_item(self) -> Optional[Flight]:
         """Returns the selected flight, if any."""
         index = self.currentIndex()
-        if not index.isValid():
+        if self.package_model is None:
             return None
         return self.package_model.flight_at_index(index)
 
@@ -123,14 +124,23 @@ class QFlightList(QListView):
     def edit_flight(self, index: QModelIndex) -> None:
         from qt_ui.dialogs import Dialog
 
+        if self.package_model is None:
+            return
+        flight = self.package_model.flight_at_index(index)
+        if flight is None:
+            return
         Dialog.open_edit_flight_dialog(
             self.package_model,
-            self.package_model.flight_at_index(index),
+            flight,
             parent=self.window(),
         )
 
     def clone_flight(self, index: QModelIndex) -> None:
+        if self.package_model is None:
+            return
         flight = self.package_model.flight_at_index(index)
+        if flight is None:
+            return
         try:
             clone = Flight.clone_flight(flight)
         except ValueError as ve:
@@ -145,10 +155,16 @@ class QFlightList(QListView):
         EventStream.put_nowait(GameUpdateEvents().new_flight(clone))
 
     def cancel_or_abort_flight(self, index: QModelIndex) -> None:
-        self.package_model.cancel_or_abort_flight_at_index(index)
+        if self.package_model is not None:
+            self.package_model.cancel_or_abort_flight_at_index(index)
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         index = self.indexAt(event.pos())
+        if (
+            self.package_model is None
+            or self.package_model.flight_at_index(index) is None
+        ):
+            return
 
         menu = QMenu("Menu")
 
@@ -246,7 +262,7 @@ class QFlightPanel(QGroupBox):
     def on_selection_changed(self) -> None:
         """Updates the status of the edit and delete buttons."""
         index = self.flight_list.currentIndex()
-        enabled = index.isValid()
+        enabled = self.flight_list.selected_item is not None
         self.edit_button.setEnabled(enabled)
         self.clone_button.setEnabled(enabled)
         self.delete_button.setEnabled(enabled)
@@ -259,10 +275,15 @@ class QFlightPanel(QGroupBox):
 
     def change_map_flight_selection(self, index: QModelIndex) -> None:
         events = GameUpdateEvents()
-        if not index.isValid():
+        flight = (
+            self.package_model.flight_at_index(index)
+            if self.package_model is not None
+            else None
+        )
+        if flight is None:
             events.deselect_flight()
         else:
-            events.select_flight(self.package_model.flight_at_index(index))
+            events.select_flight(flight)
         EventStream.put_nowait(events)
 
     def on_edit(self) -> None:
@@ -453,11 +474,13 @@ class QPackagePanel(QGroupBox):
         if package.rowCount() == 0:
             EventStream.put_nowait(GameUpdateEvents().deselect_flight())
         else:
-            EventStream.put_nowait(
-                GameUpdateEvents().select_flight(
-                    package.flight_at_index(package.index(0))
-                )
-            )
+            flight = package.flight_at_index(package.index(0))
+            events = GameUpdateEvents()
+            if flight is None:
+                events.deselect_flight()
+            else:
+                events.select_flight(flight)
+            EventStream.put_nowait(events)
 
     def on_edit(self) -> None:
         """Opens the package edit dialog."""

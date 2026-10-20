@@ -296,6 +296,97 @@ def test_package_timing_and_name_controls(package_dialog: Any) -> None:
     assert "locked" in dialog.timing_hint.text()
 
 
+def test_accept_results_refresh_tolerates_a_cleared_package(
+    package_dialog: Any,
+) -> None:
+    dialog = package_dialog
+    insert_flight(dialog)
+    model = dialog.package_model
+    index = model.index(0)
+    dialog.package_view.setCurrentIndex(index)
+    assert dialog.package_view.selected_item is not None
+
+    # Turn processing clears campaign flights before the GUI replaces ATO models.
+    model.package.flights.clear()
+    assert index.isValid()
+    assert dialog.package_view.selected_item is None
+    model.tot_changed.emit()
+    assert not dialog.edit_flight_button.isEnabled()
+    assert not dialog.delete_flight_button.isEnabled()
+    assert dialog.flight_stack.currentIndex() == 1
+
+
+def test_stale_flight_index_cannot_edit_clone_or_cancel(
+    package_dialog: Any,
+    monkeypatch: Any,
+) -> None:
+    from qt_ui.dialogs import Dialog
+
+    dialog = package_dialog
+    insert_flight(dialog)
+    model = dialog.package_model
+    index = model.index(0)
+    model.package.flights.clear()
+    edit = Mock()
+    cancel = Mock()
+    monkeypatch.setattr(Dialog, "open_edit_flight_dialog", edit)
+    monkeypatch.setattr(model, "cancel_or_abort_flight", cancel)
+    assert model.data(index) is None
+    dialog.package_view.edit_flight(index)
+    dialog.package_view.clone_flight(index)
+    model.cancel_or_abort_flight_at_index(index)
+    edit.assert_not_called()
+    cancel.assert_not_called()
+
+
+def test_invalid_or_foreign_index_does_not_resolve_to_a_flight(
+    package_dialog: Any,
+) -> None:
+    from PySide6.QtCore import QModelIndex
+    from qt_ui.models import PackageModel
+
+    dialog = package_dialog
+    flight = insert_flight(dialog)
+    model = dialog.package_model
+    assert model.flight_at_index(QModelIndex()) is None
+    model.cancel_or_abort_flight_at_index(QModelIndex())
+    assert model.package.flights == [flight]
+    foreign = PackageModel(model.package, dialog.game_model)
+    assert model.flight_at_index(foreign.index(0)) is None
+    assert model.flight_at_index(model.index(0)) is flight
+
+
+def test_rebinding_list_disconnects_the_previous_packages_deleted_signal(
+    package_dialog: Any,
+) -> None:
+    from qt_ui.models import PackageModel
+
+    dialog = package_dialog
+    view = dialog.package_view
+    previous = dialog.package_model
+    replacement = PackageModel(previous.package, dialog.game_model)
+    view.set_package(replacement)
+    previous.deleted.emit()
+    assert view.package_model is replacement
+    replacement.deleted.emit()
+    assert view.package_model is None
+    assert view.selected_item is None
+    assert view.model().rowCount() == 0
+
+
+def test_package_editor_closes_when_turn_replacement_releases_its_model(
+    package_dialog: Any,
+) -> None:
+    dialog = package_dialog
+    dialog.show()
+    assert dialog.isVisible()
+    dialog.package_model.deleted.emit()
+    assert not dialog.isVisible()
+    assert dialog.package_view.package_model is None
+    # A signal already queued before retirement must remain harmless.
+    dialog.package_model.on_sim_update(None)
+
+
 @pytest.mark.parametrize("save", [False, True])
 def test_new_package_save_and_cancel(
     package_dialog: Any, qt_app: Any, monkeypatch: Any, save: bool
