@@ -182,6 +182,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Campaign]** Write off confirmed damaged returns outside friendly recovery territory instead of restoring them next turn; include them in loss counts and costs without inferring pilot death.
 * **[Campaign]** Recognize carrier aircraft recoveries by mission ship name when DCS runtime airbase IDs differ from editor IDs or arrive as text.
 * **[Campaign]** Restore ship and building health by absolute percentage points rather than a fraction of remaining damage.
 * **[UI]** Prevent stale flight selections from crashing package editors when accepting mission results.

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from game import Game
     from game.debriefing import Debriefing
     from game.squadrons import Squadron
-    from game.theater import ControlPoint
+    from game.theater import ControlPoint, Player
     from game.unitmap import FlyingUnit
 
 
@@ -54,6 +54,26 @@ class AircraftDamageReport:
     hit: bool
     landing_place: int | None = None
     landing_name: str | None = None
+
+
+@dataclass(frozen=True)
+class DamageDisposition:
+    unit: str
+    flying: FlyingUnit
+    health: float | None
+    recoverable: bool
+    reason: str = ""
+
+
+@dataclass(frozen=True)
+class AircraftWriteoff:
+    """An abandoned airframe, not a statement about the pilot's fate."""
+
+    unit: str
+    aircraft: str
+    price: float
+    player: Player
+    reason: str
 
 
 def parse_reports(raw: Any) -> dict[str, AircraftDamageReport]:
@@ -123,14 +143,64 @@ def commit_reports(game: Game, debriefing: Debriefing) -> None:
         return
     game._aircraft_maintenance_applied = applied
     applied.add(mission_id)
-    for name, flying, value in recoverable_damage(game, debriefing):
-        admit(game, flying.flight.squadron, f"{mission_id}:{name}", value)
+    for result in list(damage_dispositions(game, debriefing)):
+        squadron = result.flying.flight.squadron
+        if result.recoverable:
+            admit(game, squadron, f"{mission_id}:{result.unit}", result.health)
+            continue
+        if getattr(result.flying.flight, "remain_at_destination", False) and getattr(
+            result.flying.flight, "is_helo", False
+        ):
+            # Air-assault remain has already removed this flight from its origin.
+            continue
+        # Never subtract existing workshop airframes or duplicate DCS losses.
+        if squadron.owned_aircraft <= damaged_count(squadron):
+            continue
+        squadron.owned_aircraft -= 1
+        squadron.destroyed_aircraft = getattr(squadron, "destroyed_aircraft", 0) + 1
+        squadron.untasked_aircraft = min(
+            squadron.untasked_aircraft,
+            max(
+                0,
+                squadron.owned_aircraft
+                + min(0, squadron.pending_deliveries)
+                - damaged_count(squadron),
+            ),
+        )
+        if not hasattr(debriefing, "aircraft_writeoffs"):
+            debriefing.aircraft_writeoffs = []
+        debriefing.aircraft_writeoffs.append(
+            AircraftWriteoff(
+                result.unit,
+                squadron.aircraft.display_name,
+                squadron.aircraft.price,
+                squadron.player,
+                result.reason,
+            )
+        )
+        # TODO(CSAR): aircraft recovery and pilot rescue are separate decisions.
+        # A survivor nearer enemy territory may still generate a CSAR objective.
+        # Do not send this airframe-only loss through pilot death resolution.
+        _notify(
+            game,
+            squadron,
+            f"{squadron}: one damaged aircraft written off — {result.reason}.",
+        )
 
 
 def recoverable_damage(
     game: Game, debriefing: Debriefing
 ) -> Iterator[tuple[str, FlyingUnit, float | None]]:
     """The same recovered damaged airframes for workshop admission and debriefing."""
+    for result in damage_dispositions(game, debriefing):
+        if result.recoverable:
+            yield result.unit, result.flying, result.health
+
+
+def damage_dispositions(
+    game: Game, debriefing: Debriefing
+) -> Iterator[DamageDisposition]:
+    """Classify only confirmed damaged returns, never silence or missing telemetry."""
     if not getattr(game.settings, "aircraft_maintenance_enabled", False):
         return
     state = debriefing.state_data
@@ -151,6 +221,7 @@ def recoverable_damage(
         )
         if lost and not ignored_crash:
             continue
+        reason = ""
         value: float | None
         if ignored_crash:
             if not report.crashed or report.pre_crash_health is None:
@@ -201,14 +272,14 @@ def recoverable_damage(
                         and landed_at.captured == squadron.player
                     )
             if not returned_to_fleet and (friendly == math.inf or friendly >= enemy):
-                continue
+                reason = "landing is not closer to a friendly base than an enemy base"
         # Recovered airframes return to their squadron's workshop. No damaged
         # airframe can fly away from a base captured during the mission.
         if squadron.location.sunk or squadron.location.captured != squadron.player:
-            continue
+            reason = "the squadron's workshop base was lost"
         if value is not None and (not math.isfinite(value) or not 0 < value < 1):
             continue
-        yield name, flying, value
+        yield DamageDisposition(name, flying, value, not reason, reason)
 
 
 def repairs(squadron: Squadron) -> list[AircraftRepair]:

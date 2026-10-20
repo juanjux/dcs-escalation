@@ -282,14 +282,18 @@ class Game:
             """What died, by airframe. "30 aircraft" does not tell a planner whether it
             lost its Hinds or its Frogfoots; this does, in about twenty keys."""
             try:
-                return {
-                    unit_type.name: count
+                counts = {
+                    (getattr(unit_type, "name", None) or str(unit_type)): count
                     for unit_type, count in debriefing.air_losses.by_type(
                         player
                     ).items()
                 }
             except Exception:
-                return {}
+                counts = {}
+            for loss in getattr(debriefing, "aircraft_writeoffs", []):
+                if loss.player == player:
+                    counts[loss.aircraft] = counts.get(loss.aircraft, 0) + 1
+            return counts
 
         def kills_by_weapon(losses: Any) -> dict[str, int]:
             """What did the killing, by weapon. Deliberately the weapon alone, unlike
@@ -347,10 +351,13 @@ class Game:
                 return {}
 
         try:
+            writeoffs = getattr(debriefing, "aircraft_writeoffs", [])
             summary = {
                 "turn": self.turn,
-                "blue_air_lost": len(debriefing.air_losses.player),
-                "red_air_lost": len(debriefing.air_losses.enemy),
+                "blue_air_lost": len(debriefing.air_losses.player)
+                + sum(loss.player == Player.BLUE for loss in writeoffs),
+                "red_air_lost": len(debriefing.air_losses.enemy)
+                + sum(loss.player == Player.RED for loss in writeoffs),
                 "blue_air_crashed": sum(
                     debriefing.is_non_combat_loss(u)
                     for u in debriefing.air_losses.player

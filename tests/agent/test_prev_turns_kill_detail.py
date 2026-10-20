@@ -65,6 +65,27 @@ def test_what_died_is_broken_down_by_airframe(debriefing: Any) -> None:
     assert summary["blue_air_lost_by_type"] == {"F-16C_50": 1}
 
 
+def test_airframe_writeoffs_count_as_losses_without_inventing_a_killer(
+    debriefing: Any,
+) -> None:
+    from game.aircraftmaintenance import AircraftWriteoff
+    from game.theater import Player
+
+    debriefing.aircraft_writeoffs = [
+        AircraftWriteoff("unit", "F-16C_50", 20, Player.BLUE, "hostile landing"),
+        AircraftWriteoff("unit2", "Su-25", 12, Player.RED, "hostile landing"),
+    ]
+    game = SimpleNamespace(turn=4, debrief_history=[])
+    summary = _summary(game, debriefing)
+    assert summary["blue_air_lost"] == 2
+    assert summary["red_air_lost"] == 3
+    assert summary["blue_air_lost_by_type"] == {"F-16C_50": 2}
+    assert summary["red_air_lost_by_type"] == {"Su-57": 2, "Su-25": 1}
+    assert summary["blue_air_crashed"] == summary["red_air_crashed"] == 0
+    assert summary["red_air_kills_by_weapon"] == {"R-37M": 1}
+    assert summary["blue_air_kills_by_weapon"] == {"AIM-120C": 1, "AIM-260": 1}
+
+
 def test_kills_by_weapon_never_falls_back_to_the_shooter(debriefing: Any) -> None:
     """The whole reason this exists next to *_air_killers: a loadout cannot be judged
     from a dict whose values might be airframes."""
