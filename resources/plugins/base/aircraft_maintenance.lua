@@ -50,7 +50,7 @@ function M.sample(name, object)
         state.was_airborne = true
         state.ground_since, state.stopped_since = nil, nil
         state.recovered = false
-        state.landing_time, state.landing_place = nil, nil
+        state.landing_time, state.landing_place, state.landing_name = nil, nil, nil
     elseif inAir == false and state.was_airborne then
         if previous == true then state.ground_since = now end
     end
@@ -140,6 +140,7 @@ function M:onEvent(event)
     elseif id == world.event.S_EVENT_LAND then
         state.landing_time = now
         state.landing_place = read(event.place, "getID")
+        state.landing_name = read(event.place, "getName")
         M.places[name] = {object = event.place, time = timer.getTime(),
             point = read(event.place, "getPoint")}
     elseif id == world.event.S_EVENT_HIT then

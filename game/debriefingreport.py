@@ -162,6 +162,8 @@ class DebriefingReport(SaveCompatible):
     losses: Dict[bool, SideLossCounts] = field(default_factory=dict)
     air: Dict[bool, list[LossRow]] = field(default_factory=dict)
     ground: Dict[bool, list[LossRow]] = field(default_factory=dict)
+    #: Recovered damaged airframes, separate from permanent losses, grouped by type.
+    damaged_aircraft: Dict[bool, list[LossRow]] = field(default_factory=dict)
     #: What each side's losses cost it. Empty in a report saved before it was kept.
     costs: Dict[bool, LossCosts] = field(default_factory=dict)
     #: (group, fired, remaining) for the cruise missiles, worked out while the turn
@@ -187,6 +189,9 @@ class DebriefingReport(SaveCompatible):
 
     def ground_rows(self, player: Player) -> list[LossRow]:
         return self.ground.get(player.is_blue, [])
+
+    def damage_rows(self, player: Player) -> list[LossRow]:
+        return self.damaged_aircraft.get(player.is_blue, [])
 
     def loss_costs(self, player: Player) -> Optional[LossCosts]:
         return self.costs.get(player.is_blue)
@@ -222,6 +227,21 @@ class DebriefingReport(SaveCompatible):
             if costs is not None:
                 report.costs[player.is_blue] = costs
         report.missile_rows = missile_rows(debriefing)
+        from game.aircraftmaintenance import recoverable_damage
+
+        counts: dict[bool, dict[str, int]] = {True: {}, False: {}}
+        for _, flying, _ in recoverable_damage(debriefing.game, debriefing):
+            squadron = flying.flight.squadron
+            name = squadron.aircraft.display_name
+            side_counts = counts[squadron.player.is_blue]
+            side_counts[name] = side_counts.get(name, 0) + 1
+        report.damaged_aircraft = {
+            side: [
+                (name, count, "Recovered for repair")
+                for name, count in sorted(rows.items())
+            ]
+            for side, rows in counts.items()
+        }
         return report
 
 

@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Debriefing]** Show recovered damaged aircraft grouped by model, separately from losses, and retain the summary in saved reports.
 * **[High Command]** Avoid repeated reward kinds across open requests, allowing aircraft loans for distinct aircraft or helicopter types.
 * **[Campaign]** Connect Gran Polvorin's Ushuaia airport and inland air-defence sectors through a shared communications mast.
 * **[Campaign]** Group damage and repair settings, let spare mechanics cooperate (default 50% health each), configure hiring in dollars and expose runway repair duration.
@@ -181,6 +182,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Campaign]** Recognize carrier aircraft recoveries by mission ship name when DCS runtime airbase IDs differ from editor IDs or arrive as text.
 * **[Campaign]** Restore ship and building health by absolute percentage points rather than a fraction of remaining damage.
 * **[UI]** Prevent stale flight selections from crashing package editors when accepting mission results.
 

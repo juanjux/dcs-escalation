@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import logging
 from dataclasses import dataclass, field, replace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterator
 from uuid import uuid4
 
 if TYPE_CHECKING:
@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from game.debriefing import Debriefing
     from game.squadrons import Squadron
     from game.theater import ControlPoint
+    from game.unitmap import FlyingUnit
 
 
 @dataclass
@@ -52,6 +53,7 @@ class AircraftDamageReport:
     pre_crash_health: float | None
     hit: bool
     landing_place: int | None = None
+    landing_name: str | None = None
 
 
 def parse_reports(raw: Any) -> dict[str, AircraftDamageReport]:
@@ -79,7 +81,15 @@ def parse_reports(raw: Any) -> dict[str, AircraftDamageReport]:
         prior = health(entry.get("pre_crash_health"))
         if crash_time is None or damage_time is None or crash_time - damage_time < 2:
             prior = None
-        place = number(entry.get("landing_place"))
+        raw_place = entry.get("landing_place")
+        # DCS carrier Airbase.getID() can return a numeric string.
+        if (
+            isinstance(raw_place, str)
+            and len(raw_place) <= 20
+            and raw_place.isdecimal()
+        ):
+            raw_place = int(raw_place)
+        place = number(raw_place)
         result[unit] = AircraftDamageReport(
             unit,
             health(entry.get("health")),
@@ -92,6 +102,11 @@ def parse_reports(raw: Any) -> dict[str, AircraftDamageReport]:
             prior,
             entry.get("hit") is True,
             int(place) if place is not None and place.is_integer() else None,
+            (
+                entry.get("landing_name")
+                if isinstance(entry.get("landing_name"), str)
+                else None
+            ),
         )
     return result
 
@@ -108,8 +123,22 @@ def commit_reports(game: Game, debriefing: Debriefing) -> None:
         return
     game._aircraft_maintenance_applied = applied
     applied.add(mission_id)
+    for name, flying, value in recoverable_damage(game, debriefing):
+        admit(game, flying.flight.squadron, f"{mission_id}:{name}", value)
+
+
+def recoverable_damage(
+    game: Game, debriefing: Debriefing
+) -> Iterator[tuple[str, FlyingUnit, float | None]]:
+    """The same recovered damaged airframes for workshop admission and debriefing."""
+    if not getattr(game.settings, "aircraft_maintenance_enabled", False):
+        return
+    state = debriefing.state_data
+    reports = getattr(state, "aircraft_damage", {})
+    if not reports:
+        return
     losses = {id(loss) for loss in debriefing.air_losses.losses}
-    for name, report in state.aircraft_damage.items():
+    for name, report in reports.items():
         flying = debriefing.unit_map.flight(name)
         if flying is None or report.ejected or report.killed:
             continue
@@ -155,13 +184,31 @@ def commit_reports(game: Game, debriefing: Debriefing) -> None:
                 and report.landing_place is not None
                 and report.landing_place == arrival.airdrome_id_for_landing
             )
+            # Runtime airbase IDs need not equal editor unit IDs. Carrier airbase
+            # names resolve through the mission's ship mapping instead of comparing
+            # those unrelated numeric namespaces or a moving ship's old position.
+            if report.landing_name:
+                lookup = getattr(debriefing.unit_map, "theater_units", lambda _: None)
+                mapping = lookup(report.landing_name)
+                if mapping is not None:
+                    unit = mapping.theater_unit
+                    landed_at = unit.ground_object.control_point
+                    returned_to_fleet = (
+                        unit.is_ship
+                        and unit.alive
+                        and landed_at.is_fleet
+                        and not landed_at.sunk
+                        and landed_at.captured == squadron.player
+                    )
             if not returned_to_fleet and (friendly == math.inf or friendly >= enemy):
                 continue
         # Recovered airframes return to their squadron's workshop. No damaged
         # airframe can fly away from a base captured during the mission.
         if squadron.location.sunk or squadron.location.captured != squadron.player:
             continue
-        admit(game, squadron, f"{mission_id}:{name}", value)
+        if value is not None and (not math.isfinite(value) or not 0 < value < 1):
+            continue
+        yield name, flying, value
 
 
 def repairs(squadron: Squadron) -> list[AircraftRepair]:

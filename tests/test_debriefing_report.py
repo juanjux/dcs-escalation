@@ -88,6 +88,13 @@ def test_it_carries_the_turn_the_mission_was_flown_in() -> None:
     assert _report().turn == 11
 
 
+def test_old_saved_reports_have_no_damage_rows() -> None:
+    report = _report()
+    del report.__dict__["damaged_aircraft"]
+    restored = pickle.loads(pickle.dumps(report))
+    assert restored.damage_rows(Player.BLUE) == []
+
+
 def test_the_air_losses_are_counted_by_airframe() -> None:
     report = _report()
 

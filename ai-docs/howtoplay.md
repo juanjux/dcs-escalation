@@ -43,6 +43,13 @@ parking and its squadron slot, but cannot fly until repaired. Use `workshops` /
 `GET /retribution-ai/workshops` to inspect your own airframes' remaining health,
 repairing/queued status, repair duration, readiness forecast and mechanic capacity.
 The air-wing view reports `damaged`; `untasked` and `flyable` exclude those airframes.
+The debriefing's **Damaged aircraft** section counts confirmed friendly recoveries
+by aircraft/helicopter model, separately from permanent losses, and is retained in
+the saved report. It uses the same recovery rules as workshop admission and does
+not reveal enemy workshop inventories. A visibly damaged aircraft is counted only
+when telemetry confirms numerical damage or a hit with unknown remaining health.
+For carrier returns, the native landing name is resolved through the mission's
+ship mapping: DCS runtime airbase IDs can be text and need not match editor IDs.
 
 Initial mechanics are total physical fixed-wing/helicopter parking divided by 10,
 rounded up, with a minimum of two; the ratio is configurable. Mechanics are shared
