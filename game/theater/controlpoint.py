@@ -52,6 +52,7 @@ from game.ground_forces.combat_stance import CombatStance
 from game.point_with_heading import PointWithHeading
 from game.runways import RunwayAssigner, RunwayData
 from game.scenery_group import SceneryGroup
+from game.settings.settings import DEFAULT_RUNWAY_REPAIR_TURNS
 from game.sidc import (
     Entity,
     LandInstallationEntity,
@@ -325,8 +326,8 @@ class GroundUnitAllocations:
         return sum(self.transferring.values())
 
 
-# A cratered runway takes this many turns to repair (RunwayStatus.begin_repair).
-RUNWAY_REPAIR_TURNS = 4
+# Default retained for callers constructing a standalone RunwayStatus.
+RUNWAY_REPAIR_TURNS = DEFAULT_RUNWAY_REPAIR_TURNS
 
 
 @dataclass
@@ -344,10 +345,13 @@ class RunwayStatus:
         self.repair_turns_remaining = None
         self.damaged = False
 
-    def begin_repair(self) -> None:
+    def begin_repair(self, turns: int = RUNWAY_REPAIR_TURNS) -> None:
         if self.repair_turns_remaining is not None:
             logging.error("Runway already under repair. Restarting.")
-        self.repair_turns_remaining = RUNWAY_REPAIR_TURNS
+        if turns <= 0:
+            self.repair()
+        else:
+            self.repair_turns_remaining = turns
 
     def process_turn(self) -> None:
         if self.repair_turns_remaining is not None:
@@ -1173,7 +1177,9 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         if not self.runway_can_be_repaired:
             logging.error(f"Cannot repair runway at {self}")
             return
-        self.runway_status.begin_repair()
+        self.runway_status.begin_repair(
+            self.coalition.game.settings.runway_repair_turns
+        )
 
     def process_ground_object_repairs(
         self, game: Game, events: GameUpdateEvents

@@ -108,9 +108,16 @@ def test_new_damage_blocks_a_complete_turn_and_advances_only_once(world: Any) ->
     assert len([m for m in world.messages if "one aircraft repaired" in m[1]]) == 1
 
 
-def test_default_one_third_needs_three_not_four_working_turns(world: Any) -> None:
+def test_default_half_health_and_two_mechanics_finish_in_one_working_turn(
+    world: Any,
+) -> None:
+    assert world.game.settings.aircraft_repair_percent == 50
     maintenance.admit(world.game, world.sq, "severe", 0.001)
-    for turn, remaining in ((11, 1), (12, 1), (13, 1), (14, 0)):
+    view = maintenance.workshop_view(world.game, world.base)
+    assert view["aircraft"][0]["assigned_mechanics"] == 2
+    assert view["aircraft"][0]["working_turns_remaining"] == 1
+    assert view["aircraft"][0]["turns_until_ready"] == 2
+    for turn, remaining in ((11, 1), (12, 0)):
         world.game.turn = turn
         maintenance.advance(world.game)
         assert maintenance.damaged_count(world.sq) == remaining
@@ -134,7 +141,7 @@ def test_shared_fifo_queue_does_not_reuse_a_mechanic_in_same_turn(world: Any) ->
     world.game.turn = 12
     maintenance.advance(world.game)
     assert [j.source for j in maintenance.repairs(world.sq)] == ["third"]
-    assert maintenance.repairs(other)[0].health == pytest.approx(0.2 + 1 / 3)
+    assert maintenance.repairs(other)[0].health == pytest.approx(0.7)
     world.game.turn = 13
     maintenance.advance(world.game)
     assert not maintenance.repairs(world.sq)
@@ -147,6 +154,83 @@ def test_binary_damage_one_turn_and_idempotent_admission(world: Any) -> None:
     world.game.turn = 12
     maintenance.advance(world.game)
     assert not maintenance.repairs(world.sq)
+
+
+def test_spare_mechanics_help_without_wasting_staff_on_small_or_binary_jobs(
+    world: Any,
+) -> None:
+    world.base.extra_aircraft_mechanics = 3
+    world.game.settings.aircraft_repair_percent = 20
+    maintenance.admit(world.game, world.sq, "minor", 0.95)
+    maintenance.admit(world.game, world.sq, "binary", None)
+    maintenance.admit(world.game, world.sq, "severe", 0.05)
+    view = maintenance.workshop_view(world.game, world.base)
+    assert [job["assigned_mechanics"] for job in view["aircraft"]] == [1, 1, 3]
+    assert [job["working_turns_remaining"] for job in view["aircraft"]] == [1, 1, 2]
+    assert view["busy"] == 5 and view["free"] == 0
+    world.game.turn = 12
+    maintenance.advance(world.game)
+    assert len(maintenance.repairs(world.sq)) == 1
+    assert maintenance.repairs(world.sq)[0].health == pytest.approx(0.65)
+    view = maintenance.workshop_view(world.game, world.base)
+    assert view["aircraft"][0]["assigned_mechanics"] == 2
+    assert view["busy"] == 2 and view["free"] == 3
+    world.game.turn = 13
+    maintenance.advance(world.game)
+    assert not maintenance.repairs(world.sq)
+
+
+@pytest.mark.parametrize("staff", [2, 3, 5, 10])
+@pytest.mark.parametrize("rate", [1, 20, 34, 50, 100])
+def test_cooperative_forecast_matches_real_boundaries(
+    world: Any, staff: int, rate: int
+) -> None:
+    world.base.extra_aircraft_mechanics = staff - 2
+    world.game.settings.aircraft_repair_percent = rate
+    for i, health in enumerate([0.01, 0.25, 0.8, None, 0.1]):
+        maintenance.admit(world.game, world.sq, f"job-{i}", health)
+    # A later admission overlaps the existing FIFO queue.
+    world.game.turn = 11
+    maintenance.admit(world.game, world.sq, "later", 0.4)
+    view = maintenance.workshop_view(world.game, world.base)
+    expected = {
+        job["id"]: world.game.turn + job["turns_until_ready"]
+        for job in view["aircraft"]
+    }
+    original_damage = [job.damage for job in maintenance.repairs(world.sq)]
+    maintenance.workshop_view(world.game, world.base)
+    assert [job.damage for job in maintenance.repairs(world.sq)] == original_damage
+    for turn in range(12, max(expected.values()) + 1):
+        world.game.turn = turn
+        maintenance.advance(world.game)
+        actual = {job.id for job in maintenance.repairs(world.sq)}
+        assert actual == {job_id for job_id, ready in expected.items() if ready > turn}
+
+
+def test_custom_mechanic_cost_is_dollars_and_api_keeps_million_budget_units(
+    world: Any,
+) -> None:
+    world.game.settings.aircraft_mechanic_cost = 125_000
+    maintenance.hire_mechanic(world.game, world.base)
+    assert world.blue.budget == pytest.approx(9.875)
+    view = maintenance.workshop_view(world.game, world.base)
+    assert view["mechanic_cost_dollars"] == 125_000
+    assert view["mechanic_price_m"] == 0.125
+
+
+def test_new_admission_does_not_reserve_a_helper_needed_by_an_eligible_aircraft(
+    world: Any,
+) -> None:
+    maintenance.admit(world.game, world.sq, "old", 0.01)
+    world.game.turn = 11
+    maintenance.admit(world.game, world.sq, "new", 0.5)
+    view = maintenance.workshop_view(world.game, world.base)
+    assert view["next_working_turn"] == 12
+    assert [job["assigned_mechanics"] for job in view["aircraft"]] == [2, 0]
+    assert [job["turns_until_ready"] for job in view["aircraft"]] == [1, 2]
+    world.game.turn = 12
+    maintenance.advance(world.game)
+    assert [job.source for job in maintenance.repairs(world.sq)] == ["new"]
 
 
 @pytest.mark.parametrize("health", [1, 0, -1, 2, float("nan"), float("inf")])
@@ -486,12 +570,12 @@ def test_readiness_forecast_overlaps_admission_delay_with_existing_queue(
     job = maintenance.repairs(world.sq)[-1]
     view = maintenance.workshop_view(world.game, world.base)
     prediction = next(item for item in view["aircraft"] if item["id"] == job.id)
-    assert prediction["turns_until_ready"] == 4
-    for turn in range(12, 15):
+    assert prediction["turns_until_ready"] == 3
+    for turn in range(12, 14):
         world.game.turn = turn
         maintenance.advance(world.game)
         assert job in maintenance.repairs(world.sq)
-    world.game.turn = 15
+    world.game.turn = 14
     maintenance.advance(world.game)
     assert job not in maintenance.repairs(world.sq)
 
@@ -537,7 +621,7 @@ def test_workshop_widget_shows_health_queue_and_fractional_price(
     app.processEvents()
     assert world.blue.budget == pytest.approx(9.95)
     status = widget.table.item(2, 2)
-    assert status is not None and status.text() == "Repairing"
+    assert status is not None and status.text() == "Repairing (1 mechanic)"
     widget.resize(1250, 450)
     widget.show()
     app.processEvents()

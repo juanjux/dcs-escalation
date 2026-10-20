@@ -53,7 +53,8 @@ class QAircraftWorkshop(QWidget):
         )
         layout.addWidget(self.table)
         hint = QLabel(
-            "One mechanic works on one aircraft per turn. New damage cannot be repaired "
+            "Spare mechanics help assigned aircraft and add their repair capacity. "
+            "Each mechanic works on only one aircraft per turn. New damage cannot be repaired "
             "at the end of the same mission. Damaged aircraft still occupy parking."
         )
         hint.setWordWrap(True)
@@ -70,11 +71,9 @@ class QAircraftWorkshop(QWidget):
         view = workshop_view(game, self.base)
         self.summary.setText(
             f"Mechanics: {view['mechanics']} total · {view['busy']} busy · {view['free']} free "
-            f"| Repairs: {view['repair_percent_per_turn']:.1f}% of maximum health per turn"
+            f"| Each mechanic: up to {view['repair_percent_per_turn']:.1f}% of maximum health per turn"
         )
-        self.hire.setText(
-            f"Hire one mechanic — ${view['mechanic_price_m'] * 1_000_000:,.0f}"
-        )
+        self.hire.setText(f"Hire one mechanic — ${view['mechanic_cost_dollars']:,.0f}")
         self.hire.setEnabled(
             view["enabled"]
             and not self.base.sunk
@@ -95,7 +94,11 @@ class QAircraftWorkshop(QWidget):
             values = [
                 f"{entry['aircraft']} — {entry['squadron']}",
                 "Unknown" if health is None else f"{health:.1f}%",
-                entry["status"].capitalize(),
+                (
+                    f"Repairing ({entry['assigned_mechanics']} mechanic{'s' if entry['assigned_mechanics'] != 1 else ''})"
+                    if entry["assigned_mechanics"]
+                    else "Queued"
+                ),
                 str(entry["working_turns_remaining"]),
                 str(entry["turns_until_ready"]),
                 f"{entry['sale_price_m']:.3f}",

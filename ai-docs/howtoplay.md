@@ -25,7 +25,10 @@ After that, follow the turn protocol at the end.
 
 ## Aircraft damage and workshops
 
-Campaign Management > General can enable persistent aircraft damage (off by default).
+Campaign Management > Persistent damage & repairs contains separate boxes for
+aircraft workshops, surviving ship/building damage, and reconstruction times.
+Persistent aircraft damage is off by default. Its dependent controls are greyed
+out until enabled; ship/building recovery has its own independent switch.
 Both coalitions use the same rules. A damaged aircraft remains owned and occupies
 parking and its squadron slot, but cannot fly until repaired. Use `workshops` /
 `GET /retribution-ai/workshops` to inspect your own airframes' remaining health,
@@ -34,10 +37,17 @@ The air-wing view reports `damaged`; `untasked` and `flyable` exclude those airf
 
 Initial mechanics are total physical fixed-wing/helicopter parking divided by 10,
 rounded up, with a minimum of two; the ratio is configurable. Mechanics are shared
-between all squadrons at a base. Each handles one aircraft at a time, in admission
-order, and repairs one third of maximum health per working turn by default. Severe
-damage therefore takes up to three working turns; confirmed damage without a valid
-health percentage takes one. New damage cannot finish at the boundary that commits
+between all squadrons at a base. First assign one mechanic per aircraft in admission
+order, then distribute spare mechanics among those aircraft, up to what each needs
+to finish that turn. Each mechanic restores up to 50 percentage points of maximum
+health per working turn by default: one mechanic needs two turns for severe damage,
+but two can finish it in one. A mechanic cannot work on a second aircraft in the
+same turn. Confirmed damage without a valid health percentage needs one mechanic
+for one working turn. The API reports `assigned_mechanics` and
+`repair_capacity_percent_per_turn` per airframe for the workshop's
+`next_working_turn`; readiness forecasts account for cooperation, admission
+delays and reallocation after other aircraft finish.
+New damage cannot finish at the boundary that commits
 that mission: a return during turn N is unavailable in N+1 and needs at least the
 next boundary to become ready in N+2. Waiting in a queue can extend this. Skipped
 turns advance repairs, but reloading or regenerating a mission does not.
@@ -57,7 +67,9 @@ does not model every subsystem; canopy jettison alone did not reduce measured li
 Old missions without this telemetry retain their existing behavior.
 
 Use `hire_aircraft_mechanic` / `POST /retribution-ai/workshops/hire` to buy permanent
-additional mechanics at your own base: $50,000 (0.05M) each by default. Use
+additional mechanics at your own base: $50,000 each by default, configured in
+dollars. The API reports `mechanic_cost_dollars` and retains `mechanic_price_m`
+for clients that use million-dollar budgets. Use
 `sell_damaged_aircraft` / `POST /retribution-ai/workshops/sell` with the repair ID
 to sell a specific damaged airframe immediately. Default resale is 50% of its
 normal price; both the price factor and mechanic cost are configurable. Regular
@@ -118,20 +130,30 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
 
 ### Persistent ship and building damage
 
-Campaign Management > General contains **Persistent ship and building damage**
+Campaign Management > Persistent damage & repairs contains **Persistent ship and building damage**
 (enabled by default) and **Ship and building damage repaired per turn (%)**
-(default 30). Surviving naval units and buildings, including scenery objectives,
+(default 34). Surviving naval units and buildings, including scenery objectives,
 keep their remaining health in the next mission. Armor groups and SAM units do
 not retain partial damage and continue to recover fully between turns.
 
-At each turn boundary, including a skipped turn, the configured percentage of
-the **remaining damage** is repaired: 50% health with 30% repair becomes 65%,
-then 75.5% on the following turn. Less than 0.5% remaining damage rounds up to
-full health. Set repair to 0 for no automatic recovery or 100 for full recovery.
+At each turn boundary, including a skipped turn, add the configured percentage
+points of **original maximum health**, capped at 100%, not a fraction of remaining
+damage. With 30 configured, 20% health becomes 50%, then 80%, then 100%.
+The default 34 points restores any surviving unit in at most three turns.
+Set repair to 0 for no automatic recovery or 100 for full recovery.
 Destroyed units stay destroyed; their existing paid repair/rebuild rules still
 apply. Switching persistence off restores surviving units at the turn boundary.
 Partial damage does not reduce a surviving building's income or disable its IADS
 role; destruction still controls those effects.
+
+The same settings subpage contains reconstruction times for destroyed ground
+object units (default two turns), buildings (four), and runways (four, now
+configurable). Zero means instant repair. These durations apply to manual and
+automatic orders independently of damage persistence, so they remain editable
+when persistence is off. Existing repair countdowns are unchanged. Automatic
+repair switches and AI purchasing priorities remain in HQ Automation.
+Existing campaigns retain saved repair percentages and costs; new defaults do
+not overwrite custom values.
 
 The map and location dialog show a partially filled orange health bar for
 surviving damaged units. The API exposes a `health` object on targets, your own

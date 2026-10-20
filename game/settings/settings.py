@@ -76,6 +76,12 @@ CAMPAIGN_MANAGEMENT_PAGE = "Campaign Management"
 GENERAL_SECTION = "General"
 PILOTS_AND_SQUADRONS_SECTION = "Pilots and Squadrons"
 HQ_AUTOMATION_SECTION = "HQ Automation"
+PERSISTENT_DAMAGE_SECTION = "Persistent damage & repairs"
+AIRCRAFT_REPAIRS_BOX = "Aircraft damage and workshops"
+SHIP_BUILDING_REPAIRS_BOX = "Ship and building damage"
+REPAIR_TIMES_BOX = "Destroyed units, buildings and runways"
+DEFAULT_RUNWAY_REPAIR_TURNS = 4
+DEFAULT_PERSISTENT_DAMAGE_REPAIR_PERCENT = 34
 OPFOR_AI_SECTION = "OPFOR AI commander"
 HIGH_COMMAND_SECTION = "High Command"
 FLIGHT_PLANNER_AUTOMATION = "Flight Planner Automation"
@@ -255,51 +261,57 @@ class Settings:
     aircraft_maintenance_enabled: bool = boolean_option(
         "Persistent aircraft damage and workshops",
         page=CAMPAIGN_MANAGEMENT_PAGE,
-        section=GENERAL_SECTION,
+        section=PERSISTENT_DAMAGE_SECTION,
+        subsection=AIRCRAFT_REPAIRS_BOX,
         default=False,
         detail="Recovered damaged aircraft occupy parking but cannot fly until repaired. Applies to both coalitions. Old missions without telemetry create no repairs. Disabling releases existing repairs at the next turn boundary.",
     )
     aircraft_slots_per_mechanic: int = bounded_int_option(
-        "Parking slots per initial mechanic",
+        "Get one mechanic per each N parking slots in the base, where N is…",
         page=CAMPAIGN_MANAGEMENT_PAGE,
-        section=GENERAL_SECTION,
+        section=PERSISTENT_DAMAGE_SECTION,
+        subsection=AIRCRAFT_REPAIRS_BOX,
         default=10,
         min=1,
         max=100,
-        detail="Total fixed-wing and helicopter parking divided by this number, rounded up. Every base has at least two mechanics. Mechanics are shared between squadrons.",
+        detail="Determines initial workshop staff, not parking capacity. Count all physical aircraft and helicopter parking slots, divide by N and round up, with at least two mechanics per base. With N = 10, 100 slots give 10 mechanics and 51 slots give 6. Mechanics are shared between all squadrons at the base.",
+        enabled_when=lambda s: s.aircraft_maintenance_enabled,
     )
     aircraft_repair_percent: float = bounded_float_option(
         "Maximum aircraft health repaired per turn (%)",
         page=CAMPAIGN_MANAGEMENT_PAGE,
-        section=GENERAL_SECTION,
-        default=100 / 3,
+        section=PERSISTENT_DAMAGE_SECTION,
+        subsection=AIRCRAFT_REPAIRS_BOX,
+        default=50,
         min=1,
         max=100,
         divisor=10,
         prefix="",
         decimals=1,
-        detail="Each mechanic works on one aircraft per turn. The default repairs one third of maximum health, so severe damage takes up to three working turns. Unknown numerical damage takes one turn.",
+        detail="Maximum health restored by EACH mechanic per working turn. One mechanic works on one aircraft at a time. Spare mechanics help aircraft already assigned, adding their repair capacity: at 50%, two mechanics can restore up to 100% in one working turn. Aircraft are assigned in admission order; unknown numerical damage takes one working turn.",
+        enabled_when=lambda s: s.aircraft_maintenance_enabled,
     )
     damaged_aircraft_sale_percent: int = bounded_int_option(
         "Damaged aircraft resale value (%)",
         page=CAMPAIGN_MANAGEMENT_PAGE,
-        section=GENERAL_SECTION,
+        section=PERSISTENT_DAMAGE_SECTION,
+        subsection=AIRCRAFT_REPAIRS_BOX,
         default=50,
         min=0,
         max=100,
         detail="Percentage of the normal aircraft price received when selling a damaged airframe from the workshop or confirming a squadron relocation.",
+        enabled_when=lambda s: s.aircraft_maintenance_enabled,
     )
-    aircraft_mechanic_price: float = bounded_float_option(
-        "Cost per additional aircraft mechanic ($M)",
+    aircraft_mechanic_cost: int = bounded_int_option(
+        "Cost per additional aircraft mechanic ($)",
         page=CAMPAIGN_MANAGEMENT_PAGE,
-        section=GENERAL_SECTION,
-        default=0.05,
+        section=PERSISTENT_DAMAGE_SECTION,
+        subsection=AIRCRAFT_REPAIRS_BOX,
+        default=50_000,
         min=0,
-        max=10,
-        divisor=100,
-        prefix="$ ",
-        decimals=2,
-        detail="Permanent additional capacity at this base. The default is $50,000 (0.05 million).",
+        max=10_000_000,
+        detail="Price in dollars to permanently hire one additional mechanic at a base. The default is $50,000.",
+        enabled_when=lambda s: s.aircraft_maintenance_enabled,
     )
     opfor_ai_enabled: bool = boolean_option(
         "Allow OPFOR AI control (external LLM plays red)",
@@ -707,7 +719,8 @@ class Settings:
     persistent_damage_enabled: bool = boolean_option(
         "Persistent ship and building damage",
         page=CAMPAIGN_MANAGEMENT_PAGE,
-        section=GENERAL_SECTION,
+        section=PERSISTENT_DAMAGE_SECTION,
+        subsection=SHIP_BUILDING_REPAIRS_BOX,
         default=True,
         detail=(
             "Surviving ships and buildings keep their remaining health between "
@@ -718,13 +731,15 @@ class Settings:
     persistent_damage_repair_percent: int = bounded_int_option(
         "Ship and building damage repaired per turn (%)",
         page=CAMPAIGN_MANAGEMENT_PAGE,
-        section=GENERAL_SECTION,
-        default=30,
+        section=PERSISTENT_DAMAGE_SECTION,
+        subsection=SHIP_BUILDING_REPAIRS_BOX,
+        default=DEFAULT_PERSISTENT_DAMAGE_REPAIR_PERCENT,
         min=0,
         max=100,
         detail=(
-            "Percentage of the remaining damage repaired at the end of each turn. "
-            "For example, 30% repair raises 50% health to 65%. Zero disables "
+            "Percentage points of original maximum health restored at the end of each turn, "
+            "not a percentage of remaining damage. For example, 30% repair raises 20% health to 50%. "
+            "The default is 34 points per turn. Zero disables "
             "automatic recovery; 100 restores surviving units fully."
         ),
         enabled_when=lambda settings: settings.persistent_damage_enabled,
@@ -987,7 +1002,8 @@ class Settings:
     ground_object_repair_turns: int = bounded_int_option(
         "Ground object repair turns",
         CAMPAIGN_MANAGEMENT_PAGE,
-        HQ_AUTOMATION_SECTION,
+        PERSISTENT_DAMAGE_SECTION,
+        subsection=REPAIR_TIMES_BOX,
         min=0,
         max=10,
         default=2,
@@ -1022,7 +1038,8 @@ class Settings:
     building_repair_turns: int = bounded_int_option(
         "Building repair turns",
         CAMPAIGN_MANAGEMENT_PAGE,
-        HQ_AUTOMATION_SECTION,
+        PERSISTENT_DAMAGE_SECTION,
+        subsection=REPAIR_TIMES_BOX,
         min=0,
         max=10,
         default=4,
@@ -1031,6 +1048,16 @@ class Settings:
             "Set to 0 for instant repairs. Applies to your own repairs as well, so it "
             "stands whether or not the AI is doing them."
         ),
+    )
+    runway_repair_turns: int = bounded_int_option(
+        "Runway repair turns",
+        CAMPAIGN_MANAGEMENT_PAGE,
+        PERSISTENT_DAMAGE_SECTION,
+        subsection=REPAIR_TIMES_BOX,
+        min=0,
+        max=10,
+        default=DEFAULT_RUNWAY_REPAIR_TURNS,
+        detail="Turns for a newly ordered runway repair to complete. Set to 0 for instant repairs. Applies to manual and automatic orders; existing repairs keep their countdown. Automatic repair switches remain in HQ Automation.",
     )
     automate_aircraft_reinforcements: bool = boolean_option(
         "Automate aircraft purchases",
@@ -3144,6 +3171,10 @@ class Settings:
     def deserialize_state_dict(state: dict[str, Any]) -> dict[str, Any]:
         # restore Enum & timedelta types
         s = Settings()
+        # The old mechanic price was expressed in millions, including in presets.
+        if "aircraft_mechanic_price" in state:
+            old_price = state.pop("aircraft_mechanic_price")
+            state.setdefault("aircraft_mechanic_cost", round(old_price * 1_000_000))
         Settings._migrate_legacy_bandit_clouds(state)
         Settings._migrate_settings_into_plugins(state)
         Settings._migrate_lopsided_friendship_bands(state)

@@ -1540,8 +1540,6 @@ def build_turn_context(game: Game, side: str = "red") -> TurnContextView:
 
 
 def build_settings(game: Game) -> SettingsView:
-    from game.theater.controlpoint import RUNWAY_REPAIR_TURNS
-
     s = game.settings
     return SettingsView(
         opfor_aggressiveness_pct=s.opfor_autoplanner_aggressiveness,
@@ -1564,7 +1562,7 @@ def build_settings(game: Game) -> SettingsView:
             if getattr(s, "enable_squadron_pilot_limits", True)
             else None
         ),
-        runway_repair_turns=RUNWAY_REPAIR_TURNS,
+        runway_repair_turns=s.runway_repair_turns,
         cruise_missile_strikes=bool(s.plugin_option_or("cruisemissiles", False)),
         cruise_missile_auto_raids=bool(
             s.plugin_option_or("cruisemissiles.autoRaids", False)

@@ -1,9 +1,10 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Campaign]** Group damage and repair settings, let spare mechanics cooperate (default 50% health each), configure hiring in dollars and expose runway repair duration.
 * **[Campaign]** Optional persistent aircraft damage with shared base workshops,
   mechanic hiring, discounted sales, relocation warnings and API visibility.
-* **[Campaign]** Persist surviving ship and building damage with configurable automatic recovery (default 30% per turn), orange health bars and API health reports.
+* **[Campaign]** Persist surviving ship and building damage with configurable automatic recovery (default 34 percentage points per turn), orange health bars and API health reports.
 * **[UI]** Show saved aircraft points as yellow map pins with drag, rename and delete controls synchronized with Player Aircrafts.
 * **[Campaign]** Protect newly captured bases from recapture for one full turn, with an event log notice for bases without ground forces.
 * **[Payload]** Select GAU-8 combat mix, HEI or practice ammunition for the A-10 family and save it with the loadout.
@@ -178,6 +179,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Campaign]** Restore ship and building health by absolute percentage points rather than a fraction of remaining damage.
 * **[UI]** Prevent stale flight selections from crashing package editors when accepting mission results.
 
 * **[UI]** Show capped deployable forces and separate reserves in base front-line comparisons instead of total ground inventories.

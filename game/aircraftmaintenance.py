@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -280,7 +280,7 @@ def _require_base(game: Game, base: ControlPoint) -> None:
 def hire_mechanic(game: Game, base: ControlPoint) -> None:
     _require_base(game, base)
     coalition = game.coalition_for(base.captured)
-    price = game.settings.aircraft_mechanic_price
+    price = game.settings.aircraft_mechanic_cost / 1_000_000
     if coalition.budget < price:
         raise ValueError("Not enough funds to hire a mechanic")
     coalition.adjust_budget(-price)
@@ -305,6 +305,60 @@ def sell_damaged(game: Game, squadron: Squadron, job_id: str) -> float:
     return value
 
 
+def _assign_mechanics(
+    jobs: list[AircraftRepair], count: int, rate: float
+) -> dict[str, int]:
+    """FIFO first assignments, then share spare staff without wasting repair work.
+
+    Each mechanic works on only one airframe in a turn. Extra staff rotate through
+    assigned airframes, capped at the staff needed to finish each repair this turn.
+    """
+    assigned = {job.id: 0 for job in jobs}
+    active = jobs[:count]
+    for job in active:
+        assigned[job.id] = 1
+    spare = count - len(active)
+    while spare:
+        helpers = [job for job in active if assigned[job.id] < job.working_turns(rate)]
+        if not helpers:
+            break
+        for job in helpers[:spare]:
+            assigned[job.id] += 1
+            spare -= 1
+    return assigned
+
+
+def _forecast(
+    jobs: list[AircraftRepair], count: int, rate: float, turn: int
+) -> dict[str, tuple[int, int, int]]:
+    """Simulate the same allocation as advance without modifying saved repairs.
+
+    Return working turns, turns before the first working turn, and readiness.
+    Reallocation after completion and the admission delay both affect the result.
+    """
+    pending = [replace(job) for job in jobs]
+    first: dict[str, int] = {}
+    working = {job.id: 0 for job in jobs}
+    result = {}
+    step = 0
+    while pending:
+        step += 1
+        eligible = [job for job in pending if turn + step > job.admitted_turn + 1]
+        assigned = _assign_mechanics(eligible, count, rate)
+        for job in eligible:
+            staff = assigned[job.id]
+            if not staff:
+                continue
+            first.setdefault(job.id, step)
+            working[job.id] += 1
+            if job.damage is not None:
+                job.damage = max(0, job.damage - staff * rate)
+            if job.damage is None or job.damage <= 1e-9:
+                result[job.id] = (working[job.id], first[job.id] - 1, step)
+                pending.remove(job)
+    return result
+
+
 def advance(game: Game) -> None:
     """Exactly one repair step per turn; never called by mission regeneration."""
     if getattr(game, "_aircraft_workshop_turn", -1) == game.turn:
@@ -320,13 +374,16 @@ def advance(game: Game) -> None:
             for squadron, job in jobs:
                 squadron.aircraft_repairs.remove(job)
             continue
-        # Each mechanic handles one aircraft per turn. Completing a small repair
-        # does not also repair the next queued aircraft at the same boundary.
-        for squadron, job in jobs[: mechanics(game, base)]:
-            if game.turn <= job.admitted_turn + 1:
+        eligible = [(sq, job) for sq, job in jobs if game.turn > job.admitted_turn + 1]
+        assigned = _assign_mechanics(
+            [job for _, job in eligible], mechanics(game, base), repair_rate(game)
+        )
+        for squadron, job in eligible:
+            staff = assigned[job.id]
+            if not staff:
                 continue
             if job.damage is not None:
-                job.damage = max(0, job.damage - repair_rate(game))
+                job.damage = max(0, job.damage - staff * repair_rate(game))
             if job.damage is None or job.damage <= 1e-9:
                 squadron.aircraft_repairs.remove(job)
                 _notify(
@@ -337,17 +394,23 @@ def advance(game: Game) -> None:
 def workshop_view(game: Game, base: ControlPoint) -> dict[str, Any]:
     count = mechanics(game, base)
     jobs = base_jobs(game, base) if game.settings.aircraft_maintenance_enabled else []
-    # Forecast by assigning each queued job to the first mechanic that becomes
-    # free. Ongoing jobs retain their mechanic; all durations use the same rate.
-    availability = [0] * count
+    rate = repair_rate(game)
+    airframes = [job for _, job in jobs]
+    next_working_turn = max(
+        game.turn + 1,
+        min((job.admitted_turn + 2 for job in airframes), default=game.turn + 1),
+    )
+    assigned = _assign_mechanics(
+        [job for job in airframes if next_working_turn > job.admitted_turn + 1],
+        count,
+        rate,
+    )
+    forecast = _forecast(airframes, count, rate, game.turn)
+    busy = sum(assigned.values())
     entries = []
-    for index, (squadron, job) in enumerate(jobs):
-        mechanic = min(range(count), key=availability.__getitem__)
-        wait = availability[mechanic]
-        duration = job.working_turns(repair_rate(game))
-        admission_delay = max(0, job.admitted_turn + 1 - game.turn)
-        ready = max(wait, admission_delay) + duration
-        availability[mechanic] = ready
+    for squadron, job in jobs:
+        staff = assigned.get(job.id, 0)
+        duration, wait, ready = forecast[job.id]
         entries.append(
             {
                 "id": job.id,
@@ -355,7 +418,9 @@ def workshop_view(game: Game, base: ControlPoint) -> dict[str, Any]:
                 "squadron": str(squadron),
                 "aircraft": squadron.aircraft.display_name,
                 "health_percent": None if job.health is None else job.health * 100,
-                "status": "repairing" if index < count else "queued",
+                "status": "repairing" if staff else "queued",
+                "assigned_mechanics": staff,
+                "repair_capacity_percent_per_turn": staff * rate * 100,
                 "working_turns_remaining": duration,
                 "queue_turns": wait,
                 "turns_until_ready": ready,
@@ -367,9 +432,11 @@ def workshop_view(game: Game, base: ControlPoint) -> dict[str, Any]:
         "base": base.name,
         "enabled": game.settings.aircraft_maintenance_enabled,
         "mechanics": count,
-        "busy": min(count, len(jobs)),
-        "free": max(0, count - len(jobs)),
-        "mechanic_price_m": game.settings.aircraft_mechanic_price,
+        "busy": busy,
+        "free": count - busy,
+        "mechanic_cost_dollars": game.settings.aircraft_mechanic_cost,
+        "mechanic_price_m": game.settings.aircraft_mechanic_cost / 1_000_000,
         "repair_percent_per_turn": game.settings.aircraft_repair_percent,
+        "next_working_turn": next_working_turn if jobs else None,
         "aircraft": entries,
     }
