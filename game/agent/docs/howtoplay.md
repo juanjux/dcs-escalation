@@ -1190,6 +1190,12 @@ them ranked by difficulty plus importance (three by default: high, medium and lo
   start of the next turn by another from the same tier.
 - **Prizes.** An instant prize is given at once: cash, morale for your pilots, the
   wounded back early. A **ticket** is kept in `tickets` for you to spend when you choose.
+  New requests do not repeat a reward kind already offered by another open request
+  on the same side, even if the amount or duration differs. Typed squadron loans
+  may repeat only for different aircraft or helicopter models; generic AWACS,
+  tanker or reinforcement loans cannot promise that distinction. Existing promises
+  are not changed. Completed requests, saved tickets and active effects do not
+  reserve a reward kind. If no distinct reward remains, that request slot waits.
 - **Spending a ticket.** One with no `steps` (state `READY`) is spent with
   `POST /high_command/spend {ticket: index}`. One with steps asks a pick per step: call
   `POST /high_command/ticket_choices {ticket, picked: []}` for the first step's `choices`,

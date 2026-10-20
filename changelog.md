@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[High Command]** Avoid repeated reward kinds across open requests, allowing aircraft loans for distinct aircraft or helicopter types.
 * **[Campaign]** Connect Gran Polvorin's Ushuaia airport and inland air-defence sectors through a shared communications mast.
 * **[Campaign]** Group damage and repair settings, let spare mechanics cooperate (default 50% health each), configure hiring in dollars and expose runway repair duration.
 * **[Campaign]** Optional persistent aircraft damage with shared base workshops,

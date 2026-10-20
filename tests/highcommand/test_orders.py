@@ -28,6 +28,7 @@ from tests.highcommand.stubs import Base, motorpool
 
 def _objective(name: str, score: int) -> Objective:
     difficulty = min(5, score - 1)
+    kind = "cash" if score <= 3 else "aircraft" if score <= 6 else "morale"
     return Objective(
         name=name,
         kind="Factory",
@@ -37,7 +38,7 @@ def _objective(name: str, score: int) -> Objective:
         difficulty=difficulty,
         importance=score - difficulty,
         justification=f"{name} earns.",
-        prize=Prize("cash", score, False, f"Cash for {name}."),
+        prize=Prize(kind, score, False, f"Reward for {name}."),
     )
 
 
@@ -121,9 +122,7 @@ def test_one_order_for_each_tier_with_its_prize_and_a_lifetime(
     for order in command.orders:
         assert order.objective[0] == "LMH"[order.tier]
         assert 2 <= order.expires_on - 10 <= 5
-        assert order.prize == Prize(
-            "cash", order.score, False, f"Cash for {order.objective}."
-        )
+        assert order.prize == next(o.prize for o in BOARD if o.name == order.objective)
         assert order.justification == f"{order.objective} earns."
 
 
