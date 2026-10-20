@@ -38,6 +38,56 @@ roles · 5. How to plan a strong turn · 6. Rules you must respect · 7. Asking 
 Read 1-4 once, then work from 5 and 8 each turn; 9 is the field-by-field reference.
 **Turn 0 is different and is described at the end of §5 — you cannot fly on it.**
 
+## Aircraft damage and workshops
+
+Campaign Management > General can enable persistent aircraft damage (off by default).
+Both coalitions use the same rules. A damaged aircraft remains owned and occupies
+parking and its squadron slot, but cannot fly until repaired. Use `workshops` /
+`GET /retribution-ai/workshops` to inspect your own airframes' remaining health,
+repairing/queued status, repair duration, readiness forecast and mechanic capacity.
+The air-wing view reports `damaged`; `untasked` and `flyable` exclude those airframes.
+
+Initial mechanics are total physical fixed-wing/helicopter parking divided by 10,
+rounded up, with a minimum of two; the ratio is configurable. Mechanics are shared
+between all squadrons at a base. Each handles one aircraft at a time, in admission
+order, and repairs one third of maximum health per working turn by default. Severe
+damage therefore takes up to three working turns; confirmed damage without a valid
+health percentage takes one. New damage cannot finish at the boundary that commits
+that mission: a return during turn N is unavailable in N+1 and needs at least the
+next boundary to become ready in N+2. Waiting in a queue can extend this. Skipped
+turns advance repairs, but reloading or regenerating a mission does not.
+
+Recovery requires a native landing event and a living aircraft stationary on the
+ground for 30 seconds. Use the actual position, not DCS's airport attribution:
+off-field landings may still name a nearby airport. A landing closer to a friendly
+base than an enemy base is eligible, including an emergency landing. Recovered
+airframes enter their squadron's base workshop. A confirmed return to the intended
+friendly carrier also qualifies; stopping on deck is measured relative to the moving
+ship. Ejected pilots and confirmed kills
+never recover their aircraft. With "Non-combat (crash) aircraft losses don't count"
+enabled, an otherwise non-combat crash with damage recorded before impact also
+enters the workshop. With that option off it remains a loss. Missing units, a final
+impact reading, or last positive health alone never establish recovery. Telemetry
+does not model every subsystem; canopy jettison alone did not reduce measured life.
+Old missions without this telemetry retain their existing behavior.
+
+Use `hire_aircraft_mechanic` / `POST /retribution-ai/workshops/hire` to buy permanent
+additional mechanics at your own base: $50,000 (0.05M) each by default. Use
+`sell_damaged_aircraft` / `POST /retribution-ai/workshops/sell` with the repair ID
+to sell a specific damaged airframe immediately. Default resale is 50% of its
+normal price; both the price factor and mechanic cost are configurable. Regular
+aircraft sales sell idle healthy aircraft, not workshop jobs.
+
+Before relocating, read `relocation_workshop_quote` /
+`GET /retribution-ai/workshops/relocation-quote`. Damaged aircraft cannot transfer:
+both repairing and queued airframes must be sold automatically with explicit
+`confirm_damaged_sale: true` on the relocation request. The UI asks for confirmation
+with the healthy transfer count, damaged sale count and proceeds. Canceling changes
+nothing, and an invalid relocation never sells aircraft. Losing a base or sinking
+its ship writes off immobile damaged aircraft without a resale refund. Returning
+a loan removes its workshop jobs along with that squadron. Disabling maintenance
+releases existing repair jobs at the next turn boundary without selling airframes.
+
 ## 1. What this game is
 
 DCS Escalation is a **turn-based strategic campaign** on top of DCS World. Each

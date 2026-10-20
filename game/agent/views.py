@@ -179,6 +179,7 @@ class ControlPointView(BaseModel):
 class SquadronView(BaseModel):
     id: str
     name: str
+    damaged: int | None = None
     aircraft: str
     base: str
     owned: int | None = None  # aircraft on hand (omitted when 0)
@@ -847,6 +848,11 @@ def _unflyable_reason(sq: Squadron, grounded: bool) -> str | None:
     if grounded:
         return "grounded"  # the `grounded` flag carries the detail
     if sq.untasked_aircraft <= 0:
+        from game.aircraftmaintenance import damaged_count
+
+        damaged = damaged_count(sq)
+        if damaged:
+            return f"{damaged} in workshop; remaining aircraft already tasked or sold"
         return f"all {sq.owned_aircraft} already tasked"
     return "no available pilots"
 
@@ -862,6 +868,8 @@ def idle_flyable_total(game: Game, side: str) -> int:
 
 
 def build_squadron(sq: Squadron, player: Player | None = None) -> SquadronView:
+    from game.aircraftmaintenance import damaged_count
+
     # A squadron that can't sortie (enemy-held base, or a cratered runway / sunk
     # hull) is excluded by the engine's mission planner, so flag it instead of
     # advertising phantom flyable aircraft to the planner.
@@ -873,6 +881,7 @@ def build_squadron(sq: Squadron, player: Player | None = None) -> SquadronView:
     return SquadronView(
         id=str(sq.id),
         name=str(sq),
+        damaged=damaged_count(sq) or None,
         aircraft=sq.aircraft.display_name,
         base=sq.location.name,
         owned=owned or None,

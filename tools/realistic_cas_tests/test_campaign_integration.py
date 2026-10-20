@@ -278,6 +278,8 @@ class CampaignIntegrationTests(unittest.TestCase):
                 self.g, "_seed_pilot_roster"
             ), patch.object(self.g, "_seed_scenery_objectives"), patch.object(
                 self.g, "_inject_tic_script"
+            ), patch.object(
+                self.g, "_inject_aircraft_maintenance"
             ):
                 self.g.generate()
         self.assertEqual(

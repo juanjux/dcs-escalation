@@ -453,9 +453,16 @@ class MissionResultsProcessor:
             # "remain at destination" assault reached a base we now hold.
             with logged_duration("commit_air_assault_remain"):
                 self.commit_air_assault_remain(debriefing)
+            with logged_duration("commit_aircraft_damage"):
+                self.commit_aircraft_damage(debriefing)
             with logged_duration("record_carcasses"):
                 self.record_carcasses(debriefing)
             self.game.record_debrief(debriefing)
+
+    def commit_aircraft_damage(self, debriefing: Debriefing) -> None:
+        from game.aircraftmaintenance import commit_reports
+
+        commit_reports(self.game, debriefing)
 
     def note_high_command_orders(self, debriefing: Debriefing) -> None:
         """Mark the High Command's orders the mission achieved. A fault here must not

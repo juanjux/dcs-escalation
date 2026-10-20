@@ -445,6 +445,7 @@ class ParkingType:
 
 
 class ControlPoint(MissionTarget, SidcDescribable, ABC):
+    extra_aircraft_mechanics: int = 0
     # Not sure what distance DCS uses, but assuming it's about 2NM since that's roughly
     # the distance of the circle on the map.
     CAPTURE_DISTANCE = meters(TRIGGER_RADIUS_CAPTURE)
@@ -1031,6 +1032,10 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         return base_for_fewest_losses
 
     def _retreat_squadron(self, game: Game, squadron: Squadron) -> None:
+        from game.aircraftmaintenance import remove_damaged, repairs
+
+        if repairs(squadron):
+            remove_damaged(game, squadron, refund=False)
         destination = self.aircraft_retreat_destination(squadron)
         if destination is None:
             squadron.refund_orders()
@@ -1698,6 +1703,10 @@ class NavalControlPoint(
         """
         game = self.coalition.game
         for squadron in list(self.squadrons):
+            from game.aircraftmaintenance import remove_damaged, repairs
+
+            if repairs(squadron):
+                remove_damaged(game, squadron, refund=False)
             aboard = max(0, min(squadron.untasked_aircraft, squadron.owned_aircraft))
             squadron.owned_aircraft -= aboard
             squadron.destroyed_aircraft += aboard

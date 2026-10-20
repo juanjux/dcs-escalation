@@ -142,6 +142,9 @@ class Game:
         self.theater = theater
         self.campaign_name = campaign_name
         self.turn = 0
+        self._aircraft_repair_sequence = 0
+        self._aircraft_workshop_turn = -1
+        self._aircraft_maintenance_applied: set[str] = set()
         # NB: This is the *start* date. It is never updated.
         self.date = date(start_date.year, start_date.month, start_date.day)
         self.game_stats = GameStats()
@@ -632,6 +635,12 @@ class Game:
             self.opfor_high_command.end_effects(self)
         except Exception:
             logging.exception("Could not take back the High Command's loans")
+
+        # Expired loans leave the queue before mechanics are allocated. Inventory
+        # is reset in initialize_turn, after these repairs have been completed.
+        from .aircraftmaintenance import advance as advance_aircraft_repairs
+
+        advance_aircraft_repairs(self)
 
     def begin_turn_0(self, squadrons_start_full: bool) -> None:
         """Initialization for the first turn of the game."""

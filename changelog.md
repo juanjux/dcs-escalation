@@ -1,6 +1,8 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Campaign]** Optional persistent aircraft damage with shared base workshops,
+  mechanic hiring, discounted sales, relocation warnings and API visibility.
 * **[UI]** Show saved aircraft points as yellow map pins with drag, rename and delete controls synchronized with Player Aircrafts.
 * **[Campaign]** Protect newly captured bases from recapture for one full turn, with an event log notice for bases without ground forces.
 * **[Payload]** Select GAU-8 combat mix, HEI or practice ammunition for the A-10 family and save it with the loadout.

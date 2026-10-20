@@ -85,6 +85,14 @@ recovery or the damage state of every aircraft component.
 
 ## Off-field landing check
 
+The first version 3 off-field A-10 run produced an airborne-to-ground transition
+at 333.801 seconds, RUNWAY_TOUCH at 334.86 and LAND at 346.86. The aircraft stopped
+by 357.801 seconds and remained alive at 32/32 life through the marker at 444.73.
+Its final position was 3,066.6 metres from Batumi and 185,991.3 metres from Gudauta.
+DCS still attributed both landing events to Batumi despite the off-airfield
+touchdown. This validates touchdown/survival observations in that case, not a native
+"emergency" flag, remote off-field behavior or a damaged emergency return.
+
 Version 3 adds an `off-field` scenario with all automatic explosions disabled.
 Take off from Batumi and land on suitable dry, flat terrain outside an airport,
 not a runway or taxiway. Remain alive, stopped and in the cockpit for at least

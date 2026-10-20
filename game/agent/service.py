@@ -468,10 +468,75 @@ def repair(side, asset_id):
 
 
 @opfor_only
-def relocate_squadron(side, squadron_id, dest_cp_id):
+def relocate_squadron(side, squadron_id, dest_cp_id, confirm_damaged_sale=False):
     from game.agent import planner
 
-    return planner.relocate_squadron(_require_game(), side, squadron_id, dest_cp_id)
+    return planner.relocate_squadron(
+        _require_game(), side, squadron_id, dest_cp_id, confirm_damaged_sale
+    )
+
+
+@opfor_only
+def workshops(side: str = "red") -> list[dict]:
+    """Own workshops only: numerical health, queue, forecast and mechanic capacity."""
+    from game.aircraftmaintenance import workshop_view
+
+    game = _require_game()
+    player = views.player_for_side(side)
+    return [
+        workshop_view(game, base)
+        for base in game.theater.controlpoints
+        if base.captured == player
+    ]
+
+
+@opfor_only
+def hire_aircraft_mechanic(side: str, cp_id: str):
+    from game.agent import planner, schemas
+    from game.aircraftmaintenance import hire_mechanic
+
+    game = _require_game()
+    try:
+        base = planner._resolve_cp(game, cp_id)
+        if base.captured != views.player_for_side(side):
+            raise ValueError("The workshop must be at your own base")
+        hire_mechanic(game, base)
+        return schemas.OpResult(ok=True, detail=f"One mechanic hired at {base.name}")
+    except (ValueError, KeyError) as exc:
+        return schemas.OpResult(ok=False, error=str(exc))
+
+
+@opfor_only
+def sell_damaged_aircraft(side: str, squadron_id: str, repair_id: str):
+    from game.agent import planner, schemas
+    from game.aircraftmaintenance import sell_damaged
+
+    game = _require_game()
+    try:
+        squadron = planner._resolve_squadron(game, side, squadron_id)
+        value = sell_damaged(game, squadron, repair_id)
+        return schemas.OpResult(
+            ok=True, detail=f"Damaged aircraft sold for ${value:.3f}M"
+        )
+    except (ValueError, KeyError) as exc:
+        return schemas.OpResult(ok=False, error=str(exc))
+
+
+@opfor_only
+def relocation_workshop_quote(side: str, squadron_id: str) -> dict:
+    from game.agent import planner
+    from game.aircraftmaintenance import repairs, sale_value
+
+    game = _require_game()
+    squadron = planner._resolve_squadron(game, side, squadron_id)
+    count = len(repairs(squadron))
+    return {
+        "squadron_id": str(squadron.id),
+        "damaged_to_sell": count,
+        "operational_aircraft": squadron.owned_aircraft - count,
+        "sale_price_m": count * sale_value(game, squadron),
+        "requires_confirmation": count > 0,
+    }
 
 
 @opfor_only

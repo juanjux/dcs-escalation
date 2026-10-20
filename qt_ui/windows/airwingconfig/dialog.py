@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 from dcs.mapping import Point
 
 from game import Game
+from game.aircraftmaintenance import AircraftRepair
 from game.campaignloader.campaignairwingconfig import (
     DEFAULT_SQUADRON_SIZE,
     CampaignAirWingConfig,
@@ -176,6 +177,9 @@ class SquadronState:
     pilot_limit_override: Optional[int]
     owned_aircraft: int
     untasked_aircraft: int
+    aircraft_repairs: tuple[AircraftRepair, ...]
+    damaged_sale_income: float
+    location: Optional[ControlPoint]
 
     @classmethod
     def of(cls, squadron: Squadron) -> SquadronState:
@@ -185,6 +189,9 @@ class SquadronState:
             squadron.pilot_limit_override,
             squadron.owned_aircraft,
             squadron.untasked_aircraft,
+            tuple(getattr(squadron, "aircraft_repairs", [])),
+            getattr(squadron, "damaged_aircraft_sale_income", 0.0),
+            getattr(squadron, "location", None),
         )
 
     def restore(self) -> None:
@@ -192,6 +199,16 @@ class SquadronState:
         self.squadron.pilot_limit_override = self.pilot_limit_override
         self.squadron.owned_aircraft = self.owned_aircraft
         self.squadron.untasked_aircraft = self.untasked_aircraft
+        credited = (
+            getattr(self.squadron, "damaged_aircraft_sale_income", 0.0)
+            - self.damaged_sale_income
+        )
+        if credited:
+            self.squadron.coalition.adjust_budget(-credited)
+        self.squadron.damaged_aircraft_sale_income = self.damaged_sale_income
+        self.squadron.aircraft_repairs = list(self.aircraft_repairs)
+        if self.location is not None:
+            self.squadron.location = self.location
 
 
 class AirWingConfigurationTab(QWidget):

@@ -77,6 +77,30 @@ class QBaseMenuTabs(QTabWidget):
             )
 
         self._add(self._flights(), "Flights", count=self._flight_count())
+        if game is not None and game.settings.aircraft_maintenance_enabled and parking:
+            from .QAircraftWorkshop import QAircraftWorkshop
+            from game.aircraftmaintenance import base_jobs
+
+            workshop = QAircraftWorkshop(cp, game_model)
+            self._add(workshop, "Workshop", count=len(base_jobs(game, cp)))
+            workshop.changed.connect(
+                lambda count: self.setTabText(
+                    self.indexOf(workshop), f"Workshop  {count}"
+                )
+            )
+            self.currentChanged.connect(self._refresh_aircraft)
+
+    def _refresh_aircraft(self, _index: int) -> None:
+        from .airfield.QAircraftRecruitmentMenu import QAircraftRecruitmentMenu
+
+        if hasattr(self, "airfield_command"):
+            menu = self.airfield_command.findChild(QAircraftRecruitmentMenu)
+            if menu is not None:
+                menu.update_existing_units()
+            self.setTabText(
+                self.indexOf(self.airfield_command),
+                f"Aircraft  {self._aircraft_count()}",
+            )
 
     # -- the tabs ------------------------------------------------------------
 

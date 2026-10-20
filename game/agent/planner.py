@@ -1521,7 +1521,11 @@ def set_stance(
 
 
 def relocate_squadron(
-    game: Game, side: str, squadron_id: str, dest_cp_id: str
+    game: Game,
+    side: str,
+    squadron_id: str,
+    dest_cp_id: str,
+    confirm_damaged_sale: bool = False,
 ) -> schemas.OpResult:
     """Order a squadron to relocate to another of your bases (arrives over time)."""
     try:
@@ -1532,7 +1536,12 @@ def relocate_squadron(
         if dest == squadron.location:
             raise ValueError(f"{squadron} is already at {dest.name}")
         origin = squadron.location.name
-        squadron.plan_relocation(dest, game.conditions.start_time)
+        if confirm_damaged_sale:
+            squadron.plan_relocation(
+                dest, game.conditions.start_time, confirm_damaged_sale=True
+            )
+        else:
+            squadron.plan_relocation(dest, game.conditions.start_time)
         ferries = sum(
             1
             for package in squadron.coalition.ato.packages

@@ -366,7 +366,31 @@ def set_stance(body: schemas.StanceRequest) -> schemas.OpResult:
     response_model_exclude_none=True,
 )
 def relocate_squadron(body: schemas.RelocateSquadronRequest) -> schemas.OpResult:
-    return service.relocate_squadron(body.side, body.squadron_id, body.dest_cp_id)
+    return service.relocate_squadron(
+        body.side, body.squadron_id, body.dest_cp_id, body.confirm_damaged_sale
+    )
+
+
+@router.get("/workshops", operation_id="ai_workshops")
+def workshops(side: str = "red") -> list[dict]:
+    return service.workshops(side)
+
+
+@router.post("/workshops/hire", operation_id="ai_hire_aircraft_mechanic")
+def hire_aircraft_mechanic(
+    body: schemas.HireAircraftMechanicRequest,
+) -> schemas.OpResult:
+    return service.hire_aircraft_mechanic(body.side, body.cp_id)
+
+
+@router.post("/workshops/sell", operation_id="ai_sell_damaged_aircraft")
+def sell_damaged_aircraft(body: schemas.SellDamagedAircraftRequest) -> schemas.OpResult:
+    return service.sell_damaged_aircraft(body.side, body.squadron_id, body.repair_id)
+
+
+@router.get("/workshops/relocation-quote", operation_id="ai_relocation_workshop_quote")
+def relocation_workshop_quote(side: str = "red", squadron_id: str = "") -> dict:
+    return service.relocation_workshop_quote(side, squadron_id)
 
 
 @router.post(

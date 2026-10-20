@@ -158,6 +158,10 @@ class QAircraftRecruitmentMenu(UnitTransactionFrame[Squadron]):
 
     def row_subtitle(self, item: Squadron) -> str:
         text = str(item)
+        from game.aircraftmaintenance import damaged_count
+
+        if damaged := damaged_count(item):
+            text += f" · {damaged} in workshop"
         if loan := squadron_loan_text(item):
             text += f" · {loan}"
         if item.destination is not None:
