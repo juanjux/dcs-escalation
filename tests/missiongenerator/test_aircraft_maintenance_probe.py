@@ -228,3 +228,55 @@ def test_initial_sample_and_optional_terrain_height(runtime: Any) -> None:
     sample = runtime.globals().EscalationAircraftProbe.sample("PLAYER", "check_agl")
     assert sample["ground_height_m"] == 25
     assert sample["agl_m"] == 75
+
+
+def test_off_field_variant_disables_automatic_damage(tmp_path: Path) -> None:
+    mission = build_mission("a10", "off-field")
+    assert "OFF-FIELD LANDING TELEMETRY" in mission.description_text()
+    assert "no automatic damage" in mission.description_text()
+    assert "at least 30 seconds" in mission.description_text()
+    output = tmp_path / "off-field.miz"
+    mission.save(str(output))
+    with ZipFile(output) as archive:
+        assert b"automatic_damage=false" in archive.read("mission")
+
+
+def test_off_field_runtime_never_runs_automatic_blasts(runtime: Any) -> None:
+    runtime.execute("ESCALATION_AIRCRAFT_PROBE.automatic_damage = false")
+    runtime.execute(SCRIPT.read_text(encoding="utf-8"))
+    for time in (20, 40, 60, 80, 100):
+        runtime.execute(f"now={time}; tick(nil,now)")
+    assert len(runtime.globals().blasts) == 0
+
+
+def test_off_field_transition_and_speed_without_synthetic_landing(runtime: Any) -> None:
+    runtime.execute("""
+        now = 4
+        units.PLAYER.airborne = false
+        function units.PLAYER:getVelocity() return {x=3,y=-1,z=4} end
+        tick(nil, now)
+        now = 5; tick(nil, now)
+    """)
+    records = list(runtime.globals().EscalationAircraftProbe.records.values())
+    transitions = [r for r in records if r["kind"] == "airborne_transition"]
+    assert len(transitions) == 1
+    assert transitions[0]["from_in_air"] is True
+    assert transitions[0]["to_in_air"] is False
+    assert transitions[0]["speed_m_s"] == pytest.approx(26**0.5)
+    assert transitions[0]["friendly_distance_m"] == 20
+    assert not any(r["kind"] == "event" for r in records)
+    runtime.globals().commands["Mark off-field landing attempt"]()
+    records = list(runtime.globals().EscalationAircraftProbe.records.values())
+    assert any(r["reason"] == "OFF_FIELD_LANDING_OBSERVED" for r in records)
+    assert not any(r["kind"] == "event" for r in records)
+
+
+def test_missing_unit_does_not_create_touchdown_or_stationary_evidence(
+    runtime: Any,
+) -> None:
+    runtime.execute("now=1; units.PLAYER=nil; tick(nil,now)")
+    records = list(runtime.globals().EscalationAircraftProbe.records.values())
+    assert not any(r["kind"] == "airborne_transition" for r in records)
+    sample = runtime.globals().EscalationAircraftProbe.samples["PLAYER"]
+    assert sample["in_air"] is None
+    assert sample["speed_m_s"] is None

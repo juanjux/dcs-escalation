@@ -23,7 +23,9 @@ SCRIPT = Path(__file__).with_suffix(".lua")
 PLAYER_TYPES = {"a10": A_10C_2, "hornet": FA_18C_hornet}
 
 
-def build_mission(player: str = "a10") -> Mission:
+def build_mission(player: str = "a10", scenario: str = "damage") -> Mission:
+    if scenario not in ("damage", "off-field"):
+        raise ValueError(f"Unknown probe scenario: {scenario}")
     mission = Mission(Caucasus())
     mission.start_time = datetime(2026, 6, 15, 12)
     batumi = mission.terrain.airports["Batumi"]
@@ -103,7 +105,9 @@ def build_mission(player: str = "a10") -> Mission:
         + strings(targets)
         + ",bases={"
         + ",".join(bases)
-        + "}}"
+        + "},automatic_damage="
+        + ("false" if scenario == "off-field" else "true")
+        + "}"
     )
     trigger = TriggerOnce(Event.NoEvent, "Aircraft maintenance telemetry")
     trigger.add_condition(TimeAfter(1))
@@ -126,6 +130,28 @@ def build_mission(player: str = "a10") -> Mission:
         "aircraft-maintenance-probe-*.jsonl. No security settings need changing.\n"
         "The nearest-base comparison covers Batumi, Kobuleti, Sochi-Adler and Gudauta."
     )
+    if scenario == "off-field":
+        mission.set_description_text(
+            "OFF-FIELD LANDING TELEMETRY — DIAGNOSTIC ONLY\n\n"
+            "Start hot at Batumi. There is no automatic damage to any aircraft.\n"
+            "1. Take off normally, then land on dry terrain OUTSIDE an airport, "
+            "not on its runway or taxiway. Choose a suitable flat area near Batumi.\n"
+            "2. Stay in the aircraft, stopped, for at least 30 seconds. Do not "
+            "eject, leave the slot or end the mission during this interval.\n"
+            "3. F10 > Aircraft maintenance probe > Mark off-field landing attempt. "
+            "This only labels the observation; it does not force a landing event.\n"
+            "4. Show health readings, then exit the mission.\n\n"
+            "First establish a surviving off-field landing with an undamaged aircraft. "
+            "A separate, optional run can use Small blast near PLAYER before landing; "
+            "this can destroy the aircraft and is not needed for the first run.\n"
+            "An AI A-10 also lands normally at Batumi as a control.\n"
+            "The recorder captures native landing/crash events, airborne transitions, "
+            "health, speed, position and distances to friendly/enemy bases. A marker "
+            "or a stationary unit alone is NOT proof of recovery.\n\n"
+            "Results: Saved Games/DCS/Logs/dcs.log, prefix ESCALATION_AIRCRAFT_PROBE. "
+            "If file access is already available, also Saved Games/DCS/_debug_logs/"
+            "aircraft-maintenance-probe-*.jsonl. No campaign is modified."
+        )
     return mission
 
 
@@ -133,12 +159,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument("--aircraft", choices=PLAYER_TYPES, default="a10")
+    parser.add_argument("--scenario", choices=("damage", "off-field"), default="damage")
     args = parser.parse_args()
     if args.output.exists():
         parser.error(f"Refusing to overwrite {args.output}")
     if not args.output.parent.is_dir():
         parser.error("The output directory must already exist")
-    build_mission(args.aircraft).save(str(args.output))
+    build_mission(args.aircraft, args.scenario).save(str(args.output))
     print(args.output)
 
 

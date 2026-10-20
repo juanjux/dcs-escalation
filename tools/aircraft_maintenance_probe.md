@@ -12,6 +12,7 @@ From the repository root:
 ```powershell
 python tools/aircraft_maintenance_probe.py C:\path\probe-a10.miz --aircraft a10
 python tools/aircraft_maintenance_probe.py C:\path\probe-hornet.miz --aircraft hornet
+python tools/aircraft_maintenance_probe.py C:\path\probe-off-field.miz --aircraft a10 --scenario off-field
 ```
 
 Existing output files are never overwritten. Open either mission in DCS and unpause.
@@ -72,3 +73,29 @@ The AI return control crashed shortly after startup, so this run provided no
 landing evidence. Version 2 moves its low-altitude start to the sea-side approach,
 records terrain height/AGL when available, and samples all units immediately at
 script startup. A new live run is still needed to validate the landing control.
+
+## Second live run
+
+The version 2 AI A-10 reached Batumi alive. DCS emitted RUNWAY_TOUCH at 288.5
+seconds and LAND at 307.5 seconds, both with Batumi's place ID and coalition.
+The player Hornet's life remained 20/20 before and after a confirmed canopy
+jettison. Canopy removal therefore does not require a special workshop rule.
+These observations validate normal arrival and numerical health, not off-field
+recovery or the damage state of every aircraft component.
+
+## Off-field landing check
+
+Version 3 adds an `off-field` scenario with all automatic explosions disabled.
+Take off from Batumi and land on suitable dry, flat terrain outside an airport,
+not a runway or taxiway. Remain alive, stopped and in the cockpit for at least
+30 seconds, then select **Mark off-field landing attempt** and show readings.
+The marker is an observation label, never synthetic landing evidence. A first
+undamaged run isolates native touchdown reporting. A separate optional damaged
+run can then test the combination; the player blast may destroy the aircraft.
+
+The recorder also samples speed and vertical speed when available, logs airborne
+transitions independently of native landing events, and includes nearest-base
+distances in periodic samples. Missing units or unavailable speed remain unknown,
+never stationary or landed. A surviving off-field landing is not automatically
+classified as an emergency: its raw telemetry must be examined alongside the
+operator's account and any crash, kill, ejection or later takeoff events.

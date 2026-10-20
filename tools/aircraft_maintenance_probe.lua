@@ -1,7 +1,8 @@
 -- Standalone diagnostic only. Never changes campaign state or directly sets life.
-EscalationAircraftProbe = { records = {}, samples = {}, cancelled = false }
+EscalationAircraftProbe = { records = {}, samples = {} }
 local P = EscalationAircraftProbe
 local config = ESCALATION_AIRCRAFT_PROBE
+P.cancelled = config.automatic_damage == false
 local tracked, previous, lastLive = {}, {}, {}
 for _, name in ipairs(config.units) do tracked[name] = true end
 
@@ -83,6 +84,11 @@ function P.sample(name, reason, object)
     record.in_air = read(object, "inAir")
     record.coalition = read(object, "getCoalition")
     record.aircraft_type = read(object, "getTypeName")
+    local velocity = read(object, "getVelocity")
+    if velocity and finite(velocity.x) and finite(velocity.y) and finite(velocity.z) then
+        record.speed_m_s = math.sqrt(velocity.x^2 + velocity.y^2 + velocity.z^2)
+        record.vertical_speed_m_s = velocity.y
+    end
     if finite(record.life) and finite(record.life0) and record.life0 > 0 and record.life >= 0 then
         record.raw_life_ratio = record.life / record.life0
         record.life_ratio = math.max(0, math.min(1, record.raw_life_ratio))
@@ -98,8 +104,17 @@ function P.sample(name, reason, object)
             record.agl_m = point.y - height
         end
     end
-    if reason ~= "periodic" then nearest(record, point, record.coalition) end
     local old = previous[name]
+    nearest(record, point, record.coalition)
+    if old and old.in_air ~= nil and record.in_air ~= nil and old.in_air ~= record.in_air then
+        log({kind = "airborne_transition", name = name, time = record.time,
+            from_in_air = old.in_air, to_in_air = record.in_air,
+            life_ratio = record.life_ratio, x = record.x, y = record.y, z = record.z,
+            speed_m_s = record.speed_m_s, agl_m = record.agl_m,
+            nearest_friendly = record.nearest_friendly,
+            friendly_distance_m = record.friendly_distance_m,
+            nearest_enemy = record.nearest_enemy, enemy_distance_m = record.enemy_distance_m})
+    end
     if reason ~= "periodic" or not old or old.life ~= record.life or
         old.in_air ~= record.in_air or old.exists ~= record.exists or
         timer.getTime() - old.time >= 10 then
@@ -179,6 +194,10 @@ missionCommands.addCommand("Mark canopy change for comparison", root, function()
     log({kind = "marker", name = config.player, reason = "CANOPY_VISUAL_CHANGED"})
     P.report()
 end)
+missionCommands.addCommand("Mark off-field landing attempt", root, function()
+    log({kind = "marker", name = config.player, reason = "OFF_FIELD_LANDING_OBSERVED"})
+    P.report()
+end)
 missionCommands.addCommand("Stop automatic target blasts", root, function()
     P.cancelled = true
     log({kind = "marker", reason = "AUTOMATIC_BLASTS_CANCELLED"})
@@ -202,11 +221,16 @@ timer.scheduleFunction(function(_, now)
     if not finished and now - start >= 100 then
         finished = true
         P.report()
-        trigger.action.outText("Automatic damage test finished. Telemetry continues for landings, crashes and ejections. Results are in dcs.log (ESCALATION_AIRCRAFT_PROBE).", 30)
+        trigger.action.outText("Initial observation interval finished. Telemetry continues for landings, crashes and ejections. Results are in dcs.log (ESCALATION_AIRCRAFT_PROBE).", 30)
     end
     return now + 1
 end, nil, start + 1)
 world.addEventHandler(P)
-log({kind = "start", version = 2, separate_log = logfile ~= nil})
+log({kind = "start", version = 3, separate_log = logfile ~= nil,
+    automatic_damage = not P.cancelled})
 for _, name in ipairs(config.units) do P.sample(name, "initial") end
-trigger.action.outText("Maintenance probe: watch for 100 seconds. Only the dedicated AI targets receive automatic blasts. Use F10 > Aircraft maintenance probe for readings and optional player tests.", 30)
+if P.cancelled then
+    trigger.action.outText("Off-field landing probe: automatic blasts are OFF. Take off, land outside an airport and remain stopped in the aircraft for 30 seconds. Then use F10 > Aircraft maintenance probe > Mark off-field landing attempt. Read the mission briefing first.", 45)
+else
+    trigger.action.outText("Maintenance probe: watch for 100 seconds. Only the dedicated AI targets receive automatic blasts. Use F10 > Aircraft maintenance probe for readings and optional player tests.", 30)
+end
