@@ -135,6 +135,8 @@ class PackageModel(QAbstractListModel):
         if not index.isValid():
             return None
         flight = self.flight_at_index(index)
+        if flight is None:
+            return None
         if role == Qt.ItemDataRole.DisplayRole:
             return self.text_for_flight(flight)
         if role == Qt.ItemDataRole.DecorationRole:
@@ -170,7 +172,9 @@ class PackageModel(QAbstractListModel):
 
     def cancel_or_abort_flight_at_index(self, index: QModelIndex) -> None:
         """Removes the flight at the given index from the package."""
-        self.cancel_or_abort_flight(self.flight_at_index(index))
+        flight = self.flight_at_index(index)
+        if flight is not None:
+            self.cancel_or_abort_flight(flight)
 
     def cancel_or_abort_flight(self, flight: Flight) -> None:
         if flight.state.cancelable:
@@ -209,8 +213,15 @@ class PackageModel(QAbstractListModel):
         if pushed:
             EventStream.put_nowait(events)
 
-    def flight_at_index(self, index: QModelIndex) -> Flight:
-        """Returns the flight located at the given index."""
+    def flight_at_index(self, index: QModelIndex) -> Optional[Flight]:
+        """A Qt index may outlive its row while campaign results clear the ATO."""
+        if (
+            not index.isValid()
+            or index.model() is not self
+            or index.column() != 0
+            or not 0 <= index.row() < len(self.package.flights)
+        ):
+            return None
         return self.package.flights[index.row()]
 
     def set_tot(self, tot: datetime.datetime) -> None:
