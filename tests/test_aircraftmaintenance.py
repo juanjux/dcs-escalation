@@ -550,6 +550,116 @@ def test_native_return_to_friendly_carrier_does_not_use_static_nearest_land_base
     assert maintenance.damaged_count(world.sq) == 1
 
 
+@pytest.mark.parametrize("invalid", [False, "not-an-id", "501.5", "-501", "9" * 30])
+def test_invalid_landing_ids_are_not_interpreted_as_carrier_ids(invalid: Any) -> None:
+    report = maintenance.parse_reports([{"unit": "one", "landing_place": invalid}])[
+        "one"
+    ]
+    assert report.landing_place is None
+
+
+def test_numeric_string_landing_ids_are_preserved() -> None:
+    report = maintenance.parse_reports([{"unit": "one", "landing_place": "501"}])["one"]
+    assert report.landing_place == 501
+
+
+@pytest.mark.parametrize("disqualifier", [None, "sunk", "enemy", "dead"])
+def test_carrier_runtime_id_resolves_by_native_name_not_editor_id(
+    world: Any, disqualifier: str | None
+) -> None:
+    world.base.is_fleet = True
+    world.base.airdrome_id_for_landing = 493
+    ship = SimpleNamespace(
+        is_ship=True,
+        alive=True,
+        ground_object=SimpleNamespace(control_point=world.base),
+    )
+    debrief = _debrief(
+        world,
+        {
+            "health": 0.928571,
+            "recovered": True,
+            "x": 9900,
+            "z": 0,
+            "landing_place": "501",
+            "landing_name": "CVN native name",
+        },
+    )
+    debrief.unit_map.flight("unit").flight.arrival = world.base
+    debrief.unit_map.theater_units = lambda name: (
+        SimpleNamespace(theater_unit=ship) if name == "CVN native name" else None
+    )
+    if disqualifier == "sunk":
+        world.base.sunk = True
+    elif disqualifier == "enemy":
+        world.base.captured = Player.RED
+    elif disqualifier == "dead":
+        ship.alive = False
+    maintenance.commit_reports(world.game, debrief)
+    assert maintenance.damaged_count(world.sq) == (1 if disqualifier is None else 0)
+
+
+def test_debrief_counts_match_admission_and_group_by_airframe(world: Any) -> None:
+    from game.debriefingreport import DebriefingReport
+    from tests.test_debriefing_report import _debriefing
+
+    raw = [
+        dict(unit=name, health=health, recovered=True, x=10, z=0)
+        for name, health in (("first", 0.5), ("second", 0.928571), ("healthy", 1.0))
+    ]
+    state = SimpleNamespace(
+        mission_ended=True,
+        aircraft_damage=maintenance.parse_reports(raw),
+        aircraft_damage_mission_id="report",
+    )
+    flying = SimpleNamespace(flight=SimpleNamespace(squadron=world.sq))
+    debrief = _debriefing(
+        game=world.game,
+        state_data=state,
+        unit_map=SimpleNamespace(flight=lambda name: flying),
+        air_losses=SimpleNamespace(
+            losses=[], player=[], enemy=[], by_type=lambda _: {}
+        ),
+    )
+    preview = DebriefingReport.from_debriefing(debrief, world.game.turn)
+    assert preview.damage_rows(Player.BLUE) == [
+        ("Test aircraft", 2, "Recovered for repair")
+    ]
+    maintenance.commit_reports(world.game, debrief)
+    committed = DebriefingReport.from_debriefing(debrief, world.game.turn)
+    assert committed.damage_rows(Player.BLUE) == preview.damage_rows(Player.BLUE)
+    assert maintenance.damaged_count(world.sq) == 2
+    assert pickle.loads(pickle.dumps(committed)).damage_rows(
+        Player.BLUE
+    ) == committed.damage_rows(Player.BLUE)
+
+
+def test_debrief_does_not_count_damaged_kills_or_enemy_territory_returns(
+    world: Any,
+) -> None:
+    from game.debriefingreport import DebriefingReport
+    from tests.test_debriefing_report import _debriefing
+
+    raw = [
+        dict(unit="lost", health=0.4, recovered=True, killed=True, x=0, z=0),
+        dict(unit="enemy landing", health=0.4, recovered=True, x=9990, z=0),
+    ]
+    state = SimpleNamespace(
+        mission_ended=True, aircraft_damage=maintenance.parse_reports(raw)
+    )
+    flying = SimpleNamespace(flight=SimpleNamespace(squadron=world.sq))
+    debrief = _debriefing(
+        game=world.game,
+        state_data=state,
+        unit_map=SimpleNamespace(flight=lambda name: flying),
+        air_losses=SimpleNamespace(
+            losses=[], player=[], enemy=[], by_type=lambda _: {}
+        ),
+    )
+    report = DebriefingReport.from_debriefing(debrief, world.game.turn)
+    assert report.damage_rows(Player.BLUE) == []
+
+
 def test_workshop_reads_only_the_commanded_coalition(
     world: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:

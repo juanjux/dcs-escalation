@@ -165,6 +165,24 @@ def test_stationary_on_a_moving_carrier_uses_relative_motion(vm: Any) -> None:
     assert state(vm)["landing_place"] == 777
 
 
+def test_carrier_airbase_name_survives_string_runtime_ids_and_resets_on_takeoff(
+    vm: Any,
+) -> None:
+    vm.execute("""
+        local deck = {getID=function() return '501' end,
+            getName=function() return 'CVN native name' end,
+            getPoint=function() return {x=now*15,y=0,z=0} end}
+        plane.life=65; plane.airborne=false; plane.velocity=15; step(10)
+        observer:onEvent({id=world.event.S_EVENT_LAND,initiator=plane,place=deck,time=now})
+        step(11); step(41)
+    """)
+    report = parse_reports([dict(state(vm))])["tracked"]
+    assert report.recovered and report.health == 0.65
+    assert report.landing_place == 501 and report.landing_name == "CVN native name"
+    vm.execute("plane.airborne=true; step(42)")
+    assert state(vm)["landing_name"] is None
+
+
 def test_unrelated_weapon_events_do_not_sample_aircraft(vm: Any) -> None:
     vm.execute("""
         plane.life=40; now=5

@@ -1080,6 +1080,7 @@ class QDebriefingWindow(QDialog):
             self._pilots_section(debriefing),
             self._high_command_section(debriefing),
             self._losses_section(debriefing),
+            self._damage_section(debriefing),
             self._front_line_section(debriefing),
             self._missiles_section(debriefing),
         ):
@@ -1211,6 +1212,26 @@ class QDebriefingWindow(QDialog):
         grid.setColumnStretch(1, 1)
         return self._section(
             "Losses", "both sides, side by side · aircraft first, then ground", card
+        )
+
+    def _damage_section(self, debriefing: DebriefingReport) -> Optional[QVBoxLayout]:
+        """Only confirmed friendly recoveries, not hidden enemy workshop inventory."""
+        rows = debriefing.damage_rows(Player.BLUE)
+        if not rows:
+            return None
+        card = QWidget()
+        card.setStyleSheet(
+            f"background: {CARD}; border: 1px solid {LINE}; border-radius: 3px;"
+        )
+        body = QVBoxLayout(card)
+        body.setContentsMargins(0, 6, 0, 6)
+        body.setSpacing(0)
+        for name, count, note in rows:
+            body.addWidget(FactionLosses._row(name, str(count), AMBER, note))
+        return self._section(
+            "Damaged aircraft",
+            "friendly recoveries · grouped by model · not counted as losses",
+            card,
         )
 
     def _front_line_section(
