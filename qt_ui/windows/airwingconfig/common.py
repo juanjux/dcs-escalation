@@ -151,10 +151,11 @@ class AirWingConfigParkingTracker(QWidget):
         squadron: Squadron,
         prior_location: ControlPoint,
         new_location: ControlPoint,
+        confirm_damaged_sale: bool = False,
     ) -> None:
+        squadron.relocate_to(new_location, confirm_damaged_sale=confirm_damaged_sale)
         self.by_cp[prior_location].discard(squadron)
         self.by_cp[new_location].add(squadron)
-        squadron.relocate_to(new_location)
         self.signal_change()
 
     def used_parking_at(self, control_point: ControlPoint) -> int:

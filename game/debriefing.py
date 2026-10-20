@@ -18,6 +18,7 @@ from typing import (
 from uuid import UUID
 
 from game.ato.starttype import StartType
+from game.aircraftmaintenance import AircraftDamageReport, parse_reports
 from game.dcs.aircrafttype import AircraftType
 from game.dcs.groundunittype import GroundUnitType
 from game.squadrons.experience import PilotOutcomes
@@ -173,7 +174,19 @@ class StateData:
     #: disjoint from cruise_missiles_state's land-attack families, so a shot is never
     #: charged to both. Empty on pre-feature state files and when the feature is off.
     naval_magazines_state: List[Tuple[str, int]] = field(default_factory=list)
+    aircraft_damage: dict[str, AircraftDamageReport] = field(default_factory=dict)
+    aircraft_damage_mission_id: str | None = None
     persistent_health: Dict[str, float] = field(default_factory=dict)
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        object.__setattr__(self, "aircraft_damage", state.get("aircraft_damage", {}))
+        object.__setattr__(
+            self, "aircraft_damage_mission_id", state.get("aircraft_damage_mission_id")
+        )
+        object.__setattr__(
+            self, "persistent_health", state.get("persistent_health", {})
+        )
 
     @classmethod
     def from_json(cls, data: Dict[str, Any], unit_map: UnitMap) -> StateData:
@@ -190,6 +203,7 @@ class StateData:
             # that diff by position, e.g. the mission panel event feed, rely on this).
             return list(dict.fromkeys(str(unit) for unit in unit_list))
 
+        aircraft_damage = parse_reports(data.get("aircraft_damage_state"))
         killed_aircraft = []
         killed_ground_units = []
 
@@ -202,6 +216,11 @@ class StateData:
             + data.get("kill_events", [])
             + data.get("crash_events", [])
             + data.get("dead_events", [])
+            + [
+                name
+                for name, report in aircraft_damage.items()
+                if report.ejected or report.killed
+            ]
         )
         for unit in killed_units:  # organize killed units into aircraft vs ground
             if unit_map.flight(unit) is not None:
@@ -264,6 +283,12 @@ class StateData:
                 data.get("naval_magazines_state", [])
             ),
             mission_log_events=parse_log_events(data.get("mission_log_events", [])),
+            aircraft_damage=aircraft_damage,
+            aircraft_damage_mission_id=(
+                data["aircraft_damage_mission_id"]
+                if isinstance(data.get("aircraft_damage_mission_id"), str)
+                else None
+            ),
             persistent_health=parse_health(data.get("persistent_health", {})),
         )
 
@@ -285,7 +310,7 @@ class Debriefing:
         #: What became of the aircrew, filled in by the results processor as it
         #: commits losses and experience, and read by the debriefing window.
         self.pilot_outcomes = PilotOutcomes()
-        self.air_losses = self.dead_aircraft()
+        self.air_losses: AirLosses = self.dead_aircraft()
         self.ground_losses = self.dead_ground_units()
         self.base_captures = self.base_capture_events()
         self.kill_info_by_unit_id = self._index_kill_details()
@@ -470,6 +495,10 @@ class Debriefing:
         by a weapon or SAM. Escalation-sim combat losses (no DCS kill record) are
         NOT treated as crashes, nor are inferred 'indirect' kills (destroyed
         parked, or the same attack as a confirmed weapon-kill flightmate)."""
+        unit_name = getattr(self, "_loss_name_by_id", {}).get(id(flying_unit))
+        report = getattr(self.state_data, "aircraft_damage", {}).get(unit_name or "")
+        if report is not None and (report.ejected or report.killed):
+            return False
         if id(flying_unit) in self._sim_loss_ids:
             return False
         if id(flying_unit) in self._indirect_loss_ids:

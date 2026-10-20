@@ -702,6 +702,9 @@ class SquadronDestinationComboBox(QComboBox):
         self.parking_overflow: dict[str, list[tuple[Squadron, str]]] = {}
 
         parking_type = ParkingType().from_squadron(squadron)
+        from game.aircraftmaintenance import repairs
+
+        relocating_aircraft = squadron.owned_aircraft - len(repairs(squadron))
         room = squadron.location.unclaimed_parking(parking_type)
         self.addItem(
             f"Remain at {squadron.location} (room for {room} more aircraft)",
@@ -718,8 +721,10 @@ class SquadronDestinationComboBox(QComboBox):
                 f"Transfer to {destination} (room for {room} more aircraft)",
                 destination,
             )
-            if room < squadron.owned_aircraft or room == 0:
-                diff = squadron.owned_aircraft - room
+            if room < relocating_aircraft or (
+                room == 0 and (relocating_aircraft > 0 or squadron.owned_aircraft == 0)
+            ):
+                diff = relocating_aircraft - room
                 text = (
                     f"Transfer to {destination} not possible "
                     f"({diff} additional slots required)"
@@ -732,7 +737,7 @@ class SquadronDestinationComboBox(QComboBox):
                 self.setItemText(idx, text)
                 self.model().item(idx).setEnabled(False)
 
-        if squadron.owned_aircraft and not squadron.location.runway_is_operational():
+        if relocating_aircraft and not squadron.location.runway_is_operational():
             # Nothing takes off from a damaged runway, ferries included. An empty
             # squadron has nothing to fly out, so it can still move.
             why = (
@@ -865,10 +870,10 @@ BUTTON_DESTRUCTIVE = (
     "QPushButton:disabled { background: #202B36; color: #5F6F7D; }"
 )
 
-#: The five figures of the inventory, in the order they are read: what you have, what
-#: is coming, what you lost, what you paid for, what you started with.
+#: Owned airframes include aircraft in the workshop; available inventory does not.
 INVENTORY_TILES = (
     ("CURRENT", "owned_aircraft", "#F2F7FA"),
+    ("WORKSHOP", "damaged_aircraft", "#D9953B"),
     ("ON ORDER", "pending_deliveries", "#E0A86B"),
     ("DESTROYED", "destroyed_aircraft", "#C08A72"),
     ("PURCHASED", "purchased_aircraft", "#B7C6D2"),
@@ -1446,7 +1451,7 @@ class SquadronDialog(QDialog):
             GameUpdateSignal.get_instance().updateBudget(self.ato_model.game)
 
     def _instant_relocate(self, destination: ControlPoint) -> None:
-        self.squadron.relocate_to(destination)
+        self.squadron.relocate_to(destination, confirm_damaged_sale=True)
         for _, f in self.squadron.flight_db.objects.items():
             if f.squadron == self.squadron:
                 if isinstance(f.flight_plan, CustomFlightPlan):
@@ -1461,13 +1466,28 @@ class SquadronDialog(QDialog):
     def on_destination_changed(self, index: int) -> None:
         with report_errors("Could not change squadron destination", self):
             destination = self.transfer_destination.itemData(index)
+            if destination is not self.squadron.location:
+                from qt_ui.windows.basemenu.QAircraftWorkshop import (
+                    confirm_workshop_sale,
+                )
+
+                if not confirm_workshop_sale(self, self.squadron):
+                    prior = self.squadron.destination or self.squadron.location
+                    self.transfer_destination.blockSignals(True)
+                    self.transfer_destination.setCurrentIndex(
+                        self.transfer_destination.findData(prior)
+                    )
+                    self.transfer_destination.blockSignals(False)
+                    return
             if destination is self.squadron.location:
                 self.squadron.cancel_relocation()
             elif self.ato_model.game.settings.enable_transfer_cheat:
                 self._instant_relocate(destination)
             else:
                 self.squadron.plan_relocation(
-                    destination, self.sim_controller.current_time_in_sim
+                    destination,
+                    self.sim_controller.current_time_in_sim,
+                    confirm_damaged_sale=True,
                 )
             self.ato_model.replace_from_game(player=True)
 

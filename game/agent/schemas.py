@@ -240,7 +240,19 @@ class StanceRequest(BaseModel):
     stance: str
 
 
+class HireAircraftMechanicRequest(BaseModel):
+    side: str = "red"
+    cp_id: str
+
+
+class SellDamagedAircraftRequest(BaseModel):
+    side: str = "red"
+    squadron_id: str
+    repair_id: str
+
+
 class RelocateSquadronRequest(BaseModel):
+    confirm_damaged_sale: bool = False
     side: str = "red"
     squadron_id: str
     dest_cp_id: str

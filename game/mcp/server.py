@@ -395,9 +395,37 @@ def repair(side: str, id: str) -> dict:
 
 
 @_tool()
-def relocate_squadron(side: str, squadron_id: str, dest_cp_id: str) -> dict:
+def relocate_squadron(
+    side: str, squadron_id: str, dest_cp_id: str, confirm_damaged_sale: bool = False
+) -> dict:
     """Relocate a squadron to another of your bases (arrives over time, not instant)."""
-    return _dump(service.relocate_squadron(side, squadron_id, dest_cp_id))
+    return _dump(
+        service.relocate_squadron(side, squadron_id, dest_cp_id, confirm_damaged_sale)
+    )
+
+
+@_tool()
+def workshops(side: str = "red") -> list[dict]:
+    """Own base mechanics, damaged airframes with health, repair queue and forecasts."""
+    return service.workshops(side)
+
+
+@_tool()
+def hire_aircraft_mechanic(side: str, cp_id: str) -> dict:
+    """Pay for one permanent additional mechanic at your own base."""
+    return _dump(service.hire_aircraft_mechanic(side, cp_id))
+
+
+@_tool()
+def sell_damaged_aircraft(side: str, squadron_id: str, repair_id: str) -> dict:
+    """Sell one damaged aircraft immediately at the configured discounted price."""
+    return _dump(service.sell_damaged_aircraft(side, squadron_id, repair_id))
+
+
+@_tool()
+def relocation_workshop_quote(side: str, squadron_id: str) -> dict:
+    """Read damaged sale count/proceeds before relocating with confirm_damaged_sale=true."""
+    return service.relocation_workshop_quote(side, squadron_id)
 
 
 @_tool()

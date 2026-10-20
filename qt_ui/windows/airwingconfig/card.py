@@ -614,6 +614,10 @@ class SquadronCard(QWidget):
     def cheat_remove_aircraft(self) -> None:
         if self.squadron.owned_aircraft <= 0:
             return
+        from game.aircraftmaintenance import repairs
+
+        if self.squadron.owned_aircraft <= len(repairs(self.squadron)):
+            self.squadron.aircraft_repairs.pop()
         self.squadron.owned_aircraft -= 1
         self.squadron.untasked_aircraft = max(0, self.squadron.untasked_aircraft - 1)
         self.update_aircraft_count_label()
@@ -623,8 +627,20 @@ class SquadronCard(QWidget):
         location = self.base_selector.currentData()
         if location is None:
             return
+        from qt_ui.windows.basemenu.QAircraftWorkshop import confirm_workshop_sale
+
+        if location != self.squadron.location and not confirm_workshop_sale(
+            self, self.squadron
+        ):
+            self.base_selector.blockSignals(True)
+            self.base_selector.setCurrentText(self.squadron.location.name)
+            self.base_selector.blockSignals(False)
+            return
         self.parking_tracker.relocate_squadron(
-            self.squadron, self.squadron.location, location
+            self.squadron,
+            self.squadron.location,
+            location,
+            confirm_damaged_sale=True,
         )
         self.structure_changed.emit()
 

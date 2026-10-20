@@ -252,6 +252,55 @@ class Settings:
         },
         default=Views.All,
     )
+    aircraft_maintenance_enabled: bool = boolean_option(
+        "Persistent aircraft damage and workshops",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=GENERAL_SECTION,
+        default=False,
+        detail="Recovered damaged aircraft occupy parking but cannot fly until repaired. Applies to both coalitions. Old missions without telemetry create no repairs. Disabling releases existing repairs at the next turn boundary.",
+    )
+    aircraft_slots_per_mechanic: int = bounded_int_option(
+        "Parking slots per initial mechanic",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=GENERAL_SECTION,
+        default=10,
+        min=1,
+        max=100,
+        detail="Total fixed-wing and helicopter parking divided by this number, rounded up. Every base has at least two mechanics. Mechanics are shared between squadrons.",
+    )
+    aircraft_repair_percent: float = bounded_float_option(
+        "Maximum aircraft health repaired per turn (%)",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=GENERAL_SECTION,
+        default=100 / 3,
+        min=1,
+        max=100,
+        divisor=10,
+        prefix="",
+        decimals=1,
+        detail="Each mechanic works on one aircraft per turn. The default repairs one third of maximum health, so severe damage takes up to three working turns. Unknown numerical damage takes one turn.",
+    )
+    damaged_aircraft_sale_percent: int = bounded_int_option(
+        "Damaged aircraft resale value (%)",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=GENERAL_SECTION,
+        default=50,
+        min=0,
+        max=100,
+        detail="Percentage of the normal aircraft price received when selling a damaged airframe from the workshop or confirming a squadron relocation.",
+    )
+    aircraft_mechanic_price: float = bounded_float_option(
+        "Cost per additional aircraft mechanic ($M)",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=GENERAL_SECTION,
+        default=0.05,
+        min=0,
+        max=10,
+        divisor=100,
+        prefix="$ ",
+        decimals=2,
+        detail="Permanent additional capacity at this base. The default is $50,000 (0.05 million).",
+    )
     opfor_ai_enabled: bool = boolean_option(
         "Allow OPFOR AI control (external LLM plays red)",
         page=CAMPAIGN_MANAGEMENT_PAGE,

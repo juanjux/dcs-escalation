@@ -130,6 +130,11 @@ tool/resource of the same name.
 - `POST /high_command/spend` `{ticket, picked}` — spend a ticket. See howtoplay.
 
 **Air wings**
+- `GET /workshops` — your mechanics, damaged aircraft health, queue and readiness.
+- `POST /workshops/hire` `{side, cp_id}` — pay for one additional mechanic.
+- `POST /workshops/sell` `{side, squadron_id, repair_id}` — sell one damaged aircraft.
+- `GET /workshops/relocation-quote?side=red&squadron_id=...` — damaged sale count and
+  proceeds; relocating these requires explicit `confirm_damaged_sale: true`.
 - `POST /squadron/relocate` `{side, squadron_id, dest_cp_id}` — move a squadron to another
   friendly base; the answer says how many ferry flights it planned. Deleting their package
   cancels the relocation. There is no endpoint to create or delete squadrons.

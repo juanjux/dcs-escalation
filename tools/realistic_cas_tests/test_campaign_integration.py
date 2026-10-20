@@ -280,6 +280,8 @@ class CampaignIntegrationTests(unittest.TestCase):
                 self.g, "_seed_persistent_damage"
             ), patch.object(
                 self.g, "_inject_tic_script"
+            ), patch.object(
+                self.g, "_inject_aircraft_maintenance"
             ):
                 self.g.generate()
         self.assertEqual(

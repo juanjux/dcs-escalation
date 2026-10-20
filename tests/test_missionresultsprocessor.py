@@ -39,6 +39,7 @@ COMMIT_STEPS = [
     "commit_naval_magazines",
     "commit_captures",
     "commit_air_assault_remain",
+    "commit_aircraft_damage",
     "commit_front_line_battle_impact",
     "record_carcasses",
 ]

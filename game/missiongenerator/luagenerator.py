@@ -6,6 +6,7 @@ import textwrap
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
+from uuid import uuid4
 
 from dcs import Mission
 from dcs.action import DoScript, DoScriptFile
@@ -54,6 +55,7 @@ class LuaGenerator:
         self.generate_plugin_data()
         self._seed_pilot_roster()
         self.inject_plugins()
+        self._inject_aircraft_maintenance()
         self._seed_scenery_objectives()
         self._seed_persistent_damage()
         self._inject_tic_script()
@@ -61,6 +63,24 @@ class LuaGenerator:
         for t in ewrj_triggers:
             self.mission.triggerrules.triggers.remove(t)
             self.mission.triggerrules.triggers.append(t)
+
+    def _inject_aircraft_maintenance(self) -> None:
+        if self.unit_map is None or not self.game.settings.aircraft_maintenance_enabled:
+            return
+        names = ",".join(
+            f'"{escape_string_for_lua(name)}"' for name in self.unit_map.aircraft
+        )
+        preamble = (
+            f'ESCALATION_AIRCRAFT_MAINTENANCE = {{mission_id="{uuid4()}",'
+            f"units={{{names}}}}}"
+        )
+        trigger = TriggerStart(comment="Aircraft maintenance telemetry")
+        trigger.add_action(DoScript(String(preamble)))
+        script = Path("resources/plugins/base/aircraft_maintenance.lua")
+        trigger.add_action(
+            DoScriptFile(self.mission.map_resource.add_resource_file(script))
+        )
+        self.mission.triggerrules.triggers.append(trigger)
 
     def _seed_persistent_damage(self) -> None:
         from game.persistentdamage import enabled

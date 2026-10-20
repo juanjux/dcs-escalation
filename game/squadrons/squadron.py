@@ -14,6 +14,7 @@ from dcs.unit import Skill
 from faker import Faker
 
 from game.ato import Flight, FlightType, Package
+from game.aircraftmaintenance import AircraftRepair, damaged_count
 from game.ato.savedpoints import SavedPoint
 from game.settings import AutoAtoBehavior, Settings
 from game.theater import ParkingType
@@ -86,6 +87,12 @@ class Squadron:
     owned_aircraft: int = field(init=False, hash=False, compare=False, default=0)
     untasked_aircraft: int = field(init=False, hash=False, compare=False, default=0)
     pending_deliveries: int = field(init=False, hash=False, compare=False, default=0)
+    aircraft_repairs: list[AircraftRepair] = field(
+        init=False, hash=False, compare=False, repr=False, default_factory=list
+    )
+    damaged_aircraft_sale_income: float = field(
+        init=False, hash=False, compare=False, default=0.0
+    )
 
     #: Aircraft the squadron started the campaign with (set at turn 0).
     initial_aircraft: int = field(init=False, hash=False, compare=False, default=0)
@@ -132,6 +139,8 @@ class Squadron:
         if "purchased_aircraft" not in state:
             state["purchased_aircraft"] = 0
         state.setdefault("saved_points", [])
+        state.setdefault("aircraft_repairs", [])
+        state.setdefault("damaged_aircraft_sale_income", 0.0)
         self.__dict__.update(state)
 
     def __str__(self) -> str:
@@ -811,7 +820,14 @@ class Squadron:
         # Aircraft already sold this turn (negative pending) must not return to the
         # taskable pool; otherwise a turn re-initialisation would let the same units
         # be sold (and flown) again, refunding their price every time.
-        self.untasked_aircraft = self.owned_aircraft + min(0, self.pending_deliveries)
+        self.untasked_aircraft = max(
+            0,
+            self.owned_aircraft + min(0, self.pending_deliveries) - damaged_count(self),
+        )
+
+    @property
+    def damaged_aircraft(self) -> int:
+        return damaged_count(self)
 
     def send_on_leave(self, pilot: Pilot, turns: int = 0, turn: int = -1) -> None:
         """Open-ended from the Air Wing button; for a fixed spell from a granted request."""
@@ -1065,7 +1081,9 @@ class Squadron:
         self.owned_aircraft += self.pending_deliveries
         self.pending_deliveries = 0
 
-    def relocate_to(self, destination: ControlPoint) -> None:
+    def relocate_to(
+        self, destination: ControlPoint, *, confirm_damaged_sale: bool = False
+    ) -> None:
         if not destination.is_friendly(self.coalition.player):
             logging.warning(
                 f"Cannot relocate {self} to {destination.name} - destination is no longer friendly. "
@@ -1073,6 +1091,25 @@ class Squadron:
             )
             self.destination = None
             return
+        if (
+            getattr(self, "aircraft_repairs", [])
+            and destination != self.location
+            and destination != self.destination
+        ):
+            if not confirm_damaged_sale:
+                raise RuntimeError(
+                    "Damaged aircraft cannot transfer. Confirm their sale before relocating."
+                )
+            if not destination.can_operate(self.aircraft):
+                raise RuntimeError(f"{self} cannot operate at {destination}.")
+            parking_type = ParkingType().from_squadron(self)
+            if self.expected_size_next_turn - len(
+                self.aircraft_repairs
+            ) > destination.unclaimed_parking(parking_type):
+                raise RuntimeError(f"Not enough parking for {self} at {destination}.")
+            from game.aircraftmaintenance import remove_damaged
+
+            remove_damaged(self.coalition.game, self, refund=True)
         self.location = destination
         if self.location == self.destination:
             self.destination = None
@@ -1121,7 +1158,13 @@ class Squadron:
     def arrival(self) -> ControlPoint:
         return self.location if self.destination is None else self.destination
 
-    def plan_relocation(self, destination: ControlPoint, now: datetime) -> None:
+    def plan_relocation(
+        self,
+        destination: ControlPoint,
+        now: datetime,
+        *,
+        confirm_damaged_sale: bool = False,
+    ) -> None:
         from game.theater import ParkingType
 
         if destination == self.location:
@@ -1130,7 +1173,12 @@ class Squadron:
                 f"{destination}. Ignoring."
             )
             return
-        if self.owned_aircraft and not self.location.runway_is_operational():
+        damaged = len(getattr(self, "aircraft_repairs", []))
+        if damaged and not confirm_damaged_sale:
+            raise RuntimeError(
+                "Damaged aircraft cannot transfer. Confirm their sale before relocating."
+            )
+        if self.owned_aircraft - damaged and not self.location.runway_is_operational():
             # The mission leaves out a flight from a damaged runway, ferries included,
             # and the squadron used to arrive at the end of the turn all the same. An
             # empty squadron has nothing to take off, so it can still move.
@@ -1149,10 +1197,22 @@ class Squadron:
             return
 
         parking_type = ParkingType().from_squadron(self)
-        if self.expected_size_next_turn > destination.unclaimed_parking(parking_type):
+        if self.expected_size_next_turn - damaged > destination.unclaimed_parking(
+            parking_type
+        ):
             raise RuntimeError(f"Not enough parking for {self} at {destination}.")
+        prior_destination = self.destination
         self.destination = destination
-        self.replan_ferry_flights(now)
+        try:
+            self.replan_ferry_flights(now)
+        except Exception:
+            self.cancel_ferry_flights()
+            self.destination = prior_destination
+            raise
+        if damaged:
+            from game.aircraftmaintenance import remove_damaged
+
+            remove_damaged(self.coalition.game, self, refund=True)
 
     def cancel_relocation(self) -> None:
         from game.theater import ParkingType
