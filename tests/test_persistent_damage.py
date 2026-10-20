@@ -101,13 +101,17 @@ def test_damage_debrief_repairs_and_survives_save_reload(campaign: Any) -> None:
     commit_damage(campaign.game, debrief, campaign.events)
     assert [unit.health_fraction for unit in campaign.units] == [0.5, 0.5, 1, 1]
     repair_damage(campaign.game, campaign.events)
-    assert [unit.health_fraction for unit in campaign.units] == [0.65, 0.65, 1, 1]
+    assert [unit.health_fraction for unit in campaign.units] == pytest.approx(
+        [0.84, 0.84, 1, 1]
+    )
     restored = pickle.loads(pickle.dumps(ship))
-    assert restored.health_fraction == 0.65
+    assert restored.health_fraction == pytest.approx(0.84)
     assert campaign.sites[0] in campaign.events.updated_tgos
 
 
-@pytest.mark.parametrize("percent,expected", [(0, 0.5), (30, 0.65), (100, 1)])
+@pytest.mark.parametrize(
+    "percent,expected", [(0, 0.5), (30, 0.8), (34, 0.84), (100, 1)]
+)
 def test_repair_percent_and_full_recovery(
     campaign: Any, percent: int, expected: float
 ) -> None:
@@ -115,7 +119,7 @@ def test_repair_percent_and_full_recovery(
     ship = campaign.units[0]
     ship.health = 0.5
     repair_damage(campaign.game, campaign.events)
-    assert ship.health_fraction == expected
+    assert ship.health_fraction == pytest.approx(expected)
     assert repaired_health(0, percent) == 0
     assert repaired_health(0.999, 0) == 0.999
     assert repaired_health(0.994, 30) == 1
@@ -131,6 +135,17 @@ def test_dead_units_stay_dead_and_explicit_revival_restores_health(
     assert unit.health_fraction == 0
     unit.revive(campaign.events)
     assert unit.health_fraction == 1
+
+
+def test_recovery_is_absolute_and_reaches_full_health_without_rounding() -> None:
+    assert repaired_health(0.2, 30) == pytest.approx(0.5)
+    assert repaired_health(repaired_health(0.2, 30), 30) == pytest.approx(0.8)
+    health = 0.001
+    for _ in range(3):
+        health = repaired_health(health, 34)
+    assert health == 1
+    # Do not prematurely round away a small amount of damage.
+    assert repaired_health(0.986, 1) == pytest.approx(0.996)
 
 
 def test_disabling_restores_survivors_and_legacy_units_start_full(
@@ -179,9 +194,9 @@ def test_api_reports_remaining_health_and_next_turn_gain(campaign: Any) -> None:
     unit.health = 0.5
     report = HealthStatus(**health_report([unit], campaign.game.settings))
     assert report.health_percent == 50
-    assert report.damage_repaired_per_turn_percent == 30
-    assert report.repair_next_turn_percent == 15
-    assert report.health_next_turn_percent == 65
+    assert report.damage_repaired_per_turn_percent == 34
+    assert report.repair_next_turn_percent == pytest.approx(34)
+    assert report.health_next_turn_percent == pytest.approx(84)
     assert report.units[0].health_percent == 50
     assert report.units[0].persistent
 
@@ -200,7 +215,7 @@ def test_the_real_turn_boundary_repairs_even_a_skipped_turn(campaign: Any) -> No
     campaign.units[0].health = 0.5
     Game.finish_turn(game, campaign.events, skipped=True)
     assert game.turn == 1
-    assert campaign.units[0].health_fraction == 0.65
+    assert campaign.units[0].health_fraction == pytest.approx(0.84)
 
 
 def test_map_and_planner_api_expose_the_same_health(
@@ -219,7 +234,7 @@ def test_map_and_planner_api_expose_the_same_health(
     assert mapped.health == planned.health
     assert mapped.health is not None
     assert mapped.health.health_percent == 50
-    assert mapped.health.health_next_turn_percent == 65
+    assert mapped.health.health_next_turn_percent == pytest.approx(84)
 
 
 def test_invalid_health_is_ignored() -> None:

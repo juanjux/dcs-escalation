@@ -654,9 +654,20 @@ class AutoSettingsLayout(QGridLayout):
         refresh()
 
     def set_enabled(self, name: str, enabled: bool) -> None:
+        def apply(target: QWidget | QLayout) -> None:
+            # QLayout.setEnabled only controls layout management, not its widgets.
+            if isinstance(target, QLayout):
+                for index in range(target.count()):
+                    item = target.itemAt(index)
+                    child = item.widget() or item.layout()
+                    if child is not None:
+                        apply(child)
+            else:
+                target.setEnabled(enabled)
+
         for target in (self.control_for(name), self.label_map.get(name)):
             if target is not None:
-                target.setEnabled(enabled)
+                apply(target)
 
     def _wire_survival_odds(self) -> None:
         """The odds follow their own switch, and the switch follows Live Pilots.

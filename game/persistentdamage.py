@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any, Iterable
 
+from game.settings.settings import DEFAULT_PERSISTENT_DAMAGE_REPAIR_PERCENT
+
 if TYPE_CHECKING:
     from game import Game
     from game.debriefing import Debriefing
@@ -18,16 +20,24 @@ def enabled(settings: object) -> bool:
 
 def repair_percent(settings: object) -> int:
     return max(
-        0, min(100, int(getattr(settings, "persistent_damage_repair_percent", 30)))
+        0,
+        min(
+            100,
+            int(
+                getattr(
+                    settings,
+                    "persistent_damage_repair_percent",
+                    DEFAULT_PERSISTENT_DAMAGE_REPAIR_PERCENT,
+                )
+            ),
+        ),
     )
 
 
 def repaired_health(health: float, percent: int) -> float:
     if health <= 0 or health >= 1 or percent <= 0:
         return health
-    result = health + (1 - health) * percent / 100
-    # Round to full health once less than half a percent of damage remains.
-    return 1.0 if result >= 0.995 else result
+    return min(1.0, health + percent / 100)
 
 
 def parse_health(raw: Any) -> dict[str, float]:
