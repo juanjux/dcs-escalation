@@ -704,6 +704,31 @@ class Settings:
 
     # Campaign management
     # General
+    persistent_damage_enabled: bool = boolean_option(
+        "Persistent ship and building damage",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=GENERAL_SECTION,
+        default=True,
+        detail=(
+            "Surviving ships and buildings keep their remaining health between "
+            "missions. Armor and SAM units still recover fully each turn. "
+            "Destroyed units are not revived by this setting."
+        ),
+    )
+    persistent_damage_repair_percent: int = bounded_int_option(
+        "Ship and building damage repaired per turn (%)",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=GENERAL_SECTION,
+        default=30,
+        min=0,
+        max=100,
+        detail=(
+            "Percentage of the remaining damage repaired at the end of each turn. "
+            "For example, 30% repair raises 50% health to 65%. Zero disables "
+            "automatic recovery; 100 restores surviving units fully."
+        ),
+        enabled_when=lambda settings: settings.persistent_damage_enabled,
+    )
     squadron_random_chance: int = bounded_int_option(
         "Percentage of randomly selected aircraft types (only for generated squadrons)",
         page=CAMPAIGN_MANAGEMENT_PAGE,

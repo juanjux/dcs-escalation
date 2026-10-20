@@ -27,6 +27,7 @@ class _Tgo:
         repairing: bool = False,
     ) -> None:
         self.id = name
+        self.units: list[Any] = []
         self.name = name
         self.category = category
         self.is_dead = dead

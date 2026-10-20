@@ -601,6 +601,10 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
 
     @property
     def sidc_status(self) -> Status:
+        if self.is_fleet and self.status is ControlPointStatus.Functional:
+            for tgo in self.ground_objects:
+                if tgo.is_control_point:
+                    return tgo.sidc_status
         if self.status is ControlPointStatus.Functional:
             return Status.PRESENT
         if self.status is ControlPointStatus.Damaged:

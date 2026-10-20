@@ -593,6 +593,10 @@ class Game:
         self.message("End of turn #" + str(self.turn), "-" * 40)
         self.turn += 1
 
+        from game.persistentdamage import repair_damage
+
+        repair_damage(self, events)
+
         # The coalition-specific turn finalization *must* happen before unit deliveries,
         # since the coalition-specific finalization handles transit network updates and
         # transfer processing. If in the other order, units may be delivered to captured

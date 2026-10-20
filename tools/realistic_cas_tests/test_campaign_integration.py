@@ -277,6 +277,8 @@ class CampaignIntegrationTests(unittest.TestCase):
             with patch.object(self.g, "generate_plugin_data"), patch.object(
                 self.g, "_seed_pilot_roster"
             ), patch.object(self.g, "_seed_scenery_objectives"), patch.object(
+                self.g, "_seed_persistent_damage"
+            ), patch.object(
                 self.g, "_inject_tic_script"
             ), patch.object(
                 self.g, "_inject_aircraft_maintenance"

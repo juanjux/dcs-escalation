@@ -176,6 +176,7 @@ class StateData:
     naval_magazines_state: List[Tuple[str, int]] = field(default_factory=list)
     aircraft_damage: dict[str, AircraftDamageReport] = field(default_factory=dict)
     aircraft_damage_mission_id: str | None = None
+    persistent_health: Dict[str, float] = field(default_factory=dict)
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)
@@ -183,9 +184,14 @@ class StateData:
         object.__setattr__(
             self, "aircraft_damage_mission_id", state.get("aircraft_damage_mission_id")
         )
+        object.__setattr__(
+            self, "persistent_health", state.get("persistent_health", {})
+        )
 
     @classmethod
     def from_json(cls, data: Dict[str, Any], unit_map: UnitMap) -> StateData:
+        from game.persistentdamage import parse_health
+
         def clean_unit_list(unit_list: List[Any]) -> List[str]:
             # Cleans list of units in state.json by
             # - Removing duplicates. Airfields emit a new "dead" event every time a bomb
@@ -283,6 +289,7 @@ class StateData:
                 if isinstance(data.get("aircraft_damage_mission_id"), str)
                 else None
             ),
+            persistent_health=parse_health(data.get("persistent_health", {})),
         )
 
 

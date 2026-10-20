@@ -21,6 +21,7 @@ from qt_ui.widgets.coordinatelabel import CoordinateLabel
 from qt_ui.windows.groundobject.common import (
     ALIVE_INK,
     DESTROYED_INK,
+    DAMAGED_INK,
     REPAIRING_INK,
     two_tone_button,
 )
@@ -48,6 +49,8 @@ RepairCall = Callable[[TheaterUnit, int], None]
 def state_of(unit: TheaterUnit) -> tuple[str, str]:
     """The unit's state as a chip and the colour of its bar."""
     if unit.alive:
+        if unit.health_fraction < 1:
+            return f"HEALTH {unit.health_fraction:.0%}", DAMAGED_INK
         return "", ALIVE_INK
     if unit.repair_turns_remaining is not None:
         turns = unit.repair_turns_remaining

@@ -57,6 +57,7 @@ class LuaGenerator:
         self.inject_plugins()
         self._inject_aircraft_maintenance()
         self._seed_scenery_objectives()
+        self._seed_persistent_damage()
         self._inject_tic_script()
         inject_campaign(self, realistic_cas)
         for t in ewrj_triggers:
@@ -78,6 +79,59 @@ class LuaGenerator:
         script = Path("resources/plugins/base/aircraft_maintenance.lua")
         trigger.add_action(
             DoScriptFile(self.mission.map_resource.add_resource_file(script))
+        )
+        self.mission.triggerrules.triggers.append(trigger)
+
+    def _seed_persistent_damage(self) -> None:
+        from game.persistentdamage import enabled
+
+        if self.unit_map is None or not enabled(self.game.settings):
+            return
+        rows = []
+        for name, mapping in self.unit_map.theater_objects.items():
+            unit = mapping.theater_unit
+            if unit.alive and unit.persistent_damage_eligible:
+                rows.append({"name": name, "health": unit.health_fraction})
+        for name, scenery in self.unit_map.scenery_objects.items():
+            unit = scenery.ground_unit
+            if unit.alive and unit.persistent_damage_eligible:
+                rows.append(
+                    {
+                        "name": name,
+                        "health": unit.health_fraction,
+                        "x": unit.position.x,
+                        "z": unit.position.y,
+                    }
+                )
+        if not rows:
+            return
+        import json
+
+        # JSON's scalar values and string escaping are also valid in Lua tables.
+        entries = []
+        for row in rows:
+            entries.append(
+                "{"
+                + ", ".join(
+                    f"{key} = {json.dumps(value, ensure_ascii=False)}"
+                    for key, value in row.items()
+                )
+                + "}"
+            )
+        trigger = TriggerStart(comment="Persistent ship and building damage")
+        trigger.add_action(
+            DoScript(
+                String(
+                    "ESCALATION_PERSISTENT_DAMAGE = {\n" + ",\n".join(entries) + "\n}"
+                )
+            )
+        )
+        trigger.add_action(
+            DoScriptFile(
+                self.mission.map_resource.add_resource_file(
+                    "resources/plugins/base/persistent_damage.lua"
+                )
+            )
         )
         self.mission.triggerrules.triggers.append(trigger)
 

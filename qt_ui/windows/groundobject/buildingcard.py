@@ -24,6 +24,7 @@ from qt_ui.widgets.coordinatelabel import CoordinateLabel
 from qt_ui.windows.groundobject.common import (
     ALIVE_INK,
     DESTROYED_INK,
+    DAMAGED_INK,
     REPAIRING_INK,
     two_tone_button,
 )
@@ -191,6 +192,8 @@ class BuildingCard(QWidget):
     @staticmethod
     def _state(building: TheaterUnit) -> tuple[str, str]:
         if building.alive:
+            if building.health_fraction < 1:
+                return f"HEALTH {building.health_fraction:.0%}", DAMAGED_INK
             return "", ALIVE_INK
         if building.repair_turns_remaining is not None:
             turns = building.repair_turns_remaining
