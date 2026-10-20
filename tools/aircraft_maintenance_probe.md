@@ -57,3 +57,18 @@ life, whether canopy damage changes that value, which landing events and place
 information are emitted, and whether damage readings survive immediately before a
 crash or player departure. Until these checks pass, workshop recovery and repair
 duration remain unverified.
+
+## First live run
+
+The first A-10 player run recorded A-10C II life changing from 32 to 31,
+Hornet and Viper life from 20 to 19, and Huey life from 12 to 11 and then 4.
+Numerical fractional health is therefore available on these probe units, although
+this does not establish coverage of every subsystem or equivalence across types.
+Scripted explosions did not produce HIT records: periodic health sampling is
+needed in addition to event handlers. Missing units remain unknown, not recovered
+on the strength of their last positive health reading.
+
+The AI return control crashed shortly after startup, so this run provided no
+landing evidence. Version 2 moves its low-altitude start to the sea-side approach,
+records terrain height/AGL when available, and samples all units immediately at
+script startup. A new live run is still needed to validate the landing control.

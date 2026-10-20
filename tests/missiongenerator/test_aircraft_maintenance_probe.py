@@ -49,6 +49,12 @@ def test_probe_mission_contains_isolated_targets_and_embedded_script(
         assert len(data["trigrules"]) == 1
     arrival = next(g for g in groups if g.units[0].name == "PROBE_RETURNING_A10")
     assert arrival.points[-1].airdrome_id == mission.terrain.airports["Batumi"].id
+    approach = mission.terrain.airports["Batumi"].position.point_from_heading(
+        mission.terrain.airports["Batumi"].runways[0].heading, 12000
+    )
+    assert arrival.units[0].position.distance_to_point(approach) < 1
+    first_leg = arrival.points[0].position.distance_to_point(arrival.points[1].position)
+    assert first_leg == pytest.approx(6000)
 
 
 @pytest.fixture
@@ -214,3 +220,11 @@ def test_automatic_blasts_can_be_cancelled(runtime: Any) -> None:
     runtime.globals().commands["Stop automatic target blasts"]()
     runtime.execute("now=40; tick(nil, now)")
     assert len(runtime.globals().blasts) == 0
+
+
+def test_initial_sample_and_optional_terrain_height(runtime: Any) -> None:
+    assert runtime.globals().EscalationAircraftProbe.samples["PLAYER"]["time"] == 0
+    runtime.execute("land = { getHeight = function(point) return 25 end }")
+    sample = runtime.globals().EscalationAircraftProbe.sample("PLAYER", "check_agl")
+    assert sample["ground_height_m"] == 25
+    assert sample["agl_m"] == 75

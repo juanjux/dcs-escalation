@@ -90,6 +90,13 @@ function P.sample(name, reason, object)
     local point = read(object, "getPoint")
     if point then
         record.x, record.y, record.z = point.x, point.y, point.z
+        local ok, height = pcall(function()
+            return land.getHeight({x = point.x, y = point.z})
+        end)
+        if ok and finite(height) then
+            record.ground_height_m = height
+            record.agl_m = point.y - height
+        end
     end
     if reason ~= "periodic" then nearest(record, point, record.coalition) end
     local old = previous[name]
@@ -200,5 +207,6 @@ timer.scheduleFunction(function(_, now)
     return now + 1
 end, nil, start + 1)
 world.addEventHandler(P)
-log({kind = "start", version = 1, separate_log = logfile ~= nil})
+log({kind = "start", version = 2, separate_log = logfile ~= nil})
+for _, name in ipairs(config.units) do P.sample(name, "initial") end
 trigger.action.outText("Maintenance probe: watch for 100 seconds. Only the dedicated AI targets receive automatic blasts. Use F10 > Aircraft maintenance probe for readings and optional player tests.", 30)

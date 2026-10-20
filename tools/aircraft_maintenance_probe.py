@@ -69,7 +69,9 @@ def build_mission(player: str = "a10") -> Mission:
         targets.append(name)
         tracked.append(name)
     runway = batumi.runways[0]
-    approach = batumi.position.point_from_heading((runway.heading + 180) % 360, 12000)
+    # Continue along the sea-side approach waypoint, not the opposite, inland
+    # side where a low-altitude spawn can intersect the terrain.
+    approach = batumi.position.point_from_heading(runway.heading, 12000)
     arrival = mission.flight_group_inflight(
         country,
         "Maintenance landing control",
