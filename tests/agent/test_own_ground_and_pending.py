@@ -64,10 +64,10 @@ def _tgo(cls: Any, name: str) -> Any:
     return tgo
 
 
-def test_only_your_own_rebuildable_sites_are_listed(
+def test_your_own_sites_include_buildings_for_health_reporting(
     monkeypatch: Any,
 ) -> None:
-    """Enemy sites are already in `targets`; buildings cannot be rebuilt this way."""
+    """Buildings expose health too; listing them does not authorize upgrades."""
     mine_sam = _tgo(SamGroundObject, "SA-3 Kirovsk")
     mine_armor = _tgo(VehicleGroupGroundObject, "Armor Group Nalchik")
     mine_building = _tgo(BuildingGroundObject, "Factory Nalchik")
@@ -90,8 +90,14 @@ def test_only_your_own_rebuildable_sites_are_listed(
     )
 
     listed = views.build_own_ground_objects(cast("Game", game), "red")
-    assert {t.name for t in listed} == {"SA-3 Kirovsk", "Armor Group Nalchik"}
-    assert {t.kind for t in listed} == {"sam", "ground"}
+    assert {t.name for t in listed} == {
+        "SA-3 Kirovsk",
+        "Armor Group Nalchik",
+        "Factory Nalchik",
+    }
+    building = next(t for t in listed if t.name == "Factory Nalchik")
+    assert (building.kind, building.suggested_task) == ("building", "STRIKE")
+    assert {t.kind for t in listed} == {"sam", "ground", "building"}
     assert all(t.id for t in listed)
 
 

@@ -434,6 +434,8 @@ class MissionResultsProcessor:
                 self.commit_airlift_losses(debriefing)
             with logged_duration("commit_ground_losses"):
                 self.commit_ground_losses(debriefing, events)
+            with logged_duration("commit_persistent_damage"):
+                self.commit_persistent_damage(debriefing, events)
             with logged_duration("commit_damaged_runways"):
                 self.commit_damaged_runways(debriefing)
             with logged_duration("commit_cruise_missiles"):
@@ -456,6 +458,13 @@ class MissionResultsProcessor:
             with logged_duration("record_carcasses"):
                 self.record_carcasses(debriefing)
             self.game.record_debrief(debriefing)
+
+    def commit_persistent_damage(
+        self, debriefing: Debriefing, events: GameUpdateEvents
+    ) -> None:
+        from game.persistentdamage import commit_damage
+
+        commit_damage(self.game, debriefing, events)
 
     def note_high_command_orders(self, debriefing: Debriefing) -> None:
         """Mark the High Command's orders the mission achieved. A fault here must not

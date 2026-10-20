@@ -278,6 +278,7 @@ function write_state()
         ["cruise_missiles_state"] = cruise_missiles_state or {},
         ["naval_magazines_state"] = naval_magazines_state or {},
         ["mission_log_events"] = mission_log_events or {},
+        ["persistent_health"] = escalationPersistentDamage and escalationPersistentDamage.snapshot() or {},
     }
     local t0 = os.clock()
     local ok, write_error = pcall(function()
@@ -372,6 +373,7 @@ debriefing_file_location = discoverDebriefingFilePath()
 local error_message_shown = false
 
 write_state_error_handling = function()
+    if escalationPersistentDamage then escalationPersistentDamage.poll() end
     local _debriefing_file_location = debriefing_file_location
     if not debriefing_file_location then 
         _debriefing_file_location = "[nil]"

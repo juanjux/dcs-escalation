@@ -3,6 +3,7 @@ import {
   Tgo as TgoModel,
 } from "../../api/liberationApi";
 import SplitLines from "../splitlines/SplitLines";
+import { hasPersistentDamage, healthBarSvg } from "../health/health";
 import { Icon, Point } from "leaflet";
 import ms from "milsymbol";
 import { Tooltip } from "react-leaflet";
@@ -124,17 +125,18 @@ export function iconForTgo(tgo: TgoModel) {
   const jammer = isJammer(tgo);
   const store = isStore(tgo);
   const iadsColor = iadsBarColor(tgo);
-  if (!repairing && !jammer && !store && !iadsColor) {
+  const damaged = hasPersistentDamage(tgo.health);
+  if (!repairing && !jammer && !store && !iadsColor && !damaged) {
     return new Icon({ iconUrl: symbol.toDataURL(), iconAnchor });
   }
-  let svg = symbol.asSVG();
+  let svg = healthBarSvg(symbol.asSVG(), tgo.health);
   if (store) {
     svg = relabelStore(svg, tgo.category);
   }
   if (repairing) {
     svg = svg.split(MILSYMBOL_DAMAGED_YELLOW).join(REPAIRING_ORANGE);
   }
-  if (iadsColor) {
+  if (iadsColor && !damaged) {
     // Over the repair orange as well: a site with no power is not being brought back
     // this turn whatever else is pending on it.
     for (const was of [
@@ -198,6 +200,13 @@ export function TgoTooltipContent(props: { tgo: TgoModel }) {
     <>
       {`${props.tgo.name} (${props.tgo.control_point_name})`}
       <br />
+      {props.tgo.health && hasPersistentDamage(props.tgo.health) && (
+        <>
+          Health: {props.tgo.health.health_percent}% · next turn:{" "}
+          {props.tgo.health.health_next_turn_percent}%
+          <br />
+        </>
+      )}
       {props.tgo.category === "motorpool" ? (
         <>
           <InventorySection label="Motorpool reserve" inventory={reserve} />

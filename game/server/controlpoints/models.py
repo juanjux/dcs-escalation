@@ -4,6 +4,8 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import BaseModel
+from game.health import HealthStatus
+from game.persistentdamage import health_report
 
 from game.server.leaflet import LeafletPoint
 
@@ -13,6 +15,7 @@ if TYPE_CHECKING:
 
 
 class ControlPointJs(BaseModel):
+    health: HealthStatus | None = None
     id: UUID
     name: str
     blue: bool
@@ -81,6 +84,21 @@ class ControlPointJs(BaseModel):
         tacan, atc_frequency = _comms_summary(control_point)
 
         return ControlPointJs(
+            health=(
+                HealthStatus(
+                    **health_report(
+                        (
+                            unit
+                            for tgo in control_point.ground_objects
+                            if tgo.is_control_point
+                            for unit in tgo.units
+                        ),
+                        control_point.coalition.game.settings,
+                    )
+                )
+                if control_point.is_fleet
+                else None
+            ),
             id=control_point.id,
             name=control_point.name,
             blue=blue,

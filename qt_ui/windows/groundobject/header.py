@@ -13,6 +13,7 @@ from qt_ui.widgets.cards import make_transparent
 from qt_ui.windows.groundobject.buildingcard import buildings_of, reward_for
 from qt_ui.windows.groundobject.common import (
     DESTROYED_INK,
+    DAMAGED_INK,
     HealthBar,
     kind_chip_text,
     owner_of,
@@ -194,7 +195,17 @@ class LocationHeader(QWidget):
         column.addLayout(figure)
         # No "-$4M until repaired" line: the bar and the two figures above it already
         # say what is missing, and a minus sign beside money reads as a cost.
-        column.addWidget(HealthBar(standing, 0, len(buildings)))
+        damaged = any(0 < unit.health_fraction < 1 for unit in buildings)
+        health = sum(unit.health_fraction for unit in buildings)
+        bar = HealthBar(health, 0, len(buildings), damaged=damaged)
+        bar.setToolTip(f"Health: {health / max(1, len(buildings)):.0%}")
+        column.addWidget(bar)
+        if damaged:
+            column.addWidget(
+                _right(
+                    label(f"HEALTH {health / max(1, len(buildings)):.0%}", 10, AMBER)
+                )
+            )
         holder.setLayout(column)
         return holder
 
@@ -202,6 +213,8 @@ class LocationHeader(QWidget):
     def _health(ground_object: TheaterGroundObject) -> QWidget:
         units = list(ground_object.units)
         alive = sum(1 for unit in units if unit.alive)
+        health = sum(unit.health_fraction for unit in units)
+        damaged = any(0 < unit.health_fraction < 1 for unit in units)
         repairing = sum(
             1
             for unit in units
@@ -228,13 +241,20 @@ class LocationHeader(QWidget):
             )
         )
         column.addLayout(figure)
-        column.addWidget(HealthBar(alive, repairing, len(units)))
+        bar = HealthBar(health, repairing, len(units), damaged=damaged)
+        bar.setToolTip(f"Health: {health / max(1, len(units)):.0%}")
+        column.addWidget(bar)
+        if damaged:
+            column.addWidget(
+                _right(label(f"HEALTH {health / max(1, len(units)):.0%}", 10, AMBER))
+            )
 
         legend = QHBoxLayout()
         legend.setSpacing(10)
         legend.addStretch()
         for text, ink in (
             ("alive", GREEN),
+            *((("damaged", DAMAGED_INK),) if damaged else ()),
             ("repairing", AMBER),
             ("destroyed", DESTROYED_INK),
         ):
