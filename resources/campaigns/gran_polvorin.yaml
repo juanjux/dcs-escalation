@@ -52,16 +52,26 @@ iads_config:
 
 # RED -- Tierra del Fuego. Rio Grande has a comms tower but no power station, so the
 # Ushuaia plant stands inland between the two and its grid covers both.
+# The shared Ushuaia Backbone mast links the airport and inland radar sectors.
+# These are explicit long-haul campaign links, not automatic proximity links.
     - Ground-1:            # S-300 at Ushuaia
         - Red Comms Ushuaia Airport
+        - Red Comms Ushuaia Backbone
         - Red Power Ushuaia Airport
+        - Red IADS Command Center Punta Arenas
+    - Ground-2:            # Air-defence site beside the inland radar sector
+        - Red Comms Ushuaia
+        - Red Comms Ushuaia Backbone
+        - Red Power Ushuaia
         - Red IADS Command Center Punta Arenas
     - Ground-7:            # SA-2 north-east of Ushuaia
         - Red Comms Ushuaia
+        - Red Comms Ushuaia Backbone
         - Red Power Ushuaia
         - Red IADS Command Center Punta Arenas
     - Red EWR Ushuaia:
         - Red Comms Ushuaia
+        - Red Comms Ushuaia Backbone
         - Red Power Ushuaia
         - Red IADS Command Center Punta Arenas
     - Ground-17:           # SA-2 at Rio Grande
