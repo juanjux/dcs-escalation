@@ -148,33 +148,22 @@ class ConflictTheater:
         if self.is_on_land(point):
             return False
 
-        for exclusion_zone in self.landmap.exclusion_zones.geoms:
-            if poly_contains(point.x, point.y, exclusion_zone):
-                return False
+        if poly_contains(point.x, point.y, self.landmap.exclusion_zones):
+            return False
 
-        for sea in self.landmap.sea_zones.geoms:
-            if poly_contains(point.x, point.y, sea):
-                return True
-
-        return False
+        return poly_contains(point.x, point.y, self.landmap.sea_zones)
 
     def is_on_land(self, point: Point, ignore_exclusion: bool = False) -> bool:
         if not self.landmap:
             return True
 
-        is_point_included = False
-        if poly_contains(point.x, point.y, self.landmap.inclusion_zones):
-            is_point_included = True
-
-        if not is_point_included:
+        if not poly_contains(point.x, point.y, self.landmap.inclusion_zones):
             return False
 
-        if not ignore_exclusion:
-            for exclusion_zone in self.landmap.exclusion_zones.geoms:
-                if poly_contains(point.x, point.y, exclusion_zone):
-                    return False
-
-        return True
+        # Query the prepared MultiPolygon once, rather than every island/hole.
+        return ignore_exclusion or not poly_contains(
+            point.x, point.y, self.landmap.exclusion_zones
+        )
 
     def nearest_land_pos(self, near: Point, extend_dist: int = 50) -> Point:
         """Returns the nearest point inside a land exclusion zone from point
