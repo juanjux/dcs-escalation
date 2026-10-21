@@ -2358,6 +2358,21 @@ class Settings:
         max=0,
         detail="He came home without it.",
     )
+    morale_damaged_return: int = bounded_int_option(
+        "Returned in a damaged aircraft",
+        page=LIVE_PILOTS_PAGE,
+        section=LIVE_PILOTS_MORALE_SECTION,
+        subsection=LIVE_PILOTS_MORALE_EVENTS_SECTION,
+        default=-3,
+        min=-50,
+        max=0,
+        detail=(
+            "Applied once after a confirmed damaged return to friendly territory. "
+            "The normal mission-complete reward still applies. Rank and hardening "
+            "reduce this penalty as usual; zero disables it. Does not alter pilot "
+            "survival, and does not require aircraft workshops to be enabled."
+        ),
+    )
     morale_achieved_nothing: int = bounded_int_option(
         "Came home empty",
         page=LIVE_PILOTS_PAGE,

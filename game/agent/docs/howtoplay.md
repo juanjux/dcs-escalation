@@ -40,6 +40,14 @@ Read 1-4 once, then work from 5 and 8 each turn; 9 is the field-by-field referen
 
 ## Aircraft damage and workshops
 
+With Live Pilots and morale enabled, a confirmed damaged return to friendly
+territory adds a small morale penalty (default -3), configurable under Live
+Pilots > Morale events. Zero disables it. The normal mission-complete reward
+still applies, and rank/hardening reduce the penalty as usual. This event does
+not change survival or wounds, does not count unknown or airborne outcomes,
+and works independently of aircraft workshops. Regenerate missions to include
+the required telemetry.
+
 Campaign Management > Persistent damage & repairs contains separate boxes for
 aircraft workshops, surviving ship/building damage, and reconstruction times.
 Persistent aircraft damage is off by default. Its dependent controls are greyed
