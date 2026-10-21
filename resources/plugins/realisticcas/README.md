@@ -92,7 +92,17 @@ Hover an option's label or control for its explanation.
   A failed hide is NOT reported as confirmed
   concealment: diagnostics/contact expose `backendVisible`. Acceptance of setCommand
   is the strongest API acknowledgement, not a DCS getter of physical invisibility.
-- No F10 changes, task replacement, destruction/respawn, immortality or radar changes.
+- No F10 visibility changes, runtime task replacement, destruction/respawn,
+  immortality or radar changes. AI CAS and Armed Recon routes include a moving
+  four-leg search circuit in their assigned area while the plugin is enabled.
+  Native search-and-engage tasks remain responsible for detecting/attacking
+  revealed contacts; the circuit never reads hidden target positions. Human or
+  mixed player flights and other mission roles are unchanged. CAS uses its
+  scheduled end time; Armed Recon allows the doctrine's CAS duration after TOT.
+  Each search corner checks that deadline and a 20% fuel reserve before continuing
+  or resuming the original exit route. Small zones use a minimum 250 m standoff
+  half-width, without enlarging the native engagement zone. Runtime engine
+  acceptance of the new Cobra search route remains a separate DCS test.
 
 ## Detection rolls
 
