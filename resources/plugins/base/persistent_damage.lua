@@ -19,22 +19,28 @@ local function baseline(object, life)
     return life
 end
 
-local function restore(object, fraction)
-    if fraction >= 1 then return true end
+local function restore(object, entry)
+    local fraction = entry.health
+    if fraction >= 1 or entry.native then return true end
     -- The same DCS mission command used by MOOSE UNIT:SetLife. No explosions:
     -- restoring old damage must not hit neighbours or create new kill events.
-    local ok, result = pcall(function()
-        local code = string.format("a_unit_set_life_percentage(%d, %.9f)", object:getID(), fraction)
+    local ok, result, detail = pcall(function()
+        local percent = fraction * 100
+        local code = string.format("a_unit_set_life_percentage(%.0f, %.9f)", object:getID(), percent)
         if type(a_unit_set_life_percentage) == "function" then
-            a_unit_set_life_percentage(object:getID(), fraction)
+            a_unit_set_life_percentage(object:getID(), percent)
             return true
         end
-        if not net or type(net.dostring_in) ~= "function" then return false end
+        if not net or type(net.dostring_in) ~= "function" then
+            return false, "native setter and net.dostring_in unavailable in mission sandbox"
+        end
         local value, err = net.dostring_in("mission", code .. "; return 'applied'")
-        return not err and value == "applied"
+        return not err and value == "applied", err or tostring(value)
     end)
     if not ok or not result then
-        env.warning("Escalation: cannot restore persistent health for object " .. tostring(object:getID()))
+        env.warning("Escalation: cannot restore persistent health for " .. entry.name
+            .. " (object " .. tostring(object:getID()) .. ", expected " .. tostring(fraction * 100)
+            .. "%): " .. tostring(detail or result))
         trigger.action.outText("Escalation: DCS could not restore persistent ship/building health. See dcs.log.", 30)
         return false
     end
@@ -71,7 +77,7 @@ local function initialize(entry)
         local life = lifeOf(object)
         if life and life > 0 then
             local maximum = baseline(object, life)
-            if maximum > 0 and restore(object, entry.health) then
+            if maximum > 0 and restore(object, entry) then
                 state[#state + 1] = {object = object, maximum = maximum, expected = entry.health}
             end
         end

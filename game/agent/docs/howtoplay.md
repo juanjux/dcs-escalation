@@ -88,6 +88,15 @@ impact reading, or last positive health alone never establish recovery. Telemetr
 does not model every subsystem; canopy jettison alone did not reduce measured life.
 Old missions without this telemetry retain their existing behavior.
 
+Ship and placed-building health is restored with native mission-trigger actions
+using DCS percentage units, then checked against measured life. Mission-sandbox
+Lua does not have to expose the native setter or `net.dostring_in` for these
+objects. Finite-life terrain scenery still requires a working native bridge;
+unsupported restorations are warned about and omitted from health telemetry,
+rather than recording a healthy replacement over existing campaign damage.
+Regenerate a mission to use updated restoration actions; an already loaded
+mission retains its embedded scripts and triggers.
+
 A confirmed damaged landing that fails recovery eligibility is a permanent
 airframe write-off, not a healthy aircraft returned next turn. It reduces owned
 inventory without a refund and appears in aircraft losses and replacement costs

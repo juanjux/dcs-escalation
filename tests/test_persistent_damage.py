@@ -84,7 +84,7 @@ def campaign() -> Any:
     um = UnitMap()
     for unit in units:
         um.add_theater_unit_mapping(
-            unit, cast(Any, SimpleNamespace(name=unit.unit_name))
+            unit, cast(Any, SimpleNamespace(name=unit.unit_name, id=unit.id + 100))
         )
     return SimpleNamespace(
         game=game, units=units, sites=sites, um=um, events=GameUpdateEvents()
@@ -272,7 +272,7 @@ def test_generation_embeds_health_and_only_tracks_eligible_units(
             name.endswith("persistent_damage.lua") for name in archive.namelist()
         )
     lua.execute(
-        "function getValueDictByKey(key) return dictionary[key] or key end; function getValueResourceByKey(key) return key end; function a_do_script(code) assert(loadstring(code))() end; function a_do_script_file() end"
+        "function getValueDictByKey(key) return dictionary[key] or key end; function getValueResourceByKey(key) return key end; function a_do_script(code) assert(loadstring(code))() end; function a_do_script_file() end; native_calls={}; function a_unit_set_life_percentage(id,percent) native_calls[#native_calls+1]={id=id,percent=percent} end"
     )
     lua.execute(lua.globals().mission.trig.actions[1])
     rows = list(lua.globals().ESCALATION_PERSISTENT_DAMAGE.values())
@@ -281,6 +281,10 @@ def test_generation_embeds_health_and_only_tracks_eligible_units(
         campaign.units[1].unit_name,
     }
     assert rows[0].health == 0.65
+    assert all(row.native for row in rows)
+    assert len(lua.globals().native_calls) == 1
+    assert lua.globals().native_calls[1].id == 101
+    assert lua.globals().native_calls[1].percent == 65
     campaign.game.settings.persistent_damage_enabled = False
     other = LuaGenerator(
         campaign.game, Mission(), cast(Any, SimpleNamespace()), campaign.um

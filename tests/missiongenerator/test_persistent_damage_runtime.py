@@ -1,4 +1,4 @@
-"""Execute the mission runtime with DCS objects and its real Lua 5.1 bridge."""
+"""Execute health tracking in Lua 5.1 with modeled DCS objects and APIs."""
 
 from pathlib import Path
 from typing import Any
@@ -29,9 +29,9 @@ def runtime(bridge_only: bool = False) -> Any:
             obj.isExist=function() return true end
             objects[name]=obj; return obj
         end
-        function a_unit_set_life_percentage(id, fraction)
-            calls[#calls+1]={id=id,fraction=fraction}
-            for _, obj in pairs(objects) do if obj.id==id then obj.life=obj.max*fraction end end
+        function a_unit_set_life_percentage(id, percent)
+            calls[#calls+1]={id=id,percent=percent}
+            for _, obj in pairs(objects) do if obj.id==id then obj.life=obj.max*percent/100 end end
         end
         net={dostring_in=function(context, code) return assert(loadstring(code))() end}
         ship=add('ship', 1, 1000); building=add('building', 2, 500)
@@ -64,6 +64,10 @@ def test_restores_ship_static_and_scenery_without_damaging_neighbours(
     assert state.zone == 0.4
     assert lua.eval("neighbour.life") == 200
     assert lua.eval("#calls") == 3
+
+    assert lua.eval("calls[1].percent") == 65
+    assert lua.eval("calls[2].percent") == 80
+    assert lua.eval("calls[3].percent") == 40
 
 
 def test_burning_damage_updates_state_and_is_never_restored_twice() -> None:
