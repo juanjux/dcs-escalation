@@ -14,6 +14,7 @@ import pytest
 from game import aircraftmaintenance as maintenance
 from game.agent import service
 from game.settings import Settings
+from game.squadrons.experience import PilotOutcomes
 from game.squadrons.squadron import Squadron
 from game.theater import Player
 
@@ -316,6 +317,146 @@ def test_confirmed_off_field_return_uses_actual_position_and_deduplicates(
     maintenance.commit_reports(world.game, debrief)
     maintenance.commit_reports(world.game, debrief)
     assert maintenance.damaged_count(world.sq) == 1
+
+
+@pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
+@pytest.mark.parametrize("ignore_crashes", [False, True])
+@pytest.mark.parametrize("pilot_alive", [False, True])
+@pytest.mark.parametrize("live_pilots", [False, True])
+def test_hostile_damaged_return_is_written_off_once_without_harming_pilot(
+    world: Any, side: Player, ignore_crashes: bool, pilot_alive: bool, live_pilots: bool
+) -> None:
+    world.game.settings.ignore_non_combat_air_losses = ignore_crashes
+    world.game.settings.live_pilots_enabled = live_pilots
+    if side == Player.RED:
+        world.sq.player = Player.RED
+        world.base.captured = Player.RED
+        world.enemy.captured = Player.BLUE
+    debrief = _debrief(world, {"health": 0.5, "recovered": True, "x": 9990, "z": 0})
+    pilot = SimpleNamespace(alive=pilot_alive, wounded=False)
+    debrief.unit_map.flight("unit").pilot = pilot
+    debrief.pilot_outcomes = PilotOutcomes()
+    maintenance.commit_reports(world.game, debrief)
+    maintenance.commit_reports(world.game, debrief)
+    assert world.sq.owned_aircraft == 5 and world.sq.destroyed_aircraft == 1
+    assert world.sq.untasked_aircraft == 5
+    assert world.blue.budget == 10
+    assert len(debrief.aircraft_writeoffs) == 1
+    assert debrief.aircraft_writeoffs[0].player == side
+    assert not maintenance.repairs(world.sq)
+    assert vars(pilot) == {"alive": pilot_alive, "wounded": False}
+    assert debrief.pilot_outcomes == PilotOutcomes()
+    assert debrief.air_losses.losses == []
+    world.game.turn += 1
+    world.sq.morale_in_play = False
+    world.sq.active_pilots = []
+    Squadron.return_all_pilots_and_aircraft(world.sq)
+    assert world.sq.untasked_aircraft == 5
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        {"health": 1, "recovered": True, "x": 9990, "z": 0},
+        {"health": 0.5, "recovered": False, "x": 9990, "z": 0},
+        {"health": 0.5, "recovered": True},
+        {"health": 0, "recovered": True, "x": 9990, "z": 0},
+        {"health": 0.5, "recovered": True, "x": 9990, "z": 0, "killed": True},
+        {"health": 0.5, "recovered": True, "x": 9990, "z": 0, "ejected": True},
+    ],
+)
+def test_unknown_healthy_or_terminal_reports_do_not_add_a_writeoff(
+    world: Any, entry: dict[str, Any]
+) -> None:
+    debrief = _debrief(world, entry)
+    maintenance.commit_reports(world.game, debrief)
+    assert world.sq.owned_aircraft == 6
+    assert not getattr(debrief, "aircraft_writeoffs", [])
+
+
+def test_actual_dcs_loss_is_not_debited_again_as_a_writeoff(world: Any) -> None:
+    debrief = _debrief(
+        world, {"health": 0.5, "recovered": True, "x": 9990, "z": 0}, lost=True
+    )
+    maintenance.commit_reports(world.game, debrief)
+    assert (
+        world.sq.owned_aircraft == 6
+    )  # The existing physical-loss path owns this debit.
+    assert not getattr(debrief, "aircraft_writeoffs", [])
+
+
+def test_writeoff_never_removes_aircraft_already_in_the_workshop(world: Any) -> None:
+    maintenance.admit(world.game, world.sq, "old", 0.5)
+    world.sq.owned_aircraft = 1
+    world.sq.untasked_aircraft = 0
+    debrief = _debrief(world, {"health": 0.5, "recovered": True, "x": 9990, "z": 0})
+    maintenance.commit_reports(world.game, debrief)
+    assert world.sq.owned_aircraft == maintenance.damaged_count(world.sq) == 1
+    assert world.sq.untasked_aircraft == 0
+    assert not getattr(debrief, "aircraft_writeoffs", [])
+
+
+def test_disabled_maintenance_does_not_write_off_damaged_landings(world: Any) -> None:
+    world.game.settings.aircraft_maintenance_enabled = False
+    debrief = _debrief(world, {"health": 0.5, "recovered": True, "x": 9990, "z": 0})
+    maintenance.commit_reports(world.game, debrief)
+    assert world.sq.owned_aircraft == world.sq.untasked_aircraft == 6
+    assert not getattr(debrief, "aircraft_writeoffs", [])
+
+
+def test_same_distance_is_unrecoverable_but_no_enemy_base_allows_recovery(
+    world: Any,
+) -> None:
+    debrief = _debrief(world, {"health": 0.5, "recovered": True, "x": 5000, "z": 0})
+    maintenance.commit_reports(world.game, debrief)
+    assert world.sq.owned_aircraft == 5
+    world.game._aircraft_maintenance_applied.clear()
+    world.enemy.captured = Player.NEUTRAL
+    debrief = _debrief(world, {"health": 0.5, "recovered": True, "x": 5000, "z": 0})
+    maintenance.commit_reports(world.game, debrief)
+    assert maintenance.damaged_count(world.sq) == 1 and world.sq.owned_aircraft == 5
+
+
+def test_remain_air_assault_is_not_debited_twice(world: Any) -> None:
+    debrief = _debrief(world, {"health": 0.5, "recovered": True, "x": 9990, "z": 0})
+    flight = debrief.unit_map.flight("unit").flight
+    flight.remain_at_destination = flight.is_helo = True
+    world.sq.owned_aircraft = 5
+    maintenance.commit_reports(world.game, debrief)
+    assert world.sq.owned_aircraft == 5
+    assert not getattr(debrief, "aircraft_writeoffs", [])
+
+
+def test_writeoff_is_in_debrief_counts_rows_costs_and_saved_report(world: Any) -> None:
+    from game.debriefing import Debriefing, GroundLosses
+    from game.debriefingreport import DebriefingReport
+    from tests.test_debriefing_report import _debriefing
+
+    damaged = _debrief(world, {"health": 0.5, "recovered": True, "x": 9990, "z": 0})
+    damaged.state_data.mission_ended = True
+    debrief = _debriefing(
+        game=world.game,
+        state_data=damaged.state_data,
+        unit_map=damaged.unit_map,
+        ground_losses=GroundLosses(),
+        base_captures=[],
+        air_losses=SimpleNamespace(
+            losses=[], player=[], enemy=[], by_type=lambda _: {}
+        ),
+    )
+    debrief.loss_counts = lambda side: Debriefing.loss_counts(debrief, side)
+    maintenance.commit_reports(world.game, debrief)
+    report = DebriefingReport.from_debriefing(debrief, world.game.turn)
+    assert report.loss_counts(Player.BLUE).aircraft == 1
+    assert report.air_rows(Player.BLUE) == [
+        ("Test aircraft", 1, "Unrecoverable damage — written off")
+    ]
+    costs = report.loss_costs(Player.BLUE)
+    assert costs is not None and costs.aircraft == 20
+    assert report.damage_rows(Player.BLUE) == []
+    assert pickle.loads(pickle.dumps(report)).air_rows(Player.BLUE) == report.air_rows(
+        Player.BLUE
+    )
 
 
 @pytest.mark.parametrize(

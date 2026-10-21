@@ -18,7 +18,11 @@ from typing import (
 from uuid import UUID
 
 from game.ato.starttype import StartType
-from game.aircraftmaintenance import AircraftDamageReport, parse_reports
+from game.aircraftmaintenance import (
+    AircraftDamageReport,
+    AircraftWriteoff,
+    parse_reports,
+)
 from game.dcs.aircrafttype import AircraftType
 from game.dcs.groundunittype import GroundUnitType
 from game.squadrons.experience import PilotOutcomes
@@ -310,6 +314,7 @@ class Debriefing:
         #: What became of the aircrew, filled in by the results processor as it
         #: commits losses and experience, and read by the debriefing window.
         self.pilot_outcomes = PilotOutcomes()
+        self.aircraft_writeoffs: list[AircraftWriteoff] = []
         self.air_losses: AirLosses = self.dead_aircraft()
         self.ground_losses = self.dead_ground_units()
         self.base_captures = self.base_capture_events()
@@ -667,6 +672,9 @@ class Debriefing:
             aircraft_lost = sum(1 for loss in air if not self.is_non_combat_loss(loss))
         else:
             aircraft_lost = len(air)
+        aircraft_lost += sum(
+            loss.player == player for loss in getattr(self, "aircraft_writeoffs", [])
+        )
         return SideLossCounts(
             aircraft=aircraft_lost,
             front_line=len(front_line),

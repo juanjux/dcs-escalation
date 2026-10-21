@@ -275,6 +275,21 @@ def air_rows(debriefing: Debriefing, player: Player) -> list[LossRow]:
         )
         note = f"{nc} not counted — crashed-do-not-count" if nc else ""
         rows.append((name, count - nc, note))
+    writeoffs: dict[str, int] = {}
+    for writeoff in getattr(debriefing, "aircraft_writeoffs", []):
+        if writeoff.player == player:
+            writeoffs[writeoff.aircraft] = writeoffs.get(writeoff.aircraft, 0) + 1
+    for index, (name, count, note) in enumerate(rows):
+        extra = writeoffs.pop(name, 0)
+        if extra:
+            note = "; ".join(
+                filter(None, (note, f"{extra} unrecoverable damaged aircraft"))
+            )
+            rows[index] = (name, count + extra, note)
+    rows.extend(
+        (name, count, "Unrecoverable damage — written off")
+        for name, count in sorted(writeoffs.items())
+    )
     return rows
 
 
@@ -309,6 +324,11 @@ def loss_costs(debriefing: Debriefing, player: Player) -> LossCosts:
         if doctrine_on and debriefing.is_non_combat_loss(loss):
             continue
         costs.aircraft += loss.flight.unit_type.price
+    costs.aircraft += sum(
+        loss.price
+        for loss in getattr(debriefing, "aircraft_writeoffs", [])
+        if loss.player == player
+    )
 
     units = [
         loss.unit_type

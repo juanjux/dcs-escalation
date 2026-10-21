@@ -82,6 +82,25 @@ impact reading, or last positive health alone never establish recovery. Telemetr
 does not model every subsystem; canopy jettison alone did not reduce measured life.
 Old missions without this telemetry retain their existing behavior.
 
+A confirmed damaged landing that fails recovery eligibility is a permanent
+airframe write-off, not a healthy aircraft returned next turn. It reduces owned
+inventory without a refund and appears in aircraft losses and replacement costs
+as unrecoverable damage, not in the workshop. Both sides use the same rule.
+This changes aircraft inventory only: pilot survival and status remain entirely
+governed by the existing Live Pilots rules.
+Geographic recovery compares straight-line distances to the nearest non-neutral,
+non-sunk friendly and enemy bases: friendly must be strictly closer, with no
+maximum radius. A confirmed friendly carrier return bypasses that comparison.
+The non-combat crash exception still recovers recorded pre-impact damage when its
+doctrine is enabled. Missing telemetry, missing positions, an aircraft still in
+flight or a healthy return do not establish a new write-off.
+
+Future CSAR work must keep aircraft recoverability separate from pilot rescue:
+an airframe written off does not automatically kill its pilot. A surviving pilot
+nearer enemy territory may generate a CSAR mission. Preserve survivor positions
+and times for that feature, and use the pilot's position rather than assuming the
+aircraft's recovery decision determines the crew's fate.
+
 Use `hire_aircraft_mechanic` / `POST /retribution-ai/workshops/hire` to buy permanent
 additional mechanics at your own base: $50,000 each by default, configured in
 dollars. The API reports `mechanic_cost_dollars` and retains `mechanic_price_m`
