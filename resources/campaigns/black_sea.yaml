@@ -27,19 +27,23 @@ squadrons:
       aircraft:
         - A-50
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
     - primary: Transport
       aircraft:
         - IL-78MD
       size: 4
+      pilots: 8
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Tu-160 Blackjack
       size: 4
+      pilots: 8
   # Krasnodar-Center
   13:
     - primary: BARCAP
@@ -88,6 +92,7 @@ squadrons:
       aircraft:
         - UH-60A
       size: 8
+      pilots: 12
   # Kobuleti
   24:
     - primary: BARCAP
@@ -111,19 +116,23 @@ squadrons:
       aircraft:
         - E-3A
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
     - primary: Transport
       aircraft:
         - C-17A
       size: 4
+      pilots: 8
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
   Blue CV:
     - primary: BARCAP
       secondary: air-to-air
@@ -145,6 +154,7 @@ squadrons:
       aircraft:
         - S-3B Tanker
       size: 2
+      pilots: 6
   Blue LHA:
     - primary: BAI
       secondary: air-to-ground
@@ -155,6 +165,7 @@ squadrons:
       aircraft:
         - UH-1H Iroquois
       size: 8
+      pilots: 12
   Red CV:
     - primary: BARCAP
       secondary: air-to-air
@@ -166,9 +177,11 @@ squadrons:
       secondary: any
     - primary: Refueling
       size: 2
+      pilots: 6
   Red LHA:
     - primary: BAI
       secondary: air-to-ground
     - primary: CAS
       secondary: air-to-ground
       size: 8
+      pilots: 12

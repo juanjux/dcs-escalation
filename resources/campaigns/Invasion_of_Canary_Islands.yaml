@@ -349,46 +349,56 @@ squadrons:
           aircraft:
             - ALA 14 - 142 Escuadron - Albacete F1M-EE
           size: 12
+          pilots: 16
         - primary: BAI
           secondary: air-to-ground
           aircraft:
             - Ala 23 - 232 Escuadron
           size: 12
+          pilots: 16
         - primary: Transport
           aircraft:
             - Ala 31 - Grupo 20
           size: 4
+          pilots: 8
           
     #Inclirk (Torrejón)
     16:
         - primary: AEW&C
           size: 2
+          pilots: 6
         - primary: Refueling
           aircraft: 
             - Ala 31 - Grupo 15
           size: 3
+          pilots: 7
         - primary: BARCAP
           secondary: air-to-ground
           aircraft:
             - Ala 12 - 121 Escuadron
           size: 12
+          pilots: 16
         - primary: BARCAP
           secondary: air-to-ground
           aircraft:
             - Ala 15 - 151 Escuadron
           size: 12
+          pilots: 16
         - primary: CAS
           aircraft:
             - FAMET 251 Escuadrilla
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - BHELTRA-V
           size: 4
+          pilots: 8
         - primary: Transport
           aircraft:
             - Ala 31 - Grupo 20
           size: 4
+          pilots: 8
           
     #Larnaca (Gran Canarias)
     47:
@@ -397,27 +407,33 @@ squadrons:
           aircraft:
             - 462 Escuadron
           size: 8
+          pilots: 12
         - primary: CAS
           secondary: any
           aircraft:
             - ALA 46 - 462 Escuadron - Gando F1M-EE
           size: 8
+          pilots: 12
         - primary: Refueling
           aircraft: 
             - Ala 31 - Grupo 10
           size: 3
+          pilots: 7
         - primary: CAS
           aircraft:
             - CEFAMET 216 Escuadirlla
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - BHELTRA-V Bosque
           size: 4
+          pilots: 8
         - primary: Transport
           aircraft:
             - Ala 31 - Grupo 30
           size: 4
+          pilots: 8
           
     #Paphos (Gando)
     46:
@@ -426,14 +442,17 @@ squadrons:
           aircraft:
            - ALA 46 - 462 Escuadron - Gando F1EE
           size: 10
+          pilots: 14
         - primary: CAS
           aircraft:
             - CEFAMET 214 Escuadrilla
           size: 8
+          pilots: 12
         - primary: BAI
           aircraft:
            - Ala 21 - 211 Escuadron
           size: 8
+          pilots: 12
            
     #Basel Al-Assad (Melilla)
     21:
@@ -442,22 +461,27 @@ squadrons:
           aircraft:
             - ALA 14 - 141 Escuadron - Albacete F1BE
           size: 10
+          pilots: 14
         - primary: BAI
           aircraft:
             - Escuadrón de Vigilancia Aérea nº21 (Macan)
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - FAMET 257 Escuadrilla
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - BHELTRA-V Arido
           size: 3
+          pilots: 7
         - primary: Transport
           aircraft:
             - Ala 46
           size: 3
+          pilots: 7
     
     #Akrotiri (Tenerife)
     44:
@@ -466,10 +490,12 @@ squadrons:
           aircraft:
             - Ala 46 - 462 Escuadron
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - CEFAMET 217 Escuadrilla
           size: 8
+          pilots: 12
             
     #L-61 Juan Carlos I
     Blue LHA:
@@ -477,18 +503,22 @@ squadrons:
           aircraft:
             - 9a Escuadrilla Armada Española
           size: 10
+          pilots: 14
         - primary: CAS
           aircraft:
             - 3a Escuadrilla de Aeronaves
           size: 8
+          pilots: 12
         - primary: BAI
           aircraft:
             - 7a Escuadrilla de Aeronaves
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - 10a Escuadrilla de Aeronaves
           size: 3
+          pilots: 7
             
     #Ceuta
     Spain FOB Ceuta:
@@ -496,6 +526,7 @@ squadrons:
           aircraft:
             - Spain - FAMET SAHARA
           size: 8
+          pilots: 12
     
     #GC Norte
     Spain FOB GC Norte:
@@ -503,6 +534,7 @@ squadrons:
           aircraft:
             - CEFAMET 217 Escuadrilla
           size: 8
+          pilots: 12
     
     #MOROCCO ARMED FORCES
     #Aleppo
@@ -512,18 +544,22 @@ squadrons:
           aircraft:
             - Mirage-F1CE
           size: 10
+          pilots: 14
         - primary: CAS
           aircraft:
             - AH-64D Apache Longbow
           size: 6
+          pilots: 10
         - primary: Transport
           aircraft:
             - UH-1H Iroquois
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - CH-47D
           size: 3
+          pilots: 7
         
     #Hama
     14:
@@ -532,18 +568,22 @@ squadrons:
           aircraft:
             - F-16CM Fighting Falcon (Block 50)
           size: 10
+          pilots: 14
         - primary: CAS
           aircraft:
             - SA 342M Gazelle
           size: 6
+          pilots: 10
         - primary: Transport
           aircraft:
             - UH-1H Iroquois
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - CH-47D
           size: 3
+          pilots: 7
             
     #Rene Mouawad
     33:
@@ -552,18 +592,22 @@ squadrons:
           aircraft:
             - F-5E Tiger II
           size: 12
+          pilots: 16
         - primary: CAS
           aircraft:
             - SA 342M Gazelle
           size: 6
+          pilots: 10
         - primary: Transport
           aircraft:
             - UH-1H Iroquois
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - CH-47D
           size: 3
+          pilots: 7
     #Tiyas
     39:
         - primary: BARCAP
@@ -571,11 +615,13 @@ squadrons:
           aircraft:
             - F-16CM Fighting Falcon (Block 50)
           size: 10
+          pilots: 14
         - primary: BAI
           Secondary: any
           aircraft:
             - Mirage-F1CE
           size: 10
+          pilots: 14
             
     #Palmyra
     28:
@@ -584,15 +630,18 @@ squadrons:
           aircraft:
             - Mirage-F1CE
           size: 8
+          pilots: 12
         - primary: BARCAP
           Secondary: any
           aircraft:
             - F-5E Tiger II
           size: 10
+          pilots: 14
         - primary: Transport
           aircraft:
             - C-130
           size: 3
+          pilots: 7
    
    #Beyrut
     6:
@@ -601,11 +650,13 @@ squadrons:
           aircraft:
             - F-16CM Fighting Falcon (Block 50)
           size: 5
+          pilots: 9
         - primary: BAI
           Secondary: any
           aircraft:
             - Mirage-F1CE
           size: 5
+          pilots: 9
     
     #Ramat David
     30:
@@ -614,25 +665,30 @@ squadrons:
           aircraft:
             - F-16CM Fighting Falcon (Block 50)
           size: 5
+          pilots: 9
         - primary: BARCAP
           Secondary: any
           aircraft:
             - F-5E Tiger II
           size: 5
+          pilots: 9
     #Haifa
     13:
         - primary: CAS
           aircraft:
             - SA 342M Gazelle
           size: 6
+          pilots: 10
         - primary: Transport
           aircraft:
             - UH-1H Iroquois
           size: 8
+          pilots: 12
         - primary: Transport
           aircraft:
             - CH-47D
           size: 2
+          pilots: 6
     #Damascus
     7:
         - primary: BARCAP
@@ -640,12 +696,15 @@ squadrons:
           aircraft:
             - Mirage-F1CE
           size: 6
+          pilots: 10
         - primary: BARCAP
           Secondary: any
           aircraft:
             - F-5E Tiger II
           size: 6
+          pilots: 10
         - primary: Transport
           aircraft:
             - C-130
           size: 3
+          pilots: 7

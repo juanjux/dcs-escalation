@@ -34,6 +34,12 @@ If no distinct reward remains available, that request slot waits.
 
 ## Aircraft damage and workshops
 
+New campaign squadron templates with an explicit aircraft `size` use `size + 4`
+pilot slots. For example, 16 aircraft allow 20 pilots and four aircraft allow
+eight. The optional campaign YAML `pilots` field overrides this cap; templates
+without an explicit size keep the global pilot policy. The initial roster uses
+the squadron's cap. Existing saved squadron capacities and rosters are unchanged.
+
 Campaign Management > Persistent damage & repairs contains separate boxes for
 aircraft workshops, surviving ship/building damage, and reconstruction times.
 Persistent aircraft damage is off by default. Its dependent controls are greyed

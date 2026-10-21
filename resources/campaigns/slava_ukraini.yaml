@@ -34,23 +34,27 @@ squadrons:
         - "[CH] MiG-29MU2"
         - MIG-29-FULCRUM
       size: 12
+      pilots: 16
     - primary: Escort
       secondary: any
       aircraft:
         - "[CH] Su-27P1M"
         - Su-27 Flanker-B
       size: 12
+      pilots: 16
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - "[CH] Su-24MU"
         - Su-24M Fencer-D
       size: 12     
+      pilots: 16
     - primary: Air Assault
       secondary: any
       aircraft:
         - Mi-24P Hind-F
       size: 4      
+      pilots: 8
   #Novorossiysk
   14:
     - primary: CAS
@@ -58,16 +62,19 @@ squadrons:
       aircraft:
         - Su-25 Frogfoot
       size: 12
+      pilots: 16
     - primary: BAI
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 12
+      pilots: 16
     - primary: BARCAP
       secondary: any
       aircraft:
         - Mirage 2000C
       size: 12
+      pilots: 16
   #Maykop-Khanskaya
   16:
     - primary: Air Assault
@@ -75,51 +82,61 @@ squadrons:
       aircraft:
         - Mi-26
       size: 2
+      pilots: 6
     - primary: SEAD Sweep
       secondary: air-to-ground
       aircraft:
         - Su-25T Frogfoot
       size: 12
+      pilots: 16
     - primary: BAI
       secondary: any
       aircraft:
          - "[CH] Ka-52"
          - Ka-50 Hokum III
       size: 8
+      pilots: 12
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - Mi-28N Havoc
       size: 4
+      pilots: 8
   #Mineralnye Vody
   26:
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - Su-27 Flanker-B
       size: 12
+      pilots: 16
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - Su-34 Fullback
       size: 12
+      pilots: 16
   #Mozdok
   28:  
     - primary: AEW&C
       aircraft:
         - A-50
       size: 2
+      pilots: 6
     - primary: Strike
       secondary: any
       aircraft:
         - Tu-95MS Bear-H
       size: 12
+      pilots: 16
     - primary: BARCAP
       secondary: any
       aircraft:
         - MIG-29-FULCRUM
       size: 12
+      pilots: 16

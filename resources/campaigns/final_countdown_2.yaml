@@ -32,29 +32,35 @@ squadrons:
       aircraft:
         - F-14A Tomcat (Block 135-GR Late)
       size: 12
+      pilots: 16
     - primary: DEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 12
+      pilots: 16
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - A-6E Intruder
       size: 8
+      pilots: 12
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - S-3B Viking
       size: 8
+      pilots: 12
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 4
+      pilots: 8
   #Blue LHA (20)
   Blue-LHA:
     - primary: Escort
@@ -62,17 +68,20 @@ squadrons:
       aircraft:
         - AH-1J SeaCobra
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-60L
         - UH-60A
       size: 4
+      pilots: 8
     - primary: SEAD Sweep
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 12
+      pilots: 16
   #Stoney Cross (39)
   58:
     - primary: OCA/Runway
@@ -81,6 +90,7 @@ squadrons:
         - A-20G Havoc
         - Boston Mk.III
       size: 12
+      pilots: 16
   #Needs Oar Point (55)
   28:
     - primary: BARCAP
@@ -88,11 +98,13 @@ squadrons:
       aircraft:
         - Spitfire LF Mk IX
       size: 12
+      pilots: 16
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - MosquitoFBMkVI
       size: 12
+      pilots: 16
   #Northolt (22)
   88:
     - primary: Strike
@@ -101,6 +113,7 @@ squadrons:
         - B-17G Flying Fortress
         - Fortress Mk.III
       size: 12
+      pilots: 16
   #Lymington (56)
   37:
     - primary: Escort
@@ -109,17 +122,20 @@ squadrons:
         - P-51D-30-NA Mustang
         - Mustang Mk.IV (Late)
       size: 12
+      pilots: 16
     - primary: BAI
       secondary: any
       aircraft:
         - P-47D-40 Thunderbolt
         - Thunderbolt Mk.II (Late)
       size: 12
+      pilots: 16
     - primary: Armed Recon
       secondary: any
       aircraft:
         - F4U-1D Corsair
       size: 12
+      pilots: 16
   #Carpiquet (47)
   19:
     - primary: TARCAP
@@ -127,11 +143,13 @@ squadrons:
       aircraft:
         - Fw 190 D-9 Dora
       size: 16
+      pilots: 20
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - Ju 88 A-4
       size: 16
+      pilots: 20
   #Broglie (32)
   68:
     - primary: Escort
@@ -139,6 +157,7 @@ squadrons:
       aircraft:
         - Bf 109 K-4 Kurfürst
       size: 20
+      pilots: 24
   #Saint-Andre-de-lEure (30)
   70:
     - primary: Strike
@@ -146,6 +165,7 @@ squadrons:
       aircraft:
         - Ju 88 A-4
       size: 20
+      pilots: 24
   #Vilacoublay (76)
   42:
     - primary: BARCAP
@@ -153,3 +173,4 @@ squadrons:
       aircraft:
         - Fw 190 A-8 Anton
       size: 20
+      pilots: 24

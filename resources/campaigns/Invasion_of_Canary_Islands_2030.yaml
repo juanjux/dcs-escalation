@@ -535,6 +535,7 @@ squadrons:
     name: Ala 35 - Esc. 351
     aircraft_type: C-130
     size: 6
+    pilots: 10
   - primary: Transport
     secondary:
     - Air Assault
@@ -543,6 +544,7 @@ squadrons:
     name: Esc. 802
     aircraft_type: UH-60A
     size: 8
+    pilots: 12
   90:
   - primary: BARCAP
     secondary:
@@ -553,6 +555,7 @@ squadrons:
     name: Ala 14 - Esc. 141/142
     aircraft_type: Eurofighter Typhoon
     size: 24
+    pilots: 28
   - primary: Air Assault
     secondary:
     - Transport
@@ -561,6 +564,7 @@ squadrons:
     name: BHELMA III
     aircraft_type: UH-60A
     size: 12
+    pilots: 16
   47:
   - primary: BARCAP
     secondary:
@@ -571,6 +575,7 @@ squadrons:
     name: Ala 11 - Esc. 111
     aircraft_type: Eurofighter Typhoon
     size: 24
+    pilots: 28
   16:
   - primary: BARCAP
     secondary:
@@ -583,6 +588,7 @@ squadrons:
     name: Ala 12 - Esc. 121
     aircraft_type: F/A-18C Hornet (Lot 20)
     size: 24
+    pilots: 28
   - primary: BARCAP
     secondary:
     - Escort
@@ -592,11 +598,13 @@ squadrons:
     name: Ala 12 - Esc. 122
     aircraft_type: Eurofighter Typhoon
     size: 22
+    pilots: 26
   - primary: AEW&C
     aircraft:
     - E-3A
     name: OTAN AWACS
     size: 1
+    pilots: 5
   46:
   - primary: BARCAP
     secondary:
@@ -607,6 +615,7 @@ squadrons:
     name: Ala 46 - Esc. 462
     aircraft_type: Eurofighter Typhoon
     size: 22
+    pilots: 26
   218:
   - primary: Transport
     aircraft:
@@ -614,11 +623,13 @@ squadrons:
     name: Ala 31 - Esc. 311/312
     aircraft_type: A400M Atlas
     size: 14
+    pilots: 18
   - primary: Refueling
     aircraft:
     - KC-135 Stratotanker MPRS
     name: Ala 45 - Esc. 451
     size: 4
+    pilots: 8
   21:
   - primary: Air Assault
     secondary:
@@ -628,6 +639,7 @@ squadrons:
     name: BHELMA IV
     aircraft_type: UH-60A
     size: 12
+    pilots: 16
   - primary: Transport
     secondary:
     - Air Assault
@@ -636,6 +648,7 @@ squadrons:
     name: Esc. 803
     aircraft_type: UH-60A
     size: 8
+    pilots: 12
   - primary: CAS
     secondary:
     - BAI
@@ -644,6 +657,7 @@ squadrons:
     - AH-64D Apache Longbow (AI)
     name: BHELA IA
     size: 8
+    pilots: 12
   - primary: BARCAP
     secondary:
     - Escort
@@ -652,6 +666,7 @@ squadrons:
     name: Ala 15 - Esc. 151/152
     aircraft_type: Eurofighter Typhoon
     size: 20
+    pilots: 24
   Spain FOB Ceuta:
   - primary: Air Assault
     secondary:
@@ -661,6 +676,7 @@ squadrons:
     name: BHELTRA VA
     aircraft_type: CH-47F Block I
     size: 8
+    pilots: 12
   - primary: CAS
     secondary:
     - BAI
@@ -669,6 +685,7 @@ squadrons:
     - AH-64D Apache Longbow (AI)
     name: BHELA IB
     size: 8
+    pilots: 12
   Spain FOB GC Norte:
   - primary: CAS
     secondary:
@@ -677,6 +694,7 @@ squadrons:
     - AH-64D Apache Longbow (AI)
     name: BHELA IC
     size: 8
+    pilots: 12
   - primary: Air Assault
     secondary:
     - Transport
@@ -685,6 +703,7 @@ squadrons:
     name: BHELMA VI
     aircraft_type: UH-60A
     size: 8
+    pilots: 12
   Blue LHA:
   - primary: CAS
     secondary:
@@ -695,6 +714,7 @@ squadrons:
     name: 9a Escuadrilla
     aircraft_type: AV-8B Harrier II Night Attack
     size: 12
+    pilots: 16
   - primary: Anti-ship
     secondary:
     - Transport
@@ -702,6 +722,7 @@ squadrons:
     - SH-60B Seahawk
     name: 10a Escuadrilla
     size: 8
+    pilots: 12
   Blue LHA Castilla:
   - primary: Air Assault
     secondary:
@@ -711,6 +732,7 @@ squadrons:
     name: BHELTRA VB
     aircraft_type: CH-47F Block I
     size: 2
+    pilots: 6
   Blue LHA Galicia:
   - primary: Transport
     secondary:
@@ -720,6 +742,7 @@ squadrons:
     name: 3a Escuadrilla
     aircraft_type: UH-1H Iroquois
     size: 2
+    pilots: 6
   6:
   - primary: BARCAP
     secondary:
@@ -735,11 +758,13 @@ squadrons:
     - F-16CM Fighting Falcon (Block 50)
     name: Fighter Squadron 2
     size: 24
+    pilots: 28
   - primary: Transport
     aircraft:
     - C-130
     name: Tactical Transport 1
     size: 7
+    pilots: 11
   14:
   - primary: BARCAP
     secondary:
@@ -754,6 +779,7 @@ squadrons:
     - JF-17 Thunder
     name: Fighter Squadron 3
     size: 16
+    pilots: 20
   - primary: CAS
     secondary:
     - BAI
@@ -762,6 +788,7 @@ squadrons:
     - AH-64D Apache Longbow
     name: Attack Squadron 2
     size: 8
+    pilots: 12
   - primary: Air Assault
     secondary:
     - Transport
@@ -769,6 +796,7 @@ squadrons:
     - UH-60A
     name: Medium Transport Squadron 1
     size: 12
+    pilots: 16
   7:
   - primary: BARCAP
     secondary:
@@ -779,11 +807,13 @@ squadrons:
     - F-35A Lightning II
     name: Fighter Squadron 4
     size: 16
+    pilots: 20
   - primary: Transport
     aircraft:
     - C-130
     name: Transport Squadron 1
     size: 16
+    pilots: 20
   28:
   - primary: BARCAP
     secondary:
@@ -794,6 +824,7 @@ squadrons:
     - F-35A Lightning II
     name: Fighter Squadron 5
     size: 16
+    pilots: 20
   39:
   - primary: BARCAP
     secondary:
@@ -808,6 +839,7 @@ squadrons:
     - JF-17 Thunder
     name: Fighter Squadron 6
     size: 16
+    pilots: 20
   - primary: Transport
     secondary:
     - Air Assault
@@ -815,12 +847,14 @@ squadrons:
     - UH-1H Iroquois
     name: Utility Squadron 1
     size: 20
+    pilots: 24
   27:
   - primary: Refueling
     aircraft:
     - KC-130
     name: Refuel Squadron 1
     size: 3
+    pilots: 7
   - primary: CAS
     secondary:
     - BAI
@@ -829,6 +863,7 @@ squadrons:
     - AH-64D Apache Longbow
     name: Attack Squadron 3
     size: 8
+    pilots: 12
   44:
   - primary: CAS
     secondary:
@@ -838,6 +873,7 @@ squadrons:
     - AH-64D Apache Longbow
     name: Attack Squadron 1
     size: 8
+    pilots: 12
   - primary: Air Assault
     secondary:
     - Transport
@@ -845,6 +881,7 @@ squadrons:
     - UH-60A
     name: Medium Transport Squadron 2
     size: 12
+    pilots: 16
   59:
   - primary: Transport
     secondary:
@@ -853,6 +890,7 @@ squadrons:
     - CH-47D
     name: Heavy Transport Squadron 1
     size: 12
+    pilots: 16
 
   30:
   - primary: BARCAP
@@ -869,3 +907,4 @@ squadrons:
     - F-16CM Fighting Falcon (Block 50)
     name: Fighter Squadron 1
     size: 24
+    pilots: 28

@@ -103,31 +103,37 @@ squadrons:
       aircraft:
         - E-3A
       size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 1
+      pilots: 5
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - F-15C Eagle
       size: 10
+      pilots: 14
     - primary: BARCAP
       secondary: any
       aircraft:
         - F-4E Phantom II
       size: 10
+      pilots: 14
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - F-15E Strike Eagle (AI)
         - F-15E Strike Eagle (Suite 4+)
       size: 10
+      pilots: 14
     - primary: SEAD
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 10
+      pilots: 14
   # Golan South
   Golan South:
     - primary: CAS
@@ -137,6 +143,7 @@ squadrons:
       aircraft:
         - AH-1W SuperCobra
       size: 4
+      pilots: 8
     - primary: BAI
       secondary: air-to-ground
       nickname: Defenders of Golan
@@ -144,11 +151,13 @@ squadrons:
       aircraft:
         - AH-64D Apache Longbow
       size: 6
+      pilots: 10
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-1H Iroquois
       size: 2
+      pilots: 6
   # Golan North
   Golan North:
     - primary: CAS
@@ -156,16 +165,19 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - SA 342M Gazelle
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 2
+      pilots: 6
   # Marj Ruhayyil
   23:
     - primary: BAI
@@ -173,11 +185,13 @@ squadrons:
       aircraft:
         - MiG-21bis Fishbed-N
       size: 12
+      pilots: 16
     - primary: Escort
       secondary: any
       aircraft:
         - MiG-21bis Fishbed-N
       size: 12
+      pilots: 16
   # Damascus
   7:
     - primary: BARCAP
@@ -185,18 +199,22 @@ squadrons:
       aircraft:
         - MiG-23MLD Flogger-K
       size: 12
+      pilots: 16
     - primary: TARCAP
       secondary: any
       aircraft:
         - MiG-25PD Foxbat-E
       size: 12
+      pilots: 16
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-17M4 Fitter-K
       size: 12
+      pilots: 16

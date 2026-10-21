@@ -85,90 +85,108 @@ squadrons:
       aircraft:
         - VMFA-251 #Hornet - Marines
       size: 16
+      pilots: 20
     - primary: Strike
       secondary: any
       aircraft:
         - 23rd FS #Viper USAF
       size: 16
+      pilots: 20
     - primary: BAI
       secondary: any
       aircraft:
         - F-117A Nighthawk
       size: 5
+      pilots: 9
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 16  
+      pilots: 20
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - 58th FS #F15c
       size: 16
+      pilots: 20
  # Kutaisi
   25:  
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-130
       size: 2  
+      pilots: 6
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - B-52H Stratofortress
       size: 2
+      pilots: 6
     - primary: Strike
       secondary: any
       aircraft:
         - B-1B Lancer
       size: 2
+      pilots: 6
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 8 
+      pilots: 12
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 8
+      pilots: 12
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - A Company, 1-211th ARB #AH-64D Apache Longbow
       size: 6       
+      pilots: 10
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Mi-24P Hind-F
       size: 6
+      pilots: 10
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Ka-50 Hokum III
       size: 6
+      pilots: 10
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - SA 342M Gazelle
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - HMLA-169 (UH-1H) #UH-1H Iroquois
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 4 
+      pilots: 8
  # Kobuleti
   24:
     - primary: BAI
@@ -176,16 +194,19 @@ squadrons:
       aircraft:
         - AJS-37 Viggen
       size: 12  
+      pilots: 16
     - primary: BAI
       secondary: any
       aircraft:
         - JF-17 Thunder
       size: 12
+      pilots: 16
     - primary: BARCAP
       secondary: any
       aircraft:
         - Mirage 2000C
       size: 12
+      pilots: 16
  # Vaziani - Note: Large aircraft get stuck on Taxi. No AWACs/refuelers
   31:     
     - primary: BARCAP
@@ -193,11 +214,13 @@ squadrons:
       aircraft:
         - MiG-29S Fulcrum-C
       size: 16
+      pilots: 20
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - Su-27 Flanker-B
       size: 16
+      pilots: 20
  # Tbilisi-Lochini - Note: Large aircraft get stuck on Taxi. No AWACs/refuelers
   29:
     - primary: BARCAP
@@ -205,21 +228,25 @@ squadrons:
       aircraft:
         - MiG-31 Foxhound
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 16
+      pilots: 20
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-34 Fullback
       size: 16
+      pilots: 20
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Su-30 Flanker-C  
       size: 16
+      pilots: 20
   # Escalation SAM site override:
 # GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
 # most of its own air defences. No radar on it, so it is a STRIKE target, not

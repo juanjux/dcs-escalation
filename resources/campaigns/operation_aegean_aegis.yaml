@@ -55,16 +55,19 @@ squadrons:
       aircraft:
         - AH-64D Apache Longbow
       size: 8
+      pilots: 12
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 8
+      pilots: 12
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-1H Iroquois
       size: 4
+      pilots: 8
   #Akrotiri
   44:
     - primary: Escort
@@ -72,28 +75,33 @@ squadrons:
       aircraft:
         - AH-1W SuperCobra
       size: 4
+      pilots: 8
     - primary: Armed Recon
       secondary: any
       aircraft:
         - AH-1W SuperCobra
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-60L
         - UH-60A
       size: 2
+      pilots: 6
   #Larnaca
   47:
     - primary: Transport
       aircraft:
         - C-130J-30
       size: 6
+      pilots: 10
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - F-4E-45MC Phantom II
       size: 12
+      pilots: 16
   #Ercan
   49:
     - primary: Air Assault
@@ -101,8 +109,10 @@ squadrons:
       aircraft:
         - CH-47F Block I
       size: 2
+      pilots: 6
     - primary: Escort
       secondary: air-to-ground
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 4
+      pilots: 8
