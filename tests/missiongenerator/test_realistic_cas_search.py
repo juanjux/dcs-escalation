@@ -212,6 +212,51 @@ def test_generated_probe_serializes_and_compiles_search_tasks(tmp_path: Path) ->
                 lua.compile(script)
             assert point["speed"] > 0
         assert points[-1]["type"] == "Land"
-    for trigger in mission.triggerrules.triggers:
-        for action in trigger.actions:
-            lua.compile(str(action.params[0]))
+    for trigger in data["trigrules"].values():
+        for action in trigger["actions"].values():
+            assert action["text"].strip()
+            lua.compile(action["text"])
+
+
+def test_probe_events_tolerate_unnamed_weapons_and_expired_objects(
+    tmp_path: Path,
+) -> None:
+    from dcs.lua import loads
+    from tools.realistic_cas_tests.build_search_probe import build_mission
+
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    lua.execute("""
+        messages={}
+        env={info=function(message) messages[#messages+1]=message end}
+        Group={getByName=function() return {
+            getController=function() return {setCommand=function() end} end} end}
+        timer={getTime=function() return 10 end,scheduleFunction=function() end}
+        world={event={S_EVENT_SHOT=1,S_EVENT_HIT=2,S_EVENT_DEAD=8},
+            addEventHandler=function(value) eventHandler=value end}
+    """)
+    mission = build_mission()
+    path = tmp_path / "events.miz"
+    mission.save(path)
+    with ZipFile(path) as archive:
+        data = loads(archive.read("mission").decode())["mission"]
+    for trigger in data["trigrules"].values():
+        for action in trigger["actions"].values():
+            script = action["text"]
+            assert script.strip()
+            lua.execute(script)
+    lua.execute("""
+        eventHandler:onEvent({id=8})
+        eventHandler:onEvent({id=8,initiator={},target={}})
+        local expired={getName=function() error('object no longer exists') end}
+        eventHandler:onEvent({id=2,initiator=expired,target=expired})
+        local invalid=newproxy(true)
+        getmetatable(invalid).__index=function() error('invalid native object') end
+        eventHandler:onEvent({id=8,initiator=invalid,target=invalid})
+        eventHandler:onEvent({id=8,initiator={getName=function() return nil end}})
+        local unit={getName=function() return 'Cobra' end}
+        eventHandler:onEvent({id=1,time=12.5,initiator=unit,target=unit})
+    """)
+    assert lua.eval("#messages") == 6
+    for index in range(1, 6):
+        assert "initiator=? target=?" in lua.eval(f"messages[{index}]")
+    assert "t=12.5 initiator=Cobra target=Cobra" in lua.eval("messages[6]")

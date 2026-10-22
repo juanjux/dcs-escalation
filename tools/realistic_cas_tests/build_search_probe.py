@@ -94,13 +94,18 @@ for i=0,3 do
 end
 local previous={}
 local revealed=false
+local function eventName(object)
+    if not object then return '?' end
+    -- DEAD events also include weapons and invalidated native objects.
+    local ok,name=pcall(function() return object:getName() end)
+    return ok and type(name)=='string' and name or '?'
+end
 local handler={}
 function handler:onEvent(event)
     if event.id~=world.event.S_EVENT_SHOT and event.id~=world.event.S_EVENT_HIT
         and event.id~=world.event.S_EVENT_DEAD then return end
-    local u=event.initiator
-    local name=u and u:getName() or '?'
-    local target=event.target and event.target:getName() or '?'
+    local name=eventName(event.initiator)
+    local target=eventName(event.target)
     env.info(string.format('REALISTIC_CAS_SEARCH_PROBE|event=%s t=%.1f initiator=%s target=%s',
         event.id,event.time or timer.getTime(),name,target))
 end

@@ -375,7 +375,9 @@ engagement orders have matching time and 20% fuel stop conditions, including
 during combat. Search corners check those limits before following the original
 exit route; only the last corner loops back. Player/mixed flights, other roles
 and disabled-plugin routes are unchanged.
-This route behavior still requires in-engine validation with the Cobra probe.
+A standalone Cobra test validated search, engagement and timed departure in DCS;
+full campaign and other-aircraft validation remain separate checks. Native AI
+does not guarantee destruction of every detected target.
 
 A mission is a **package** aimed at a **target**. A package contains one or more
 **flights**. A **flight** is a group of aircraft from one squadron with a single

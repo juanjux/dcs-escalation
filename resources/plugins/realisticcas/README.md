@@ -104,8 +104,10 @@ Hover an option's label or control for its explanation.
   Search corners check those limits before resuming the original exit route.
   Only the last corner loops; intermediate legs use ordinary native navigation.
   Small zones use a minimum 250 m standoff
-  half-width, without enlarging the native engagement zone. Runtime engine
-  acceptance of the new Cobra search route remains a separate DCS test.
+  half-width, without enlarging the native engagement zone. A standalone Cobra
+  engine probe validated hidden-target search, revealed-target engagement and
+  departure after station time. Full campaign and other-aircraft acceptance remain
+  separate checks; this does not guarantee that native AI destroys every contact.
 
 ## Detection rolls
 
