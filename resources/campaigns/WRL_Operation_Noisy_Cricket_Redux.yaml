@@ -45,25 +45,30 @@ squadrons:
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 12
+      pilots: 16
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - F-14B Tomcat
       size: 12
+      pilots: 16
     - primary: AEW&C
       aircraft:
         - E-2D Advanced Hawkeye
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 4
+      pilots: 8
   Blue LHA-1:
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 8
+      pilots: 12
   #Khasab (10)
   10:
     - primary: Air Assault
@@ -72,21 +77,25 @@ squadrons:
         - UH-60L
         - UH-60A
       size: 8
+      pilots: 12
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - AH-64D Apache Longbow
       size: 8
+      pilots: 12
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Ka-50 Hokum III
       size: 8
+      pilots: 12
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 12
+      pilots: 16
   # Al Minhad AFB (61)
   12:
     - primary: SEAD
@@ -94,26 +103,31 @@ squadrons:
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 12
+      pilots: 16
     - primary: DEAD
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 18
+      pilots: 22
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - F-15C Eagle
       size: 18
+      pilots: 22
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - JF-17 Thunder
       size: 12
+      pilots: 16
     - primary: BAI
       secondary: air-to-air
       aircraft:
         - Mirage 2000C
       size: 12
+      pilots: 16
   #Al Dhafra AFB (251)
   4:
     - primary: Strike
@@ -121,29 +135,35 @@ squadrons:
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-130
       size: 2
+      pilots: 6
     - primary: Air Assault
       secondary: air-to-ground
       aircraft:
         - C-130
       size: 8
+      pilots: 12
     - primary: Air Assault
       secondary: air-to-ground
       aircraft:
         - C-130
       size: 8
+      pilots: 12
     - primary: OCA/Runway
       secondary: any
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 18
+      pilots: 22
   #Bandar Abbas Intl (51)
   2:
     - primary: SEAD
@@ -151,11 +171,13 @@ squadrons:
       aircraft:
         - F-4E Phantom II
       size: 18
+      pilots: 22
     - primary: TARCAP
       secondary: air-to-air
       aircraft:
         - F-5E Tiger II
       size: 16
+      pilots: 20
   #Qeshm Island (12)
   13:
     - primary: Air Assault
@@ -163,6 +185,7 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 12
+      pilots: 16
   #Abu Musa Island (8)
   1:
     - primary: DEAD
@@ -170,6 +193,7 @@ squadrons:
       aircraft:
         - Su-25T Frogfoot
       size: 8
+      pilots: 12
   #Kish Intl (46)
   24:
     - primary: Strike
@@ -177,33 +201,39 @@ squadrons:
       aircraft:
         - Su-24MK Fencer-D
       size: 20
+      pilots: 24
     - primary: Escort
       secondary: any
       aircraft:
         - Mirage-F1EQ
       size: 16
+      pilots: 20
   #Shiraz Intl (122)
   19:
     - primary: Transport
       aircraft:
         - IL-76MD
       size: 5
+      pilots: 9
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - MiG-29A Fulcrum-A
       size: 12
+      pilots: 16
   #Kerman
   18:
     - primary: AEW&C
       aircraft:
         - A-50
       size: 1
+      pilots: 5
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - F-14A Tomcat (Block 95-GR Export)
       size: 10
+      pilots: 14
 advanced_iads: true
 iads_config:
   # Command And Control

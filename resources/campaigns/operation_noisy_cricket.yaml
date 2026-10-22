@@ -49,26 +49,31 @@ squadrons:
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 24
+      pilots: 28
     - primary: SEAD Escort
       secondary: any
       aircraft:
         - EA-18G Growler
         - F/A-18C Hornet (Lot 20)
       size: 16
+      pilots: 20
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-60L
         - UH-60A
       size: 4
+      pilots: 8
   #Al Minhad AFB (61)
   12:
     - primary: Transport
@@ -76,27 +81,32 @@ squadrons:
       aircraft:
         - C-130J-30
       size: 2
+      pilots: 6
     - primary: Air Assault
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: TARCAP
       secondary: any
       aircraft:
         - F-22A Raptor
         - F-15C Eagle
       size: 12
+      pilots: 16
     - primary: DEAD
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 16
+      pilots: 20
   #Al Dhafra AFB (251)
   4:
     - primary: Strike
@@ -104,25 +114,30 @@ squadrons:
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 1
+      pilots: 5
     - primary: OCA/Runway
       secondary: any
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 16
+      pilots: 20
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - F-15C Eagle
       size: 12
+      pilots: 16
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 16
+      pilots: 20
   #Bandar Abbas Intl (51)
   2:
     - primary: SEAD
@@ -130,11 +145,13 @@ squadrons:
       aircraft:
         - F-4E-45MC Phantom II
       size: 20
+      pilots: 24
     - primary: TARCAP
       secondary: air-to-air
       aircraft:
         - F-5E Tiger II
       size: 16
+      pilots: 20
   #Qeshm Island (12)
   13:
     - primary: Air Assault
@@ -142,16 +159,19 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - Mi-17 Hip
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - AH-1J SeaCobra
       size: 4      
+      pilots: 8
   #Abu Musa Island (8)
   1:
     - primary: SEAD Escort
@@ -159,6 +179,7 @@ squadrons:
       aircraft:
         - Su-25T Frogfoot
       size: 8
+      pilots: 12
   #Kish Intl (46)
   24:
     - primary: Strike
@@ -166,11 +187,13 @@ squadrons:
       aircraft:
         - Su-24MK Fencer-D
       size: 20
+      pilots: 24
     - primary: Escort
       secondary: any
       aircraft:
         - Mirage-F1EQ
       size: 16
+      pilots: 20
   #Shiraz Intl (122)
   19:
     - primary: Transport
@@ -178,19 +201,23 @@ squadrons:
       aircraft:
         - IL-76MD
       size: 4
+      pilots: 8
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - MIG-29-FULCRUM
       size: 12
+      pilots: 16
   #Kerman
   18:
     - primary: AEW&C
       aircraft:
         - A-50
       size: 1
+      pilots: 5
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - F-14A Tomcat (Block 95-GR Export)
       size: 10
+      pilots: 14

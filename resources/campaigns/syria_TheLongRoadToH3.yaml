@@ -108,6 +108,7 @@ squadrons:
         - VF-32
         - F-14B Tomcat
       size: 14
+      pilots: 18
     # Tomcat F-14A - Black Aces
     - primary: BARCAP
       secondary: any
@@ -115,6 +116,7 @@ squadrons:
         - VF-41
         - F-14A Tomcat (Block 135-GR Late)
       size: 14
+      pilots: 18
     # Hornet - Golden Dragons
     - primary: SEAD
       secondary: any
@@ -131,50 +133,60 @@ squadrons:
       aircraft:
         - S-3B Tanker
       size: 4
+      pilots: 8
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - S-3B Viking
       size: 8
+      pilots: 12
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 2
+      pilots: 6
   Blue LHA:
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 10
+      pilots: 14
     - primary: Air Assault
       secondary: air-to-ground
       aircraft:
         - UH-1H Iroquois
       size: 4
+      pilots: 8
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - AH-1W SuperCobra
       size: 6
+      pilots: 10
   # Incirlik
   16:
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker MPRS
       size: 2
+      pilots: 6
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 2
+      pilots: 6
     - primary: Transport
       secondary: any
       aircraft:
         - C-130
       size: 8
+      pilots: 12
     # Viper Warhawks
     - primary: SEAD
       secondary: any
@@ -182,23 +194,27 @@ squadrons:
         - 480th FS
         - F-16CM Fighting Falcon (Block 50)
       size: 12
+      pilots: 16
     # Mirage 2000s
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - Escadron de chasse 1/30
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
     - primary: Strike
       secondary: any
       aircraft:
         - 494th Fighter Squadron
         - F-15E Strike Eagle (Suite 4+)
       size: 12
+      pilots: 16
   # Gaziantep
   11:
     - primary: CAS
@@ -206,11 +222,13 @@ squadrons:
       aircraft:
         - UH-1H Iroquois
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - AH-64D Apache Longbow
       size: 8
+      pilots: 12
 ####################### REDFOR
   Red CV:
     - primary: BARCAP
@@ -218,6 +236,7 @@ squadrons:
       aircraft:
         - Su-33 Flanker-D
       size: 12
+      pilots: 16
   # Aleppo - 29
   27:
     - primary: BARCAP
@@ -233,12 +252,14 @@ squadrons:
         - L-39ZA Albatros
         - Su-25 Frogfoot
       size: 12
+      pilots: 16
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Su-22M4 Fitter-K
         - Su-24M Fencer-D
       size: 8
+      pilots: 12
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
@@ -249,6 +270,7 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 2
+      pilots: 6
   # Al-Tanf - 2
   63:
     - primary: CAS
@@ -256,6 +278,7 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 2
+      pilots: 6
 # Al Quasyr - 34
   3:
     - primary: CAS
@@ -263,18 +286,21 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 2 
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - MiG-21bis Fishbed-N
         - MiG-23MLD Flogger-K
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-22M4 Fitter-K
         - Su-24M Fencer-D
       size: 12
+      pilots: 16
   # Bassel Al-Assad - 53
   21:
     - primary: CAS
@@ -282,31 +308,37 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - MiG-29A Fulcrum-A
         - MiG-29S Fulcrum-C
       size: 12
+      pilots: 16
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
     - primary: Transport
       aircraft:
         - IL-76MD
       size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - SA 342L Gazelle
       size: 4
+      pilots: 8
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
         - Su-34 Fullback
       size: 6
+      pilots: 10
 # Tiyas - 82
   39:
     - primary: TARCAP
@@ -314,15 +346,18 @@ squadrons:
       aircraft:
         - MiG-25PD Foxbat-E
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 12
+      pilots: 16
     - primary: AEW&C
       aircraft:
         - A-50
       size: 2
+      pilots: 6
 # H3 - 68
   53:
     - primary: TARCAP
@@ -330,21 +365,25 @@ squadrons:
       aircraft:
         - MiG-25PD Foxbat-E
       size: 12
+      pilots: 16
     - primary: BARCAP
       secondary: any
       aircraft:
         - Mirage-F1EQ
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 8
+      pilots: 12
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - H-6J Badger
       size: 8
+      pilots: 12
     - primary: CAS
       secondary: air-to-ground
       aircraft:
@@ -353,6 +392,7 @@ squadrons:
       aircraft:
         - A-50
       size: 2
+      pilots: 6
   # Kharab - 11
   59:
     - primary: CAS
@@ -360,11 +400,13 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
  # Damascus - 
   7:
     - primary: TARCAP
@@ -389,3 +431,4 @@ squadrons:
       aircraft:
         - H-6J Badger
       size: 8
+      pilots: 12

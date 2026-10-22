@@ -212,6 +212,10 @@ leave previously recorded damage unchanged.
 - **Air wing → squadrons**: your aircraft live in **squadrons** based at your
   airfields/carriers. Each squadron has one **airframe** type, a number of
   **aircraft**, and **pilots**. You can only field airframes your faction allows.
+  New campaign templates with explicit aircraft `size` use `size + 4` pilot slots:
+  16 aircraft allow 20 pilots; four allow eight. The optional YAML `pilots` field
+  overrides this cap. Without explicit size, the global pilot policy remains.
+  Initial rosters use the squadron cap; existing saved rosters are unchanged.
 - **Pilots matter**: every aircraft in a flight needs a pilot. A flight with empty
   seats will **block the turn from starting** — always crew your flights (the API
   assigns pilots automatically and refuses pilotless flights).

@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Campaigns]** New campaign squadrons with a defined aircraft capacity get four extra pilot slots; existing saved rosters are unchanged.
 * **[Live Pilots]** Add a configurable morale penalty for confirmed damaged returns (default -3), independent of aircraft workshops.
 * **[Debriefing]** Show recovered damaged aircraft grouped by model, separately from losses, and retain the summary in saved reports.
 * **[High Command]** Avoid repeated reward kinds across open requests, allowing aircraft loans for distinct aircraft or helicopter types.

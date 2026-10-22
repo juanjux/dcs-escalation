@@ -33,11 +33,13 @@ squadrons:
       aircraft:
         - C-130J-30
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 4
+      pilots: 8
   # Kandahar Heliport
   15:  
     - primary: Air Assault
@@ -46,11 +48,13 @@ squadrons:
         - UH-60L
         - UH-60A
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: any
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 4
+      pilots: 8
   #Camp Bastion
   10:
     - primary: BAI
@@ -58,10 +62,12 @@ squadrons:
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 4
+      pilots: 8
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 1
+      pilots: 5
   #Camp Bastion Heliport
   13:
     - primary: CAS
@@ -69,8 +75,10 @@ squadrons:
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8

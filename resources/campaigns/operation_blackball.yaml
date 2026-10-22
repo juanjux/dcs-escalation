@@ -27,6 +27,7 @@ squadrons:
       aircraft:
         - VF-142
       size: 14
+      pilots: 18
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
@@ -35,19 +36,23 @@ squadrons:
       aircraft:
         - VAW-125
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - VS-35 (Tanker)
       size: 4
+      pilots: 8
     - primary: Anti-ship
       secondary: air-to-ground
       aircraft:
         - VS-35
       size: 8
+      pilots: 12
     - primary: Transport
       aircraft:
         - HSM-40
       size: 2
+      pilots: 6
   # BLUFOR LHA
   Naval-2:
     - primary: BAI
@@ -55,16 +60,19 @@ squadrons:
       aircraft:
         - VMA-223
       size: 10
+      pilots: 14
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - HMLA-269 (UH-1H)
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - HMLA-269 (AH-1W)
       size: 6
+      pilots: 10
   # OPFOR Start FOB
   FOB Andreas:
     - primary: CAS
@@ -72,6 +80,7 @@ squadrons:
       aircraft:
         - Ka-50 Hokum
       size: 6
+      pilots: 10
   # OPFOR CVN
   Naval-3:
     - primary: BARCAP
@@ -89,6 +98,7 @@ squadrons:
       aircraft:
         - Ka-50 Hokum
       size: 6
+      pilots: 10
   # Larnaca
   47:
     - primary: TARCAP
@@ -128,23 +138,28 @@ squadrons:
       aircraft:
         - Mi-28N Havoc
       size: 6
+      pilots: 10
     - primary: Strike
       secondary: air-to-ground
       aircraft:
       - Tu-160 Blackjack
       size: 6
+      pilots: 10
     - primary: AEW&C
       aircraft:
         - A-50
       size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 1
+      pilots: 5
     - primary: Transport
       aircraft:
         - IL-78MD
       size: 1
+      pilots: 5
   # OPFOR First FOB
   FOB Gecitkale:
     - primary: CAS
@@ -152,6 +167,7 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 6
+      pilots: 10
   # OPFOR Second FOB
   FOB Guzelyurt:
     - primary: Transport
@@ -159,8 +175,10 @@ squadrons:
       aircraft:
         - Mi-8MTV2 Hip
       size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8

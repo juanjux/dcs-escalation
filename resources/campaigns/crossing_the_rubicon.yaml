@@ -31,21 +31,25 @@ squadrons:
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: any
       aircraft:
         - A-10A Thunderbolt II
       size: 8
+      pilots: 12
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - Mirage-F1EE
       size: 8
+      pilots: 12
     - primary: SEAD Sweep
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 8
+      pilots: 12
   #Spangdahlem
   162:
     - primary: TARCAP
@@ -53,21 +57,25 @@ squadrons:
       aircraft:
         - F-15C Eagle
       size: 8
+      pilots: 12
     - primary: BAI
       secondary: any
       aircraft:
         - F-4E-45MC Phantom II
       size: 8
+      pilots: 12
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-1H Iroquois
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - AH-1W SuperCobra
       size: 4
+      pilots: 8
   #Hahn
   155:
     - primary: Strike
@@ -75,65 +83,77 @@ squadrons:
       aircraft:
         - B-52H Stratofortress
       size: 4
+      pilots: 8
     - primary: DEAD
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 8
+      pilots: 12
     - primary: SEAD Escort
       secondary: any
       aircraft:
         - Tornado IDS
       size: 8
+      pilots: 12
     - primary: OCA/Runway
       secondary: any
       aircraft:
         - F-111C Aardvark
         - F-4E-45MC Phantom II
       size: 8
+      pilots: 12
   #Frankfurt
   163:
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
     - primary: Transport
       secondary: any
       aircraft:
         - C-130J-30
       size: 2
+      pilots: 6
     - primary: Air Assault
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
   #Hamburg
   17:
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 2
+      pilots: 6
     - primary: Transport
       secondary: any
       aircraft:
         - C-130J-30
       size: 2
+      pilots: 6
     - primary: Escort
       secondary: any
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-60L
         - UH-60A
       size: 4
+      pilots: 8
   #H FRG 20
   #143:
   #H FRG 09
@@ -147,29 +167,35 @@ squadrons:
       aircraft:
         - F-14A Tomcat (Block 135-GR Late)
       size: 8
+      pilots: 12
     - primary: SEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 8
+      pilots: 12
     - primary: OCA/Aircraft
       secondary: air-to-ground
       aircraft:
         - A-6E Intruder
       size: 8
+      pilots: 12
     - primary: Armed Recon
       secondary: air-to-ground
       aircraft:
         - S-3B Viking
       size: 8
+      pilots: 12
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 4
+      pilots: 8
   #Haina
   161:
     - primary: Escort
@@ -177,26 +203,31 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
     - primary: Armed Recon
       secondary: air-to-ground
       aircraft:
         - Su-25 Frogfoot
       size: 8
+      pilots: 12
     - primary: Escort
       secondary: any
       aircraft:
         - MiG-23MLD Flogger-K
       size: 8
+      pilots: 12
     - primary: SEAD Escort
       secondary: any
       aircraft:
         - MiG-27K Flogger-J2
       size: 8
+      pilots: 12
   #Sperenberg
   101:
     - primary: Strike
@@ -204,31 +235,37 @@ squadrons:
       aircraft:
         - Tu-95MS Bear-H
       size: 8
+      pilots: 12
     - primary: OCA/Aircraft
       secondary: any
       aircraft:
         - Tu-22M3 Backfire-C
       size: 8
+      pilots: 12
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - Su-27 Flanker-B
       size: 8
+      pilots: 12
   #Schonefeld
   26:
     - primary: AEW&C
       aircraft:
         - A-50
       size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
     - primary: Transport
       secondary: any
       aircraft:
         - AN-26B
       size: 4
+      pilots: 8
   #Templin
   15:
     - primary: SEAD
@@ -236,11 +273,13 @@ squadrons:
       aircraft:
         - Su-24M Fencer-D
       size: 8
+      pilots: 12
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - MiG-21bis Fishbed-N
       size: 8
+      pilots: 12
   #Wittstock:
   1:
     - primary: DEAD
@@ -248,6 +287,7 @@ squadrons:
       aircraft:
         - Su-17M4 Fitter-K
       size: 8
+      pilots: 12
   #Peenemunde
   25:
     - primary: BARCAP
@@ -255,3 +295,4 @@ squadrons:
       aircraft:
         - MIG-29-FULCRUM
       size: 8
+      pilots: 12

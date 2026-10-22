@@ -31,28 +31,33 @@ squadrons:
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 6
+      pilots: 10
     # Hornet - VFA-136 "Knighthawks"
     - primary: DEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 4
+      pilots: 8
     # Hornet - VFA-81 "Sunliners"
     - primary: DEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 4
+      pilots: 8
     # VRC-40 Det.1
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 1
+      pilots: 5
     # VAW-126 "Seahawks"
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 1
+      pilots: 5
   Blue LHA:
     # VMM-261 “Raging Bulls”
     - primary: BAI
@@ -60,6 +65,7 @@ squadrons:
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 4
+      pilots: 8
   # Tiyas - 39  
   39:
     - primary: TARCAP
@@ -67,15 +73,18 @@ squadrons:
       aircraft:
         - MiG-25PD Foxbat-E
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 12
+      pilots: 16
     - primary: AEW&C
       aircraft:
         - A-50
       size: 2
+      pilots: 6
   # Palmyra - 28
   28:
     - primary: CAS
@@ -83,31 +92,37 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - MiG-29A Fulcrum-A
         - MiG-29S Fulcrum-C
       size: 12
+      pilots: 16
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
     - primary: Transport
       aircraft:
         - IL-76MD
       size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - SA 342L Gazelle
       size: 4
+      pilots: 8
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
         - Su-34 Fullback
       size: 6
+      pilots: 10
   # Shayrat - 36
   36:
     - primary: CAS
@@ -115,34 +130,40 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
         - Su-34 Fullback
       size: 6
+      pilots: 10
   30: # Ramat David
     # 109th Squadron “The Valley Squadron”
     - primary: BARCAP
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 4
+      pilots: 8
     # 190th Squadron “Magic Touch”
     - primary: BAI
       secondary: any
       aircraft:
         - AH-64D Apache Longbow
       size: 2
+      pilots: 6
     # Unit 669 / 124th Squadron “Rolling Sword”
     - primary: Air Assault
       aircraft:
         - UH-1H Iroquois
       size: 2
+      pilots: 6
     # 100th ARW Detachment
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
     # 75th Fighter Squadron “Tiger Sharks”
     - primary: CAS
       aircraft:
@@ -150,11 +171,13 @@ squadrons:
         - A-10C Thunderbolt II (Suite 3)
         - A-10A Thunderbolt II
       size: 2
+      pilots: 6
     # 122nd Squadron “Nachshon”
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 1
+      pilots: 5
   # Dier Ezzor - 42
   42:
     - primary: TARCAP
@@ -169,14 +192,17 @@ squadrons:
       aircraft:
         - IL-78M
       size: 1
+      pilots: 5
     - primary: Transport
       aircraft:
         - IL-76MD
       size: 1
+      pilots: 5
     - primary: AEW&C
       aircraft:
         - A-50
       size: 1
+      pilots: 5
     - primary: Strike
       secondary: air-to-ground
       aircraft:
@@ -187,3 +213,4 @@ squadrons:
       aircraft:
       - Mi-24V Hind-E
       size: 6
+      pilots: 10

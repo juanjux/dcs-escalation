@@ -45,16 +45,19 @@ squadrons:
       aircraft:
         - AH-64D Apache Longbow
       size: 6
+      pilots: 10
     - primary: BAI
       secondary: any
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 6
+      pilots: 10
     - primary: Air Assault
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
   #San Carlos FOB
   3:
     - primary: DEAD
@@ -62,6 +65,7 @@ squadrons:
       aircraft:
         - Ka-50 Hokum III
       size: 6
+      pilots: 10
   #Goose Green
   24:
     - primary: BAI
@@ -69,8 +73,10 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 2
+      pilots: 6
