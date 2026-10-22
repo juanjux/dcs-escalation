@@ -21,14 +21,15 @@ from game.dcs.aircrafttype import AircraftType
 from game.squadrons.squadrondef import SquadronDef
 from game.theater import ControlPoint
 from qt_ui.widgets.combos.primarytaskselector import PrimaryTaskSelector
+from qt_ui.widgets.searchablecombo import SearchableComboBox
 from .common import SquadronBaseSelector
 
 
-class SquadronAircraftTypeSelector(QComboBox):
+class SquadronAircraftTypeSelector(SearchableComboBox):
     def __init__(
         self, types: set[AircraftType], selected_aircraft: Optional[str]
     ) -> None:
-        super().__init__()
+        super().__init__(placeholder="Type to find an aircraft…")
         self.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
 
         for type in sorted(types, key=lambda type: type.display_name):
