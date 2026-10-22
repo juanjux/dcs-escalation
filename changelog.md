@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Show local sunrise and sunset times in the WEATHER tooltip for the mission date and campaign reference position.
 * **[Campaigns]** New campaign squadrons with a defined aircraft capacity get four extra pilot slots; existing saved rosters are unchanged.
 * **[Live Pilots]** Add a configurable morale penalty for confirmed damaged returns (default -3), independent of aircraft workshops.
 * **[Debriefing]** Show recovered damaged aircraft grouped by model, separately from losses, and retain the summary in saved reports.

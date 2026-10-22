@@ -228,6 +228,10 @@ leave previously recorded damage unchanged.
 
 ## 4. Missions: packages, flights, and roles
 
+Hover **WEATHER** to read sunrise and sunset for the mission date, in local
+mission time. These are approximate times at the campaign reference position;
+twilight continues after sunset. Polar conditions show unavailable times.
+
 With the experimental Realistic CAS plugin enabled, AI-only CAS and Armed Recon
 flights get a moving four-corner search circuit over their assigned area instead
 of relying on visible targets to keep moving. Native engagement tasks remain

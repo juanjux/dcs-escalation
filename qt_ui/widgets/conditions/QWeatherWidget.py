@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (
 )
 from dcs.weather import CloudPreset, Weather as PydcsWeather
 
+from game.theater import ConflictTheater
+from game.theater.daytimecalculator import _sun_times
 from game.timeofday import TimeOfDay
 from game.utils import meters, mps
 from game.weather.atmosxliveweather import LiveWeather
@@ -100,6 +102,7 @@ class QWeatherWidget(QGroupBox):
 
     def __init__(self):
         super(QWeatherWidget, self).__init__("")
+        self.theater: ConflictTheater | None = None
         self.setProperty("style", "QWeatherWidget")
 
         self.icons = {
@@ -202,16 +205,22 @@ class QWeatherWidget(QGroupBox):
         return icon
 
     def setCurrentTurn(
-        self, turn: int, conditions: Conditions, can_refresh: bool = False
+        self,
+        turn: int,
+        conditions: Conditions,
+        can_refresh: bool = False,
+        theater: ConflictTheater | None = None,
     ) -> None:
         """Sets the turn information display.
 
         :arg turn Current turn number.
         :arg conditions Current time and weather conditions.
         :arg can_refresh Whether live weather is on, so a refresh is worth offering.
+        :arg theater Campaign location and mission timezone for solar times.
         """
         self.turn = turn
         self.conditions = conditions
+        self.theater = theater
 
         self.update_forecast()
         self.updateWinds()
@@ -227,6 +236,8 @@ class QWeatherWidget(QGroupBox):
             rows.append(("Source", f"Live METAR &mdash; {weather.station}"))
         else:
             rows.append(("Source", "Generated forecast"))
+
+        rows.extend(self.sun_details())
 
         atmospheric = weather.atmospheric
         rows.append(("Temperature", f"{atmospheric.temperature_celsius:.0f} &deg;C"))
@@ -296,7 +307,31 @@ class QWeatherWidget(QGroupBox):
             f"<tr><td><b>{label}</b>&nbsp;&nbsp;</td><td>{value}</td></tr>"
             for label, value in rows
         )
-        return f"<table>{cells}</table>"
+        note = (
+            "<p>Sun times are approximate at the campaign reference position."
+            "<br>Twilight continues after sunset.</p>"
+            if self.theater is not None
+            else ""
+        )
+        return f"<table>{cells}</table>{note}"
+
+    def sun_details(self) -> list[tuple[str, str]]:
+        if self.theater is None:
+            return []
+        start = self.conditions.start_time
+        if start.tzinfo is not None:
+            start = start.astimezone(self.theater.timezone)
+        position = self.theater.reference_position
+        times = _sun_times(
+            position.lat, position.lng, self.theater.timezone, start.date()
+        )
+        if times is None:
+            return [("Sunrise / sunset", "Unavailable (polar conditions)")]
+        sunrise, sunset = times
+        return [
+            ("Sunrise (local)", sunrise.strftime("%H:%M")),
+            ("Sunset (local)", sunset.strftime("%H:%M")),
+        ]
 
     @staticmethod
     def height(value: int) -> str:
