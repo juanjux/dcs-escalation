@@ -188,6 +188,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Restore a visible draggable scrollbar in all searchable combo-box popups.
 * **[Realistic CAS]** Give AI CAS and Armed Recon flights a moving search circuit while contacts are hidden, bounded by station time and fuel reserve.
 * **[Mission Generator]** Use indexed land and sea queries instead of scanning every exclusion polygon when placing ground units.
 * **[Campaign]** Write off confirmed damaged returns outside friendly recovery territory instead of restoring them next turn; include them in loss counts and costs without inferring pilot death.

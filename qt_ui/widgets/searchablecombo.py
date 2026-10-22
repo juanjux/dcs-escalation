@@ -67,6 +67,18 @@ class SearchableComboBox(QComboBox):
         self._list.setUniformItemSizes(True)
         self._list.setSelectionMode(QListView.SelectionMode.SingleSelection)
         self._list.clicked.connect(self._chose)
+        # The popup's inherited background otherwise hides the native scrollbar thumb.
+        self._list.verticalScrollBar().setStyleSheet(
+            "QScrollBar:vertical { background: #1D2731; width: 14px;"
+            " border: none; margin: 0; }"
+            "QScrollBar::handle:vertical { background: #607A90;"
+            " min-height: 28px; border: none; border-radius: 3px; }"
+            "QScrollBar::handle:vertical:hover { background: #8BC2EC; }"
+            "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
+            " height: 0; border: none; }"
+            "QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {"
+            " background: none; border: none; }"
+        )
         layout.addWidget(self._list)
 
         self._popup.setLayout(layout)
