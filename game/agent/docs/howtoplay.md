@@ -378,6 +378,19 @@ leave previously recorded damage unchanged.
 
 ## 4. Missions: packages, flights, and roles
 
+With the experimental Realistic CAS plugin enabled, AI-only CAS and Armed Recon
+flights get a moving four-corner search circuit over their assigned area instead
+of relying on visible targets to keep moving. Native engagement tasks remain
+active; no hidden target positions are used. CAS stops searching at its planned
+station end, Armed Recon after the doctrine's CAS duration following TOT. Native
+engagement orders have matching time and 20% fuel stop conditions, including
+during combat. Search corners check those limits before following the original
+exit route; only the last corner loops back. Player/mixed flights, other roles
+and disabled-plugin routes are unchanged.
+A standalone Cobra test validated search, engagement and timed departure in DCS;
+full campaign and other-aircraft validation remain separate checks. Native AI
+does not guarantee destruction of every detected target.
+
 A mission is a **package** aimed at a **target**. A package contains one or more
 **flights**. A **flight** is a group of aircraft from one squadron with a single
 **task** (role), pilots, a start type, and a weapon loadout. **Escorts are flights
