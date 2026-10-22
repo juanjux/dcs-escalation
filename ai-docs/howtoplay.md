@@ -220,9 +220,11 @@ With the experimental Realistic CAS plugin enabled, AI-only CAS and Armed Recon
 flights get a moving four-corner search circuit over their assigned area instead
 of relying on visible targets to keep moving. Native engagement tasks remain
 active; no hidden target positions are used. CAS stops searching at its planned
-station end, Armed Recon after the doctrine's CAS duration following TOT. Every
-corner checks time and the 20% fuel reserve before following the original exit
-route. Player/mixed flights, other roles and disabled-plugin routes are unchanged.
+station end, Armed Recon after the doctrine's CAS duration following TOT. Native
+engagement orders have matching time and 20% fuel stop conditions, including
+during combat. Search corners check those limits before following the original
+exit route; only the last corner loops back. Player/mixed flights, other roles
+and disabled-plugin routes are unchanged.
 This route behavior still requires in-engine validation with the Cobra probe.
 
 A mission is a **package** aimed at a **target**. A package contains one or more

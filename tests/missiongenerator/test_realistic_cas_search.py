@@ -9,6 +9,7 @@ from zipfile import ZipFile
 from dcs import Mission
 from dcs.helicopters import AH_1W
 from dcs.mapping import Point
+from dcs.task import ControlledTask, EngageTargetsInZone, OptECMUsing, Targets
 import pytest
 
 from game.ato import FlightType
@@ -22,8 +23,10 @@ def scenario(task: FlightType = FlightType.CAS) -> tuple[Any, Any, list[Any], da
     group = mission.flight_group_inflight(
         mission.country("USA"), "Searching Cobra", AH_1W, center, 300, speed=180
     )
+    group.points[0].tasks.clear()
     logical = object()
     anchor = group.add_waypoint(center, 300, speed=180, name="OBJECTIVE")
+    anchor.add_task(EngageTargetsInZone(center, 2000, [Targets.All.GroundUnits]))
     group.add_waypoint(Point(9000, 0, mission.terrain), 300, speed=180, name="RTB")
     now = datetime(2026, 6, 1, 12)
     plan = NS(
@@ -107,6 +110,67 @@ def test_loop_command_obeys_deadline_and_reserve(
     assert lua.eval("commands[1].params.goToWaypointIndex") == expected
 
 
+@pytest.mark.parametrize("time,expected", [(10, 0), (900, 1)])
+def test_intermediate_corners_do_not_override_native_navigation(
+    time: float, expected: int
+) -> None:
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    flight, group, generated, now = scenario()
+    add_search_pattern(flight, group, now, generated)
+    lua.execute(f"""
+        commands={{}}; env={{info=function() end}}
+        timer={{getTime=function() return {time} end}}
+        controller={{setCommand=function(self,c) commands[#commands+1]=c end}}
+        group={{isExist=function() return true end,getUnits=function() return {{}} end,
+            getController=function() return controller end}}
+        Group={{getByName=function() return group end}}
+    """)
+    lua.execute(group.points[2].tasks[-1].params["action"]["params"]["command"])
+    assert lua.eval("#commands") == expected
+    if expected:
+        assert lua.eval("commands[1].params.goToWaypointIndex") == 7
+
+
+@pytest.mark.parametrize("wrapped", [False, True])
+def test_native_engagement_has_limits_even_when_no_corner_is_reached(
+    wrapped: bool,
+) -> None:
+    flight, group, generated, now = scenario()
+    anchor = group.points[1]
+    original = anchor.tasks[0].dict()
+    if wrapped:
+        controlled = ControlledTask(anchor.tasks[0])
+        controlled.stop_after_time(800)
+        controlled.stop_after_duration(200)
+        controlled.stop_if_lua_predicate("originalStop")
+        anchor.tasks[0] = controlled
+    option = OptECMUsing(value=OptECMUsing.Values.UseIfDetectedLockByRadar)
+    anchor.add_task(option)
+    assert add_search_pattern(flight, group, now, generated)
+    task = anchor.tasks[0]
+    assert task.id == "ControlledTask"
+    assert task.params["task"] == original
+    stop = task.params["stopCondition"]
+    assert stop["time"] == (800 if wrapped else 900)
+    if wrapped:
+        assert stop["duration"] == 200
+    assert anchor.tasks[1] is option
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    lua.execute("""
+        originalStop=false; fuel=0.5
+        unit={isExist=function() return true end,getFuel=function() return fuel end}
+        Group={getByName=function() return {
+            isExist=function() return true end,getUnits=function() return {unit} end} end}
+    """)
+    condition = stop["condition"]
+    assert not lua.eval(condition)
+    lua.execute("fuel=0.1")
+    assert lua.eval(condition)
+    if wrapped:
+        lua.execute("fuel=0.5; originalStop=true")
+        assert lua.eval(condition)
+
+
 def test_generated_probe_serializes_and_compiles_search_tasks(tmp_path: Path) -> None:
     from dcs.lua import loads
     from tools.realistic_cas_tests.build_search_probe import build_mission
@@ -121,19 +185,31 @@ def test_generated_probe_serializes_and_compiles_search_tasks(tmp_path: Path) ->
     helicopters = [
         g for c in countries for g in c.get("helicopter", {}).get("group", {}).values()
     ]
-    assert len(helicopters) == 2
+    assert len(helicopters) == 4
     for group in helicopters:
         points = list(group["route"]["points"].values())
+        assert not points[0]["task"]["params"]["tasks"]
+        engagement = points[1]["task"]["params"]["tasks"][1]
+        assert engagement["id"] == "ControlledTask"
+        assert engagement["params"]["task"]["id"] == "EngageTargetsInZone"
+        assert engagement["params"]["stopCondition"]["time"] == 720
         legs = [
             p
             for p in points
             if p.get("name", "").startswith("SEARCH ")
             and p.get("name") != "SEARCH AREA"
         ]
-        assert len(legs) == 4
+        control = "CONTROL" in group["name"]
+        assert len(legs) == (64 if control else 4)
         for point in legs:
             tasks = list(point["task"]["params"]["tasks"].values())
-            script = tasks[-1]["params"]["action"]["params"]["command"]
-            lua.compile(script)
+            if control:
+                assert not tasks
+            else:
+                script = tasks[-1]["params"]["action"]["params"]["command"]
+                lua.compile(script)
             assert point["speed"] > 0
         assert points[-1]["type"] == "Land"
+    for trigger in mission.triggerrules.triggers:
+        for action in trigger.actions:
+            lua.compile(str(action.params[0]))

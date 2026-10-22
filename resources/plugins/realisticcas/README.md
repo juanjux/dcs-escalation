@@ -99,8 +99,11 @@ Hover an option's label or control for its explanation.
   revealed contacts; the circuit never reads hidden target positions. Human or
   mixed player flights and other mission roles are unchanged. CAS uses its
   scheduled end time; Armed Recon allows the doctrine's CAS duration after TOT.
-  Each search corner checks that deadline and a 20% fuel reserve before continuing
-  or resuming the original exit route. Small zones use a minimum 250 m standoff
+  Native engagement tasks have matching time and 20% fuel stop conditions, so
+  combat cannot leave an unlimited search-and-engage order active after exit.
+  Search corners check those limits before resuming the original exit route.
+  Only the last corner loops; intermediate legs use ordinary native navigation.
+  Small zones use a minimum 250 m standoff
   half-width, without enlarging the native engagement zone. Runtime engine
   acceptance of the new Cobra search route remains a separate DCS test.
 

@@ -3,9 +3,10 @@
 from datetime import datetime
 import json
 import logging
+import math
 from typing import Any
 
-from dcs.task import RunScript
+from dcs.task import ControlledTask, RunScript
 
 from game.ato import FlightType
 from game.utils import knots
@@ -74,26 +75,57 @@ def add_search_pattern(
     end_index = insertion + len(added)
     name = json.dumps(str(group.name), ensure_ascii=False)
     exit_index = end_index + 1
+    # A waypoint switch alone does not stop an active en-route engagement. Give
+    # the native task the same limits, including while combat suspends navigation.
+    fuel_condition = f"""(function()
+local g=Group.getByName({name})
+if not g or not g:isExist() then return true end
+for _,u in ipairs(g:getUnits()) do
+    if u:isExist() and u:getFuel()<0.2 then return true end
+end
+return false
+end)()"""
+    for native in group.points[:insertion]:
+        for index, task in enumerate(native.tasks):
+            if task.id == "EngageTargetsInZone":
+                bounded = ControlledTask(task)
+                bounded.enabled, bounded.auto = task.enabled, task.auto
+                native.tasks[index] = task = bounded
+            if (
+                task.id != "ControlledTask"
+                or task.params.get("task", {}).get("id") != "EngageTargetsInZone"
+            ):
+                continue
+            stop = task.params.setdefault("stopCondition", {})
+            stop["time"] = min(
+                stop.get("time", math.ceil(deadline)), math.ceil(deadline)
+            )
+            existing = stop.get("condition")
+            stop["condition"] = (
+                f"({existing}) or ({fuel_condition})" if existing else fuel_condition
+            )
     for offset, point in enumerate(added):
         current_index = start_index + offset
-        next_index = start_index if current_index == end_index else current_index + 1
         script = f"""do
 local g=Group.getByName({name})
 if not g or not g:isExist() then return end
-local destination={next_index}
+env.info('REALISTIC_CAS_SEARCH|'..{name}..' corner={current_index} t='..timer.getTime())
+local destination=nil
 if timer.getTime()>={deadline:.3f} then
-    env.info('REALISTIC_CAS_SEARCH|time limit reached')
     destination={exit_index}
 end
 for _,unit in ipairs(g:getUnits()) do
     if unit:isExist() and unit:getFuel()<0.2 then
-        env.info('REALISTIC_CAS_SEARCH|fuel reserve reached')
         destination={exit_index}
     end
 end
-g:getController():setCommand({{id='SwitchWaypoint',params={{
+if not destination and {current_index}=={end_index} then destination={start_index} end
+if destination then
+    env.info('REALISTIC_CAS_SEARCH|'..{name}..' switch {current_index}->'..destination)
+    g:getController():setCommand({{id='SwitchWaypoint',params={{
     fromWaypointIndex={current_index},goToWaypointIndex=destination
-}}}})
+    }}}})
+end
 end
 """
         point.add_task(RunScript(script))
