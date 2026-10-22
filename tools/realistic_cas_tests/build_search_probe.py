@@ -9,8 +9,6 @@ from types import SimpleNamespace as NS
 from dcs import Mission
 from dcs.action import DoScript
 from dcs.helicopters import AH_1W
-from dcs.mission import StartType
-from dcs.planes import A_10C_2
 from dcs.task import CAS, EngageTargetsInZone, Targets
 from dcs.translation import String
 from dcs.triggers import TriggerStart
@@ -29,10 +27,7 @@ def build_mission() -> Mission:
     airport = mission.terrain.airports["Batumi"]
     airport.set_coalition("blue")
     blue, red = mission.country("USA"), mission.country("Russia")
-    player = mission.flight_group_from_airport(
-        blue, "Probe player", A_10C_2, airport, start_type=StartType.Warm
-    )
-    player.units[0].skill = Skill.Player
+    mission.groundControl.blue_game_masters = 1
     cases = (
         (FlightType.CAS, False),
         (FlightType.ARMED_RECON, False),
@@ -154,6 +149,7 @@ end,nil,timer.getTime()+15)
     mission.triggerrules.triggers.append(trigger)
     mission.set_description_text(
         "COBRA SEARCH ROUTE PROBE — NO CAMPAIGN\n"
+        "Join the blue Game Master slot; no player aircraft is needed. "
         "V2: watch four AI Cobras on F10. Targets are invisible for three minutes, "
         "then revealed. PROBE flights use the revised search loop; CONTROL flights "
         "fly the same geometry as a long ordinary route, without waypoint switches. "

@@ -181,7 +181,9 @@ def test_generated_probe_serializes_and_compiles_search_tasks(tmp_path: Path) ->
     mission.save(path)
     with ZipFile(path) as archive:
         data = loads(archive.read("mission").decode())["mission"]
+    assert data["groundControl"]["roles"]["instructor"]["blue"] == 1
     countries = data["coalition"]["blue"]["country"].values()
+    assert all(not c.get("plane", {}).get("group") for c in countries)
     helicopters = [
         g for c in countries for g in c.get("helicopter", {}).get("group", {}).values()
     ]
