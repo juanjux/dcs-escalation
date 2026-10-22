@@ -74,6 +74,10 @@ class MoraleEvent:
 #: so this covers both.
 LOST_AIRCRAFT = MoraleEvent("morale_lost_aircraft", -15, "lost his aircraft")
 
+DAMAGED_RETURN = MoraleEvent(
+    "morale_damaged_return", -3, "returned in a damaged aircraft"
+)
+
 #: He flew a strike, a CAS or a SEAD and destroyed nothing at all.
 ACHIEVED_NOTHING = MoraleEvent("morale_achieved_nothing", -10, "came home empty")
 
@@ -134,6 +138,7 @@ SQUADRON_RECOVERED = MoraleEvent(
 #: Every event, for the settings page and for tests that check nothing was forgotten.
 MORALE_EVENTS: tuple[MoraleEvent, ...] = (
     LOST_AIRCRAFT,
+    DAMAGED_RETURN,
     ACHIEVED_NOTHING,
     SQUADRON_DEATH,
     FLIGHT_DEATH,

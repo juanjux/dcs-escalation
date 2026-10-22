@@ -65,7 +65,15 @@ class LuaGenerator:
             self.mission.triggerrules.triggers.append(t)
 
     def _inject_aircraft_maintenance(self) -> None:
-        if self.unit_map is None or not self.game.settings.aircraft_maintenance_enabled:
+        settings = self.game.settings
+        morale_telemetry = (
+            settings.live_pilots_enabled
+            and settings.morale_enabled
+            and settings.morale_damaged_return != 0
+        )
+        if self.unit_map is None or not (
+            settings.aircraft_maintenance_enabled or morale_telemetry
+        ):
             return
         names = ",".join(
             f'"{escape_string_for_lua(name)}"' for name in self.unit_map.aircraft
