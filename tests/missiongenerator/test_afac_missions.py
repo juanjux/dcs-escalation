@@ -265,6 +265,15 @@ def test_final_registry_exports_zone_skill_and_thermal_equipment() -> None:
     assert observer["equipment"]["ir"] is True
     assert observer["equipment"]["remoteOperator"] is True
 
+    unit.pylons = {
+        1: {"CLSID": "{M260_M156}"},
+        2: {"CLSID": "{M260_M156}"},
+        3: {"CLSID": "unknown"},
+    }
+    registry = collect_registry(s.mission, data, enabled=True, unit_map=mapping)
+    assert registry is not None
+    assert registry["observers"][0]["afac"]["smokeRounds"] == 14
+
 
 @pytest.mark.parametrize("night", [False, True])
 def test_game_master_probe_serializes_real_orbits_and_plugin_startup(

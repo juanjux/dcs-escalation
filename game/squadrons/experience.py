@@ -24,6 +24,7 @@ XP_AIR_KILL = 500
 #: Flying the sortie and coming back from it. Losing the aircraft forfeits this.
 XP_MISSION_COMPLETE = 500
 XP_AFAC_DISCOVERY = 100
+XP_AFAC_MARKING = 50
 
 #: A vehicle: a tank, a SAM launcher, a convoy truck, a front line gun.
 XP_GROUND_KILL = 200
@@ -243,6 +244,7 @@ XP_SHIPS = "Ships"
 XP_BUILDINGS = "Structures"
 XP_DAMAGE = "Damage dealt"
 XP_RECON = "AFAC discoveries"
+XP_MARKING = "AFAC marking"
 XP_MISSION = "Mission complete"
 XP_WOUND = "Wounded"
 XP_MORALE = "Morale"
@@ -258,6 +260,7 @@ XP_REASON_ORDER = (
     XP_BUILDINGS,
     XP_DAMAGE,
     XP_RECON,
+    XP_MARKING,
     XP_MISSION,
     XP_WOUND,
     XP_MORALE,

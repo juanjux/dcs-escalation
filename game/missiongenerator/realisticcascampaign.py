@@ -9,6 +9,7 @@ from typing import Any
 from .realisticcasenvironment import SunTimes, export_environment
 from .realisticcasluadata import (
     SCRIPT_ORDER,
+    afac_marking_config,
     collect_registry,
     probability_config,
     render_startup,
@@ -148,6 +149,7 @@ def prepare_campaign(
     config = {
         "enabled": True,
         "afacEnabled": afac_enabled,
+        "afacMarking": afac_marking_config(options) if afac_enabled else None,
         "registry": registry,
         "environment": environment,
         "acquisitionSeconds": acquisition,

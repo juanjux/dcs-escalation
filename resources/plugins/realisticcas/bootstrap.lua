@@ -33,15 +33,20 @@ do
     assert(c.probabilisticDetection==nil or type(c.probabilisticDetection)=='boolean',
       'invalid probabilistic detection option')
     local probability=RealisticCAS.Sensors.probabilityConfig(c.probability)
+    if c.afacEnabled then RealisticCAS.validateAFACMarking(c.afacMarking) end
     local function log(kind,msg)
       env.info('REALISTIC_CAS_MISSION|'..kind..'|t='..timer.getTime()..'|'..tostring(msg))
     end
     local api={active=false}
     local handler={}
     function api:stop()
-      if self.detectors then self.detectors:stop() end
+      local markersStopped=not self.detectors or self.detectors:stop()
       if self.fog and not self.fog:stop() then
         log('ERROR','visibility restoration incomplete; retry RealisticCAS.mission:stop()')
+        return false
+      end
+      if not markersStopped then
+        log('ERROR','AFAC spot cleanup incomplete; retry RealisticCAS.mission:stop()')
         return false
       end
       world.removeEventHandler(handler)
@@ -50,6 +55,10 @@ do
       return true
     end
     function handler:onEvent(event)
+      if event and event.id==world.event.S_EVENT_SHOT and api.detectors and api.detectors.afacMarking then
+        local ok,name=pcall(function() return event.initiator:getName() end)
+        if ok then api.detectors.afacMarking:shot(name) end
+      end
       if event and world.event.S_EVENT_MISSION_END and event.id==world.event.S_EVENT_MISSION_END then
         local ok,result=pcall(function()return api:stop()end)
         if not ok or not result then log('ERROR','mission-end cleanup: '..tostring(result)) end
@@ -64,6 +73,7 @@ do
         probabilisticDetection=c.probabilisticDetection,
         probability=probability,
         afacEnabled=c.afacEnabled,
+        afacMarking=c.afacMarking,
         acquisitionMaxGap=c.acquisitionMaxGap,interval=c.interval,revisit=c.revisit,
         targetBudget=c.targetBudget,workBudget=c.workBudget,cellSize=c.cellSize,
         observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,

@@ -5,8 +5,8 @@
     "specificOptions": [
         {
             "section": "Airborne forward air control (AFAC)",
-            "nameInUI": "Enable AFAC search missions (experimental)",
-            "descriptionInUI": "Allow AFAC — Area and AFAC — Frontline missions for compatible aircraft. This stage provides non-attacking search patrols, shared discoveries and pilot experience; laser, IR and smoke marking are not integrated yet. Requires Realistic CAS and no conflicting JTAC scripts. Passenger-capable helicopters embark a JTAC with thermal observation equipment.",
+            "nameInUI": "Enable AFAC missions (experimental)",
+            "descriptionInUI": "Allow AFAC — Area and AFAC — Frontline search and marking missions. Compatible aircraft designate observed targets with laser, IR at night and finite payload smoke. Passenger-capable helicopters embark a thermal-equipped JTAC. Discovering and successfully marking groups earn separate experience. Requires Realistic CAS and no conflicting JTAC scripts. Threat-aware flight routing is not integrated yet.",
             "mnemonic": "afacEnabled",
             "defaultValue": false
         },
@@ -19,6 +19,51 @@
             "defaultValue": 60,
             "minimumValue": 1,
             "maximumValue": 240
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC marking time per group (minutes)",
+            "descriptionInUI": "Mark one target for up to this long before selecting a different group. Default 5 minutes. Losing observation, terrain line of sight, leaving the assigned zone, Bingo or loss of the aircraft stops marking sooner. Only one AFAC can reserve an enemy group at a time.",
+            "mnemonic": "afacMarkMinutes",
+            "defaultValue": 5,
+            "minimumValue": 1,
+            "maximumValue": 60
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC message duration (seconds)",
+            "descriptionInUI": "Display discovery and marking reports to the AFAC's coalition only. Default 15 seconds.",
+            "mnemonic": "afacMessageSeconds",
+            "defaultValue": 15,
+            "minimumValue": 1,
+            "maximumValue": 300
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC laser code (shared)",
+            "descriptionInUI": "All AFACs use this code, default 1688, so laser-guided bombs can be configured before takeoff. Use a valid code from 1511 to 1788, with no 0 or 9 digits. Different AFACs reserve different target groups.",
+            "mnemonic": "afacLaserCode",
+            "defaultValue": 1688,
+            "minimumValue": 1511,
+            "maximumValue": 1788
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC coordinate format",
+            "descriptionInUI": "Coordinate format used in discovery and marking reports.",
+            "mnemonic": "afacCoordinateFormat",
+            "choices": [
+                {"label": "Degrees and decimal minutes", "value": 0},
+                {"label": "Degrees, minutes and seconds", "value": 1},
+                {"label": "MGRS", "value": 2}
+            ],
+            "defaultValue": 0,
+            "minimumValue": 0,
+            "maximumValue": 2
         },
         {
             "nameInUI": "Search time for a new group (seconds)",

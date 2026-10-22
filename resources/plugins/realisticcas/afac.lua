@@ -1,4 +1,4 @@
--- Isolated AFAC coordinator, Lua 5.1. Not injected into campaign missions yet.
+-- AFAC coordinator, Lua 5.1. Native effects are supplied by the DCS adapter.
 -- The caller supplies fresh, validated observations, never hidden live positions.
 assert(RealisticCAS, "load core.lua first")
 
@@ -61,6 +61,7 @@ do
     end
     local function call(key,...)
       local ok,result=pcall(o[key],...)
+      if not ok and o.log then pcall(o.log,key..': '..tostring(result)) end
       return ok and result==true
     end
     local function snapshot(r)
@@ -124,6 +125,7 @@ do
         if type(report)=="table" and report.alive==false then
           r.pending={state="lost",reason="observer lost"}
         elseif r.pending.state~="lost" and ((r.stationEnds and time>=r.stationEnds) or
+          (type(report)=="table" and report.stationComplete==true) or
           (type(report)=="table" and finite(report.fuel) and report.fuel>=0 and report.fuel<=bingo)) then
           r.pending={state="rtb",reason="station complete or bingo"}
         end
@@ -142,7 +144,7 @@ do
         leave(r,r.stationEnds and "search" or "transit","invalid observer report")
         return snapshot(r)
       end
-      if report.fuel<=bingo or (r.stationEnds and time>=r.stationEnds) then
+      if report.fuel<=bingo or report.stationComplete==true or (r.stationEnds and time>=r.stationEnds) then
         local reason=report.fuel<=bingo and "bingo" or "station complete"
         leave(r,"rtb",reason);return snapshot(r)
       end
@@ -155,6 +157,9 @@ do
       r.state=r.mark and "mark" or "search"
       local contacts=type(report.contacts)=="table" and report.contacts or {}
       if r.mark then
+        if report.targetDestroyed==true then
+          leave(r,"search","target destroyed");return snapshot(r)
+        end
         if time>=r.markEnds then
           r.blockedGroup=r.mark.group
           leave(r,"search","mark complete");return snapshot(r)
@@ -191,6 +196,9 @@ do
             r.smokeRounds=r.smokeRounds-1
             smoked=call("smoke",r.id,target(t))
           end
+          if not r.laser and not infrared and not smoked then
+            leave(r,"search","no effective marker");return snapshot(r)
+          end
           event(r,"mark",{group=t.group,unit=t.id,laserCode=laserCode,
             laser=r.laser,infrared=infrared,smoke=smoked})
           return snapshot(r)
@@ -200,6 +208,17 @@ do
     end
 
     function api:get(id) return records[id] and snapshot(records[id]) or nil end
+
+    function api:spendSmoke(id)
+      -- Conservatively debit native weapon shots as well as scripted smoke.
+      local r=records[id]
+      if r then r.smokeRounds=math.max(0,r.smokeRounds-1) end
+    end
+
+    function api:disableSmoke(id)
+      local r=records[id]
+      if r then r.smokeRounds=0 end
+    end
 
     function api:stop()
       if not enabled then return true end

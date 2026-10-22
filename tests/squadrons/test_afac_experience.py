@@ -10,7 +10,12 @@ from game.ato import FlightType
 from game.debriefing import StateData
 from game.settings import Settings
 from game.sim.missionresultsprocessor import MissionResultsProcessor
-from game.squadrons.experience import XP_AFAC_DISCOVERY, XP_RECON
+from game.squadrons.experience import (
+    XP_AFAC_DISCOVERY,
+    XP_AFAC_MARKING,
+    XP_RECON,
+    XP_MARKING,
+)
 from game.squadrons.pilot import Pilot
 
 
@@ -108,3 +113,44 @@ def test_old_pickled_state_migrates_discovery_list() -> None:
     state = StateData.__new__(StateData)
     state.__setstate__({})
     assert state.afac_discoveries == []
+    assert state.afac_marks == []
+
+
+@pytest.mark.parametrize("blue", [False, True])
+@pytest.mark.parametrize("channel", ["laser", "infrared", "smoke"])
+def test_effective_marking_pays_separately_from_discovery(
+    blue: bool, channel: str
+) -> None:
+    s = scenario(blue=blue)
+    detail = dict(s.detail, **{channel: True})
+    s.debriefing.state_data.afac_marks = [detail, detail, dict(detail, target="T2")]
+    assert s.processor._experience_from_afac(s.debriefing) == {
+        id(s.pilot): XP_AFAC_DISCOVERY
+    }
+    assert s.processor._experience_from_afac(s.debriefing, marking=True) == {
+        id(s.pilot): XP_AFAC_MARKING
+    }
+    assert s.processor._xp_reasons[id(s.pilot)] == {
+        XP_RECON: XP_AFAC_DISCOVERY,
+        XP_MARKING: XP_AFAC_MARKING,
+    }
+
+
+@pytest.mark.parametrize(
+    "replacement",
+    [None, {}, {"laser": 1}, {"smoke": "true"}, {"laser": True, "target": "UNKNOWN"}],
+)
+def test_invalid_or_ineffective_marks_pay_nothing(replacement: Any) -> None:
+    s = scenario()
+    record = dict(s.detail)
+    if isinstance(replacement, dict):
+        record.update(replacement)
+    else:
+        record = replacement
+    s.debriefing.state_data.afac_marks = [record]
+    assert s.processor._experience_from_afac(s.debriefing, marking=True) == {}
+
+
+@pytest.mark.parametrize("value", [None, "invalid", {}])
+def test_missing_and_invalid_mark_state_is_backwards_compatible(value: Any) -> None:
+    assert StateData.from_json({"afac_marks": value}, MagicMock()).afac_marks == []

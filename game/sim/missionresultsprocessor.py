@@ -19,6 +19,8 @@ from game.squadrons.experience import (
     XP_GROUND_KILL,
     XP_MISSION_COMPLETE,
     XP_AFAC_DISCOVERY,
+    XP_AFAC_MARKING,
+    XP_MARKING,
     XP_RECON,
     XP_SHIP_KILL,
     XP_UNKNOWN_KILL,
@@ -1372,7 +1374,9 @@ class MissionResultsProcessor:
             seen.add(id(pilot))
             self._note_morale(pilot, morale_rules.DAMAGED_RETURN)
 
-    def _experience_from_afac(self, debriefing: Debriefing) -> dict[int, int]:
+    def _experience_from_afac(
+        self, debriefing: Debriefing, *, marking: bool = False
+    ) -> dict[int, int]:
         from game.ato.afac import enabled
 
         earned: dict[int, int] = {}
@@ -1380,11 +1384,17 @@ class MissionResultsProcessor:
             return earned
         seen: set[tuple[int, str]] = set()
         targets = getattr(debriefing.unit_map, "afac_targets", {})
-        details = getattr(debriefing.state_data, "afac_discoveries", [])
+        field = "afac_marks" if marking else "afac_discoveries"
+        details = getattr(debriefing.state_data, field, [])
         if not isinstance(details, list):
             return earned
         for detail in details[:10000]:
             if not isinstance(detail, dict):
+                continue
+            if marking and not any(
+                detail.get(channel) is True
+                for channel in ("laser", "infrared", "smoke")
+            ):
                 continue
             observer, target = detail.get("observer"), detail.get("target")
             if not isinstance(observer, str) or not isinstance(target, str):
@@ -1407,9 +1417,13 @@ class MissionResultsProcessor:
                 continue
             seen.add(key)
             pilot = flying.pilot
-            earned[id(pilot)] = earned.get(id(pilot), 0) + XP_AFAC_DISCOVERY
-            self._note_xp(pilot, XP_RECON, XP_AFAC_DISCOVERY)
-            self.xp_log.award(pilot, XP_AFAC_DISCOVERY, "discovered", group, target)
+            xp = XP_AFAC_MARKING if marking else XP_AFAC_DISCOVERY
+            reason = XP_MARKING if marking else XP_RECON
+            earned[id(pilot)] = earned.get(id(pilot), 0) + xp
+            self._note_xp(pilot, reason, xp)
+            self.xp_log.award(
+                pilot, xp, "marked" if marking else "discovered", group, target
+            )
         return earned
 
     def commit_pilot_experience(self, debriefing: Debriefing) -> None:
@@ -1418,6 +1432,10 @@ class MissionResultsProcessor:
         for pilot_id, xp in self._experience_from_damage(debriefing, credited).items():
             earned[pilot_id] = earned.get(pilot_id, 0) + xp
         for pilot_id, xp in self._experience_from_afac(debriefing).items():
+            earned[pilot_id] = earned.get(pilot_id, 0) + xp
+        for pilot_id, xp in self._experience_from_afac(
+            debriefing, marking=True
+        ).items():
             earned[pilot_id] = earned.get(pilot_id, 0) + xp
         self._commit_pilot_experience(self.game.blue.ato, debriefing, earned)
         self._commit_pilot_experience(self.game.red.ato, debriefing, earned)

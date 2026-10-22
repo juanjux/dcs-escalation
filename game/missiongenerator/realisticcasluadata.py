@@ -12,7 +12,7 @@ from collections.abc import Collection, Mapping
 from typing import TYPE_CHECKING, Any
 
 from dcs.flyingunit import FlyingUnit
-from game.dcs.afaccapabilities import capabilities_for
+from game.dcs.afaccapabilities import capabilities_for, smoke_rounds
 from game.dcs.skills import SKILL_LADDER
 from game.ato.afac import station_minutes
 
@@ -39,10 +39,12 @@ SCRIPT_ORDER = (
     "core.lua",
     "dcs.lua",
     "afac-search.lua",
+    "afac.lua",
     "sensors.lua",
     "environment.lua",
     "detection.lua",
     "detectors-dcs.lua",
+    "afac-dcs.lua",
     "bootstrap.lua",
 )
 
@@ -61,6 +63,30 @@ PROBABILITY_DEFAULTS = {
     "visualMaxAGL": 3500,
     "opticalMaxAGL": 7010.4,  # 23,000 ft; saved/Lua heights remain metres.
 }
+
+
+def afac_marking_config(options: Mapping[str, Any]) -> dict[str, int]:
+    """Reject invalid saved options before starting any mission-side effects."""
+    result = {}
+    for key, default, low, high in (
+        ("afacMarkMinutes", 5, 1, 60),
+        ("afacMessageSeconds", 15, 1, 300),
+        ("afacLaserCode", 1688, 1511, 1788),
+        ("afacCoordinateFormat", 0, 0, 2),
+    ):
+        value = options.get(key, default)
+        if type(value) is not int or not low <= value <= high:
+            raise ValueError(f"Realistic CAS: {key} must be an integer {low}..{high}")
+        result[key] = value
+    code = str(result["afacLaserCode"])
+    if any(digit not in "12345678" for digit in code) or code[1] not in "567":
+        raise ValueError("Realistic CAS: invalid AFAC laser code")
+    return {
+        "markSeconds": result["afacMarkMinutes"] * 60,
+        "messageSeconds": result["afacMessageSeconds"],
+        "laserCode": result["afacLaserCode"],
+        "coordinateFormat": result["afacCoordinateFormat"],
+    }
 
 
 def probability_config(options: Mapping[str, Any]) -> dict[str, Any]:
@@ -376,6 +402,11 @@ def collect_registry(
                             }
                             if unit.name in afac:
                                 meta = dict(afac[unit.name])
+                                meta["smokeRounds"] = smoke_rounds(
+                                    v["CLSID"]
+                                    for v in unit.pylons.values()
+                                    if v.get("CLSID")
+                                )
                                 observer["equipment"].update(meta.pop("equipment"))
                                 observer["afac"] = meta
                                 observer["allowPlayer"] = True

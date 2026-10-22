@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Realistic CAS]** Add AFAC laser, night IR and finite payload smoke marking, configurable reports and mark duration, group reservations and separate marking experience.
 * **[UI]** Add aircraft search to the Add Squadron selector in Air Wing Configuration.
 * **[Realistic CAS]** Add opt-in AFAC area and frontline search patrols, skill-based discovery, discovery experience and visual-only night warnings; marking is not enabled yet.
 * **[Realistic CAS]** Add AFAC aircraft choices to all factions and protect remote UAV operators from casualties while retaining normal aircraft losses, rosters and experience.

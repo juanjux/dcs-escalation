@@ -1,4 +1,4 @@
-"""Build a Game Master AFAC search, Bingo and station-duration probe."""
+"""Build a Game Master AFAC search, marking, Bingo and station-duration probe."""
 
 from __future__ import annotations
 
@@ -44,6 +44,7 @@ def build_mission(*, night: bool = False) -> Mission:
             "realisticcas": True,
             "realisticcas.afacEnabled": True,
             "realisticcas.afacStationMinutes": 2,
+            "realisticcas.afacMarkMinutes": 1,
             "realisticcas.probabilisticDetection": False,
             "realisticcas.acquisitionSeconds": 3,
             "realisticcas.debug": True,
@@ -84,6 +85,8 @@ def build_mission(*, night: bool = False) -> Mission:
             speed=200,
         )
         group.units[0].fuel = native.fuel_max * (0.15 if bingo else 0.9)
+        if native is UH_1H:
+            group.units[0].load_pylon(UH_1H.Pylon5.XM158_M156)
         logical = (
             WaypointBuilder.race_track_start(start, meters(altitude)),
             WaypointBuilder.race_track_end(end, meters(altitude)),
@@ -125,13 +128,14 @@ def build_mission(*, night: bool = False) -> Mission:
             )
         )
         mappings[group.units[0].name] = NS(pilot=object(), flight=flight)
-        mission.vehicle_group(
+        target_group = mission.vehicle_group(
             mission.country("Russia"),
             "AFAC_TARGET_" + str(index),
             Unarmed.Ural_375,
             center,
             group_size=2,
         )
+        target_group.add_waypoint(center.point_from_heading(90, 1200), speed=12)
     data = NS(flights=flights, jtacs=[], tic_groups=[])
     mapping: Any = NS(theater_objects={}, flight=mappings.get)
     plugin = LuaPlugin.from_json(
@@ -143,12 +147,15 @@ def build_mission(*, night: bool = False) -> Mission:
     inject_campaign(generator, prepare_campaign(generator, [plugin]))
     trigger = TriggerStart(comment="AFAC probe diagnostics")
     trigger.add_action(DoScript(String("""
-trigger.action.outText('AFAC search probe: Game Master only. Normal flights search for 2 minutes after arrival, then land at Kobuleti. BINGO should return early. No AFAC should attack. Night: Yak warns; Huey/MQ-9 retain thermal observation. See RCAS_AFAC_PROBE in dcs.log.',30)
+trigger.action.outText('AFAC marking probe: Game Master only. Huey has 7 smoke rounds; Huey and MQ-9 lase observed moving trucks with code 1688, plus IR at night. Marks last at most 1 minute; station ends at 2 minutes. BINGO returns early, Yak only searches. No AFAC should attack. See RCAS_AFAC_PROBE and REALISTIC_CAS_AFAC in dcs.log.',30)
 timer.scheduleFunction(function(_,now)
   local credits=afac_discoveries or {}
   env.info('RCAS_AFAC_PROBE|t='..now..'|discoveries='..#credits)
   for _,row in ipairs(credits) do
     env.info('RCAS_AFAC_PROBE|credit='..row.observer..'|group='..row.group..'|side='..row.coalition)
+  end
+  for _,row in ipairs(afac_marks or {}) do
+    env.info('RCAS_AFAC_PROBE|marked='..row.observer..'|group='..row.group..'|laser='..tostring(row.laser)..'|ir='..tostring(row.infrared)..'|smoke='..tostring(row.smoke))
   end
   return now<600 and now+10 or nil
 end,nil,timer.getTime()+10)
