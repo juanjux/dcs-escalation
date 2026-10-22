@@ -24,6 +24,11 @@ class QFlightTypeComboBox(QComboBox):
         for mission_type in self.target.mission_types(
             for_player=Player.BLUE if is_ownfor else Player.RED
         ):
+            if mission_type.is_afac:
+                from game.ato.afac import enabled
+
+                if not enabled(settings):
+                    continue
             if mission_type == FlightType.AIR_ASSAULT and not settings.plugin_option(
                 "ctld"
             ):

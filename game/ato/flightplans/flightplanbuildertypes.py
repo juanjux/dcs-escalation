@@ -5,6 +5,7 @@ from typing import Any, TYPE_CHECKING, Type
 from game.ato import FlightType
 from game.theater.controlpoint import NavalControlPoint
 from .aewc import AewcFlightPlan
+from .afac import AfacFlightPlan
 from .airassault import AirAssaultFlightPlan
 from .airlift import AirliftFlightPlan
 from .antiship import AntiShipFlightPlan
@@ -49,6 +50,8 @@ class FlightPlanBuilderTypes:
             FlightType.BAI: BaiFlightPlan.builder_type(),
             FlightType.BARCAP: BarCapFlightPlan.builder_type(),
             FlightType.CAS: CasFlightPlan.builder_type(),
+            FlightType.AFAC_AREA: AfacFlightPlan.builder_type(),
+            FlightType.AFAC_FRONTLINE: AfacFlightPlan.builder_type(),
             FlightType.DEAD: DeadFlightPlan.builder_type(),
             FlightType.ESCORT: EscortFlightPlan.builder_type(),
             FlightType.OCA_AIRCRAFT: OcaAircraftFlightPlan.builder_type(),

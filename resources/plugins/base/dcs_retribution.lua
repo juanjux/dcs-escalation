@@ -10,6 +10,7 @@ unit_lost_events = {} -- killed units will be added via S_EVENT_UNIT_LOST
 kill_events = {} -- killed units will be added via S_EVENT_KILL
 kill_details = {} -- structured S_EVENT_KILL records {target, initiator, weapon} for the UI feed
 hit_details = {} -- structured S_EVENT_HIT records, one per attacking aircraft per target, for pilot experience
+afac_discoveries = {} -- First AFAC discovery per enemy group and coalition this mission.
 hit_seen = {} -- initiator -> {target -> true}, so a strafing pass is recorded once and not once per round
 HIT_DETAIL_LIMIT = 2000 -- a hard stop on the table above; state.json is written every 15 s
 base_capture_events = {}
@@ -274,6 +275,7 @@ function write_state()
 		["kill_events"] = kill_events,
 		["kill_details"] = kill_details,
 		["hit_details"] = hit_details,
+        ["afac_discoveries"] = afac_discoveries or {},
         ["mission_ended"] = mission_ended,
         ["destroyed_objects_positions"] = destroyed_objects_positions,
         ["model_time"] = timer.getTime(),

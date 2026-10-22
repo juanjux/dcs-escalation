@@ -260,7 +260,9 @@ class CampaignIntegrationTests(unittest.TestCase):
             with zipfile.ZipFile(path) as archive:
                 rt.compile(archive.read("mission").decode("utf-8"))
                 scripts = [name for name in archive.namelist() if name.endswith(".lua")]
-                self.assertEqual(len(scripts), 7)
+                self.assertEqual(
+                    len(scripts), len(test_registry_export.EXPORT.SCRIPT_ORDER)
+                )
                 for name in scripts:
                     rt.compile(archive.read(name).decode("utf-8"))
                 # Validate generated trigger action strings too (Lua text inside strings).

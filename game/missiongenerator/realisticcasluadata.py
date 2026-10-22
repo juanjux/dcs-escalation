@@ -12,6 +12,9 @@ from collections.abc import Collection, Mapping
 from typing import TYPE_CHECKING, Any
 
 from dcs.flyingunit import FlyingUnit
+from game.dcs.afaccapabilities import capabilities_for
+from game.dcs.skills import SKILL_LADDER
+from game.ato.afac import station_minutes
 
 if TYPE_CHECKING:
     from dcs import Mission
@@ -35,6 +38,7 @@ TARGETING_PODS = frozenset(
 SCRIPT_ORDER = (
     "core.lua",
     "dcs.lua",
+    "afac-search.lua",
     "sensors.lua",
     "environment.lua",
     "detection.lua",
@@ -206,12 +210,44 @@ def collect_registry(
         "knownAirDefenseGroups": [],
     }
     roles: dict[str, str] = {}
+    afac: dict[str, dict[str, Any]] = {}
     for flight in mission_data.flights:
         role = flight.flight_type.value
         for flight_unit in flight.units:
             if flight_unit.name in roles:
                 raise ValueError(f"Duplicate FlightData unit: {flight_unit.name}")
             roles[flight_unit.name] = role
+            if role in ("AFAC — Area", "AFAC — Frontline"):
+                zone = flight.work_zone
+                afac_mapping = unit_map.flight(flight_unit.name)
+                profile = capabilities_for(flight_unit.type)
+                if (
+                    zone is None
+                    or afac_mapping is None
+                    or afac_mapping.pilot is None
+                    or profile is None
+                ):
+                    raise ValueError(
+                        "AFAC requires work zone, pilot mapping and supported aircraft"
+                    )
+                if profile.can_embark_jtac:
+                    profile = capabilities_for(flight_unit.type, embarked_jtac=True)
+                assert profile is not None
+                afac[flight_unit.name] = {
+                    "zone": {
+                        "points": [{"x": p.x, "z": p.y} for p in zone.points],
+                        "radius": zone.radius.meters,
+                    },
+                    "groupName": flight.group_name,
+                    "stationSeconds": station_minutes(
+                        afac_mapping.flight.coalition.game.settings
+                    )
+                    * 60,
+                    "skill": SKILL_LADDER.index(
+                        flight.squadron.pilot_skill(afac_mapping.pilot)
+                    ),
+                    "equipment": profile.equipment(),
+                }
     for jtac in mission_data.jtacs:
         previous = roles.get(jtac.unit_name)
         if previous is not None and previous != "JTAC":
@@ -301,7 +337,9 @@ def collect_registry(
                             )
                         # Players do not provide scripted AI sensor reports. In a
                         # mixed flight, retain AI wingmen without touching tasks.
-                        if getattr(unit.skill, "value", unit.skill) in (
+                        if unit.name not in afac and getattr(
+                            unit.skill, "value", unit.skill
+                        ) in (
                             "Client",
                             "Player",
                         ):
@@ -336,6 +374,11 @@ def collect_registry(
                                     TARGETING_PODS.intersection(clsids)
                                 )
                             }
+                            if unit.name in afac:
+                                meta = dict(afac[unit.name])
+                                observer["equipment"].update(meta.pop("equipment"))
+                                observer["afac"] = meta
+                                observer["allowPlayer"] = True
                         result["observers"].append(observer)
     for name in sorted(roles.keys() - present_air):
         result["warnings"].append(

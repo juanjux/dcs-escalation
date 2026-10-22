@@ -16,6 +16,7 @@ from dcs.unittype import FlyingType
 from dcs.weapons_data import weapon_ids
 
 from game.ato import FlightType
+from game.dcs.afaccapabilities import capabilities_for
 from game.data.units import UnitClass
 from game.dcs.aircraftproperties import PropertyDateGate
 from game.dcs.lasercodeconfig import LaserCodeConfig
@@ -281,6 +282,9 @@ class AircraftType(UnitType[Type[FlyingType]]):
 
     def __post_init__(self) -> None:
         enrich = {}
+        if capabilities_for(self.dcs_id) is not None:
+            enrich[FlightType.AFAC_AREA] = 10
+            enrich[FlightType.AFAC_FRONTLINE] = 10
         if FlightType.SEAD_SWEEP not in self.task_priorities:
             if (value := self.task_priorities.get(FlightType.SEAD)) or (
                 value := self.task_priorities.get(FlightType.SEAD_ESCORT)

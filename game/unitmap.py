@@ -69,6 +69,8 @@ TIC_CLONE_NAME = re.compile(r"^(?P<group>.+?)(?:-\d+#\d{3})+-\d{2}$")
 
 class UnitMap:
     def __init__(self) -> None:
+        # Final generated ground registry, used to verify AFAC discovery credits.
+        self.afac_targets: dict[str, tuple[str, int]] = {}
         self.aircraft: Dict[str, FlyingUnit] = {}
         self.airfields: Dict[str, Airfield] = {}
         self.front_line_units: Dict[str, FrontLineUnit] = {}

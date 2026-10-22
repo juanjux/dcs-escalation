@@ -18,6 +18,8 @@ from game.squadrons.experience import (
     XP_DAMAGE_SHARE,
     XP_GROUND_KILL,
     XP_MISSION_COMPLETE,
+    XP_AFAC_DISCOVERY,
+    XP_RECON,
     XP_SHIP_KILL,
     XP_UNKNOWN_KILL,
     XP_WOUNDED,
@@ -1370,10 +1372,52 @@ class MissionResultsProcessor:
             seen.add(id(pilot))
             self._note_morale(pilot, morale_rules.DAMAGED_RETURN)
 
+    def _experience_from_afac(self, debriefing: Debriefing) -> dict[int, int]:
+        from game.ato.afac import enabled
+
+        earned: dict[int, int] = {}
+        if not enabled(self.game.settings):
+            return earned
+        seen: set[tuple[int, str]] = set()
+        targets = getattr(debriefing.unit_map, "afac_targets", {})
+        details = getattr(debriefing.state_data, "afac_discoveries", [])
+        if not isinstance(details, list):
+            return earned
+        for detail in details[:10000]:
+            if not isinstance(detail, dict):
+                continue
+            observer, target = detail.get("observer"), detail.get("target")
+            if not isinstance(observer, str) or not isinstance(target, str):
+                continue
+            flying = debriefing.unit_map.flight(observer)
+            expected = targets.get(target)
+            if flying is None or flying.pilot is None or expected is None:
+                continue
+            if not flying.flight.flight_type.is_afac:
+                continue
+            side = 2 if flying.flight.squadron.player.is_blue else 1
+            group, owner = expected
+            key = (side, group)
+            if (
+                owner == side
+                or detail.get("coalition") != side
+                or detail.get("group") != group
+                or key in seen
+            ):
+                continue
+            seen.add(key)
+            pilot = flying.pilot
+            earned[id(pilot)] = earned.get(id(pilot), 0) + XP_AFAC_DISCOVERY
+            self._note_xp(pilot, XP_RECON, XP_AFAC_DISCOVERY)
+            self.xp_log.award(pilot, XP_AFAC_DISCOVERY, "discovered", group, target)
+        return earned
+
     def commit_pilot_experience(self, debriefing: Debriefing) -> None:
         self._note_damaged_return_morale(debriefing)
         earned, credited = self._experience_from_kills(debriefing)
         for pilot_id, xp in self._experience_from_damage(debriefing, credited).items():
+            earned[pilot_id] = earned.get(pilot_id, 0) + xp
+        for pilot_id, xp in self._experience_from_afac(debriefing).items():
             earned[pilot_id] = earned.get(pilot_id, 0) + xp
         self._commit_pilot_experience(self.game.blue.ato, debriefing, earned)
         self._commit_pilot_experience(self.game.red.ato, debriefing, earned)

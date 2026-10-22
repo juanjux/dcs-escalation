@@ -40,6 +40,7 @@ class MissionTarget:
                 FlightType.SEAD_ESCORT,
                 FlightType.SEAD_SWEEP,
                 FlightType.ARMED_RECON,
+                FlightType.AFAC_AREA,
                 FlightType.SWEEP,
                 # TODO: FlightType.ELINT,
                 # TODO: FlightType.EWAR,

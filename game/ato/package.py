@@ -265,6 +265,8 @@ class Package(RadioFrequencyContainer):
             FlightType.TRANSPORT,
             FlightType.AIR_ASSAULT,
             FlightType.ARMED_RECON,
+            FlightType.AFAC_AREA,
+            FlightType.AFAC_FRONTLINE,
             FlightType.SEAD,
             FlightType.SEAD_SWEEP,
             FlightType.TARCAP,

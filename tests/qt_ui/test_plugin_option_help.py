@@ -16,6 +16,64 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def test_afac_options_have_a_separate_box_and_disabled_dependencies(
+    qt_app: Any,
+) -> None:
+    from PySide6.QtWidgets import QCheckBox, QGroupBox
+    from game.settings import Settings
+    from qt_ui.windows.settings.plugins import PluginOptionsBox
+
+    plugin = LuaPlugin.from_json(
+        "realisticcas", ROOT / "resources/plugins/realisticcas/plugin.json"
+    )
+    assert plugin is not None
+    plugin.set_settings(Settings())
+    box = PluginOptionsBox(plugin)
+    try:
+        switch = box.widgets["realisticcas.afacEnabled"]
+        duration = box.widgets["realisticcas.afacStationMinutes"]
+        assert isinstance(switch, QCheckBox)
+        assert not switch.isChecked() and not duration.isEnabled()
+        section = duration.parentWidget()
+        assert (
+            isinstance(section, QGroupBox)
+            and section.title() == "Airborne forward air control (AFAC)"
+        )
+        switch.setChecked(True)
+        assert duration.isEnabled()
+        restored = Settings()
+        plugin.set_settings(restored)
+        box.update_from_settings(restored)
+        assert not duration.isEnabled()
+    finally:
+        box.close()
+
+
+def test_afac_mission_picker_requires_both_switches(qt_app: Any) -> None:
+    from types import SimpleNamespace
+    from game.ato import FlightType
+    from game.settings import Settings
+    from qt_ui.widgets.combos.QFlightTypeComboBox import QFlightTypeComboBox
+
+    target: Any = SimpleNamespace(
+        mission_types=lambda **_: iter(
+            (FlightType.CAS, FlightType.AFAC_AREA, FlightType.AFAC_FRONTLINE)
+        )
+    )
+    for main, afac in ((False, True), (True, False), (True, True)):
+        settings = Settings()
+        settings.plugins.update(
+            {"realisticcas": main, "realisticcas.afacEnabled": afac}
+        )
+        box = QFlightTypeComboBox(SimpleNamespace(), target, settings, True)  # type: ignore[arg-type]
+        try:
+            assert (box.findData(FlightType.AFAC_AREA) >= 0) == (main and afac)
+            assert (box.findData(FlightType.AFAC_FRONTLINE) >= 0) == (main and afac)
+            assert box.findData(FlightType.CAS) >= 0
+        finally:
+            box.close()
+
+
 @pytest.fixture(scope="module")
 def qt_app() -> Any:
     from PySide6.QtWidgets import QApplication

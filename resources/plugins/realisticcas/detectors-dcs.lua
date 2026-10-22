@@ -21,8 +21,12 @@ do
       assert(type(v.name)=="string" and v.name~="" and not observers[v.name],"invalid/duplicate observer")
       assert(type(v.typeName)=="string","observer aircraft/vehicle type required")
       local p=S.profile(v.typeName,v.category,v.equipment,probability)
+      if v.afac then
+        assert(c.afacEnabled==true, 'AFAC missions are disabled')
+        RealisticCAS.AFACSearch.validate(v.afac)
+      end
       observers[v.name]={typeName=v.typeName,category=v.category,role=v.role,profile=p,
-        allowPlayer=v.allowPlayer==true}
+        allowPlayer=v.allowPlayer==true,afac=v.afac,equipment=v.equipment or {}}
     end
     for _,v in ipairs(c.targets) do
       assert(type(v.name)=="string" and v.name~="" and type(v.groupName)=="string" and
@@ -69,8 +73,20 @@ do
           local ok,on=pcall(function() return u:getRadar() end)
           radar=ok and on==true
         end
-        return {name=name,side=u:getCoalition(),point={x=p.x,y=p.y+(ground and 2 or 0),z=p.z},
-          forward=pose.x,agl=agl,role=meta.role,radarOn=radar}
+        local report={name=name,side=u:getCoalition(),point={x=p.x,y=p.y+(ground and 2 or 0),z=p.z},
+          forward=pose.x,agl=agl,role=meta.role,radarOn=radar,afac=meta.afac}
+        if meta.afac then
+          local start=(RealisticCAS.afacStations or {})[meta.afac.groupName]
+          if not RealisticCAS.AFACSearch.active(meta.afac,p,timer.getTime(),start,u:getFuel()) then return nil end
+          if not meta.nightWarned and meta.equipment.ir~=true and meta.equipment.targetingPod~=true then
+            local weather=c.environment(report,{point=report.point},timer.getTime())
+            if weather and weather.light<0.5 then
+              meta.nightWarned=true
+              trigger.action.outTextForCoalition(report.side,'Warning: AFAC '..name..' has no thermal night observation equipment.',15)
+            end
+          end
+        end
+        return report
       end,
       lineOfSight=function(a,b) return land.isVisible(a,b) end,
       isRevealed=function(target,observer)
@@ -79,7 +95,23 @@ do
       end,
       reveal=function(target,observer,result)
         if not fog.active or fog.stopping then return false end
-        return fog:observe(target.groupName,observer.side,target.position,result.mode..":"..observer.name)
+        local g=Group.getByName(target.groupName)
+        local known=g and fog.service:isRevealed(g:getID(),observer.side)==true
+        local success=fog:observe(target.groupName,observer.side,target.position,result.mode..":"..observer.name)
+        if success and not known and observer.afac then
+          RealisticCAS.afacDiscoveryCredits=RealisticCAS.afacDiscoveryCredits or {}
+          local key=observer.side..':'..target.groupName
+          if not RealisticCAS.afacDiscoveryCredits[key] then
+            RealisticCAS.afacDiscoveryCredits[key]=true
+            afac_discoveries=afac_discoveries or {}
+            if #afac_discoveries<10000 then
+              afac_discoveries[#afac_discoveries+1]={observer=observer.name,target=target.name,
+                group=target.groupName,coalition=observer.side}
+              dirty_state=true
+            end
+          end
+        end
+        return success
       end})
     for name,meta in pairs(observers) do engine:addObserver(name,meta.profile) end
     for name in pairs(targets) do engine:addTarget(name) end

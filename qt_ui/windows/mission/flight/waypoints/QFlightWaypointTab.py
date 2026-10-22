@@ -173,6 +173,11 @@ class QFlightWaypointTab(QFrame):
         self.recreate_buttons.clear()
         self.recreate_selector = QComboBox()
         for task in self.package.target.mission_types(for_player=Player.BLUE):
+            if task.is_afac:
+                from game.ato.afac import enabled
+
+                if not enabled(self.game.settings):
+                    continue
             if task == FlightType.AIR_ASSAULT and not self.game.settings.plugin_option(
                 "ctld"
             ):

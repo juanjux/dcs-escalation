@@ -110,6 +110,7 @@ class FrontLine(MissionTarget):
 
         yield from [
             FlightType.CAS,
+            FlightType.AFAC_FRONTLINE,
             FlightType.AEWC,
             FlightType.REFUELING,
             # TODO: FlightType.TROOP_TRANSPORT
