@@ -74,6 +74,26 @@ class AircraftBehavior:
             self.configure_refueling(group, flight)
         elif self.task == FlightType.RECOVERY:
             self.configure_recovery(group, flight)
+        elif self.task.is_afac:
+            from game.ato.afac import enabled
+
+            if not enabled(flight.squadron.settings):
+                raise ValueError(
+                    "AFAC requires Realistic CAS AFAC search missions enabled"
+                )
+            self.configure_behavior(
+                flight,
+                group,
+                roe=OptROE.Values.WeaponHold,
+                rtb_on_bingo=True,
+                ai_unlimited_fuel=False,
+            )
+            # Observation does not consume weapons; shaken pilots must not RTB
+            # immediately because an unarmed aircraft is already Winchester.
+            group.points[0].tasks[:] = [
+                t for t in group.points[0].tasks if not isinstance(t, OptRTBOnOutOfAmmo)
+            ]
+            group.task = Nothing.name
         elif self.task in [FlightType.CAS, FlightType.BAI]:
             self.configure_cas(group, flight)
         elif self.task == FlightType.ARMED_RECON:

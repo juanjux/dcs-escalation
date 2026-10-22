@@ -59,6 +59,8 @@ class FlightType(Enum):
     AIR_ASSAULT = "Air Assault"
     SEAD_SWEEP = "SEAD Sweep"  # Reintroduce legacy "engage-whatever-you-can-find" SEAD
     ARMED_RECON = "Armed Recon"
+    AFAC_AREA = "AFAC — Area"
+    AFAC_FRONTLINE = "AFAC — Frontline"
     RECOVERY = "Recovery"
 
     def __str__(self) -> str:
@@ -79,6 +81,10 @@ class FlightType(Enum):
             if name == entry.value:
                 return entry
         raise KeyError(f"No FlightType with name {name}")
+
+    @property
+    def is_afac(self) -> bool:
+        return self in {FlightType.AFAC_AREA, FlightType.AFAC_FRONTLINE}
 
     @property
     def is_air_to_air(self) -> bool:

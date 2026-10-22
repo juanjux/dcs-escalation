@@ -72,6 +72,8 @@ class LuaPluginOption(PluginSettings):
         description: str = "",
         choices: Optional[List[tuple[str, Any]]] = None,
         display_unit: str = "",
+        section: str = "",
+        enabled_by: str = "",
     ) -> None:
         super().__init__(identifier, value)
         self.name = name
@@ -81,6 +83,8 @@ class LuaPluginOption(PluginSettings):
         if display_unit not in ("", "ft"):
             raise ValueError(f"Unsupported plugin display unit: {display_unit}")
         self.display_unit = display_unit
+        self.section = section
+        self.enabled_by = enabled_by
         if type(value) == int or type(value) == float:
             self.min, self.max = min, max
         else:
@@ -123,6 +127,12 @@ class LuaPluginDefinition:
                         for choice in option.get("choices", [])
                     ],
                     display_unit=option.get("displayUnit", ""),
+                    section=option.get("section", ""),
+                    enabled_by=(
+                        f"{name}.{option['enabledBy']}"
+                        if option.get("enabledBy")
+                        else ""
+                    ),
                 )
             )
 

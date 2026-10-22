@@ -99,6 +99,8 @@ AIR_TO_GROUND = {
     FlightType.ARMED_RECON,
 }
 SUPPORT = {
+    FlightType.AFAC_AREA,
+    FlightType.AFAC_FRONTLINE,
     FlightType.AEWC,
     FlightType.REFUELING,
     FlightType.TRANSPORT,
@@ -115,10 +117,7 @@ CHIP_FAMILIES = {
 }
 CHIP_DEPLETED = (QColor("#2E2723"), QColor("#9A8168"))
 
-#: Hues spaced around the wheel with the families kept contiguous, at the saturation
-#: and lightness the amber chip already used. Every cross-family pair is at least 11
-#: dE76 apart; the pairs closer than that are all inside one family -- the SEAD three,
-#: the two OCA -- where looking alike is the point.
+#: Separate task colours, with similar colours for related mission families.
 CHIP_TASKS: dict[FlightType, tuple[QColor, QColor]] = {
     FlightType.STRIKE: (QColor("#38211E"), QColor("#E17970")),
     FlightType.OCA_AIRCRAFT: (QColor("#38251E"), QColor("#E18E70")),
@@ -129,6 +128,8 @@ CHIP_TASKS: dict[FlightType, tuple[QColor, QColor]] = {
     FlightType.AIR_ASSAULT: (QColor("#2E381E"), QColor("#B2E170")),
     FlightType.TRANSPORT: (QColor("#25381E"), QColor("#8CE170")),
     FlightType.AEWC: (QColor("#1E3824"), QColor("#70E186")),
+    FlightType.AFAC_AREA: (QColor("#1E3830"), QColor("#80E1BD")),
+    FlightType.AFAC_FRONTLINE: (QColor("#1E352E"), QColor("#A0E1CC")),
     FlightType.FERRY: (QColor("#1E382C"), QColor("#70E1AC")),
     FlightType.REFUELING: (QColor("#1E3832"), QColor("#70E1C6")),
     FlightType.RECOVERY: (QColor("#1E3838"), QColor("#70E1DF")),

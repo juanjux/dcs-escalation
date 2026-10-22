@@ -208,6 +208,20 @@ class WaypointGenerator:
                 eta_locked_after = True
 
     def builder_for_waypoint(self, waypoint: FlightWaypoint) -> PydcsWaypointBuilder:
+        if (
+            self.flight.flight_type.is_afac
+            and waypoint is self.flight.flight_plan.layout.patrol_start
+        ):
+            from .afac import AfacSearchBuilder
+
+            return AfacSearchBuilder(
+                waypoint,
+                self.group,
+                self.flight,
+                self.mission,
+                self.time,
+                self.mission_data,
+            )
         builders = {
             FlightWaypointType.CARGO_STOP: CargoStopBuilder,
             FlightWaypointType.DROPOFF_ZONE: LandingZoneBuilder,

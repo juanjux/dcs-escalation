@@ -70,7 +70,20 @@ class PluginOptionsBox(QGroupBox):
             layout.addWidget(description, row, 0, 1, 2)
             row += 1
 
+        root_layout = layout
+        root_row = row
+        sections: dict[str, tuple[QGridLayout, int]] = {}
         for option in plugin.options:
+            if option.section:
+                if option.section not in sections:
+                    box = QGroupBox(option.section)
+                    section_layout = QGridLayout(box)
+                    root_layout.addWidget(box, root_row, 0, 1, 2)
+                    root_row += 1
+                    sections[option.section] = (section_layout, 0)
+                layout, row = sections[option.section]
+            else:
+                layout, row = root_layout, root_row
             # Rich text wraps long help; escape plugin text rather than treating
             # sensor comparisons or other markup as HTML.
             tooltip = (
@@ -144,6 +157,21 @@ class PluginOptionsBox(QGroupBox):
                 widget.setToolTip(tooltip)
 
             row += 1
+            if option.section:
+                sections[option.section] = (layout, row)
+            else:
+                root_row = row
+
+        for option in plugin.options:
+            if option.enabled_by:
+                controller = self.widgets.get(option.enabled_by)
+                if isinstance(controller, QCheckBox):
+                    for control in (
+                        self.widgets[option.identifier],
+                        self.labels[option.identifier],
+                    ):
+                        control.setEnabled(controller.isChecked())
+                        controller.toggled.connect(control.setEnabled)
 
     def update_from_settings(self, settings: Settings) -> None:
         for identifier in self.widgets:

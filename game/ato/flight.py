@@ -68,6 +68,15 @@ class Flight(
         callsign_tcn: Optional[str] = None,
         claim_inv: bool = True,
     ) -> None:
+        if flight_type.is_afac:
+            from game.ato.afac import enabled
+
+            if not enabled(squadron.settings) or not squadron.aircraft.capable_of(
+                flight_type
+            ):
+                raise ValueError(
+                    "AFAC requires an eligible aircraft and enabled Realistic CAS AFAC missions"
+                )
         self.id = uuid.uuid4()
         self.package = package
         self.coalition = squadron.coalition

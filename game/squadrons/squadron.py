@@ -991,10 +991,17 @@ class Squadron:
         A squadron may be capable of performing a task even if it will not be
         automatically assigned to it.
         """
+        if task.is_afac:
+            from game.ato.afac import enabled
+
+            if not enabled(self.settings):
+                return False
         return self.aircraft.capable_of(task)
 
     def can_auto_assign(self, task: FlightType) -> bool:
-        return task in self.auto_assignable_mission_types
+        return task in self.auto_assignable_mission_types and (
+            not task.is_afac or self.capable_of(task)
+        )
 
     def can_auto_assign_mission(
         self,

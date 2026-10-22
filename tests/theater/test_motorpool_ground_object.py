@@ -77,5 +77,6 @@ def test_hostile_motorpool_mission_types_include_bai_and_inherited_types() -> No
         FlightType.SEAD_ESCORT,
         FlightType.SEAD_SWEEP,
         FlightType.ARMED_RECON,
+        FlightType.AFAC_AREA,
         FlightType.SWEEP,
     ]

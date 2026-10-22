@@ -4,6 +4,23 @@
     "defaultValue": false,
     "specificOptions": [
         {
+            "section": "Airborne forward air control (AFAC)",
+            "nameInUI": "Enable AFAC search missions (experimental)",
+            "descriptionInUI": "Allow AFAC — Area and AFAC — Frontline missions for compatible aircraft. This stage provides non-attacking search patrols, shared discoveries and pilot experience; laser, IR and smoke marking are not integrated yet. Requires Realistic CAS and no conflicting JTAC scripts. Passenger-capable helicopters embark a JTAC with thermal observation equipment.",
+            "mnemonic": "afacEnabled",
+            "defaultValue": false
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC maximum on-station time (minutes)",
+            "descriptionInUI": "Search for this long after actually reaching the patrol, then return to base. Default 60 minutes. Bingo fuel ends the patrol earlier. Discoveries are restricted to the assigned area or frontline segment.",
+            "mnemonic": "afacStationMinutes",
+            "defaultValue": 60,
+            "minimumValue": 1,
+            "maximumValue": 240
+        },
+        {
             "nameInUI": "Search time for a new group (seconds)",
             "descriptionInUI": "Observation time needed before trying to discover one previously unknown enemy group (default: 20 seconds). An observer searches one new group at a time and must keep obtaining valid observations within sensor range, field of view and terrain line of sight. Losing contact resets the search. With detection rolls enabled, completing this delay allows the first roll, not guaranteed discovery; failed attempts retry at the configured minimum interval (default: 5 simulated seconds). With rolls disabled, discovery follows the search delay. Firing always reveals a group immediately, without a delay or roll.",
             "mnemonic": "acquisitionSeconds",

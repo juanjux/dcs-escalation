@@ -13,7 +13,10 @@ from .pydcswaypointbuilder import PydcsWaypointBuilder
 class RaceTrackEndBuilder(PydcsWaypointBuilder):
     def add_tasks(self, waypoint: MovingPoint) -> None:
         # Unlimited fuel option : enable at racetrack end. Must be first option to work.
-        if self.flight.squadron.coalition.game.settings.ai_unlimited_fuel:
+        if (
+            self.flight.squadron.coalition.game.settings.ai_unlimited_fuel
+            and not self.flight.flight_type.is_afac
+        ):
             waypoint.tasks.insert(0, SetUnlimitedFuelCommand(True))
 
         # Disable Offensive Jamming at Racetrack End

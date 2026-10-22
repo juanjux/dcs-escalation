@@ -63,6 +63,7 @@ do
         environment=environment,acquisitionSeconds=c.acquisitionSeconds,
         probabilisticDetection=c.probabilisticDetection,
         probability=probability,
+        afacEnabled=c.afacEnabled,
         acquisitionMaxGap=c.acquisitionMaxGap,interval=c.interval,revisit=c.revisit,
         targetBudget=c.targetBudget,workBudget=c.workBudget,cellSize=c.cellSize,
         observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,

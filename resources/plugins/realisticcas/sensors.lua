@@ -99,6 +99,7 @@ do
     if not o or not t or o.side==t.side or (o.side~=1 and o.side~=2) or
       (t.side~=1 and t.side~=2) then return nil,"coalition" end
     if not vec(o.point) or not vec(t.point) or not bounded(o.agl,0,100000) then return nil,"geometry" end
+    if o.afac and not RealisticCAS.AFACSearch.inside(t.point,o.afac.zone) then return nil,"outside AFAC zone" end
     if not e or not terrain[e.cover] or not bounded(e.light,0,1) or
       not bounded(e.weather,0,1) or not bounded(e.visibility,0,1000000) or
       not bounded(e.visualTransmission,0,1) or not bounded(e.irTransmission,0,1) then
@@ -118,8 +119,10 @@ do
     local light=0.04+0.96*e.light
     local mode,reach,chance
     local function choose(name,r)
+      if o.afac then r=r*(0.75+0.25*RealisticCAS.AFACSearch.skillFactor(o.afac)) end
       if r>0 and distance<=r then
         local candidate=M.discoveryChance(name,distance,r,o.agl,p,probability)
+        if o.afac then candidate=candidate*RealisticCAS.AFACSearch.skillFactor(o.afac) end
         if not reach or (probabilistic and candidate>chance) or
           (not probabilistic and r>reach) then
           mode,reach,chance=name,r,candidate
