@@ -11,7 +11,7 @@ import pytest
 from dcs import Mission
 from dcs.mapping import Point
 from dcs.planes import MQ_9_Reaper
-from dcs.task import Nothing
+from dcs.task import Nothing, RunScript, SetUnlimitedFuelCommand
 
 from game import persistency
 from game.ato import Flight, FlightType
@@ -23,6 +23,7 @@ from game.dcs.aircrafttype import AircraftType
 from game.dcs.skills import CADET_SKILL
 from game.missiongenerator.aircraft.aircraftbehavior import AircraftBehavior
 from game.missiongenerator.aircraft.waypoints.afac import AfacSearchBuilder
+from game.missiongenerator.aircraft.waypoints.racetrackend import RaceTrackEndBuilder
 from game.missiongenerator.realisticcasluadata import collect_registry
 from game.settings import Settings
 from game.squadrons.squadron import Squadron
@@ -171,6 +172,34 @@ def test_afac_behavior_is_unarmed_no_infinite_fuel_and_no_winchester_rtb() -> No
     assert options[6] is True  # Bingo.
     assert 10 not in options  # No ammo-based RTB.
     assert not any("SetUnlimitedFuel" in str(t) for t in tasks)
+
+
+@pytest.mark.parametrize(
+    "task", [FlightType.AFAC_AREA, FlightType.AFAC_FRONTLINE, FlightType.BARCAP]
+)
+@pytest.mark.parametrize("unlimited", [False, True])
+def test_racetrack_end_restores_unlimited_fuel_only_when_configured(
+    task: FlightType, unlimited: bool
+) -> None:
+    s = scenario(task)
+    s.settings.ai_unlimited_fuel = unlimited
+    point = s.group.points[0]
+    original = RunScript("-- Existing arrival task")
+    point.add_task(original)
+    builder = RaceTrackEndBuilder(
+        s.plan.layout.patrol_end,
+        s.group,
+        s.flight,
+        s.mission,
+        datetime(2026, 1, 1),
+        MagicMock(),
+    )
+    builder.add_tasks(point)
+    if unlimited:
+        assert point.tasks[0].dict() == SetUnlimitedFuelCommand(True).dict()
+        assert point.tasks[1:] == [original]
+    else:
+        assert point.tasks == [original]
 
 
 def test_native_orbit_uses_relative_duration_and_fuel_stop() -> None:
