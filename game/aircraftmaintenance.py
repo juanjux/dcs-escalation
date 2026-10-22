@@ -198,12 +198,14 @@ def recoverable_damage(
 
 
 def damage_dispositions(
-    game: Game, debriefing: Debriefing
+    game: Game, debriefing: Debriefing, *, require_workshops: bool = True
 ) -> Iterator[DamageDisposition]:
     """Classify only confirmed damaged returns, never silence or missing telemetry."""
-    if not getattr(game.settings, "aircraft_maintenance_enabled", False):
+    if require_workshops and not getattr(
+        game.settings, "aircraft_maintenance_enabled", False
+    ):
         return
-    state = debriefing.state_data
+    state = getattr(debriefing, "state_data", None)
     reports = getattr(state, "aircraft_damage", {})
     if not reports:
         return

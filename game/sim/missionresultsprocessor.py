@@ -1335,7 +1335,36 @@ class MissionResultsProcessor:
             # nobody has not failed at anything, so those are left out of it.
             self._note_morale(pilot, morale_rules.ACHIEVED_NOTHING)
 
+    def _note_damaged_return_morale(self, debriefing: Debriefing) -> None:
+        from game.aircraftmaintenance import damage_dispositions
+
+        settings = self.game.settings
+        if not (settings.live_pilots_enabled and settings.morale_enabled):
+            return
+        if morale_rules.DAMAGED_RETURN.amount(settings) == 0:
+            return
+        seen: set[int] = set()
+        for result in damage_dispositions(
+            self.game, debriefing, require_workshops=False
+        ):
+            pilot = result.flying.pilot
+            report = debriefing.state_data.aircraft_damage[result.unit]
+            # Ignored crashes can enter the workshop but are not damaged returns.
+            if (
+                not result.recoverable
+                or not report.recovered
+                or report.crashed
+                or pilot is None
+                or not pilot.alive
+                or id(pilot) in seen
+                or id(pilot) in debriefing.pilot_outcomes.lost_aircraft
+            ):
+                continue
+            seen.add(id(pilot))
+            self._note_morale(pilot, morale_rules.DAMAGED_RETURN)
+
     def commit_pilot_experience(self, debriefing: Debriefing) -> None:
+        self._note_damaged_return_morale(debriefing)
         earned, credited = self._experience_from_kills(debriefing)
         for pilot_id, xp in self._experience_from_damage(debriefing, credited).items():
             earned[pilot_id] = earned.get(pilot_id, 0) + xp
