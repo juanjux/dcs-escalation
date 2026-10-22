@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Realistic CAS]** Add isolated AFAC capability and coordination foundations with Lua 5.1 tests; campaign AFAC missions are not enabled yet.
 * **[UI]** Show local sunrise and sunset times in the WEATHER tooltip for the mission date and campaign reference position.
 * **[Campaigns]** New campaign squadrons with a defined aircraft capacity get four extra pilot slots; existing saved rosters are unchanged.
 * **[Live Pilots]** Add a configurable morale penalty for confirmed damaged returns (default -3), independent of aircraft workshops.

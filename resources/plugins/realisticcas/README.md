@@ -10,6 +10,10 @@ including saving/reloading a MIZ and compiling its scripts. This is NOT yet a
 full generated-campaign DCS acceptance or campaign-scale performance measurement.
 TIC/CTLD/MOOSE ownership adapters and replacement JTACs remain pending.
 
+The [AFAC development contract](AFAC.md) describes the isolated aircraft profiles
+and coordination core. They are not injected into campaigns yet; no new AFAC
+mission types or settings are available in this stage.
+
 ### Enabling this first integration
 
 - Select **Realistic CAS (experimental)** in Mission Plugins. Initial options:
