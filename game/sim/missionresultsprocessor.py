@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Iterator, Optional, TYPE_CHECKING
 
 from game.debriefing import Debriefing
+from game.dcs.afaccapabilities import capabilities_for
 from game.squadrons.pilot import KilledBy
 from game.squadrons.experience import (
     PilotDeath,
@@ -638,10 +639,16 @@ class MissionResultsProcessor:
         settings = self.game.settings
         pilot = loss.pilot
         squadron = loss.flight.squadron
-        record = self._describe_loss(loss, debriefing)
         # However this ends for him, he did not bring the aircraft home.
         debriefing.pilot_outcomes.lost_aircraft.add(id(pilot))
         pilot.record.aircraft_lost += 1
+        profile = capabilities_for(getattr(loss.flight.unit_type, "dcs_id", ""))
+        if profile is not None and profile.remote_operator:
+            # The airframe is lost, but its crew never boarded it. Do not record
+            # an escape, hospital stay, casualty or near-death hardening either.
+            logging.info("%s remotely operated the lost aircraft", pilot.name)
+            return
+        record = self._describe_loss(loss, debriefing)
         # What the men who were up there with him think of *him*: the half of
         # friendship that decides how hard anybody looks. Positive only -- being
         # disliked does not make somebody slower to reach a burning cockpit -- and read

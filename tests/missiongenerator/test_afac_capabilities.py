@@ -4,7 +4,7 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-from game.missiongenerator.afaccapabilities import (
+from game.dcs.afaccapabilities import (
     AFAC_AIRCRAFT,
     AFACCapabilities,
     capabilities_for,

@@ -20,7 +20,9 @@
     "F-16D Barak (Block 40)",
     "F-16I Sufa",
     "UH-1H Iroquois",
-    "UH-60L"
+    "UH-60L",
+    "MQ-9 Reaper",
+    "RQ-1A Predator"
   ],
   "awacs": [
     "E-2C Hawkeye"
