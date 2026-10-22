@@ -40,7 +40,8 @@ do
       if side~=1 and side~=2 then return nil end
       return u
     end
-    local engine=RealisticCAS.newDetection({clock=timer.getTime,cellSize=c.cellSize,
+    local marking
+    local callbacks={clock=timer.getTime,cellSize=c.cellSize,
       targetBudget=c.targetBudget,workBudget=c.workBudget,revisit=c.revisit,log=log,
       observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,
       traceDecisions=c.traceDecisions==true,
@@ -55,7 +56,7 @@ do
         if not g or g:getName()~=targets[name] or g:getCategory()~=Group.Category.GROUND then return nil end
         local pos=u:getPoint()
         return {name=name,groupName=targets[name],side=u:getCoalition(),position=pos,
-          point={x=pos.x,y=pos.y+1,z=pos.z},velocity=u:getVelocity()}
+          point={x=pos.x,y=pos.y+1,z=pos.z},velocity=u:getVelocity(),typeName=u:getTypeName()}
       end,
       readObserver=function(name)
         local u=live(name);if not u then return nil end
@@ -63,6 +64,7 @@ do
         if u:getTypeName()~=meta.typeName then return nil end
         if not meta.allowPlayer and u:getPlayerName() then return nil end
         local g=u:getGroup();if not g then return nil end
+        if meta.afac and g:getName()~=meta.afac.groupName then return nil end
         local ground=g:getCategory()==Group.Category.GROUND
         if ground~=(meta.category=="ground") then return nil end
         if not ground and not u:inAir() then return nil end
@@ -86,6 +88,7 @@ do
             end
           end
         end
+        report.afacMarking=marking and marking:busy(name) or false
         return report
       end,
       lineOfSight=function(a,b) return land.isVisible(a,b) end,
@@ -111,15 +114,30 @@ do
             end
           end
         end
+        if success and marking and observer.afac then marking:observe(target,observer,not known) end
         return success
-      end})
+      end}
+    if c.afacEnabled and c.afacMarking then
+      marking=RealisticCAS.newAFACMarking(fog,c,callbacks)
+    end
+    local engine=RealisticCAS.newDetection(callbacks)
+    engine.afacMarking=marking
+    local stopDetection=engine.stop
+    function engine:stop()
+      stopDetection(self)
+      return not marking or marking:stop()
+    end
     for name,meta in pairs(observers) do engine:addObserver(name,meta.profile) end
     for name in pairs(targets) do engine:addTarget(name) end
     timer.scheduleFunction(function(_,now)
       if not fog.active or fog.stopping or not engine:getDiagnostics().enabled then
-        engine:stop();return nil
+        if not engine:stop() then return now+interval end
+        return nil
       end
-      local ok,err=pcall(function()engine:tick()end)
+      local ok,err=pcall(function()
+        engine:tick()
+        if marking then marking:tick() end
+      end)
       if not ok then log("ERROR",err) end
       if c.debug then
         local d=engine:getDiagnostics()

@@ -262,6 +262,7 @@ do
                       -- Other unknown groups wait while this observer examines one.
                       -- Already shared contacts may still be observed/renewed normally.
                       local available=acquisition==0 or known or not v.focus or v.focus.group==group
+                      if observer.afacMarking and not known then available=false end
                       if available then
                       stats.los=stats.los+1
                       losUsed=losUsed+1
