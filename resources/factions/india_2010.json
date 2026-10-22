@@ -17,7 +17,9 @@
     "Mirage 2000-5",
     "Mirage 2000C",
     "Su-30 Flanker-C",
-    "Su-30MKI Flanker-H"
+    "Su-30MKI Flanker-H",
+    "Mi-17 Hip",
+    "RQ-1A Predator"
   ],
   "awacs": [
     "A-50"

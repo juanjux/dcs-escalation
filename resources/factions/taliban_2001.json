@@ -3,7 +3,10 @@
   "name": "Toyota Al Gaib 2001",
   "authors": "Starfire",
   "description": "<p>Total Terror Through Toyota Technicals.</p>",
-  "aircrafts": [],
+  "aircrafts": [
+    "Mi-8MTV2 Hip",
+    "UH-1H Iroquois"
+  ],
   "frontline_units": [
     "Scout LC with DSHK 12.7mm",
     "Scout LC with KORD 12.7mm",

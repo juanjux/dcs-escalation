@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Realistic CAS]** Add AFAC aircraft choices to all factions and protect remote UAV operators from casualties while retaining normal aircraft losses, rosters and experience.
 * **[Realistic CAS]** Add isolated AFAC capability and coordination foundations with Lua 5.1 tests; campaign AFAC missions are not enabled yet.
 * **[UI]** Show local sunrise and sunset times in the WEATHER tooltip for the mission date and campaign reference position.
 * **[Campaigns]** New campaign squadrons with a defined aircraft capacity get four extra pilot slots; existing saved rosters are unchanged.

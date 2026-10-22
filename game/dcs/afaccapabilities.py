@@ -1,4 +1,4 @@
-"""Gameplay capability profiles for the forthcoming Realistic CAS AFAC missions.
+"""Shared aircraft capabilities for Realistic CAS AFAC missions and remote crews.
 
 Profiles deliberately combine equipment across variants. They are not aircraft
 specifications. This module does not enable missions or change existing sensors.
