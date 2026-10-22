@@ -15,7 +15,7 @@ do
     RealisticCAS.newAFAC({markSeconds=c.markSeconds,messageSeconds=c.messageSeconds,laserCode=c.laserCode})
   end
 
-  function RealisticCAS.newAFACMarking(fog,c,callbacks)
+  function RealisticCAS.newAFACMarking(fog,c,callbacks,navigation)
     RealisticCAS.validateAFACMarking(c.afacMarking)
     local settings=c.afacMarking
     local records,order,spots,announced={},{},{},{}
@@ -202,10 +202,22 @@ do
       local report={alive=true,fuel=source:getFuel(),onStation=false,contacts={}}
       local meta=r.meta.afac
       local start=(RealisticCAS.afacStations or {})[meta.groupName]
-      report.stationComplete=S.finite(start) and timer.getTime()>=start+meta.stationSeconds
+      report.stationComplete=(RealisticCAS.afacAbort or {})[meta.groupName] or
+        (S.finite(start) and timer.getTime()>=start+meta.stationSeconds)
       local observer=callbacks.readObserver(id)
       if not observer then return report end
       report.onStation=true
+      if navigation then
+        local safe,reason=navigation:clear(meta.groupName,observer.point)
+        if not safe then
+          if r.safetyNotice~=reason then
+            r.safetyNotice=reason
+            message(id,'not marking: known '..tostring(reason)..' threat within range.')
+          end
+          return report
+        end
+        r.safetyNotice=nil
+      end
       local entry
       if state.unit then entry={name=state.unit,group=state.group}
       elseif #r.contacts>0 then
@@ -223,6 +235,9 @@ do
       report.night=weather.light<0.5
       r.night=report.night
       if not S.assess(observer,t,weather,r.profile) then return report end
+      local clouds=c.afacAvoidance and c.afacAvoidance.clouds
+      if clouds and math.min(observer.point.y,t.point.y)<=clouds.top and
+        math.max(observer.point.y,t.point.y)>=clouds.base then return report end
       -- A radar-only contact must not produce a laser through opaque cloud.
       if weather.visualTransmission<=0 or not land.isVisible(observer.point,t.point) then return report end
       report.contacts={{id=t.name,group=t.groupName,side=t.side,point=t.point,typeName=t.typeName,

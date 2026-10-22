@@ -6,7 +6,7 @@
         {
             "section": "Airborne forward air control (AFAC)",
             "nameInUI": "Enable AFAC missions (experimental)",
-            "descriptionInUI": "Allow AFAC — Area and AFAC — Frontline search and marking missions. Compatible aircraft designate observed targets with laser, IR at night and finite payload smoke. Passenger-capable helicopters embark a thermal-equipped JTAC. Discovering and successfully marking groups earn separate experience. Requires Realistic CAS and no conflicting JTAC scripts. Threat-aware flight routing is not integrated yet.",
+            "descriptionInUI": "Allow AFAC — Area and AFAC — Frontline search and marking missions. Compatible aircraft designate observed targets with laser, IR at night and finite payload smoke. Passenger-capable helicopters embark a thermal-equipped JTAC. AI flights avoid known ground air defences, climbing only with a known threat ceiling, a native aircraft altitude limit and room below the approximate cloud base. Unknown ceilings force standoff; no safe orbit inside the zone causes an abort. Discovering and marking groups earn separate experience. Requires Realistic CAS and no conflicting JTAC scripts. Threat envelopes and cloud slabs are approximations, not guaranteed protection.",
             "mnemonic": "afacEnabled",
             "defaultValue": false
         },

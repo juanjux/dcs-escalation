@@ -15,6 +15,9 @@ class AfacSearchBuilder(PydcsWaypointBuilder):
         if not isinstance(plan, AfacFlightPlan):
             raise TypeError("AFAC search requires an AFAC flight plan")
         name = json.dumps(str(self.group.name), ensure_ascii=False)
+        # Retain the native point identity until the final route is assembled.
+        setattr(self.group, "_afac_search_point", waypoint)
+        setattr(self.group, "_afac_patrol_speed", plan.patrol_speed.meters_per_second)
         waypoint.add_task(SetUnlimitedFuelCommand(False))
         waypoint.add_task(
             RunScript(
@@ -33,6 +36,9 @@ class AfacSearchBuilder(PydcsWaypointBuilder):
         orbit.stop_if_lua_predicate(f"""(function()
 local g=Group.getByName({name})
 if not g or not g:isExist() then return true end
+local start=(RealisticCAS.afacStations or {{}})[{name}]
+if (RealisticCAS.afacAbort or {{}})[{name}] or
+    (start and timer.getTime()>=start+{int(plan.patrol_duration.total_seconds())}) then return true end
 for _,u in ipairs(g:getUnits()) do
     if u:isExist() and u:getFuel()<0.2 then return true end
 end

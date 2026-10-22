@@ -302,3 +302,27 @@ def test_game_master_probe_serializes_real_orbits_and_plugin_startup(
         lua.execute(archive.read("mission").decode("utf-8"))
         for _, action in lua.globals().mission["trig"]["actions"].items():
             lua.compile(action)
+
+
+@pytest.mark.parametrize("cloudy", [False, True])
+def test_safety_probes_export_routes_known_threats_and_cloud_limits(
+    tmp_path: Path, cloudy: bool
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    mission = build_mission(safety=True, cloudy=cloudy)
+    config = getattr(mission, "_afac_probe_config")
+    observers = [o for o in config["registry"]["observers"] if "afac" in o]
+    assert len(observers) == 4
+    assert all(o["afac"]["navigation"]["exitWaypoint"] == 4 for o in observers)
+    threats = config["registry"]["airDefenseThreats"]
+    assert len(threats) == 4 and sum(t["known"] for t in threats) == 3
+    if cloudy:
+        assert config["afacAvoidance"]["clouds"]["base"] == 2000
+    path = tmp_path / "safety.miz"
+    mission.save(path)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    with ZipFile(path) as archive:
+        for name in archive.namelist():
+            if name == "mission" or name.endswith(".lua"):
+                lua.compile(archive.read(name).decode("utf-8"))

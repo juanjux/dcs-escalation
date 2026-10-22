@@ -13,37 +13,47 @@ from dcs import Mission
 from dcs.action import DoScript
 from dcs.helicopters import UH_1H
 from dcs.planes import MQ_9_Reaper, Yak_52
+from dcs.task import OptROE
 from dcs.triggers import TriggerStart
 from dcs.translation import String
-from dcs.vehicles import Unarmed
+from dcs.vehicles import AirDefence, Unarmed
 
 from game import persistency
 from game.ato import FlightType
 from game.ato.flightplans.afac import AfacFlightPlan
 from game.ato.flightplans.waypointbuilder import WaypointBuilder
+from game.ato.flightplans.uizonedisplay import UiZone
 from game.dcs.aircrafttype import AircraftType
 from game.dcs.skills import CADET_SKILL
 from game.missiongenerator.aircraft.aircraftbehavior import AircraftBehavior
 from game.missiongenerator.aircraft.waypoints.afac import AfacSearchBuilder
 from game.missiongenerator.luagenerator import LuaGenerator
 from game.missiongenerator.realisticcascampaign import prepare_campaign, inject_campaign
+from game.missiongenerator.realisticcasluadata import lua_literal
 from game.plugins.luaplugin import LuaPlugin
 from game.settings import Settings
-from game.utils import meters
+from game.utils import meters, nautical_miles
 
 
-def build_mission(*, night: bool = False) -> Mission:
+def build_mission(
+    *, night: bool = False, safety: bool = False, cloudy: bool = False
+) -> Mission:
     mission = Mission()
     mission.start_time = datetime(2026, 6, 1, 0 if night else 12)
     mission.groundControl.blue_game_masters = 1
     airport = mission.terrain.airports["Kobuleti"]
     airport.set_coalition("blue")
+    if cloudy:
+        mission.weather.clouds_preset = None
+        mission.weather.clouds_base = 2000
+        mission.weather.clouds_thickness = 1000
+        mission.weather.clouds_density = 8
     settings = Settings()
     settings.plugins.update(
         {
             "realisticcas": True,
             "realisticcas.afacEnabled": True,
-            "realisticcas.afacStationMinutes": 2,
+            "realisticcas.afacStationMinutes": 8 if safety else 2,
             "realisticcas.afacMarkMinutes": 1,
             "realisticcas.probabilisticDetection": False,
             "realisticcas.acquisitionSeconds": 3,
@@ -52,8 +62,8 @@ def build_mission(*, night: bool = False) -> Mission:
     )
     settings.live_pilots_enabled = False
     settings.ai_unlimited_fuel = False
-    settings.cas_engagement_range_distance = 4
-    settings.armed_recon_engagement_range_distance = 4
+    settings.cas_engagement_range_distance = 10 if safety else 4
+    settings.armed_recon_engagement_range_distance = 10 if safety else 4
     game: Any = NS(
         settings=settings,
         theater=NS(
@@ -61,26 +71,37 @@ def build_mission(*, night: bool = False) -> Mission:
             reference_position=NS(lat=41.9, lng=41.86),
         ),
     )
-    flights, mappings = [], {}
+    flights, mappings, theater_objects = [], {}, {}
     cases = (
         (UH_1H, "UH-1H Iroquois", FlightType.AFAC_AREA, False),
         (MQ_9_Reaper, "MQ-9 Reaper", FlightType.AFAC_FRONTLINE, False),
         (MQ_9_Reaper, "MQ-9 Reaper", FlightType.AFAC_AREA, True),
         (Yak_52, "Yak-52", FlightType.AFAC_AREA, False),
     )
+    if safety:
+        cases = (
+            (MQ_9_Reaper, "MQ-9 Reaper", FlightType.AFAC_AREA, False),
+            (UH_1H, "UH-1H Iroquois", FlightType.AFAC_AREA, False),
+            (MQ_9_Reaper, "MQ-9 Reaper", FlightType.AFAC_AREA, False),
+            (MQ_9_Reaper, "MQ-9 Reaper", FlightType.AFAC_AREA, False),
+        )
     for index, (native, variant, task, bingo) in enumerate(cases):
-        center = airport.position.point_from_heading(0, 6000 + index * 12000)
+        center = airport.position.point_from_heading(
+            0, 6000 + index * (40000 if safety else 12000)
+        )
         start, end = center.point_from_heading(270, 2000), center.point_from_heading(
             90, 2000
         )
         name = "AFAC_" + ("BINGO" if bingo else task.name + "_" + native.id)
+        if safety:
+            name += f"_SAFETY_{index}"
         aircraft = AircraftType.named(variant)
-        altitude = 1000 if aircraft.helicopter else 2500
+        altitude = 1000 if aircraft.helicopter else (3500 if safety else 2500)
         group = mission.flight_group_inflight(
             mission.country("USA"),
             name,
             native,
-            start.point_from_heading(270, 600),
+            start.point_from_heading(270, 13000 if safety else 600),
             altitude,
             speed=200,
         )
@@ -118,6 +139,8 @@ def build_mission(*, night: bool = False) -> Mission:
         group.add_waypoint(end, altitude, speed=200, name="AFAC SEARCH END")
         group.land_at(airport)
         zone = flight.flight_plan.ui_zone()
+        if safety and index == 2:
+            zone = UiZone([center], nautical_miles(2))
         flights.append(
             NS(
                 flight_type=task,
@@ -136,15 +159,34 @@ def build_mission(*, night: bool = False) -> Mission:
             group_size=2,
         )
         target_group.add_waypoint(center.point_from_heading(90, 1200), speed=12)
+        if safety:
+            kind = (
+                AirDefence.ZSU_57_2,
+                AirDefence.Soldier_stinger,
+                AirDefence.Osa_9A33_ln,
+                AirDefence.ZSU_57_2,
+            )[index]
+            defence = mission.vehicle_group(
+                mission.country("Russia"), f"AFAC_AA_{index}", kind, center
+            )
+            defence.points[0].add_task(OptROE(OptROE.Values.WeaponHold))
+            if index != 3:
+                theater_objects[defence.units[0].name] = NS(
+                    theater_unit=NS(
+                        ground_object=NS(category="aa", name=f"PROBE_AA_{index}")
+                    )
+                )
     data = NS(flights=flights, jtacs=[], tic_groups=[])
-    mapping: Any = NS(theater_objects={}, flight=mappings.get)
+    mapping: Any = NS(theater_objects=theater_objects, flight=mappings.get)
     plugin = LuaPlugin.from_json(
         "realisticcas", Path("resources/plugins/realisticcas/plugin.json")
     )
     assert plugin is not None
     plugin.set_settings(settings)
     generator = LuaGenerator(game, mission, data, mapping)
-    inject_campaign(generator, prepare_campaign(generator, [plugin]))
+    config = prepare_campaign(generator, [plugin])
+    setattr(mission, "_afac_probe_config", config)
+    inject_campaign(generator, config)
     trigger = TriggerStart(comment="AFAC probe diagnostics")
     trigger.add_action(DoScript(String("""
 trigger.action.outText('AFAC marking probe: Game Master only. Huey has 7 smoke rounds; Huey and MQ-9 lase observed moving trucks with code 1688, plus IR at night. Marks last at most 1 minute; station ends at 2 minutes. BINGO returns early, Yak only searches. No AFAC should attack. See RCAS_AFAC_PROBE and REALISTIC_CAS_AFAC in dcs.log.',30)
@@ -160,7 +202,30 @@ timer.scheduleFunction(function(_,now)
   return now<600 and now+10 or nil
 end,nil,timer.getTime()+10)
 """)))
-    mission.triggerrules.triggers.append(trigger)
+    if not safety:
+        mission.triggerrules.triggers.append(trigger)
+    if safety:
+        units = lua_literal(
+            [{"unit": f.units[0].name, "group": f.group_name} for f in flights]
+        )
+        diagnostics = """
+trigger.action.outText('AFAC avoidance probe: Game Master only. Case 0: known ZSU-57-2, climb if the native aircraft ceiling permits. Case 1: known Stinger, horizontal standoff. Case 2: SA-8 covers the small zone, abort. Case 3: hidden ZSU, no avoidance before discovery. Defences hold fire so manoeuvres can be observed. Station: 8 minutes. Compare clear sky and low clouds. See AFAC_SAFETY_PROBE and REALISTIC_CAS_AFAC_NAV in dcs.log.',45)
+local cases=__CASES__
+timer.scheduleFunction(function(_,now)
+  for index,row in ipairs(cases)do
+    local u=Unit.getByName(row.unit)
+    if u and u:isExist()then
+      local p=u:getPoint();local d=u:getDesc()
+      local nav=(RealisticCAS.afacNavigation or {})[row.group]
+      env.info('AFAC_SAFETY_PROBE|t='..now..'|case='..(index-1)..'|alt='..p.y..'|x='..p.x..'|z='..p.z..'|Hmax='..tostring(d.Hmax)..'|fuel='..u:getFuel()..'|revision='..tostring(nav and nav.revision)..'|abort='..tostring((RealisticCAS.afacAbort or {})[row.group]))
+    end
+  end
+  return now<900 and now+10 or nil
+end,nil,timer.getTime()+5)
+""".replace("__CASES__", units)
+        probe = TriggerStart(comment="AFAC avoidance diagnostics")
+        probe.add_action(DoScript(String(diagnostics)))
+        mission.triggerrules.triggers.append(probe)
     return mission
 
 
@@ -168,10 +233,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--night", action="store_true")
+    parser.add_argument("--safety", action="store_true")
+    parser.add_argument("--cloudy", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("Output already exists; choose a new mission filename")
     with TemporaryDirectory(prefix="afac-probe-") as profile:
         persistency.setup(profile, False, 0)
-        build_mission(night=args.night).save(args.output)
+        build_mission(night=args.night, safety=args.safety, cloudy=args.cloudy).save(
+            args.output
+        )
     print(args.output)

@@ -130,8 +130,14 @@ def prepare_campaign(
     assert registry is not None
     registry["warnings"].extend(warnings)
     if afac_enabled:
+        for observer in registry["observers"]:
+            if observer.get("afac") and "navigation" not in observer["afac"]:
+                raise ValueError(
+                    "Realistic CAS: AFAC native patrol and exit metadata missing"
+                )
         generator.unit_map.afac_targets = {
-            t["name"]: (t["groupName"], t["coalition"]) for t in registry["targets"]
+            t["name"]: (t["groupName"], t["coalition"])
+            for t in registry["targets"] + registry["afacKnownTargets"]
         }
     registry["warnings"].append(
         "Experimental: legacy JTAC generation suppressed; runtime-created units need adapters"
@@ -150,6 +156,9 @@ def prepare_campaign(
         "enabled": True,
         "afacEnabled": afac_enabled,
         "afacMarking": afac_marking_config(options) if afac_enabled else None,
+        "afacAvoidance": (
+            {"clouds": environment.get("clouds")} if afac_enabled else None
+        ),
         "registry": registry,
         "environment": environment,
         "acquisitionSeconds": acquisition,
