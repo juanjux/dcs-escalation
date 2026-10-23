@@ -29,7 +29,7 @@ class AfacMarkingTests(unittest.TestCase):
         end
         Spot={createLaser=function(...)if failLaser then error('laser failed')end;return spot(...)end,
           createInfraRed=function(...)if failIR then error('IR failed')end;return spot(...)end}
-        trigger.smokeColor={White=2}
+        trigger.smokeColor={Green=0,Red=1,White=2,Orange=3,Blue=4}
         trigger.action.smoke=function(p,color)smokes[#smokes+1]={point=p,color=color}end
         function advance(seconds)
           local untilTime=now+seconds
@@ -40,18 +40,34 @@ class AfacMarkingTests(unittest.TestCase):
           marker=detector.afacMarking
           assert(marker)
         end
+        function colourMarker(entries)
+          config.observers={}
+          for _,entry in ipairs(entries)do
+            unit(entry.id,blue,'FA-18C_hornet',0,1000)
+            config.observers[#config.observers+1]={name=entry.id,coalition=entry.side or 2,
+              typeName='FA-18C_hornet',category='air',
+              equipment={laser=false,irPointer=false},afac={smokeRounds=entry.rounds or 2}}
+          end
+          marker=RealisticCAS.newAFACMarking(fog,config,{})
+        end
+        function smokeFor(id,side)
+          marker.coordinator:step(id,{alive=true,fuel=0.5,onStation=true,
+            contacts={{id='target-'..id,group='group-'..id,side=3-(side or 2),alive=true,
+              observed=true,revealed=true,safe=true,inZone=true,point={x=5000,y=0,z=0}}}})
+        end
         """)
 
     def test_discovery_creates_laser_smoke_and_separate_credit(self):
         self.rt.execute("""
         begin();advance(25)
         assert(#made==1 and made[1].source==observer and made[1].code==1688)
-        assert(#smokes==1 and smokes[1].point.y==0)
+        assert(#smokes==1 and smokes[1].point.y==0 and smokes[1].color==trigger.smokeColor.Green)
         assert(#afac_discoveries==1 and #afac_marks==1)
         assert(afac_marks[1].laser and afac_marks[1].smoke and not afac_marks[1].infrared)
         assert(marker.coordinator:get('observer').state=='mark')
         assert(messages[#messages].side==2 and messages[#messages].text:find('Chevy1'))
         assert(messages[#messages].text:find('T%-72B') and messages[#messages].text:find('1688'))
+        assert(messages[#messages].text:find('green smoke',1,true))
         """)
 
     def test_night_includes_ir_and_actual_moving_target_updates(self):
@@ -63,6 +79,46 @@ class AfacMarkingTests(unittest.TestCase):
         assert(made[1].updates>0)
         """)
 
+    def test_first_four_smokers_get_distinct_nonwhite_colours_before_reuse(self):
+        self.rt.execute("""
+        colourMarker({{id='e'},{id='d'},{id='c'},{id='b'},{id='a'},
+          {id='a-drone',rounds=0}})
+        for _,id in ipairs({'a','b','c','d','e'})do smokeFor(id)end
+        assert(#smokes==5)
+        local expected={0,1,3,4,0}
+        for index,value in ipairs(expected)do
+          assert(smokes[index].color==value and value~=trigger.smokeColor.White)
+        end
+        assert(marker.coordinator:get('a-drone').smokeRounds==0)
+        assert(marker.coordinator:get('a').smokeRounds==1)
+        """)
+
+    def test_colour_assignment_is_stable_when_observer_metadata_is_reordered(self):
+        self.rt.execute("""
+        colourMarker({{id='zulu'},{id='alpha'}})
+        smokeFor('alpha');smokeFor('zulu')
+        local first,second=smokes[1].color,smokes[2].color
+        assert(first==trigger.smokeColor.Green and second==trigger.smokeColor.Red)
+        assert(marker:stop());smokes={}
+        colourMarker({{id='alpha'},{id='zulu'}})
+        smokeFor('alpha');smokeFor('zulu')
+        assert(smokes[1].color==first and smokes[2].color==second)
+        """)
+
+    def test_each_coalition_has_its_own_colour_cycle_and_reports_the_colour(self):
+        self.rt.execute("""
+        colourMarker({{id='red-z',side=1},{id='blue-z'},
+          {id='red-a',side=1},{id='blue-a'}})
+        smokeFor('red-a',1);smokeFor('blue-a')
+        smokeFor('red-z',1);smokeFor('blue-z')
+        assert(smokes[1].color==0 and smokes[2].color==0)
+        assert(smokes[3].color==1 and smokes[4].color==1)
+        assert(messages[1].side==1 and messages[1].text:find('green smoke',1,true))
+        assert(messages[2].side==2 and messages[2].text:find('green smoke',1,true))
+        assert(messages[3].side==1 and messages[3].text:find('red smoke',1,true))
+        assert(messages[4].side==2 and messages[4].text:find('red smoke',1,true))
+        """)
+
     def test_lost_los_and_reacquisition_do_not_farm_experience(self):
         self.rt.execute("""
         begin();advance(25)
@@ -70,6 +126,7 @@ class AfacMarkingTests(unittest.TestCase):
         assert(made[1].dead and marker.coordinator:get('observer').state=='search')
         land.isVisible=function()return true end;advance(10)
         assert(#made>=2 and #afac_marks==1 and #smokes==2)
+        assert(smokes[1].color==trigger.smokeColor.Green and smokes[2].color==smokes[1].color)
         land.isVisible=function()return false end;advance(2)
         land.isVisible=function()return true end;advance(10)
         assert(#smokes==2 and marker.coordinator:get('observer').smokeRounds==0)
