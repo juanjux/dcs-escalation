@@ -11,7 +11,7 @@ import pytest
 from dcs import Mission
 from dcs.mapping import Point
 from dcs.planes import MQ_9_Reaper
-from dcs.task import Nothing, RunScript, SetUnlimitedFuelCommand
+from dcs.task import Nothing, OptROE, RunScript, SetUnlimitedFuelCommand
 
 from game import persistency
 from game.ato import Flight, FlightType
@@ -350,6 +350,70 @@ def test_native_route_tables_keep_numeric_task_indices_and_reject_sparse_keys() 
     }
     with pytest.raises(ValueError, match="non-contiguous"):
         _native_route_value({"tasks": {2: {"number": 2}}})
+
+
+@pytest.mark.parametrize("cloudy", [False, True])
+def test_live_fire_probe_enables_every_defence_without_changing_afac_behaviour(
+    tmp_path: Path, cloudy: bool
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    mission = build_mission(safety=True, cloudy=cloudy, live_fire=True)
+    config = getattr(mission, "_afac_probe_config")
+    threats = config["registry"]["airDefenseThreats"]
+    assert len(threats) == 4 and sum(t["known"] for t in threats) == 3
+    baseline = build_mission(safety=True, cloudy=cloudy)
+    assert (
+        config["registry"]["observers"]
+        == getattr(baseline, "_afac_probe_config")["registry"]["observers"]
+    )
+    friendly = mission.country("USA")
+    for aircraft in [*friendly.plane_group, *friendly.helicopter_group]:
+        for defence in mission.country("Russia").vehicle_group:
+            if defence.name.startswith("AFAC_AA_"):
+                threat = next(t for t in threats if t["groupName"] == defence.name)
+                assert (
+                    aircraft.points[0].position.distance_to_point(
+                        defence.points[0].position
+                    )
+                    > threat["radius"] + 1000
+                )
+    for group in mission.country("Russia").vehicle_group:
+        if group.name.startswith("AFAC_AA_"):
+            actions = [t.dict()["params"]["action"] for t in group.points[0].tasks]
+            options = {
+                a["params"]["name"]: a["params"]["value"]
+                for a in actions
+                if a["id"] == "Option"
+            }
+            assert options[0] == OptROE.Values.WeaponFree and options[9] == 2
+    path = tmp_path / "live-fire.miz"
+    mission.save(path)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    with ZipFile(path) as archive:
+        lua.execute(archive.read("mission").decode("utf-8"))
+        lua.execute(archive.read("l10n/DEFAULT/dictionary").decode("utf-8"))
+    lua.execute("""
+getValueDictByKey=function(k)return dictionary[k] or k end
+getValueResourceByKey=function(k)return k end
+a_do_script_file=function()end
+sources={};a_do_script=function(s)assert(loadstring(s));sources[#sources+1]=s end
+""")
+    for _, action in lua.globals().mission["trig"]["actions"].items():
+        lua.execute(action)
+    sources = list(lua.globals().sources.values())
+    assert any("LIVE FIRE: defences are weapons free" in source for source in sources)
+    assert len([s for s in sources if "AFAC_LIVE_FIRE" in s]) == 1
+
+
+@pytest.mark.parametrize("safety,quick", [(False, False), (True, True)])
+def test_live_fire_rejects_cases_without_safe_initial_separation(
+    safety: bool, quick: bool
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    with pytest.raises(ValueError, match="Live fire requires full safety cases"):
+        build_mission(safety=safety, quick=quick, live_fire=True)
 
 
 def test_quick_probe_exports_complete_routes_accepted_by_native_adapter(

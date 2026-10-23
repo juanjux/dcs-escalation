@@ -13,7 +13,7 @@ from dcs import Mission
 from dcs.action import DoScript
 from dcs.helicopters import UH_1H
 from dcs.planes import MQ_9_Reaper, Yak_52
-from dcs.task import OptROE
+from dcs.task import OptAlarmState, OptROE
 from dcs.triggers import TriggerStart
 from dcs.translation import String
 from dcs.vehicles import AirDefence, Unarmed
@@ -41,9 +41,14 @@ def build_mission(
     safety: bool = False,
     cloudy: bool = False,
     quick: bool = False,
+    live_fire: bool = False,
 ) -> Mission:
     if quick and not safety:
         raise ValueError("The quick probe requires safety cases")
+    if live_fire and (not safety or quick):
+        raise ValueError(
+            "Live fire requires full safety cases with safe initial separation"
+        )
     mission = Mission()
     mission.start_time = datetime(2026, 6, 1, 0 if night else 12)
     mission.groundControl.blue_game_masters = 1
@@ -175,7 +180,13 @@ def build_mission(
             defence = mission.vehicle_group(
                 mission.country("Russia"), f"AFAC_AA_{index}", kind, center
             )
-            defence.points[0].add_task(OptROE(OptROE.Values.WeaponHold))
+            defence.points[0].add_task(
+                OptROE(
+                    OptROE.Values.WeaponFree if live_fire else OptROE.Values.WeaponHold
+                )
+            )
+            if live_fire:
+                defence.points[0].add_task(OptAlarmState(2))
             if index != 3:
                 theater_objects[defence.units[0].name] = NS(
                     theater_unit=NS(
@@ -281,9 +292,45 @@ end,nil,timer.getTime()+5)
             .replace("__RECOVERY__", recovery)
             .replace("__MINUTES__", "3" if quick else "8")
         )
+        if live_fire:
+            diagnostics = diagnostics.replace(
+                "Defences hold fire so manoeuvres can be observed.",
+                "LIVE FIRE: defences are weapons free and on red alert. The hidden "
+                "ZSU can shoot before discovery. Ground-truth diagnostic positions "
+                "are never fed to navigation. Wait for AFAC PROBE FINISHED.",
+            )
         probe = TriggerStart(comment="AFAC avoidance diagnostics")
         probe.add_action(DoScript(String(diagnostics)))
         mission.triggerrules.triggers.append(probe)
+        if live_fire:
+            observers = [o for o in config["registry"]["observers"] if "afac" in o]
+            live_config = {
+                "aircraft": [
+                    {
+                        "name": o["name"],
+                        "group": o["afac"]["groupName"],
+                        "side": o["coalition"],
+                        "case": next(
+                            i
+                            for i, f in enumerate(flights)
+                            if f.units[0].name == o["name"]
+                        ),
+                    }
+                    for o in observers
+                ],
+                "threats": config["registry"]["airDefenseThreats"],
+            }
+            live_script = (
+                "local LIVE_CONFIG="
+                + lua_literal(live_config)
+                + "\n"
+                + Path(__file__)
+                .with_name("afac_live_fire_probe.lua")
+                .read_text("utf-8")
+            )
+            telemetry = TriggerStart(comment="Read-only AFAC live-fire diagnostics")
+            telemetry.add_action(DoScript(String(live_script)))
+            mission.triggerrules.triggers.append(telemetry)
     return mission
 
 
@@ -294,12 +341,17 @@ if __name__ == "__main__":
     parser.add_argument("--safety", action="store_true")
     parser.add_argument("--cloudy", action="store_true")
     parser.add_argument("--quick", action="store_true")
+    parser.add_argument("--live-fire", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("Output already exists; choose a new mission filename")
     with TemporaryDirectory(prefix="afac-probe-") as profile:
         persistency.setup(profile, False, 0)
         build_mission(
-            night=args.night, safety=args.safety, cloudy=args.cloudy, quick=args.quick
+            night=args.night,
+            safety=args.safety,
+            cloudy=args.cloudy,
+            quick=args.quick,
+            live_fire=args.live_fire,
         ).save(args.output)
     print(args.output)
