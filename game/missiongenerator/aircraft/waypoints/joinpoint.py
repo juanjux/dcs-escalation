@@ -73,15 +73,6 @@ class JoinPointBuilder(PydcsWaypointBuilder):
             FlightType.SEAD_ESCORT,
             FlightType.DEAD,
         ]:
-            settings = self.flight.coalition.game.settings
-            # Read behind the plugin check, not before it: the EW jamming plugin is
-            # gone, so the option does not exist and asking for it raised.
-            if settings.plugins.get("ewrj") and settings.plugin_option_or(
-                "ewrj.ai_jammer_enabled", False
-            ):
-                self.offensive_jamming(waypoint, "start")
-                self.defensive_jamming(waypoint, "start")
-
             if self.flight.flight_type == FlightType.SEAD_ESCORT:
                 self.handle_sead_escort(doctrine, waypoint)
                 # Let the AI use ECM to preemptively defend themselves.
