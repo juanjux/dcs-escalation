@@ -413,3 +413,64 @@ def test_recovery_control_is_native_only_and_serializes_landing_routes(
         lua.execute(native)
         for _, action in lua.globals().mission["trig"]["actions"].items():
             lua.compile(action)
+
+
+def test_recovery_matrix_isolates_switching_and_active_orbit_replacement(
+    tmp_path: Path,
+) -> None:
+    from tools.realistic_cas_tests.build_afac_recovery_probe import build_mission
+
+    mission = build_mission(replacement_matrix=True)
+    groups = mission.country("USA").plane_group
+    assert [group.name for group in groups] == [
+        "NATIVE_DIRECT",
+        "NATIVE_SWITCH",
+        "REPLACED_DIRECT",
+        "REPLACED_SWITCH",
+    ]
+    assert [len(group.points) for group in groups] == [2, 4, 2, 4]
+    for group in groups:
+        assert group.points[0].speed == pytest.approx(200 / 3.6)
+        assert group.points[-1].type == "Land"
+        assert group.points[-1].speed == 0
+        ids = [task.id for task in group.points[0].tasks]
+        assert ("Orbit" in ids) == group.name.startswith("REPLACED")
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    path = tmp_path / "recovery-matrix.miz"
+    mission.save(path)
+    with ZipFile(path) as archive:
+        lua.execute(archive.read("mission").decode("utf-8"))
+        lua.execute(archive.read("l10n/DEFAULT/dictionary").decode("utf-8"))
+        for _, action in lua.globals().mission["trig"]["actions"].items():
+            lua.compile(action)
+    # Execute the generated script with a bounded native API double. This checks
+    # that only the two active-orbit controls receive a replacement mission.
+    lua.execute("""
+scheduled={}; assigned={}
+trigger={action={outText=function()end}}
+env={info=function()end};world={event={},addEventHandler=function()end}
+timer={getTime=function()return 0 end,scheduleFunction=function(fn,_,at)
+  scheduled[at]=fn
+end}
+Group={getByName=function(name)return {
+  getUnits=function()return {{getName=function()return name..'-1' end,
+    getPoint=function()return {x=1,y=3506,z=2}end}}end,
+  getController=function()return {setTask=function(_,task)assigned[name]=task end}end
+}end}
+a_do_script=function(source)assert(loadstring(source))()end
+getValueDictByKey=function(key)return dictionary[key] or key end
+""")
+    for _, action in lua.globals().mission["trig"]["actions"].items():
+        lua.execute(action)
+    lua.execute("""
+scheduled[30]()
+assert(assigned.NATIVE_DIRECT==nil and assigned.NATIVE_SWITCH==nil)
+local direct=assigned.REPLACED_DIRECT.params.route.points
+local switched=assigned.REPLACED_SWITCH.params.route.points
+assert(#direct==2 and #switched==4)
+assert(direct[1].alt==3506 and direct[1].speed==200/3.6)
+assert(#direct[1].task.params.tasks==0)
+assert(switched[1].task.params.tasks[1].params.action.params.goToWaypointIndex==4)
+assert(direct[2].type=='Land' and direct[2].speed==0)
+assert(switched[4].type=='Land' and switched[4].airdromeId==direct[2].airdromeId)
+""")
