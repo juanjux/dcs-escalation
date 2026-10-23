@@ -415,6 +415,57 @@ def test_recovery_control_is_native_only_and_serializes_landing_routes(
             lua.compile(action)
 
 
+@pytest.mark.parametrize("lost", [False, True])
+def test_safety_probe_reports_recovery_only_after_all_four_outcomes(
+    tmp_path: Path, lost: bool
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    mission = build_mission(safety=True, cloudy=True)
+    observers = getattr(mission, "_afac_probe_config")["registry"]["observers"]
+    names = [o["name"] for o in observers if "afac" in o]
+    assert len(names) == 4
+    path = tmp_path / "recovery-summary.miz"
+    mission.save(path)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    with ZipFile(path) as archive:
+        lua.execute(archive.read("mission").decode("utf-8"))
+    lua.execute("""
+messages={};logs={}
+trigger={action={outText=function(text)messages[#messages+1]=text end}}
+env={info=function(text)logs[#logs+1]=text end}
+timer={getTime=function()return 0 end,scheduleFunction=function()end}
+world={event={S_EVENT_LAND=1,S_EVENT_CRASH=2,S_EVENT_DEAD=3,S_EVENT_UNIT_LOST=4},
+  addEventHandler=function(value)handler=value end}
+getValueDictByKey=function(key)return key end
+a_do_script=function(source)assert(loadstring(source))()end
+function event(name,id)
+  handler:onEvent({id=id,initiator={getName=function()return name end}})
+end
+function completed()
+  local count=0
+  for _,row in ipairs(logs)do if row:find('RECOVERY_COMPLETE') then count=count+1 end end
+  return count
+end
+""")
+    actions = list(lua.globals().mission["trig"]["actions"].values())
+    diagnostics = [action for action in actions if "AFAC_SAFETY_PROBE" in action]
+    assert len(diagnostics) == 1
+    lua.execute(diagnostics[0])
+    lua.execute("names=" + lua_literal(names))
+    lua.execute("lost=" + lua_literal(lost))
+    lua.execute("""
+handler:onEvent({id=1,initiator={}})
+event('unrelated unit',1);assert(completed()==0)
+event(names[1],1);event(names[1],1);assert(completed()==0)
+event(names[2],lost and 2 or 1);event(names[2],lost and 4 or 1)
+event(names[3],1);assert(completed()==0)
+event(names[4],1);assert(completed()==1)
+assert(messages[#messages]:find(lost and '3/4 landed, 1 lost' or '4/4 landed, 0 lost'))
+event(names[4],1);assert(completed()==1)
+""")
+
+
 def test_recovery_matrix_isolates_switching_and_active_orbit_replacement(
     tmp_path: Path,
 ) -> None:

@@ -222,6 +222,7 @@ local cases=__CASES__
 local recovery=__RECOVERY__
 local departureAnnounced=false
 local tracked={}
+local outcomesReported=false
 for index,row in ipairs(cases)do tracked[row.unit]=index-1 end
 local eventNames={}
 for _,key in ipairs({'S_EVENT_LAND','S_EVENT_CRASH','S_EVENT_DEAD','S_EVENT_UNIT_LOST'})do
@@ -233,7 +234,20 @@ function handler:onEvent(event)
   local ok,name=pcall(function()return event.initiator:getName()end)
   if ok and tracked[name]~=nil then
     env.info('AFAC_SAFETY_PROBE|EVENT|t='..timer.getTime()..'|case='..tracked[name]..'|event='..eventNames[event.id]..'|unit='..name)
-    trigger.action.outText('AFAC probe case '..tracked[name]..': '..eventNames[event.id],15)
+    local row=cases[tracked[name]+1]
+    if row.outcome then return end
+    row.outcome=event.id==world.event.S_EVENT_LAND and 'landed' or 'lost'
+    local landed,lost=0,0
+    for _,entry in ipairs(cases)do
+      if entry.outcome=='landed' then landed=landed+1 end
+      if entry.outcome=='lost' then lost=lost+1 end
+    end
+    trigger.action.outText('AFAC probe: '..landed..'/'..#cases..' landed, '..lost..' lost. Case '..tracked[name]..': '..eventNames[event.id],30)
+    if landed+lost==#cases and not outcomesReported then
+      outcomesReported=true
+      env.info('AFAC_SAFETY_PROBE|RECOVERY_COMPLETE|t='..timer.getTime()..'|landed='..landed..'|lost='..lost)
+      trigger.action.outText('AFAC PROBE FINISHED: '..landed..'/'..#cases..' landed, '..lost..' lost. Recovery results are recorded; the mission can now be ended.',120)
+    end
   end
 end
 world.addEventHandler(handler)
