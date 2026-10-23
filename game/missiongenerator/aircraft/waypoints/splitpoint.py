@@ -54,11 +54,3 @@ class SplitPointBuilder(PydcsWaypointBuilder):
                 if self.flight.flight_type.is_escort_type:
                     index = len(self.group.points)
                     self.group.add_trigger_action(SwitchWaypoint(None, index))
-            settings = self.flight.coalition.game.settings
-            # Read behind the plugin check, not before it: the EW jamming plugin is
-            # gone, so the option does not exist and asking for it raised.
-            if settings.plugins.get("ewrj") and settings.plugin_option_or(
-                "ewrj.ai_jammer_enabled", False
-            ):
-                self.offensive_jamming(waypoint, "stop")
-                self.defensive_jamming(waypoint, "stop")

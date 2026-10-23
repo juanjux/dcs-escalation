@@ -13,7 +13,6 @@ from game.ato import Flight, FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType
 from game.ato.starttype import StartType
 from game.ato.traveltime import GroundSpeed
-from game.data.weapons import WeaponType
 from game.missiongenerator.missiondata import MissionData
 from game.theater import MissionTarget, TheaterUnit, OffMapSpawn
 
@@ -24,8 +23,8 @@ TARGET_WAYPOINTS = (
 )
 
 # Waypoints whose generated .miz name is matched as a structural identifier downstream --
-# CTLD air-assault split (landingzone.py: name == "DROPOFFZONE"), EW jamming placement and
-# formation join/split (aircraftgenerator.py / missiongenerator.py: name in {"JOIN", "SPLIT",
+# CTLD air-assault split (landingzone.py: name == "DROPOFFZONE") and formation join/split
+# (aircraftgenerator.py / missiongenerator.py: name in {"JOIN", "SPLIT",
 # "RACETRACK START", "RACETRACK END"}). A player rename must NOT reach the .miz for these or
 # that logic silently breaks, so they keep their canonical name regardless of custom_name.
 STRUCTURAL_WAYPOINT_NAMES = frozenset(
@@ -181,36 +180,3 @@ class PydcsWaypointBuilder:
             self.group.units[0].unit_type in (F_14A_135_GR, F_14B)
         ):
             self.group.add_nav_target_point(self.waypoint.position, "IP")
-
-    def defensive_jamming(self, waypoint: MovingPoint, action: str) -> None:
-        # Explodes incoming missiles within the jamming bubble through the EW-Jamming script
-        settings = self.flight.coalition.game.settings
-        ecm_required = settings.plugin_option_or("ewrj.ecm_required", True)
-        for unit, member in zip(self.group.units, self.flight.iter_members()):
-            has_jammer = member.loadout.has_weapon_of_type(
-                WeaponType.JAMMER
-            ) or member.loadout.has_weapon_of_type(WeaponType.OFFENSIVE_JAMMER)
-            built_in_jammer = (
-                self.flight.squadron.aircraft.has_built_in_ecm
-                or self.flight.squadron.aircraft.has_built_in_jamming
-            )
-            if ecm_required and not (has_jammer or built_in_jammer):
-                continue
-            if not member.is_player:
-                script_content = f'{action}IAdefjamming("{unit.name}")'
-                jamming_script = RunScript(script_content)
-                waypoint.tasks.append(jamming_script)
-
-    def offensive_jamming(self, waypoint: MovingPoint, action: str) -> None:
-        # Silences enemy radars through the EW-Jamming script
-        settings = self.flight.coalition.game.settings
-        ecm_required = settings.plugin_option_or("ewrj.ecm_required", True)
-        for unit, member in zip(self.group.units, self.flight.iter_members()):
-            has_jammer = member.loadout.has_weapon_of_type(WeaponType.OFFENSIVE_JAMMER)
-            built_in_jammer = self.flight.squadron.aircraft.has_built_in_jamming
-            if ecm_required and not (has_jammer or built_in_jammer):
-                continue
-            if not member.is_player:
-                script_content = f'{action}EWjamm("{unit.name}")'
-                stop_jamming_script = RunScript(script_content)
-                waypoint.tasks.append(stop_jamming_script)

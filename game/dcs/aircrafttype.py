@@ -243,12 +243,9 @@ class AircraftType(UnitType[Type[FlyingType]]):
     # when no TGP is mounted on any station.
     has_built_in_target_pod: bool
 
-    # indicates if the aircraft has a built-in jammer allowing Defensive EWJamming to be used
-    # without the need for a jamming pod
+    # Legacy aircraft metadata retained for data compatibility. Mission generation
+    # no longer uses these flags; native ECM is controlled by waypoint options.
     has_built_in_ecm: bool
-
-    # Indicates if the aircraft has a built in jammer allowing Offensive EWJamming to be used
-    # without the need for a jamming pod
     has_built_in_jamming: bool
 
     task_priorities: dict[FlightType, int]

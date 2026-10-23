@@ -49,7 +49,7 @@ class LuaGenerator:
     def generate(self) -> None:
         # Same plugin-manager settings as injection; preflight before adding Lua.
         realistic_cas = prepare_campaign(self, LuaPluginManager.plugins())
-        ewrj_triggers = [
+        existing_start_triggers = [
             x for x in self.mission.triggerrules.triggers if isinstance(x, TriggerStart)
         ]
         self.generate_plugin_data()
@@ -60,7 +60,7 @@ class LuaGenerator:
         self._seed_persistent_damage()
         self._inject_tic_script()
         inject_campaign(self, realistic_cas)
-        for t in ewrj_triggers:
+        for t in existing_start_triggers:
             self.mission.triggerrules.triggers.remove(t)
             self.mission.triggerrules.triggers.append(t)
 

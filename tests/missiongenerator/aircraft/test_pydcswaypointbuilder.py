@@ -44,7 +44,7 @@ def test_dcs_name_falls_back_to_name_when_unset() -> None:
 
 
 def test_dcs_name_ignores_override_for_structural_join_waypoint() -> None:
-    # JOIN's generated name is matched downstream (formation/EW jamming); a rename must not
+    # JOIN's generated name is matched downstream (formation); a rename must not
     # reach the .miz or that logic breaks, so the canonical name wins.
     builder = _base_builder("MyJoin")
     builder.waypoint.name = "JOIN"
