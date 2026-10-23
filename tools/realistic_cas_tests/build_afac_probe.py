@@ -221,6 +221,22 @@ trigger.action.outText('AFAC avoidance probe: Game Master only. Case 0: known ZS
 local cases=__CASES__
 local recovery=__RECOVERY__
 local departureAnnounced=false
+local tracked={}
+for index,row in ipairs(cases)do tracked[row.unit]=index-1 end
+local eventNames={}
+for _,key in ipairs({'S_EVENT_LAND','S_EVENT_CRASH','S_EVENT_DEAD','S_EVENT_UNIT_LOST'})do
+  if world.event[key] then eventNames[world.event[key]]=key end
+end
+local handler={}
+function handler:onEvent(event)
+  if not event or not eventNames[event.id] then return end
+  local ok,name=pcall(function()return event.initiator:getName()end)
+  if ok and tracked[name]~=nil then
+    env.info('AFAC_SAFETY_PROBE|EVENT|t='..timer.getTime()..'|case='..tracked[name]..'|event='..eventNames[event.id]..'|unit='..name)
+    trigger.action.outText('AFAC probe case '..tracked[name]..': '..eventNames[event.id],15)
+  end
+end
+world.addEventHandler(handler)
 timer.scheduleFunction(function(_,now)
   local allDeparted=true
   for index,row in ipairs(cases)do
@@ -229,11 +245,15 @@ timer.scheduleFunction(function(_,now)
     local u=Unit.getByName(row.unit)
     if u and u:isExist()then
       local p=u:getPoint();local d=u:getDesc()
+      local terrain=land.getHeight({x=p.x,y=p.z})
       local velocity=u:getVelocity()
       local dx,dz=recovery.x-p.x,recovery.z-p.z
       local distance=math.sqrt(dx*dx+dz*dz)
       local closing=distance>0 and (velocity.x*dx+velocity.z*dz)/distance or 0
-      env.info('AFAC_SAFETY_PROBE|t='..now..'|case='..(index-1)..'|alt='..p.y..'|x='..p.x..'|z='..p.z..'|Hmax='..tostring(d.Hmax)..'|fuel='..u:getFuel()..'|revision='..tostring(nav and nav.revision)..'|abort='..tostring((RealisticCAS.afacAbort or {})[row.group])..'|active='..tostring(nav and nav.active)..'|finished='..tostring(nav and nav.finished)..'|nextPoint='..tostring(nav and nav.nextPoint)..'|requestedAltitude='..tostring(nav and nav.altitude)..'|stationStart='..tostring((RealisticCAS.afacStations or {})[row.group])..'|return='..tostring((RealisticCAS.afacReturn or {})[row.group])..'|exitWaypoint='..tostring(nav and nav.exitWaypoint)..'|inAir='..tostring(u:inAir())..'|recoveryDistance='..distance..'|closingSpeed='..closing..'|verticalSpeed='..velocity.y)
+      env.info('AFAC_SAFETY_PROBE|t='..now..'|case='..(index-1)..'|alt='..p.y..'|x='..p.x..'|z='..p.z..'|Hmax='..tostring(d.Hmax)..'|fuel='..u:getFuel()..'|revision='..tostring(nav and nav.revision)..'|abort='..tostring((RealisticCAS.afacAbort or {})[row.group])..'|active='..tostring(nav and nav.active)..'|finished='..tostring(nav and nav.finished)..'|nextPoint='..tostring(nav and nav.nextPoint)..'|requestedAltitude='..tostring(nav and nav.altitude)..'|stationStart='..tostring((RealisticCAS.afacStations or {})[row.group])..'|return='..tostring((RealisticCAS.afacReturn or {})[row.group])..'|exitWaypoint='..tostring(nav and nav.exitWaypoint)..'|inAir='..tostring(u:inAir())..'|recoveryDistance='..distance..'|closingSpeed='..closing..'|verticalSpeed='..velocity.y..'|terrain='..terrain..'|AGL='..(p.y-terrain))
+    elseif not row.unavailableLogged then
+      row.unavailableLogged=true
+      env.info('AFAC_SAFETY_PROBE|UNAVAILABLE|t='..now..'|case='..(index-1)..'|unit='..row.unit)
     end
   end
   if allDeparted and not departureAnnounced then

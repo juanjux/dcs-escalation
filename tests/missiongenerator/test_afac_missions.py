@@ -387,3 +387,29 @@ def test_quick_probe_exports_complete_routes_accepted_by_native_adapter(
         for name in archive.namelist():
             if name == "mission" or name.endswith(".lua"):
                 lua.compile(archive.read(name).decode("utf-8"))
+
+
+def test_recovery_control_is_native_only_and_serializes_landing_routes(
+    tmp_path: Path,
+) -> None:
+    from tools.realistic_cas_tests.build_afac_recovery_probe import build_mission
+
+    mission = build_mission()
+    assert mission.groundControl.blue_game_masters == 1
+    groups = mission.country("USA").plane_group
+    assert len(groups) == 2
+    direct, cruise = groups
+    assert len(direct.points) == 2 and len(cruise.points) == 3
+    assert direct.points[-1].airdrome_id == cruise.points[-1].airdrome_id
+    assert cruise.points[1].alt == 6000
+    assert all(g.task == Nothing.name for g in groups)
+    assert all(not unit.is_human() for group in groups for unit in group.units)
+    path = tmp_path / "recovery-control.miz"
+    mission.save(path)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    with ZipFile(path) as archive:
+        native = archive.read("mission").decode("utf-8")
+        assert "RealisticCAS" not in native
+        lua.execute(native)
+        for _, action in lua.globals().mission["trig"]["actions"].items():
+            lua.compile(action)
