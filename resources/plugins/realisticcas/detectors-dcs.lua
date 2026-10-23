@@ -82,7 +82,8 @@ do
         local report={name=name,side=u:getCoalition(),point={x=p.x,y=p.y+(ground and 2 or 0),z=p.z},
           forward=pose.x,agl=agl,role=meta.role,radarOn=radar,afac=meta.afac}
         if meta.afac then
-          if (RealisticCAS.afacAbort or {})[meta.afac.groupName] then return nil end
+          if (RealisticCAS.afacAbort or {})[meta.afac.groupName] or
+            (RealisticCAS.afacReturn or {})[meta.afac.groupName] then return nil end
           local start=(RealisticCAS.afacStations or {})[meta.afac.groupName]
           if not RealisticCAS.AFACSearch.active(meta.afac,p,timer.getTime(),start,u:getFuel()) then return nil end
           if not meta.nightWarned and meta.equipment.ir~=true and meta.equipment.targetingPod~=true then

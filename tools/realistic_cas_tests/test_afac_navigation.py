@@ -34,7 +34,10 @@ class AfacNavigationTests(unittest.TestCase):
         function tick()now=now+1;nav:tick()end
         function finalOrbit(task)
           local points=task.params.task.params.route.points
-          return points[#points].task.params.tasks[1]
+          for _,action in ipairs(points[#points].task.params.tasks)do
+            if action.id=='Orbit' then return action end
+          end
+          error('orbit missing')
         end
         """)
 
@@ -54,6 +57,9 @@ class AfacNavigationTests(unittest.TestCase):
         assert(first.point.x< -8000 and first.altitude==4500)
         assert(nav:clear('blue',{x=0,y=2000,z=0})==false)
         assert(nav:clear('blue',{x=0,y=4500,z=0})==true)
+        local points=pushed[1].params.task.params.route.points
+        assert(points[1].alt==2000)
+        for index=2,#points do assert(points[index].alt==4500)end
         observer.point.y=4500;tick()
         assert(#pushed==2 and popped==1)
         assert(finalOrbit(pushed[2]).params.point.x==0)
@@ -109,6 +115,10 @@ class AfacNavigationTests(unittest.TestCase):
                 assert(assert(loadstring('return '..expression))())
                 assert(RealisticCAS.afacNavigation.blue.finished)
                 tick();assert(popped==0) -- The native wrapper has already finished.
+                assert(#switches==1 and switches[1].params.goToWaypointIndex==4)
+                assert(RealisticCAS.afacReturn.blue and not RealisticCAS.afacAbort.blue)
+                assert(RealisticCAS.afacNavigation.blue.exitWaypoint==4)
+                tick();assert(#switches==1)
                 """
                 )
 
@@ -117,6 +127,96 @@ class AfacNavigationTests(unittest.TestCase):
         known();beginNavigation();tick();failPop=true
         assert(not nav:stop() and not RealisticCAS.afacNavigation.blue.active)
         failPop=false;assert(nav:stop() and popped==1)
+        """)
+
+    def test_safe_climb_does_not_restart_when_the_aircraft_moves(self):
+        self.rt.execute("""
+        known();beginNavigation();tick()
+        local first=finalOrbit(pushed[1]).params.point
+        for index=1,8 do
+          observer.point.x=-15000+index*300
+          observer.point.z=index*20
+          observer.point.y=2000+index*100
+          tick()
+          assert(#pushed==1 and popped==0)
+        end
+        observer.point.y=4500;known();tick()
+        assert(#pushed==2 and finalOrbit(pushed[2]).params.point.x==0)
+        """)
+
+    def test_new_threat_invalidates_a_retained_climb(self):
+        self.rt.execute("""
+        known();beginNavigation();tick()
+        local p=finalOrbit(pushed[1]).params.point
+        gun.point.x=p.x;gun.point.z=p.y
+        config.airDefenseThreats[1].ceiling=nil
+        for index=1,5 do tick()end
+        assert(#pushed>1 or RealisticCAS.afacAbort.blue)
+        """)
+
+    def test_native_waypoint_progress_is_revision_scoped(self):
+        self.rt.execute("""
+        known();beginNavigation();tick()
+        local points=pushed[1].params.task.params.route.points
+        local script=points[2].task.params.tasks[1].params.action.params.command
+        assert(loadstring(script))()
+        assert(RealisticCAS.afacNavigation.blue.nextPoint==2)
+        observer.point.y=4500;tick()
+        assert(RealisticCAS.afacNavigation.blue.nextPoint==1)
+        assert(loadstring(script))()
+        assert(RealisticCAS.afacNavigation.blue.nextPoint==1)
+        """)
+
+    def test_station_and_bingo_switch_exit_even_without_an_avoidance_task(self):
+        for change in ("now=601", "observer.fuel=0.1"):
+            with self.subTest(change=change):
+                self.setUp()
+                self.rt.execute(
+                    "beginNavigation();tick();assert(#pushed==0);"
+                    + change
+                    + ";tick();assert(popped==0 and #switches==1);"
+                    + "assert(switches[1].params.goToWaypointIndex==4);"
+                    + "tick();assert(#switches==1 and #pushed==0)"
+                )
+
+    def test_departure_cleanup_retries_before_switching_the_original_route(self):
+        self.rt.execute("""
+        known();beginNavigation();tick();failPop=true;now=601;tick()
+        assert(#switches==0 and RealisticCAS.afacReturn.blue)
+        assert(not RealisticCAS.afacNavigation.blue.exitWaypoint)
+        failPop=false;tick()
+        assert(popped==1 and #switches==1)
+        tick();assert(popped==1 and #switches==1)
+        """)
+
+    def test_exit_restores_unlimited_fuel_only_when_configured(self):
+        self.rt.execute("""
+        config.observers[1].afac.navigation.restoreUnlimitedFuel=true
+        beginNavigation();now=601;tick()
+        assert(#switches==2 and switches[1].id=='SetUnlimitedFuel' and switches[1].params.value)
+        assert(switches[2].id=='SwitchWaypoint')
+        tick();assert(#switches==2)
+        """)
+
+    def test_player_bingo_and_expiry_never_issue_exit_commands(self):
+        self.rt.execute("""
+        observer.player='Human';observer.fuel=0.1
+        beginNavigation();now=601;tick()
+        assert(#switches==0 and #pushed==0 and not RealisticCAS.afacReturn.blue)
+        """)
+
+    def test_returning_flight_stops_observing_and_removes_its_spots(self):
+        self.rt.execute("""
+        config.targets={};config.knownTargets={{name='gun',groupName='red'}}
+        config.airDefenseThreats[1].known=true
+        observer.point={x=-7000,y=4500,z=0}
+        config.observers[1].afac.navigation.altitude=4500
+        known();begin();advance(25)
+        assert(#made>0 and not made[1].dead)
+        RealisticCAS.afacStations.blue=now-600;advance(3)
+        assert(RealisticCAS.afacReturn.blue=='station complete' and made[1].dead)
+        assert(marker.coordinator:get('observer').state=='rtb')
+        local count=#made;advance(15);assert(#made==count and #switches==1)
         """)
 
     def test_player_flights_are_never_steered_by_the_script(self):

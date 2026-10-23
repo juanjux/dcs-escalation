@@ -42,6 +42,7 @@ do
     end
     RealisticCAS.afacNavigation=RealisticCAS.afacNavigation or {}
     RealisticCAS.afacAbort=RealisticCAS.afacAbort or {}
+    RealisticCAS.afacReturn=RealisticCAS.afacReturn or {}
     local api={active=true}
     local nextTick,cursor,groupCursor=0,1,1
     local function live(name)
@@ -114,16 +115,27 @@ do
       end
       r.applied=false;return true
     end
-    local function abort(name,r,controller,reason)
-      RealisticCAS.afacAbort[name]=true
+    local function depart(name,r,controller,reason,aborted)
+      if aborted then RealisticCAS.afacAbort[name]=true end
+      RealisticCAS.afacReturn[name]=reason
       if not release(name,r,controller) then return false end
-      if not r.aborted then
+      if not r.returning then
+        -- The exit skips racetrack-end tasks, including this campaign option.
+        if r.meta.navigation.restoreUnlimitedFuel then
+          controller:setCommand({id='SetUnlimitedFuel',params={value=true}})
+        end
         controller:setCommand({id='SwitchWaypoint',params={fromWaypointIndex=1,
           goToWaypointIndex=r.meta.navigation.exitWaypoint}})
-        r.aborted=true
+        local state=RealisticCAS.afacNavigation[name] or {active=false,revision=r.revision}
+        state.exitWaypoint=r.meta.navigation.exitWaypoint
+        RealisticCAS.afacNavigation[name]=state
+        r.returning=true
         notice(name,r,'returning to base: '..reason..'.')
       end
       return true
+    end
+    local function abort(name,r,controller,reason)
+      return depart(name,r,controller,reason,true)
     end
     local function condition(name,revision,seconds)
       return string.format([[(function()
@@ -143,22 +155,33 @@ end)()]],name,revision,name,name,name,seconds)
     local function push(name,r,controller,source,plan)
       if not release(name,r,controller) then return false end
       r.revision=r.revision+1
-      RealisticCAS.afacNavigation[name]={active=true,revision=r.revision}
+      RealisticCAS.afacNavigation[name]={active=true,revision=r.revision,nextPoint=1,
+        altitude=plan.altitude}
       local points={}
-      local function waypoint(p)
-        return {x=p.x,y=p.z,alt=source.y,alt_type='BARO',speed=r.meta.navigation.speed,
+      local function waypoint(p,altitude)
+        return {x=p.x,y=p.z,alt=altitude,alt_type='BARO',speed=r.meta.navigation.speed,
           speed_locked=true,type='Turning Point',action='Turning Point',
           task={id='ComboTask',params={tasks={}}}}
       end
-      points[1]=waypoint(source)
-      for _,p in ipairs(plan.path)do points[#points+1]=waypoint(p)end
+      points[1]=waypoint(source,source.y)
+      for index,p in ipairs(plan.path)do
+        -- Climb during the validated safe transit, not only after reaching its end.
+        local point=waypoint(p,plan.altitude)
+        point.task.params.tasks[1]={number=1,auto=false,enabled=true,id='WrappedAction',
+          params={action={id='Script',params={command=string.format(
+            'local s=(RealisticCAS.afacNavigation or {})[%q]; if s and s.revision==%d then s.nextPoint=%d end',
+            name,r.revision,index+1)}}}}
+        points[#points+1]=point
+      end
       local last=points[#points]
-      last.task.params.tasks[1]={number=1,auto=false,enabled=true,id='Orbit',params={
+      last.task.params.tasks[2]={number=2,auto=false,enabled=true,id='Orbit',params={
         pattern='Circle',point={x=plan.point.x,y=plan.point.z},
         altitude=plan.altitude,speed=r.meta.navigation.speed}}
       controller:pushTask({id='ControlledTask',params={task={id='Mission',params={route={points=points}}},
         stopCondition={condition=condition(name,r.revision,r.meta.stationSeconds)}}})
       r.applied=true;r.plan=plan
+      env.info(string.format('REALISTIC_CAS_AFAC_NAV|PLAN|%s|revision=%d|altitude=%.0f|points=%d',
+        name,r.revision,plan.altitude,#plan.path))
       notice(name,r,string.format('avoiding known air defence; orbit %.0f m MSL.',plan.altitude))
       return true
     end
@@ -166,11 +189,12 @@ end)()]],name,revision,name,name,name,seconds)
       local nativeGroup=Group.getByName(name)
       if not nativeGroup or not nativeGroup:isExist() then return end
       local controller=nativeGroup:getController()
-      local source,ceiling,manual
+      local source,ceiling,manual,bingo
       for _,id in ipairs(r.names) do
         local u=live(id)
         if u then
           if u:getPlayerName() then manual=true end
+          if u:getFuel()<=0.2 then bingo=true end
           if u:inAir() then source=source or u end
           local ok,desc=pcall(function()return u:getDesc()end)
           local h=ok and type(desc)=='table' and desc.Hmax
@@ -180,9 +204,17 @@ end)()]],name,revision,name,name,name,seconds)
       if not source or manual then release(name,r,controller);return end
       local m=r.meta
       local start=(RealisticCAS.afacStations or {})[name]
-      if r.aborted or RealisticCAS.afacAbort[name] then abort(name,r,controller,'unsafe assigned zone');return end
-      if source:getFuel()<=0.2 or (start and timer.getTime()>=start+m.stationSeconds) then
-        release(name,r,controller);return
+      if start and not r.stationLogged then
+        r.stationLogged=true
+        env.info(string.format('REALISTIC_CAS_AFAC_NAV|STATION|%s|start=%.2f|end=%.2f',
+          name,start,start+m.stationSeconds))
+      end
+      if RealisticCAS.afacReturn[name] then
+        depart(name,r,controller,RealisticCAS.afacReturn[name],RealisticCAS.afacAbort[name]);return
+      end
+      if RealisticCAS.afacAbort[name] then abort(name,r,controller,'unsafe assigned zone');return end
+      if bingo or (start and timer.getTime()>=start+m.stationSeconds) then
+        depart(name,r,controller,bingo and 'BINGO fuel' or 'station complete',false);return
       end
       local p=source:getPoint()
       local knownThreats=relevant(r.side,p,m)
@@ -199,10 +231,19 @@ end)()]],name,revision,name,name,name,seconds)
       local clouds=c.afacAvoidance.clouds
       if clouds then maxAltitude=math.min(maxAltitude,clouds.base-300) end
       local footprint=math.max(500,n.speed*n.speed/3.5)*1.5+250
-      local plan=A.plan({source=p,zone=m.zone,points=n.points,altitude=altitude,
+      local input={source=p,zone=m.zone,points=n.points,altitude=altitude,
         maxAltitude=maxAltitude,footprint=footprint,threats=knownThreats,clearance=150,
         holdPoint=r.plan and r.plan.point,
-        approach=not start,height=function(q)return land.getHeight({x=q.x,y=q.z})end})
+        approach=not start,height=function(q)return land.getHeight({x=q.x,y=q.z})end}
+      local state=RealisticCAS.afacNavigation[name]
+      if r.applied and state and state.active and not state.finished and
+        p.y<r.plan.altitude-100 and A.requirement(input) and A.safePlan(input,r.plan,state.nextPoint) then
+        if not start and not r.plan.approach and RealisticCAS.AFACSearch.inside(p,m.zone) then
+          RealisticCAS.afacStations=RealisticCAS.afacStations or {};RealisticCAS.afacStations[name]=timer.getTime()
+        end
+        return
+      end
+      local plan=A.plan(input)
       if plan.mode=='abort' then
         local why=knownThreats[1] and knownThreats[1].typeName or 'air defence'
         abort(name,r,controller,plan.reason..' ('..why..')')
@@ -214,14 +255,22 @@ end)()]],name,revision,name,name,name,seconds)
         if not start and not plan.approach and RealisticCAS.AFACSearch.inside(p,m.zone) then
           RealisticCAS.afacStations=RealisticCAS.afacStations or {};RealisticCAS.afacStations[name]=timer.getTime()
         end
-        if not r.applied or A.distance(r.plan.point,plan.point)>250 or math.abs(r.plan.altitude-plan.altitude)>100 then
+        local changed=not r.applied or A.distance(r.plan.point,plan.point)>250 or
+          math.abs(r.plan.altitude-plan.altitude)>100
+        if not changed then
+          local remaining=state and state.nextPoint or 1
+          if not A.safePlan(input,r.plan,remaining) then changed=true end
+        end
+        if changed then
           push(name,r,controller,p,plan)
         end
       end
     end
     function api:clear(name,p)
       local r=groups[name]
-      if not r or RealisticCAS.afacAbort[name] then return false,'mission aborted' end
+      if not r or RealisticCAS.afacAbort[name] or RealisticCAS.afacReturn[name] then
+        return false,'mission complete'
+      end
       local list=relevant(r.side,p,r.meta)
       if not list then return false,'too many known threats' end
       local safe,t=A.clear(p,list,1000)

@@ -109,3 +109,30 @@ def test_saved_hold_point_prevents_chasing_the_aircraft_each_tick(lua: Any) -> N
     local next=A.plan(input)
     assert(next.mode=='avoid' and next.point.x==p.point.x and next.point.z==p.point.z)
     """)
+
+
+def test_active_climb_route_is_revalidated_against_new_threats_and_caps(
+    lua: Any,
+) -> None:
+    lua.execute("""
+    local p=A.plan(input)
+    assert(A.safePlan(input,p))
+    input.source.x=input.source.x+100
+    assert(A.safePlan(input,p))
+    input.maxAltitude=4000
+    assert(not A.safePlan(input,p))
+    input.maxAltitude=9000
+    input.threats[2]={point={x=p.point.x,y=0,z=p.point.z},radius=2000}
+    assert(not A.safePlan(input,p))
+    """)
+
+
+def test_completed_corners_are_not_revisited_while_climbing(lua: Any) -> None:
+    lua.execute("""
+    input.threats={};input.source={x=5000,y=3000,z=0}
+    local p={point={x=6000,z=0},altitude=4500,
+      path={{x=-5000,z=0},{x=6000,z=0}}}
+    input.threats={{point={x=-5000,y=0,z=0},radius=1000}}
+    assert(not A.safePlan(input,p,1))
+    assert(A.safePlan(input,p,2))
+    """)

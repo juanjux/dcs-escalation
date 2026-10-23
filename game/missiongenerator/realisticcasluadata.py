@@ -443,6 +443,9 @@ def collect_registry(
                                     end = group.points[index + 1]
                                     meta["navigation"] = {
                                         "exitWaypoint": index + 3,
+                                        "restoreUnlimitedFuel": getattr(
+                                            group, "_afac_restore_unlimited_fuel", False
+                                        ),
                                         "speed": getattr(
                                             group,
                                             "_afac_patrol_speed",

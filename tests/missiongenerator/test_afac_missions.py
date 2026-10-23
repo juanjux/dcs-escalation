@@ -215,6 +215,7 @@ def test_native_orbit_uses_relative_duration_and_fuel_stop() -> None:
     )
     builder.add_tasks(point)
     orbit = point.tasks[-1].dict()
+    assert getattr(s.group, "_afac_restore_unlimited_fuel") is True
     assert orbit["id"] == "ControlledTask"
     assert orbit["params"]["task"]["id"] == "Orbit"
     assert orbit["params"]["stopCondition"]["duration"] == 3600
@@ -232,6 +233,8 @@ def test_native_orbit_uses_relative_duration_and_fuel_stop() -> None:
     condition = orbit["params"]["stopCondition"]["condition"]
     assert not lua.eval(condition)
     lua.execute("fuel=0.1")
+    assert lua.eval(condition)
+    lua.execute("fuel=0.5; RealisticCAS.afacReturn={AFAC='station complete'}")
     assert lua.eval(condition)
 
 
@@ -315,6 +318,9 @@ def test_safety_probes_export_routes_known_threats_and_cloud_limits(
     observers = [o for o in config["registry"]["observers"] if "afac" in o]
     assert len(observers) == 4
     assert all(o["afac"]["navigation"]["exitWaypoint"] == 4 for o in observers)
+    assert all(
+        o["afac"]["navigation"]["restoreUnlimitedFuel"] is False for o in observers
+    )
     threats = config["registry"]["airDefenseThreats"]
     assert len(threats) == 4 and sum(t["known"] for t in threats) == 3
     if cloudy:

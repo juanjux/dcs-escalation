@@ -18,6 +18,11 @@ class AfacSearchBuilder(PydcsWaypointBuilder):
         # Retain the native point identity until the final route is assembled.
         setattr(self.group, "_afac_search_point", waypoint)
         setattr(self.group, "_afac_patrol_speed", plan.patrol_speed.meters_per_second)
+        setattr(
+            self.group,
+            "_afac_restore_unlimited_fuel",
+            self.flight.squadron.coalition.game.settings.ai_unlimited_fuel,
+        )
         waypoint.add_task(SetUnlimitedFuelCommand(False))
         waypoint.add_task(
             RunScript(
@@ -38,6 +43,7 @@ local g=Group.getByName({name})
 if not g or not g:isExist() then return true end
 local start=(RealisticCAS.afacStations or {{}})[{name}]
 if (RealisticCAS.afacAbort or {{}})[{name}] or
+    (RealisticCAS.afacReturn or {{}})[{name}] or
     (start and timer.getTime()>=start+{int(plan.patrol_duration.total_seconds())}) then return true end
 for _,u in ipairs(g:getUnits()) do
     if u:isExist() and u:getFuel()<0.2 then return true end

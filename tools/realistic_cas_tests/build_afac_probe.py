@@ -211,16 +211,24 @@ end,nil,timer.getTime()+10)
         diagnostics = """
 trigger.action.outText('AFAC avoidance probe: Game Master only. Case 0: known ZSU-57-2, climb if the native aircraft ceiling permits. Case 1: known Stinger, horizontal standoff. Case 2: SA-8 covers the small zone, abort. Case 3: hidden ZSU, no avoidance before discovery. Defences hold fire so manoeuvres can be observed. Station: 8 minutes. Compare clear sky and low clouds. See AFAC_SAFETY_PROBE and REALISTIC_CAS_AFAC_NAV in dcs.log.',45)
 local cases=__CASES__
+local departureAnnounced=false
 timer.scheduleFunction(function(_,now)
+  local allDeparted=true
   for index,row in ipairs(cases)do
+    local nav=(RealisticCAS.afacNavigation or {})[row.group]
+    if not nav or not nav.exitWaypoint then allDeparted=false end
     local u=Unit.getByName(row.unit)
     if u and u:isExist()then
       local p=u:getPoint();local d=u:getDesc()
-      local nav=(RealisticCAS.afacNavigation or {})[row.group]
-      env.info('AFAC_SAFETY_PROBE|t='..now..'|case='..(index-1)..'|alt='..p.y..'|x='..p.x..'|z='..p.z..'|Hmax='..tostring(d.Hmax)..'|fuel='..u:getFuel()..'|revision='..tostring(nav and nav.revision)..'|abort='..tostring((RealisticCAS.afacAbort or {})[row.group]))
+      env.info('AFAC_SAFETY_PROBE|t='..now..'|case='..(index-1)..'|alt='..p.y..'|x='..p.x..'|z='..p.z..'|Hmax='..tostring(d.Hmax)..'|fuel='..u:getFuel()..'|revision='..tostring(nav and nav.revision)..'|abort='..tostring((RealisticCAS.afacAbort or {})[row.group])..'|active='..tostring(nav and nav.active)..'|finished='..tostring(nav and nav.finished)..'|nextPoint='..tostring(nav and nav.nextPoint)..'|requestedAltitude='..tostring(nav and nav.altitude)..'|stationStart='..tostring((RealisticCAS.afacStations or {})[row.group])..'|return='..tostring((RealisticCAS.afacReturn or {})[row.group])..'|exitWaypoint='..tostring(nav and nav.exitWaypoint)..'|inAir='..tostring(u:inAir()))
     end
   end
-  return now<900 and now+10 or nil
+  if allDeparted and not departureAnnounced then
+    departureAnnounced=true
+    trigger.action.outText('AFAC probe: exit orders have been issued to all four groups. Verify that they leave their search orbits and follow their recovery routes; physical return still needs confirmation.',30)
+    env.info('AFAC_SAFETY_PROBE|EXIT_ORDERS_COMPLETE|t='..now)
+  end
+  return now<3600 and now+10 or nil
 end,nil,timer.getTime()+5)
 """.replace("__CASES__", units)
         probe = TriggerStart(comment="AFAC avoidance diagnostics")

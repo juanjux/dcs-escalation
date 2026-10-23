@@ -203,6 +203,7 @@ do
       local meta=r.meta.afac
       local start=(RealisticCAS.afacStations or {})[meta.groupName]
       report.stationComplete=(RealisticCAS.afacAbort or {})[meta.groupName] or
+        (RealisticCAS.afacReturn or {})[meta.groupName]~=nil or
         (S.finite(start) and timer.getTime()>=start+meta.stationSeconds)
       local observer=callbacks.readObserver(id)
       if not observer then return report end
