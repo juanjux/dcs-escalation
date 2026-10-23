@@ -301,6 +301,59 @@ class AfacNavigationTests(unittest.TestCase):
         assert(orbit(assigned[1]).params.altitude==4500)
         """)
 
+    def test_distant_direct_landing_retains_cruise_altitude_and_original_links(self):
+        for carrier in (False, True):
+            with self.subTest(carrier=carrier):
+                self.setUp()
+                self.rt.execute(
+                    """
+                local n=config.observers[1].afac.navigation
+                n.exitWaypoint=5;n.route[5].speed=0;n.route[5].alt=0
+                n.route[5].x=110000;n.route[5].y=25000
+                """
+                    + (
+                        "n.route[5].airdromeId=nil;n.route[5].helipadId=44;n.route[5].linkUnit=99"
+                        if carrier
+                        else ""
+                    )
+                    + """
+                local original=n.route[5]
+                beginNavigation();now=601;tick()
+                local points=assigned[1].params.route.points
+                assert(#points==#n.route and jump(assigned[1])==4)
+                assert(points[4].type=='Turning Point' and points[4].alt_type=='BARO')
+                assert(points[4].alt==observer.point.y and points[4].speed==100)
+                assert(math.abs(RealisticCAS.AFACSafety.distance(
+                  {x=points[4].x,z=points[4].y},{x=original.x,z=original.y})-18000)<0.01)
+                assert(points[5].type=='Land' and points[5].alt==0 and points[5].speed==0)
+                assert(points[5].airdromeId==original.airdromeId and
+                  points[5].helipadId==original.helipadId and points[5].linkUnit==original.linkUnit)
+                assert(n.route[4].x==4000 and original.ETA_locked)
+                assert(RealisticCAS.afacNavigation.blue.exitWaypoint==5)
+                tick();assert(#assigned==1)
+                """
+                )
+
+    def test_minimal_route_uses_one_prefix_slot_for_distant_recovery(self):
+        self.rt.execute("""
+        local n=config.observers[1].afac.navigation
+        n.exitWaypoint=3;n.route[3]=n.route[5];n.route[4]=nil;n.route[5]=nil
+        n.route[3].x=110000;n.route[3].speed=0;n.route[3].alt=0
+        beginNavigation();now=601;tick()
+        local points=assigned[1].params.route.points
+        assert(#points==3 and jump(assigned[1])==2)
+        assert(points[2].alt==observer.point.y and points[3].airdromeId==12)
+        """)
+
+    def test_distant_search_resume_keeps_the_original_waypoint(self):
+        self.rt.execute("""
+        local n=config.observers[1].afac.navigation
+        n.route[2].x=110000
+        known();beginNavigation();tick();assert(#assigned==1)
+        assert(nav:stop() and #assigned==2 and jump(assigned[2])==2)
+        assert(assigned[2].params.route.points[2].x==110000)
+        """)
+
     def test_shared_known_fixed_sam_does_not_require_fog_registration(self):
         self.rt.execute("""
         config.airDefenseThreats[1].known=true

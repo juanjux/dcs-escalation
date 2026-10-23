@@ -144,19 +144,36 @@ do
       -- Keep original waypoint indices and every recovery task/link. Old ingress
       -- points become harmless current-position placeholders, not a second patrol.
       for i=1,index-1 do points[i]=waypoint(source,source.y,speed)end
+      local nextIndex=index
+      local destination=points[index]
+      if mode=='return' and destination.type=='Land' then
+        local dx,dz=destination.x-source.x,destination.y-source.z
+        local distance=math.sqrt(dx*dx+dz*dz)
+        local approach=math.max(5000,math.min(20000,speed*180))
+        if distance>approach*2 then
+          -- A distant native landing task can descend over mountains too early.
+          -- Use a vacated prefix slot to retain the departure flight level until
+          -- the approach, without moving any original recovery task or link.
+          nextIndex=index-1
+          local fraction=(distance-approach)/distance
+          points[nextIndex]=waypoint({x=source.x+dx*fraction,z=source.z+dz*fraction},source.y,speed)
+          env.info(string.format('REALISTIC_CAS_AFAC_NAV|RECOVERY_CRUISE|%s|altitude=%.0f|approach=%.0f',
+            name,source.y,approach))
+        end
+      end
       for _,p in ipairs(points)do p.ETA_locked=false end
       local tasks=points[1].task.params.tasks
       table.insert(tasks,1,{auto=false,enabled=true,id='WrappedAction',
         params={action={id='Script',params={command=string.format(
           'env.info(%q)', 'REALISTIC_CAS_AFAC_NAV|ROUTE_ACTIVE|'..name..'|mode='..mode)}}}})
-      if index>1 then
+      if nextIndex>1 then
         table.insert(tasks,2,{auto=false,enabled=true,id='WrappedAction',
-          params={action={id='SwitchWaypoint',params={fromWaypointIndex=1,goToWaypointIndex=index}}}}
+          params={action={id='SwitchWaypoint',params={fromWaypointIndex=1,goToWaypointIndex=nextIndex}}}}
         )
       end
       for i,task in ipairs(tasks)do task.number=i end
       controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
-      env.info('REALISTIC_CAS_AFAC_NAV|ROUTE|'..name..'|mode='..mode..'|waypoint='..index)
+      env.info('REALISTIC_CAS_AFAC_NAV|ROUTE|'..name..'|mode='..mode..'|waypoint='..nextIndex)
       r.applied=false;return true
     end
     local function release(name,r,controller)

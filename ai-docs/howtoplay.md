@@ -255,9 +255,11 @@ separate pilot experience, once per group and coalition. AI AFACs react only to
 known ground air defences: they try to climb above a verified threat ceiling
 within aircraft limits and below the approximate cloud base, or keep lateral
 separation. Unknown ceilings force standoff. They abort if no safe orbit and
-approach fit the assigned zone. Routes retain station/fuel limits; player flights
-are not automatically steered. Threat ranges, cloud layers and turn footprints
-are approximations, not protection from interception or hidden defences.
+approach fit the assigned zone. Long direct returns include a cruise leg at the
+departure flight level before the native landing approach. Routes retain
+station/fuel limits; player flights are not automatically steered. Threat ranges,
+cloud layers and turn footprints are approximations, not protection from
+interception or hidden defences.
 
 A mission is a **package** aimed at a **target**. A package contains one or more
 **flights**. A **flight** is a group of aircraft from one squadron with a single
