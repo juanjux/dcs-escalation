@@ -24,7 +24,11 @@ from game.dcs.skills import CADET_SKILL
 from game.missiongenerator.aircraft.aircraftbehavior import AircraftBehavior
 from game.missiongenerator.aircraft.waypoints.afac import AfacSearchBuilder
 from game.missiongenerator.aircraft.waypoints.racetrackend import RaceTrackEndBuilder
-from game.missiongenerator.realisticcasluadata import collect_registry
+from game.missiongenerator.realisticcasluadata import (
+    _native_route_value,
+    collect_registry,
+    lua_literal,
+)
 from game.settings import Settings
 from game.squadrons.squadron import Squadron
 from game.utils import feet
@@ -318,6 +322,12 @@ def test_safety_probes_export_routes_known_threats_and_cloud_limits(
     observers = [o for o in config["registry"]["observers"] if "afac" in o]
     assert len(observers) == 4
     assert all(o["afac"]["navigation"]["exitWaypoint"] == 4 for o in observers)
+    for observer in observers:
+        nav = observer["afac"]["navigation"]
+        assert nav["searchWaypoint"] == 2
+        assert nav["route"][3]["type"] == "Land"
+        assert nav["route"][3]["airdromeId"] == mission.terrain.airports["Kobuleti"].id
+        assert isinstance(nav["route"][1]["task"]["params"]["tasks"], list)
     assert all(
         o["afac"]["navigation"]["restoreUnlimitedFuel"] is False for o in observers
     )
@@ -328,6 +338,51 @@ def test_safety_probes_export_routes_known_threats_and_cloud_limits(
     path = tmp_path / "safety.miz"
     mission.save(path)
     lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    with ZipFile(path) as archive:
+        for name in archive.namelist():
+            if name == "mission" or name.endswith(".lua"):
+                lua.compile(archive.read(name).decode("utf-8"))
+
+
+def test_native_route_tables_keep_numeric_task_indices_and_reject_sparse_keys() -> None:
+    assert _native_route_value({"tasks": {1: {"number": 1}, 2: {"number": 2}}}) == {
+        "tasks": [{"number": 1}, {"number": 2}]
+    }
+    with pytest.raises(ValueError, match="non-contiguous"):
+        _native_route_value({"tasks": {2: {"number": 2}}})
+
+
+def test_quick_probe_exports_complete_routes_accepted_by_native_adapter(
+    tmp_path: Path,
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    mission = build_mission(safety=True, quick=True)
+    config = getattr(mission, "_afac_probe_config")
+    observers = [o for o in config["registry"]["observers"] if "afac" in o]
+    assert len(observers) == 4
+    assert all(o["afac"]["stationSeconds"] == 180 for o in observers)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    for name in (
+        "core.lua",
+        "afac-search.lua",
+        "sensors.lua",
+        "afac-safety.lua",
+        "afac-navigation.lua",
+    ):
+        lua.execute((Path("resources/plugins/realisticcas") / name).read_text("utf-8"))
+    lua.execute(
+        "config="
+        + lua_literal(
+            {
+                "observers": config["registry"]["observers"],
+                "airDefenseThreats": config["registry"]["airDefenseThreats"],
+            }
+        )
+    )
+    lua.execute("nav=RealisticCAS.newAFACNavigation({},config);assert(nav.active)")
+    path = tmp_path / "quick.miz"
+    mission.save(path)
     with ZipFile(path) as archive:
         for name in archive.namelist():
             if name == "mission" or name.endswith(".lua"):

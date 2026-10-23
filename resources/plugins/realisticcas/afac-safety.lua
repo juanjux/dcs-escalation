@@ -128,7 +128,7 @@ do
         local path
         local flightAlt=math.min(source.y,altitude)
         if A.leg(source,p,flightAlt,threats,true) then path={p}
-        else
+        elseif not input.directOnly then
           -- One intermediate corner can route around a circle; complex blocked
           -- corridors fail closed rather than claiming a globally optimal path.
           for _,corner in ipairs(candidates) do

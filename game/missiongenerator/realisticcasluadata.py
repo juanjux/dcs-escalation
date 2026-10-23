@@ -204,6 +204,19 @@ def _controls_visibility(value: Any) -> bool:
     return False
 
 
+def _native_route_value(value: Any) -> Any:
+    """Convert pydcs one-based task tables to Lua arrays without changing indices."""
+    if isinstance(value, dict):
+        if value and all(type(key) is int for key in value):
+            if set(value) != set(range(1, len(value) + 1)):
+                raise ValueError("Realistic CAS: non-contiguous native route table")
+            return [_native_route_value(value[i]) for i in range(1, len(value) + 1)]
+        return {key: _native_route_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_native_route_value(item) for item in value]
+    return value
+
+
 def collect_registry(
     mission: Mission,
     mission_data: MissionData,
@@ -442,7 +455,12 @@ def collect_registry(
                                     index = group.points.index(search_point)
                                     end = group.points[index + 1]
                                     meta["navigation"] = {
+                                        "searchWaypoint": index + 1,
                                         "exitWaypoint": index + 3,
+                                        "route": [
+                                            _native_route_value(p.dict())
+                                            for p in group.points
+                                        ],
                                         "restoreUnlimitedFuel": getattr(
                                             group, "_afac_restore_unlimited_fuel", False
                                         ),

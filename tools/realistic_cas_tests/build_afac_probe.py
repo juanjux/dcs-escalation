@@ -36,8 +36,14 @@ from game.utils import meters, nautical_miles
 
 
 def build_mission(
-    *, night: bool = False, safety: bool = False, cloudy: bool = False
+    *,
+    night: bool = False,
+    safety: bool = False,
+    cloudy: bool = False,
+    quick: bool = False,
 ) -> Mission:
+    if quick and not safety:
+        raise ValueError("The quick probe requires safety cases")
     mission = Mission()
     mission.start_time = datetime(2026, 6, 1, 0 if night else 12)
     mission.groundControl.blue_game_masters = 1
@@ -53,7 +59,7 @@ def build_mission(
         {
             "realisticcas": True,
             "realisticcas.afacEnabled": True,
-            "realisticcas.afacStationMinutes": 8 if safety else 2,
+            "realisticcas.afacStationMinutes": 3 if quick else (8 if safety else 2),
             "realisticcas.afacMarkMinutes": 1,
             "realisticcas.probabilisticDetection": False,
             "realisticcas.acquisitionSeconds": 3,
@@ -101,7 +107,7 @@ def build_mission(
             mission.country("USA"),
             name,
             native,
-            start.point_from_heading(270, 13000 if safety else 600),
+            start.point_from_heading(270, 13000 if safety and not quick else 600),
             altitude,
             speed=200,
         )
@@ -208,9 +214,12 @@ end,nil,timer.getTime()+10)
         units = lua_literal(
             [{"unit": f.units[0].name, "group": f.group_name} for f in flights]
         )
-        diagnostics = """
-trigger.action.outText('AFAC avoidance probe: Game Master only. Case 0: known ZSU-57-2, climb if the native aircraft ceiling permits. Case 1: known Stinger, horizontal standoff. Case 2: SA-8 covers the small zone, abort. Case 3: hidden ZSU, no avoidance before discovery. Defences hold fire so manoeuvres can be observed. Station: 8 minutes. Compare clear sky and low clouds. See AFAC_SAFETY_PROBE and REALISTIC_CAS_AFAC_NAV in dcs.log.',45)
+        recovery = lua_literal({"x": airport.position.x, "z": airport.position.y})
+        diagnostics = (
+            """
+trigger.action.outText('AFAC avoidance probe: Game Master only. Case 0: known ZSU-57-2, climb if the native aircraft ceiling permits. Case 1: known Stinger, horizontal standoff. Case 2: SA-8 covers the small zone, abort. Case 3: hidden ZSU, no avoidance before discovery. Defences hold fire so manoeuvres can be observed. Station: __MINUTES__ minutes. The quick case starts close to the search orbit; check climb onset and physical RTB after 5 minutes, not full recovery. See AFAC_SAFETY_PROBE and REALISTIC_CAS_AFAC_NAV in dcs.log.',45)
 local cases=__CASES__
+local recovery=__RECOVERY__
 local departureAnnounced=false
 timer.scheduleFunction(function(_,now)
   local allDeparted=true
@@ -220,7 +229,11 @@ timer.scheduleFunction(function(_,now)
     local u=Unit.getByName(row.unit)
     if u and u:isExist()then
       local p=u:getPoint();local d=u:getDesc()
-      env.info('AFAC_SAFETY_PROBE|t='..now..'|case='..(index-1)..'|alt='..p.y..'|x='..p.x..'|z='..p.z..'|Hmax='..tostring(d.Hmax)..'|fuel='..u:getFuel()..'|revision='..tostring(nav and nav.revision)..'|abort='..tostring((RealisticCAS.afacAbort or {})[row.group])..'|active='..tostring(nav and nav.active)..'|finished='..tostring(nav and nav.finished)..'|nextPoint='..tostring(nav and nav.nextPoint)..'|requestedAltitude='..tostring(nav and nav.altitude)..'|stationStart='..tostring((RealisticCAS.afacStations or {})[row.group])..'|return='..tostring((RealisticCAS.afacReturn or {})[row.group])..'|exitWaypoint='..tostring(nav and nav.exitWaypoint)..'|inAir='..tostring(u:inAir()))
+      local velocity=u:getVelocity()
+      local dx,dz=recovery.x-p.x,recovery.z-p.z
+      local distance=math.sqrt(dx*dx+dz*dz)
+      local closing=distance>0 and (velocity.x*dx+velocity.z*dz)/distance or 0
+      env.info('AFAC_SAFETY_PROBE|t='..now..'|case='..(index-1)..'|alt='..p.y..'|x='..p.x..'|z='..p.z..'|Hmax='..tostring(d.Hmax)..'|fuel='..u:getFuel()..'|revision='..tostring(nav and nav.revision)..'|abort='..tostring((RealisticCAS.afacAbort or {})[row.group])..'|active='..tostring(nav and nav.active)..'|finished='..tostring(nav and nav.finished)..'|nextPoint='..tostring(nav and nav.nextPoint)..'|requestedAltitude='..tostring(nav and nav.altitude)..'|stationStart='..tostring((RealisticCAS.afacStations or {})[row.group])..'|return='..tostring((RealisticCAS.afacReturn or {})[row.group])..'|exitWaypoint='..tostring(nav and nav.exitWaypoint)..'|inAir='..tostring(u:inAir())..'|recoveryDistance='..distance..'|closingSpeed='..closing..'|verticalSpeed='..velocity.y)
     end
   end
   if allDeparted and not departureAnnounced then
@@ -231,6 +244,9 @@ timer.scheduleFunction(function(_,now)
   return now<3600 and now+10 or nil
 end,nil,timer.getTime()+5)
 """.replace("__CASES__", units)
+            .replace("__RECOVERY__", recovery)
+            .replace("__MINUTES__", "3" if quick else "8")
+        )
         probe = TriggerStart(comment="AFAC avoidance diagnostics")
         probe.add_action(DoScript(String(diagnostics)))
         mission.triggerrules.triggers.append(probe)
@@ -243,12 +259,13 @@ if __name__ == "__main__":
     parser.add_argument("--night", action="store_true")
     parser.add_argument("--safety", action="store_true")
     parser.add_argument("--cloudy", action="store_true")
+    parser.add_argument("--quick", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("Output already exists; choose a new mission filename")
     with TemporaryDirectory(prefix="afac-probe-") as profile:
         persistency.setup(profile, False, 0)
-        build_mission(night=args.night, safety=args.safety, cloudy=args.cloudy).save(
-            args.output
-        )
+        build_mission(
+            night=args.night, safety=args.safety, cloudy=args.cloudy, quick=args.quick
+        ).save(args.output)
     print(args.output)

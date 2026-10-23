@@ -1,4 +1,4 @@
--- Coalition-known threat sampling and temporary native AFAC navigation tasks.
+-- Coalition-known threats and AI-only native mission route replacement.
 assert(RealisticCAS and RealisticCAS.AFACSafety, 'load afac-safety.lua first')
 
 do
@@ -30,8 +30,15 @@ do
         local n=m.navigation
         assert(S.finite(n.speed) and n.speed>0 and S.finite(n.altitude) and
           (n.altType=='BARO' or n.altType=='RADIO') and #n.points==2 and
-          S.finite(n.exitWaypoint) and n.exitWaypoint>=3 and n.exitWaypoint==math.floor(n.exitWaypoint), 'invalid AFAC native route')
+          S.finite(n.exitWaypoint) and n.exitWaypoint>=3 and n.exitWaypoint==math.floor(n.exitWaypoint) and
+          S.finite(n.searchWaypoint) and n.searchWaypoint>=1 and n.searchWaypoint==math.floor(n.searchWaypoint) and
+          n.searchWaypoint<n.exitWaypoint and type(n.route)=='table' and
+          #n.route>=n.exitWaypoint and #n.route<=1000, 'invalid AFAC native route')
         for _,p in ipairs(n.points)do assert(S.finite(p.x) and S.finite(p.z), 'invalid AFAC patrol point')end
+        for _,p in ipairs(n.route)do
+          assert(S.finite(p.x) and S.finite(p.y) and S.finite(p.alt) and
+            S.finite(p.speed) and p.speed>=0, 'invalid AFAC original waypoint')
+        end
         local r=groups[m.groupName]
         if not r then
           r={meta=m,side=o.coalition,names={},revision=0}
@@ -106,26 +113,68 @@ do
       trigger.action.outTextForCoalition(r.side,'JTAC '..name..' '..text,c.afacMarking.messageSeconds)
       env.info('REALISTIC_CAS_AFAC_NAV|'..name..'|'..text)
     end
-    local function release(name,r,controller)
+    local function copy(value)
+      if type(value)~='table' then return value end
+      local out={};for key,v in pairs(value)do out[key]=copy(v)end;return out
+    end
+    local function waypoint(p,altitude,speed)
+      return {x=p.x,y=p.z,alt=altitude,alt_type='BARO',speed=speed,
+        speed_locked=true,ETA_locked=false,type='Turning Point',action='Turning Point',
+        properties={vnav=1,scale=0,angle=0,vangle=0,steer=2},
+        task={id='ComboTask',params={tasks={}}}}
+    end
+    local function deactivate(name)
       local state=RealisticCAS.afacNavigation[name]
       if state then state.active=false end
-      if r.applied and state and not state.finished and controller then
-        local ok=pcall(function()controller:popTask()end)
-        if not ok then return false end
+    end
+    local function original(name,r,controller,index,mode)
+      local source
+      for _,id in ipairs(r.names)do
+        local u=live(id)
+        -- A human taking over the group must never receive an automatic reroute.
+        if u and u:getPlayerName() then r.applied=false;return true end
+        if u and u:inAir() then source=source or u:getPoint() end
       end
+      if not source or not controller then r.applied=false;return true end
+      local points=copy(r.meta.navigation.route)
+      -- Native takeoff/landing records legitimately have speed zero. The new
+      -- airborne prefix must instead use a flying speed, leaving landing intact.
+      local speed=points[index].speed>0 and points[index].speed or
+        math.max(r.meta.navigation.speed,points[r.meta.navigation.searchWaypoint].speed)
+      -- Keep original waypoint indices and every recovery task/link. Old ingress
+      -- points become harmless current-position placeholders, not a second patrol.
+      for i=1,index-1 do points[i]=waypoint(source,source.y,speed)end
+      for _,p in ipairs(points)do p.ETA_locked=false end
+      local tasks=points[1].task.params.tasks
+      table.insert(tasks,1,{auto=false,enabled=true,id='WrappedAction',
+        params={action={id='Script',params={command=string.format(
+          'env.info(%q)', 'REALISTIC_CAS_AFAC_NAV|ROUTE_ACTIVE|'..name..'|mode='..mode)}}}})
+      if index>1 then
+        table.insert(tasks,2,{auto=false,enabled=true,id='WrappedAction',
+          params={action={id='SwitchWaypoint',params={fromWaypointIndex=1,goToWaypointIndex=index}}}}
+        )
+      end
+      for i,task in ipairs(tasks)do task.number=i end
+      controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
+      env.info('REALISTIC_CAS_AFAC_NAV|ROUTE|'..name..'|mode='..mode..'|waypoint='..index)
       r.applied=false;return true
+    end
+    local function release(name,r,controller)
+      deactivate(name)
+      if not r.applied then return true end
+      local ok,result=pcall(original,name,r,controller,r.meta.navigation.searchWaypoint,'resume')
+      return ok and result
     end
     local function depart(name,r,controller,reason,aborted)
       if aborted then RealisticCAS.afacAbort[name]=true end
       RealisticCAS.afacReturn[name]=reason
-      if not release(name,r,controller) then return false end
+      deactivate(name)
       if not r.returning then
         -- The exit skips racetrack-end tasks, including this campaign option.
         if r.meta.navigation.restoreUnlimitedFuel then
           controller:setCommand({id='SetUnlimitedFuel',params={value=true}})
         end
-        controller:setCommand({id='SwitchWaypoint',params={fromWaypointIndex=1,
-          goToWaypointIndex=r.meta.navigation.exitWaypoint}})
+        if not original(name,r,controller,r.meta.navigation.exitWaypoint,'return') then return false end
         local state=RealisticCAS.afacNavigation[name] or {active=false,revision=r.revision}
         state.exitWaypoint=r.meta.navigation.exitWaypoint
         RealisticCAS.afacNavigation[name]=state
@@ -153,32 +202,34 @@ return done==true
 end)()]],name,revision,name,name,name,seconds)
     end
     local function push(name,r,controller,source,plan)
-      if not release(name,r,controller) then return false end
+      assert(#plan.path+1<r.meta.navigation.exitWaypoint, 'AFAC route lacks safe approach slots')
+      deactivate(name)
       r.revision=r.revision+1
       RealisticCAS.afacNavigation[name]={active=true,revision=r.revision,nextPoint=1,
         altitude=plan.altitude}
-      local points={}
-      local function waypoint(p,altitude)
-        return {x=p.x,y=p.z,alt=altitude,alt_type='BARO',speed=r.meta.navigation.speed,
-          speed_locked=true,type='Turning Point',action='Turning Point',
-          task={id='ComboTask',params={tasks={}}}}
+      local points=copy(r.meta.navigation.route)
+      for index=1,r.meta.navigation.exitWaypoint-1 do
+        points[index]=waypoint(plan.point,plan.altitude,r.meta.navigation.speed)
       end
-      points[1]=waypoint(source,source.y)
+      points[1]=waypoint(source,source.y,r.meta.navigation.speed)
       for index,p in ipairs(plan.path)do
         -- Climb during the validated safe transit, not only after reaching its end.
-        local point=waypoint(p,plan.altitude)
+        local point=waypoint(p,plan.altitude,r.meta.navigation.speed)
         point.task.params.tasks[1]={number=1,auto=false,enabled=true,id='WrappedAction',
           params={action={id='Script',params={command=string.format(
             'local s=(RealisticCAS.afacNavigation or {})[%q]; if s and s.revision==%d then s.nextPoint=%d end',
             name,r.revision,index+1)}}}}
-        points[#points+1]=point
+        points[index+1]=point
       end
-      local last=points[#points]
-      last.task.params.tasks[2]={number=2,auto=false,enabled=true,id='Orbit',params={
+      local last=points[#plan.path+1]
+      last.task.params.tasks[2]={number=2,auto=false,enabled=true,id='ControlledTask',params={
+        task={id='Orbit',params={
         pattern='Circle',point={x=plan.point.x,y=plan.point.z},
-        altitude=plan.altitude,speed=r.meta.navigation.speed}}
-      controller:pushTask({id='ControlledTask',params={task={id='Mission',params={route={points=points}}},
-        stopCondition={condition=condition(name,r.revision,r.meta.stationSeconds)}}})
+        altitude=plan.altitude,speed=r.meta.navigation.speed}},
+        stopCondition={condition=condition(name,r.revision,r.meta.stationSeconds)}}}
+      -- A Mission pushed over an active native Orbit did not take over in DCS.
+      -- Replace it explicitly; the complete original recovery suffix stays intact.
+      controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
       r.applied=true;r.plan=plan
       env.info(string.format('REALISTIC_CAS_AFAC_NAV|PLAN|%s|revision=%d|altitude=%.0f|points=%d',
         name,r.revision,plan.altitude,#plan.path))
@@ -201,7 +252,8 @@ end)()]],name,revision,name,name,name,seconds)
           if S.finite(h) and h>0 then ceiling=math.min(ceiling or h,h) else ceiling=0 end
         end
       end
-      if not source or manual then release(name,r,controller);return end
+      if manual then deactivate(name);r.applied=false;return end
+      if not source then deactivate(name);r.applied=false;return end
       local m=r.meta
       local start=(RealisticCAS.afacStations or {})[name]
       if start and not r.stationLogged then
@@ -233,6 +285,7 @@ end)()]],name,revision,name,name,name,seconds)
       local footprint=math.max(500,n.speed*n.speed/3.5)*1.5+250
       local input={source=p,zone=m.zone,points=n.points,altitude=altitude,
         maxAltitude=maxAltitude,footprint=footprint,threats=knownThreats,clearance=150,
+        directOnly=n.exitWaypoint==3,
         holdPoint=r.plan and r.plan.point,
         approach=not start,height=function(q)return land.getHeight({x=q.x,y=q.z})end}
       local state=RealisticCAS.afacNavigation[name]
