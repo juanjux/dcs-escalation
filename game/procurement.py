@@ -614,7 +614,11 @@ class ProcurementAi:
     def fulfill_aircraft_request(
         squadrons: list[Squadron], quantity: int, budget: float
     ) -> Tuple[float, bool]:
+        from game.highcommand.loans import loan_for
+
         for squadron in squadrons:
+            if loan_for(squadron) is not None:
+                continue
             price = squadron.aircraft.price * quantity
             # Final check to make sure the number of aircraft won't exceed the number of available pilots
             # after fulfilling this aircraft request.

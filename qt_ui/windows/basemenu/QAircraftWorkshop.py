@@ -115,8 +115,10 @@ class QAircraftWorkshop(QWidget):
             button = QPushButton("Sell…")
             button.setToolTip(
                 "Sell this damaged aircraft at the configured discounted price."
+                if entry["can_sell"]
+                else "Loaned aircraft cannot be sold, and the base must remain operational and friendly."
             )
-            button.setEnabled(not self.base.sunk and self.base.captured.is_blue)
+            button.setEnabled(entry["can_sell"] and self.base.captured.is_blue)
             button.clicked.connect(lambda checked=False, item=entry: self._sell(item))
             self.table.setCellWidget(row, 6, button)
         self.changed.emit(len(view["aircraft"]))
@@ -177,6 +179,15 @@ def confirm_workshop_sale(parent: QWidget, squadron: object) -> bool:
     count = len(repairs(sq))
     if not count:
         return True
+    from game.highcommand.loans import LOAN_TRADE_ERROR, loan_for
+
+    if loan_for(sq) is not None:
+        QMessageBox.warning(
+            parent,
+            "Loaned aircraft cannot be sold",
+            f"{LOAN_TRADE_ERROR} Wait for repairs before transferring this squadron.",
+        )
+        return False
     value = count * sale_value(sq.coalition.game, sq)
     return (
         QMessageBox.question(

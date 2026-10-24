@@ -6,6 +6,7 @@ from game.coalition import Coalition
 from game.dcs.aircrafttype import AircraftType
 from game.dcs.groundunittype import GroundUnitType
 from game.dcs.unittype import UnitType
+from game.highcommand.loans import LOAN_TRADE_ERROR, loan_for, require_owned_aircraft
 from game.squadrons import Squadron
 from game.theater import ControlPoint, ParkingType
 
@@ -106,6 +107,23 @@ class AircraftPurchaseAdapter(PurchaseAdapter[Squadron]):
         super().__init__(control_point.coalition)
         self.control_point = control_point
 
+    @staticmethod
+    def _require_tradeable(item: Squadron) -> None:
+        try:
+            require_owned_aircraft(item)
+        except ValueError as exc:
+            raise TransactionError(str(exc)) from exc
+
+    def buy(self, item: Squadron, quantity: int) -> None:
+        # Check before pending-sale cancellation, which bypasses can_buy().
+        self._require_tradeable(item)
+        super().buy(item, quantity)
+
+    def sell(self, item: Squadron, quantity: int) -> None:
+        # Check before pending-order cancellation, which bypasses can_sell().
+        self._require_tradeable(item)
+        super().sell(item, quantity)
+
     def pending_delivery_quantity(self, item: Squadron) -> int:
         return item.pending_deliveries
 
@@ -113,7 +131,7 @@ class AircraftPurchaseAdapter(PurchaseAdapter[Squadron]):
         return item.owned_aircraft
 
     def can_buy(self, item: Squadron) -> bool:
-        if self.control_point.sunk:
+        if loan_for(item) is not None or self.control_point.sunk:
             return False
         parking_type = ParkingType().from_squadron(item)
         unclaimed_parking = self.control_point.unclaimed_parking(parking_type)
@@ -124,6 +142,8 @@ class AircraftPurchaseAdapter(PurchaseAdapter[Squadron]):
         )
 
     def why_cannot_buy(self, item: Squadron) -> str:
+        if loan_for(item) is not None:
+            return LOAN_TRADE_ERROR
         if self.control_point.sunk:
             return f"{self.control_point} has sunk"
         price = self.price_of(item)
@@ -140,19 +160,26 @@ class AircraftPurchaseAdapter(PurchaseAdapter[Squadron]):
         return "not available"
 
     def can_sell(self, item: Squadron) -> bool:
-        return item.untasked_aircraft > 0
+        return loan_for(item) is None and item.untasked_aircraft > 0
+
+    def can_sell_or_cancel(self, item: Squadron) -> bool:
+        return loan_for(item) is None and super().can_sell_or_cancel(item)
 
     def do_purchase(self, item: Squadron) -> None:
+        self._require_tradeable(item)
         item.pending_deliveries += 1
 
     def do_cancel_purchase(self, item: Squadron) -> None:
+        self._require_tradeable(item)
         item.pending_deliveries -= 1
 
     def do_sale(self, item: Squadron) -> None:
+        self._require_tradeable(item)
         item.untasked_aircraft -= 1
         item.pending_deliveries -= 1
 
     def do_cancel_sale(self, item: Squadron) -> None:
+        self._require_tradeable(item)
         item.untasked_aircraft += 1
         item.pending_deliveries += 1
 

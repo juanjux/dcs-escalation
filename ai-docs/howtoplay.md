@@ -25,6 +25,12 @@ After that, follow the turn protocol at the end.
 
 ## High Command reward variety
 
+Aircraft in loan squadrons cannot be bought or sold, including damaged aircraft
+in the workshop. Automatic purchases do not reinforce loan squadrons. A loan
+with damaged aircraft must finish repairs before relocating; healthy loans can
+still relocate normally. These rules apply while the loan remains registered,
+including its return turn.
+
 High Command reward variety: new requests cannot repeat a reward kind already
 offered by another open request on the same side, regardless of amount or duration.
 Squadron loans may repeat only for distinct aircraft or helicopter models. Generic

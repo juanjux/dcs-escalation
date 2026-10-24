@@ -12,6 +12,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from game.theater import Player
 
 from game.purchaseadapter import (
     AircraftPurchaseAdapter,
@@ -69,12 +70,18 @@ def _squadron(owned: int = 0, cap: int = 24) -> Any:
     # setting, so the fake has to carry that chain too.
     settings = SimpleNamespace(ground_start_ai_planes=False)
     return SimpleNamespace(
+        player=Player.BLUE,
         owned_aircraft=owned,
         pending_deliveries=0,
         max_size=cap,
         has_aircraft_capacity_for=lambda n: owned + n <= cap,
         aircraft=SimpleNamespace(price=20, helicopter=True, lha_capable=False),
-        coalition=SimpleNamespace(game=SimpleNamespace(settings=settings)),
+        coalition=SimpleNamespace(
+            game=SimpleNamespace(
+                settings=settings,
+                high_command_for=lambda side: SimpleNamespace(loans=[]),
+            )
+        ),
     )
 
 

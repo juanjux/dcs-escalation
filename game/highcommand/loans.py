@@ -32,6 +32,27 @@ class Loan(SaveCompatible):
     until: int
 
 
+LOAN_TRADE_ERROR = "Aircraft in an on-loan squadron cannot be bought or sold."
+
+
+def loan_for(squadron: Squadron) -> Optional[Loan]:
+    """Use the owning side's loan register, including loans awaiting return."""
+    game = squadron.coalition.game
+    return next(
+        (
+            loan
+            for loan in game.high_command_for(squadron.player).loans
+            if loan.squadron == squadron
+        ),
+        None,
+    )
+
+
+def require_owned_aircraft(squadron: Squadron) -> None:
+    if loan_for(squadron) is not None:
+        raise ValueError(LOAN_TRADE_ERROR)
+
+
 def lend(
     game: Game,
     player: Player,
