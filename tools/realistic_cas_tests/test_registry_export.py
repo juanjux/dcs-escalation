@@ -80,6 +80,11 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual([t["name"] for t in r["targets"]], [front.units[0].name])
         # Being excluded from concealment does not disable their ordinary observation.
         self.assertIn(self.g.units[0].name, {o["name"] for o in r["observers"]})
+        self.assertEqual(len(r["afacKnownTargets"]), 2)
+        threats = {t["name"]: t for t in r["airDefenseThreats"]}
+        self.assertTrue(threats[self.g.units[0].name]["known"])
+        self.assertFalse(threats[front.units[0].name]["known"])
+        self.assertIsNone(threats[front.units[0].name]["ceiling"])
 
     def test_bai_ground_object_is_not_exempt_for_having_a_known_position(self):
         mapping = NS(

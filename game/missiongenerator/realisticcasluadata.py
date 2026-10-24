@@ -15,6 +15,7 @@ from dcs.flyingunit import FlyingUnit
 from game.dcs.afaccapabilities import capabilities_for, smoke_rounds
 from game.dcs.skills import SKILL_LADDER
 from game.ato.afac import station_minutes
+from game.missiongenerator.afacthreats import envelope
 
 if TYPE_CHECKING:
     from dcs import Mission
@@ -39,12 +40,14 @@ SCRIPT_ORDER = (
     "core.lua",
     "dcs.lua",
     "afac-search.lua",
+    "afac-safety.lua",
     "afac.lua",
     "sensors.lua",
     "environment.lua",
     "detection.lua",
     "detectors-dcs.lua",
     "afac-dcs.lua",
+    "afac-navigation.lua",
     "bootstrap.lua",
 )
 
@@ -201,6 +204,19 @@ def _controls_visibility(value: Any) -> bool:
     return False
 
 
+def _native_route_value(value: Any) -> Any:
+    """Convert pydcs one-based task tables to Lua arrays without changing indices."""
+    if isinstance(value, dict):
+        if value and all(type(key) is int for key in value):
+            if set(value) != set(range(1, len(value) + 1)):
+                raise ValueError("Realistic CAS: non-contiguous native route table")
+            return [_native_route_value(value[i]) for i in range(1, len(value) + 1)]
+        return {key: _native_route_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_native_route_value(item) for item in value]
+    return value
+
+
 def collect_registry(
     mission: Mission,
     mission_data: MissionData,
@@ -234,6 +250,8 @@ def collect_registry(
         "observers": [],
         "warnings": [],
         "knownAirDefenseGroups": [],
+        "airDefenseThreats": [],
+        "afacKnownTargets": [],
     }
     roles: dict[str, str] = {}
     afac: dict[str, dict[str, Any]] = {}
@@ -352,6 +370,34 @@ def collect_registry(
                             present_air.add(unit.name)
                         if foreign_owner:
                             continue
+                        if category == "ground":
+                            threat = envelope(unit.type)
+                            if threat is not None:
+                                threat = dict(threat)
+                                if sites:
+                                    threat["initialPoint"] = {
+                                        "x": unit.position.x,
+                                        "z": unit.position.y,
+                                    }
+                                result["airDefenseThreats"].append(
+                                    dict(
+                                        threat,
+                                        name=unit.name,
+                                        groupName=group.name,
+                                        coalition=side,
+                                        typeName=unit.type,
+                                        known=bool(sites),
+                                    )
+                                )
+                            if sites:
+                                result["afacKnownTargets"].append(
+                                    {
+                                        "name": unit.name,
+                                        "groupName": group.name,
+                                        "coalition": side,
+                                        "typeName": unit.type,
+                                    }
+                                )
                         if category == "ground" and not sites:
                             result["targets"].append(
                                 {
@@ -402,6 +448,34 @@ def collect_registry(
                             }
                             if unit.name in afac:
                                 meta = dict(afac[unit.name])
+                                search_point = getattr(
+                                    group, "_afac_search_point", None
+                                )
+                                if search_point in group.points:
+                                    index = group.points.index(search_point)
+                                    end = group.points[index + 1]
+                                    meta["navigation"] = {
+                                        "searchWaypoint": index + 1,
+                                        "exitWaypoint": index + 3,
+                                        "route": [
+                                            _native_route_value(p.dict())
+                                            for p in group.points
+                                        ],
+                                        "restoreUnlimitedFuel": getattr(
+                                            group, "_afac_restore_unlimited_fuel", False
+                                        ),
+                                        "speed": getattr(
+                                            group,
+                                            "_afac_patrol_speed",
+                                            search_point.speed,
+                                        ),
+                                        "altitude": search_point.alt,
+                                        "altType": search_point.alt_type,
+                                        "points": [
+                                            {"x": p.position.x, "z": p.position.y}
+                                            for p in (search_point, end)
+                                        ],
+                                    }
                                 meta["smokeRounds"] = smoke_rounds(
                                     v["CLSID"]
                                     for v in unit.pylons.values()

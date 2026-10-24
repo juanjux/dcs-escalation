@@ -9,7 +9,7 @@ do
     local probability=S.probabilityConfig(c.probability)
     assert(type(c.observers)=="table" and type(c.targets)=="table","explicit observer/target lists required")
     assert(type(c.environment)=="function","environment provider required")
-    local observers,targets={},{}
+    local observers,targets,knownTargets={},{},{}
     local interval=c.interval or 1
     assert(S.finite(interval) and interval>=0.1 and interval<=60,"invalid interval")
     local function log(kind,detail)
@@ -33,6 +33,10 @@ do
         v.groupName~="" and not targets[v.name],"invalid/duplicate target")
       targets[v.name]=v.groupName
     end
+    for _,v in ipairs(c.knownTargets or {})do
+      assert(type(v.name)=='string' and type(v.groupName)=='string' and not targets[v.name], 'invalid known target')
+      targets[v.name]=v.groupName;knownTargets[v.name]=true
+    end
     local function live(name)
       local u=Unit.getByName(name)
       if not u or not u:isExist() or u:getLife()<=0 then return nil end
@@ -40,7 +44,7 @@ do
       if side~=1 and side~=2 then return nil end
       return u
     end
-    local marking
+    local marking,navigation
     local callbacks={clock=timer.getTime,cellSize=c.cellSize,
       targetBudget=c.targetBudget,workBudget=c.workBudget,revisit=c.revisit,log=log,
       observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,
@@ -78,6 +82,8 @@ do
         local report={name=name,side=u:getCoalition(),point={x=p.x,y=p.y+(ground and 2 or 0),z=p.z},
           forward=pose.x,agl=agl,role=meta.role,radarOn=radar,afac=meta.afac}
         if meta.afac then
+          if (RealisticCAS.afacAbort or {})[meta.afac.groupName] or
+            (RealisticCAS.afacReturn or {})[meta.afac.groupName] then return nil end
           local start=(RealisticCAS.afacStations or {})[meta.afac.groupName]
           if not RealisticCAS.AFACSearch.active(meta.afac,p,timer.getTime(),start,u:getFuel()) then return nil end
           if not meta.nightWarned and meta.equipment.ir~=true and meta.equipment.targetingPod~=true then
@@ -93,14 +99,15 @@ do
       end,
       lineOfSight=function(a,b) return land.isVisible(a,b) end,
       isRevealed=function(target,observer)
+        if knownTargets[target.name] then return true end
         local g=Group.getByName(target.groupName)
         return g and fog.service:isRevealed(g:getID(),observer.side)==true
       end,
       reveal=function(target,observer,result)
         if not fog.active or fog.stopping then return false end
         local g=Group.getByName(target.groupName)
-        local known=g and fog.service:isRevealed(g:getID(),observer.side)==true
-        local success=fog:observe(target.groupName,observer.side,target.position,result.mode..":"..observer.name)
+        local known=knownTargets[target.name] or (g and fog.service:isRevealed(g:getID(),observer.side)==true)
+        local success=knownTargets[target.name] or fog:observe(target.groupName,observer.side,target.position,result.mode..":"..observer.name)
         if success and not known and observer.afac then
           RealisticCAS.afacDiscoveryCredits=RealisticCAS.afacDiscoveryCredits or {}
           local key=observer.side..':'..target.groupName
@@ -114,18 +121,23 @@ do
             end
           end
         end
+        if success and navigation then navigation:observe(target) end
         if success and marking and observer.afac then marking:observe(target,observer,not known) end
         return success
       end}
     if c.afacEnabled and c.afacMarking then
-      marking=RealisticCAS.newAFACMarking(fog,c,callbacks)
+      if c.afacAvoidance then navigation=RealisticCAS.newAFACNavigation(fog,c) end
+      marking=RealisticCAS.newAFACMarking(fog,c,callbacks,navigation)
     end
     local engine=RealisticCAS.newDetection(callbacks)
     engine.afacMarking=marking
+    engine.afacNavigation=navigation
     local stopDetection=engine.stop
     function engine:stop()
       stopDetection(self)
-      return not marking or marking:stop()
+      local navigationStopped=not navigation or navigation:stop()
+      local markingStopped=not marking or marking:stop()
+      return navigationStopped and markingStopped
     end
     for name,meta in pairs(observers) do engine:addObserver(name,meta.profile) end
     for name in pairs(targets) do engine:addTarget(name) end
@@ -136,6 +148,7 @@ do
       end
       local ok,err=pcall(function()
         engine:tick()
+        if navigation then navigation:tick() end
         if marking then marking:tick() end
       end)
       if not ok then log("ERROR",err) end

@@ -26,6 +26,12 @@ do
       assert(managed[v.groupName],'target outside managed group list')
       unitNames[v.name]=true
     end
+    if c.afacEnabled then
+      for _,v in ipairs(r.afacKnownTargets or {})do
+        assert(known[v.groupName] and not unitNames[v.name], 'invalid known AFAC target')
+        unitNames[v.name]=true
+      end
+    end
     -- Build the environment before hiding anything. No guessed time or biome.
     local environment=RealisticCAS.newEnvironment(c.environment)
     assert(RealisticCAS.Sensors.finite(c.acquisitionSeconds) and c.acquisitionSeconds>0
@@ -69,6 +75,8 @@ do
       api.fog=assert(RealisticCAS.start({enabled=true,targets=r.groups,ttl=c.ttl,
         debug=c.debug,expiryBudget=c.expiryBudget}))
       api.detectors=RealisticCAS.startDetection(api.fog,{targets=r.targets,observers=r.observers,
+        knownTargets=c.afacEnabled and r.afacKnownTargets or nil,
+        airDefenseThreats=r.airDefenseThreats,afacAvoidance=c.afacAvoidance,
         environment=environment,acquisitionSeconds=c.acquisitionSeconds,
         probabilisticDetection=c.probabilisticDetection,
         probability=probability,

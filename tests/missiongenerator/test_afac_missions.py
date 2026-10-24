@@ -11,7 +11,7 @@ import pytest
 from dcs import Mission
 from dcs.mapping import Point
 from dcs.planes import MQ_9_Reaper
-from dcs.task import Nothing, RunScript, SetUnlimitedFuelCommand
+from dcs.task import Nothing, OptROE, RunScript, SetUnlimitedFuelCommand
 
 from game import persistency
 from game.ato import Flight, FlightType
@@ -24,7 +24,11 @@ from game.dcs.skills import CADET_SKILL
 from game.missiongenerator.aircraft.aircraftbehavior import AircraftBehavior
 from game.missiongenerator.aircraft.waypoints.afac import AfacSearchBuilder
 from game.missiongenerator.aircraft.waypoints.racetrackend import RaceTrackEndBuilder
-from game.missiongenerator.realisticcasluadata import collect_registry
+from game.missiongenerator.realisticcasluadata import (
+    _native_route_value,
+    collect_registry,
+    lua_literal,
+)
 from game.settings import Settings
 from game.squadrons.squadron import Squadron
 from game.utils import feet
@@ -215,6 +219,7 @@ def test_native_orbit_uses_relative_duration_and_fuel_stop() -> None:
     )
     builder.add_tasks(point)
     orbit = point.tasks[-1].dict()
+    assert getattr(s.group, "_afac_restore_unlimited_fuel") is True
     assert orbit["id"] == "ControlledTask"
     assert orbit["params"]["task"]["id"] == "Orbit"
     assert orbit["params"]["stopCondition"]["duration"] == 3600
@@ -232,6 +237,8 @@ def test_native_orbit_uses_relative_duration_and_fuel_stop() -> None:
     condition = orbit["params"]["stopCondition"]["condition"]
     assert not lua.eval(condition)
     lua.execute("fuel=0.1")
+    assert lua.eval(condition)
+    lua.execute("fuel=0.5; RealisticCAS.afacReturn={AFAC='station complete'}")
     assert lua.eval(condition)
 
 
@@ -302,3 +309,283 @@ def test_game_master_probe_serializes_real_orbits_and_plugin_startup(
         lua.execute(archive.read("mission").decode("utf-8"))
         for _, action in lua.globals().mission["trig"]["actions"].items():
             lua.compile(action)
+
+
+@pytest.mark.parametrize("cloudy", [False, True])
+def test_safety_probes_export_routes_known_threats_and_cloud_limits(
+    tmp_path: Path, cloudy: bool
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    mission = build_mission(safety=True, cloudy=cloudy)
+    config = getattr(mission, "_afac_probe_config")
+    observers = [o for o in config["registry"]["observers"] if "afac" in o]
+    assert len(observers) == 4
+    assert all(o["afac"]["navigation"]["exitWaypoint"] == 4 for o in observers)
+    for observer in observers:
+        nav = observer["afac"]["navigation"]
+        assert nav["searchWaypoint"] == 2
+        assert nav["route"][3]["type"] == "Land"
+        assert nav["route"][3]["airdromeId"] == mission.terrain.airports["Kobuleti"].id
+        assert isinstance(nav["route"][1]["task"]["params"]["tasks"], list)
+    assert all(
+        o["afac"]["navigation"]["restoreUnlimitedFuel"] is False for o in observers
+    )
+    threats = config["registry"]["airDefenseThreats"]
+    assert len(threats) == 4 and sum(t["known"] for t in threats) == 3
+    if cloudy:
+        assert config["afacAvoidance"]["clouds"]["base"] == 2000
+    path = tmp_path / "safety.miz"
+    mission.save(path)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    with ZipFile(path) as archive:
+        for name in archive.namelist():
+            if name == "mission" or name.endswith(".lua"):
+                lua.compile(archive.read(name).decode("utf-8"))
+
+
+def test_native_route_tables_keep_numeric_task_indices_and_reject_sparse_keys() -> None:
+    assert _native_route_value({"tasks": {1: {"number": 1}, 2: {"number": 2}}}) == {
+        "tasks": [{"number": 1}, {"number": 2}]
+    }
+    with pytest.raises(ValueError, match="non-contiguous"):
+        _native_route_value({"tasks": {2: {"number": 2}}})
+
+
+@pytest.mark.parametrize("cloudy", [False, True])
+def test_live_fire_probe_enables_every_defence_without_changing_afac_behaviour(
+    tmp_path: Path, cloudy: bool
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    mission = build_mission(safety=True, cloudy=cloudy, live_fire=True)
+    config = getattr(mission, "_afac_probe_config")
+    threats = config["registry"]["airDefenseThreats"]
+    assert len(threats) == 4 and sum(t["known"] for t in threats) == 3
+    baseline = build_mission(safety=True, cloudy=cloudy)
+    assert (
+        config["registry"]["observers"]
+        == getattr(baseline, "_afac_probe_config")["registry"]["observers"]
+    )
+    friendly = mission.country("USA")
+    for aircraft in [*friendly.plane_group, *friendly.helicopter_group]:
+        for defence in mission.country("Russia").vehicle_group:
+            if defence.name.startswith("AFAC_AA_"):
+                threat = next(t for t in threats if t["groupName"] == defence.name)
+                assert (
+                    aircraft.points[0].position.distance_to_point(
+                        defence.points[0].position
+                    )
+                    > threat["radius"] + 1000
+                )
+    for group in mission.country("Russia").vehicle_group:
+        if group.name.startswith("AFAC_AA_"):
+            actions = [t.dict()["params"]["action"] for t in group.points[0].tasks]
+            options = {
+                a["params"]["name"]: a["params"]["value"]
+                for a in actions
+                if a["id"] == "Option"
+            }
+            assert options[0] == OptROE.Values.WeaponFree and options[9] == 2
+    path = tmp_path / "live-fire.miz"
+    mission.save(path)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    with ZipFile(path) as archive:
+        lua.execute(archive.read("mission").decode("utf-8"))
+        lua.execute(archive.read("l10n/DEFAULT/dictionary").decode("utf-8"))
+    lua.execute("""
+getValueDictByKey=function(k)return dictionary[k] or k end
+getValueResourceByKey=function(k)return k end
+a_do_script_file=function()end
+sources={};a_do_script=function(s)assert(loadstring(s));sources[#sources+1]=s end
+""")
+    for _, action in lua.globals().mission["trig"]["actions"].items():
+        lua.execute(action)
+    sources = list(lua.globals().sources.values())
+    assert any("LIVE FIRE: defences are weapons free" in source for source in sources)
+    assert len([s for s in sources if "AFAC_LIVE_FIRE" in s]) == 1
+
+
+@pytest.mark.parametrize("safety,quick", [(False, False), (True, True)])
+def test_live_fire_rejects_cases_without_safe_initial_separation(
+    safety: bool, quick: bool
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    with pytest.raises(ValueError, match="Live fire requires full safety cases"):
+        build_mission(safety=safety, quick=quick, live_fire=True)
+
+
+def test_quick_probe_exports_complete_routes_accepted_by_native_adapter(
+    tmp_path: Path,
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    mission = build_mission(safety=True, quick=True)
+    config = getattr(mission, "_afac_probe_config")
+    observers = [o for o in config["registry"]["observers"] if "afac" in o]
+    assert len(observers) == 4
+    assert all(o["afac"]["stationSeconds"] == 180 for o in observers)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    for name in (
+        "core.lua",
+        "afac-search.lua",
+        "sensors.lua",
+        "afac-safety.lua",
+        "afac-navigation.lua",
+    ):
+        lua.execute((Path("resources/plugins/realisticcas") / name).read_text("utf-8"))
+    lua.execute(
+        "config="
+        + lua_literal(
+            {
+                "observers": config["registry"]["observers"],
+                "airDefenseThreats": config["registry"]["airDefenseThreats"],
+            }
+        )
+    )
+    lua.execute("nav=RealisticCAS.newAFACNavigation({},config);assert(nav.active)")
+    path = tmp_path / "quick.miz"
+    mission.save(path)
+    with ZipFile(path) as archive:
+        for name in archive.namelist():
+            if name == "mission" or name.endswith(".lua"):
+                lua.compile(archive.read(name).decode("utf-8"))
+
+
+def test_recovery_control_is_native_only_and_serializes_landing_routes(
+    tmp_path: Path,
+) -> None:
+    from tools.realistic_cas_tests.build_afac_recovery_probe import build_mission
+
+    mission = build_mission()
+    assert mission.groundControl.blue_game_masters == 1
+    groups = mission.country("USA").plane_group
+    assert len(groups) == 2
+    direct, cruise = groups
+    assert len(direct.points) == 2 and len(cruise.points) == 3
+    assert direct.points[-1].airdrome_id == cruise.points[-1].airdrome_id
+    assert cruise.points[1].alt == 6000
+    assert all(g.task == Nothing.name for g in groups)
+    assert all(not unit.is_human() for group in groups for unit in group.units)
+    path = tmp_path / "recovery-control.miz"
+    mission.save(path)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    with ZipFile(path) as archive:
+        native = archive.read("mission").decode("utf-8")
+        assert "RealisticCAS" not in native
+        lua.execute(native)
+        for _, action in lua.globals().mission["trig"]["actions"].items():
+            lua.compile(action)
+
+
+@pytest.mark.parametrize("lost", [False, True])
+def test_safety_probe_reports_recovery_only_after_all_four_outcomes(
+    tmp_path: Path, lost: bool
+) -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    mission = build_mission(safety=True, cloudy=True)
+    observers = getattr(mission, "_afac_probe_config")["registry"]["observers"]
+    names = [o["name"] for o in observers if "afac" in o]
+    assert len(names) == 4
+    path = tmp_path / "recovery-summary.miz"
+    mission.save(path)
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    with ZipFile(path) as archive:
+        lua.execute(archive.read("mission").decode("utf-8"))
+    lua.execute("""
+messages={};logs={}
+trigger={action={outText=function(text)messages[#messages+1]=text end}}
+env={info=function(text)logs[#logs+1]=text end}
+timer={getTime=function()return 0 end,scheduleFunction=function()end}
+world={event={S_EVENT_LAND=1,S_EVENT_CRASH=2,S_EVENT_DEAD=3,S_EVENT_UNIT_LOST=4},
+  addEventHandler=function(value)handler=value end}
+getValueDictByKey=function(key)return key end
+a_do_script=function(source)assert(loadstring(source))()end
+function event(name,id)
+  handler:onEvent({id=id,initiator={getName=function()return name end}})
+end
+function completed()
+  local count=0
+  for _,row in ipairs(logs)do if row:find('RECOVERY_COMPLETE') then count=count+1 end end
+  return count
+end
+""")
+    actions = list(lua.globals().mission["trig"]["actions"].values())
+    diagnostics = [action for action in actions if "AFAC_SAFETY_PROBE" in action]
+    assert len(diagnostics) == 1
+    lua.execute(diagnostics[0])
+    lua.execute("names=" + lua_literal(names))
+    lua.execute("lost=" + lua_literal(lost))
+    lua.execute("""
+handler:onEvent({id=1,initiator={}})
+event('unrelated unit',1);assert(completed()==0)
+event(names[1],1);event(names[1],1);assert(completed()==0)
+event(names[2],lost and 2 or 1);event(names[2],lost and 4 or 1)
+event(names[3],1);assert(completed()==0)
+event(names[4],1);assert(completed()==1)
+assert(messages[#messages]:find(lost and '3/4 landed, 1 lost' or '4/4 landed, 0 lost'))
+event(names[4],1);assert(completed()==1)
+""")
+
+
+def test_recovery_matrix_isolates_switching_and_active_orbit_replacement(
+    tmp_path: Path,
+) -> None:
+    from tools.realistic_cas_tests.build_afac_recovery_probe import build_mission
+
+    mission = build_mission(replacement_matrix=True)
+    groups = mission.country("USA").plane_group
+    assert [group.name for group in groups] == [
+        "NATIVE_DIRECT",
+        "NATIVE_SWITCH",
+        "REPLACED_DIRECT",
+        "REPLACED_SWITCH",
+    ]
+    assert [len(group.points) for group in groups] == [2, 4, 2, 4]
+    for group in groups:
+        assert group.points[0].speed == pytest.approx(200 / 3.6)
+        assert group.points[-1].type == "Land"
+        assert group.points[-1].speed == 0
+        ids = [task.id for task in group.points[0].tasks]
+        assert ("Orbit" in ids) == group.name.startswith("REPLACED")
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    path = tmp_path / "recovery-matrix.miz"
+    mission.save(path)
+    with ZipFile(path) as archive:
+        lua.execute(archive.read("mission").decode("utf-8"))
+        lua.execute(archive.read("l10n/DEFAULT/dictionary").decode("utf-8"))
+        for _, action in lua.globals().mission["trig"]["actions"].items():
+            lua.compile(action)
+    # Execute the generated script with a bounded native API double. This checks
+    # that only the two active-orbit controls receive a replacement mission.
+    lua.execute("""
+scheduled={}; assigned={}
+trigger={action={outText=function()end}}
+env={info=function()end};world={event={},addEventHandler=function()end}
+timer={getTime=function()return 0 end,scheduleFunction=function(fn,_,at)
+  scheduled[at]=fn
+end}
+Group={getByName=function(name)return {
+  getUnits=function()return {{getName=function()return name..'-1' end,
+    getPoint=function()return {x=1,y=3506,z=2}end}}end,
+  getController=function()return {setTask=function(_,task)assigned[name]=task end}end
+}end}
+a_do_script=function(source)assert(loadstring(source))()end
+getValueDictByKey=function(key)return dictionary[key] or key end
+""")
+    for _, action in lua.globals().mission["trig"]["actions"].items():
+        lua.execute(action)
+    lua.execute("""
+scheduled[30]()
+assert(assigned.NATIVE_DIRECT==nil and assigned.NATIVE_SWITCH==nil)
+local direct=assigned.REPLACED_DIRECT.params.route.points
+local switched=assigned.REPLACED_SWITCH.params.route.points
+assert(#direct==2 and #switched==4)
+assert(direct[1].alt==3506 and direct[1].speed==200/3.6)
+assert(#direct[1].task.params.tasks==0)
+assert(switched[1].task.params.tasks[1].params.action.params.goToWaypointIndex==4)
+assert(direct[2].type=='Land' and direct[2].speed==0)
+assert(switched[4].type=='Land' and switched[4].airdromeId==direct[2].airdromeId)
+""")
