@@ -10,8 +10,7 @@ from zipfile import ZipFile
 import pytest
 from dcs import Mission
 from dcs.mapping import Point
-from dcs.planes import MQ_9_Reaper
-from dcs.task import Nothing, OptROE, RunScript, SetUnlimitedFuelCommand
+from dcs.task import AFAC, Nothing, OptROE, RunScript, SetUnlimitedFuelCommand
 
 from game import persistency
 from game.ato import Flight, FlightType
@@ -39,22 +38,24 @@ def saved_games(tmp_path: Path) -> None:
     persistency.setup(str(tmp_path), False, 0)
 
 
-def scenario(task: FlightType = FlightType.AFAC_AREA) -> Any:
+def scenario(
+    task: FlightType = FlightType.AFAC_AREA, variant: str = "MQ-9 Reaper"
+) -> Any:
     settings = Settings()
     settings.plugins.update({"realisticcas": True, "realisticcas.afacEnabled": True})
     settings.live_pilots_enabled = False
     settings.ai_unlimited_fuel = True
     mission = Mission()
+    aircraft = AircraftType.named(variant)
     group = mission.flight_group_inflight(
         mission.country("USA"),
         "AFAC",
-        MQ_9_Reaper,
+        aircraft.dcs_unit_type,
         Point(0, 0, mission.terrain),
         3000,
         speed=250,
     )
     group.points[0].tasks.clear()
-    aircraft = AircraftType.named("MQ-9 Reaper")
     layout: Any = NS(
         patrol_start=NS(position=Point(-2000, 0, mission.terrain), alt=feet(10000)),
         patrol_end=NS(position=Point(2000, 0, mission.terrain)),
@@ -62,7 +63,7 @@ def scenario(task: FlightType = FlightType.AFAC_AREA) -> Any:
     flight: Any = NS(
         flight_type=task,
         unit_type=aircraft,
-        is_helo=False,
+        is_helo=aircraft.helicopter,
         client_count=0,
         package=NS(target=NS(position=Point(0, 0, mission.terrain))),
         state=NS(is_at_ip=False, in_combat=False),
@@ -159,12 +160,18 @@ def test_flight_picker_warns_about_final_night_equipment(
     assert ("Warning" in label.setText.call_args.args[0]) == warning
 
 
-def test_afac_behavior_is_unarmed_no_infinite_fuel_and_no_winchester_rtb() -> None:
-    s = scenario()
-    AircraftBehavior(FlightType.AFAC_AREA, MagicMock()).apply_to(s.flight, s.group)
-    assert s.group.task == Nothing.name
+@pytest.mark.parametrize("task", [FlightType.AFAC_AREA, FlightType.AFAC_FRONTLINE])
+@pytest.mark.parametrize(
+    "variant", ["MQ-9 Reaper", "OH-58D(R) Kiowa Warrior", "UH-1H Iroquois"]
+)
+def test_afac_behavior_labels_the_role_without_native_engagement_or_fac_tasks(
+    task: FlightType, variant: str
+) -> None:
+    s = scenario(task, variant)
+    AircraftBehavior(task, MagicMock()).apply_to(s.flight, s.group)
+    assert s.group.dict()["task"] == AFAC.name
     tasks = [t.dict() for t in s.group.points[0].tasks]
-    assert not any(t["id"].startswith(("Engage", "Attack")) for t in tasks)
+    assert not any(t["id"].startswith(("Engage", "Attack", "FAC")) for t in tasks)
     options = {
         t["params"]["action"]["params"]["name"]: t["params"]["action"]["params"][
             "value"
@@ -295,7 +302,7 @@ def test_game_master_probe_serializes_real_orbits_and_plugin_startup(
     assert len(groups) == 4
     assert all(not u.is_human() for g in groups for u in g.units)
     for group in groups:
-        assert group.task == Nothing.name
+        assert group.task == AFAC.name
         serialized = str([p.dict() for p in group.points])
         assert "AttackGroup" not in serialized and "EngageTargets" not in serialized
         assert "duration" in serialized and "120" in serialized
