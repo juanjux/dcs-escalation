@@ -526,16 +526,21 @@ def sell_damaged_aircraft(side: str, squadron_id: str, repair_id: str):
 def relocation_workshop_quote(side: str, squadron_id: str) -> dict:
     from game.agent import planner
     from game.aircraftmaintenance import repairs, sale_value
+    from game.highcommand.loans import LOAN_TRADE_ERROR, loan_for
 
     game = _require_game()
     squadron = planner._resolve_squadron(game, side, squadron_id)
     count = len(repairs(squadron))
+    loaned = loan_for(squadron) is not None
+    blocked = count > 0 and loaned
     return {
         "squadron_id": str(squadron.id),
         "damaged_to_sell": count,
         "operational_aircraft": squadron.owned_aircraft - count,
-        "sale_price_m": count * sale_value(game, squadron),
-        "requires_confirmation": count > 0,
+        "sale_price_m": 0 if blocked else count * sale_value(game, squadron),
+        "requires_confirmation": count > 0 and not blocked,
+        "can_sell_damaged": not loaned,
+        "blocked_reason": LOAN_TRADE_ERROR if blocked else None,
     }
 
 

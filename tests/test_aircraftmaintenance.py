@@ -59,6 +59,7 @@ def world() -> Any:
         theater=SimpleNamespace(controlpoints=[base, enemy]),
         message=lambda *args: messages.append(args),
         coalition_for=lambda side: blue if side == Player.BLUE else red,
+        high_command_for=lambda side: SimpleNamespace(loans=[]),
     )
     sq: Any = _Squadron(
         id="sq",
@@ -831,15 +832,17 @@ def test_readiness_forecast_overlaps_admission_delay_with_existing_queue(
     assert job not in maintenance.repairs(world.sq)
 
 
+@pytest.mark.parametrize("loaned", [False, True])
 def test_workshop_widget_shows_health_queue_and_fractional_price(
     world: Any,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    loaned: bool,
 ) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtCore import QObject, Signal
     from PySide6.QtGui import QFont, QFontDatabase
-    from PySide6.QtWidgets import QApplication, QProgressBar
+    from PySide6.QtWidgets import QApplication, QProgressBar, QPushButton
     from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
     from qt_ui.windows.basemenu.QAircraftWorkshop import QAircraftWorkshop
 
@@ -856,6 +859,8 @@ def test_workshop_widget_shows_health_queue_and_fractional_price(
     monkeypatch.setattr(GameUpdateSignal, "get_instance", lambda: signals)
     for i in range(3):
         maintenance.admit(world.game, world.sq, f"job-{i}", 0.4)
+    if loaned:
+        _lend_squadron(world)
     model: Any = SimpleNamespace(game=world.game)
     widget = QAircraftWorkshop(world.base, model)
     font_id = QFontDatabase.addApplicationFont("resources/fonts/Inconsolata.otf")
@@ -863,6 +868,8 @@ def test_workshop_widget_shows_health_queue_and_fractional_price(
     if families:
         widget.setFont(QFont(families[0], 11))
     assert widget.table.rowCount() == 3
+    sell = widget.table.cellWidget(0, 6)
+    assert isinstance(sell, QPushButton) and sell.isEnabled() is (not loaned)
     status = widget.table.item(2, 2)
     assert status is not None and status.text() == "Queued"
     bar = widget.table.cellWidget(0, 1)
@@ -878,3 +885,68 @@ def test_workshop_widget_shows_health_queue_and_fractional_price(
     app.processEvents()
     assert widget.grab().save(str(tmp_path / "workshop.png"))
     widget.close()
+
+
+def _lend_squadron(world: Any) -> None:
+    from game.highcommand.loans import Loan
+
+    commands = SimpleNamespace(loans=[Loan(world.sq, world.game.turn + 3)])
+    world.game.high_command_for = lambda side: commands
+
+
+def test_loan_workshop_aircraft_cannot_be_sold(world: Any) -> None:
+    maintenance.admit(world.game, world.sq, "loan-damage", 0.4)
+    _lend_squadron(world)
+    job = maintenance.repairs(world.sq)[0]
+    entry = maintenance.workshop_view(world.game, world.base)["aircraft"][0]
+    assert not entry["can_sell"]
+    with pytest.raises(ValueError, match="on-loan"):
+        maintenance.sell_damaged(world.game, world.sq, job.id)
+    with pytest.raises(ValueError, match="on-loan"):
+        maintenance.remove_damaged(world.game, world.sq, refund=True)
+    assert maintenance.repairs(world.sq) == [job]
+    assert world.sq.owned_aircraft == 6
+    assert world.blue.budget == 10
+
+
+def test_losing_a_loan_workshop_still_writes_off_its_aircraft(world: Any) -> None:
+    maintenance.admit(world.game, world.sq, "loan-damage", 0.4)
+    _lend_squadron(world)
+    count, income = maintenance.remove_damaged(world.game, world.sq, refund=False)
+    assert (count, income) == (1, 0)
+    assert not maintenance.repairs(world.sq)
+    assert world.sq.owned_aircraft == 5
+    assert world.blue.budget == 10
+
+
+@pytest.mark.parametrize("confirm", [True, False])
+def test_relocating_a_damaged_loan_is_rejected_before_planning_or_sale(
+    world: Any, confirm: bool
+) -> None:
+    maintenance.admit(world.game, world.sq, "loan-damage", 0.4)
+    _lend_squadron(world)
+    world.sq.destination = None
+    planned: list[object] = []
+    world.sq.replan_ferry_flights = planned.append
+    destination: Any = SimpleNamespace(name="Other")
+    with pytest.raises(ValueError, match="on-loan"):
+        Squadron.plan_relocation(
+            world.sq, destination, datetime(2026, 1, 1), confirm_damaged_sale=confirm
+        )
+    assert world.sq.destination is None
+    assert not planned
+    assert len(maintenance.repairs(world.sq)) == 1
+    assert world.blue.budget == 10
+
+
+def test_instant_relocation_cannot_sell_a_damaged_loan(world: Any) -> None:
+    maintenance.admit(world.game, world.sq, "loan-damage", 0.4)
+    _lend_squadron(world)
+    world.sq.destination = None
+    world.blue.player = Player.BLUE
+    destination: Any = SimpleNamespace(name="Other", is_friendly=lambda side: True)
+    with pytest.raises(ValueError, match="on-loan"):
+        Squadron.relocate_to(world.sq, destination, confirm_damaged_sale=True)
+    assert world.sq.location is world.base
+    assert len(maintenance.repairs(world.sq)) == 1
+    assert world.blue.budget == 10

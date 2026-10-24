@@ -373,7 +373,11 @@ def remove_damaged(
     game: Game, squadron: Squadron, *, refund: bool
 ) -> tuple[int, float]:
     """Sell with explicit consent, or write off immobile airframes on base loss."""
+    from game.highcommand.loans import require_owned_aircraft
+
     count = len(repairs(squadron))
+    if refund and count:
+        require_owned_aircraft(squadron)
     value = count * sale_value(game, squadron) if refund else 0.0
     squadron.aircraft_repairs.clear()
     squadron.owned_aircraft = max(0, squadron.owned_aircraft - count)
@@ -408,6 +412,9 @@ def hire_mechanic(game: Game, base: ControlPoint) -> None:
 
 
 def sell_damaged(game: Game, squadron: Squadron, job_id: str) -> float:
+    from game.highcommand.loans import require_owned_aircraft
+
+    require_owned_aircraft(squadron)
     _require_base(game, squadron.location)
     if squadron.location.captured != squadron.player:
         raise ValueError("The squadron's base is no longer friendly")
@@ -528,6 +535,8 @@ def workshop_view(game: Game, base: ControlPoint) -> dict[str, Any]:
     forecast = _forecast(airframes, count, rate, game.turn)
     busy = sum(assigned.values())
     entries = []
+    from game.highcommand.loans import loan_for
+
     for squadron, job in jobs:
         staff = assigned.get(job.id, 0)
         duration, wait, ready = forecast[job.id]
@@ -545,6 +554,9 @@ def workshop_view(game: Game, base: ControlPoint) -> dict[str, Any]:
                 "queue_turns": wait,
                 "turns_until_ready": ready,
                 "sale_price_m": sale_value(game, squadron),
+                "can_sell": loan_for(squadron) is None
+                and not base.sunk
+                and base.captured == squadron.player,
             }
         )
     return {

@@ -16,6 +16,7 @@ import pytest
 from game.migrator import Migrator
 from game.theater.controlpoint import NavalControlPoint
 from game.squadrons.squadron import Squadron
+from game.theater import Player
 from game.utils import nautical_miles
 
 NOW = datetime(2026, 9, 21, 20, 0)
@@ -39,13 +40,17 @@ def _base(name: str, operational: bool, sunk: bool = False) -> Any:
 def _squadron(location: Any, aircraft: int) -> Any:
     planned: list[datetime] = []
     return SimpleNamespace(
+        player=Player.BLUE,
         location=location,
         destination=None,
         owned_aircraft=aircraft,
         expected_size_next_turn=aircraft,
         aircraft=SimpleNamespace(helicopter=False, lha_capable=False, flyable=False),
         coalition=SimpleNamespace(
-            game=SimpleNamespace(settings=SimpleNamespace(ground_start_ai_planes=True))
+            game=SimpleNamespace(
+                settings=SimpleNamespace(ground_start_ai_planes=True),
+                high_command_for=lambda side: SimpleNamespace(loans=[]),
+            )
         ),
         replan_ferry_flights=planned.append,
         planned=planned,

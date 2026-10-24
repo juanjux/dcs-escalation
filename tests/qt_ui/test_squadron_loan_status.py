@@ -148,3 +148,51 @@ def test_detail_header_shows_the_same_status(app: Any, on_loan: bool) -> None:
     else:
         assert badge is None
     holder.close()
+
+
+@pytest.mark.parametrize("on_loan", [True, False])
+def test_detail_purchase_buttons_follow_the_loan_register(
+    app: Any, on_loan: bool
+) -> None:
+    from PySide6.QtWidgets import QLabel, QPushButton
+    from game.purchaseadapter import AircraftPurchaseAdapter
+    from game.settings import Settings
+    from qt_ui.windows.SquadronDialog import SquadronDialog
+
+    sq = _squadron(on_loan=on_loan)
+    sq.aircraft.price = 20
+    sq.aircraft.helicopter = False
+    sq.aircraft.lha_capable = False
+    sq.aircraft.flyable = True
+    sq.pending_deliveries = 0
+    sq.untasked_aircraft = 10
+    sq.coalition.game.settings = Settings()
+    sq.coalition.budget = 1000
+    sq.location.coalition = sq.coalition
+    sq.location.sunk = False
+    sq.location.unclaimed_parking = lambda parking: 20
+    dialog: Any = SimpleNamespace(
+        squadron=sq,
+        purchase_adapter=AircraftPurchaseAdapter(sq.location),
+        inventory_tiles={},
+        on_order_label=QLabel(),
+        price_label=QLabel(),
+        parking_slots_label=QLabel(),
+        buy_aircraft_button=QPushButton(),
+        sell_aircraft_button=QPushButton(),
+    )
+    SquadronDialog._refresh_aircraft_controls(dialog)
+    assert dialog.buy_aircraft_button.isEnabled() is (not on_loan)
+    assert dialog.sell_aircraft_button.isEnabled() is (not on_loan)
+    if on_loan:
+        assert "on-loan" in dialog.buy_aircraft_button.toolTip()
+        assert "on-loan" in dialog.sell_aircraft_button.toolTip()
+
+
+def test_base_row_explains_the_loan_trade_restriction() -> None:
+    from qt_ui.windows.basemenu.airfield.QAircraftRecruitmentMenu import (
+        QAircraftRecruitmentMenu,
+    )
+
+    menu: Any = SimpleNamespace()
+    assert "on-loan" in QAircraftRecruitmentMenu.row_warning(menu, _squadron())

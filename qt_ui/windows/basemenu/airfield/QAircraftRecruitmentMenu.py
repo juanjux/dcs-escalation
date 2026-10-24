@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from game.purchaseadapter import AircraftPurchaseAdapter
+from game.highcommand.loans import LOAN_TRADE_ERROR, loan_for
 from game.squadrons import Squadron
 from game.theater import ControlPoint, ParkingType
 from qt_ui.models import GameModel, SquadronModel
@@ -174,6 +175,8 @@ class QAircraftRecruitmentMenu(UnitTransactionFrame[Squadron]):
         The budget is in the summary above, and repeating "costs 20M, you have 5M"
         on every row of a list you cannot afford says nothing the summary has not.
         """
+        if loan_for(item) is not None:
+            return LOAN_TRADE_ERROR
         if self.enable_purchase(item):
             return ""
         if self.cp.unclaimed_parking(ParkingType().from_squadron(item)) <= 0:
@@ -231,6 +234,8 @@ class QAircraftRecruitmentMenu(UnitTransactionFrame[Squadron]):
     def clear_order(self) -> None:
         """Undo everything ordered or sold at this base, in one click."""
         for squadron in list(self.cp.squadrons):
+            if loan_for(squadron) is not None:
+                continue
             pending = squadron.pending_deliveries
             if pending > 0:
                 self.sell(squadron, pending)

@@ -1103,6 +1103,9 @@ class Squadron:
             and destination != self.location
             and destination != self.destination
         ):
+            from game.highcommand.loans import require_owned_aircraft
+
+            require_owned_aircraft(self)
             if not confirm_damaged_sale:
                 raise RuntimeError(
                     "Damaged aircraft cannot transfer. Confirm their sale before relocating."
@@ -1181,6 +1184,10 @@ class Squadron:
             )
             return
         damaged = len(getattr(self, "aircraft_repairs", []))
+        if damaged:
+            from game.highcommand.loans import require_owned_aircraft
+
+            require_owned_aircraft(self)
         if damaged and not confirm_damaged_sale:
             raise RuntimeError(
                 "Damaged aircraft cannot transfer. Confirm their sale before relocating."

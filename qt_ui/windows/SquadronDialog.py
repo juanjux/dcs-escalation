@@ -1412,18 +1412,29 @@ class SquadronDialog(QDialog):
             f"{self.squadron.location}"
         )
         can_buy = self.purchase_adapter.can_buy(self.squadron)
+        from game.highcommand.loans import LOAN_TRADE_ERROR, loan_for
+
+        loaned = loan_for(self.squadron) is not None
         self.buy_aircraft_button.setEnabled(can_buy)
         self.buy_aircraft_button.setToolTip(
             "Buy aircraft. Use Shift or Ctrl to buy 10 or 5 at once."
             if can_buy
-            else "Cannot buy: insufficient budget, parking or squadron capacity."
+            else (
+                LOAN_TRADE_ERROR
+                if loaned
+                else "Cannot buy: insufficient budget, parking or squadron capacity."
+            )
         )
         can_sell = self.purchase_adapter.can_sell_or_cancel(self.squadron)
         self.sell_aircraft_button.setEnabled(can_sell)
         self.sell_aircraft_button.setToolTip(
             "Sell aircraft. Use Shift or Ctrl to sell 10 or 5 at once."
             if can_sell
-            else "Cannot sell: no idle aircraft or pending orders."
+            else (
+                LOAN_TRADE_ERROR
+                if loaned
+                else "Cannot sell: no idle aircraft or pending orders."
+            )
         )
 
     def buy_aircraft(self) -> None:

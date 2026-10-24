@@ -12,6 +12,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
+from game.theater import Player
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -36,6 +37,7 @@ def _squadron(
 ) -> Any:
     settings = SimpleNamespace(ground_start_ai_planes=False)
     return SimpleNamespace(
+        player=Player.BLUE,
         owned_aircraft=owned,
         pending_deliveries=pending,
         untasked_aircraft=idle,
@@ -46,7 +48,12 @@ def _squadron(
         aircraft=SimpleNamespace(
             helicopter=helicopter, lha_capable=False, flyable=True
         ),
-        coalition=SimpleNamespace(game=SimpleNamespace(settings=settings)),
+        coalition=SimpleNamespace(
+            game=SimpleNamespace(
+                settings=settings,
+                high_command_for=lambda side: SimpleNamespace(loans=[]),
+            )
+        ),
     )
 
 
