@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Add a synchronized Grant all checkbox to leave requests, including a mixed-selection indicator.
 * **[Realistic CAS]** Add AFAC avoidance of known ground air defences, cloud-limited climbs, standoff or abort routes, and marking of known SAM sites.
 * **[Realistic CAS]** Give smoke-capable AFACs stable non-white smoke colours and include the colour in marking reports.
 * **[Realistic CAS]** Add AFAC laser, night IR and finite payload smoke marking, configurable reports and mark duration, group reservations and separate marking experience.
@@ -193,6 +194,7 @@
 
 ## Fixes
 * **[Campaign]** Restore ship health with native actions and placed-building health with small startup pulses; retain saved damage when restoration fails.
+* **[Realistic CAS]** Label AFAC flights as AFAC instead of Nothing in the DCS F10 task display.
 * **[Realistic CAS]** Recheck known threats during AFAC recovery, prioritise fire-revealed threats and allow urgent outward escapes beyond the station zone.
 * **[Mission Generation]** Remove leftover waypoint calls to the deleted EW Jammer plugin.
 * **[UI]** Restore a visible draggable scrollbar in all searchable combo-box popups.

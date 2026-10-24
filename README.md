@@ -192,9 +192,17 @@ Still to come:
   weapon accuracy are unchanged. Enable **Realistic CAS (experimental)** in Mission
   Plugins; **TIC and Moose Autolase must be disabled**. CTLD logistics can remain
   enabled with **JTAC autolase targets** off; runtime-created units are not yet
-  registered in the fog. Legacy generated
-  JTACs are temporarily omitted. Campaign-scale tuning and replacement JTACs remain
-  pending. [Plugin details](resources/plugins/realisticcas/README.md).
+  registered in the fog. Legacy generated JTACs are omitted.
+
+  Enable **AFAC missions** separately in the plugin options to add **AFAC — Area**
+  and **AFAC — Frontline**. Compatible aircraft search without attacking, report
+  contacts and mark targets with laser, night IR and finite coloured payload smoke.
+  Eligible transport helicopters carry a thermal-equipped JTAC. Flights coordinate
+  by enemy group, earn discovery and marking experience, and avoid known ground air
+  defences during patrol and recovery. Station time, marking duration, reports and
+  the shared laser code are configurable. Threat avoidance and sensors use gameplay
+  approximations; campaign-scale tuning remains ongoing.
+  [Plugin details](resources/plugins/realisticcas/README.md).
   ([#195](https://github.com/juanjux/dcs-escalation/pull/195))
   
 - **Automatic refuelling waypoint and tanker added only if needed.** A package's route is costed leg by leg against and estimation of fuel usage based on the plane, speed and height
