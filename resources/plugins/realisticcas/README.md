@@ -1,16 +1,17 @@
 # Realistic CAS — experimental campaign plugin
 
-The plugin is now selectable, **experimental and OFF by default**. No saved
-campaign/faction settings are automatically changed. The contact core, observer
-model and DCS bridge passed in-engine controls31–37; combat trials40–43 validated
-gradual search with the limitations recorded in the results notes.
+The plugin is **experimental and OFF by default**. Both sides discover ground
+groups through visual, optical, thermal and eligible ground-radar observations,
+with terrain LOS and approximate weather, daylight and cover effects. Firing
+reveals a managed group immediately. The separate AFAC option adds airborne
+search and marking missions; existing campaign settings are not enabled on load.
 
 Campaign injection and final-pydcs environment export now have automated coverage,
 including saving/reloading a MIZ and compiling its scripts. This is NOT yet a
 full generated-campaign DCS acceptance or campaign-scale performance measurement.
-TIC/CTLD/MOOSE ownership adapters and replacement JTACs remain pending.
+Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
 
-### Enabling this first integration
+## Enabling the plugin
 
 - Select **Realistic CAS (experimental)** in Mission Plugins. Initial options:
   search20s, detection rolls on, contact lifetime600s, approximate theater cover,
@@ -23,11 +24,12 @@ TIC/CTLD/MOOSE ownership adapters and replacement JTACs remain pending.
   this remains a documented limitation, not a generation blocker.
 - Combined Arms **Number of JTAC controllers** is a human slot count, not an AI
   autolase switch; zero is fine but is not required by this compatibility check.
-- Generated legacy JTACs are omitted while Realistic CAS is enabled, as agreed
-  for this first version. This does not change `faction.has_jtac` or remove
-  frontline metadata. Turning the plugin off restores the original generator path.
-- Fixed map SAM groups remain known, frontline SAMs participate in fog. No F10,
-  ROE, CAS weapon accuracy, flight-route or ammo changes.
+- Generated legacy JTACs are omitted while Realistic CAS is enabled. Use the
+  separate **Enable AFAC missions (experimental)** option for airborne JTACs.
+  Turning the plugin off restores the original JTAC generator path.
+- Fixed map SAM groups remain known; frontline SAMs participate in fog. F10
+  visibility and weapon accuracy are unchanged. AI CAS and Armed Recon receive
+  moving search routes, and AFACs receive known-threat avoidance.
 - Terrain profile0 selects an explicit approximate biome by theater;1..5 override
   it (desert, grassland, tundra, forest, city). This is currently homogeneous,
   not a real per-position cover map. Unknown theaters require a manual profile.
@@ -39,9 +41,40 @@ TIC/CTLD/MOOSE ownership adapters and replacement JTACs remain pending.
   zero numeric density/thickness do not mean a clear sky. Warnings are logged.
 - This snapshot does not claim support for other scripts that create units or
   control visibility. Declared late starts work; arbitrary runtime clones need
-  adapters. JTAC integration was deliberately deferred, not silently validated.
+  adapters.
 
-## Contract
+## Airborne forward air control (AFAC)
+
+Enable **Realistic CAS (experimental)** and, in its **Airborne forward air control
+(AFAC)** section, **Enable AFAC missions (experimental)**. Reopen the flight
+creation dialog after changing these settings. Choose **AFAC — Frontline** for a
+frontline segment or **AFAC — Area** for an area target. Compatible drones, scout
+aircraft and helicopters use normal squadrons, aircraft inventories and pilots;
+remote UAV operators cannot be killed, wounded or go missing with their aircraft.
+Eligible transport helicopters carry a thermal-equipped JTAC. Aircraft without
+thermal observation show a warning when creating a night flight.
+
+AFACs search without attacking and prefer marking observed contacts. They report
+coordinates, designate with laser and night IR where equipped, and use finite
+payload smoke in green, red, orange or blue. Each aircraft keeps its assigned
+smoke colour; colours repeat if necessary. Only one AFAC reserves an enemy group
+at a time. Discovery and effective marking award separate pilot experience.
+AI flights climb above verified threat ceilings when aircraft and cloud limits
+permit, otherwise keep lateral separation. Newly revealed threats can trigger an
+urgent escape outside the patrol zone; recovery legs are also checked. A blocked
+recovery causes a warning and a safe hold where possible, with fuel still burning.
+Player flights are not automatically steered. These approximate threat envelopes
+do not guarantee safety from hidden defences, interceptors or terrain.
+
+| AFAC option | Default |
+| --- | --- |
+| Maximum on-station time | 60 minutes; Bingo fuel ends the patrol earlier |
+| Marking time per group | 5 minutes |
+| Message duration | 15 seconds, addressed to the AFAC's coalition |
+| Shared laser code | 1688 |
+| Coordinate format | Degrees and decimal minutes; DMS and MGRS also available |
+
+## Options and behaviour
 
 ### Option help
 
@@ -92,12 +125,13 @@ Hover an option's label or control for its explanation.
   A failed hide is NOT reported as confirmed
   concealment: diagnostics/contact expose `backendVisible`. Acceptance of setCommand
   is the strongest API acknowledgement, not a DCS getter of physical invisibility.
-- No F10 visibility changes, runtime task replacement, destruction/respawn,
-  immortality or radar changes. AI CAS and Armed Recon routes include a moving
+- No F10 visibility changes, destruction/respawn, immortality or radar changes.
+  AFAC avoidance may replace native AI routes while preserving recovery tasks.
+  AI CAS and Armed Recon routes include a moving
   four-leg search circuit in their assigned area while the plugin is enabled.
   Native search-and-engage tasks remain responsible for detecting/attacking
   revealed contacts; the circuit never reads hidden target positions. Human or
-  mixed player flights and other mission roles are unchanged. CAS uses its
+  mixed player flights are not automatically steered. CAS uses its
   scheduled end time; Armed Recon allows the doctrine's CAS duration after TOT.
   Native engagement tasks have matching time and 20% fuel stop conditions, so
   combat cannot leave an unlimited search-and-engage order active after exit.
@@ -361,7 +395,8 @@ mission-end event stop detectors and restore visibility. A failed restoration
 keeps the recovery handle for a later retry; it is not silently reported as success.
 Lua integration tests cover these paths using DCS doubles, not native engine
 acceptance. The experimental campaign hook rejects active CTLD autolase, Moose
-Autolase and TIC, not CTLD logistics; it is not the complete planned feature.
+Autolase and TIC, not CTLD logistics. AFAC search and marking use the same
+visibility and compatibility rules.
 In-engine controls 35–37 additionally passed night/IR, controlled cloud
 transmission, and RBM/GMTI with live DCS radar-on/target velocities. These validate
 the model/bridge, not native radar-mode telemetry or physical cloud calibration.
@@ -383,11 +418,11 @@ this inspection is not a certificate of universal compatibility. TIC campaigns
 are rejected at this boundary until the clone/visibility adapter exists.
 
 `LuaGenerator.generate` now preflights the registry/environment/options and injects
-the seven source files in `SCRIPT_ORDER`, then the typed startup action. Missing
+the source files in `SCRIPT_ORDER`, then the typed startup action. Missing
 source files fail generation before partial plugin injection. Off returns before
 reading mission metadata. No new standalone mission is needed just to validate
-this Python serialization boundary. Replacement JTACs and coordinated ownership
-remain follow-up work under the explicitly restricted experimental option.
+this Python serialization boundary. AFACs coordinate their own target-group
+reservations; other scripts' runtime visibility ownership still needs adapters.
 
 Confirmed scope: map SAM objectives (`SamGroundObject`, category `aa`) are never
 concealed, including their generated support groups. UnitMap campaign membership
