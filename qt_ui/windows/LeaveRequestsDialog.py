@@ -10,7 +10,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional
 
-from PySide6.QtCore import QEvent, QObject, Qt
+from PySide6.QtCore import QEvent, QObject, QSignalBlocker, Qt
 from PySide6.QtGui import QIcon, QMouseEvent
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -82,6 +82,16 @@ class LeaveRequestsDialog(QDialog):
         self.requests = requests
         self.rows: list[_Row] = []
         self.selected: Optional[int] = None
+        self.grant_all = QCheckBox("Grant all")
+        self.grant_all.setTristate(True)
+        self.grant_all.setStyleSheet(
+            "QCheckBox::indicator:indeterminate { "
+            "image: url(resources/stylesheets/check-partial.svg); }"
+        )
+        self.grant_all.setToolTip(
+            "Check or clear Grant for every request. Decisions apply only when "
+            "Answer them is pressed."
+        )
 
         self.setModal(True)
         self.setWindowTitle("Leave requests")
@@ -125,7 +135,11 @@ class LeaveRequestsDialog(QDialog):
                 "Grant",
             )
         ):
-            grid.addWidget(QLabel(f"<b>{heading}</b>"), 0, column)
+            if column == COLUMNS - 1:
+                make_transparent(self.grant_all)
+                grid.addWidget(self.grant_all, 0, column)
+            else:
+                grid.addWidget(QLabel(f"<b>{heading}</b>"), 0, column)
 
         for row, (squadron, pilot) in enumerate(requests, start=1):
             # First, so everything else is drawn over it rather than under it.
@@ -136,7 +150,7 @@ class LeaveRequestsDialog(QDialog):
 
             rank = squadron.pilot_rank(pilot)
             name = pilot.name if rank is None else f"{rank.abbreviation} {pilot.name}"
-            cells = [
+            cells: list[QWidget] = [
                 QLabel(name),
                 QLabel(str(squadron)),
                 QLabel(str(squadron.aircraft)),
@@ -182,6 +196,11 @@ class LeaveRequestsDialog(QDialog):
             grid.addWidget(grant, row, 6, Qt.AlignmentFlag.AlignCenter)
 
             self.rows.append(_Row(squadron, pilot, grant, turns, backdrop, cells))
+            grant.toggled.connect(self._sync_grant_all)
+
+        self.grant_all.stateChanged.connect(self._set_all_grants)
+        self.grant_all.setEnabled(bool(self.rows))
+        self._sync_grant_all()
 
         # The squadron name is the one that varies; everything else is a short word.
         grid.setColumnStretch(1, 1)
@@ -189,6 +208,25 @@ class LeaveRequestsDialog(QDialog):
         apply_button = QPushButton("Answer them")
         apply_button.clicked.connect(self.answer)
         outer.addWidget(apply_button)
+
+    def _set_all_grants(self, state: int) -> None:
+        checked = state != Qt.CheckState.Unchecked.value
+        for row in self.rows:
+            with QSignalBlocker(row.grant):
+                row.grant.setChecked(checked)
+        self._sync_grant_all()
+
+    def _sync_grant_all(self) -> None:
+        checked = sum(row.grant.isChecked() for row in self.rows)
+        state = Qt.CheckState.Unchecked
+        if checked:
+            state = (
+                Qt.CheckState.Checked
+                if checked == len(self.rows)
+                else Qt.CheckState.PartiallyChecked
+            )
+        with QSignalBlocker(self.grant_all):
+            self.grant_all.setCheckState(state)
 
     # --- picking a man out --------------------------------------------------
 
