@@ -93,7 +93,9 @@ class AircraftBehavior:
             group.points[0].tasks[:] = [
                 t for t in group.points[0].tasks if not isinstance(t, OptRTBOnOutOfAmmo)
             ]
-            group.task = Nothing.name
+            # Main-task metadata labels the flight in F10. Native FAC tasks
+            # remain absent; Realistic CAS owns discovery and designation.
+            group.task = AFAC.name
         elif self.task in [FlightType.CAS, FlightType.BAI]:
             self.configure_cas(group, flight)
         elif self.task == FlightType.ARMED_RECON:
