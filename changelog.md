@@ -2,6 +2,7 @@
 
 ## Features/Improvements
 * **[Realistic CAS]** Add AFAC avoidance of known ground air defences, cloud-limited climbs, standoff or abort routes, and marking of known SAM sites.
+* **[Realistic CAS]** Give smoke-capable AFACs stable non-white smoke colours and include the colour in marking reports.
 * **[Realistic CAS]** Add AFAC laser, night IR and finite payload smoke marking, configurable reports and mark duration, group reservations and separate marking experience.
 * **[UI]** Add aircraft search to the Add Squadron selector in Air Wing Configuration.
 * **[Realistic CAS]** Add opt-in AFAC area and frontline search patrols, skill-based discovery, discovery experience and visual-only night warnings; marking is not enabled yet.

@@ -276,6 +276,11 @@ station/fuel limits; player flights are not automatically steered. Threat ranges
 cloud layers and turn footprints are approximations, not protection from
 interception or hidden defences.
 
+AFAC smoke markers use green, red, orange and blue, never white. Each aircraft
+with smoke ammunition keeps a stable colour, included in its marking report.
+Each coalition uses all four colours before reusing them. Smoke remains limited
+by the aircraft's payload; manually fired smoke is unchanged.
+
 A mission is a **package** aimed at a **target**. A package contains one or more
 **flights**. A **flight** is a group of aircraft from one squadron with a single
 **task** (role), pilots, a start type, and a weapon loadout. **Escorts are flights

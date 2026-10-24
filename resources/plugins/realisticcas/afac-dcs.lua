@@ -30,6 +30,20 @@ do
         order[#order+1]=meta.name
       end
     end
+    -- Keep a stable colour per smoke-capable aircraft. Observers without smoke
+    -- do not consume a colour; each coalition cycles through the four colours.
+    local smokers,used={},{[1]=0,[2]=0}
+    local colours={'Green','Red','Orange','Blue'}
+    for _,id in ipairs(order)do
+      if (records[id].meta.afac.smokeRounds or 0)>0 then smokers[#smokers+1]=id end
+    end
+    table.sort(smokers)
+    for _,id in ipairs(smokers)do
+      local r=records[id]
+      local side=r.meta.coalition
+      r.smokeColour=colours[used[side]%#colours+1]
+      used[side]=used[side]+1
+    end
     local api={active=true}
     local nextTick=0
     local nextError=0
@@ -142,7 +156,7 @@ do
       smoke=function(id,t)
         local p=t.point
         trigger.action.smoke({x=p.x,y=land.getHeight({x=p.x,y=p.z}),z=p.z},
-          trigger.smokeColor.White)
+          trigger.smokeColor[records[id].smokeColour])
         records[id].smoked=true
         return true
       end,
@@ -155,7 +169,8 @@ do
           if detail.infrared then effects[#effects+1]='IR pointing' end
           if detail.smoke then effects[#effects+1]='smoking' end
           message(id,table.concat(effects,' and ')..' '..(t.typeName or t.id)..' at '..
-            coordinates(t.point)..(detail.laser and (' with code '..detail.laserCode) or '')..'.')
+            coordinates(t.point)..(detail.laser and (' with code '..detail.laserCode) or '')..
+            (detail.smoke and (' ('..records[id].smokeColour:lower()..' smoke)') or '')..'.')
         else
           message(id,'unmarking '..(t and (t.typeName or t.id) or detail.unit)..
             ' ('..detail.reason..').')
