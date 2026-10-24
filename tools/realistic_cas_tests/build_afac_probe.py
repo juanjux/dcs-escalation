@@ -42,6 +42,7 @@ def build_mission(
     cloudy: bool = False,
     quick: bool = False,
     live_fire: bool = False,
+    fire_discovery: bool = False,
 ) -> Mission:
     if quick and not safety:
         raise ValueError("The quick probe requires safety cases")
@@ -49,6 +50,8 @@ def build_mission(
         raise ValueError(
             "Live fire requires full safety cases with safe initial separation"
         )
+    if fire_discovery and not live_fire:
+        raise ValueError("Fire-discovery control requires live fire")
     mission = Mission()
     mission.start_time = datetime(2026, 6, 1, 0 if night else 12)
     mission.groundControl.blue_game_masters = 1
@@ -67,7 +70,7 @@ def build_mission(
             "realisticcas.afacStationMinutes": 3 if quick else (8 if safety else 2),
             "realisticcas.afacMarkMinutes": 1,
             "realisticcas.probabilisticDetection": False,
-            "realisticcas.acquisitionSeconds": 3,
+            "realisticcas.acquisitionSeconds": 60 if fire_discovery else 3,
             "realisticcas.debug": True,
         }
     )
@@ -97,9 +100,12 @@ def build_mission(
             (MQ_9_Reaper, "MQ-9 Reaper", FlightType.AFAC_AREA, False),
         )
     for index, (native, variant, task, bingo) in enumerate(cases):
-        center = airport.position.point_from_heading(
-            0, 6000 + index * (40000 if safety else 12000)
+        distance = (
+            30000
+            if safety and index == 0
+            else 6000 + index * (40000 if safety else 12000)
         )
+        center = airport.position.point_from_heading(0, distance)
         start, end = center.point_from_heading(270, 2000), center.point_from_heading(
             90, 2000
         )
@@ -299,6 +305,16 @@ end,nil,timer.getTime()+5)
                 "ZSU can shoot before discovery. Ground-truth diagnostic positions "
                 "are never fed to navigation. Wait for AFAC PROBE FINISHED.",
             )
+        if fire_discovery:
+            diagnostics = diagnostics.replace(
+                "Wait for AFAC PROBE FINISHED.",
+                "Sensor acquisition is deliberately delayed to 60 seconds to test "
+                "discovery by firing; no diagnostic reveals are injected. Wait for AFAC PROBE FINISHED.",
+            )
+            diagnostics = (
+                "trigger.action.outText('AFAC SAFE RECOVERY - FIRE DISCOVERY CONTROL. Airfield clear of threat rings. Sensor acquisition: 60 seconds. Wait for AFAC PROBE FINISHED.',60)\n"
+                + diagnostics
+            )
         probe = TriggerStart(comment="AFAC avoidance diagnostics")
         probe.add_action(DoScript(String(diagnostics)))
         mission.triggerrules.triggers.append(probe)
@@ -319,6 +335,8 @@ end,nil,timer.getTime()+5)
                     for o in observers
                 ],
                 "threats": config["registry"]["airDefenseThreats"],
+                "fireDiscovery": fire_discovery,
+                "acquisitionSeconds": config["acquisitionSeconds"],
             }
             live_script = (
                 "local LIVE_CONFIG="
@@ -342,6 +360,7 @@ if __name__ == "__main__":
     parser.add_argument("--cloudy", action="store_true")
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--live-fire", action="store_true")
+    parser.add_argument("--fire-discovery", action="store_true")
     args = parser.parse_args()
     if args.output.exists():
         parser.error("Output already exists; choose a new mission filename")
@@ -353,5 +372,6 @@ if __name__ == "__main__":
             cloudy=args.cloudy,
             quick=args.quick,
             live_fire=args.live_fire,
+            fire_discovery=args.fire_discovery,
         ).save(args.output)
     print(args.output)

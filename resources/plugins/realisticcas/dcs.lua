@@ -8,6 +8,7 @@ do
     if o.enabled~=true then return nil,"disabled" end
     if RealisticCAS._running then return nil,"already running" end
     assert(type(o.targets)=="table","explicit targets allowlist required")
+    assert(o.onFire==nil or type(o.onFire)=='function','onFire callback must be a function')
     local interval=o.interval or 1
     local budget=o.expiryBudget or 128
     assert(type(interval)=="number" and interval>=0.1 and interval<=60,"invalid interval")
@@ -77,7 +78,11 @@ do
         local g=u:getGroup()
         if not g or not allowed[g:getName()] then return end
         if not register(g) then return end
-        if event.id~=world.event.S_EVENT_BIRTH then service:fire(g:getID(),u:getPoint()) end
+        if event.id~=world.event.S_EVENT_BIRTH then
+          local p=u:getPoint()
+          local revealed=service:fire(g:getID(),p)
+          if revealed and o.onFire then o.onFire(g:getName(),u:getName(),p)end
+        end
       end)
       if not ok then log("ADAPTER_ERROR",nil,err) end
     end

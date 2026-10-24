@@ -162,4 +162,148 @@ do
     end
     return {mode='abort',reason='no safe orbit and approach inside assigned zone'}
   end
+
+  -- Recovery is not confined to the station zone. Candidate generation is
+  -- bounded, but every leg is checked against every supplied known threat.
+  local function travelThreats(input)
+    local out={}
+    for _,t in ipairs(input.threats)do
+      out[#out+1]={point=t.point,radius=t.radius+input.footprint,ceiling=t.ceiling}
+    end
+    return out
+  end
+  local function travelCandidates(input,threats)
+    local near={}
+    if input.candidateThreats then
+      for _,t in ipairs(input.candidateThreats)do
+        near[#near+1]={point=t.point,radius=t.radius+input.footprint,ceiling=t.ceiling}
+      end
+    else for _,t in ipairs(threats)do near[#near+1]=t end end
+    table.sort(near,function(a,b)
+      return distance(input.source,a.point)-a.radius<distance(input.source,b.point)-b.radius
+    end)
+    local out={}
+    for i=1,math.min(4,#near)do
+      local t=near[i]
+      local angle=math.atan2(input.source.z-t.point.z,input.source.x-t.point.x)
+      for n=0,8 do
+        local a=n==0 and angle or (n-1)*math.pi/4
+        local r=n==0 and t.radius+1250 or (t.radius+1500)/math.cos(math.pi/8)
+        local p={x=t.point.x+math.cos(a)*r,z=t.point.z+math.sin(a)*r}
+        if A.clear({x=p.x,y=input.source.y,z=p.z},threats,1000) and
+          input.height(p)+input.clearance<=input.source.y then out[#out+1]=p end
+      end
+    end
+    return out
+  end
+  function A.escape(input)
+    local threats=travelThreats(input)
+    if A.clear(input.source,threats,1000) then return nil end
+    local best,cost
+    for _,p in ipairs(travelCandidates(input,threats))do
+      local d=distance(input.source,p)
+      if (not cost or d<cost) and A.leg(input.source,p,input.source.y,threats,true) and
+        terrainSafe(input,input.source,p,input.source.y) and orbitTerrainSafe(input,p,input.source.y) then
+        best,cost=p,d
+      end
+    end
+    if best then return {mode='avoid',escape=true,point=best,path={best},altitude=input.source.y}end
+  end
+  function A.recovery(input)
+    if #input.threats>64 then return A.recoveryHold(input)end
+    local threats=travelThreats(input)
+    local source,destination=input.source,input.destination
+    local slots=math.min(3,input.slots)
+    local nodes={{point=source}}
+    for _,p in ipairs(travelCandidates(input,threats))do nodes[#nodes+1]={point=p}end
+    local function goal(p,native,landing)
+      local altitude=landing and 0 or math.min(source.y,p.altitude or source.y)
+      if A.clear({x=p.x,y=altitude,z=p.z},threats,1000) then
+        nodes[#nodes+1]={point=p,goal=true,native=native,landing=landing,altitude=altitude}
+      end
+    end
+    if destination.landing then
+      local approach=math.max(5000,math.min(20000,input.speed*180))
+      local d=distance(source,destination)
+      if d<=approach*2 then goal(destination,true,true)end
+      local angle=math.atan2(source.z-destination.z,source.x-destination.x)
+      for n=0,8 do
+        local a=n==0 and angle or (n-1)*math.pi/4
+        local p={x=destination.x+math.cos(a)*approach,z=destination.z+math.sin(a)*approach}
+        -- The native landing approach must not begin inside a known low-level ring.
+        if A.leg(p,destination,0,threats,false) then goal(p,false,false)end
+      end
+    else goal(destination,true,false)end
+    local unsafe=not A.clear(source,threats,1000)
+    local function better(a,b)
+      return not b or a.escape<b.escape-0.01 or
+        (math.abs(a.escape-b.escape)<0.01 and (a.length<b.length-0.01 or
+          (math.abs(a.length-b.length)<0.01 and #a.path<#b.path)))
+    end
+    local edges={}
+    local function edge(i,j)
+      local key=i..':'..j
+      if edges[key]~=nil then return edges[key]end
+      local a,b=nodes[i],nodes[j]
+      local altitude=b.altitude or source.y
+      local ok=A.leg(a.point,b.point,altitude,threats,i==1) and
+        (b.landing or terrainSafe(input,a.point,b.point,altitude))
+      edges[key]=ok;return ok
+    end
+    local states={[1]={escape=0,length=0,path={}}}
+    local best
+    for hop=1,slots+1 do
+      local nextStates={}
+      for i,state in pairs(states)do
+        if not nodes[i].goal then
+          for j=2,#nodes do
+            local node=nodes[j]
+            local count=hop-(node.native and 1 or 0)
+            if i~=j and count<=slots and edge(i,j)then
+              local length=distance(nodes[i].point,node.point)
+              local candidate={escape=unsafe and (hop==1 and length or state.escape) or 0,
+                length=state.length+length,path={}}
+              for _,p in ipairs(state.path)do candidate.path[#candidate.path+1]=p end
+              if not node.native then candidate.path[#candidate.path+1]=node.point end
+              if node.goal then
+                if destination.landing and not node.native then
+                  candidate.length=candidate.length+distance(node.point,destination)
+                end
+                if better(candidate,best)then best=candidate end
+              elseif better(candidate,nextStates[j])then nextStates[j]=candidate end
+            end
+          end
+        end
+      end
+      states=nextStates
+    end
+    if best then return {mode='return',path=best.path,altitude=source.y,escape=unsafe}end
+    local escape=A.escape(input)
+    if escape then escape.mode='hold';return escape end
+    return A.recoveryHold(input)
+  end
+  function A.recoveryHold(input)
+    local source=input.source
+    if A.clear(source,travelThreats(input),1000) and orbitTerrainSafe(input,source,source.y)then
+      return {mode='hold',point=source,path={source},altitude=source.y}
+    end
+    return {mode='blocked',reason='no safe recovery or escape path'}
+  end
+  function A.recoverySafe(input,points,first,last,holding)
+    local threats=travelThreats(input)
+    local previous=input.source
+    for i=first,last do
+      local native=points[i]
+      local p={x=native.x,z=native.y}
+      local landing=native.type=='Land'
+      local altitude=landing and 0 or native.alt+
+        (native.alt_type=='RADIO' and input.height(p) or 0)
+      altitude=math.min(input.source.y,altitude)
+      if not A.leg(previous,p,altitude,threats,i==first) or
+        (not landing and not terrainSafe(input,previous,p,altitude))then return false end
+      previous=p
+    end
+    return not holding or (A.clear({x=previous.x,y=input.source.y,z=previous.z},threats,1000) and
+      orbitTerrainSafe(input,previous,input.source.y))
+  end
 end

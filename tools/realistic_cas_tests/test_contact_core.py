@@ -55,6 +55,7 @@ function group(name,id,side,category)
 end
 function emit(id,g)
   local u={isExist=function() return true end,getCoalition=function() return g.side end,
+    getName=function()return g.name..'-unit' end,
     getGroup=function() return g end,getPoint=function() return {x=1,y=2,z=3} end}
   for h in pairs(handlers) do h:onEvent({id=id,initiator=u}) end
 end
@@ -212,6 +213,21 @@ class DcsAdapterTests(unittest.TestCase):
         now=15;pending[1].f(nil,now);assert(b.hidden)
         assert(a:stop());assert(not r.hidden and not b.hidden)
         assert(next(handlers)==nil and pending[1].f(nil,now)==nil)
+        """)
+
+    def test_fire_callback_runs_only_after_successful_revelation(self):
+        self.check("""
+        r=group('r',1);outside=group('outside',5);callbacks=0
+        a=RealisticCAS.start({enabled=true,targets={{name='r',originalInvisible=false}},
+          onFire=function(groupName,unitName,p)
+            callbacks=callbacks+1
+            assert(groupName=='r' and unitName=='r-unit' and p.x==1)
+            assert(a.service:isRevealed(1,2))
+          end})
+        emit(15,r);emit(1,outside);assert(callbacks==0)
+        r.fail=true;emit(1,r);assert(callbacks==0)
+        r.fail=false;emit(1,r);assert(callbacks==1)
+        emit(23,r);assert(callbacks==2)
         """)
 
     def test_late_birth_and_replacement(self):

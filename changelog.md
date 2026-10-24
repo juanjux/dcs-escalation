@@ -191,6 +191,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Realistic CAS]** Recheck known threats during AFAC recovery, prioritise fire-revealed threats and allow urgent outward escapes beyond the station zone.
 * **[Mission Generation]** Remove leftover waypoint calls to the deleted EW Jammer plugin.
 * **[UI]** Restore a visible draggable scrollbar in all searchable combo-box popups.
 * **[Realistic CAS]** Give AI CAS and Armed Recon flights a moving search circuit while contacts are hidden, bounded by station time and fuel reserve.
