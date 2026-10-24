@@ -1553,6 +1553,7 @@ Saves from 2.3 are not compatible with 2.4.
 * **[Game]** Added new Economy options for adjusting income multipliers and starting budgets.
 
 ## Fixes :
+* **[HQ Automation]** Balance ground purchases against the actual roster and resulting force composition; unavailable classes no longer cause repeated expensive artillery orders.
 * **[Map]** Missiles sites now have a proper icon and will not re-use the SAM sites icon
 * **[Mission Generator]** Ground unit waypoints improperly set to "On Road" - fixed
 * **[Mission Generator]** Target waypoints not at ground level - fixed

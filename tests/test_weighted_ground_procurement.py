@@ -5,7 +5,9 @@ from types import SimpleNamespace
 from typing import Any
 
 from game.procurement import ProcurementAi
+from game.data.doctrine import GroundUnitProcurementRatios
 from game.data.units import UnitClass
+from game.theater import Player
 
 
 class _Unit:
@@ -23,19 +25,32 @@ class _Unit:
 def _ai(weighted: bool, units: list[Any]) -> ProcurementAi:
     ai = ProcurementAi.__new__(ProcurementAi)
     ai.game = SimpleNamespace(  # type: ignore[assignment]
-        settings=SimpleNamespace(weighted_ground_procurement=weighted)
+        settings=SimpleNamespace(weighted_ground_procurement=weighted),
+        coalition_for=lambda _: SimpleNamespace(transfers=[]),
     )
+    ai.is_player = Player.BLUE
     ai.faction = SimpleNamespace(  # type: ignore[assignment]
-        frontline_units=units, artillery_units=[]
+        frontline_units=units,
+        artillery_units=[],
+        doctrine=SimpleNamespace(
+            ground_unit_procurement_ratios=GroundUnitProcurementRatios(
+                {UnitClass.TANK: 1}
+            )
+        ),
     )
     return ai
+
+
+def _pick(ai: ProcurementAi, budget: float) -> Any:
+    cp = SimpleNamespace(allocated_ground_units=lambda _: SimpleNamespace(all={}))
+    return ai.balanced_ground_unit(cp, budget)  # type: ignore[arg-type]
 
 
 def _draws(ai: ProcurementAi, times: int = 4000) -> collections.Counter[str]:
     picks: collections.Counter[str] = collections.Counter()
     for _ in range(times):
-        picked = ai.affordable_ground_unit_of_class(1000, UnitClass.TANK)
-        picks[picked.name] += 1  # type: ignore[union-attr]
+        picked = _pick(ai, 1000)
+        picks[picked.name] += 1
     return picks
 
 
@@ -60,10 +75,10 @@ def test_off_is_the_old_uniform_roll() -> None:
 
 def test_nothing_affordable_buys_nothing() -> None:
     ai = _ai(True, [_Unit("MBT", 9000)])
-    assert ai.affordable_ground_unit_of_class(10, UnitClass.TANK) is None
+    assert _pick(ai, 10) is None
 
 
 def test_a_free_unit_does_not_break_the_weighting() -> None:
     """A price of 0 would make random.choices raise on an all-zero weight vector."""
     ai = _ai(True, [_Unit("free", 0)])
-    assert ai.affordable_ground_unit_of_class(10, UnitClass.TANK) is not None
+    assert _pick(ai, 10) is not None
