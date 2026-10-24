@@ -171,6 +171,21 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
 
 ## 3. Your forces
 
+### Automatic ground purchases
+
+Campaign Management > HQ Automation > **Automate front-line purchases** buys a
+mix based on the faction's doctrine and its actual purchasable roster. AAA and
+MANPADS count toward the short-range air-defense role. Existing units, pending
+orders and incoming transfers all count when comparing the force's value by role.
+Each purchase is evaluated against the resulting composition, so an expensive
+support unit does not automatically take priority over missing tanks. If one
+role is unaffordable, other affordable roles can still be reinforced.
+
+**AI buys its better ground units more often** only prefers higher-priced models
+within the same role when they fit the composition equally well. It does not
+favor an expensive role over another. Purchase budgets and reserve limits are
+unchanged; existing campaigns use the new selection without editing their save.
+
 ### Persistent ship and building damage
 
 Campaign Management > Persistent damage & repairs contains **Persistent ship and building damage**

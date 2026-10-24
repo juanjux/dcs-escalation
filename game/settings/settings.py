@@ -981,11 +981,11 @@ class Settings:
         HQ_AUTOMATION_SECTION,
         default=True,
         detail=(
-            "The AI picks a ground unit uniformly at random from everything of the "
-            "right class it can afford, so a faction fielding both a modern MBT and a "
-            "gun truck buys as many of one as the other. With this enabled the roll is "
-            "weighted by price, which is the only capability measure the model has. It "
-            "is a weighting and not a maximum, so cheap units still appear."
+            "Automatic purchases first choose the units that best balance the force "
+            "against the faction's doctrine. When models within the same role fit "
+            "equally well, prefer more expensive models as a proxy for capability. "
+            "Disabling this uses an equal chance among those models. This option "
+            "does not increase a role's share of spending."
         ),
     )
     automate_ground_object_repairs: bool = boolean_option(
