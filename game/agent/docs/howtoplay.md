@@ -96,12 +96,13 @@ impact reading, or last positive health alone never establish recovery. Telemetr
 does not model every subsystem; canopy jettison alone did not reduce measured life.
 Old missions without this telemetry retain their existing behavior.
 
-Ship and placed-building health is restored with native mission-trigger actions
-using DCS percentage units, then checked against measured life. Mission-sandbox
-Lua does not have to expose the native setter or `net.dostring_in` for these
-objects. Finite-life terrain scenery still requires a working native bridge;
-unsupported restorations are warned about and omitted from health telemetry,
-rather than recording a healthy replacement over existing campaign damage.
+Ship health is restored with native mission-trigger actions. Placed buildings
+receive small initial damage pulses, accepting a two-percentage-point tolerance
+because DCS ignores very small hits. Initialization can take about 90 simulated
+seconds for severe damage. Buildings with dangerously close or fragile neighbours
+are skipped, as is partial restoration of baked terrain scenery. A warning names
+skipped buildings, and their stored campaign health is retained instead of being
+overwritten by a full-health reading. Health telemetry starts after initialization.
 Regenerate a mission to use updated restoration actions; an already loaded
 mission retains its embedded scripts and triggers.
 
@@ -214,8 +215,8 @@ unchanged; existing campaigns use the new selection without editing their save.
 
 Campaign Management > Persistent damage & repairs contains **Persistent ship and building damage**
 (enabled by default) and **Ship and building damage repaired per turn (%)**
-(default 34). Surviving naval units and buildings, including scenery objectives,
-keep their remaining health in the next mission. Armor groups and SAM units do
+(default 34). Surviving naval units and placed buildings keep their remaining
+health in the next mission, subject to the restoration limits above. Armor groups and SAM units do
 not retain partial damage and continue to recover fully between turns.
 
 At each turn boundary, including a skipped turn, add the configured percentage

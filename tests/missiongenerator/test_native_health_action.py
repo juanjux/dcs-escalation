@@ -64,7 +64,7 @@ def test_compiled_mission_restores_without_net_or_a_sandbox_setter(
     trigger.add_action(
         DoScript(
             String(
-                'ESCALATION_PERSISTENT_DAMAGE={{name="building",health=.65,native=true}}'
+                'ESCALATION_PERSISTENT_DAMAGE={{name="ship",health=.65,native=true}}'
             )
         )
     )
@@ -113,6 +113,6 @@ def test_compiled_mission_restores_without_net_or_a_sandbox_setter(
     lua.execute("scheduled(nil,1)")
     assert lua.eval("sandbox.net") is None
     assert lua.eval("sandbox.a_unit_set_life_percentage") is None
-    assert lua.eval("sandbox.escalationPersistentDamage.snapshot().building") == 0.65
+    assert lua.eval("sandbox.escalationPersistentDamage.snapshot().ship") == 0.65
     lua.execute("object.life=400; scheduled(nil,2)")
-    assert lua.eval("sandbox.escalationPersistentDamage.snapshot().building") == 0.4
+    assert lua.eval("sandbox.escalationPersistentDamage.snapshot().ship") == 0.4

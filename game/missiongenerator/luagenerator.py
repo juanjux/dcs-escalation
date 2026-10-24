@@ -102,9 +102,14 @@ class LuaGenerator:
             unit = mapping.theater_unit
             if unit.alive and unit.persistent_damage_eligible:
                 rows.append(
-                    {"name": name, "health": unit.health_fraction, "native": True}
+                    {
+                        "name": name,
+                        "health": unit.health_fraction,
+                        "native": unit.is_ship,
+                        "building": not unit.is_ship,
+                    }
                 )
-                if unit.health_fraction < 1:
+                if unit.is_ship and unit.health_fraction < 1:
                     native_actions.append(
                         SetUnitHealth(mapping.dcs_unit.id, unit.health_fraction)
                     )
@@ -115,6 +120,7 @@ class LuaGenerator:
                     {
                         "name": name,
                         "health": unit.health_fraction,
+                        "unsupported": True,
                         "x": unit.position.x,
                         "z": unit.position.y,
                     }

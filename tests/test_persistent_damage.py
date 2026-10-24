@@ -258,6 +258,7 @@ def test_generation_embeds_health_and_only_tracks_eligible_units(
     from zipfile import ZipFile
 
     campaign.units[0].health = 0.65
+    campaign.units[1].health = 0.35
     generator = LuaGenerator(
         campaign.game, Mission(), cast(Any, SimpleNamespace()), campaign.um
     )
@@ -281,7 +282,13 @@ def test_generation_embeds_health_and_only_tracks_eligible_units(
         campaign.units[1].unit_name,
     }
     assert rows[0].health == 0.65
-    assert all(row.native for row in rows)
+    by_name = {row.name: row for row in rows}
+    assert by_name[campaign.units[0].unit_name].native
+    assert not by_name[campaign.units[0].unit_name].unsupported
+    assert not by_name[campaign.units[1].unit_name].native
+    assert by_name[campaign.units[1].unit_name].building
+    assert not by_name[campaign.units[1].unit_name].unsupported
+    assert by_name[campaign.units[1].unit_name].health == 0.35
     assert len(lua.globals().native_calls) == 1
     assert lua.globals().native_calls[1].id == 101
     assert lua.globals().native_calls[1].percent == 65

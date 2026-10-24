@@ -192,7 +192,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
-* **[Campaign]** Restore ship and placed-building health with native mission actions and correct percentage units; report restoration failures with object details.
+* **[Campaign]** Restore ship health with native actions and placed-building health with small startup pulses; retain saved damage when restoration fails.
 * **[Realistic CAS]** Recheck known threats during AFAC recovery, prioritise fire-revealed threats and allow urgent outward escapes beyond the station zone.
 * **[Mission Generation]** Remove leftover waypoint calls to the deleted EW Jammer plugin.
 * **[UI]** Restore a visible draggable scrollbar in all searchable combo-box popups.
