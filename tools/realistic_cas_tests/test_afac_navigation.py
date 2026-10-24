@@ -24,6 +24,7 @@ class AfacNavigationTests(unittest.TestCase):
         end
         meta.navigation.route[5].type='Land';meta.navigation.route[5].action='Landing'
         meta.navigation.route[5].airdromeId=12
+        meta.navigation.route[4].x=-40000;meta.navigation.route[5].x=-50000
         config.afacAvoidance={}
         config.airDefenseThreats={{name='gun',groupName='red',coalition=1,typeName='ZSU_57_2',
           radius=7000,ceiling=4000,known=false}}
@@ -54,7 +55,9 @@ class AfacNavigationTests(unittest.TestCase):
         end
         function orbit(task)return finalOrbit(task).params.task end
         function jump(task)
-          return task.params.route.points[1].task.params.tasks[2].params.action.params.goToWaypointIndex
+          for _,t in ipairs(task.params.route.points[1].task.params.tasks)do
+            if t.params.action.id=='SwitchWaypoint' then return t.params.action.params.goToWaypointIndex end
+          end
         end
         """)
 
@@ -66,6 +69,135 @@ class AfacNavigationTests(unittest.TestCase):
         assert(enemyReads==1 and #assigned==1)
         assert(assigned[1].id=='Mission' and assigned[1].params.airborne)
         assert(orbit(assigned[1]).params.altitude==4500)
+        """)
+
+    def test_return_detours_a_known_threat_and_rechecks_after_waypoint_progress(self):
+        self.rt.execute("""
+        local n=config.observers[1].afac.navigation
+        observer.point.x=-20000;n.route[4].x=25000
+        beginNavigation();now=601;known();tick()
+        local points=assigned[1].params.route.points
+        assert(jump(assigned[1])<4 and points[4].x==25000)
+        assert(points[5].airdromeId==12 and n.route[4].x==25000)
+        observer.point.x=25000
+        local actions=points[4].task.params.tasks
+        assert(loadstring(actions[#actions].params.action.params.command))()
+        tick();assert(#assigned==2)
+        assert(RealisticCAS.afacNavigation.blue.exitWaypoint==4)
+        """)
+
+    def test_new_fire_knowledge_replans_an_already_returning_flight(self):
+        self.rt.execute("""
+        local n=config.observers[1].afac.navigation
+        observer.point.x=-20000;n.route[4].x=25000
+        beginNavigation();now=601;tick()
+        assert(enemyReads==0 and #assigned==1 and jump(assigned[1])==4)
+        assert(fog.service:fire(red:getID(),gun.point))
+        nav:fire('red','gun',gun.point);tick()
+        assert(#assigned==2 and jump(assigned[2])<4)
+        assert(RealisticCAS.afacReturn.blue=='station complete')
+        """)
+
+    def test_emergency_escape_leaves_the_zone_without_restarting_every_tick(self):
+        self.rt.execute("""
+        config.observers[1].afac.zone.radius=2000
+        observer.point.x=-1000
+        function observer:getDesc()return {Hmax=9000,speedMax=140}end
+        known();beginNavigation();tick()
+        local points=assigned[1].params.route.points
+        assert(points[2].x< -9000 and points[2].speed==140)
+        assert(orbit(assigned[1]).params.speed==55)
+        for i=1,8 do tick()end
+        assert(#assigned==1 and not RealisticCAS.afacReturn.blue)
+        """)
+
+    def test_blocked_airfield_holds_then_resumes_when_the_threat_is_destroyed(self):
+        self.rt.execute("""
+        local n=config.observers[1].afac.navigation
+        n.exitWaypoint=5;n.route[5].x=0;n.route[5].alt=0;n.route[5].speed=0
+        observer.point.x=-20000
+        beginNavigation();now=601;known();tick()
+        assert(#assigned==1 and finalOrbit(assigned[1]))
+        local options=assigned[1].params.route.points[1].task.params.tasks
+        assert(options[2].params.action.params.name==6 and options[2].params.action.params.value==false)
+        for i=1,7 do tick()end;assert(#assigned==1)
+        gun.life=0;for i=1,6 do tick()end
+        assert(#assigned==2 and jump(assigned[2])==5)
+        options=assigned[2].params.route.points[1].task.params.tasks
+        assert(options[2].params.action.params.value==true)
+        """)
+
+    def test_recovery_cleanup_retries_without_losing_ownership(self):
+        self.rt.execute("""
+        beginNavigation();now=601;tick()
+        failSet=true;assert(not nav:stop())
+        failSet=false;assert(nav:stop() and #assigned==2)
+        assert(RealisticCAS.afacNavigation.blue.recoveryRevision==nil)
+        """)
+
+    def test_fire_prioritises_a_nearby_afac_over_the_regular_work_cursor(self):
+        self.rt.execute("""
+        local original=config.observers[1]
+        config.observers={}
+        for i=1,8 do
+          local name='distant-'..i
+          local g=group(name,100+i,2,0)
+          local u=unit(name,g,'FA-18C_hornet',500000+i*10000,2000)
+          function u:getFuel()return 0.5 end
+          function u:getDesc()return {Hmax=9000}end
+          local afac={}
+          for k,v in pairs(original.afac)do afac[k]=v end
+          local n={}
+          for k,v in pairs(afac.navigation)do n[k]=v end
+          n.points={{x=500000+i*10000-2000,z=0},{x=500000+i*10000+2000,z=0}}
+          afac.navigation=n;afac.groupName=name
+          config.observers[#config.observers+1]={name=name,coalition=2,afac=afac}
+        end
+        config.observers[#config.observers+1]=original
+        observer.point.x=-1000
+        beginNavigation();tick();assert(#assigned==0 and enemyReads==0)
+        assert(fog.service:fire(red:getID(),gun.point))
+        nav:fire('red','gun',gun.point);tick()
+        assert(#assigned==1 and RealisticCAS.afacNavigation.blue.active)
+        """)
+
+    def test_known_fixed_sam_fire_is_not_dependent_on_concealment_ownership(self):
+        self.rt.execute("""
+        config.airDefenseThreats[1].known=true
+        observer.point.x=-1000
+        function gun:getName()return 'gun'end
+        beginNavigation();nav:fireEvent(gun);tick()
+        assert(#assigned==1 and orbit(assigned[1]).params.point.x< -9000)
+        assert(red.hidden)
+        """)
+
+    def test_fire_notification_does_not_query_an_unknown_unit_position(self):
+        self.rt.execute("""
+        function gun:getName()return 'gun'end
+        beginNavigation();nav:fireEvent(gun);tick()
+        assert(enemyReads==0 and #assigned==0)
+        """)
+
+    def test_rejected_recovery_does_not_invalidate_the_previous_route_revision(self):
+        self.rt.execute("""
+        config.observers[1].afac.navigation.route[4].x=25000
+        observer.point.x=-20000
+        beginNavigation();now=601;tick()
+        local previous=RealisticCAS.afacNavigation.blue.recoveryRevision
+        known();failSet=true;tick()
+        assert(RealisticCAS.afacNavigation.blue.recoveryRevision==previous)
+        failSet=false;tick()
+        assert(#assigned==2 and RealisticCAS.afacNavigation.blue.recoveryRevision>previous)
+        """)
+
+    def test_turn_margins_use_actual_speed_instead_of_only_patrol_speed(self):
+        self.rt.execute("""
+        config.observers[1].afac.zone.radius=100000
+        config.airDefenseThreats[1].ceiling=nil
+        observer.point.x=-50000;observer.velocity={x=140,y=0,z=0}
+        known();beginNavigation();tick()
+        local p=orbit(assigned[1]).params.point
+        assert(math.sqrt(p.x*p.x+p.y*p.y)>16000)
         """)
 
     def test_climb_uses_real_altitude_before_crossing_the_threat(self):
@@ -103,10 +235,11 @@ class AfacNavigationTests(unittest.TestCase):
         observer.point.x=1000
         config.afacAvoidance.clouds={base=2500,top=4000}
         known();beginNavigation();tick()
-        assert(RealisticCAS.afacAbort.blue and #assigned==1 and #switches==0)
-        assert(jump(assigned[1])==4)
+        assert(#assigned==1 and #switches==0 and orbit(assigned[1]))
         assert(not nav:clear('blue',observer.point))
-        tick();assert(#assigned==1)
+        observer.point.x=-10000
+        for i=1,6 do tick()end
+        assert(RealisticCAS.afacAbort.blue and RealisticCAS.afacReturn.blue)
         """)
 
     def test_destroyed_or_expired_threat_resumes_original_task(self):
@@ -328,7 +461,7 @@ class AfacNavigationTests(unittest.TestCase):
                 assert(points[5].type=='Land' and points[5].alt==0 and points[5].speed==0)
                 assert(points[5].airdromeId==original.airdromeId and
                   points[5].helipadId==original.helipadId and points[5].linkUnit==original.linkUnit)
-                assert(n.route[4].x==4000 and original.ETA_locked)
+                assert(n.route[4].x==-40000 and original.ETA_locked)
                 assert(RealisticCAS.afacNavigation.blue.exitWaypoint==5)
                 tick();assert(#assigned==1)
                 """

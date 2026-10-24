@@ -416,6 +416,28 @@ def test_live_fire_rejects_cases_without_safe_initial_separation(
         build_mission(safety=safety, quick=quick, live_fire=True)
 
 
+def test_fire_discovery_probe_delays_acquisition_and_keeps_the_airfield_clear() -> None:
+    from tools.realistic_cas_tests.build_afac_probe import build_mission
+
+    mission = build_mission(safety=True, live_fire=True, fire_discovery=True)
+    config = getattr(mission, "_afac_probe_config")
+    assert config["acquisitionSeconds"] == 60
+    airport = mission.terrain.airports["Kobuleti"]
+    for group in mission.country("Russia").vehicle_group:
+        if group.name.startswith("AFAC_AA_"):
+            threat = next(
+                t
+                for t in config["registry"]["airDefenseThreats"]
+                if t["groupName"] == group.name
+            )
+            assert (
+                group.points[0].position.distance_to_point(airport.position)
+                > threat["radius"] + 20000
+            )
+    with pytest.raises(ValueError, match="requires live fire"):
+        build_mission(fire_discovery=True)
+
+
 def test_quick_probe_exports_complete_routes_accepted_by_native_adapter(
     tmp_path: Path,
 ) -> None:

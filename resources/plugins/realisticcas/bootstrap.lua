@@ -65,6 +65,14 @@ do
         local ok,name=pcall(function() return event.initiator:getName() end)
         if ok then api.detectors.afacMarking:shot(name) end
       end
+      if event and (event.id==world.event.S_EVENT_SHOT or
+        (world.event.S_EVENT_SHOOTING_START and event.id==world.event.S_EVENT_SHOOTING_START))then
+        local nav=api.detectors and api.detectors.afacNavigation
+        if nav then
+          local ok,err=pcall(function()nav:fireEvent(event.initiator)end)
+          if not ok then log('ERROR','AFAC fire notification: '..tostring(err))end
+        end
+      end
       if event and world.event.S_EVENT_MISSION_END and event.id==world.event.S_EVENT_MISSION_END then
         local ok,result=pcall(function()return api:stop()end)
         if not ok or not result then log('ERROR','mission-end cleanup: '..tostring(result)) end
@@ -73,7 +81,10 @@ do
     RealisticCAS.mission=api -- Retain a recovery handle even if startup rollback fails.
     local ok,err=pcall(function()
       api.fog=assert(RealisticCAS.start({enabled=true,targets=r.groups,ttl=c.ttl,
-        debug=c.debug,expiryBudget=c.expiryBudget}))
+        debug=c.debug,expiryBudget=c.expiryBudget,onFire=function(groupName,unitName,point)
+          local nav=api.detectors and api.detectors.afacNavigation
+          if nav then nav:fire(groupName,unitName,point)end
+        end}))
       api.detectors=RealisticCAS.startDetection(api.fog,{targets=r.targets,observers=r.observers,
         knownTargets=c.afacEnabled and r.afacKnownTargets or nil,
         airDefenseThreats=r.airDefenseThreats,afacAvoidance=c.afacAvoidance,

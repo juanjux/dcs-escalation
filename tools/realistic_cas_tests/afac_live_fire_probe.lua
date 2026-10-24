@@ -75,7 +75,8 @@ do
     end
   end
   world.addEventHandler(handler)
-  log('START','readOnly=true|interval=1|groundTruthNotShared=true|envelopes=approximate')
+  log('START','readOnly=true|interval=1|groundTruthNotShared=true|envelopes=approximate'..
+    '|fireDiscovery='..tostring(c.fireDiscovery)..'|acquisitionSeconds='..tostring(c.acquisitionSeconds))
   timer.scheduleFunction(function(_,now)
     local samples={}
     for _,t in ipairs(c.threats)do
