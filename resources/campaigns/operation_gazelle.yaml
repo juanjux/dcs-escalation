@@ -31,6 +31,7 @@ squadrons:
       aircraft:
         - C-130J-30
       size: 4
+      pilots: 8
   # Tel Nof
   23:
     - primary: SEAD
@@ -38,25 +39,30 @@ squadrons:
       aircraft:
         - F-4E-45MC Phantom II
       size: 20
+      pilots: 24
     - primary: Escort
       secondary: any
       aircraft:
         - F-4E-45MC Phantom II
       size: 20
+      pilots: 24
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 2
+      pilots: 6
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-1H Iroquois
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - UH-1H Iroquois
       size: 4
+      pilots: 8
   # Hatzor
   20:
     - primary: BAI
@@ -65,12 +71,14 @@ squadrons:
         - A-4E Skyhawk
         - F-4E-45MC Phantom II
       size: 20
+      pilots: 24
     - primary: Strike
       secondary: any
       aircraft:
         - A-4E Skyhawk
         - F-4E-45MC Phantom II
       size: 20
+      pilots: 24
   # El Arish
   29:
     - primary: CAS
@@ -78,6 +86,7 @@ squadrons:
       aircraft:
         - MiG-19P Farmer-B
       size: 12
+      pilots: 16
   # Baluza
   27:
     - primary: Air Assault
@@ -85,6 +94,7 @@ squadrons:
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
   # Melez
   5:
     - primary: BAI
@@ -92,11 +102,13 @@ squadrons:
       aircraft:
         - MiG-15bis Fagot
       size: 16
+      pilots: 20
     - primary: Air Assault
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
   # Al Mansurah
   14:
     - primary: BARCAP
@@ -104,11 +116,13 @@ squadrons:
       aircraft:
         - MiG-21bis Fishbed-N
       size: 16
+      pilots: 20
     - primary: BAI
       secondary: any
       aircraft:
         - MiG-19P Farmer-B
       size: 16
+      pilots: 20
   # Cairo West
   18:
     - primary: Strike
@@ -116,11 +130,13 @@ squadrons:
       aircraft:
         - Tu-16 Badger
       size: 14
+      pilots: 18
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - MiG-21bis Fishbed-N
       size: 16
+      pilots: 20
   # FARP
   Port Tewfik Staging Area:
     - primary: Transport
@@ -128,3 +144,4 @@ squadrons:
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8

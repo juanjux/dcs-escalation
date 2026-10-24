@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
 )
 
+from game.theater import ConflictTheater
 from game.weather.conditions import Conditions
 from qt_ui.simcontroller import SimController
 from qt_ui.widgets.QConditionsDialog import QConditionsDialog
@@ -49,16 +50,23 @@ class QConditionsWidget(QFrame):
         QConditionsDialog(self.time_turn_widget, self.weather_widget).exec()
 
     def setCurrentTurn(
-        self, turn: int, conditions: Conditions, can_refresh_weather: bool = False
+        self,
+        turn: int,
+        conditions: Conditions,
+        can_refresh_weather: bool = False,
+        theater: ConflictTheater | None = None,
     ) -> None:
         """Sets the turn information display.
 
         :arg turn Current turn number.
         :arg conditions Current time and weather conditions.
         :arg can_refresh_weather Whether to offer refetching the observation.
+        :arg theater Campaign location and mission timezone for solar times.
         """
         self.time_turn_widget.set_current_turn(turn, conditions)
-        self.weather_widget.setCurrentTurn(turn, conditions, can_refresh_weather)
+        self.weather_widget.setCurrentTurn(
+            turn, conditions, can_refresh_weather, theater
+        )
         self.weather_widget.show()
         # The whole block is one hover target, so the details follow the cursor
         # anywhere over the turn and weather panel, not just over the weather half.

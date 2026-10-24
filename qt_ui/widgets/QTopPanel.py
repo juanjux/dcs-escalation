@@ -265,7 +265,9 @@ class QTopPanel(QFrame):
         # tooltip with everything the strip has no room for, and the two widgets
         # QConditionsDialog is built from.
         can_refresh = live_weather_enabled(game.settings)
-        self.conditionsWidget.setCurrentTurn(game.turn, game.conditions, can_refresh)
+        self.conditionsWidget.setCurrentTurn(
+            game.turn, game.conditions, can_refresh, theater=game.theater
+        )
         weather_widget = self.conditionsWidget.weather_widget
 
         self.turn_cell.set_turn(game.turn, game.conditions)

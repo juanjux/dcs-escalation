@@ -90,142 +90,166 @@ squadrons:
           aircraft: 
             - VAW-122 #Steeljaws - E-2 Hawkeye
           size: 2
+          pilots: 6
 
         - primary: Refueling
           aircraft: 
             - VS-28 (Tanker) #Gamblers - S-3B Viking
           size: 2
+          pilots: 6
           
         - primary: BARCAP
           secondary: air-to-air
           aircraft: 
             - VMFA-531 #Grey Ghosts - F-4B Phantom II
           size: 12
+          pilots: 16
           
         - primary: BARCAP
           secondary: air-to-air
           aircraft: 
             - VF-151 #Vigilantes - F-4B Phantom II
           size: 12
+          pilots: 16
 
         - primary: Strike
           secondary: air-to-ground
           aircraft: 
             - VF-14 #Tophatters - F-4B Phantom II
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-176 Thunderbolts #A-6A Intruder
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-165 Boomers #A-6A Intruder
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-147 #Argonauts - A-7E Corsair II
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-305 #Lobos - A-7E Corsair II
           size: 12
+          pilots: 16
           
         - primary: SEAD
           secondary: air-to-ground
           aircraft:
             - VA-46 Clansmen #Clansmen A-4E
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-55 Warhorses #Warhorses - A-4E
           size: 12
+          pilots: 16
           
         - primary: Air Assault
           secondary: any
           aircraft:
             - CH-53E
           size: 2
+          pilots: 6
     #CV-59 Forrestal
     Naval-2:
         - primary: AEW&C
           aircraft: 
             - VAW-123 #Screwtops - E-2 Hawkeye
           size: 2
+          pilots: 6
           
         - primary: Refueling
           aircraft: 
             - VS-24 (Tanker) #Scouts - S-3B Viking
           size: 2
+          pilots: 6
           
         - primary: BARCAP
           secondary: air-to-air
           aircraft: 
             - VF-84 #Jolly Rogers - F-4B Phantom II
           size: 12
+          pilots: 16
           
         - primary: BARCAP
           secondary: air-to-air
           aircraft: 
             - VF-111 #Sundowners - F-4B Phantom II
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft: 
             - VF-41 #Black Aces - F-4B Phantom II
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-34 Blue Blasters #A-6A Intruder
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-196 Main Battery #A-6A Intruder
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-12 #Flying Ubangis - A-7E Corsair II
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-113 #Stingers - A-7E Corsair II
           size: 12
+          pilots: 16
           
         - primary: SEAD
           secondary: air-to-ground
           aircraft:
             - VMA-144 Roadrunners #Roadruners - A-4E
           size: 12
+          pilots: 16
           
         - primary: Strike
           secondary: air-to-ground
           aircraft:
             - VA-212 #Rampant Riders - A-4E
           size: 12
+          pilots: 16
           
         - primary: Transport
           secondary: any
           aircraft:
             - CH-53E
           size: 2
+          pilots: 6
     #USAF
     #Guam (Andersen AFB)
     Guam:
@@ -233,34 +257,40 @@ squadrons:
          aircraft:
            - 43d Strategic Wing #B-52H Stratofortress
          size: 4
+         pilots: 8
           
        - primary: Strike
          aircraft:
            - 0038 43d Strategic Wing 0038 #B-52H Stratofortress
          size: 4
+         pilots: 8
           
        - primary: Refueling
          aircraft: 
            - KC-135 Stratotanker        
          size: 2
+         pilots: 6
           
        - primary: Escort
          secondary: air-to-air
          aircraft: 
            - F-4E Phantom II
          size: 12
+         pilots: 16
        
        - primary: Escort
          secondary: air-to-air
          aircraft: 
            - F-104G Starfighter 
          size: 12
+         pilots: 16
           
        - primary: Transport
          secondary: any
          aircraft:
            - C-130
          size: 4
+         pilots: 8
     #Da Nang 
     21: #Gudauta
        - primary: CAS
@@ -268,54 +298,63 @@ squadrons:
          aircraft:
            - VMA-311 Tomcats #Tomcats - A-4E
          size: 12
+         pilots: 16
        
        - primary: CAS
          secondary: air-to-ground
          aircraft:
            - VAL 4 Black Ponies #OV-10A Bronco
          size: 8
+         pilots: 12
 
        - primary: CAS
          secondary: air-to-ground
          aircraft:
            - AH-1W SuperCobra
          size: 4
+         pilots: 8
            
        - primary: CAS
          secondary: air-to-ground
          aircraft:
            - 20th TASS FAC #OV-10A Bronco
          size: 8
+         pilots: 12
           
        - primary: Transport
          secondary: any
          aircraft:
            - C-130
          size: 4
+         pilots: 8
          
        - primary: Air Assault
          secondary: any
          aircraft:
            - CH-53E        
          size: 2
+         pilots: 6
          
        - primary: Air Assault
          secondary: any
          aircraft:
            - CH-47D
          size: 2
+         pilots: 6
          
        - primary: Air Assault
          secondary: any
          aircraft:
            - UH-1H Iroquois
          size: 4
+         pilots: 8
          
        - primary: Transport
          secondary: any
          aircraft:
            - UH-1H Iroquois
          size: 4
+         pilots: 8
 
     #FOB Khe-Sahn
     FOB Khe-Sahn:
@@ -325,18 +364,21 @@ squadrons:
          aircraft:
            - AH-1W SuperCobra
          size: 4
+         pilots: 8
          
        - primary: Air Assault
          secondary: any
          aircraft:
            - UH-1H Iroquois
          size: 4
+         pilots: 8
          
        - primary: Transport
          secondary: any
          aircraft:
            - UH-1H Iroquois 
          size: 4
+         pilots: 8
 
     #Nah Trang 
     18: #Sochi-Adler
@@ -345,24 +387,28 @@ squadrons:
          aircraft:
            - F-5E Tiger II
          size: 8
+         pilots: 12
          
        - primary: Strike
          secondary: air-to-ground
          aircraft:
            - F-100 Super Sabre        
          size: 12
+         pilots: 16
          
        - primary: Transport
          secondary: any
          aircraft:
            - C-130
          size: 4
+         pilots: 8
          
        - primary: Transport
          secondary: any
          aircraft:
            - CH-47D
          size: 2
+         pilots: 6
          
     #Ubon (Tahiland)
     16: #Maykop-Khanskaya
@@ -370,54 +416,63 @@ squadrons:
          aircraft:
             - KC-130
          size: 2
+         pilots: 6
          
        - primary: Transport
          secondary: any
          aircraft:
            - C-130
          size: 4
+         pilots: 8
          
        - primary: Transport
          secondary: any
          aircraft:
            - CH-47D
          size: 2
+         pilots: 6
          
        - primary: BARCAP
          secondary: air-to-air
          aircraft:
            - 435th TFS #Deadly Black Eagles - F-104C Starfighter
          size: 12
+         pilots: 16
 
        - primary: BARCAP
          secondary: air-to-air
          aircraft:
            - 479th TFS #Deadly Black Eagles - F-104C Starfighter
          size: 12
+         pilots: 16
 
        - primary: Strike
          secondary: air-to-ground
          aircraft:
            - F-4C Phantom II
          size: 12
+         pilots: 16
 
        - primary: Strike
          secondary: air-to-ground
          aircraft:
            - 307th Strategic Wing #B-52H Stratofortress
          size: 4
+         pilots: 8
          
        - primary: Strike
          secondary: air-to-ground
          aircraft:
            - 0059 307th Strategic Wing #B-52H Stratofortress
          size: 4
+         pilots: 8
          
        - primary: Strike
          secondary: air-to-ground
          aircraft:
            - VA-354 TFW Bulldogs #A-7E Corsair II  
          size: 12
+         pilots: 16
     
     #Saigon
     15: #Krymsk
@@ -425,36 +480,42 @@ squadrons:
         aircraft:
            - KC-135 Stratotanker
         size: 2
+        pilots: 6
          
       - primary: Transport
         secondary: any
         aircraft:
           - C-130
         size: 4
+        pilots: 8
          
       - primary: BARCAP
         secondary: air-to-air
         aircraft:
           - F-4C Phantom II
         size: 12
+        pilots: 16
 
       - primary: SEAD
         secondary: air-to-ground
         aircraft:
           - F-105G Thunderchief
         size: 12
+        pilots: 16
          
       - primary: Strike
         secondary: air-to-ground
         aircraft:
           - F-105D Thunderchief        
         size: 12
+        pilots: 16
         
       - primary: Transport
         secondary: any
         aircraft:
           - CH-47D
         size: 4
+        pilots: 8
     #Vietnam 
     
     #Hai Pong 
@@ -464,18 +525,21 @@ squadrons:
         aircraft:
           - Mi-8MTV2 Hip
         size: 4
+        pilots: 8
 
       - primary: BAI
         secondary: air-to-ground
         aircraft:
           - MiG-15bis Fagot
         size: 12
+        pilots: 16
 
       - primary: BARCAP
         secondary: air-to-air
         aircraft:
           - MiG-19P Farmer-B
         size: 12
+        pilots: 16
 
     #Vinh
     23: #Kobuleti
@@ -484,17 +548,20 @@ squadrons:
         aircraft:
           - Mi-8MTV2 Hip
         size: 4
+        pilots: 8
 
       - primary: BAI
         secondary: air-to-ground
         aircraft:
           - MiG-15bis Fagot
         size: 12
+        pilots: 16
 
       - primary: Transport
         aircraft:
           - Mi-8MTV2 Hip
         size: 4
+        pilots: 8
         
     #Thanh Hoa
     24: #Senaki
@@ -503,18 +570,21 @@ squadrons:
         aircraft:
           - MiG-15bis Fagot
         size: 12
+        pilots: 16
 
       - primary: BAI
         secondary: air-to-ground
         aircraft:
           - MiG-19P Farmer-B
         size: 12
+        pilots: 16
 
       - primary: BARCAP
         secondary: air-to-air
         aircraft:
           - MiG-19P Farmer-B
         size: 12
+        pilots: 16
 
     # Hanoi
     25: #Kutaisi
@@ -522,11 +592,13 @@ squadrons:
         aircraft:
           - MiG-15bis Fagot
         size: 12
+        pilots: 16
 
       - primary: BARCAP
         aircraft:
           - MiG-21bis Fishbed-N
         size: 8
+        pilots: 12
 
     #Don Hoi 
     20: #Sukhumi
@@ -534,11 +606,13 @@ squadrons:
         aircraft:
           - MiG-21bis Fishbed-N
         size: 8
+        pilots: 12
 
       - primary: BARCAP
         aircraft:
           - MiG-21bis Fishbed-N
         size: 8
+        pilots: 12
 
     # Dien Bien Phu 
     32: #Beslan
@@ -547,6 +621,7 @@ squadrons:
           - An-26B
           - An-30M
         size: 4
+        pilots: 8
 
     # Yen Bai  
     29: #Tbilisi-Lochini
@@ -554,12 +629,14 @@ squadrons:
         aircraft:
           - MiG-21bis Fishbed-N
         size: 8
+        pilots: 12
 
       - primary: Transport
         aircraft:
           - An-30M
           - An-26B
         size: 4
+        pilots: 8
 
     # Yen Bai 
     Soganlug: #Songalung
@@ -568,6 +645,7 @@ squadrons:
           - An-30M
           - An-26B
         size: 4
+        pilots: 8
 
     #FOB Cambodia
     FOB Cambodia:
@@ -577,18 +655,21 @@ squadrons:
          aircraft:
            - Mi-8MTV2 Hip
          size: 4
+         pilots: 8
 
        - primary: Air Assault
          secondary: any
          aircraft:
            - Mi-8MTV2 Hip
          size: 4
+         pilots: 8
 
        - primary: Transport
          secondary: any
          aircraft:
            - Mi-8MTV2 Hip 
          size: 4
+         pilots: 8
 
     #FOB Thailand
     FOB Thailand:
@@ -598,18 +679,21 @@ squadrons:
          aircraft:
            - Mi-8MTV2 Hip
          size: 4
+         pilots: 8
 
        - primary: Air Assault
          secondary: any
          aircraft:
            - Mi-8MTV2 Hip
          size: 4
+         pilots: 8
 
        - primary: Transport
          secondary: any
          aircraft:
            - Mi-8MTV2 Hip
          size: 4
+         pilots: 8
 
     #FOB Laos
     FOB Laos:
@@ -619,15 +703,18 @@ squadrons:
          aircraft:
            - Mi-8MTV2 Hip
          size: 4
+         pilots: 8
 
        - primary: Air Assault
          secondary: any
          aircraft:
            - Mi-8MTV2 Hip
          size: 4
+         pilots: 8
 
        - primary: Transport
          secondary: any
          aircraft:
            - Mi-8MTV2 Hip
          size: 4
+         pilots: 8

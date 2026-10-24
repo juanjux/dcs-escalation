@@ -23,34 +23,41 @@ squadrons:
       aircraft:
         - E-3A
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-130
       size: 2  
+      pilots: 6
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - B-52H Stratofortress
       size: 2
+      pilots: 6
     - primary: Strike
       secondary: any
       aircraft:
         - B-1B Lancer
       size: 2
+      pilots: 6
     - primary: BAI
       secondary: any
       aircraft:
         - F-117A Nighthawk
       size: 5         
+      pilots: 9
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - F-15C Eagle
       size: 16
+      pilots: 20
   # Kish:
   24:
     - primary: BAI
@@ -58,61 +65,73 @@ squadrons:
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 16
+      pilots: 20
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - VMFA-251 #Hornet - Marines
       size: 16
+      pilots: 20
     - primary: Strike
       secondary: any
       aircraft:
         - 23rd FS #Viper USAF
       size: 16
+      pilots: 20
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - 58th FS #F15c
       size: 16
+      pilots: 20
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 16
+      pilots: 20
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 16
+      pilots: 20
   Blue CV:
     - primary: BARCAP
       secondary: any
       aircraft:
         - VF-142 #F14B
       size: 16
+      pilots: 20
     - primary: Strike
       secondary: any
       aircraft:
         - VFA-192 #Hornet Navy
       size: 16
+      pilots: 20
     - primary: AEW&C
       aircraft:
         - VAW-125 #E2C
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 2
+      pilots: 6
     - primary: Strike
       secondary: any
       aircraft:
         - S-3B Viking
       size: 4
+      pilots: 8
   Blue LHA:
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 12
+      pilots: 16
 #BLUEFOR FOBs
   FOB Ras Al Khaimah:
     - primary: BAI
@@ -120,31 +139,37 @@ squadrons:
       aircraft:
         - A Company, 1-211th ARB #AH-64D Apache Longbow
       size: 10       
+      pilots: 14
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Mi-24P Hind-F
       size: 10
+      pilots: 14
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Ka-50 Hokum III
       size: 10
+      pilots: 14
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - SA 342M Gazelle
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - HMLA-169 (UH-1H) #UH-1H Iroquois
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
   # Al Dhafra AFB:
   4:
     - primary: BARCAP
@@ -152,29 +177,35 @@ squadrons:
       aircraft:
         - MiG-29S Fulcrum-C  
       size: 16
+      pilots: 20
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - Mirage 2000C
       size: 16
+      pilots: 20
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - JF-17 Thunder
       size: 16
+      pilots: 20
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-34 Fullback 
       size: 16        
+      pilots: 20
     - primary: AEW&C
       aircraft:
         - A-50   
       size: 2        
+      pilots: 6
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
   # Al Minhad AFB:
   12:
     - primary: BAI
@@ -182,16 +213,19 @@ squadrons:
       aircraft:
         - F-16CM Fighting Falcon (Block 50)  
       size: 16        
+      pilots: 20
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 16
+      pilots: 20
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - Su-25T Frogfoot
       size: 16
+      pilots: 20
   # Liwa AFB:
   29:
     - primary: BARCAP
@@ -199,16 +233,19 @@ squadrons:
       aircraft:
         - Su-27 Flanker-B
       size: 16
+      pilots: 20
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - F-15C Eagle
       size: 16
+      pilots: 20
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Su-30 Flanker-C
       size: 16
+      pilots: 20
   # Escalation SAM site override:
 # GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
 # most of its own air defences. No radar on it, so it is a STRIKE target, not

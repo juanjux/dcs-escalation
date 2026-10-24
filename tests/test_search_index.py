@@ -220,15 +220,16 @@ def test_a_different_campaign_builds_it_again(
     assert built == 2
 
 
-def test_a_campaign_sized_index_answers_inside_the_budget() -> None:
-    """A large theatre has a few thousand findable things, and the box is searched
-    on a pause in typing: anything approaching a tenth of a second would be felt.
+def test_a_campaign_sized_index_has_bounded_search_work(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Check the hot path without depending on shared CI runner speed.
 
-    A generous ceiling, because this runs on whatever machine CI gives it. The
-    measurement that matters is on a real campaign, where a thousand entries answer
-    in about one millisecond.
+    Each search scores entries once, folds only the query words, and avoids the
+    fallback typo pass when there are enough matches. Keep result ordering and
+    the limit checked at campaign scale as well as in the smaller ranking tests.
     """
-    import time
+    from game.search.matcher import fold
 
     index = Index(
         _entry(
@@ -240,9 +241,29 @@ def test_a_campaign_sized_index_answers_inside_the_budget() -> None:
         for n in range(5000)
     )
 
-    start = time.perf_counter()
-    for _ in range(5):
-        index.search("buk radar", limit=40)
-    each = (time.perf_counter() - start) / 5
+    scored: list[str] = []
+    folded: list[str] = []
+    original_score = Entry.score
 
-    assert each < 0.15, f"{each * 1000:.0f} ms per search over 5000 entries"
+    def score(entry: Entry, tokens: list[str]) -> int:
+        scored.append(entry.label)
+        return original_score(entry, tokens)
+
+    def count_fold(text: str) -> str:
+        folded.append(text)
+        return fold(text)
+
+    def unexpected_typo_pass(entry: Entry, tokens: list[str]) -> int:
+        pytest.fail("A query with enough matches must not run the fallback typo pass")
+
+    monkeypatch.setattr(Entry, "score", score)
+    monkeypatch.setattr(Entry, "score_by_typo", unexpected_typo_pass)
+    monkeypatch.setattr("game.search.matcher.fold", count_fold)
+    expected = sorted(index.entries, key=lambda e: (len(e.label), e.label))[:40]
+    for _ in range(5):
+        scored.clear()
+        folded.clear()
+        hits = index.search("buk radar", limit=40)
+        assert [hit.entry for hit in hits] == expected
+        assert scored == [entry.label for entry in index.entries]
+        assert folded == ["buk", "radar"]

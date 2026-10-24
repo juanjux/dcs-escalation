@@ -504,7 +504,7 @@ class Squadron:
     def populate_for_turn_0(self, squadrons_start_full: bool) -> None:
         if any(p.status is not PilotStatus.Active for p in self.pilot_pool):
             raise ValueError("Squadrons can only be created with active pilots.")
-        self._recruit_pilots(self.settings.squadron_pilot_limit)
+        self._recruit_pilots(self.pilot_limit)
         if squadrons_start_full:
             parking_type = ParkingType().from_squadron(self)
             self.owned_aircraft = min(
@@ -991,10 +991,17 @@ class Squadron:
         A squadron may be capable of performing a task even if it will not be
         automatically assigned to it.
         """
+        if task.is_afac:
+            from game.ato.afac import enabled
+
+            if not enabled(self.settings):
+                return False
         return self.aircraft.capable_of(task)
 
     def can_auto_assign(self, task: FlightType) -> bool:
-        return task in self.auto_assignable_mission_types
+        return task in self.auto_assignable_mission_types and (
+            not task.is_afac or self.capable_of(task)
+        )
 
     def can_auto_assign_mission(
         self,

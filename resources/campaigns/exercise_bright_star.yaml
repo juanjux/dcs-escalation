@@ -47,20 +47,24 @@ squadrons:
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 16
+      pilots: 20
     - primary: SEAD Escort
       secondary: any
       aircraft:
         - EA-18G Growler
         - F/A-18C Hornet (Lot 20)
       size: 16
+      pilots: 20
     - primary: AEW&C
       aircraft:
         - E-2D Advanced Hawkeye
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 4
+      pilots: 8
   #Ovda
   10:
     - primary: CAS
@@ -68,27 +72,32 @@ squadrons:
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 8
+      pilots: 12
     - primary: Escort
       secondary: any
       aircraft:
         - F-15C Eagle
       size: 12
+      pilots: 16
     - primary: TARCAP
       secondary: any
       aircraft:
         - F-22A Raptor
         - F-15C Eagle
       size: 12
+      pilots: 16
     - primary: OCA/Runway
       secondary: any
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 8
+      pilots: 12
     - primary: SEAD Sweep
       secondary: any
       aircraft:
         - JF-17 Thunder
       size: 8
+      pilots: 12
   #Ramon Airbase
   9:
     - primary: DEAD
@@ -96,21 +105,25 @@ squadrons:
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 12
+      pilots: 16
     - primary: BARCAP
       secondary: any
       aircraft:
         - Mirage-F1M-EE
       size: 8
+      pilots: 12
     - primary: BAI
       secondary: any
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
   #Ramon International Airport
   41:
     - primary: Strike
@@ -118,19 +131,23 @@ squadrons:
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - C-130J-30
       size: 4
+      pilots: 8
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
   #Al Salam Bridgehead
   Al Salam Bridgehead: 
     - primary: Air Assault
@@ -138,11 +155,13 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - SA 342L Gazelle
       size: 4
+      pilots: 8
    #Melez
   5:
     - primary: CAS
@@ -150,16 +169,19 @@ squadrons:
       aircraft:
         - Ka-50 Hokum III
       size: 4
+      pilots: 8
     - primary: BAI
       secondary: any
       aircraft:
         - Mirage 2000C
       size: 12
+      pilots: 16
     - primary: Escort
       secondary: any
       aircraft:
         - MiG-21bis Fishbed-N
       size: 12
+      pilots: 16
   #Wadi al Jandali
   13:
     - primary: Transport
@@ -167,15 +189,18 @@ squadrons:
       aircraft:
         - C-130J-30
       size: 2
+      pilots: 6
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 2
+      pilots: 6
     - primary: SEAD
       secondary: any
       aircraft:
         - F-4E-45MC Phantom II
       size: 20
+      pilots: 24
   #Wadi Abu Rish
   43:
     - primary: BARCAP
@@ -183,6 +208,7 @@ squadrons:
       aircraft:
         - MIG-29-FULCRUM
       size: 20
+      pilots: 24
     - primary: DEAD
       secondary: 
         - BAI
@@ -198,3 +224,4 @@ squadrons:
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 20
+      pilots: 24

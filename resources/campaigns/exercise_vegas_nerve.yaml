@@ -36,12 +36,14 @@ squadrons:
       aircraft:
         - B-52H Stratofortress
       size: 4
+      pilots: 8
   Bombers from Ellsworth AFB:
     - primary: OCA/Runway
       secondary: air-to-ground
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
   # Tonopah Airport
   17:
     - primary: TARCAP
@@ -50,11 +52,13 @@ squadrons:
         - F-22A Raptor
         - F-15C Eagle
       size: 16
+      pilots: 20
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 8
+      pilots: 12
   # Tonopah Test Range
   18:
     - primary: BAI
@@ -62,46 +66,55 @@ squadrons:
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 8
+      pilots: 12
     - primary: Armed Recon
       secondary: any
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
     - primary: SEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 16
+      pilots: 20
     - primary: SEAD Escort
       secondary: any
       aircraft:
         - EA-18G Growler
         - F/A-18C Hornet (Lot 20)
       size: 16
+      pilots: 20
     - primary: DEAD
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 20
+      pilots: 24
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 1
+      pilots: 5
     - primary: Transport
       secondary: any
       aircraft:
         - C-130J-30
       size: 1
+      pilots: 5
   # Groom Lake
   2:
     - primary: Escort
@@ -109,11 +122,13 @@ squadrons:
       aircraft:
         - J-11A Flanker-L
       size: 16
+      pilots: 20
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - Su-25T Frogfoot
       size: 12
+      pilots: 16
   # Creech
   1:
     - primary: Armed Recon
@@ -121,16 +136,19 @@ squadrons:
       aircraft:
         - Ka-50 Hokum III
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
   # Nellis AFB
   4:
     - primary: Strike
@@ -138,20 +156,24 @@ squadrons:
       aircraft:
         - H-6J Badger
       size: 20
+      pilots: 24
     - primary: AEW&C
       aircraft:
         - KJ-2000
       size: 1
+      pilots: 5
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 16
+      pilots: 20
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - Su-34 Fullback
       size: 16
+      pilots: 20
   # Boulder City Airport
   6:
     - primary: SEAD Escort
@@ -159,3 +181,4 @@ squadrons:
       aircraft:
         - FC-1 Fierce Dragon
       size: 16
+      pilots: 20

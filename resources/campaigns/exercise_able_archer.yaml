@@ -42,15 +42,18 @@ squadrons:
       aircraft:
         - F-15C Eagle
       size: 12
+      pilots: 16
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
     - primary: Transport
       secondary: any
       aircraft:
         - C-130
       size: 2
+      pilots: 6
   #Andoya
   20:
     - primary: Strike
@@ -58,21 +61,25 @@ squadrons:
       aircraft:
         - B-52H Stratofortress
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: any
       aircraft:
         - A-10A Thunderbolt II
       size: 4
+      pilots: 8
     - primary: SEAD
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 12
+      pilots: 16
     - primary: Transport
       secondary: any
       aircraft:
         - C-130J-30
       size: 1
+      pilots: 5
   #Rovaniemi
   2:
     - primary: BARCAP
@@ -80,31 +87,37 @@ squadrons:
       aircraft:
         - MiG-21bis Fishbed-N
       size: 8
+      pilots: 12
     - primary: BAI
       secondary: any
       aircraft:
         - F-4E-45MC Phantom II
       size: 12
+      pilots: 16
     - primary: Escort
       secondary: any
       aircraft:
         - Mirage-F1CE
       size: 8
+      pilots: 12
     - primary: Air Assault
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Armed Recon
       secondary: any
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 4
+      pilots: 8
   #Kiruna
   5:
     - primary: DEAD
@@ -112,6 +125,7 @@ squadrons:
       aircraft:
         - AJS-37 Viggen
       size: 8
+      pilots: 12
   #Jokkmokk
   11:
     - primary: DEAD
@@ -119,6 +133,7 @@ squadrons:
       aircraft:
         - AJS-37 Viggen
       size: 8
+      pilots: 12
   #Kallax
   15:
     - primary: Transport
@@ -126,17 +141,20 @@ squadrons:
       aircraft:
         - C-130J-30
       size: 1
+      pilots: 5
     - primary: OCA/Runway
       secondary: any
       aircraft:
         - F-111C Aardvark
         - F-4E-45MC Phantom II
       size: 8
+      pilots: 12
     - primary: BARCAP
       secondary: any
       aircraft:
         - F-5E Tiger II
       size: 8
+      pilots: 12
   #Blue Carrier
   Blue-CV:
     - primary: TARCAP
@@ -144,26 +162,31 @@ squadrons:
       aircraft:
         - F-14A Tomcat
       size: 24
+      pilots: 28
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 2
+      pilots: 6
     - primary: OCA/Aircraft
       secondary: air-to-ground
       aircraft:
         - A-6E Intruder
       size: 12
+      pilots: 16
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - S-3B Viking
       size: 12
+      pilots: 16
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-60L
         - UH-60A
       size: 4
+      pilots: 8
   #Blue LHA
   Blue-LHA:
     - primary: DEAD
@@ -171,6 +194,7 @@ squadrons:
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 20
+      pilots: 24
   #Vuojarvi
   4:
     - primary: SEAD Sweep
@@ -178,6 +202,7 @@ squadrons:
       aircraft:
         - Su-17M4 Fitter-K
       size: 8
+      pilots: 12
   #Banak
   1:
     - primary: CAS
@@ -185,6 +210,7 @@ squadrons:
       aircraft:
         - Su-25 Frogfoot
       size: 8
+      pilots: 12
   #Kirkenes
   14:
     - primary: BARCAP
@@ -192,6 +218,7 @@ squadrons:
       aircraft:
         - MiG-31 Foxhound
       size: 6
+      pilots: 10
   #Severomorsk-1
   8:
     - primary: Escort
@@ -199,27 +226,32 @@ squadrons:
       aircraft:
         - MiG-23MLD Flogger-K
       size: 8
+      pilots: 12
     - primary: SEAD
       secondary: any
       aircraft:
         - MiG-27K Flogger-J2
       size: 8
+      pilots: 12
   #Severomorsk-3
   6:
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
     - primary: DEAD
       secondary: any
       aircraft:
         - Su-24M Fencer-D
       size: 12
+      pilots: 16
     - primary: TARCAP
       secondary: any
       aircraft:
         - Su-27 Flanker-B
       size: 8
+      pilots: 12
   #Olenya
   9:
     - primary: Strike
@@ -227,15 +259,18 @@ squadrons:
       aircraft:
         - Tu-95MS Bear-H
       size: 16
+      pilots: 20
     - primary: Strike
       secondary: any
       aircraft:
         - Tu-22M3 Backfire-C
       size: 16
+      pilots: 20
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
   #Monchegorsk
   10:
     - primary: Escort
@@ -243,22 +278,26 @@ squadrons:
       aircraft:
         - MIG-29-FULCRUM
       size: 12
+      pilots: 16
     - primary: BAI
       secondary: any
       aircraft:
         - MiG-21bis Fishbed-N
       size: 12
+      pilots: 16
   #Murmansk International
   12:
     - primary: AEW&C
       aircraft:
         - A-50
       size: 1
+      pilots: 5
     - primary: Transport
       secondary: any
       aircraft:
         - IL-76MD
       size: 2
+      pilots: 6
 #Ivalo
   18:
     - primary: BARCAP
@@ -266,13 +305,16 @@ squadrons:
       aircraft:
         - MiG-25PD Foxbat-E
       size: 4
+      pilots: 8
     - primary: OCA/Aircraft
       secondary: any
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8

@@ -53,6 +53,8 @@ class DefaultSquadronAssigner:
                 squadron.set_auto_assignable_mission_types(
                     squadron_config.auto_assignable
                 )
+                # This is a new-campaign template, not a migration of saved rosters.
+                squadron.pilot_limit_override = squadron_config.pilot_limit
                 self.air_wing.add_squadron(squadron)
 
     def find_squadron_for(

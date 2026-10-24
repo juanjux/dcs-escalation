@@ -181,9 +181,13 @@ class StateData:
     aircraft_damage: dict[str, AircraftDamageReport] = field(default_factory=dict)
     aircraft_damage_mission_id: str | None = None
     persistent_health: Dict[str, float] = field(default_factory=dict)
+    afac_discoveries: List[Any] = field(default_factory=list)
+    afac_marks: List[Any] = field(default_factory=list)
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)
+        object.__setattr__(self, "afac_discoveries", state.get("afac_discoveries", []))
+        object.__setattr__(self, "afac_marks", state.get("afac_marks", []))
         object.__setattr__(self, "aircraft_damage", state.get("aircraft_damage", {}))
         object.__setattr__(
             self, "aircraft_damage_mission_id", state.get("aircraft_damage_mission_id")
@@ -277,6 +281,16 @@ class StateData:
             base_capture_events=data.get("base_capture_events", []),
             kill_details=data.get("kill_details", []),
             hit_details=data.get("hit_details", []),
+            afac_discoveries=(
+                data["afac_discoveries"][:10000]
+                if isinstance(data.get("afac_discoveries"), list)
+                else []
+            ),
+            afac_marks=(
+                data["afac_marks"][:10000]
+                if isinstance(data.get("afac_marks"), list)
+                else []
+            ),
             model_time=data.get("model_time"),
             took_off=took_off,
             death_times=death_times,

@@ -49,7 +49,7 @@ class LuaGenerator:
     def generate(self) -> None:
         # Same plugin-manager settings as injection; preflight before adding Lua.
         realistic_cas = prepare_campaign(self, LuaPluginManager.plugins())
-        ewrj_triggers = [
+        existing_start_triggers = [
             x for x in self.mission.triggerrules.triggers if isinstance(x, TriggerStart)
         ]
         self.generate_plugin_data()
@@ -60,12 +60,20 @@ class LuaGenerator:
         self._seed_persistent_damage()
         self._inject_tic_script()
         inject_campaign(self, realistic_cas)
-        for t in ewrj_triggers:
+        for t in existing_start_triggers:
             self.mission.triggerrules.triggers.remove(t)
             self.mission.triggerrules.triggers.append(t)
 
     def _inject_aircraft_maintenance(self) -> None:
-        if self.unit_map is None or not self.game.settings.aircraft_maintenance_enabled:
+        settings = self.game.settings
+        morale_telemetry = (
+            settings.live_pilots_enabled
+            and settings.morale_enabled
+            and settings.morale_damaged_return != 0
+        )
+        if self.unit_map is None or not (
+            settings.aircraft_maintenance_enabled or morale_telemetry
+        ):
             return
         names = ",".join(
             f'"{escape_string_for_lua(name)}"' for name in self.unit_map.aircraft

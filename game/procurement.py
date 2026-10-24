@@ -500,28 +500,94 @@ class ProcurementAi:
                     )
         return budget
 
-    def affordable_ground_unit_of_class(
-        self, budget: float, unit_class: UnitClass
-    ) -> Optional[GroundUnitType]:
-        faction_units = set(self.faction.frontline_units) | set(
-            self.faction.artillery_units
+    def purchasable_ground_units(self) -> list[GroundUnitType]:
+        # Presets and static SAM sites are not purchasable frontline reinforcements.
+        units = set(self.faction.frontline_units) | set(self.faction.artillery_units)
+        return sorted(
+            (u for u in units if u.price >= 0),
+            key=lambda u: (u.unit_class.value, u.price, str(u)),
         )
-        of_class = {u for u in faction_units if u.unit_class is unit_class}
 
-        # faction has no access to needed unit type, take a random unit
-        if not of_class:
-            of_class = faction_units
+    @staticmethod
+    def ground_procurement_role(unit_class: UnitClass) -> UnitClass:
+        # The doctrines allocate an air-defense share under SHORAD. Factions may
+        # fill that role with gun-based AAA or MANPADS instead of missile vehicles.
+        if unit_class in (UnitClass.AAA, UnitClass.MANPAD):
+            return UnitClass.SHORAD
+        return unit_class
 
-        affordable_units = [u for u in of_class if u.price <= budget]
-        if not affordable_units:
+    def pick_ground_unit(self, units: list[GroundUnitType]) -> Optional[GroundUnitType]:
+        if not units:
             return None
         if self.game.settings.weighted_ground_procurement:
-            # Price is the only capability proxy the model has, so weight the roll by
-            # it: the commander fields its modern armor more often than its gun trucks
-            # without ever being locked out of the cheap end.
-            weights = [max(u.price, 1) for u in affordable_units]
-            return random.choices(affordable_units, weights=weights, k=1)[0]
-        return random.choice(affordable_units)
+            weights = [max(u.price, 1) for u in units]
+            return random.choices(units, weights=weights, k=1)[0]
+        return random.choice(units)
+
+    def balanced_ground_unit(
+        self, cp: ControlPoint, budget: float
+    ) -> Optional[GroundUnitType]:
+        units = self.purchasable_ground_units()
+        if not units:
+            return None
+        roles = dict.fromkeys(self.ground_procurement_role(u.unit_class) for u in units)
+        doctrine = self.faction.doctrine.ground_unit_procurement_ratios
+        targets = {
+            role: sum(
+                doctrine.for_unit_class(cls)
+                for cls in UnitClass
+                if self.ground_procurement_role(cls) is role
+            )
+            for role in roles
+        }
+        targets = {role: weight for role, weight in targets.items() if weight > 0}
+        if not targets:
+            # An unusual faction (for example, infantry only) still needs reinforcements.
+            targets = dict.fromkeys(roles, 1.0)
+        total_weight = sum(targets.values())
+        targets = {role: weight / total_weight for role, weight in targets.items()}
+
+        allocations = cp.allocated_ground_units(
+            self.game.coalition_for(self.is_player).transfers
+        )
+        costs = dict.fromkeys(targets, 0.0)
+        counts = dict.fromkeys(targets, 0)
+        for unit, count in allocations.all.items():
+            role = self.ground_procurement_role(unit.unit_class)
+            if role in targets:
+                costs[role] += unit.price * count
+                counts[role] += count
+        total_cost = sum(costs.values())
+        total_count = sum(counts.values())
+
+        scores: dict[GroundUnitType, float] = {}
+        for unit in units:
+            role = self.ground_procurement_role(unit.unit_class)
+            if role not in targets or unit.price > budget:
+                continue
+            # Compare the resulting composition, not just the deficit before buying.
+            # Relative squared error penalizes overshooting small support quotas.
+            denominator = total_cost + unit.price
+            distribution = costs if denominator else counts
+            increment = unit.price if denominator else 1
+            denominator = denominator or total_count + 1
+            scores[unit] = sum(
+                ((distribution[r] + (increment if r is role else 0)) / denominator - t)
+                ** 2
+                / t
+                for r, t in targets.items()
+            )
+        if not scores:
+            return None
+        best_score = min(scores.values())
+        best_by_role: dict[UnitClass, list[GroundUnitType]] = {}
+        for unit, score in scores.items():
+            if math.isclose(score, best_score, rel_tol=1e-9, abs_tol=1e-12):
+                role = self.ground_procurement_role(unit.unit_class)
+                best_by_role.setdefault(role, []).append(unit)
+        # Price weighting must not make artillery win ties against other roles.
+        role = random.choice(list(best_by_role))
+        return self.pick_ground_unit(best_by_role[role])
 
     def reinforce_front_line(self, budget: float) -> float:
         if not self.faction.frontline_units and not self.faction.artillery_units:
@@ -534,8 +600,7 @@ class ProcurementAi:
             if cp is None:
                 break
 
-            most_needed_type = self.most_needed_unit_class(cp)
-            unit = self.affordable_ground_unit_of_class(budget, most_needed_type)
+            unit = self.balanced_ground_unit(cp, budget)
             if unit is None:
                 # Can't afford any more units.
                 break
@@ -544,31 +609,6 @@ class ProcurementAi:
             cp.ground_unit_orders.order({unit: 1})
 
         return budget
-
-    def most_needed_unit_class(self, cp: ControlPoint) -> UnitClass:
-        worst_balanced: Optional[UnitClass] = None
-        worst_fulfillment = math.inf
-        for unit_class in UnitClass:
-            if not self.faction.has_access_to_unit_class(unit_class):
-                continue
-
-            current_ratio = self.cost_ratio_of_ground_unit(cp, unit_class)
-            desired_ratio = (
-                self.faction.doctrine.ground_unit_procurement_ratios.for_unit_class(
-                    unit_class
-                )
-            )
-            if not desired_ratio:
-                continue
-            if current_ratio >= desired_ratio:
-                continue
-            fulfillment = current_ratio / desired_ratio
-            if fulfillment < worst_fulfillment:
-                worst_fulfillment = fulfillment
-                worst_balanced = unit_class
-        if worst_balanced is None:
-            return UnitClass.TANK
-        return worst_balanced
 
     @staticmethod
     def fulfill_aircraft_request(
@@ -703,20 +743,3 @@ class ProcurementAi:
                 understaffed = cp
 
         return understaffed
-
-    def cost_ratio_of_ground_unit(
-        self, control_point: ControlPoint, unit_class: UnitClass
-    ) -> float:
-        allocations = control_point.allocated_ground_units(
-            self.game.coalition_for(self.is_player).transfers
-        )
-        class_cost = 0
-        total_cost = 0
-        for unit_type, count in allocations.all.items():
-            cost = unit_type.price * count
-            total_cost += cost
-            if unit_type.unit_class is unit_class:
-                class_cost += cost
-        if not total_cost:
-            return 0
-        return class_cost / total_cost

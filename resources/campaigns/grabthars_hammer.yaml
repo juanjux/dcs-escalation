@@ -34,35 +34,42 @@ squadrons:
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 8
+      pilots: 12
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 8
+      pilots: 12
     - primary: Escort
       secondary: any
       aircraft:
         - F-15C Eagle
       size: 8
+      pilots: 12
     - primary: CAS
       secondary: any
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 1
+      pilots: 5
     - primary: Transport
       secondary: any
       aircraft:
         - C-130J-30
       size: 1
+      pilots: 5
   #San Julian
   11:
     - primary: DEAD
@@ -70,6 +77,7 @@ squadrons:
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 8
+      pilots: 12
   #Blue CV
   Blue-CV:
     - primary: BARCAP
@@ -77,30 +85,36 @@ squadrons:
       aircraft:
         - F-14B(U) Tomcat
       size: 20
+      pilots: 24
     - primary: SEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 32
+      pilots: 36
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - S-3B Viking
       size: 16
+      pilots: 20
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-60L
         - UH-60A
       size: 4
+      pilots: 8
   # Blue LHA
   Blue-LHA:
     - primary: DEAD
@@ -108,33 +122,39 @@ squadrons:
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 12
+      pilots: 16
     - primary: CAS
       secondary: any
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 4     
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-1H Iroquois
       size: 4
+      pilots: 8
   Bombers from Edwards AFB:
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - B-52H Stratofortress
       size: 4
+      pilots: 8
     - primary: OCA/Runway
       secondary: air-to-ground
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
   #El Calafate
   14:
     - primary: Transport
       aircraft:
         - Mi-8MTV2 Hip
       size: 8
+      pilots: 12
   #Rio Gallegros
   5:
     - primary: Escort
@@ -142,11 +162,13 @@ squadrons:
       aircraft:
         - Su-27 Flanker-B
       size: 12
+      pilots: 16
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Su-25T Frogfoot
       size: 12
+      pilots: 16
   #Punta Arenas
   9:
     - primary: SEAD
@@ -154,20 +176,24 @@ squadrons:
       aircraft:
         - Su-24M Fencer-D
       size: 16
+      pilots: 20
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - Su-34 Fullback
       size: 16
+      pilots: 20
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Tu-22M3 Backfire-C
       size: 16
+      pilots: 20
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
   #Ushuaia
   7:
     - primary: Escort
@@ -176,6 +202,7 @@ squadrons:
         - Ka-50 Hokum III
         - Ka-50 Hokum (Blackshark 3)
       size: 8
+      pilots: 12
   #Ushuaia Helo Port
   8:
     - primary: Air Assault
@@ -183,3 +210,4 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 8
+      pilots: 12

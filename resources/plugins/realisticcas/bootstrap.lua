@@ -26,6 +26,12 @@ do
       assert(managed[v.groupName],'target outside managed group list')
       unitNames[v.name]=true
     end
+    if c.afacEnabled then
+      for _,v in ipairs(r.afacKnownTargets or {})do
+        assert(known[v.groupName] and not unitNames[v.name], 'invalid known AFAC target')
+        unitNames[v.name]=true
+      end
+    end
     -- Build the environment before hiding anything. No guessed time or biome.
     local environment=RealisticCAS.newEnvironment(c.environment)
     assert(RealisticCAS.Sensors.finite(c.acquisitionSeconds) and c.acquisitionSeconds>0
@@ -33,15 +39,20 @@ do
     assert(c.probabilisticDetection==nil or type(c.probabilisticDetection)=='boolean',
       'invalid probabilistic detection option')
     local probability=RealisticCAS.Sensors.probabilityConfig(c.probability)
+    if c.afacEnabled then RealisticCAS.validateAFACMarking(c.afacMarking) end
     local function log(kind,msg)
       env.info('REALISTIC_CAS_MISSION|'..kind..'|t='..timer.getTime()..'|'..tostring(msg))
     end
     local api={active=false}
     local handler={}
     function api:stop()
-      if self.detectors then self.detectors:stop() end
+      local markersStopped=not self.detectors or self.detectors:stop()
       if self.fog and not self.fog:stop() then
         log('ERROR','visibility restoration incomplete; retry RealisticCAS.mission:stop()')
+        return false
+      end
+      if not markersStopped then
+        log('ERROR','AFAC spot cleanup incomplete; retry RealisticCAS.mission:stop()')
         return false
       end
       world.removeEventHandler(handler)
@@ -50,6 +61,18 @@ do
       return true
     end
     function handler:onEvent(event)
+      if event and event.id==world.event.S_EVENT_SHOT and api.detectors and api.detectors.afacMarking then
+        local ok,name=pcall(function() return event.initiator:getName() end)
+        if ok then api.detectors.afacMarking:shot(name) end
+      end
+      if event and (event.id==world.event.S_EVENT_SHOT or
+        (world.event.S_EVENT_SHOOTING_START and event.id==world.event.S_EVENT_SHOOTING_START))then
+        local nav=api.detectors and api.detectors.afacNavigation
+        if nav then
+          local ok,err=pcall(function()nav:fireEvent(event.initiator)end)
+          if not ok then log('ERROR','AFAC fire notification: '..tostring(err))end
+        end
+      end
       if event and world.event.S_EVENT_MISSION_END and event.id==world.event.S_EVENT_MISSION_END then
         local ok,result=pcall(function()return api:stop()end)
         if not ok or not result then log('ERROR','mission-end cleanup: '..tostring(result)) end
@@ -58,11 +81,18 @@ do
     RealisticCAS.mission=api -- Retain a recovery handle even if startup rollback fails.
     local ok,err=pcall(function()
       api.fog=assert(RealisticCAS.start({enabled=true,targets=r.groups,ttl=c.ttl,
-        debug=c.debug,expiryBudget=c.expiryBudget}))
+        debug=c.debug,expiryBudget=c.expiryBudget,onFire=function(groupName,unitName,point)
+          local nav=api.detectors and api.detectors.afacNavigation
+          if nav then nav:fire(groupName,unitName,point)end
+        end}))
       api.detectors=RealisticCAS.startDetection(api.fog,{targets=r.targets,observers=r.observers,
+        knownTargets=c.afacEnabled and r.afacKnownTargets or nil,
+        airDefenseThreats=r.airDefenseThreats,afacAvoidance=c.afacAvoidance,
         environment=environment,acquisitionSeconds=c.acquisitionSeconds,
         probabilisticDetection=c.probabilisticDetection,
         probability=probability,
+        afacEnabled=c.afacEnabled,
+        afacMarking=c.afacMarking,
         acquisitionMaxGap=c.acquisitionMaxGap,interval=c.interval,revisit=c.revisit,
         targetBudget=c.targetBudget,workBudget=c.workBudget,cellSize=c.cellSize,
         observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,

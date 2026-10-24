@@ -4,6 +4,68 @@
     "defaultValue": false,
     "specificOptions": [
         {
+            "section": "Airborne forward air control (AFAC)",
+            "nameInUI": "Enable AFAC missions (experimental)",
+            "descriptionInUI": "Allow AFAC — Area and AFAC — Frontline search and marking missions. Compatible aircraft designate observed targets with laser, IR at night and finite payload smoke. Passenger-capable helicopters embark a thermal-equipped JTAC. AI flights avoid known ground air defences, climbing only with a known threat ceiling, a native aircraft altitude limit and room below the approximate cloud base. Unknown ceilings force standoff; no safe orbit inside the zone causes an abort. Discovering and marking groups earn separate experience. Requires Realistic CAS and no conflicting JTAC scripts. Threat envelopes and cloud slabs are approximations, not guaranteed protection.",
+            "mnemonic": "afacEnabled",
+            "defaultValue": false
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC maximum on-station time (minutes)",
+            "descriptionInUI": "Search for this long after actually reaching the patrol, then return to base. Default 60 minutes. Bingo fuel ends the patrol earlier. Discoveries are restricted to the assigned area or frontline segment.",
+            "mnemonic": "afacStationMinutes",
+            "defaultValue": 60,
+            "minimumValue": 1,
+            "maximumValue": 240
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC marking time per group (minutes)",
+            "descriptionInUI": "Mark one target for up to this long before selecting a different group. Default 5 minutes. Losing observation, terrain line of sight, leaving the assigned zone, Bingo or loss of the aircraft stops marking sooner. Only one AFAC can reserve an enemy group at a time.",
+            "mnemonic": "afacMarkMinutes",
+            "defaultValue": 5,
+            "minimumValue": 1,
+            "maximumValue": 60
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC message duration (seconds)",
+            "descriptionInUI": "Display discovery and marking reports to the AFAC's coalition only. Default 15 seconds.",
+            "mnemonic": "afacMessageSeconds",
+            "defaultValue": 15,
+            "minimumValue": 1,
+            "maximumValue": 300
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC laser code (shared)",
+            "descriptionInUI": "All AFACs use this code, default 1688, so laser-guided bombs can be configured before takeoff. Use a valid code from 1511 to 1788, with no 0 or 9 digits. Different AFACs reserve different target groups.",
+            "mnemonic": "afacLaserCode",
+            "defaultValue": 1688,
+            "minimumValue": 1511,
+            "maximumValue": 1788
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC coordinate format",
+            "descriptionInUI": "Coordinate format used in discovery and marking reports.",
+            "mnemonic": "afacCoordinateFormat",
+            "choices": [
+                {"label": "Degrees and decimal minutes", "value": 0},
+                {"label": "Degrees, minutes and seconds", "value": 1},
+                {"label": "MGRS", "value": 2}
+            ],
+            "defaultValue": 0,
+            "minimumValue": 0,
+            "maximumValue": 2
+        },
+        {
             "nameInUI": "Search time for a new group (seconds)",
             "descriptionInUI": "Observation time needed before trying to discover one previously unknown enemy group (default: 20 seconds). An observer searches one new group at a time and must keep obtaining valid observations within sensor range, field of view and terrain line of sight. Losing contact resets the search. With detection rolls enabled, completing this delay allows the first roll, not guaranteed discovery; failed attempts retry at the configured minimum interval (default: 5 simulated seconds). With rolls disabled, discovery follows the search delay. Firing always reveals a group immediately, without a delay or roll.",
             "mnemonic": "acquisitionSeconds",

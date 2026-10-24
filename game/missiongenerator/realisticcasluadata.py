@@ -12,6 +12,10 @@ from collections.abc import Collection, Mapping
 from typing import TYPE_CHECKING, Any
 
 from dcs.flyingunit import FlyingUnit
+from game.dcs.afaccapabilities import capabilities_for, smoke_rounds
+from game.dcs.skills import SKILL_LADDER
+from game.ato.afac import station_minutes
+from game.missiongenerator.afacthreats import envelope
 
 if TYPE_CHECKING:
     from dcs import Mission
@@ -35,10 +39,15 @@ TARGETING_PODS = frozenset(
 SCRIPT_ORDER = (
     "core.lua",
     "dcs.lua",
+    "afac-search.lua",
+    "afac-safety.lua",
+    "afac.lua",
     "sensors.lua",
     "environment.lua",
     "detection.lua",
     "detectors-dcs.lua",
+    "afac-dcs.lua",
+    "afac-navigation.lua",
     "bootstrap.lua",
 )
 
@@ -57,6 +66,30 @@ PROBABILITY_DEFAULTS = {
     "visualMaxAGL": 3500,
     "opticalMaxAGL": 7010.4,  # 23,000 ft; saved/Lua heights remain metres.
 }
+
+
+def afac_marking_config(options: Mapping[str, Any]) -> dict[str, int]:
+    """Reject invalid saved options before starting any mission-side effects."""
+    result = {}
+    for key, default, low, high in (
+        ("afacMarkMinutes", 5, 1, 60),
+        ("afacMessageSeconds", 15, 1, 300),
+        ("afacLaserCode", 1688, 1511, 1788),
+        ("afacCoordinateFormat", 0, 0, 2),
+    ):
+        value = options.get(key, default)
+        if type(value) is not int or not low <= value <= high:
+            raise ValueError(f"Realistic CAS: {key} must be an integer {low}..{high}")
+        result[key] = value
+    code = str(result["afacLaserCode"])
+    if any(digit not in "12345678" for digit in code) or code[1] not in "567":
+        raise ValueError("Realistic CAS: invalid AFAC laser code")
+    return {
+        "markSeconds": result["afacMarkMinutes"] * 60,
+        "messageSeconds": result["afacMessageSeconds"],
+        "laserCode": result["afacLaserCode"],
+        "coordinateFormat": result["afacCoordinateFormat"],
+    }
 
 
 def probability_config(options: Mapping[str, Any]) -> dict[str, Any]:
@@ -171,6 +204,19 @@ def _controls_visibility(value: Any) -> bool:
     return False
 
 
+def _native_route_value(value: Any) -> Any:
+    """Convert pydcs one-based task tables to Lua arrays without changing indices."""
+    if isinstance(value, dict):
+        if value and all(type(key) is int for key in value):
+            if set(value) != set(range(1, len(value) + 1)):
+                raise ValueError("Realistic CAS: non-contiguous native route table")
+            return [_native_route_value(value[i]) for i in range(1, len(value) + 1)]
+        return {key: _native_route_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_native_route_value(item) for item in value]
+    return value
+
+
 def collect_registry(
     mission: Mission,
     mission_data: MissionData,
@@ -204,14 +250,48 @@ def collect_registry(
         "observers": [],
         "warnings": [],
         "knownAirDefenseGroups": [],
+        "airDefenseThreats": [],
+        "afacKnownTargets": [],
     }
     roles: dict[str, str] = {}
+    afac: dict[str, dict[str, Any]] = {}
     for flight in mission_data.flights:
         role = flight.flight_type.value
         for flight_unit in flight.units:
             if flight_unit.name in roles:
                 raise ValueError(f"Duplicate FlightData unit: {flight_unit.name}")
             roles[flight_unit.name] = role
+            if role in ("AFAC — Area", "AFAC — Frontline"):
+                zone = flight.work_zone
+                afac_mapping = unit_map.flight(flight_unit.name)
+                profile = capabilities_for(flight_unit.type)
+                if (
+                    zone is None
+                    or afac_mapping is None
+                    or afac_mapping.pilot is None
+                    or profile is None
+                ):
+                    raise ValueError(
+                        "AFAC requires work zone, pilot mapping and supported aircraft"
+                    )
+                if profile.can_embark_jtac:
+                    profile = capabilities_for(flight_unit.type, embarked_jtac=True)
+                assert profile is not None
+                afac[flight_unit.name] = {
+                    "zone": {
+                        "points": [{"x": p.x, "z": p.y} for p in zone.points],
+                        "radius": zone.radius.meters,
+                    },
+                    "groupName": flight.group_name,
+                    "stationSeconds": station_minutes(
+                        afac_mapping.flight.coalition.game.settings
+                    )
+                    * 60,
+                    "skill": SKILL_LADDER.index(
+                        flight.squadron.pilot_skill(afac_mapping.pilot)
+                    ),
+                    "equipment": profile.equipment(),
+                }
     for jtac in mission_data.jtacs:
         previous = roles.get(jtac.unit_name)
         if previous is not None and previous != "JTAC":
@@ -290,6 +370,34 @@ def collect_registry(
                             present_air.add(unit.name)
                         if foreign_owner:
                             continue
+                        if category == "ground":
+                            threat = envelope(unit.type)
+                            if threat is not None:
+                                threat = dict(threat)
+                                if sites:
+                                    threat["initialPoint"] = {
+                                        "x": unit.position.x,
+                                        "z": unit.position.y,
+                                    }
+                                result["airDefenseThreats"].append(
+                                    dict(
+                                        threat,
+                                        name=unit.name,
+                                        groupName=group.name,
+                                        coalition=side,
+                                        typeName=unit.type,
+                                        known=bool(sites),
+                                    )
+                                )
+                            if sites:
+                                result["afacKnownTargets"].append(
+                                    {
+                                        "name": unit.name,
+                                        "groupName": group.name,
+                                        "coalition": side,
+                                        "typeName": unit.type,
+                                    }
+                                )
                         if category == "ground" and not sites:
                             result["targets"].append(
                                 {
@@ -301,7 +409,9 @@ def collect_registry(
                             )
                         # Players do not provide scripted AI sensor reports. In a
                         # mixed flight, retain AI wingmen without touching tasks.
-                        if getattr(unit.skill, "value", unit.skill) in (
+                        if unit.name not in afac and getattr(
+                            unit.skill, "value", unit.skill
+                        ) in (
                             "Client",
                             "Player",
                         ):
@@ -336,6 +446,44 @@ def collect_registry(
                                     TARGETING_PODS.intersection(clsids)
                                 )
                             }
+                            if unit.name in afac:
+                                meta = dict(afac[unit.name])
+                                search_point = getattr(
+                                    group, "_afac_search_point", None
+                                )
+                                if search_point in group.points:
+                                    index = group.points.index(search_point)
+                                    end = group.points[index + 1]
+                                    meta["navigation"] = {
+                                        "searchWaypoint": index + 1,
+                                        "exitWaypoint": index + 3,
+                                        "route": [
+                                            _native_route_value(p.dict())
+                                            for p in group.points
+                                        ],
+                                        "restoreUnlimitedFuel": getattr(
+                                            group, "_afac_restore_unlimited_fuel", False
+                                        ),
+                                        "speed": getattr(
+                                            group,
+                                            "_afac_patrol_speed",
+                                            search_point.speed,
+                                        ),
+                                        "altitude": search_point.alt,
+                                        "altType": search_point.alt_type,
+                                        "points": [
+                                            {"x": p.position.x, "z": p.position.y}
+                                            for p in (search_point, end)
+                                        ],
+                                    }
+                                meta["smokeRounds"] = smoke_rounds(
+                                    v["CLSID"]
+                                    for v in unit.pylons.values()
+                                    if v.get("CLSID")
+                                )
+                                observer["equipment"].update(meta.pop("equipment"))
+                                observer["afac"] = meta
+                                observer["allowPlayer"] = True
                         result["observers"].append(observer)
     for name in sorted(roles.keys() - present_air):
         result["warnings"].append(

@@ -50,34 +50,41 @@ squadrons:
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - C-130J-30
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 1
+      pilots: 5
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 1
+      pilots: 5
     - primary: DEAD
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 16
+      pilots: 20
     - primary: BAI
       secondary: any
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 8
+      pilots: 12
     - primary: Escort
       secondary: any
       aircraft:
         - F-15C Eagle
       size: 16
+      pilots: 20
   # Kandahar Heliport
   15:  
     - primary: Transport
@@ -85,6 +92,7 @@ squadrons:
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
   #Camp Bastion
   10:
     - primary: Refueling
@@ -92,26 +100,31 @@ squadrons:
         - KC-130J
         - C-130J-30
       size: 1
+      pilots: 5
     - primary: SEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: any
       aircraft:
         - F-14B(U) Tomcat
       size: 12
+      pilots: 16
     - primary: SEAD Escort
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 8
+      pilots: 12
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 8
+      pilots: 12
   #Camp Bastion Heliport
   13:
     - primary: Armed Recon
@@ -119,17 +132,20 @@ squadrons:
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-60L
         - UH-60A
       size: 4
+      pilots: 8
   #Shindand
   3:
     - primary: BAI
@@ -137,16 +153,19 @@ squadrons:
       aircraft:
         - Su-25T Frogfoot
       size: 16
+      pilots: 20
     - primary: TARCAP
       secondary: air-to-air
       aircraft:
         - Su-27 Flanker-B
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 16
+      pilots: 20
   #Shindand Heliport
   14:
     - primary: Escort
@@ -154,11 +173,13 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
   #Herat
   1:
     - primary: DEAD
@@ -166,16 +187,19 @@ squadrons:
       aircraft:
         - Su-34 Fullback
       size: 12
+      pilots: 16
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - MIG-29-FULCRUM
       size: 10
+      pilots: 14
     - primary: SEAD Escort
       secondary: any
       aircraft:
         - JF-17 Thunder
       size: 8
+      pilots: 12
   #Farah
   2:
     - primary: CAS
@@ -184,3 +208,4 @@ squadrons:
          - "[CH] Ka-52"
          - Ka-50 Hokum III
       size: 4
+      pilots: 8

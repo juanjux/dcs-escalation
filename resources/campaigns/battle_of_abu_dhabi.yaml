@@ -39,19 +39,23 @@ squadrons:
         - F-4E-45MC Phantom II
     - primary: AEW&C
       size: 2
+      pilots: 6
       aircraft:
         - E-3A
     - primary: Refueling
       size: 2
+      pilots: 6
       aircraft:
         - KC-135 Stratotanker
     - primary: Transport
       size: 4
+      pilots: 8
       aircraft:
         - C-17A
     - primary: Strike
       secondary: air-to-ground
       size: 4
+      pilots: 8
       aircraft:
         - Su-24MK Fencer-D
 
@@ -70,6 +74,7 @@ squadrons:
     - primary: BAI
       secondary: air-to-ground
       size: 8
+      pilots: 12
       aircraft:
         - Su-24MK Fencer-D
     - primary: DEAD
@@ -100,6 +105,7 @@ squadrons:
         - F-14A Tomcat (Block 135-GR Late)
     - primary: Refueling
       size: 2
+      pilots: 6
       aircraft:
         - S-3B Tanker
 
@@ -110,6 +116,7 @@ squadrons:
         - AV-8B Harrier II Night Attack
     - primary: CAS
       size: 8
+      pilots: 12
       secondary: air-to-ground
       aircraft:
         - UH-1H Iroquois

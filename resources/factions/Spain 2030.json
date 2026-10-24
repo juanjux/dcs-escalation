@@ -19,7 +19,9 @@
     "SH-60B Seahawk",
     "E-3A",
     "KC-135 Stratotanker MPRS",
-    "AH-64D Apache Longbow"
+    "AH-64D Apache Longbow",
+    "MQ-9 Reaper",
+    "C-101CC Aviojet"
   ],
   "awacs": [
     "E-3A"

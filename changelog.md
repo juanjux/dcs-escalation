@@ -1,6 +1,16 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Realistic CAS]** Add AFAC avoidance of known ground air defences, cloud-limited climbs, standoff or abort routes, and marking of known SAM sites.
+* **[Realistic CAS]** Give smoke-capable AFACs stable non-white smoke colours and include the colour in marking reports.
+* **[Realistic CAS]** Add AFAC laser, night IR and finite payload smoke marking, configurable reports and mark duration, group reservations and separate marking experience.
+* **[UI]** Add aircraft search to the Add Squadron selector in Air Wing Configuration.
+* **[Realistic CAS]** Add opt-in AFAC area and frontline search patrols, skill-based discovery, discovery experience and visual-only night warnings; marking is not enabled yet.
+* **[Realistic CAS]** Add AFAC aircraft choices to all factions and protect remote UAV operators from casualties while retaining normal aircraft losses, rosters and experience.
+* **[Realistic CAS]** Add isolated AFAC capability and coordination foundations with Lua 5.1 tests; campaign AFAC missions are not enabled yet.
+* **[UI]** Show local sunrise and sunset times in the WEATHER tooltip for the mission date and campaign reference position.
+* **[Campaigns]** New campaign squadrons with a defined aircraft capacity get four extra pilot slots; existing saved rosters are unchanged.
+* **[Live Pilots]** Add a configurable morale penalty for confirmed damaged returns (default -3), independent of aircraft workshops.
 * **[Debriefing]** Show recovered damaged aircraft grouped by model, separately from losses, and retain the summary in saved reports.
 * **[High Command]** Avoid repeated reward kinds across open requests, allowing aircraft loans for distinct aircraft or helicopter types.
 * **[Campaign]** Connect Gran Polvorin's Ushuaia airport and inland air-defence sectors through a shared communications mast.
@@ -183,6 +193,11 @@
 
 ## Fixes
 * **[Campaign]** Restore ship and placed-building health with native mission actions and correct percentage units; report restoration failures with object details.
+* **[Realistic CAS]** Recheck known threats during AFAC recovery, prioritise fire-revealed threats and allow urgent outward escapes beyond the station zone.
+* **[Mission Generation]** Remove leftover waypoint calls to the deleted EW Jammer plugin.
+* **[UI]** Restore a visible draggable scrollbar in all searchable combo-box popups.
+* **[Realistic CAS]** Give AI CAS and Armed Recon flights a moving search circuit while contacts are hidden, bounded by station time and fuel reserve.
+* **[Mission Generator]** Use indexed land and sea queries instead of scanning every exclusion polygon when placing ground units.
 * **[Campaign]** Write off confirmed damaged returns outside friendly recovery territory instead of restoring them next turn; include them in loss counts and costs without inferring pilot death.
 * **[Campaign]** Recognize carrier aircraft recoveries by mission ship name when DCS runtime airbase IDs differ from editor IDs or arrive as text.
 * **[Campaign]** Restore ship and building health by absolute percentage points rather than a fraction of remaining damage.
@@ -1541,6 +1556,7 @@ Saves from 2.3 are not compatible with 2.4.
 * **[Game]** Added new Economy options for adjusting income multipliers and starting budgets.
 
 ## Fixes :
+* **[HQ Automation]** Balance ground purchases against the actual roster and resulting force composition; unavailable classes no longer cause repeated expensive artillery orders.
 * **[Map]** Missiles sites now have a proper icon and will not re-use the SAM sites icon
 * **[Mission Generator]** Ground unit waypoints improperly set to "On Road" - fixed
 * **[Mission Generator]** Target waypoints not at ground level - fixed

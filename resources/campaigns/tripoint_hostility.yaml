@@ -21,6 +21,7 @@ squadrons:
       aircraft:
         - VF-143
       size: 14
+      pilots: 18
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
@@ -29,19 +30,23 @@ squadrons:
       aircraft:
         - VAW-125
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - VS-35 (Tanker)
       size: 4
+      pilots: 8
     - primary: Anti-ship
       secondary: air-to-ground
       aircraft:
         - VS-35
       size: 8
+      pilots: 12
     - primary: Transport
       aircraft:
         - HSM-40
       size: 2
+      pilots: 6
   # BLUFOR LHA
   Naval-2:
     - primary: BAI
@@ -49,16 +54,19 @@ squadrons:
       aircraft:
         - VMA-223
       size: 10
+      pilots: 14
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - HMLA-169 (UH-1H)
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - HMLA-169 (AH-1W)
       size: 6
+      pilots: 10
   # Incirlik
   16:
     - primary: Strike
@@ -70,17 +78,20 @@ squadrons:
         - 960th AAC Squadron
         #USAF E-3A
       size: 2
+      pilots: 6
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 12
+      pilots: 16
     - primary: SEAD
       secondary: any
       aircraft:
         - 77th FS
         #USAF F-16C
       size: 12
+      pilots: 16
   # King Hussein Air College, BLUFOR start
   19:
     - primary: BARCAP
@@ -104,10 +115,12 @@ squadrons:
         - 101st Combat Aviation Brigade
         #US Army UH-60
       size: 4
+      pilots: 8
   # FOB Tha'lah, BLUFOR 1st FOB north
   FOB Tha'lah:
     - primary: CAS
       size: 6
+      pilots: 10
       secondary: air-to-ground
       aircraft:
         - A Company, 1-227th ARB
@@ -119,6 +132,7 @@ squadrons:
       aircraft:
         - C Company, 2-159th ARB
       size: 6
+      pilots: 10
         #US Army AH-64D
   # FOB Qalea, first OPFOR FOB south
   FOB Qalea:
@@ -128,6 +142,7 @@ squadrons:
         - SA 342M Gazelle
   # H4 Airbase, 1st OPFOR airfield south
       size: 6
+      pilots: 10
   12:
     - primary: BARCAP
       secondary: any
@@ -138,6 +153,7 @@ squadrons:
     - primary: CAS
       secondary: air-to-ground
       size: 6
+      pilots: 10
       aircraft:
         - Mi-24P Hind-F
   # Ruwayshid, 2nd OPFOR airfield south
@@ -179,6 +195,7 @@ squadrons:
       aircraft:
         - SA 342M Gazelle
       size: 6
+      pilots: 10
   # FOB Kataf, 2nd OPFOR FOB north
   FOB Kataf:
     - primary: CAS
@@ -186,6 +203,7 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 6
+      pilots: 10
   # At Tanf, 3rd OPFOR heliport north
   63:
     - primary: CAS
@@ -193,6 +211,7 @@ squadrons:
       aircraft:
         - SA 342M Gazelle
       size: 2
+      pilots: 6
   # FOB Qalb, 4th OPFOR FOB north
   FOB Qalb:
     - primary: CAS
@@ -200,6 +219,7 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 6
+      pilots: 10
   # H3 Northwest, 2nd OPFOR airfield north
   54:
     - primary: BARCAP

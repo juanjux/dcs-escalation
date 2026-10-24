@@ -28,6 +28,7 @@ squadrons:
       aircraft:
         - VF-143
       size: 14
+      pilots: 18
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
@@ -36,19 +37,23 @@ squadrons:
       aircraft:
         - VAW-125
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - VS-35 (Tanker)
       size: 4
+      pilots: 8
     - primary: Anti-ship
       secondary: air-to-ground
       aircraft:
         - VS-35
       size: 8
+      pilots: 12
     - primary: Transport
       aircraft:
         - HSM-40
       size: 2
+      pilots: 6
   # BLUFOR LHA
   Naval-2:
     - primary: BAI
@@ -56,16 +61,19 @@ squadrons:
       aircraft:
         - VMA-223
       size: 10
+      pilots: 14
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - HMLA-169 (UH-1H)
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - HMLA-169 (AH-1W)
       size: 6
+      pilots: 10
   # OPFOR CVN
   Naval-3:
     - primary: BARCAP
@@ -81,6 +89,7 @@ squadrons:
       aircraft:
         - A-50
       size: 1
+      pilots: 5
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
@@ -100,11 +109,13 @@ squadrons:
       aircraft:
       - F-4E Phantom II
       size: 10
+      pilots: 14
     - primary: CAS
       secondary: air-to-ground
       aircraft:
       - Su-25 Frogfoot
       size: 12 
+      pilots: 16
   # Bandar Abbas Intl
   2:
     - primary: TARCAP
@@ -130,6 +141,7 @@ squadrons:
       aircraft:
         - Mi-24V Hind-E
       size: 6
+      pilots: 10
   # OPFOR Second FOB
   FOB Kohnehshahr:
     - primary: CAS
@@ -137,6 +149,7 @@ squadrons:
       aircraft:
         - Mi-24V Hind-F
       size: 6
+      pilots: 10
   # OPFOR Third FOB
   FOB Khvosh:
     - primary: CAS
@@ -144,6 +157,7 @@ squadrons:
       aircraft:
         - Mi-28N Havoc
       size: 6
+      pilots: 10
   # OPFOR Last FOB
   FOB Charak:
     - primary: CAS
@@ -151,3 +165,4 @@ squadrons:
       aircraft:
         - Mi-28N Havoc
       size: 6
+      pilots: 10

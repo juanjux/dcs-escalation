@@ -134,35 +134,42 @@ squadrons:
       aircraft:
         - VF-142    # F14B
       size: 4
+      pilots: 8
     - primary: Strike
       secondary: any
       aircraft:
         - VFA-192    # Hornet Navy
       size: 8
+      pilots: 12
     - primary: AEW&C
       aircraft:
         - E-2D Advanced Hawkeye
       size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 2
+      pilots: 6
     - primary: Strike
       secondary: any
       aircraft:
         - S-3B Viking
       size: 4
+      pilots: 8
   LHA-1 Tarawa:
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - SH-60B Seahawk
       size: 4
+      pilots: 8
 # AIR SPAWN BLUE
   BLUEAIR:
     - primary: Strike
@@ -170,16 +177,19 @@ squadrons:
       aircraft:
         - B-52H Stratofortress
       size: 2
+      pilots: 6
     - primary: Strike
       secondary: any
       aircraft:
         - B-1B Lancer
       size: 2
+      pilots: 6
     - primary: BAI
       secondary: any
       aircraft:
         - F-117A Nighthawk
       size: 2   
+      pilots: 6
 # Ramat-David (max 65)
   30:
     - primary: BAI
@@ -187,43 +197,52 @@ squadrons:
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 4  
+      pilots: 8
     - primary: Strike
       secondary: air-to-air
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 2
+      pilots: 6
     - primary: SEAD
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 8
+      pilots: 12
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - F-15C Eagle
       size: 8
+      pilots: 12
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - F-15C Eagle
       size: 8
+      pilots: 12
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 4
+      pilots: 8
     - primary: Refueling
       aircraft:
         - KC-130J
       size: 1
+      pilots: 5
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 1
+      pilots: 5
     - primary: Transport
       aircraft:
         - C-130
       size: 4
+      pilots: 8
 # Haifa (max 16)
   13:
     - primary: SEAD
@@ -231,11 +250,13 @@ squadrons:
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - F-15C Eagle
       size: 2
+      pilots: 6
 # Golan North (max 14)
   Golan North:
     - primary: CAS
@@ -244,12 +265,14 @@ squadrons:
         - AH-64D Apache Longbow
         - Ka-50 Hokum III
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - UH-60A
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
 # Golan South (max 12)
   Golan South: 
     - primary: CAS
@@ -258,56 +281,67 @@ squadrons:
         - AH-64D Apache Longbow
         - Mi-24P Hind-F
       size: 4       
+      pilots: 8
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - UH-60A
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
 # Damascus (max 66 + 8)
   7:
     - primary: AEW&C
       aircraft:
         - A-50
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
     - primary: Transport
       aircraft:
         - IL-76MD
       size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - MiG-29S Fulcrum-C
       size: 8
+      pilots: 12
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - Su-30 Flanker-C
       size: 4
+      pilots: 8
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - Su-34 Fullback
       size: 4
+      pilots: 8
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - Su-25T Frogfoot
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - Mi-8MTV2 Hip
       size: 2
+      pilots: 6
 # Marj Ruhayyil (max 33 + 12)
   23:
     - primary: BARCAP
@@ -315,11 +349,13 @@ squadrons:
       aircraft:
         - MiG-29S Fulcrum-C
       size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - Su-25T Frogfoot
       size: 4
+      pilots: 8
 # Al-Dumayr (max 57)
   9:
     - primary: BARCAP
@@ -327,11 +363,13 @@ squadrons:
       aircraft:
         - MiG-29S Fulcrum-C
       size: 4
+      pilots: 8
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - Su-30 Flanker-C
       size: 4
+      pilots: 8
 # Khalkhalah (max 35 FW, max 20 RW)
   18:
     - primary: BARCAP
@@ -339,11 +377,13 @@ squadrons:
       aircraft:
         - MiG-29S Fulcrum-C
       size: 4
+      pilots: 8
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - Su-34 Fullback
       size: 4
+      pilots: 8
 # Mezzeh (max 28, max 12 RW)
 #  25:
 # Sayqal(max 59)
@@ -353,32 +393,38 @@ squadrons:
       aircraft:
         - MiG-29S Fulcrum-C
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - Mi-8MTV2 Hip
       size: 2
+      pilots: 6
 # Beirut (max 37)
   6:
     - primary: Transport
       aircraft:
         - IL-76MD
       size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - MiG-29S Fulcrum-C
       size: 4
+      pilots: 8
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - Mi-8MTV2 Hip
       size: 2
+      pilots: 6
 # FOB ALPHA (max 20 RW)
   FOB ALPHA:
     - primary: CAS
@@ -387,12 +433,14 @@ squadrons:
         - Ka-50 Hokum III
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - Mi-8MTV2 Hip
         - UH-60A
       size: 4
+      pilots: 8
 # FOB BRAVO (max 8 FW, max 14 RW)
   FOB BRAVO:
     - primary: BAI
@@ -401,12 +449,14 @@ squadrons:
         - Mi-24P Hind-F
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - Mi-8MTV2 Hip
         - UH-60A
       size: 4
+      pilots: 8
 # QABR AS SITT
 #  29:
 # GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the

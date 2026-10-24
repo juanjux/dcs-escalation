@@ -38,16 +38,6 @@ class RaceTrackBuilder(PydcsWaypointBuilder):
             )
             return
 
-        # Start Defensive Jamming for all flights
-        settings = self.flight.coalition.game.settings
-        # Read behind the plugin check, not before it: the EW jamming plugin is
-        # gone, so the option does not exist and asking for it raised.
-        if settings.plugins.get("ewrj") and settings.plugin_option_or(
-            "ewrj.ai_jammer_enabled", False
-        ):
-            self.defensive_jamming(waypoint, "start")
-            self.offensive_jamming(waypoint, "start")
-
         # NB: It's important that the engage task comes before the orbit task.
         # Though they're on the same waypoint, if the orbit task comes first it
         # is their first priority and they will not engage any targets because

@@ -1,9 +1,7 @@
 """No code may make a RAISING read of a plugin that is not shipped.
 
 Settings.plugin_option raises on a missing key, and a dropped plugin never gets its
-defaults written, so one read of it takes down mission generation. The EW jamming
-hooks are parked rather than deleted, waiting for the plugin to come back, so they
-are allowed -- through plugin_option_or, which answers with a default instead.
+defaults written, so one read of it takes down mission generation.
 """
 
 from __future__ import annotations
@@ -13,8 +11,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-#: The raising form only. plugin_option_or takes a default and cannot fail, which is
-#: how parked code keeps its hooks; set_plugin_option only writes.
+#: The raising form only. plugin_option_or takes a default and cannot fail;
+#: set_plugin_option only writes.
 CALL = re.compile(r"""(?<![_\w])plugin_option\(\s*['"]([^'"]+)['"]""")
 
 

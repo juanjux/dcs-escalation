@@ -35,31 +35,37 @@ squadrons:
       aircraft:
         - E-3A
       size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker MPRS
       size: 1
+      pilots: 5
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - "[CH] B-21"
         - F-14B(U) Tomcat
       size: 12
+      pilots: 16
     - primary: Escort
       secondary: any
       aircraft:
         - F-22A Raptor
         - F-15C Eagle
       size: 16
+      pilots: 20
     - primary: SEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 16
+      pilots: 20
   # Al-Salam Airbase
   14:  
     - primary: CAS
@@ -67,41 +73,49 @@ squadrons:
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 8
+      pilots: 12
     - primary: SEAD Sweep
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 16
+      pilots: 20
     - primary: OCA/Runway
       secondary: any
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 8
+      pilots: 12
     - primary: DEAD
       secondary: any
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 16
+      pilots: 20
     - primary: Air Assault
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: OCA/Aircraft
       secondary: any
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 4
+      pilots: 8
     - primary: Transport
       secondary: any
       aircraft:
         - C-130J-30
       size: 4
+      pilots: 8
   #Kirkuk International Airport
   10:
     - primary: SEAD
@@ -109,31 +123,37 @@ squadrons:
       aircraft:
         - Su-24M Fencer-D
       size: 12
+      pilots: 16
     - primary: CAS
       secondary: any
       aircraft:
         - Su-25 Frogfoot
       size: 12
+      pilots: 16
     - primary: SEAD Escort
       secondary: air-to-ground
       aircraft:
         - JF-17 Thunder
       size: 8
+      pilots: 12
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - MIG-29-FULCRUM
       size: 8
+      pilots: 12
     - primary: Escort
       secondary: any
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - Mi-8MTV2 Hip
       size: 4
+      pilots: 8
   #Qayyarah Airfield West
   6:
     - primary: DEAD
@@ -141,16 +161,19 @@ squadrons:
       aircraft:
         - H-6J Badger
       size: 8
+      pilots: 12
     - primary: TARCAP
       secondary: any
       aircraft:
         - Mirage-F1EQ
       size: 8
+      pilots: 12
     - primary: Transport
       secondary: any
       aircraft:
         - Mi-26
       size: 2
+      pilots: 6
   #Sulaimaniyah International Airport
   7:
     - primary: BAI
@@ -158,28 +181,34 @@ squadrons:
       aircraft:
         - Su-34 Fullback
       size: 16
+      pilots: 20
   #Erbil International Airport
   4:
     - primary: AEW&C
       aircraft:
         - A-50
       size: 1
+      pilots: 5
     - primary: Transport
       secondary: any
       aircraft:
         - IL-76MD
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - Tu-22M3 Backfire-C
       size: 12
+      pilots: 16
     - primary: BARCAP
       secondary: any
       aircraft:
         - MiG-21bis Fishbed-N
       size: 8
+      pilots: 12

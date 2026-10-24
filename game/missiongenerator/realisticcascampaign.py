@@ -9,6 +9,7 @@ from typing import Any
 from .realisticcasenvironment import SunTimes, export_environment
 from .realisticcasluadata import (
     SCRIPT_ORDER,
+    afac_marking_config,
     collect_registry,
     probability_config,
     render_startup,
@@ -78,6 +79,15 @@ def prepare_campaign(
     options = {
         o.identifier.removeprefix("realisticcas."): o.get_value for o in plugin.options
     }
+    afac_enabled = options.get("afacEnabled", False)
+    if type(afac_enabled) is not bool:
+        raise ValueError("Realistic CAS: AFAC enabled must be boolean")
+    if not afac_enabled and any(
+        f.flight_type.is_afac
+        for f in generator.mission_data.flights
+        if hasattr(f.flight_type, "is_afac")
+    ):
+        raise ValueError("Enable AFAC search missions or remove AFAC flights")
     profile = options.get("terrainProfile", 0)
     covers = {1: "desert", 2: "grassland", 3: "tundra", 4: "forest", 5: "city"}
     if type(profile) is not int or not 0 <= profile <= 5:
@@ -119,6 +129,16 @@ def prepare_campaign(
     )
     assert registry is not None
     registry["warnings"].extend(warnings)
+    if afac_enabled:
+        for observer in registry["observers"]:
+            if observer.get("afac") and "navigation" not in observer["afac"]:
+                raise ValueError(
+                    "Realistic CAS: AFAC native patrol and exit metadata missing"
+                )
+        generator.unit_map.afac_targets = {
+            t["name"]: (t["groupName"], t["coalition"])
+            for t in registry["targets"] + registry["afacKnownTargets"]
+        }
     registry["warnings"].append(
         "Experimental: legacy JTAC generation suppressed; runtime-created units need adapters"
     )
@@ -134,6 +154,11 @@ def prepare_campaign(
         raise ValueError("Realistic CAS: debug must be boolean")
     config = {
         "enabled": True,
+        "afacEnabled": afac_enabled,
+        "afacMarking": afac_marking_config(options) if afac_enabled else None,
+        "afacAvoidance": (
+            {"clouds": environment.get("clouds")} if afac_enabled else None
+        ),
         "registry": registry,
         "environment": environment,
         "acquisitionSeconds": acquisition,

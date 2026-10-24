@@ -3,7 +3,11 @@
   "name": "Insurgents",
   "authors": "Khopa",
   "description": "<p>Insurgents faction.</p>",
-  "aircrafts": [],
+  "aircrafts": [
+    "WingLoong-I",
+    "Mi-8MTV2 Hip",
+    "UH-1H Iroquois"
+  ],
   "frontline_units": [
     "DIM' KAMIKAZE",
     "DIM' TOYOTA BLUE",

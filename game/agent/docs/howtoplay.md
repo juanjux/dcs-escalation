@@ -40,6 +40,14 @@ Read 1-4 once, then work from 5 and 8 each turn; 9 is the field-by-field referen
 
 ## Aircraft damage and workshops
 
+With Live Pilots and morale enabled, a confirmed damaged return to friendly
+territory adds a small morale penalty (default -3), configurable under Live
+Pilots > Morale events. Zero disables it. The normal mission-complete reward
+still applies, and rank/hardening reduce the penalty as usual. This event does
+not change survival or wounds, does not count unknown or airborne outcomes,
+and works independently of aircraft workshops. Regenerate missions to include
+the required telemetry.
+
 Campaign Management > Persistent damage & repairs contains separate boxes for
 aircraft workshops, surviving ship/building damage, and reconstruction times.
 Persistent aircraft damage is off by default. Its dependent controls are greyed
@@ -187,6 +195,21 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
 
 ## 3. Your forces
 
+### Automatic ground purchases
+
+Campaign Management > HQ Automation > **Automate front-line purchases** buys a
+mix based on the faction's doctrine and its actual purchasable roster. AAA and
+MANPADS count toward the short-range air-defense role. Existing units, pending
+orders and incoming transfers all count when comparing the force's value by role.
+Each purchase is evaluated against the resulting composition, so an expensive
+support unit does not automatically take priority over missing tanks. If one
+role is unaffordable, other affordable roles can still be reinforced.
+
+**AI buys its better ground units more often** only prefers higher-priced models
+within the same role when they fit the composition equally well. It does not
+favor an expensive role over another. Purchase budgets and reserve limits are
+unchanged; existing campaigns use the new selection without editing their save.
+
 ### Persistent ship and building damage
 
 Campaign Management > Persistent damage & repairs contains **Persistent ship and building damage**
@@ -228,6 +251,10 @@ leave previously recorded damage unchanged.
 - **Air wing → squadrons**: your aircraft live in **squadrons** based at your
   airfields/carriers. Each squadron has one **airframe** type, a number of
   **aircraft**, and **pilots**. You can only field airframes your faction allows.
+  New campaign templates with explicit aircraft `size` use `size + 4` pilot slots:
+  16 aircraft allow 20 pilots; four allow eight. The optional YAML `pilots` field
+  overrides this cap. Without explicit size, the global pilot policy remains.
+  Initial rosters use the squadron cap; existing saved rosters are unchanged.
 - **Pilots matter**: every aircraft in a flight needs a pilot. A flight with empty
   seats will **block the turn from starting** — always crew your flights (the API
   assigns pilots automatically and refuses pilotless flights).
@@ -374,6 +401,52 @@ leave previously recorded damage unchanged.
   **once at the start of a campaign**, not every turn: it is around two hundred entries.
 
 ## 4. Missions: packages, flights, and roles
+
+Hover **WEATHER** to read sunrise and sunset for the mission date, in local
+mission time. These are approximate times at the campaign reference position;
+twilight continues after sunset. Polar conditions show unavailable times.
+
+With the experimental Realistic CAS plugin enabled, AI-only CAS and Armed Recon
+flights get a moving four-corner search circuit over their assigned area instead
+of relying on visible targets to keep moving. Native engagement tasks remain
+active; no hidden target positions are used. CAS stops searching at its planned
+station end, Armed Recon after the doctrine's CAS duration following TOT. Native
+engagement orders have matching time and 20% fuel stop conditions, including
+during combat. Search corners check those limits before following the original
+exit route; only the last corner loops back. Player/mixed flights, other roles
+and disabled-plugin routes are unchanged.
+A standalone Cobra test validated search, engagement and timed departure in DCS;
+full campaign and other-aircraft validation remain separate checks. Native AI
+does not guarantee destruction of every detected target.
+
+The plugin's separate **AFAC** switch enables **AFAC — Area** and **AFAC — Frontline**
+missions for compatible aircraft. They search without attacking and mark observed
+targets with their laser, night IR pointer and finite payload smoke; eligible
+transport helicopters carry a thermal-equipped JTAC. Default station time is
+60 minutes, marking time 5 minutes and shared laser code 1688; these and reports
+are configurable in the plugin options. Discovery and effective marking earn
+separate pilot experience, once per group and coalition. AI AFACs react only to
+known ground air defences: they try to climb above a verified threat ceiling
+within aircraft limits and below the approximate cloud base, or keep lateral
+separation. Unknown ceilings force standoff. They abort if no safe orbit and
+approach fit the assigned zone. Long direct returns include a cruise leg at the
+departure flight level before the native landing approach. Recovery legs are
+rechecked against known defences, including newly revealed threats. Firing reveals
+a concealed managed defence and prioritises nearby AFACs on the next navigation
+tick. Emergency egress may leave the assigned zone and uses the native aircraft
+speed limit when available. Turn margins include actual ground speed. If the
+destination is blocked, the flight warns and holds outside known threats instead
+of forcing an approach; fuel still burns, so clear the threats or arrange a
+diversion. The bounded planner can fail to find a route even when a longer route
+exists. Routes retain station/fuel limits; player flights are not automatically
+steered. Threat ranges,
+cloud layers and turn footprints are approximations, not protection from
+interception or hidden defences.
+
+AFAC smoke markers use green, red, orange and blue, never white. Each aircraft
+with smoke ammunition keeps a stable colour, included in its marking report.
+Each coalition uses all four colours before reusing them. Smoke remains limited
+by the aircraft's payload; manually fired smoke is unchanged.
 
 A mission is a **package** aimed at a **target**. A package contains one or more
 **flights**. A **flight** is a group of aircraft from one squadron with a single

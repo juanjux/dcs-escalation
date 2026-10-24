@@ -199,6 +199,7 @@ squadrons:
       aircraft:
         - F-22A Raptor
       size: 8
+      pilots: 12
     # Kept alongside the Raptors, not replaced by them: the F-22 is a mod, and if it is
     # not installed this is the squadron that still holds the air over Guam.
     - primary: BARCAP
@@ -206,16 +207,19 @@ squadrons:
       aircraft:
         - F-15C Eagle
       size: 10
+      pilots: 14
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 12
+      pilots: 16
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 12
+      pilots: 16
     # The long-range anti-ship arm. The PLAN surface groups are the campaign's
     # centre of gravity and nothing else blue owns can reach them with mass.
     - primary: Anti-ship
@@ -223,10 +227,12 @@ squadrons:
       aircraft:
         - B-1B Lancer
       size: 6
+      pilots: 10
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 3
+      pilots: 7
     # The boom tanker for the land-based wing. EVERY jet at Andersen and Won Pat is a
     # boom receiver (F-15C/E, F-16CM, B-1B, A-10C), and the KC-135 MPRS is
     # `tanker_refuel_types: probe` -- a drogue tanker -- so the MPRS alone would leave
@@ -235,18 +241,21 @@ squadrons:
       aircraft:
         - KC-135 Stratotanker
       size: 4
+      pilots: 8
     # The drogue det: the Harriers off Olf Orote and the LHA, and the carrier air when
     # the boat's own organic tanker is busy.
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker MPRS
       size: 2
+      pilots: 6
     # Air Assault is how islands change hands here, and the C-130J drops sticks by
     # parachute (§76) -- the fixed-wing half of the capture game.
     - primary: Transport
       aircraft:
         - C-130J-30
       size: 4
+      pilots: 8
 
   Antonio B. Won Pat Intl:
     - primary: BARCAP
@@ -254,11 +263,13 @@ squadrons:
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 12
+      pilots: 16
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - A-10C Thunderbolt II (Suite 7)
       size: 8
+      pilots: 12
 
   # Orote has four parking slots. It gets exactly one small detachment.
   Olf Orote:
@@ -267,6 +278,7 @@ squadrons:
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 4
+      pilots: 8
 
   # ==================== BLUE -- the carrier group ====================
   # A transitional 2027 air wing: Super Hornets and a Growler det, with one legacy
@@ -278,12 +290,14 @@ squadrons:
       aircraft:
         - F/A-18E Super Hornet
       size: 12
+      pilots: 16
     # The mod-free ride. Do not remove without also dropping the fa_18efg preseed.
     - primary: BARCAP
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 12
+      pilots: 16
     # The Rhino is the wing's anti-ship shooter, and the PLAN surface groups are the
     # campaign's centre of gravity.
     - primary: Anti-ship
@@ -291,11 +305,13 @@ squadrons:
       aircraft:
         - F/A-18F Super Hornet
       size: 10
+      pilots: 14
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - F/A-18E Super Hornet
       size: 8
+      pilots: 12
     # VAQ-136 "Gauntlets" -- a real Growler squadron. Authored SEAD, but the Escort
     # Jammer role is offered to every capable squadron automatically
     # (SquadronConfig.auto_assignable) and the EA-18G outranks every other airframe
@@ -308,6 +324,7 @@ squadrons:
       aircraft:
         - EA-18G Growler
       size: 5
+      pilots: 9
     # The organic recovery tanker. Probe-and-drogue, like the whole air wing it feeds
     # (Hornets, Super Hornets, Growlers, Harriers). It cannot service Andersen's boom
     # receivers -- that is the plain KC-135's job.
@@ -315,14 +332,17 @@ squadrons:
       aircraft:
         - F/A-18E Tanker
       size: 4
+      pilots: 8
     - primary: AEW&C
       aircraft:
         - E-2D Advanced Hawkeye
       size: 4
+      pilots: 8
     - primary: Transport
       aircraft:
         - SH-60B Seahawk
       size: 4
+      pilots: 8
 
   # The second US carrier. A single CVN could not both cover Guam and push north, and
   # with the PLAN spread from Saipan to Uracus the coalition needs two decks.
@@ -332,28 +352,34 @@ squadrons:
       aircraft:
         - F/A-18E Super Hornet
       size: 12
+      pilots: 16
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - F/A-18F Super Hornet
       size: 10
+      pilots: 14
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 10
+      pilots: 14
     - primary: AEW&C
       aircraft:
         - E-2D Advanced Hawkeye
       size: 3
+      pilots: 7
     - primary: Refueling
       aircraft:
         - F/A-18E Tanker
       size: 3
+      pilots: 7
     - primary: Transport
       aircraft:
         - SH-60B Seahawk
       size: 3
+      pilots: 7
 
   # The Royal Navy amphibious group. DCS has no RN amphib, so this is a Tarawa hull with
   # a UK-countried air group -- the §23 country pin gives it British comms and pilot
@@ -365,17 +391,20 @@ squadrons:
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 8
+      pilots: 12
     - primary: CAS
       secondary: air-to-ground
       country: UK
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Transport
       country: UK
       aircraft:
         - UH-60A
       size: 4
+      pilots: 8
 
   Naval-2:
     - primary: BAI
@@ -383,16 +412,19 @@ squadrons:
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 8
+      pilots: 12
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - AH-64D Apache Longbow
       size: 6
+      pilots: 10
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - UH-60A
       size: 6
+      pilots: 10
 
   # ==================== RED -- the occupied chain ====================
   # Saipan is the PLA's main field on the chain (19 slots): the fighter regiment,
@@ -403,15 +435,18 @@ squadrons:
       aircraft:
         - J-11A Flanker-L
       size: 10
+      pilots: 14
     - primary: AEW&C
       aircraft:
         - KJ-2000
       size: 2
+      pilots: 6
     - primary: Anti-ship
       secondary: air-to-ground
       aircraft:
         - H-6J Badger
       size: 6
+      pilots: 10
 
   # Rota is 90 km off Guam -- the strike field pointed at Andersen.
   Rota Intl:
@@ -420,10 +455,12 @@ squadrons:
       aircraft:
         - Su-30MKK Flanker-G
       size: 6
+      pilots: 10
     - primary: Refueling
       aircraft:
         - IL-78M
       size: 2
+      pilots: 6
 
   Tinian Intl:
     - primary: BARCAP
@@ -431,12 +468,14 @@ squadrons:
       aircraft:
         - FC-1 Fierce Dragon
       size: 4
+      pilots: 8
 
   Pagan Airstrip:
     - primary: Transport
       aircraft:
         - IL-76MD
       size: 2
+      pilots: 6
 
   # ==================== RED -- the PLAN carrier groups ====================
   Naval-3:
@@ -445,33 +484,39 @@ squadrons:
       aircraft:
         - J-15 Flanker X-2
       size: 14
+      pilots: 18
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - J-15 Flanker X-2
       size: 12
+      pilots: 16
   Naval-4:
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - J-15 Flanker X-2
       size: 14
+      pilots: 18
     - primary: Anti-ship
       secondary: air-to-ground
       aircraft:
         - J-15 Flanker X-2
       size: 12
+      pilots: 16
   Naval-28:
     - primary: TARCAP
       secondary: air-to-air
       aircraft:
         - J-15 Flanker X-2
       size: 14
+      pilots: 18
     - primary: Strike
       secondary: air-to-ground
       aircraft:
         - J-15 Flanker X-2
       size: 12
+      pilots: 16
 
   # ==================== RED -- the amphibious groups ====================
   OPLHA:
@@ -480,11 +525,13 @@ squadrons:
       aircraft:
         - Mi-24P Hind-F
       size: 10
+      pilots: 14
   OPLHA-1:
     - primary: Transport
       aircraft:
         - Mi-8MTV2 Hip
       size: 10
+      pilots: 14
 
   # The northern chain garrisons. Blue now fields two carriers and an RN group across a
   # 760 km frontage; the far-north islands were holding it with nothing but ground troops.
@@ -495,24 +542,28 @@ squadrons:
       aircraft:
         - Mi-8MTV2 Hip
       size: 6
+      pilots: 10
   FOB Anatahan:
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - Mi-24P Hind-F
       size: 6
+      pilots: 10
   FOB Uracus:
     - primary: Transport
       secondary: air-to-ground
       aircraft:
         - Mi-8MTV2 Hip
       size: 6
+      pilots: 10
   FOB Pagan:
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
 
 supply_routes:
   # Guam, Route 1 / Marine Corps Drive north through Dededo and Yigo. Inherited from

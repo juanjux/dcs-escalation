@@ -73,6 +73,7 @@ class WaypointGenerator:
         mission_start_time = self.set_takeoff_time(waypoints[0])
 
         filtered_points: list[FlightWaypoint] = []
+        generated = []
         for point in self.flight.points:
             if point.only_for_player and not self.flight.client_count:
                 continue
@@ -90,6 +91,7 @@ class WaypointGenerator:
                     ):
                         self.builder_for_waypoint(point).add_tasks(self.group.points[0])
                 if point == self.flight.state.current_waypoint:
+                    generated.append((point, self.group.points[0]))
                     # We don't need to build this waypoint because pydcs did that for
                     # us, but we do need to configure the tasks for it so that mid-
                     # mission aircraft starting at a waypoint with tasks behave
@@ -124,7 +126,15 @@ class WaypointGenerator:
                 ]
 
         for idx, point in enumerate(filtered_points):
-            self.builder_for_waypoint(point).build()
+            generated.append((point, self.builder_for_waypoint(point).build()))
+
+        from game.missiongenerator.aircraft.searchpattern import add_search_pattern
+
+        if not self.flight.client_count and self.flight.flight_type in (
+            FlightType.CAS,
+            FlightType.ARMED_RECON,
+        ):
+            add_search_pattern(self.flight, self.group, self.time, generated)
 
         self._resolve_locked_speed_time_conflicts()
         enable_route_vnav(self.flight, self.group)
@@ -198,6 +208,20 @@ class WaypointGenerator:
                 eta_locked_after = True
 
     def builder_for_waypoint(self, waypoint: FlightWaypoint) -> PydcsWaypointBuilder:
+        if (
+            self.flight.flight_type.is_afac
+            and waypoint is self.flight.flight_plan.layout.patrol_start
+        ):
+            from .afac import AfacSearchBuilder
+
+            return AfacSearchBuilder(
+                waypoint,
+                self.group,
+                self.flight,
+                self.mission,
+                self.time,
+                self.mission_data,
+            )
         builders = {
             FlightWaypointType.CARGO_STOP: CargoStopBuilder,
             FlightWaypointType.DROPOFF_ZONE: LandingZoneBuilder,

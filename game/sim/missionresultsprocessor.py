@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Iterator, Optional, TYPE_CHECKING
 
 from game.debriefing import Debriefing
+from game.dcs.afaccapabilities import capabilities_for
 from game.squadrons.pilot import KilledBy
 from game.squadrons.experience import (
     PilotDeath,
@@ -17,6 +18,10 @@ from game.squadrons.experience import (
     XP_DAMAGE_SHARE,
     XP_GROUND_KILL,
     XP_MISSION_COMPLETE,
+    XP_AFAC_DISCOVERY,
+    XP_AFAC_MARKING,
+    XP_MARKING,
+    XP_RECON,
     XP_SHIP_KILL,
     XP_UNKNOWN_KILL,
     XP_WOUNDED,
@@ -638,10 +643,16 @@ class MissionResultsProcessor:
         settings = self.game.settings
         pilot = loss.pilot
         squadron = loss.flight.squadron
-        record = self._describe_loss(loss, debriefing)
         # However this ends for him, he did not bring the aircraft home.
         debriefing.pilot_outcomes.lost_aircraft.add(id(pilot))
         pilot.record.aircraft_lost += 1
+        profile = capabilities_for(getattr(loss.flight.unit_type, "dcs_id", ""))
+        if profile is not None and profile.remote_operator:
+            # The airframe is lost, but its crew never boarded it. Do not record
+            # an escape, hospital stay, casualty or near-death hardening either.
+            logging.info("%s remotely operated the lost aircraft", pilot.name)
+            return
+        record = self._describe_loss(loss, debriefing)
         # What the men who were up there with him think of *him*: the half of
         # friendship that decides how hard anybody looks. Positive only -- being
         # disliked does not make somebody slower to reach a burning cockpit -- and read
@@ -1335,9 +1346,96 @@ class MissionResultsProcessor:
             # nobody has not failed at anything, so those are left out of it.
             self._note_morale(pilot, morale_rules.ACHIEVED_NOTHING)
 
+    def _note_damaged_return_morale(self, debriefing: Debriefing) -> None:
+        from game.aircraftmaintenance import damage_dispositions
+
+        settings = self.game.settings
+        if not (settings.live_pilots_enabled and settings.morale_enabled):
+            return
+        if morale_rules.DAMAGED_RETURN.amount(settings) == 0:
+            return
+        seen: set[int] = set()
+        for result in damage_dispositions(
+            self.game, debriefing, require_workshops=False
+        ):
+            pilot = result.flying.pilot
+            report = debriefing.state_data.aircraft_damage[result.unit]
+            # Ignored crashes can enter the workshop but are not damaged returns.
+            if (
+                not result.recoverable
+                or not report.recovered
+                or report.crashed
+                or pilot is None
+                or not pilot.alive
+                or id(pilot) in seen
+                or id(pilot) in debriefing.pilot_outcomes.lost_aircraft
+            ):
+                continue
+            seen.add(id(pilot))
+            self._note_morale(pilot, morale_rules.DAMAGED_RETURN)
+
+    def _experience_from_afac(
+        self, debriefing: Debriefing, *, marking: bool = False
+    ) -> dict[int, int]:
+        from game.ato.afac import enabled
+
+        earned: dict[int, int] = {}
+        if not enabled(self.game.settings):
+            return earned
+        seen: set[tuple[int, str]] = set()
+        targets = getattr(debriefing.unit_map, "afac_targets", {})
+        field = "afac_marks" if marking else "afac_discoveries"
+        details = getattr(debriefing.state_data, field, [])
+        if not isinstance(details, list):
+            return earned
+        for detail in details[:10000]:
+            if not isinstance(detail, dict):
+                continue
+            if marking and not any(
+                detail.get(channel) is True
+                for channel in ("laser", "infrared", "smoke")
+            ):
+                continue
+            observer, target = detail.get("observer"), detail.get("target")
+            if not isinstance(observer, str) or not isinstance(target, str):
+                continue
+            flying = debriefing.unit_map.flight(observer)
+            expected = targets.get(target)
+            if flying is None or flying.pilot is None or expected is None:
+                continue
+            if not flying.flight.flight_type.is_afac:
+                continue
+            side = 2 if flying.flight.squadron.player.is_blue else 1
+            group, owner = expected
+            key = (side, group)
+            if (
+                owner == side
+                or detail.get("coalition") != side
+                or detail.get("group") != group
+                or key in seen
+            ):
+                continue
+            seen.add(key)
+            pilot = flying.pilot
+            xp = XP_AFAC_MARKING if marking else XP_AFAC_DISCOVERY
+            reason = XP_MARKING if marking else XP_RECON
+            earned[id(pilot)] = earned.get(id(pilot), 0) + xp
+            self._note_xp(pilot, reason, xp)
+            self.xp_log.award(
+                pilot, xp, "marked" if marking else "discovered", group, target
+            )
+        return earned
+
     def commit_pilot_experience(self, debriefing: Debriefing) -> None:
+        self._note_damaged_return_morale(debriefing)
         earned, credited = self._experience_from_kills(debriefing)
         for pilot_id, xp in self._experience_from_damage(debriefing, credited).items():
+            earned[pilot_id] = earned.get(pilot_id, 0) + xp
+        for pilot_id, xp in self._experience_from_afac(debriefing).items():
+            earned[pilot_id] = earned.get(pilot_id, 0) + xp
+        for pilot_id, xp in self._experience_from_afac(
+            debriefing, marking=True
+        ).items():
             earned[pilot_id] = earned.get(pilot_id, 0) + xp
         self._commit_pilot_experience(self.game.blue.ato, debriefing, earned)
         self._commit_pilot_experience(self.game.red.ato, debriefing, earned)

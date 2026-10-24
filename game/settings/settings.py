@@ -981,11 +981,11 @@ class Settings:
         HQ_AUTOMATION_SECTION,
         default=True,
         detail=(
-            "The AI picks a ground unit uniformly at random from everything of the "
-            "right class it can afford, so a faction fielding both a modern MBT and a "
-            "gun truck buys as many of one as the other. With this enabled the roll is "
-            "weighted by price, which is the only capability measure the model has. It "
-            "is a weighting and not a maximum, so cheap units still appear."
+            "Automatic purchases first choose the units that best balance the force "
+            "against the faction's doctrine. When models within the same role fit "
+            "equally well, prefer more expensive models as a proxy for capability. "
+            "Disabling this uses an equal chance among those models. This option "
+            "does not increase a role's share of spending."
         ),
     )
     automate_ground_object_repairs: bool = boolean_option(
@@ -2357,6 +2357,21 @@ class Settings:
         min=-50,
         max=0,
         detail="He came home without it.",
+    )
+    morale_damaged_return: int = bounded_int_option(
+        "Returned in a damaged aircraft",
+        page=LIVE_PILOTS_PAGE,
+        section=LIVE_PILOTS_MORALE_SECTION,
+        subsection=LIVE_PILOTS_MORALE_EVENTS_SECTION,
+        default=-3,
+        min=-50,
+        max=0,
+        detail=(
+            "Applied once after a confirmed damaged return to friendly territory. "
+            "The normal mission-complete reward still applies. Rank and hardening "
+            "reduce this penalty as usual; zero disables it. Does not alter pilot "
+            "survival, and does not require aircraft workshops to be enabled."
+        ),
     )
     morale_achieved_nothing: int = bounded_int_option(
         "Came home empty",

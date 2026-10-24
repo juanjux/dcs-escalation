@@ -542,10 +542,28 @@ class QFlightCreator(QDialog):
             if squadron.primary_task == task
             else f"Secondary role (primary: {squadron.primary_task.value})"
         )
-        self.selection_summary.setText(
+        summary = (
             f"{squadron.location.name}\n"
             f"{squadron.untasked_aircraft} aircraft available  ·  {role_alignment}"
         )
+        if task.is_afac:
+            from game.dcs.afaccapabilities import capabilities_for
+            from game.missiongenerator.realisticcasluadata import TARGETING_PODS
+            from game.timeofday import TimeOfDay
+
+            profile = capabilities_for(aircraft.dcs_id)
+            thermal = profile is not None and (profile.ir or profile.can_embark_jtac)
+            loadout = self.loadout_selector.currentData()
+            pod = loadout is not None and any(
+                w.clsid in TARGETING_PODS for w in loadout.pylons.values()
+            )
+            if (
+                self.game.conditions.time_of_day is TimeOfDay.Night
+                and not thermal
+                and not pod
+            ):
+                summary += "\nWarning: no thermal night-observation equipment."
+        self.selection_summary.setText(summary)
 
 
 class LoadoutDelegate(QStyledItemDelegate):

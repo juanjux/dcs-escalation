@@ -30,24 +30,29 @@ squadrons:
       aircraft:
         - F/A-18C Hornet (Lot 20)
       size: 16
+      pilots: 20
     - primary: Escort
       secondary: any
       aircraft:
         - F-14B(U) Tomcat
       size: 16
+      pilots: 20
     - primary: BAI
       secondary: any
       aircraft:
         - S-3B Viking
       size: 8
+      pilots: 12
     - primary: AEW&C
       aircraft:
         - E-2C Hawkeye
       size: 4
+      pilots: 8
     - primary: Refueling
       aircraft:
         - S-3B Tanker
       size: 4
+      pilots: 8
   #Ownfor LHA
   Blue LHA-1:
     - primary: Armed Recon
@@ -55,16 +60,19 @@ squadrons:
       aircraft:
         - AV-8B Harrier II Night Attack
       size: 16
+      pilots: 20
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-1H Iroquois
       size: 2
+      pilots: 6
     - primary: Escort
       secondary: any
       aircraft:
         - AH-1W SuperCobra
       size: 2
+      pilots: 6
   # Akrotiri
   44:
     - primary: OCA/Runway
@@ -72,38 +80,46 @@ squadrons:
       aircraft:
         - B-1B Lancer
       size: 4
+      pilots: 8
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker MPRS
       size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
       size: 2
+      pilots: 6
     - primary: AEW&C
       aircraft:
         - E-3A
       size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
         - A-10A Thunderbolt II
       size: 8
+      pilots: 12
     - primary: Strike
       secondary: any
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
       size: 8
+      pilots: 12
     - primary: Transport
       secondary: any
       aircraft:
         - CH-47F Block I
       size: 4
+      pilots: 8
     - primary: Armed Recon
       secondary: any
       aircraft:
         - OH-58D(R) Kiowa Warrior
       size: 4
+      pilots: 8
   # Tel Nof
   220:
     - primary: Escort
@@ -111,11 +127,13 @@ squadrons:
       aircraft:
         - F-15C Eagle
       size: 12
+      pilots: 16
     - primary: BAI
       secondary: any
       aircraft:
         - F-4E-45MC Phantom II
       size: 8
+      pilots: 12
   # Ben Gurion
   221:
     - primary: Transport
@@ -123,6 +141,7 @@ squadrons:
       aircraft:
         - C-130J-30
       size: 12
+      pilots: 16
   # Hatzor
   222:
     - primary: DEAD
@@ -130,17 +149,20 @@ squadrons:
       aircraft:
         - F-16CM Fighting Falcon (Block 50)
       size: 12
+      pilots: 16
     - primary: Escort
       secondary: any
       aircraft:
         - AH-64D Apache Longbow
       size: 4
+      pilots: 8
     - primary: Air Assault
       secondary: any
       aircraft:
         - UH-60L
         - UH-60A
       size: 4
+      pilots: 8
   # Muwaffaq Salti
   68:
     - primary: Anti-ship
@@ -148,16 +170,19 @@ squadrons:
       aircraft:
         - Tu-22M3 Backfire-C
       size: 4
+      pilots: 8
     - primary: Armed Recon
       secondary: any
       aircraft:
         - Su-25 Frogfoot
       size: 8
+      pilots: 12
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - MIG-29-FULCRUM
       size: 16
+      pilots: 20
   # Prince Hassan
   64:
     - primary: BAI
@@ -165,21 +190,25 @@ squadrons:
       aircraft:
         - MiG-23ML Flogger-G
       size: 16
+      pilots: 20
     - primary: TARCAP
       secondary: any
       aircraft:
         - Mirage-F1EQ
       size: 12
+      pilots: 16
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - Su-22M4 Fitter-K
       size: 16
+      pilots: 20
     - primary: CAS
       secondary: any
       aircraft:
         - SA 342L Gazelle
       size: 4
+      pilots: 8
   # H-4
   12:
     - primary: Air Assault
@@ -187,11 +216,13 @@ squadrons:
       aircraft:
         - Mi-8MTV2 Hip
       size: 2
+      pilots: 6
     - primary: Escort
       secondary: any
       aircraft:
         - Mi-24P Hind-F
       size: 4
+      pilots: 8
   # H-3
   53:
     - primary: Escort
@@ -199,6 +230,7 @@ squadrons:
       aircraft:
         - MiG-21bis Fishbed-N
       size: 16
+      pilots: 20
   # H-3 Northwest
   54:
     - primary: BARCAP
@@ -206,6 +238,7 @@ squadrons:
       aircraft:
         - MiG-25PD Foxbat-E
       size: 8
+      pilots: 12
   # H-3 Southwest
   55:
     - primary: Strike
@@ -213,3 +246,4 @@ squadrons:
       aircraft:
         - Su-24M Fencer-D
       size: 20
+      pilots: 24

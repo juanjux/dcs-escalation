@@ -28,7 +28,9 @@
     "Mi-24P Hind-F",
     "SH-60B Seahawk",
     "Su-27 Flanker-B",
-    "UH-1H Iroquois"
+    "UH-1H Iroquois",
+    "MQ-9 Reaper",
+    "OH-58D(R) Kiowa Warrior"
   ],
   "awacs": [
     "E-2C Hawkeye",

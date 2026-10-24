@@ -9,7 +9,7 @@ do
     local probability=S.probabilityConfig(c.probability)
     assert(type(c.observers)=="table" and type(c.targets)=="table","explicit observer/target lists required")
     assert(type(c.environment)=="function","environment provider required")
-    local observers,targets={},{}
+    local observers,targets,knownTargets={},{},{}
     local interval=c.interval or 1
     assert(S.finite(interval) and interval>=0.1 and interval<=60,"invalid interval")
     local function log(kind,detail)
@@ -21,13 +21,21 @@ do
       assert(type(v.name)=="string" and v.name~="" and not observers[v.name],"invalid/duplicate observer")
       assert(type(v.typeName)=="string","observer aircraft/vehicle type required")
       local p=S.profile(v.typeName,v.category,v.equipment,probability)
+      if v.afac then
+        assert(c.afacEnabled==true, 'AFAC missions are disabled')
+        RealisticCAS.AFACSearch.validate(v.afac)
+      end
       observers[v.name]={typeName=v.typeName,category=v.category,role=v.role,profile=p,
-        allowPlayer=v.allowPlayer==true}
+        allowPlayer=v.allowPlayer==true,afac=v.afac,equipment=v.equipment or {}}
     end
     for _,v in ipairs(c.targets) do
       assert(type(v.name)=="string" and v.name~="" and type(v.groupName)=="string" and
         v.groupName~="" and not targets[v.name],"invalid/duplicate target")
       targets[v.name]=v.groupName
+    end
+    for _,v in ipairs(c.knownTargets or {})do
+      assert(type(v.name)=='string' and type(v.groupName)=='string' and not targets[v.name], 'invalid known target')
+      targets[v.name]=v.groupName;knownTargets[v.name]=true
     end
     local function live(name)
       local u=Unit.getByName(name)
@@ -36,7 +44,8 @@ do
       if side~=1 and side~=2 then return nil end
       return u
     end
-    local engine=RealisticCAS.newDetection({clock=timer.getTime,cellSize=c.cellSize,
+    local marking,navigation
+    local callbacks={clock=timer.getTime,cellSize=c.cellSize,
       targetBudget=c.targetBudget,workBudget=c.workBudget,revisit=c.revisit,log=log,
       observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,
       traceDecisions=c.traceDecisions==true,
@@ -51,7 +60,7 @@ do
         if not g or g:getName()~=targets[name] or g:getCategory()~=Group.Category.GROUND then return nil end
         local pos=u:getPoint()
         return {name=name,groupName=targets[name],side=u:getCoalition(),position=pos,
-          point={x=pos.x,y=pos.y+1,z=pos.z},velocity=u:getVelocity()}
+          point={x=pos.x,y=pos.y+1,z=pos.z},velocity=u:getVelocity(),typeName=u:getTypeName()}
       end,
       readObserver=function(name)
         local u=live(name);if not u then return nil end
@@ -59,6 +68,7 @@ do
         if u:getTypeName()~=meta.typeName then return nil end
         if not meta.allowPlayer and u:getPlayerName() then return nil end
         local g=u:getGroup();if not g then return nil end
+        if meta.afac and g:getName()~=meta.afac.groupName then return nil end
         local ground=g:getCategory()==Group.Category.GROUND
         if ground~=(meta.category=="ground") then return nil end
         if not ground and not u:inAir() then return nil end
@@ -69,25 +79,78 @@ do
           local ok,on=pcall(function() return u:getRadar() end)
           radar=ok and on==true
         end
-        return {name=name,side=u:getCoalition(),point={x=p.x,y=p.y+(ground and 2 or 0),z=p.z},
-          forward=pose.x,agl=agl,role=meta.role,radarOn=radar}
+        local report={name=name,side=u:getCoalition(),point={x=p.x,y=p.y+(ground and 2 or 0),z=p.z},
+          forward=pose.x,agl=agl,role=meta.role,radarOn=radar,afac=meta.afac}
+        if meta.afac then
+          if (RealisticCAS.afacAbort or {})[meta.afac.groupName] or
+            (RealisticCAS.afacReturn or {})[meta.afac.groupName] then return nil end
+          local start=(RealisticCAS.afacStations or {})[meta.afac.groupName]
+          if not RealisticCAS.AFACSearch.active(meta.afac,p,timer.getTime(),start,u:getFuel()) then return nil end
+          if not meta.nightWarned and meta.equipment.ir~=true and meta.equipment.targetingPod~=true then
+            local weather=c.environment(report,{point=report.point},timer.getTime())
+            if weather and weather.light<0.5 then
+              meta.nightWarned=true
+              trigger.action.outTextForCoalition(report.side,'Warning: AFAC '..name..' has no thermal night observation equipment.',15)
+            end
+          end
+        end
+        report.afacMarking=marking and marking:busy(name) or false
+        return report
       end,
       lineOfSight=function(a,b) return land.isVisible(a,b) end,
       isRevealed=function(target,observer)
+        if knownTargets[target.name] then return true end
         local g=Group.getByName(target.groupName)
         return g and fog.service:isRevealed(g:getID(),observer.side)==true
       end,
       reveal=function(target,observer,result)
         if not fog.active or fog.stopping then return false end
-        return fog:observe(target.groupName,observer.side,target.position,result.mode..":"..observer.name)
-      end})
+        local g=Group.getByName(target.groupName)
+        local known=knownTargets[target.name] or (g and fog.service:isRevealed(g:getID(),observer.side)==true)
+        local success=knownTargets[target.name] or fog:observe(target.groupName,observer.side,target.position,result.mode..":"..observer.name)
+        if success and not known and observer.afac then
+          RealisticCAS.afacDiscoveryCredits=RealisticCAS.afacDiscoveryCredits or {}
+          local key=observer.side..':'..target.groupName
+          if not RealisticCAS.afacDiscoveryCredits[key] then
+            RealisticCAS.afacDiscoveryCredits[key]=true
+            afac_discoveries=afac_discoveries or {}
+            if #afac_discoveries<10000 then
+              afac_discoveries[#afac_discoveries+1]={observer=observer.name,target=target.name,
+                group=target.groupName,coalition=observer.side}
+              dirty_state=true
+            end
+          end
+        end
+        if success and navigation then navigation:observe(target) end
+        if success and marking and observer.afac then marking:observe(target,observer,not known) end
+        return success
+      end}
+    if c.afacEnabled and c.afacMarking then
+      if c.afacAvoidance then navigation=RealisticCAS.newAFACNavigation(fog,c) end
+      marking=RealisticCAS.newAFACMarking(fog,c,callbacks,navigation)
+    end
+    local engine=RealisticCAS.newDetection(callbacks)
+    engine.afacMarking=marking
+    engine.afacNavigation=navigation
+    local stopDetection=engine.stop
+    function engine:stop()
+      stopDetection(self)
+      local navigationStopped=not navigation or navigation:stop()
+      local markingStopped=not marking or marking:stop()
+      return navigationStopped and markingStopped
+    end
     for name,meta in pairs(observers) do engine:addObserver(name,meta.profile) end
     for name in pairs(targets) do engine:addTarget(name) end
     timer.scheduleFunction(function(_,now)
       if not fog.active or fog.stopping or not engine:getDiagnostics().enabled then
-        engine:stop();return nil
+        if not engine:stop() then return now+interval end
+        return nil
       end
-      local ok,err=pcall(function()engine:tick()end)
+      local ok,err=pcall(function()
+        engine:tick()
+        if navigation then navigation:tick() end
+        if marking then marking:tick() end
+      end)
       if not ok then log("ERROR",err) end
       if c.debug then
         local d=engine:getDiagnostics()

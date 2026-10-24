@@ -5,7 +5,6 @@ from dcs.task import (
     SetUnlimitedFuelCommand,
 )
 
-from game.ato import FlightType
 from game.ato.flightplans.patrolling import PatrollingFlightPlan
 from .pydcswaypointbuilder import PydcsWaypointBuilder
 
@@ -15,18 +14,6 @@ class RaceTrackEndBuilder(PydcsWaypointBuilder):
         # Unlimited fuel option : enable at racetrack end. Must be first option to work.
         if self.flight.squadron.coalition.game.settings.ai_unlimited_fuel:
             waypoint.tasks.insert(0, SetUnlimitedFuelCommand(True))
-
-        # Disable Offensive Jamming at Racetrack End
-        if self.flight.flight_type == FlightType.AEWC:
-            # Stop Defensive Jamming for all AWACS flights
-            settings = self.flight.coalition.game.settings
-            # Read behind the plugin check, not before it: the EW jamming plugin is
-            # gone, so the option does not exist and asking for it raised.
-            if settings.plugins.get("ewrj") and settings.plugin_option_or(
-                "ewrj.ai_jammer_enabled", False
-            ):
-                self.defensive_jamming(waypoint, "stop")
-                self.offensive_jamming(waypoint, "stop")
 
     def build(self) -> MovingPoint:
         waypoint = super().build()
