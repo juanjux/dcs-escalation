@@ -150,10 +150,20 @@ class CoordinateLabel(QWidget):
 
     def _save(self, flight: Any, kind: Any) -> None:
         from game.ato.savedpoints import SavedPoint, add_point
+        from game.elevation import elevation_ft
+
+        latlng = self.position.latlng()
+        height = elevation_ft(latlng.lat, latlng.lng)
 
         add_point(
             flight,
-            SavedPoint(kind=kind, name=self.text, x=self.position.x, y=self.position.y),
+            SavedPoint(
+                kind=kind,
+                name=self.text,
+                x=self.position.x,
+                y=self.position.y,
+                altitude_ft=height if height is not None else 0,
+            ),
         )
         from game.server.savedpoints.notifications import publish_points_changed
 
