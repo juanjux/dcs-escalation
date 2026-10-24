@@ -6,8 +6,8 @@ Generate a standalone Caucasus mission from the repository root:
 python -m tools.persistent_damage_probe path/to/persistent_health_native_probe.miz
 ```
 
-Open it in DCS, enter the A-10C II slot, unpause and wait ten seconds.
-There is no need to taxi or take off. The mission changes no campaign data.
+Open it in DCS, enter the blue Game Master slot, unpause and wait ten seconds.
+No player aircraft or takeoff is needed. The mission changes no campaign data.
 Three Perry ships and three placed FARP CP Blindage buildings receive native
 UNIT AI SET LIFE actions: 35%, 65% and 98.212% remaining life. No explosions or
 mission-sandbox bridge are used. Readings repeat every fifteen seconds and are

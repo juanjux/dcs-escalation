@@ -39,6 +39,11 @@ def test_probe_generates_real_native_actions_for_both_object_types(
     mission.save(path)
     with ZipFile(path) as archive:
         data = loads(archive.read("mission").decode())["mission"]
+    assert data["groundControl"]["roles"]["instructor"]["blue"] == 1
+    for side in data["coalition"].values():
+        if isinstance(side, dict):
+            for country in side.get("country", {}).values():
+                assert not country.get("plane") and not country.get("helicopter")
     rules = list(data["trigrules"].values())
     actions = rules[0]["actions"]
     assert len(actions) == 6

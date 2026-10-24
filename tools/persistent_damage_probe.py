@@ -8,13 +8,10 @@ from dcs import Mission
 from dcs.action import DoScript
 from dcs.condition import TimeAfter
 from dcs.mapping import Point, LatLng
-from dcs.planes import A_10C_2
 from dcs.ships import PERRY
 from dcs.statics import Fortification
 from dcs.translation import String
 from dcs.triggers import TriggerOnce
-from dcs.unit import Skill
-from dcs.mission import StartType
 from dcs.terrain import Caucasus
 
 from game.missiongenerator.persistenthealth import SetUnitHealth
@@ -23,13 +20,10 @@ from game.missiongenerator.persistenthealth import SetUnitHealth
 def build_mission() -> Mission:
     mission = Mission(Caucasus())
     mission.start_time = datetime(2026, 6, 15, 12)
+    mission.groundControl.blue_game_masters = 1
     airport = mission.terrain.airports["Batumi"]
     airport.set_coalition("blue")
     country = mission.country("USA")
-    player = mission.flight_group_from_airport(
-        country, "Probe player", A_10C_2, airport, start_type=StartType.Warm
-    )
-    player.units[0].skill = Skill.Player
     targets = []
     action = TriggerOnce(comment="Native health restoration (percent units)")
     action.add_condition(TimeAfter(2))
@@ -78,7 +72,8 @@ def build_mission() -> Mission:
     mission.triggerrules.triggers.append(read)
     mission.set_description_text(
         "PERSISTENT HEALTH PROBE — NO CAMPAIGN\n"
-        "Unpause and wait 7 seconds. Expected and actual health are displayed and "
+        "Enter the blue Game Master slot, unpause and wait 7 seconds. "
+        "Expected and actual health are displayed and "
         "written to dcs.log every 15 seconds. The native action sets three ships "
         "and three FARP CP Blindage statics to 35%, 65% and 98.212%. No explosions."
     )
