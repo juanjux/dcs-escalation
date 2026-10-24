@@ -4,6 +4,8 @@ local entries = ESCALATION_PERSISTENT_DAMAGE or {}
 local initialized = {}
 local failed = {}
 local previous = {}
+local restoring = {}
+local BUILDING_TOLERANCE = 0.020001
 
 local function lifeOf(object)
     local ok, life = pcall(function() return object:getLife() end)
@@ -19,26 +21,97 @@ local function baseline(object, life)
     return life
 end
 
-local function restore(object, fraction)
-    if fraction >= 1 then return true end
-    -- The same DCS mission command used by MOOSE UNIT:SetLife. No explosions:
-    -- restoring old damage must not hit neighbours or create new kill events.
-    local ok, result = pcall(function()
-        local code = string.format("a_unit_set_life_percentage(%d, %.9f)", object:getID(), fraction)
+local function restore(object, entry)
+    local fraction = entry.health
+    if fraction >= 1 or entry.native or entry.building then return true end
+    -- Legacy ship missions can still use the native command through a bridge.
+    local ok, result, detail = pcall(function()
+        if entry.unsupported then
+            return false, "partial terrain-scenery health restoration is unsupported"
+        end
+        local percent = fraction * 100
+        local code = string.format("a_unit_set_life_percentage(%.0f, %.9f)", object:getID(), percent)
         if type(a_unit_set_life_percentage) == "function" then
-            a_unit_set_life_percentage(object:getID(), fraction)
+            a_unit_set_life_percentage(object:getID(), percent)
             return true
         end
-        if not net or type(net.dostring_in) ~= "function" then return false end
+        if not net or type(net.dostring_in) ~= "function" then
+            return false, "native setter and net.dostring_in unavailable in mission sandbox"
+        end
         local value, err = net.dostring_in("mission", code .. "; return 'applied'")
-        return not err and value == "applied"
+        return not err and value == "applied", err or tostring(value)
     end)
     if not ok or not result then
-        env.warning("Escalation: cannot restore persistent health for object " .. tostring(object:getID()))
+        env.warning("Escalation: cannot restore persistent health for " .. entry.name
+            .. " (object " .. tostring(object:getID()) .. ", expected " .. tostring(fraction * 100)
+            .. "%): " .. tostring(detail or result))
         trigger.action.outText("Escalation: DCS could not restore persistent ship/building health. See dcs.log.", 30)
         return false
     end
     return true
+end
+
+local function failBuilding(entry, reason)
+    env.warning("Escalation: cannot restore persistent building health for " .. entry.name .. ": " .. tostring(reason))
+    trigger.action.outText("Escalation: could not restore building health for " .. entry.name .. ". See dcs.log.", 30)
+    failed[entry.name] = true
+    restoring[entry.name] = nil
+end
+
+local function safeBuildingPulse(item)
+    local point = item.object:getPoint()
+    local safe = true
+    -- Very close objects and fragile neighbours were not covered by the native
+    -- pulse controls. Leave their saved health unchanged instead of risking them.
+    local volume = {id = world.VolumeType.SPHERE, params = {point = point, radius = 10}}
+    for _, category in ipairs({Object.Category.UNIT, Object.Category.STATIC, Object.Category.SCENERY}) do
+        world.searchObjects(category, volume, function(other)
+            if other:getID() ~= item.object:getID() then
+                local life = lifeOf(other)
+                if life and life > 0 then
+                    local p = other:getPoint()
+                    local distance = (p.x - point.x)^2 + (p.z - point.z)^2
+                    if distance < 25 or baseline(other, life) < item.maximum / 4 then safe = false end
+                end
+            end
+            return safe
+        end)
+        if not safe then return false end
+    end
+    return true
+end
+
+local function advanceBuilding(entry)
+    local state = restoring[entry.name]
+    local pulsed = false
+    for _, item in ipairs(state) do
+        local life = lifeOf(item.object)
+        if life == nil then
+            failBuilding(entry, "life query unavailable during initialization")
+            return
+        end
+        if item.remaining > 0 and life / item.maximum > entry.health + BUILDING_TOLERANCE then
+            local ok, reason = pcall(function()
+                if not safeBuildingPulse(item) then error("nearby object is too close or too fragile") end
+                local p = item.object:getPoint()
+                trigger.action.explosion({x = p.x, y = p.y + 0.25, z = p.z}, item.power)
+            end)
+            if not ok then failBuilding(entry, reason); return end
+            item.remaining = item.remaining - 1
+            pulsed = true
+        else item.remaining = 0 end
+    end
+    -- Read on the next tick after the final pulse, never its pre-impact value.
+    if pulsed then return end
+    for _, item in ipairs(state) do
+        if lifeOf(item.object) / item.maximum > entry.health + BUILDING_TOLERANCE then
+            failBuilding(entry, "DCS did not apply the initial damage")
+            return
+        end
+        item.checked = true
+    end
+    initialized[entry.name] = state
+    restoring[entry.name] = nil
 end
 
 local function objectsFor(entry)
@@ -71,12 +144,22 @@ local function initialize(entry)
         local life = lifeOf(object)
         if life and life > 0 then
             local maximum = baseline(object, life)
-            if maximum > 0 and restore(object, entry.health) then
-                state[#state + 1] = {object = object, maximum = maximum, expected = entry.health}
+            if maximum > 0 and restore(object, entry) then
+                local item = {object = object, maximum = maximum, expected = entry.health}
+                if entry.building then
+                    local damage = math.max(0, life / maximum - entry.health)
+                    -- DCS ignores individual hits below 2% of the original life.
+                    -- Balanced small pulses avoid the collateral of a large hit.
+                    item.remaining = damage >= 0.02 and math.max(1, math.floor(damage / 0.021)) or 0
+                    item.power = item.remaining > 0 and damage * maximum / (item.remaining * 2.5) or 0
+                    item.checked = true
+                end
+                state[#state + 1] = item
             end
         end
     end
-    if #state > 0 then initialized[entry.name] = state
+    if #state > 0 and entry.building and entry.health < 0.98 then restoring[entry.name] = state
+    elseif #state > 0 then initialized[entry.name] = state
     else failed[entry.name] = true end
 end
 
@@ -121,13 +204,17 @@ end
 
 local function start(_, now)
     local pending = false
+    local missing = false
     for _, entry in ipairs(entries) do
         if not initialized[entry.name] and not failed[entry.name] then
-            initialize(entry)
-            pending = true
+            if not restoring[entry.name] then initialize(entry) end
+            if restoring[entry.name] then
+                advanceBuilding(entry)
+                pending = pending or restoring[entry.name] ~= nil
+            elseif not initialized[entry.name] and not failed[entry.name] then missing = true end
         end
     end
     -- Retry late-activated objects briefly; never restore an initialized object twice.
-    if pending and now < 60 then return now + 1 end
+    if pending or (missing and now < 60) then return now + 2 end
 end
 timer.scheduleFunction(start, nil, timer.getTime() + 1)

@@ -193,6 +193,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Campaign]** Restore ship health with native actions and placed-building health with small startup pulses; retain saved damage when restoration fails.
 * **[Realistic CAS]** Label AFAC flights as AFAC instead of Nothing in the DCS F10 task display.
 * **[Realistic CAS]** Recheck known threats during AFAC recovery, prioritise fire-revealed threats and allow urgent outward escapes beyond the station zone.
 * **[Mission Generation]** Remove leftover waypoint calls to the deleted EW Jammer plugin.

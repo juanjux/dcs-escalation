@@ -91,15 +91,28 @@ class LuaGenerator:
         self.mission.triggerrules.triggers.append(trigger)
 
     def _seed_persistent_damage(self) -> None:
+        from game.missiongenerator.persistenthealth import SetUnitHealth
         from game.persistentdamage import enabled
 
         if self.unit_map is None or not enabled(self.game.settings):
             return
         rows = []
+        native_actions = []
         for name, mapping in self.unit_map.theater_objects.items():
             unit = mapping.theater_unit
             if unit.alive and unit.persistent_damage_eligible:
-                rows.append({"name": name, "health": unit.health_fraction})
+                rows.append(
+                    {
+                        "name": name,
+                        "health": unit.health_fraction,
+                        "native": unit.is_ship,
+                        "building": not unit.is_ship,
+                    }
+                )
+                if unit.is_ship and unit.health_fraction < 1:
+                    native_actions.append(
+                        SetUnitHealth(mapping.dcs_unit.id, unit.health_fraction)
+                    )
         for name, scenery in self.unit_map.scenery_objects.items():
             unit = scenery.ground_unit
             if unit.alive and unit.persistent_damage_eligible:
@@ -107,6 +120,7 @@ class LuaGenerator:
                     {
                         "name": name,
                         "health": unit.health_fraction,
+                        "unsupported": True,
                         "x": unit.position.x,
                         "z": unit.position.y,
                     }
@@ -141,6 +155,11 @@ class LuaGenerator:
                 )
             )
         )
+        # The native action belongs to DCS's mission-trigger environment, not
+        # the separate sandbox used by DO SCRIPT. The initializer runs one
+        # second later and verifies the actual life that DCS applied.
+        for action in native_actions:
+            trigger.add_action(action)
         self.mission.triggerrules.triggers.append(trigger)
 
     def _seed_scenery_objectives(self) -> None:
