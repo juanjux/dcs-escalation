@@ -49,7 +49,12 @@ def _label(qt_app: Any, game: Any = None) -> Any:
     from qt_ui.widgets.coordinatelabel import CoordinateLabel
 
     settings = SimpleNamespace(coordinate_format=None)
-    position = cast(Any, SimpleNamespace(x=1.0, y=2.0))
+    position = cast(
+        Any,
+        SimpleNamespace(
+            x=1.0, y=2.0, latlng=lambda: SimpleNamespace(lat=36.0, lng=-115.0)
+        ),
+    )
     widget = CoordinateLabel.__new__(CoordinateLabel)
     # Built without its constructor: what is under test is the menu, and the
     # constructor is a pile of styling that wants a real Point to format.
@@ -73,11 +78,21 @@ def test_a_crewed_flight_is_offered(qt_app: Any) -> None:
     assert found == [flying]
 
 
-def test_the_point_goes_into_the_flight_that_was_picked(qt_app: Any) -> None:
+@pytest.mark.parametrize("height", [338, 0, None])
+def test_the_point_goes_into_the_flight_with_ground_elevation(
+    qt_app: Any, monkeypatch: Any, height: int | None
+) -> None:
     from game.ato.savedpoints import PointKind, points_of
 
     flight = _flight()
     label = _label(qt_app, _game(flight))
+    looked_up = []
+
+    def elevation(lat: float, lng: float) -> int | None:
+        looked_up.append((lat, lng))
+        return height
+
+    monkeypatch.setattr("game.elevation.elevation_ft", elevation)
 
     label._save(flight, PointKind.WAYPOINT)
 
@@ -85,6 +100,8 @@ def test_the_point_goes_into_the_flight_that_was_picked(qt_app: Any) -> None:
     assert point.kind is PointKind.WAYPOINT
     assert point.name == "N36 W115"
     assert (point.x, point.y) == (1.0, 2.0)
+    assert looked_up == [(36.0, -115.0)]
+    assert point.altitude_ft == (height if height is not None else 0)
 
 
 def test_a_full_aircraft_is_greyed_rather_than_hidden(qt_app: Any) -> None:
