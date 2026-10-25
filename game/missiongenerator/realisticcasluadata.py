@@ -262,6 +262,8 @@ def collect_registry(
                 raise ValueError(f"Duplicate FlightData unit: {flight_unit.name}")
             roles[flight_unit.name] = role
             if role in ("AFAC — Area", "AFAC — Frontline"):
+                if flight_unit.is_human():
+                    raise ValueError("AFAC missions currently support AI aircraft only")
                 zone = flight.work_zone
                 afac_mapping = unit_map.flight(flight_unit.name)
                 profile = capabilities_for(flight_unit.type)
@@ -483,7 +485,7 @@ def collect_registry(
                                 )
                                 observer["equipment"].update(meta.pop("equipment"))
                                 observer["afac"] = meta
-                                observer["allowPlayer"] = True
+                                observer["allowPlayer"] = False
                         result["observers"].append(observer)
     for name in sorted(roles.keys() - present_air):
         result["warnings"].append(

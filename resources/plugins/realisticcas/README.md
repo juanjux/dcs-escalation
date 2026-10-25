@@ -54,6 +54,10 @@ remote UAV operators cannot be killed, wounded or go missing with their aircraft
 Eligible transport helicopters carry a thermal-equipped JTAC. Aircraft without
 thermal observation show a warning when creating a night flight.
 
+AFAC missions currently support AI pilots only. Player checkboxes are disabled
+and player pilots are excluded from their rosters. Replace any player pilots in
+older AFAC flights before mission generation; their global player flags are kept.
+
 AFACs search without attacking and prefer marking observed contacts. They report
 coordinates, designate with laser and night IR where equipped, and use finite
 payload smoke in green, red, orange or blue. Each aircraft keeps its assigned

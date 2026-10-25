@@ -8,6 +8,10 @@ if TYPE_CHECKING:
 
 
 class IFlightRoster(ABC):
+    @property
+    def allow_players(self) -> bool:
+        return True
+
     @abstractmethod
     def iter_pilots(self) -> Iterator[Pilot | None]: ...
 

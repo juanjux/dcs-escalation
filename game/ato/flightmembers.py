@@ -21,6 +21,10 @@ class FlightMembers(IFlightRoster):
         self.resize(initial_size)
 
     @property
+    def allow_players(self) -> bool:
+        return not self.flight.flight_type.is_afac
+
+    @property
     def squadron(self) -> Squadron:
         return self.flight.squadron
 
@@ -71,13 +75,18 @@ class FlightMembers(IFlightRoster):
             # one went to, which is what makes a crew grow together rather than four
             # men being taken off the top of the list at once.
             seated = [m.pilot for m in self.members if m.pilot is not None]
-            member = FlightMember(
-                self.flight.squadron.claim_available_pilot(seated), loadout
+            pilot = (
+                self.squadron.claim_available_pilot(seated)
+                if self.allow_players
+                else self.squadron.claim_available_pilot(seated, ai_only=True)
             )
+            member = FlightMember(pilot, loadout)
             member.use_custom_loadout = loadout.is_custom
             self.members.append(member)
 
     def set_pilot(self, index: int, pilot: Optional[Pilot]) -> None:
+        if pilot is not None and pilot.player and not self.allow_players:
+            raise ValueError("AFAC missions currently support AI pilots only")
         if pilot is not None:
             self.flight.squadron.claim_pilot(pilot)
         if (current_pilot := self.pilot_at(index)) is not None:

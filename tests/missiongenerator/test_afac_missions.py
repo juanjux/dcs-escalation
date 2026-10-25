@@ -273,6 +273,7 @@ def test_final_registry_exports_zone_skill_and_thermal_equipment() -> None:
     registry = collect_registry(s.mission, data, enabled=True, unit_map=mapping)
     assert registry is not None
     observer = registry["observers"][0]
+    assert observer["allowPlayer"] is False
     assert observer["afac"]["skill"] == 0
     assert observer["afac"]["stationSeconds"] == 3600
     assert observer["afac"]["zone"]["radius"] == s.plan.ui_zone().radius.meters
