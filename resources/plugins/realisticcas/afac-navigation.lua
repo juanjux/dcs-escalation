@@ -229,7 +229,7 @@ do
           tasks[#tasks+1]={number=#tasks+1,auto=false,enabled=true,id='ControlledTask',params={
             task={id='Orbit',params={pattern='Circle',point={x=plan.point.x,y=plan.point.z},
               altitude=plan.altitude,speed=r.meta.navigation.speed}},stopCondition={condition=string.format(
-              'not RealisticCAS.afacNavigation[%q] or RealisticCAS.afacNavigation[%q].recoveryRevision~=%d',
+              'return not RealisticCAS.afacNavigation[%q] or RealisticCAS.afacNavigation[%q].recoveryRevision~=%d',
               name,name,revision)}}}
         end
       end
@@ -304,7 +304,7 @@ do
       return depart(name,r,controller,reason,true)
     end
     local function condition(name,revision,seconds)
-      return string.format([[(function()
+      return string.format([[return (function()
 local R=RealisticCAS;local s=(R.afacNavigation or {})[%q]
 if not s or s.revision~=%d then return true end
 local start=(R.afacStations or {})[%q]

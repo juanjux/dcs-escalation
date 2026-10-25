@@ -38,7 +38,7 @@ class AfacSearchBuilder(PydcsWaypointBuilder):
             )
         )
         orbit.stop_after_duration(int(plan.patrol_duration.total_seconds()))
-        orbit.stop_if_lua_predicate(f"""(function()
+        orbit.stop_if_lua_predicate(f"""return (function()
 local g=Group.getByName({name})
 if not g or not g:isExist() then return true end
 local start=(RealisticCAS.afacStations or {{}})[{name}]
