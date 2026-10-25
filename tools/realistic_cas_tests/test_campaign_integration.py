@@ -177,11 +177,10 @@ class CampaignIntegrationTests(unittest.TestCase):
         self.assertEqual(config["environment"]["defaultCover"], "desert")
         self.assertEqual(config["ttl"], 123)
         self.assertIs(config["probabilisticDetection"], False)
-        for option in self.p.options:
-            if option.identifier == "realisticcas.acquisitionSeconds":
-                option.set_value(0)
-        with self.assertRaises(ValueError):
-            prepare_campaign(self.g, [self.p])
+        self.assertEqual(config["acquisitionSeconds"], 0)
+        self.assertNotIn(
+            "realisticcas.acquisitionSeconds", [o.identifier for o in self.p.options]
+        )
 
     def test_missing_source_rejected_before_any_resource_or_trigger(self):
         config = prepare_campaign(self.g, [self.p])
@@ -192,6 +191,15 @@ class CampaignIntegrationTests(unittest.TestCase):
             with self.assertRaises(FileNotFoundError):
                 inject_campaign(self.g, config)
         self.assertEqual(len(self.m.triggerrules.triggers), 0)
+
+    def test_retired_search_time_is_ignored_even_from_an_old_option_definition(self):
+        old = NS(identifier="realisticcas.acquisitionSeconds", get_value=99)
+        plugin = NS(
+            identifier="realisticcas", enabled=True, options=[*self.p.options, old]
+        )
+        config = prepare_campaign(self.g, [plugin])
+        self.assertEqual(config["acquisitionSeconds"], 0)
+        self.assertEqual(old.get_value, 99)
         self.assertEqual(self.g.plugin_scripts, [])
 
     def test_probability_defaults_match_manifest_python_and_lua(self):

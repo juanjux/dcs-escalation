@@ -14,7 +14,8 @@ Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
 ## Enabling the plugin
 
 - Select **Realistic CAS (experimental)** in Mission Plugins. Initial options:
-  search20s, detection rolls on, contact lifetime600s, approximate theater cover,
+  immediate discovery attempts, detection rolls on, contact lifetime600s,
+  approximate theater cover,
   debug off. The plugin itself remains off by default.
 - Disable **TIC and Moose Autolase**. TIC has a separate visibility/clone conflict.
   **CTLD logistics may stay enabled**: turn off its **JTAC autolase targets**
@@ -90,13 +91,11 @@ do not guarantee safety from hidden defences, interceptors or terrain.
 
 Hover an option's label or control for its explanation.
 
-- **Search time** is observation time for one unknown group before a discovery
-  attempt. An observer searches one new group at a time; a lost observation resets
-  the search. Completing the delay does not guarantee discovery with rolls enabled.
 - **Probabilistic detection** is on by default when this plugin is used. A failed
   roll retains the search and retries on a later valid scan, no faster than every
   the configured retry interval (five simulated seconds by default). Turn it off
-  to restore deterministic discovery after the search delay. Firing always reveals
+  for discovery on the first valid sensor/LOS observation. There is no preliminary
+  continuous-observation wait. Old saved search-time values are ignored. Firing reveals
   immediately, **without any roll**.
 - **Contact lifetime** starts again after an observation or shot. It is how long
   the whole group stays revealed, not the time needed to find it.
@@ -198,8 +197,9 @@ The configurable retry interval defaults to 5 seconds (range 5–300); a scan ma
 delay an attempt further. Settings are checked before generation and Lua startup,
 and the exported values are logged as `CONFIG` entries.
 
-Standalone callers opt in with `probabilisticDetection=true`
-and a positive `acquisitionSeconds`; omitted keeps their existing behavior.
+Standalone callers opt in with `probabilisticDetection=true` and can use
+`acquisitionSeconds=0` for an immediate first attempt. Omitted probability mode
+keeps the existing deterministic behaviour.
 The optional `probability` table accepts the option names from `plugin.json`
 (percentages, seconds and metres, not fractions); omitted fields keep defaults.
 
@@ -328,15 +328,23 @@ at most two observer reads. Candidates are re-read before reveal, so stale index
 positions never grant a contact at an old geometry. Index/search latency can delay
 discovery, especially with dense cells, moving targets or many observers. Work is
 bounded, **not a guarantee of constant detection latency or measured DCS FPS**.
-Search is deterministic with a revisit period, not a per-frame probability roll.
+Scans use a bounded revisit period; optional probability rolls are not per-frame.
 No native isTargetDetected query is required to discover an invisible target.
 
-### Gradual search
+### Discovery timing
 
-`startDetection` accepts `acquisitionSeconds`: zero preserves the instantaneous
-sensor-isolation probes; a positive value enables searching before a NEW group
-is revealed. The campaign integration must explicitly select a nonzero value
-(20s is the current test value, not a validated gameplay default).
+Campaigns use `acquisitionSeconds=0`: the first valid sensor/LOS observation can
+reveal an unknown group immediately, subject to the optional detection roll.
+Failed rolls retry on later valid scans without adding a new observation delay.
+Known contacts refresh without rolls. Firing reveals immediately. The former
+search-time UI option is removed, and older saved values do not affect generation.
+
+### Legacy delayed-acquisition diagnostics
+
+Standalone `startDetection` controls still accept a positive `acquisitionSeconds`
+to isolate timing and fire-discovery behaviour in diagnostic missions. The
+following delay rules and older combat measurements concern those controls,
+not the current campaign discovery setting.
 
 Each observer examines at most one unknown group at a time, using one bounded
 record per observer rather than an observer × target history. A group containing
@@ -393,7 +401,7 @@ typing errors in the code rather than weakening the repository's mypy rules.
 
 Load the filenames in Python `SCRIPT_ORDER`, then call
 `RealisticCAS.startMission(config)` with `enabled=true`, schema-1 `registry`, an
-explicit `environment`, and positive `acquisitionSeconds`. Merely loading
+explicit `environment`, and nonnegative `acquisitionSeconds`. Merely loading
 `bootstrap.lua` does nothing. Disabled startup creates no handlers, timers or
 visibility changes. The Python `render_startup` helper preserves booleans/numbers
 and displays a visible error if startup fails.
@@ -464,7 +472,7 @@ removal update occupancy during the bounded index refresh; culled observers retr
 after the normal revisit delay. This can delay discovery until the index refresh
 and revisit, but is not permanent culling or an assertion that a target is visible.
 
-The acquisition gap limit remains 60 seconds: stalls do not earn continuous
+The legacy diagnostic acquisition gap limit remains 60 seconds: stalls do not earn continuous
 observation credit. Overdue scans/gap resets emit rate-limited warnings even with
 debug off. Debug counters include maximum sweep gap, overdue visits, budget hits
 and culling. Overloaded missions can still suffer delayed detection; warnings

@@ -19,18 +19,17 @@ do
     end
     local revisit=o.revisit or 5
     assert(S.finite(revisit) and revisit>=1 and revisit<=300,"invalid revisit")
-    -- Zero retains the isolated sensor-probe contract. Campaign integration will
-    -- explicitly enable search time; one unknown group can occupy each observer.
+    -- Campaigns attempt discovery immediately. Positive acquisition time remains
+    -- available only to standalone diagnostic controls.
     local acquisition=o.acquisitionSeconds or 0
     assert(S.finite(acquisition) and acquisition>=0 and acquisition<=600,"invalid acquisition time")
     local maxGap=o.acquisitionMaxGap or math.max(60,revisit*2)
     assert(S.finite(maxGap) and maxGap>=revisit and maxGap<=3600,"invalid acquisition observation gap")
-    if acquisition>0 then assert(type(o.isRevealed)=="function","contact visibility callback required") end
     assert(o.probabilisticDetection==nil or type(o.probabilisticDetection)=="boolean",
       "invalid probabilistic detection option")
     local probabilistic=o.probabilisticDetection==true
+    if acquisition>0 or probabilistic then assert(type(o.isRevealed)=="function","contact visibility callback required") end
     local probability=S.probabilityConfig(o.probability)
-    assert(not probabilistic or acquisition>0,"detection rolls require positive search time")
     local random=o.random or math.random
     assert(type(random)=="function","random callback must be a function")
     local targets, observers, cells, membership={},{},{},{}
@@ -77,7 +76,7 @@ do
       v.focus=nil
     end
     local function acquired(v,target,now)
-      if acquisition==0 then return true end
+      if acquisition==0 and not probabilistic then return true end
       local id=target.groupName or target.name
       assert(type(id)=="string","acquisition requires a target group/name")
       local f=v.focus
@@ -91,7 +90,7 @@ do
         v.focus=f;stats.pendingAcquisitions=stats.pendingAcquisitions+1
         stats.acquisitionStarts=stats.acquisitionStarts+1
         log("SEARCH_START",v.id.." -> "..id.."|required="..acquisition)
-        return false
+        return acquisition==0
       end
       -- Seeing ten members in one sweep is one group observation, not ten
       -- samples of search time. Scheduler stalls never count as continuous eyes-on.
@@ -256,12 +255,12 @@ do
                     local result,reason=S.assess(observer,target,env,job.observer.profile,probabilistic,probability)
                     if result then
                       local v=job.observer
-                      local known=acquisition>0 and call("isRevealed",target,observer)==true
+                      local known=type(o.isRevealed)=='function' and call("isRevealed",target,observer)==true
                       local group=target.groupName or target.name
                       if known and v.focus and v.focus.group==group then resetFocus(v,"shared contact") end
                       -- Other unknown groups wait while this observer examines one.
                       -- Already shared contacts may still be observed/renewed normally.
-                      local available=acquisition==0 or known or not v.focus or v.focus.group==group
+                      local available=(acquisition==0 and not probabilistic) or known or not v.focus or v.focus.group==group
                       if observer.afacMarking and not known then available=false end
                       if available then
                       stats.los=stats.los+1
@@ -269,7 +268,7 @@ do
                       if call("lineOfSight",observer.point,target.point)==true then
                         trace("LOS_CLEAR",observer,id,target,result.mode.."|distance="..result.distance)
                         if (known or discovered(v,target,observer,result,now)) and call("reveal",target,observer,result)==true then
-                          if acquisition>0 and not known then
+                          if v.focus and not known then
                             stats.acquisitionCompletions=stats.acquisitionCompletions+1
                             stats.pendingAcquisitions=stats.pendingAcquisitions-1
                             v.focus=nil

@@ -142,7 +142,8 @@ def prepare_campaign(
     registry["warnings"].append(
         "Experimental: legacy JTAC generation suppressed; runtime-created units need adapters"
     )
-    acquisition = options.get("acquisitionSeconds", 20)
+    # Ignore the retired option in older saves; no continuous-observation delay.
+    acquisition = 0
     probabilistic = options.get("probabilisticDetection", True)
     if type(probabilistic) is not bool:
         raise ValueError("Realistic CAS: probabilistic detection must be boolean")

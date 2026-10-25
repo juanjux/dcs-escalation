@@ -83,6 +83,7 @@ def test_plugin_page_uses_its_settings_and_initializes_missing_options(
     active.set_plugin_option("ctld", False)
     active.set_plugin_option("realisticcas", True)
     active.set_plugin_option("realisticcas.acquisitionSeconds", 37)
+    active.set_plugin_option("realisticcas.contactSeconds", 237)
     container: Any = SimpleNamespace(settings=active)
     page = PluginsPage(container)
     assert plugins["ctld"].settings is active
@@ -90,6 +91,11 @@ def test_plugin_page_uses_its_settings_and_initializes_missing_options(
     assert page.rows[1].checkbox.isChecked()
     box = PluginOptionsBox(plugins["realisticcas"])
     assert active.plugin_option("realisticcas.acquisitionSeconds") == 37
+    assert active.plugin_option("realisticcas.contactSeconds") == 237
+    assert all(
+        o.identifier != "realisticcas.acquisitionSeconds"
+        for o in plugins["realisticcas"].options
+    )
     assert stale.plugins == {}
     box.close()
     active.plugins = {"ctld": True}

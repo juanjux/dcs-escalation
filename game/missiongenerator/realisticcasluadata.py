@@ -131,9 +131,11 @@ def render_startup(config: Mapping[str, Any]) -> str | None:
         isinstance(seconds, bool)
         or not isinstance(seconds, (int, float))
         or not math.isfinite(seconds)
-        or not 0 < seconds <= 600
+        or not 0 <= seconds <= 600
     ):
-        raise ValueError("Campaign acquisition time must be explicit and positive")
+        raise ValueError(
+            "Acquisition time must be explicit and between 0 and 600 seconds"
+        )
     if not isinstance(config.get("environment"), Mapping):
         raise ValueError("Explicit Realistic CAS environment required")
     if (
