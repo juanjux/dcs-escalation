@@ -1,8 +1,15 @@
 {
     "nameInUI": "Realistic CAS (experimental)",
-    "descriptionInUI": "Gradual ground-target discovery for both sides. Firing reveals a group immediately; visual/EO/IR/ground radar observations reveal nearby groups. Fixed map SAM sites are exempt, frontline SAMs are not. No F10 changes. Temporarily omits generated legacy JTACs. CTLD logistics may stay enabled with 'JTAC autolase targets' off; disable TIC and Moose Autolase. Combined Arms JTAC slots are unrelated. Runtime-created units are not yet registered in the fog. Terrain and cloud cover are approximations; campaign-scale validation is pending. Off by default.",
+    "descriptionInUI": "Gradual ground-target discovery for both sides. Firing reveals a group immediately; visual/EO/IR/ground radar observations reveal nearby groups. Fixed map SAM sites are exempt, frontline SAMs are not. Optional BLUE-view F10 frontline contacts. Temporarily omits generated legacy JTACs. CTLD logistics may stay enabled with 'JTAC autolase targets' off; disable TIC and Moose Autolase. Combined Arms JTAC slots are unrelated. Runtime-created units are not yet registered in the fog. Terrain and cloud cover are approximations; campaign-scale validation is pending. Off by default.",
     "defaultValue": false,
     "specificOptions": [
+        {
+            "section": "F10 frontline contacts",
+            "nameInUI": "Frontline contacts on F10 (BLUE view)",
+            "descriptionInUI": "Hide RED frontline icons and show BLUE-only contact pins using the existing discovery and contact lifetime. Includes frontline support infantry and MANPADS. Friendly BLUE units and all non-frontline groups retain their normal icons. Enables F10 Map User Marks for this mission. RED players also lose the native icons of those frontline groups; use this option for BLUE players. Off by default.",
+            "mnemonic": "f10FrontlineContacts",
+            "defaultValue": false
+        },
         {
             "section": "Airborne forward air control (AFAC)",
             "nameInUI": "Enable AFAC missions (experimental)",

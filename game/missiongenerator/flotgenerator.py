@@ -396,6 +396,7 @@ class FlotGenerator:
                             move_formation=PointAction.OffRoad,
                         )
                         vehicle = vg.units[0]
+                        self.mission_data.frontline_visibility_groups.add(str(vg.name))
                         GroundForcePainter(faction, vehicle).apply_livery()
                         vg.hidden_on_mfd = True
             return
@@ -424,6 +425,7 @@ class FlotGenerator:
             move_formation=PointAction.OffRoad,
         )
         vehicle = vg.units[0]
+        self.mission_data.frontline_visibility_groups.add(str(vg.name))
         GroundForcePainter(faction, vehicle).apply_livery()
         vg.hidden_on_mfd = True
         if tic_formation is not None:
@@ -441,6 +443,7 @@ class FlotGenerator:
                 move_formation=PointAction.OffRoad,
             )
             vehicle = vg.units[0]
+            self.mission_data.frontline_visibility_groups.add(str(vg.name))
             GroundForcePainter(faction, vehicle).apply_livery()
             vg.hidden_on_mfd = True
             if tic_formation is not None:
@@ -1205,6 +1208,7 @@ class FlotGenerator:
         group.points[0].tasks.append(OptAlarmState(2))
 
         self.unit_map.add_front_line_units(group, cp, unit_type)
+        self.mission_data.frontline_visibility_groups.add(str(group.name))
 
         for c in range(count):
             vehicle: Vehicle = group.units[c]

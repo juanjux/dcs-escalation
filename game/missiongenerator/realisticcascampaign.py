@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .realisticcasenvironment import SunTimes, export_environment
+from .realisticcasf10 import collect_frontline_map_groups, apply_frontline_map_groups
 from .realisticcasluadata import (
     SCRIPT_ORDER,
     afac_marking_config,
@@ -79,6 +80,9 @@ def prepare_campaign(
     options = {
         o.identifier.removeprefix("realisticcas."): o.get_value for o in plugin.options
     }
+    f10_frontline = options.get("f10FrontlineContacts", False)
+    if type(f10_frontline) is not bool:
+        raise ValueError("Realistic CAS: F10 frontline contacts must be boolean")
     afac_enabled = options.get("afacEnabled", False)
     if type(afac_enabled) is not bool:
         raise ValueError("Realistic CAS: AFAC enabled must be boolean")
@@ -154,6 +158,14 @@ def prepare_campaign(
         raise ValueError("Realistic CAS: debug must be boolean")
     config = {
         "enabled": True,
+        "f10FrontlineContacts": f10_frontline,
+        "frontlineMapGroups": (
+            collect_frontline_map_groups(
+                generator.mission, generator.mission_data, registry
+            )
+            if f10_frontline
+            else []
+        ),
         "afacEnabled": afac_enabled,
         "afacMarking": afac_marking_config(options) if afac_enabled else None,
         "afacAvoidance": (
@@ -175,6 +187,8 @@ def prepare_campaign(
         "losBudget": 64,
     }
     render_startup(config)  # Validate typed metadata/options before adding triggers.
+    if f10_frontline:
+        apply_frontline_map_groups(generator.mission, config["frontlineMapGroups"])
     return config
 
 

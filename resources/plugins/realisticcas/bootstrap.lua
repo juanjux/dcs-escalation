@@ -39,6 +39,8 @@ do
     assert(c.probabilisticDetection==nil or type(c.probabilisticDetection)=='boolean',
       'invalid probabilistic detection option')
     local probability=RealisticCAS.Sensors.probabilityConfig(c.probability)
+    assert(c.f10FrontlineContacts==nil or type(c.f10FrontlineContacts)=='boolean','invalid F10 contact option')
+    if c.f10FrontlineContacts then RealisticCAS.validateF10Contacts(c.frontlineMapGroups,managed)end
     if c.afacEnabled then RealisticCAS.validateAFACMarking(c.afacMarking) end
     local function log(kind,msg)
       env.info('REALISTIC_CAS_MISSION|'..kind..'|t='..timer.getTime()..'|'..tostring(msg))
@@ -46,6 +48,7 @@ do
     local api={active=false}
     local handler={}
     function api:stop()
+      local mapStopped=not self.f10Contacts or self.f10Contacts:stop()
       local markersStopped=not self.detectors or self.detectors:stop()
       if self.fog and not self.fog:stop() then
         log('ERROR','visibility restoration incomplete; retry RealisticCAS.mission:stop()')
@@ -53,6 +56,10 @@ do
       end
       if not markersStopped then
         log('ERROR','AFAC spot cleanup incomplete; retry RealisticCAS.mission:stop()')
+        return false
+      end
+      if not mapStopped then
+        log('ERROR','F10 contact cleanup incomplete; retry RealisticCAS.mission:stop()')
         return false
       end
       world.removeEventHandler(handler)
@@ -97,6 +104,10 @@ do
         targetBudget=c.targetBudget,workBudget=c.workBudget,cellSize=c.cellSize,
         observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,
         debug=c.debug,traceDecisions=c.traceDecisions})
+      if c.f10FrontlineContacts then
+        api.f10Contacts=RealisticCAS.startF10Contacts(api.fog,{groups=c.frontlineMapGroups,
+          log=function(detail)log('F10_ERROR',detail)end})
+      end
       world.addEventHandler(handler)
       api.active=true
       for _,warning in ipairs(r.warnings)do log('WARNING',warning)end

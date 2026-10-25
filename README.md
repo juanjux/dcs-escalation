@@ -197,6 +197,8 @@ Still to come:
   Enable **AFAC missions** separately in the plugin options to add **AFAC — Area**
   and **AFAC — Frontline**. Compatible aircraft search without attacking, report
   contacts and mark targets with laser, night IR and finite coloured payload smoke.
+  An optional BLUE-view F10 setting displays discovered enemy-front contacts with
+  their existing lifetime, including support infantry and MANPADS.
   Eligible transport helicopters carry a thermal-equipped JTAC. Flights coordinate
   by enemy group, earn discovery and marking experience, and avoid known ground air
   defences during patrol and recovery. Station time, marking duration, reports and
