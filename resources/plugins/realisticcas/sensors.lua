@@ -156,6 +156,11 @@ do
       end
     end
     if not mode then return nil,"sensor envelope" end
+    -- Use actual horizontal motion; ignore stationary physics jitter below 0.5 m/s.
+    -- Apply after sensor/altitude/AFAC skill factors, with no extra search rolls.
+    if vec(t.velocity) and t.velocity.x^2+t.velocity.z^2>=0.25 then
+      chance=math.min(1,chance*1.5)
+    end
     -- LOS deliberately lives outside this pure model and is checked only AFTER
     -- these cheap filters, once for the winning candidate channel.
     return {mode=mode,distance=distance,range=reach,chance=chance}

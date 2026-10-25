@@ -196,6 +196,11 @@ the difficulty of identifying small ground targets from altitude. Lower is bette
 only if LOS and the other gates still pass. Ground observers and radar do not get
 this altitude factor. GMTI still needs target ground speed and radial motion.
 The best eligible channel supplies one probability, not independent sensor rolls.
+Targets moving horizontally at least 0.5 m/s receive a 50% relative increase in
+that probability, after altitude and AFAC skill factors, capped at 100%: a 40%
+chance becomes 60%. Slower motion is ignored to avoid stationary physics jitter.
+The bonus uses the observed unit's current velocity, applies to both coalitions
+and every sensor channel, and does not bypass sensor/LOS gates or add rolls.
 These numbers are **tuning starting points, not real sensor specifications**.
 
 One observer makes at most one roll for its focused group per scan and per retry
