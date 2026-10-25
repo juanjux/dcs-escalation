@@ -218,6 +218,24 @@ local unitPayloads = {
 				[1] = 31,
 			},
 		},
+		[8] = {
+			["name"] = "Retribution AFAC Area",
+			["pylons"] = {
+				{["num"] = 3, ["CLSID"] = "{2AF2EC3F-9065-4de5-93E1-1739C9A71EF7}"},
+				{["num"] = 9, ["CLSID"] = "{2AF2EC3F-9065-4de5-93E1-1739C9A71EF7}"},
+				{["num"] = 10, ["CLSID"] = "{A111396E-D3E8-4b9c-8AC9-2432489304D5}"},
+			},
+			["tasks"] = {[1] = 16},
+		},
+		[9] = {
+			["name"] = "Retribution AFAC Frontline",
+			["pylons"] = {
+				{["num"] = 3, ["CLSID"] = "{2AF2EC3F-9065-4de5-93E1-1739C9A71EF7}"},
+				{["num"] = 9, ["CLSID"] = "{2AF2EC3F-9065-4de5-93E1-1739C9A71EF7}"},
+				{["num"] = 10, ["CLSID"] = "{A111396E-D3E8-4b9c-8AC9-2432489304D5}"},
+			},
+			["tasks"] = {[1] = 16},
+		},
 	},
 	["unitType"] = "A-10C",
 }

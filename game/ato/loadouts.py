@@ -337,6 +337,8 @@ class Loadout:
             for t in FlightType
         }
         legacy_names = {
+            FlightType.AFAC_AREA: ("Retribution AFAC Area",),
+            FlightType.AFAC_FRONTLINE: ("Retribution AFAC Frontline",),
             FlightType.TARCAP: (
                 "CAP HEAVY",
                 "CAP",

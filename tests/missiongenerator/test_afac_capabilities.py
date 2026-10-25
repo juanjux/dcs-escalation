@@ -20,6 +20,7 @@ from game.dcs.afaccapabilities import (
         ("OH-58D", "OH58D"),
         ("SA342L", "SA342M", "SA342Minigun", "SA342Mistral"),
         ("CH_Ka52", "CH_Ka52K"),
+        ("A-10A", "A-10C", "A-10C_2"),
     ],
 )
 def test_family_variants_share_the_gameplay_maximum(aliases: tuple[str, ...]) -> None:
@@ -108,3 +109,25 @@ def test_smoke_counts_rounds_and_keeps_duplicate_racks() -> None:
 def test_unknown_stores_and_aerobatic_smoke_are_not_marker_ammunition() -> None:
     assert smoke_rounds(["smoke generator", "M257", "flare", "chaff", "unknown"]) == 0
     assert smoke_rounds(["{M260_A_M151_B_M156}"]) == 0
+
+
+@pytest.mark.parametrize("name", ["A-10A", "A-10C", "A-10C_2"])
+def test_a10_family_has_observation_and_designation(name: str) -> None:
+    profile = capabilities_for(name)
+    assert profile is not None
+    assert profile.eo and profile.ir and profile.laser and profile.ir_pointer
+    assert not profile.remote_operator and not profile.can_embark_jtac
+    assert not needs_night_warning(profile, night=True)
+
+
+def test_a10_smoke_counts_single_double_and_triple_pods() -> None:
+    assert smoke_rounds(["{2AF2EC3F-9065-4de5-93E1-1739C9A71EF7}"] * 2) == 14
+    assert smoke_rounds(["{BRU42LS_2*LAU131_HYDRA_70_M274_R}"]) == 14
+    assert smoke_rounds(["LAU_131x3_HYDRA_70_M156"]) == 21
+    assert smoke_rounds(["{C2593383-3CA8-4b18-B73D-0E750BCA1C85}"]) == 21
+    assert (
+        smoke_rounds(
+            ["{DAD45FE5-CFF0-4a2b-99D4-5D044D3BC22F}", "LAU_131x3_HYDRA_70_M257"]
+        )
+        == 0
+    )

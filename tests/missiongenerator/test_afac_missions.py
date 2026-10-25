@@ -162,7 +162,15 @@ def test_flight_picker_warns_about_final_night_equipment(
 
 @pytest.mark.parametrize("task", [FlightType.AFAC_AREA, FlightType.AFAC_FRONTLINE])
 @pytest.mark.parametrize(
-    "variant", ["MQ-9 Reaper", "OH-58D(R) Kiowa Warrior", "UH-1H Iroquois"]
+    "variant",
+    [
+        "MQ-9 Reaper",
+        "OH-58D(R) Kiowa Warrior",
+        "UH-1H Iroquois",
+        "A-10A Thunderbolt II",
+        "A-10C Thunderbolt II (Suite 3)",
+        "A-10C Thunderbolt II (Suite 7)",
+    ],
 )
 def test_afac_behavior_labels_the_role_without_native_engagement_or_fac_tasks(
     task: FlightType, variant: str
@@ -249,8 +257,17 @@ def test_native_orbit_uses_relative_duration_and_fuel_stop() -> None:
     assert lua.execute(condition) is True
 
 
-def test_final_registry_exports_zone_skill_and_thermal_equipment() -> None:
-    s = scenario()
+@pytest.mark.parametrize(
+    "variant",
+    [
+        "MQ-9 Reaper",
+        "A-10A Thunderbolt II",
+        "A-10C Thunderbolt II (Suite 3)",
+        "A-10C Thunderbolt II (Suite 7)",
+    ],
+)
+def test_final_registry_exports_zone_skill_and_thermal_equipment(variant: str) -> None:
+    s = scenario(variant=variant)
     unit = s.group.units[0]
     pilot = object()
     squadron = NS(pilot_skill=lambda _: CADET_SKILL)
@@ -277,7 +294,7 @@ def test_final_registry_exports_zone_skill_and_thermal_equipment() -> None:
     assert observer["afac"]["stationSeconds"] == 3600
     assert observer["afac"]["zone"]["radius"] == s.plan.ui_zone().radius.meters
     assert observer["equipment"]["ir"] is True
-    assert observer["equipment"]["remoteOperator"] is True
+    assert observer["equipment"]["remoteOperator"] == (variant == "MQ-9 Reaper")
 
     unit.pylons = {
         1: {"CLSID": "{M260_M156}"},
@@ -287,6 +304,40 @@ def test_final_registry_exports_zone_skill_and_thermal_equipment() -> None:
     registry = collect_registry(s.mission, data, enabled=True, unit_map=mapping)
     assert registry is not None
     assert registry["observers"][0]["afac"]["smokeRounds"] == 14
+
+
+@pytest.mark.parametrize(
+    "variant",
+    [
+        "A-10A Thunderbolt II",
+        "A-10C Thunderbolt II (Suite 3)",
+        "A-10C Thunderbolt II (Suite 7)",
+    ],
+)
+def test_a10_afac_payloads_load_with_supported_pylons_and_finite_smoke(
+    variant: str,
+) -> None:
+    from dcs.lua import loads
+    from game.data.weapons import Pylon, Weapon
+    from game.dcs.afaccapabilities import smoke_rounds
+    from game.ato.loadouts import Loadout
+
+    aircraft = AircraftType.named(variant)
+    payloads = loads(
+        Path(f"resources/customized_payloads/{aircraft.dcs_id}.lua").read_text("utf-8")
+    )["unitPayloads"]["payloads"]
+    for task in (FlightType.AFAC_AREA, FlightType.AFAC_FRONTLINE):
+        names = list(Loadout.default_loadout_names_for(task))
+        payload = next(p for p in payloads.values() if p["name"] in names)
+        clsids = [p["CLSID"] for p in payload["pylons"].values()]
+        assert smoke_rounds(clsids) == 14
+        for p in payload["pylons"].values():
+            weapon = Weapon.with_clsid(p["CLSID"])
+            assert weapon is not None
+            assert Pylon.for_aircraft(aircraft, p["num"]).can_equip(weapon)
+        assert ("{A111396E-D3E8-4b9c-8AC9-2432489304D5}" in clsids) == (
+            aircraft.dcs_id != "A-10A"
+        )
 
 
 @pytest.mark.parametrize("night", [False, True])
