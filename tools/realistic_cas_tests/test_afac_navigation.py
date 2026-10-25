@@ -71,6 +71,38 @@ class AfacNavigationTests(unittest.TestCase):
         assert(orbit(assigned[1]).params.altitude==4500)
         """)
 
+    def test_friendly_nasams_never_blocks_departure_or_marking(self):
+        self.rt.execute("""
+        local friendly=group('friendly-nasams',40,2,0)
+        local launcher=unit('nasams',friendly,'CH_NASAMS3_LN_AMRAAM_ER',-15000,0)
+        config.airDefenseThreats[2]={name='nasams',groupName='friendly-nasams',coalition=2,
+          typeName='CH_NASAMS3_LN_AMRAAM_ER',radius=50000,known=true,
+          initialPoint={x=-15000,z=0}}
+        beginNavigation();tick()
+        assert(#assigned==0 and enemyReads==0)
+        assert(nav:clear('blue',observer.point))
+        nav:fire('friendly-nasams','nasams',launcher.point);tick()
+        assert(#assigned==0 and not RealisticCAS.afacReturn.blue)
+        """)
+
+    def test_pre_station_route_detours_a_threat_before_reaching_the_zone(self):
+        self.rt.execute("""
+        local meta=config.observers[1].afac
+        meta.zone={radius=10000,points={{x=50000,z=0}}}
+        meta.navigation.points={{x=48000,z=0},{x=52000,z=0}}
+        meta.navigation.route[2].x=48000;meta.navigation.route[3].x=52000
+        observer.point.x=-50000;RealisticCAS.afacStations.blue=nil
+        config.airDefenseThreats[1].ceiling=nil
+        known();beginNavigation();tick()
+        assert(#assigned==1 and not RealisticCAS.afacReturn.blue)
+        local route=assigned[1].params.route.points
+        assert(route[2].x<20000 and route[3].x>40000)
+        assert(orbit(assigned[1]).params.point.x>40000)
+        assert(not RealisticCAS.afacStations.blue)
+        for i=1,7 do tick()end
+        assert(#assigned==1 and not RealisticCAS.afacReturn.blue)
+        """)
+
     def test_return_detours_a_known_threat_and_rechecks_after_waypoint_progress(self):
         self.rt.execute("""
         local n=config.observers[1].afac.navigation
