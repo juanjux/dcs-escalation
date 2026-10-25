@@ -431,8 +431,8 @@ A standalone Cobra test validated search, engagement and timed departure in DCS;
 full campaign and other-aircraft validation remain separate checks. Native AI
 does not guarantee destruction of every detected target.
 
-The optional **Frontline contacts on F10 (BLUE view)** plugin setting hides RED
-frontline icons, including support infantry and MANPADS, and shows BLUE-only pins
+The optional **Hide frontline contacts on the F10 map until discovered** plugin
+setting hides RED frontline icons, including support infantry and MANPADS, and shows BLUE-only pins
 using the existing discovery and contact lifetime. Pins show the last observed
 position, update on observation and disappear when contact expires. BLUE friends
 and non-frontline groups retain their normal icons. It is off by default, enables

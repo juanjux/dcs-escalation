@@ -47,8 +47,8 @@ Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
 
 ## F10 frontline contacts
 
-**Frontline contacts on F10 (BLUE view)** is optional and off by default. It hides
-RED frontline native icons, including support infantry and MANPADS, and draws
+**Hide frontline contacts on the F10 map until discovered** is optional and off by
+default. It hides RED frontline native icons, including support infantry and MANPADS, and draws
 BLUE-only contact pins from the existing Realistic CAS observations and lifetime.
 Pins retain their last observed position until another observation updates it;
 reading the map does not renew contacts. Expiry removes the pin, and rediscovery

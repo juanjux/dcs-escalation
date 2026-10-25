@@ -5,7 +5,7 @@
     "specificOptions": [
         {
             "section": "F10 frontline contacts",
-            "nameInUI": "Frontline contacts on F10 (BLUE view)",
+            "nameInUI": "Hide frontline contacts on the F10 map until discovered",
             "descriptionInUI": "Hide RED frontline icons and show BLUE-only contact pins using the existing discovery and contact lifetime. Includes frontline support infantry and MANPADS. Friendly BLUE units and all non-frontline groups retain their normal icons. Enables F10 Map User Marks for this mission. RED players also lose the native icons of those frontline groups; use this option for BLUE players. Off by default.",
             "mnemonic": "f10FrontlineContacts",
             "defaultValue": false
