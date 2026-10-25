@@ -417,6 +417,9 @@ Realistic CAS discovery attempts use the first valid sensor and terrain line-of-
 without a continuous-observation delay. Optional probability rolls still apply;
 failed attempts retry on later valid scans. Known contacts renew without rolls.
 Older saved search-time values are ignored.
+Moving targets have a 50% higher detection probability, capped at 100% (40%
+becomes 60%). This applies to both sides and all sensors; normal visibility and
+line-of-sight requirements still apply.
 
 With the experimental Realistic CAS plugin enabled, AI-only CAS and Armed Recon
 flights get a moving four-corner search circuit over their assigned area instead

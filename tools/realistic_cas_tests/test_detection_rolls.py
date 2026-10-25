@@ -99,6 +99,77 @@ class DetectionRollTests(unittest.TestCase):
         assert(S.assess(o,t,e,p,true).mode=='gmti')
         """)
 
+    def test_movement_increases_each_channel_by_half_and_caps_at_one(self):
+        self.check("""
+        for _,percent in ipairs({0,40,80}) do
+          local c=S.probabilityConfig({visualFarPercent=percent,visualNearPercent=percent,
+            opticalFarPercent=percent,opticalNearPercent=percent,
+            radarFarPercent=percent,radarNearPercent=percent,
+            gmtiFarPercent=percent,gmtiNearPercent=percent,airAltitudePenaltyPercent=0})
+          for _,mode in ipairs({'visual','eo','ir','rbm','gmti'}) do
+            local p=S.profile('unknown','air',{
+              eo=mode=='eo',ir=mode=='ir',rbm=mode=='rbm',gmti=mode=='gmti'},c)
+            p.visualRange=mode=='visual' and 9260 or 0
+            t.velocity={x=0,y=0,z=0}
+            local stationary=S.assess(o,t,e,p,true,c)
+            if mode=='gmti' then assert(not stationary)
+            else assert(stationary.mode==mode and stationary.chance==percent/100) end
+            for _,velocity in ipairs({{x=10,y=0,z=0},{x=0,y=0,z=-10}}) do
+              -- GMTI also requires radial motion; add it for that channel only.
+              if mode=='gmti' then velocity.x=10 end
+              t.velocity=velocity
+              local moving=S.assess(o,t,e,p,true,c)
+              assert(moving.mode==mode)
+              assert(math.abs(moving.chance-math.min(1,percent/100*1.5))<1e-12)
+            end
+          end
+        end
+        """)
+
+    def test_movement_requires_valid_horizontal_velocity_and_ignores_jitter(self):
+        self.check("""
+        local c=S.probabilityConfig({visualFarPercent=40,visualNearPercent=40})
+        local p=S.profile('unknown','air',nil,c)
+        local base=S.assess(o,t,e,p,true,c).chance
+        t.velocity=nil;assert(S.assess(o,t,e,p,true,c).chance==base)
+        for _,velocity in ipairs({{}, {x=0,y=100,z=0}, {x=0.49,y=0,z=0},
+          {x=0/0,y=0,z=1}, {x=math.huge,y=0,z=0}}) do
+          t.velocity=velocity;assert(S.assess(o,t,e,p,true,c).chance==base)
+        end
+        for _,velocity in ipairs({{x=0.5,y=0,z=0},{x=-0.3,y=0,z=-0.4}}) do
+          t.velocity=velocity
+          assert(math.abs(S.assess(o,t,e,p,true,c).chance-base*1.5)<1e-12)
+        end
+        t.side=2;assert(not S.assess(o,t,e,p,true,c))
+        t.side=1;t.point.x=100000;assert(not S.assess(o,t,e,p,true,c))
+        """)
+
+    def test_movement_bonus_composes_with_afac_skill(self):
+        self.rt.execute((test_sensors.PLUGIN / "afac-search.lua").read_text("utf-8"))
+        self.check("""
+        o.afac={skill=0,zone={radius=10000,points={{x=5000,z=0}}}}
+        local c=S.probabilityConfig({visualFarPercent=40,visualNearPercent=40,
+          airAltitudePenaltyPercent=0})
+        local p=S.profile('unknown','air',nil,c)
+        local stationary=S.assess(o,t,e,p,true,c)
+        assert(math.abs(stationary.chance-0.24)<1e-12)
+        t.velocity.x=1
+        assert(math.abs(S.assess(o,t,e,p,true,c).chance-0.36)<1e-12)
+        """)
+
+    def test_actual_motion_changes_next_roll_without_bypassing_los_or_retry(self):
+        self.check("""
+        local engine=buildRolls(10,true,{visualFarPercent=40,visualNearPercent=40},0)
+        draw=0.5;tick(engine,0);assert(draws==1 and found==0)
+        for _,target in pairs(units) do target.velocity={x=1,y=0,z=0} end
+        for i=1,19 do tick(engine,i*0.25) end
+        assert(draws==1 and found==0)
+        losOK=false;tick(engine,5);assert(draws==1 and found==0)
+        losOK=true;tick(engine,10);assert(draws==2 and found>0)
+        local renewals=found
+        tick(engine,15);assert(draws==2 and found>renewals)
+        """)
+
     def test_radar_still_needs_role_cone_motion_and_active_sensor(self):
         self.check("""
         local p=S.profile('FA-18C_hornet','air')
