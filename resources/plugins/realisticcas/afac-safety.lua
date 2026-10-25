@@ -71,6 +71,7 @@ do
     for i=nextPoint or 1,#plan.path do
       local p=plan.path[i]
       if not A.leg(last,p,altitude,input.threats,last==input.source) or
+        (not input.approach and not RealisticCAS.AFACSearch.inside(p,input.zone)) or
         not terrainSafe(input,last,p,plan.altitude) then return false end
       last=p
     end
@@ -129,10 +130,10 @@ do
         local flightAlt=math.min(source.y,altitude)
         if A.leg(source,p,flightAlt,threats,true) then path={p}
         elseif not input.directOnly then
-          -- One intermediate corner can route around a circle; complex blocked
-          -- corridors fail closed rather than claiming a globally optimal path.
+          -- Before station arrival, a transit corner may lie outside the patrol
+          -- zone. The final orbit and all on-station detours stay inside it.
           for _,corner in ipairs(candidates) do
-            if RealisticCAS.AFACSearch.inside(corner,zone) and
+            if (input.approach or RealisticCAS.AFACSearch.inside(corner,zone)) and
               A.leg(source,corner,flightAlt,threats,true) and A.leg(corner,p,flightAlt,threats,false) then
               if not path or distance(source,corner)+distance(corner,p)<distance(source,path[1])+distance(path[1],p) then
                 path={corner,p}

@@ -136,3 +136,20 @@ def test_completed_corners_are_not_revisited_while_climbing(lua: Any) -> None:
     assert(not A.safePlan(input,p,1))
     assert(A.safePlan(input,p,2))
     """)
+
+
+def test_inbound_detour_can_pass_outside_the_station_zone(lua: Any) -> None:
+    lua.execute("""
+    input.source={x=-50000,y=2000,z=0}
+    input.points={{x=48000,z=0},{x=52000,z=0}}
+    input.zone={radius=10000,points={{x=50000,z=0}}}
+    input.approach=true;t.ceiling=nil
+    local plan=A.plan(input)
+    assert(plan.mode=='avoid' and #plan.path==2)
+    assert(not RealisticCAS.AFACSearch.inside(plan.path[1],input.zone))
+    assert(RealisticCAS.AFACSearch.inside(plan.point,input.zone))
+    assert(A.safePlan(input,plan,1))
+    input.approach=false
+    assert(not A.safePlan(input,plan,1))
+    assert(A.plan(input).mode=='abort')
+    """)

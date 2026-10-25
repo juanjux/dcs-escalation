@@ -193,6 +193,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Realistic CAS]** Allow AFAC inbound detours outside the patrol zone while keeping the final orbit and on-station routes inside it.
 * **[Realistic CAS]** Fix AFAC orbit conditions so native waits return a result and release on fuel, station expiry or route changes.
 * **[Waypoints]** Look up ground elevation when saving a target's coordinates to Player Aircrafts instead of always storing zero.
 * **[Campaign]** Restore ship health with native actions and placed-building health with small startup pulses; retain saved damage when restoration fails.
