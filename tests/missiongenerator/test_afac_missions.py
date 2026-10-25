@@ -242,11 +242,11 @@ def test_native_orbit_uses_relative_duration_and_fuel_stop() -> None:
         "fuel=0.5; Group={getByName=function()return {isExist=function()return true end,getUnits=function()return {{isExist=function()return true end,getFuel=function()return fuel end}}end}end}"
     )
     condition = orbit["params"]["stopCondition"]["condition"]
-    assert not lua.eval(condition)
+    assert lua.execute(condition) is False
     lua.execute("fuel=0.1")
-    assert lua.eval(condition)
+    assert lua.execute(condition) is True
     lua.execute("fuel=0.5; RealisticCAS.afacReturn={AFAC='station complete'}")
-    assert lua.eval(condition)
+    assert lua.execute(condition) is True
 
 
 def test_final_registry_exports_zone_skill_and_thermal_equipment() -> None:

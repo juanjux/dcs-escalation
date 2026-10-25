@@ -167,6 +167,22 @@ class AfacNavigationTests(unittest.TestCase):
         assert(RealisticCAS.afacNavigation.blue.recoveryRevision==nil)
         """)
 
+    def test_recovery_hold_condition_returns_a_boolean_to_dcs(self):
+        self.rt.execute("""
+        local n=config.observers[1].afac.navigation
+        n.exitWaypoint=5;n.route[5].x=0;n.route[5].alt=0;n.route[5].speed=0
+        observer.point.x=-20000
+        beginNavigation();now=601;known();tick()
+        local condition=finalOrbit(assigned[1]).params.stopCondition.condition
+        local check=assert(loadstring(condition))
+        assert(check()==false)
+        RealisticCAS.afacNavigation.blue.recoveryRevision=
+          RealisticCAS.afacNavigation.blue.recoveryRevision+1
+        assert(check()==true)
+        RealisticCAS.afacNavigation.blue=nil
+        assert(check()==true)
+        """)
+
     def test_fire_prioritises_a_nearby_afac_over_the_regular_work_cursor(self):
         self.rt.execute("""
         local original=config.observers[1]
@@ -292,11 +308,11 @@ class AfacNavigationTests(unittest.TestCase):
                     """
                 known();beginNavigation();tick()
                 expression=finalOrbit(assigned[1]).params.stopCondition.condition
-                assert(not assert(loadstring('return '..expression))())
+                assert(assert(loadstring(expression))()==false)
                 """
                     + change
                     + """
-                assert(assert(loadstring('return '..expression))())
+                assert(assert(loadstring(expression))()==true)
                 assert(RealisticCAS.afacNavigation.blue.finished)
                 tick();assert(#assigned==2 and jump(assigned[2])==4)
                 assert(RealisticCAS.afacReturn.blue and not RealisticCAS.afacAbort.blue)
