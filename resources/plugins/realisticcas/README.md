@@ -54,6 +54,12 @@ remote UAV operators cannot be killed, wounded or go missing with their aircraft
 Eligible transport helicopters carry a thermal-equipped JTAC. Aircraft without
 thermal observation show a warning when creating a night flight.
 
+The A-10 family can also perform both AFAC roles. Its default AFAC payload has
+14 smoke rockets, plus a LITENING pod on A-10C variants. As with the other AFAC
+families, capabilities combine the best-equipped variants for gameplay; the
+A-10A shares the family's optical, thermal, laser and IR marking profile.
+Illumination rockets and countermeasure flares do not supply ground-marker smoke.
+
 AFACs search without attacking and prefer marking observed contacts. They report
 coordinates, designate with laser and night IR where equipped, and use finite
 payload smoke in green, red, orange or blue. Each aircraft keeps its assigned

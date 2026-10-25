@@ -64,7 +64,8 @@ def _catalogue() -> Mapping[str, AFACCapabilities]:
             ),
             *aliases,
         )
-    for family, aliases in (
+    for family, type_ids in (
+        ("Thunderbolt II", ("A-10A", "A-10C", "A-10C_2")),
         ("Kiowa", ("OH-58D", "OH58D")),
         ("Ka-52", ("CH_Ka52", "CH_Ka52K")),
         ("Black Hawk DAP", ("UH-60L_DAP",)),
@@ -73,7 +74,7 @@ def _catalogue() -> Mapping[str, AFACCapabilities]:
     ):
         add(
             AFACCapabilities(family, eo=True, ir=True, laser=True, ir_pointer=True),
-            *aliases,
+            *type_ids,
         )
     add(
         AFACCapabilities(
@@ -152,10 +153,20 @@ _SMOKE: dict[str, int] = {
     "M261_MK156": 19,
     "{4F977A2A-CD25-44df-90EF-164BFA2AE72F}": 7,
     "{0877B74B-5A00-4e61-BA8A-A56450BA9E27}": 7,
+    "{2AF2EC3F-9065-4de5-93E1-1739C9A71EF7}": 7,
+    "{6D6D5C07-2A90-4a68-9A74-C5D0CFFB05D9}": 7,
+    "{C2593383-3CA8-4b18-B73D-0E750BCA1C85}": 21,
+    "{4C044B08-886B-46c8-9B1F-AB05B3ED9C1D}": 21,
+    "LAU_131x3_HYDRA_70_M156": 21,
+    "LAU_131x3_HYDRA_70_M274": 21,
     "UH60_LWL12_M156": 12,
     "UH60_LWL12_M259": 12,
     "UH60_LWL12_M274": 12,
 }
+for _pod in ("LAU68", "LAU131"):
+    for _round in ("M156", "M274"):
+        for _side in ("L", "R"):
+            _SMOKE[f"{{BRU42LS_2*{_pod}_HYDRA_70_{_round}_{_side}}}"] = 14
 for _color in ("Red", "Blue", "Green", "Yellow", "Violet", "White"):
     _SMOKE[f"OH58D_{_color}_Smoke_Grenade"] = 1
 for _color in ("BLUE", "GREEN", "RED", "YELLOW"):

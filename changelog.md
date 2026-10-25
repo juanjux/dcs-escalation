@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[AFAC]** Enable A-10 family search and marking missions with dedicated payloads and finite smoke-rocket supplies.
 * **[UI]** Add a synchronized Grant all checkbox to leave requests, including a mixed-selection indicator.
 * **[Realistic CAS]** Add AFAC avoidance of known ground air defences, cloud-limited climbs, standoff or abort routes, and marking of known SAM sites.
 * **[Realistic CAS]** Give smoke-capable AFACs stable non-white smoke colours and include the colour in marking reports.
