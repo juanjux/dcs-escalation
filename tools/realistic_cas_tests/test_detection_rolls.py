@@ -8,10 +8,10 @@ FIXTURE = """
 now=0;known=false;draw=0.999;draws=0;losOK=true;found=0;logs={}
 obs={side=2,point={x=0,y=2,z=0},forward={x=1,y=0,z=0},agl=2,role='CAS'}
 units={}
-function buildRolls(members,enabled,tuning)
+function buildRolls(members,enabled,tuning,delay)
   now=0;known=false;draws=0;found=0;units={}
   local engine=RealisticCAS.newDetection({
-    clock=function()return now end,acquisitionSeconds=20,revisit=5,
+    clock=function()return now end,acquisitionSeconds=delay or 20,revisit=5,
     probabilisticDetection=enabled,targetBudget=64,workBudget=1024,losBudget=64,
     probability=tuning,
     random=function()draws=draws+1;return draw end,
@@ -41,6 +41,26 @@ class DetectionRollTests(unittest.TestCase):
 
     def check(self, code):
         self.rt.execute(code)
+
+    def test_zero_delay_rolls_on_first_observation_and_refreshes_without_rolls(self):
+        self.check("""
+        local engine=buildRolls(1,true,nil,0);draw=0
+        tick(engine,0);assert(found==1 and draws==1)
+        tick(engine,5);assert(found>1 and draws==1)
+        assert(engine:getDiagnostics().pendingAcquisitions==0)
+        """)
+
+    def test_zero_delay_retries_remain_bounded_for_many_members_and_fast_ticks(self):
+        self.check("""
+        for _,members in ipairs({1,10,40})do
+          local engine=buildRolls(members,true,nil,0);draw=0.999
+          for i=0,40 do tick(engine,i*0.25)end
+          assert(draws==3 and found==0,'unexpected zero-delay roll rate: '..draws)
+          engine:stop()
+        end
+        local engine=buildRolls(1,false,nil,0)
+        tick(engine,0);assert(found==1 and draws==0)
+        """)
 
     def test_closer_and_lower_optical_observers_have_better_chances(self):
         self.check("""

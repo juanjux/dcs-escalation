@@ -208,6 +208,10 @@ def build_mission(
     plugin.set_settings(settings)
     generator = LuaGenerator(game, mission, data, mapping)
     config = prepare_campaign(generator, [plugin])
+    if fire_discovery:
+        # This isolated control deliberately delays sensors so native fire reveals first.
+        assert config is not None
+        config["acquisitionSeconds"] = 60
     setattr(mission, "_afac_probe_config", config)
     inject_campaign(generator, config)
     trigger = TriggerStart(comment="AFAC probe diagnostics")

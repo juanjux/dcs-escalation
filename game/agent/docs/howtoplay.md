@@ -413,6 +413,11 @@ Hover **WEATHER** to read sunrise and sunset for the mission date, in local
 mission time. These are approximate times at the campaign reference position;
 twilight continues after sunset. Polar conditions show unavailable times.
 
+Realistic CAS discovery attempts use the first valid sensor and terrain line-of-sight observation,
+without a continuous-observation delay. Optional probability rolls still apply;
+failed attempts retry on later valid scans. Known contacts renew without rolls.
+Older saved search-time values are ignored.
+
 With the experimental Realistic CAS plugin enabled, AI-only CAS and Armed Recon
 flights get a moving four-corner search circuit over their assigned area instead
 of relying on visible targets to keep moving. Native engagement tasks remain

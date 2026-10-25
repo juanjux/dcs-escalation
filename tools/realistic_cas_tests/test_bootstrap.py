@@ -34,6 +34,16 @@ class BootstrapTests(unittest.TestCase):
         assert(#pending==0)
         """)
 
+    def test_zero_delay_campaign_can_reveal_on_its_first_scan(self):
+        self.check("""
+        cfg.acquisitionSeconds=0;cfg.probabilisticDetection=true
+        math.random=function()return 0 end
+        local m=assert(RealisticCAS.startMission(cfg))
+        run(2)
+        assert(now<5 and m.fog.service:isRevealed(1,2))
+        assert(m:stop());run(3)
+        """)
+
     def test_invalid_sensor_rolls_back_already_hidden_groups(self):
         self.check("""
         cfg.registry.observers[1].typeName=nil
@@ -126,7 +136,7 @@ class BootstrapTests(unittest.TestCase):
             "assert(RealisticCAS.mission.active);assert(RealisticCAS.mission:stop())"
         )
         self.assertIsNone(EXPORT.render_startup({"enabled": False}))
-        for seconds in (0, -1, True, float("nan"), 601):
+        for seconds in (-1, True, float("nan"), 601):
             with self.assertRaises(ValueError):
                 EXPORT.render_startup({**cfg, "acquisitionSeconds": seconds})
         for bad in (1, "true", None):

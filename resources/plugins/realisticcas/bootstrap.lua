@@ -34,8 +34,8 @@ do
     end
     -- Build the environment before hiding anything. No guessed time or biome.
     local environment=RealisticCAS.newEnvironment(c.environment)
-    assert(RealisticCAS.Sensors.finite(c.acquisitionSeconds) and c.acquisitionSeconds>0
-      and c.acquisitionSeconds<=600,'campaign acquisition time must be explicit and positive')
+    assert(RealisticCAS.Sensors.finite(c.acquisitionSeconds) and c.acquisitionSeconds>=0
+      and c.acquisitionSeconds<=600,'acquisition time must be explicit and between 0 and 600 seconds')
     assert(c.probabilisticDetection==nil or type(c.probabilisticDetection)=='boolean',
       'invalid probabilistic detection option')
     local probability=RealisticCAS.Sensors.probabilityConfig(c.probability)
