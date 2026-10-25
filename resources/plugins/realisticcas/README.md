@@ -29,7 +29,8 @@ Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
   separate **Enable AFAC missions (experimental)** option for airborne JTACs.
   Turning the plugin off restores the original JTAC generator path.
 - Fixed map SAM groups remain known; frontline SAMs participate in fog. F10
-  visibility and weapon accuracy are unchanged. AI CAS and Armed Recon receive
+  visibility is unchanged unless its separate frontline option is enabled.
+  Weapon accuracy is unchanged. AI CAS and Armed Recon receive
   moving search routes, and AFACs receive known-threat avoidance.
 - Terrain profile0 selects an explicit approximate biome by theater;1..5 override
   it (desert, grassland, tundra, forest, city). This is currently homogeneous,
@@ -43,6 +44,23 @@ Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
 - This snapshot does not claim support for other scripts that create units or
   control visibility. Declared late starts work; arbitrary runtime clones need
   adapters.
+
+## F10 frontline contacts
+
+**Frontline contacts on F10 (BLUE view)** is optional and off by default. It hides
+RED frontline native icons, including support infantry and MANPADS, and draws
+BLUE-only contact pins from the existing Realistic CAS observations and lifetime.
+Pins retain their last observed position until another observation updates it;
+reading the map does not renew contacts. Expiry removes the pin, and rediscovery
+creates a new one. BLUE friendly icons and non-frontline groups keep their normal
+visibility; this does not enable global Fog of War or depend on AFAC missions.
+
+The option enables F10 Map User Marks for the generated mission. Native hidden
+flags also hide those groups from RED players, so this version is for BLUE play.
+Pins replace enemy-front icons and cannot provide native Combined Arms selection
+of those groups. Updates are processed in bounded batches with fresh marker IDs;
+unchanged observed positions do not recreate pins. Regenerate the mission after
+changing the option.
 
 ## Airborne forward air control (AFAC)
 
@@ -134,7 +152,8 @@ Hover an option's label or control for its explanation.
   A failed hide is NOT reported as confirmed
   concealment: diagnostics/contact expose `backendVisible`. Acceptance of setCommand
   is the strongest API acknowledgement, not a DCS getter of physical invisibility.
-- No F10 visibility changes, destruction/respawn, immortality or radar changes.
+- No destruction/respawn, immortality or radar changes. The optional F10 layer
+  changes only explicitly registered RED frontline icons and its own contact pins.
   AFAC avoidance may replace native AI routes while preserving recovery tasks.
   AI CAS and Armed Recon routes include a moving
   four-leg search circuit in their assigned area while the plugin is enabled.

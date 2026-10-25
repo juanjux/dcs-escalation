@@ -39,6 +39,7 @@ TARGETING_PODS = frozenset(
 SCRIPT_ORDER = (
     "core.lua",
     "dcs.lua",
+    "f10-contacts.lua",
     "afac-search.lua",
     "afac-safety.lua",
     "afac.lua",
@@ -138,6 +139,29 @@ def render_startup(config: Mapping[str, Any]) -> str | None:
         )
     if not isinstance(config.get("environment"), Mapping):
         raise ValueError("Explicit Realistic CAS environment required")
+    if type(config.get("f10FrontlineContacts", False)) is not bool:
+        raise ValueError("Realistic CAS F10 frontline contacts must be boolean")
+    if config.get("f10FrontlineContacts"):
+        groups = config.get("frontlineMapGroups")
+        if not isinstance(groups, list):
+            raise ValueError("Explicit frontline map group list required")
+        managed = {g["name"] for g in config["registry"]["groups"]}
+        ids: set[int] = set()
+        names: set[str] = set()
+        for group in groups:
+            if (
+                not isinstance(group, Mapping)
+                or group.get("name") not in managed
+                or group.get("name") in names
+                or type(group.get("coalition")) is not int
+                or group.get("coalition") != 1
+                or type(group.get("id")) is not int
+                or group["id"] <= 0
+                or group["id"] in ids
+            ):
+                raise ValueError("Invalid or duplicate F10 frontline group")
+            ids.add(group["id"])
+            names.add(group["name"])
     if (
         "probabilisticDetection" in config
         and type(config["probabilisticDetection"]) is not bool
