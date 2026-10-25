@@ -48,6 +48,22 @@ do
     end
     return true
   end
+  local function recoveryLegSafe(input,a,b,altitude,threats,escape,landing,radioAltitude)
+    if landing then return A.leg(a,b,0,threats,escape)end
+    if type(radioAltitude)=='number' and radioAltitude>0 and radioAltitude<math.huge then
+      -- Native RADIO legs follow terrain at the original commanded AGL. Treating
+      -- them as constant BARO flight both rejects low routes and misses valleys.
+      -- Screen AA conservatively, at no more than AGL plus nonpositive terrain.
+      local ground=0
+      for i=0,4 do
+        local t=i/4
+        ground=math.min(ground,input.height({x=a.x+(b.x-a.x)*t,z=a.z+(b.z-a.z)*t}))
+      end
+      local alreadyThreatened=not A.clear(input.source,threats,1000)
+      return A.leg(a,b,math.min(input.source.y,ground+radioAltitude),threats,escape and alreadyThreatened)
+    end
+    return A.leg(a,b,altitude,threats,escape) and terrainSafe(input,a,b,altitude)
+  end
   local function orbitTerrainSafe(input,p,altitude)
     local minimum=math.min(input.source.y,altitude)
     for i=0,7 do
@@ -220,7 +236,8 @@ do
     local function goal(p,native,landing)
       local altitude=landing and 0 or math.min(source.y,p.altitude or source.y)
       if A.clear({x=p.x,y=altitude,z=p.z},threats,1000) then
-        nodes[#nodes+1]={point=p,goal=true,native=native,landing=landing,altitude=altitude}
+        nodes[#nodes+1]={point=p,goal=true,native=native,landing=landing,altitude=altitude,
+          radioAltitude=native and p.radioAltitude or nil}
       end
     end
     if destination.landing then
@@ -247,8 +264,7 @@ do
       if edges[key]~=nil then return edges[key]end
       local a,b=nodes[i],nodes[j]
       local altitude=b.altitude or source.y
-      local ok=A.leg(a.point,b.point,altitude,threats,i==1) and
-        (b.landing or terrainSafe(input,a.point,b.point,altitude))
+      local ok=recoveryLegSafe(input,a.point,b.point,altitude,threats,i==1,b.landing,b.radioAltitude)
       edges[key]=ok;return ok
     end
     local states={[1]={escape=0,length=0,path={}}}
@@ -300,8 +316,8 @@ do
       local altitude=landing and 0 or native.alt+
         (native.alt_type=='RADIO' and input.height(p) or 0)
       altitude=math.min(input.source.y,altitude)
-      if not A.leg(previous,p,altitude,threats,i==first) or
-        (not landing and not terrainSafe(input,previous,p,altitude))then return false end
+      if not recoveryLegSafe(input,previous,p,altitude,threats,i==first,landing,
+        native.alt_type=='RADIO' and native.alt or nil)then return false end
       previous=p
     end
     return not holding or (A.clear({x=previous.x,y=input.source.y,z=previous.z},threats,1000) and

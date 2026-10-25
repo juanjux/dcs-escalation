@@ -460,8 +460,10 @@ within aircraft limits and below the approximate cloud base, or keep lateral
 separation. Unknown ceilings force standoff. They abort if no safe orbit and
 approach fit the assigned zone. Long direct returns include a cruise leg at the
 departure flight level before the native landing approach. Recovery legs are
-rechecked against known defences, including newly revealed threats. Firing reveals
-a concealed managed defence and prioritises nearby AFACs on the next navigation
+rechecked against known defences, including newly revealed threats.
+Native RADIO return waypoints retain their planned height above the terrain;
+BARO recovery and scripted diversions retain terrain-clearance checks.
+Firing reveals a concealed managed defence and prioritises nearby AFACs on the next navigation
 tick. Emergency egress may leave the assigned zone and uses the native aircraft
 speed limit when available. Turn margins include actual ground speed. If the
 destination is blocked, the flight warns and holds outside known threats instead

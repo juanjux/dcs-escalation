@@ -197,6 +197,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[AFAC]** Allow recovery to native low-level RADIO waypoints without rejecting their planned height against the generic diversion clearance.
 * **[Realistic CAS]** Attempt discovery on the first valid observation and remove the initial search-time option; retain bounded probability retries.
 * **[AFAC]** Restrict AFAC missions to AI pilots in flight creation, roster editing and mission generation.
 * **[Realistic CAS]** Allow AFAC inbound detours outside the patrol zone while keeping the final orbit and on-station routes inside it.

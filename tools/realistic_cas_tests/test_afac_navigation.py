@@ -118,6 +118,21 @@ class AfacNavigationTests(unittest.TestCase):
         assert(RealisticCAS.afacNavigation.blue.exitWaypoint==4)
         """)
 
+    def test_low_level_radio_return_does_not_hold_without_threats(self):
+        self.rt.execute("""
+        local n=config.observers[1].afac.navigation
+        config.airDefenseThreats={};observer.point={x=0,y=500,z=0}
+        n.route[4].x=20000;n.route[4].alt=60.95999804928006;n.route[4].alt_type='RADIO'
+        beginNavigation();now=601;tick()
+        assert(#assigned==1 and jump(assigned[1])==4)
+        local route=assigned[1].params.route.points
+        assert(route[4].alt_type=='RADIO' and route[4].alt==n.route[4].alt)
+        assert(route[5].type=='Land' and route[5].airdromeId==12)
+        for i=1,15 do tick()end
+        assert(#assigned==1)
+        for _,m in ipairs(messages)do assert(not m.text:find('holding',1,true))end
+        """)
+
     def test_new_fire_knowledge_replans_an_already_returning_flight(self):
         self.rt.execute("""
         local n=config.observers[1].afac.navigation

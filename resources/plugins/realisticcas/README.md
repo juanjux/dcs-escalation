@@ -83,6 +83,11 @@ to describe it.
 
 ## Airborne forward air control (AFAC)
 
+Recovery preserves native RADIO waypoints as terrain-following AGL legs instead
+of rejecting their planned low height against the generic 150 m diversion margin.
+Known-AA checks use a conservative low altitude, including intervening valleys;
+BARO legs and invented diversion points retain their sampled terrain checks.
+
 AFAC missions currently support AI pilots only. Player checkboxes are disabled
 and player pilots are excluded from their rosters. Replace any player pilots in
 older AFAC flights before mission generation; their global player flags are kept.
