@@ -45,6 +45,10 @@ Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
 
 ## Airborne forward air control (AFAC)
 
+AFAC missions currently support AI pilots only. Player checkboxes are disabled
+and player pilots are excluded from their rosters. Replace any player pilots in
+older AFAC flights before mission generation; their global player flags are kept.
+
 Enable **Realistic CAS (experimental)** and, in its **Airborne forward air control
 (AFAC)** section, **Enable AFAC missions (experimental)**. Reopen the flight
 creation dialog after changing these settings. Choose **AFAC — Frontline** for a
@@ -53,10 +57,6 @@ aircraft and helicopters use normal squadrons, aircraft inventories and pilots;
 remote UAV operators cannot be killed, wounded or go missing with their aircraft.
 Eligible transport helicopters carry a thermal-equipped JTAC. Aircraft without
 thermal observation show a warning when creating a night flight.
-
-AFAC missions currently support AI pilots only. Player checkboxes are disabled
-and player pilots are excluded from their rosters. Replace any player pilots in
-older AFAC flights before mission generation; their global player flags are kept.
 
 AFACs search without attacking and prefer marking observed contacts. They report
 coordinates, designate with laser and night IR where equipped, and use finite
