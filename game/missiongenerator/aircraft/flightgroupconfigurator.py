@@ -94,6 +94,10 @@ class FlightGroupConfigurator:
         self.use_client = use_client
 
     def configure(self) -> FlightData:
+        if self.flight.flight_type.is_afac and self.flight.client_count:
+            raise ValueError(
+                "AFAC missions currently support AI pilots only. Replace player pilots before generating the mission."
+            )
         flight_channel = self.setup_radios()
         AircraftBehavior(self.flight.flight_type, self.mission_data).apply_to(
             self.flight, self.group

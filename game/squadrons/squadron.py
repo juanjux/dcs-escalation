@@ -385,14 +385,27 @@ class Squadron:
         self._recruit_pilots(1)
         return self.available_pilots.pop()
 
-    def claim_available_pilot(self, alongside: Sequence[Pilot] = ()) -> Optional[Pilot]:
+    def claim_available_pilot(
+        self, alongside: Sequence[Pilot] = (), *, ai_only: bool = False
+    ) -> Optional[Pilot]:
         """Take a pilot off the list for a seat.
 
         ``alongside`` is the crew already seated; it only orders the pilots who already
         matched the player's preference about players and AI, which still decides who is
         eligible. Greedy rather than optimal: the crew grows around whoever was first.
+        AI-only flights exclude player pilots regardless of that preference.
 
         """
+        if ai_only:
+            candidates = [p for p in self.available_pilots if not p.player]
+            if candidates:
+                return self._take(self._pick(candidates, alongside, candidates[-1]))
+            pilot = self.claim_new_pilot_if_allowed()
+            if pilot is not None and pilot.player:
+                self.return_pilot(pilot)
+                return None
+            return pilot
+
         if not self.available_pilots:
             return self.claim_new_pilot_if_allowed()
 

@@ -10,10 +10,17 @@ if TYPE_CHECKING:
 
 
 class FlightRoster(IFlightRoster):
-    def __init__(self, squadron: Squadron, initial_size: int = 0) -> None:
+    def __init__(
+        self, squadron: Squadron, initial_size: int = 0, *, allow_players: bool = True
+    ) -> None:
         self._squadron = squadron
+        self._allow_players = allow_players
         self.pilots: list[Optional[Pilot]] = []
         self.resize(initial_size)
+
+    @property
+    def allow_players(self) -> bool:
+        return getattr(self, "_allow_players", True)
 
     @property
     def squadron(self) -> Squadron:
@@ -42,9 +49,16 @@ class FlightRoster(IFlightRoster):
             return
         for _ in range(new_size - self.max_size):
             seated = [pilot for pilot in self.pilots if pilot is not None]
-            self.pilots.append(self.squadron.claim_available_pilot(seated))
+            pilot = (
+                self.squadron.claim_available_pilot(seated)
+                if self.allow_players
+                else self.squadron.claim_available_pilot(seated, ai_only=True)
+            )
+            self.pilots.append(pilot)
 
     def set_pilot(self, index: int, pilot: Optional[Pilot]) -> None:
+        if pilot is not None and pilot.player and not self.allow_players:
+            raise ValueError("AFAC missions currently support AI pilots only")
         if pilot is not None:
             self.squadron.claim_pilot(pilot)
         if (current_pilot := self.pilots[index]) is not None:

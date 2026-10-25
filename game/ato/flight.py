@@ -77,6 +77,8 @@ class Flight(
                 raise ValueError(
                     "AFAC requires an eligible aircraft and enabled Realistic CAS AFAC missions"
                 )
+            if roster is not None and roster.player_count:
+                raise ValueError("AFAC missions currently support AI pilots only")
         self.id = uuid.uuid4()
         self.package = package
         self.coalition = squadron.coalition
@@ -304,6 +306,8 @@ class Flight(
         yield from self.roster.members
 
     def set_flight_type(self, var: FlightType) -> None:
+        if var.is_afac and self.client_count:
+            raise ValueError("AFAC missions currently support AI pilots only")
         self.flight_type = var
 
         # Update _flight_plan_builder so that the builder class remains relevant

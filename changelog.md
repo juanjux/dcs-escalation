@@ -194,6 +194,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[AFAC]** Restrict AFAC missions to AI pilots in flight creation, roster editing and mission generation.
 * **[Realistic CAS]** Allow AFAC inbound detours outside the patrol zone while keeping the final orbit and on-station routes inside it.
 * **[Realistic CAS]** Fix AFAC orbit conditions so native waits return a result and release on fuel, station expiry or route changes.
 * **[Waypoints]** Look up ground elevation when saving a target's coordinates to Player Aircrafts instead of always storing zero.

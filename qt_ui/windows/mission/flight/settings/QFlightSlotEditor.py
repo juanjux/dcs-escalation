@@ -209,6 +209,8 @@ class PilotSelector(PaintedPilotCombo):
                 pilot.name,
             )
 
+        if not getattr(self.roster, "allow_players", True):
+            choices = [pilot for pilot in choices if not pilot.player]
         for pilot in sorted(choices, key=order):
             self.addItem(self.text_for(pilot), pilot)
             tip = self.affinity_tooltip(pilot)
@@ -308,12 +310,16 @@ class PilotControls(QWidget):
         self.on_pilot_changed(self.selector.currentIndex())
         enabled = False
         if self.roster is not None and squadron is not None:
-            enabled = squadron.aircraft.flyable
+            enabled = squadron.aircraft.flyable and self._players_allowed
         self.player_checkbox.setEnabled(enabled)
         row.addWidget(self.player_checkbox)
 
         self.player_checkbox.toggled.connect(self.on_player_toggled)
         self.setLayout(row)
+
+    @property
+    def _players_allowed(self) -> bool:
+        return self.roster is None or getattr(self.roster, "allow_players", True)
 
     @property
     def _has_a_seat(self) -> bool:
@@ -342,6 +348,9 @@ class PilotControls(QWidget):
         return self.roster.pilot_at(self.pilot_index)
 
     def on_player_toggled(self, checked: bool) -> None:
+        if checked and not self._players_allowed:
+            self.on_pilot_changed(self.selector.currentIndex())
+            return
         pilot = self.pilot
         if pilot is None:
             logging.error("Cannot toggle state of a pilot when none is selected")
@@ -353,15 +362,26 @@ class PilotControls(QWidget):
 
     def on_pilot_changed(self, index: int) -> None:
         pilot = self.selector.itemData(index)
+        self.player_checkbox.setToolTip(
+            "Checked if this pilot is a player."
+            if self._players_allowed
+            else "AFAC missions currently support AI pilots only."
+        )
         self.player_checkbox.blockSignals(True)
         try:
-            if self.roster and self.roster.squadron.aircraft.flyable:
+            if (
+                self.roster
+                and self.roster.squadron.aircraft.flyable
+                and self._players_allowed
+            ):
                 self.player_checkbox.setChecked(pilot is not None and pilot.player)
             else:
                 self.player_checkbox.setChecked(False)
         finally:
             if self.roster is not None:
-                self.player_checkbox.setEnabled(self.roster.squadron.aircraft.flyable)
+                self.player_checkbox.setEnabled(
+                    self.roster.squadron.aircraft.flyable and self._players_allowed
+                )
             self.player_checkbox.blockSignals(False)
             # on_pilot_changed should emit pilots_changed in its finally block,
             # otherwise the start-type isn't updated if you have a single client

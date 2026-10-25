@@ -429,6 +429,13 @@ class QFlightWaypointTab(QFrame):
             self.flight.degrade_to_custom_flight_plan()
 
     def confirm_recreate(self, task: FlightType) -> None:
+        if task.is_afac and self.flight.client_count:
+            QMessageBox.information(
+                self,
+                "AI pilots only",
+                "Replace player pilots before changing this flight to an AFAC mission.",
+            )
+            return
         result = QMessageBox.question(
             self,
             "Regenerate flight?",

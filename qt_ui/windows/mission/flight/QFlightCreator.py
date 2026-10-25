@@ -184,7 +184,9 @@ class QFlightCreator(QDialog):
         else:
             required_start_type = squadron.location.required_aircraft_start_type
             roster = FlightRoster(
-                squadron, initial_size=self.flight_size_spinner.value()
+                squadron,
+                initial_size=self.flight_size_spinner.value(),
+                allow_players=not self.task_selector.currentData().is_afac,
             )
         self.roster_editor = FlightRosterEditor(squadron, roster)
         self.flight_size_spinner.valueChanged.connect(self.roster_editor.resize)
@@ -431,7 +433,12 @@ class QFlightCreator(QDialog):
         self.roster_editor.replace(None, None)
         if squadron is not None:
             self.roster_editor.replace(
-                squadron, FlightRoster(squadron, self.flight_size_spinner.value())
+                squadron,
+                FlightRoster(
+                    squadron,
+                    self.flight_size_spinner.value(),
+                    allow_players=not self.task_selector.currentData().is_afac,
+                ),
             )
             self.on_departure_changed(squadron.location)
 

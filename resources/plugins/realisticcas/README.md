@@ -45,6 +45,10 @@ Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
 
 ## Airborne forward air control (AFAC)
 
+AFAC missions currently support AI pilots only. Player checkboxes are disabled
+and player pilots are excluded from their rosters. Replace any player pilots in
+older AFAC flights before mission generation; their global player flags are kept.
+
 Enable **Realistic CAS (experimental)** and, in its **Airborne forward air control
 (AFAC)** section, **Enable AFAC missions (experimental)**. Reopen the flight
 creation dialog after changing these settings. Choose **AFAC — Frontline** for a
