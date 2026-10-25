@@ -63,25 +63,7 @@ do
       return ok and type(value)=='string' and value~='' and value or id
     end
     local function coordinates(p)
-      local lat,lon=coord.LOtoLL(p)
-      if settings.coordinateFormat==2 then
-        local m=coord.LLtoMGRS(lat,lon)
-        return string.format('%s %s %05d %05d',m.UTMZone,m.MGRSDigraph,
-          math.floor(m.Easting),math.floor(m.Northing))
-      end
-      local function angle(value,positive,negative)
-        local hemisphere=value>=0 and positive or negative
-        local scale=settings.coordinateFormat==0 and 60000 or 3600
-        local total=math.floor(math.abs(value)*scale+0.5)
-        local degrees=math.floor(total/scale)
-        local remainder=total-degrees*scale
-        if settings.coordinateFormat==0 then
-          return string.format('%s %02d %06.3f',hemisphere,degrees,remainder/1000)
-        end
-        return string.format('%s %02d %02d %02d',hemisphere,degrees,
-          math.floor(remainder/60),remainder%60)
-      end
-      return angle(lat,'N','S')..' '..angle(lon,'E','W')
+      return RealisticCAS.contactCoordinates(p,settings.coordinateFormat)
     end
     local function message(id,text)
       local side=records[id].meta.coalition
@@ -196,7 +178,9 @@ do
         r.groups[target.groupName]=entry
       end
       entry.name=target.name
-      if newContact then
+      -- Campaign contact reports own discovery announcements, including the off
+      -- switch. Keep legacy standalone diagnostics when that option is absent.
+      if newContact and c.contactReports==nil then
         local key=observer.side..':'..target.groupName
         if not announced[key] then
           announced[key]=true

@@ -39,6 +39,7 @@ do
     assert(c.probabilisticDetection==nil or type(c.probabilisticDetection)=='boolean',
       'invalid probabilistic detection option')
     local probability=RealisticCAS.Sensors.probabilityConfig(c.probability)
+    RealisticCAS.validateContactReports(c)
     assert(c.f10FrontlineContacts==nil or type(c.f10FrontlineContacts)=='boolean','invalid F10 contact option')
     if c.f10FrontlineContacts then RealisticCAS.validateF10Contacts(c.frontlineMapGroups,managed)end
     if c.afacEnabled then RealisticCAS.validateAFACMarking(c.afacMarking) end
@@ -87,7 +88,12 @@ do
     end
     RealisticCAS.mission=api -- Retain a recovery handle even if startup rollback fails.
     local ok,err=pcall(function()
+      local afacObservers={}
+      for _,observer in ipairs(r.observers)do if observer.afac then afacObservers[observer.name]=true end end
       api.fog=assert(RealisticCAS.start({enabled=true,targets=r.groups,ttl=c.ttl,
+        contactReports=c.contactReports,contactReportSeconds=c.contactReportSeconds,
+        contactCoordinateFormat=c.afacMarking and c.afacMarking.coordinateFormat,
+        afacObservers=afacObservers,
         debug=c.debug,expiryBudget=c.expiryBudget,onFire=function(groupName,unitName,point)
           local nav=api.detectors and api.detectors.afacNavigation
           if nav then nav:fire(groupName,unitName,point)end
@@ -100,6 +106,7 @@ do
         probability=probability,
         afacEnabled=c.afacEnabled,
         afacMarking=c.afacMarking,
+        contactReports=c.contactReports,
         acquisitionMaxGap=c.acquisitionMaxGap,interval=c.interval,revisit=c.revisit,
         targetBudget=c.targetBudget,workBudget=c.workBudget,cellSize=c.cellSize,
         observerBudget=c.observerBudget,losBudget=c.losBudget,observerQuantum=c.observerQuantum,

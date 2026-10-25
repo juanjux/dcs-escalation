@@ -139,6 +139,11 @@ def render_startup(config: Mapping[str, Any]) -> str | None:
         )
     if not isinstance(config.get("environment"), Mapping):
         raise ValueError("Explicit Realistic CAS environment required")
+    if type(config.get("contactReports", False)) is not bool:
+        raise ValueError("Realistic CAS contact reports must be boolean")
+    report_seconds = config.get("contactReportSeconds", 15)
+    if type(report_seconds) is not int or not 1 <= report_seconds <= 300:
+        raise ValueError("Realistic CAS contact report duration must be 1..300 seconds")
     if type(config.get("f10FrontlineContacts", False)) is not bool:
         raise ValueError("Realistic CAS F10 frontline contacts must be boolean")
     if config.get("f10FrontlineContacts"):

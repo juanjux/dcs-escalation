@@ -107,7 +107,7 @@ do
         if not fog.active or fog.stopping then return false end
         local g=Group.getByName(target.groupName)
         local known=knownTargets[target.name] or (g and fog.service:isRevealed(g:getID(),observer.side)==true)
-        local success=knownTargets[target.name] or fog:observe(target.groupName,observer.side,target.position,result.mode..":"..observer.name)
+        local success=knownTargets[target.name] or fog:observe(target.groupName,observer.side,target.position,result.mode..":"..observer.name,target.typeName)
         if success and not known and observer.afac then
           RealisticCAS.afacDiscoveryCredits=RealisticCAS.afacDiscoveryCredits or {}
           local key=observer.side..':'..target.groupName

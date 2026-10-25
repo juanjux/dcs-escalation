@@ -157,8 +157,12 @@ def prepare_campaign(
     debug = options.get("debug", False)
     if type(debug) is not bool:
         raise ValueError("Realistic CAS: debug must be boolean")
+    contact_reports = options.get("contactReports", True)
+    contact_report_seconds = options.get("contactReportSeconds", 15)
     config: dict[str, Any] = {
         "enabled": True,
+        "contactReports": contact_reports,
+        "contactReportSeconds": contact_report_seconds,
         "f10FrontlineContacts": f10_frontline,
         "frontlineMapGroups": (
             collect_frontline_map_groups(
