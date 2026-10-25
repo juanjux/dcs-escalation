@@ -59,16 +59,17 @@ do
         if ok then
           if type(c)=='table' and c.owner==g.coalition and c.revealed==true and point(c.lastPosition) then
             local p,old=c.lastPosition,drawn[g.id]
+            local label='Frontline contact: '..RealisticCAS.contactDescription(c)
             -- Renewals at the same position need no native marker replacement.
-            if not next(pending) and (not old or old.point.x~=p.x or old.point.y~=p.y or old.point.z~=p.z) then
+            if not next(pending) and (not old or old.label~=label or old.point.x~=p.x or old.point.y~=p.y or old.point.z~=p.z) then
               local allocated,id=call('allocateMarkId')
               if allocated and integer(id) then
                 local observed=copy(p)
                 owned[id]=true
-                if call('setMark',id,2,copy(observed)) then
+                if call('setMark',id,2,copy(observed),label) then
                   stats.created=stats.created+1
                   if old then retire(old.markId)end
-                  drawn[g.id]={markId=id,point=observed}
+                  drawn[g.id]={markId=id,point=observed,label=label}
                 else retire(id)end
               end
             end
@@ -129,8 +130,8 @@ do
         RealisticCAS._f10MarkSerial=id
         return id
       end,
-      setMark=function(id,side,p)
-        trigger.action.markToCoalition(id,'Frontline contact',p,side,true)
+      setMark=function(id,side,p,label)
+        trigger.action.markToCoalition(id,label,p,side,true)
         return true
       end,
       removeMark=function(id)trigger.action.removeMark(id);return true end,

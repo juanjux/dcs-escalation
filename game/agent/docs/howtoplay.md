@@ -417,6 +417,12 @@ Realistic CAS discovery attempts use the first valid sensor and terrain line-of-
 without a continuous-observation delay. Optional probability rolls still apply;
 failed attempts retry on later valid scans. Known contacts renew without rolls.
 Older saved search-time values are ignored.
+The **Contact reports** plugin options enable notices for discoveries, groups
+revealing themselves by firing, and forgotten contacts. They are on by default;
+duration defaults to 15 seconds. Only the observing coalition receives them,
+and renewals do not repeat them. Turning them off also silences AFAC discovery
+notices, while marking and safety reports continue. F10 contact pins show the
+types actually observed, without listing unseen members of the enemy group.
 Moving targets have a 50% higher detection probability, capped at 100% (40%
 becomes 60%). This applies to both sides and all sensors; normal visibility and
 line-of-sight requirements still apply.

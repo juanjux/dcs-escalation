@@ -16,7 +16,7 @@ world.getMarkPanels=function()return {{idx=200000000}}end
 trigger=trigger or {};trigger.action=trigger.action or {}
 trigger.action.markToCoalition=function(id,text,p,side,readonly)
   assert(not ever[id] and side==2 and readonly)
-  ever[id]=true;marks[id]={x=p.x,y=p.y,z=p.z};created[#created+1]=id
+  ever[id]=true;marks[id]={x=p.x,y=p.y,z=p.z,text=text};created[#created+1]=id
 end
 trigger.action.removeMark=function(id)
   if removeFailure then error('map unavailable')end
@@ -37,9 +37,9 @@ class LayerTests(unittest.TestCase):
         layer=RealisticCAS.newF10Contacts({groups={{name='front',id=1,coalition=1},{name='support',id=2,coalition=1}},
           readContact=function(id,side)return s:getContact(id,side)end,
           allocateMarkId=function()serial=serial+1;return serial end,
-          setMark=function(id,side,p)
+          setMark=function(id,side,p,text)
             assert(side==2 and not ever[id]);ever[id]=true
-            ids[#ids+1]=id;marks[id]={x=p.x,y=p.y,z=p.z}
+            ids[#ids+1]=id;marks[id]={x=p.x,y=p.y,z=p.z,text=text}
           end,
           removeMark=function(id)
             if removeFailure then return false end
@@ -82,6 +82,22 @@ class LayerTests(unittest.TestCase):
         local reads=layer:diagnostics().reads;layer:tick();assert(layer:diagnostics().reads==reads)
         """)
 
+    def test_labels_include_only_observed_types_and_refresh_at_the_same_position(self):
+        self.rt.execute("""
+        assert(s:observe(1,2,{x=10,y=0,z=20},'visual','T-72B'));layer:tick()
+        assert(marks[101].text=='Frontline contact: T-72B')
+        now=1;assert(s:observe(1,2,{x=10,y=0,z=20},'ir','T-72B'));layer:tick()
+        assert(#ids==1)
+        assert(s:observe(1,2,{x=10,y=0,z=20},'ir','BMP-2'));layer:tick()
+        assert(#ids==2 and not marks[101])
+        assert(marks[102].text=='Frontline contact: BMP-2, T-72B')
+        local contact=s:getContact(1,2);contact.observedTypes[1]='UNSEEN SECRET UNIT'
+        layer:tick();assert(#ids==2 and not marks[102].text:find('SECRET'))
+        now=16;s:tick();layer:tick();assert(next(marks)==nil)
+        assert(s:observe(1,2,{x=10,y=0,z=20},'fire','Ural-375'));layer:tick()
+        assert(marks[103].text=='Frontline contact: Ural-375')
+        """)
+
     def test_large_allowlist_is_processed_in_bounded_round_robin_batches(self):
         self.rt.execute("""
         local groups,visits={},{}
@@ -117,6 +133,14 @@ class AdapterTests(unittest.TestCase):
         removeFailure=true;assert(not display:stop())
         removeFailure=false;assert(display:stop() and fog:stop());run(5)
         assert(next(marks)==nil and next(handlers)==nil and #pending==0)
+        """)
+
+    def test_native_marker_receives_the_observed_type_label(self):
+        self.rt.execute("""
+        local display=RealisticCAS.startF10Contacts(fog,{groups={{name='red',id=1,coalition=1}}})
+        assert(fog:observe('red',2,{x=10,y=0,z=20},'visual','T-72B'));run(2)
+        assert(marks[created[1]].text=='Frontline contact: T-72B')
+        assert(display:stop())
         """)
 
 

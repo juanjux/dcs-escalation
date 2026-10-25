@@ -55,6 +55,29 @@ class CampaignIntegrationTests(unittest.TestCase):
         )
         self.assertIs(definition["defaultValue"], False)
 
+    def test_contact_report_options_are_exported_and_validated(self):
+        options = {o.identifier: o for o in self.p.options}
+        config = prepare_campaign(self.g, [self.p])
+        self.assertIs(config["contactReports"], True)
+        self.assertEqual(config["contactReportSeconds"], 15)
+        self.assertEqual(
+            options["realisticcas.contactReportSeconds"].enabled_by,
+            "realisticcas.contactReports",
+        )
+        options["realisticcas.contactReports"].set_value(False)
+        options["realisticcas.contactReportSeconds"].set_value(45)
+        config = prepare_campaign(self.g, [self.p])
+        self.assertIs(config["contactReports"], False)
+        self.assertEqual(config["contactReportSeconds"], 45)
+        for value in (0, 301, False, 1.5):
+            options["realisticcas.contactReportSeconds"].set_value(value)
+            with self.assertRaisesRegex(ValueError, "report duration"):
+                prepare_campaign(self.g, [self.p])
+        options["realisticcas.contactReportSeconds"].set_value(15)
+        options["realisticcas.contactReports"].set_value("yes")
+        with self.assertRaisesRegex(ValueError, "reports must be boolean"):
+            prepare_campaign(self.g, [self.p])
+
     def test_final_registry_environment_options_and_original_mission_unchanged(self):
         before = self.g.mission.weather.dict()
         units_before = [u.dict() for u in self.air.units]

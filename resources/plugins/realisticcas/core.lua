@@ -13,6 +13,11 @@ do
   end
   local function enemy(side) return side==1 and 2 or 1 end
 
+  function RealisticCAS.contactDescription(contact)
+    local types=contact and contact.observedTypes
+    return type(types)=='table' and #types>0 and table.concat(types,', ') or 'Unknown unit'
+  end
+
   function RealisticCAS.new(options)
     local o=options or {}
     local ttl=o.ttl or 600
@@ -21,12 +26,18 @@ do
     assert(finite(retry) and retry>0,"retryInterval must be positive seconds")
     assert(type(o.clock)=="function","clock is required")
     assert(type(o.setVisible)=="function","setVisible callback is required")
+    assert(o.onContact==nil or type(o.onContact)=='function','invalid contact callback')
     local enabled=o.enabled==true
     local records,heap,index={},{},{}
     local counters={registered=0,reveals=0,renewals=0,expirations=0,backendErrors=0}
     local api={}
     local function emit(kind,r,detail)
       if o.log then pcall(o.log,kind,r and r.id or nil,detail) end
+    end
+    local function notify(kind,r)
+      if not o.onContact then return end
+      local ok,err=pcall(o.onContact,kind,api:getContact(r.id,enemy(r.owner)))
+      if not ok then emit('CONTACT_REPORT_ERROR',r,tostring(err))end
     end
     local function swap(a,b)
       heap[a],heap[b]=heap[b],heap[a]
@@ -94,7 +105,7 @@ do
       return true
     end
 
-    function api:observe(id,observingCoalition,point,reason)
+    function api:observe(id,observingCoalition,point,reason,typeName)
       if not enabled then return false,"disabled" end
       local r=records[id]
       if not r then return false,"unknown group" end
@@ -102,20 +113,25 @@ do
       local p=position(point)
       if not p then return false,"invalid observed position" end
       if reason~=nil and (type(reason)~="string" or reason=="") then return false,"invalid reason" end
+      if typeName~=nil and (type(typeName)~='string' or typeName=='')then return false,'invalid observed type' end
       local t=currentTime()
       local fresh=r.expiresAt and t<r.expiresAt
       if not r.backendVisible and not apply(r,true) then return false,"reveal failed" end
+      if not fresh then r.types={} end
+      if typeName then r.types[typeName]=true end
+      r.expiryReported=false
       r.lastPosition=p;r.observedAt=t;r.expiresAt=t+ttl;r.reason=reason or "observation"
       schedule(id,r.expiresAt)
       if fresh then counters.renewals=counters.renewals+1 else counters.reveals=counters.reveals+1 end
       emit(fresh and "RENEW" or "REVEAL",r,r.reason)
+      if not fresh then notify('REVEAL',r)end
       return true
     end
 
-    function api:fire(id,point)
+    function api:fire(id,point,typeName)
       local r=records[id]
       if not r then return false,"unknown group" end
-      return self:observe(id,enemy(r.owner),point,"fire")
+      return self:observe(id,enemy(r.owner),point,"fire",typeName)
     end
 
     function api:isRevealed(id,coalition)
@@ -127,9 +143,12 @@ do
     function api:getContact(id,coalition)
       local r=records[id]
       if not r or coalition~=enemy(r.owner) or not r.observedAt then return nil end
+      local types={}
+      for name in pairs(r.types or {})do types[#types+1]=name end
+      table.sort(types)
       -- Copies only: reading/sharing a contact never renews it or follows its object.
       return {id=r.id,owner=r.owner,observedAt=r.observedAt,expiresAt=r.expiresAt,
-        lastPosition=position(r.lastPosition),reason=r.reason,
+        lastPosition=position(r.lastPosition),reason=r.reason,observedTypes=types,
         revealed=self:isRevealed(id,coalition),backendVisible=r.backendVisible}
     end
 
@@ -143,6 +162,8 @@ do
         remove(id);processed=processed+1
         local r=records[id]
         if r and r.backendVisible then
+          -- Contact memory expires even if the native hide command needs retries.
+          if not r.expiryReported then r.expiryReported=true;notify('EXPIRE',r)end
           if apply(r,false) then
             counters.expirations=counters.expirations+1
             emit("EXPIRE",r,now)

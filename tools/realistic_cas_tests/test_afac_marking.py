@@ -70,6 +70,30 @@ class AfacMarkingTests(unittest.TestCase):
         assert(messages[#messages].text:find('green smoke',1,true))
         """)
 
+    def test_campaign_contact_switch_controls_discovery_but_keeps_marking_reports(self):
+        for enabled in (False, True):
+            with self.subTest(enabled=enabled):
+                self.setUp()
+                self.rt.globals().reports_enabled = enabled
+                self.rt.execute("""
+                assert(fog:stop())
+                fog=assert(RealisticCAS.start({enabled=true,ttl=600,
+                  targets={{name='red',originalInvisible=false}},contactReports=reports_enabled,
+                  contactReportSeconds=27,afacObservers={observer=true}}))
+                config.contactReports=reports_enabled
+                begin();advance(25)
+                local found,lasing=0,0
+                for _,m in ipairs(messages)do
+                  assert(m.side==2)
+                  if m.text:find(' found ',1,true)then
+                    found=found+1;assert(m.text:find('JTAC Chevy1',1,true) and m.seconds==27)
+                  end
+                  if m.text:find('lasing',1,true)then lasing=lasing+1 end
+                end
+                assert(found==(reports_enabled and 1 or 0))
+                assert(lasing>0 and #made>0 and #afac_discoveries==1 and #afac_marks==1)
+                """)
+
     def test_night_includes_ir_and_actual_moving_target_updates(self):
         self.rt.execute("""
         e.light=0;begin();advance(25)

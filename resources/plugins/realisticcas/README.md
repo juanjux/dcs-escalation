@@ -47,6 +47,11 @@ Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
 
 ## F10 frontline contacts
 
+Contact pins include the unit types actually observed during the current contact,
+for example `Frontline contact: BMP-2, T-72B`. They do not list unseen members of
+the group. Rediscovery after expiry starts this identification history again.
+The pin remains a map marker, not a native vehicle icon.
+
 **Hide frontline contacts on the F10 map until discovered** is optional and off by
 default. It hides RED frontline native icons, including support infantry and MANPADS, and draws
 BLUE-only contact pins from the existing Realistic CAS observations and lifetime.
@@ -61,6 +66,20 @@ Pins replace enemy-front icons and cannot provide native Combined Arms selection
 of those groups. Updates are processed in bounded batches with fresh marker IDs;
 unchanged observed positions do not recreate pins. Regenerate the mission after
 changing the option.
+
+## Contact reports
+
+The separate **Contact reports** options control notices when an enemy group is
+discovered, reveals itself by firing, or is forgotten after its contact expires.
+They are enabled by default, with a configurable 15-second duration. Reports go
+only to the coalition observing that enemy and use its last observed position.
+Contact renewals do not repeat announcements. Disabling them also silences AFAC
+discovery notices; marking and safety reports remain active. These options work
+independently of F10 pins, AFAC mission activation and diagnostic logging. AFAC
+coordinate format applies when AFAC is enabled; otherwise reports use degrees
+and decimal minutes. The contact service retains only types actually observed,
+including a firing unit's type, and never reads a hidden group's full composition
+to describe it.
 
 ## Airborne forward air control (AFAC)
 
