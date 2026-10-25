@@ -156,7 +156,7 @@ def prepare_campaign(
     debug = options.get("debug", False)
     if type(debug) is not bool:
         raise ValueError("Realistic CAS: debug must be boolean")
-    config = {
+    config: dict[str, Any] = {
         "enabled": True,
         "f10FrontlineContacts": f10_frontline,
         "frontlineMapGroups": (
