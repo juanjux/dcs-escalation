@@ -255,6 +255,7 @@ def collect_registry(
     enabled: bool,
     unit_map: UnitMap | None = None,
     excluded_groups: Collection[str] = (),
+    include_armor_groups: bool = False,
 ) -> dict[str, Any] | None:
     """Collect declared units without modifying pydcs or activating any Lua.
 
@@ -266,6 +267,8 @@ def collect_registry(
     """
     if not enabled:
         return None
+    if type(include_armor_groups) is not bool:
+        raise ValueError("Realistic CAS: armor group discovery must be boolean")
     if unit_map is None:
         raise ValueError(
             "Realistic CAS requires UnitMap to distinguish SAM objectives from frontline SAMs"
@@ -281,6 +284,7 @@ def collect_registry(
         "observers": [],
         "warnings": [],
         "knownAirDefenseGroups": [],
+        "knownGroundGroups": [],
         "airDefenseThreats": [],
         "afacKnownTargets": [],
     }
@@ -353,6 +357,7 @@ def collect_registry(
                     # NEVER vehicle type, radar range, unit/group name, or movement.
                     # Its generated support groups belong to the same objective.
                     sites = set()
+                    armor = False
                     if category == "ground":
                         for unit in group.units:
                             mapping = unit_map.theater_objects.get(unit.name)
@@ -360,6 +365,8 @@ def collect_registry(
                                 objective = mapping.theater_unit.ground_object
                                 if objective.category == "aa":
                                     sites.add(objective.name)
+                                if objective.category == "armor":
+                                    armor = True
                     if sites:
                         result["knownAirDefenseGroups"].append(
                             {
@@ -380,10 +387,25 @@ def collect_registry(
                         result["warnings"].append(
                             f"Excluded visibility-owned group: {group.name}"
                         )
+                    concealed = not sites and (
+                        group.name
+                        in getattr(mission_data, "frontline_visibility_groups", set())
+                        or (include_armor_groups and armor)
+                    )
                     if (
                         category == "ground"
                         and not foreign_owner
                         and not sites
+                        and not concealed
+                        and group.units
+                    ):
+                        result["knownGroundGroups"].append(
+                            {"name": group.name, "coalition": side}
+                        )
+                    if (
+                        category == "ground"
+                        and not foreign_owner
+                        and concealed
                         and group.units
                     ):
                         result["groups"].append(
@@ -407,7 +429,7 @@ def collect_registry(
                             threat = envelope(unit.type)
                             if threat is not None:
                                 threat = dict(threat)
-                                if sites:
+                                if not concealed:
                                     threat["initialPoint"] = {
                                         "x": unit.position.x,
                                         "z": unit.position.y,
@@ -419,10 +441,10 @@ def collect_registry(
                                         groupName=group.name,
                                         coalition=side,
                                         typeName=unit.type,
-                                        known=bool(sites),
+                                        known=not concealed,
                                     )
                                 )
-                            if sites:
+                            if not concealed:
                                 result["afacKnownTargets"].append(
                                     {
                                         "name": unit.name,
@@ -431,7 +453,7 @@ def collect_registry(
                                         "typeName": unit.type,
                                     }
                                 )
-                        if category == "ground" and not sites:
+                        if category == "ground" and concealed:
                             result["targets"].append(
                                 {
                                     "name": unit.name,
@@ -522,7 +544,13 @@ def collect_registry(
         result["warnings"].append(
             f"FlightData/JTAC absent from generated mission: {name}"
         )
-    for field in ("groups", "targets", "observers", "knownAirDefenseGroups"):
+    for field in (
+        "groups",
+        "targets",
+        "observers",
+        "knownAirDefenseGroups",
+        "knownGroundGroups",
+    ):
         result[field].sort(key=lambda row: row["name"])
     result["warnings"].sort()
     return result

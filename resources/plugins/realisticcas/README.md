@@ -28,6 +28,12 @@ Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
 - Generated legacy JTACs are omitted while Realistic CAS is enabled. Use the
   separate **Enable AFAC missions (experimental)** option for airborne JTACs.
   Turning the plugin off restores the original JTAC generator path.
+- Discovery affects only frontline groups by default, including support infantry
+  and MANPADS. **Include armor groups in discovery** also conceals campaign armor
+  groups from AI on both sides; it is off by default, including in existing saves.
+  Other ground groups remain known AFAC targets, with known air-defence envelopes;
+  they do not generate discovery, firing-reveal or expiry notices. Regenerate the
+  mission after changing this option. It does not change MFD threat intelligence.
 - Fixed map SAM groups remain known; frontline SAMs participate in fog. F10
   visibility is unchanged unless its separate frontline option is enabled.
   Weapon accuracy is unchanged. AI CAS and Armed Recon receive

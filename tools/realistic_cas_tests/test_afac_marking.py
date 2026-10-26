@@ -282,6 +282,22 @@ class AfacMarkingTests(unittest.TestCase):
         assert(#made==1 and #smokes==0 and not afac_marks[1].smoke)
         """)
 
+    def test_known_armor_can_be_marked_without_discovery_credit(self):
+        self.rt.execute("""
+        assert(fog:stop());run(3)
+        local cfg={enabled=true,afacEnabled=true,afacMarking=config.afacMarking,
+          registry={schemaVersion=1,groups={},targets={},observers=config.observers,
+            knownAirDefenseGroups={},knownGroundGroups={{name='red',coalition=1}},
+            afacKnownTargets=config.targets,warnings={}},
+          acquisitionSeconds=0,environment={defaultCover='desert',startTime=43200,
+            sunrise=21600,sunset=64800,weather=1,visibility=30000}}
+        local m=assert(RealisticCAS.startMission(cfg));advance(25)
+        assert(not red.hidden and not m.fog.service:isRegistered(1))
+        assert(#made==1 and #afac_marks==1)
+        assert(not afac_discoveries or #afac_discoveries==0)
+        assert(m:stop())
+        """)
+
     def test_bootstrap_shots_and_mission_end_cleanup(self):
         self.rt.execute("""
         assert(fog:stop());run(3)

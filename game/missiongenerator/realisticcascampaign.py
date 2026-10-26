@@ -80,6 +80,9 @@ def prepare_campaign(
     options = {
         o.identifier.removeprefix("realisticcas."): o.get_value for o in plugin.options
     }
+    include_armor = options.get("includeArmorGroups", False)
+    if type(include_armor) is not bool:
+        raise ValueError("Realistic CAS: armor group discovery must be boolean")
     f10_frontline = options.get("f10FrontlineContacts", False)
     if type(f10_frontline) is not bool:
         raise ValueError("Realistic CAS: F10 frontline contacts must be boolean")
@@ -130,6 +133,7 @@ def prepare_campaign(
         generator.mission_data,
         enabled=True,
         unit_map=generator.unit_map,
+        include_armor_groups=include_armor,
     )
     assert registry is not None
     registry["warnings"].extend(warnings)

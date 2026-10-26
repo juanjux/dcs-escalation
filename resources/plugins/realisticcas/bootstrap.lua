@@ -15,9 +15,13 @@ do
       assert(type(v.name)=='string','invalid SAM objective group')
       known[v.name]=true
     end
+    for _,v in ipairs(r.knownGroundGroups or {})do
+      assert(type(v.name)=='string' and v.name~='' and not known[v.name], 'invalid known ground group')
+      known[v.name]=true
+    end
     for _,v in ipairs(r.groups) do
       assert(type(v.name)=='string' and v.name~='' and not managed[v.name],'invalid target group')
-      assert(not known[v.name],'fixed SAM objective must not be concealed: '..v.name)
+      assert(not known[v.name],'known ground group must not be concealed: '..v.name)
       assert(v.originalInvisible==false,'visibility ownership required')
       managed[v.name]=true
     end
