@@ -182,6 +182,31 @@ targets expose the same progress in `ground_movement`. Armor-group and SAM movem
 commands are not available yet. Convoys created while the plugin is disabled keep
 their legacy behaviour; journeys already managed by it remain paused.
 
+Friendly armor-group dialogs show a Ground transport card when the plugin is on.
+It reports available tractors and towed pieces, warns when a smaller detachment is
+needed, and identifies types whose mobility has not been defined. A mounted gun
+is self-propelled; it does not count as a spare tractor. Dead units and existing
+planning reservations are excluded from available transport capacity.
+
+Armor movement can be inspected through two read-only endpoints:
+`GET /tgos/{id}/ground-movement/options` lists this player's unit IDs and transport
+requirements; `POST /tgos/{id}/ground-movement/preview` validates a selection and
+destination without reserving or moving anything. Send `unit_ids` and
+`destination_kind`: `position` with a `position` (`lat`, `lng`), `base` with
+`base_id`, or `frontline` with both `base_id` and `opposing_base_id`. Only friendly
+land bases and current enemy fronts are valid. Frontline reinforcements target
+the supporting base's stock; deployment caps determine the reserve slice.
+
+The preview includes automatically assigned tractors, the units left behind,
+individual road/off-road segments, their distances, the first turn's stopping
+point and estimated turns. Road access uses the nearest reachable corridor from
+the campaign's authored friendly road network, not every road in DCS. Access and
+road segments must stay on mapped land and clear exclusion zones. Missing terrain
+data or an unverified water/bridge crossing blocks the preview. With no friendly
+road corridors, only a validated direct off-road route is available. These
+previews do not dispatch armor groups; movement commands and the SAM workflow are
+still pending.
+
 ## 1. What this game is
 
 DCS Escalation is a **turn-based strategic campaign** on top of DCS World. Each
