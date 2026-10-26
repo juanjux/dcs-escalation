@@ -615,6 +615,10 @@ class Game:
         self.blue.end_turn(events)
         self.red.end_turn(events)
 
+        from game.groundmovement.dispatch import advance_armor
+
+        advance_armor(self, events)
+
         for control_point in self.theater.controlpoints:
             control_point.process_turn(self, events)
 

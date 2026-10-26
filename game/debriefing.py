@@ -825,6 +825,24 @@ class Debriefing:
             # hook) and froze the debrief for ~20s on busy missions.
             untracked.append(unit_name)
 
+        lost = {
+            loss.theater_unit.id
+            for loss in losses.player_ground_objects + losses.enemy_ground_objects
+        }
+        for name in set(self.state_data.killed_ground_units):
+            for cargo in getattr(self.unit_map, "ground_transport_cargo", {}).get(
+                name, []
+            ):
+                if cargo.theater_unit.id in lost:
+                    continue
+                lost.add(cargo.theater_unit.id)
+                destination = (
+                    losses.player_ground_objects
+                    if cargo.theater_unit.ground_object.is_friendly(Player.BLUE)
+                    else losses.enemy_ground_objects
+                )
+                destination.append(cargo)
+
         if untracked:
             logging.debug(
                 "%d untracked ground unit deaths had no effect (untracked "

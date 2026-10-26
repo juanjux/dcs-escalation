@@ -143,6 +143,7 @@ class TheaterGroundObject(MissionTarget, SidcDescribable, ABC):
         self.control_point = control_point
         self.sea_object = sea_object
         self.groups: List[TheaterGroup] = []
+        self.in_transit = False
         self.original_name = location.original_name
         self._threat_poly: ThreatPoly | None = None
         self.task = task
@@ -899,7 +900,7 @@ class VehicleGroupGroundObject(TheaterGroundObject):
 
     @property
     def purchasable(self) -> bool:
-        return True
+        return not getattr(self, "in_transit", False)
 
     @property
     def should_head_to_conflict(self) -> bool:

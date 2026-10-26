@@ -292,6 +292,11 @@ class GroundObjectGenerator:
         return self.game.iads_considerate_culling(self.ground_object)
 
     def generate(self) -> None:
+        if getattr(self.ground_object, "in_transit", False):
+            from game.missiongenerator.armormovement import generate_armor_movement
+
+            generate_armor_movement(self)
+            return
         # Culling skips what costs performance: spawned statics, vehicles and ships.
         # It must NOT skip the scenery-objective apparatus below -- the map buildings
         # backing a scenery objective exist whether or not the campaign spawns
