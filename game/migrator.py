@@ -15,7 +15,7 @@ from game.ato.flightplans.waypointbuilder import WaypointBuilder
 from game.ato.packagewaypoints import PackageWaypoints
 from game.data.doctrine import MODERN_DOCTRINE, COLDWAR_DOCTRINE, WWII_DOCTRINE
 from game.squadrons import morale
-from game.theater import ParkingType, SeasonalConditions, Airfield
+from game.theater import SeasonalConditions, Airfield
 from game.theater.player import Player
 from game.theater.theatergroundobject import ShipGroundObject, TheaterGroundObject
 
@@ -341,24 +341,10 @@ class Migrator:
                     c = country_dict.get(s.country, s.country)
                     s.country = countries_by_name[c]()
 
-                # code below is used to fix corruptions wrt overpopulation
-                parking_type = ParkingType().from_squadron(s)
-                if (
-                    s.owned_aircraft < 0
-                    or s.location.unclaimed_parking(parking_type) < 0
-                ):
-                    # unclaimed_parking + owned is the capacity available to this
-                    # squadron alone; clamp an overfull squadron down to it. The
-                    # min() guards the negative-owned case: a negative count must
-                    # collapse to 0, not balloon up to the whole airfield.
-                    s.owned_aircraft = max(
-                        0,
-                        min(
-                            s.owned_aircraft,
-                            s.location.unclaimed_parking(parking_type)
-                            + s.owned_aircraft,
-                        ),
-                    )
+                # Parking overflow is resolved through sales or relocation. Loading
+                # must not remove owned airframes while keeping their flights and
+                # workshop jobs. Only negative inventory is invalid save data.
+                s.owned_aircraft = max(0, s.owned_aircraft)
 
                 if self.is_liberation:
                     s.set_auto_assignable_mission_types(s.auto_assignable_mission_types)
