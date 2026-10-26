@@ -92,13 +92,86 @@ def test_visibility_owned_and_unregistered_groups_stay_outside_f10_scope() -> No
     assert all(not g.hidden for g in (s.front, s.support, s.base, s.friend))
 
 
-def test_enabled_f10_is_serialized_and_its_scripts_compile(tmp_path: Path) -> None:
+@pytest.mark.parametrize("include_armor", [False, True])
+def test_campaign_scope_preserves_known_armor_threats_and_front_only_f10(
+    include_armor: bool,
+) -> None:
+    s = scenario()
+    # Campaign membership, not vehicle type or proximity, selects armor groups.
+    s.base.units[0].type = "SA-18 Igla-S manpad"
+    s.g.unit_map.theater_objects[s.base.units[0].name] = NS(
+        theater_unit=NS(ground_object=NS(category="armor", name="ARMOR"))
+    )
+    blue_armor = s.m.vehicle_group(
+        s.m.country("USA"), "BLUE ARMOR", Unarmed.Ural_375, Point(2000, 0, s.m.terrain)
+    )
+    other = s.m.vehicle_group(
+        s.m.country("Russia"), "OTHER", Unarmed.Ural_375, Point(3000, 0, s.m.terrain)
+    )
+    s.g.unit_map.theater_objects[blue_armor.units[0].name] = NS(
+        theater_unit=NS(ground_object=NS(category="armor", name="BLUE ARMOR"))
+    )
+    for name, value in (
+        ("includeArmorGroups", include_armor),
+        ("f10FrontlineContacts", True),
+    ):
+        next(
+            o for o in s.plugin.options if o.identifier.endswith("." + name)
+        ).set_value(value)
+    config = prepare_campaign(s.g, [s.plugin])
+    assert config is not None
+    registry = config["registry"]
+    concealed = {g["name"] for g in registry["groups"]}
+    assert concealed == {"FRONT", "SUPPORT", "FRIEND"} | (
+        {"BASE", "BLUE ARMOR"} if include_armor else set()
+    )
+    threat = next(
+        t for t in registry["airDefenseThreats"] if t["name"] == s.base.units[0].name
+    )
+    assert threat["known"] is not include_armor
+    assert ("initialPoint" in threat) is not include_armor
+    assert {t["name"] for t in registry["afacKnownTargets"]} == (
+        {other.units[0].name}
+        if include_armor
+        else {s.base.units[0].name, blue_armor.units[0].name, other.units[0].name}
+    )
+    assert {g["name"] for g in config["frontlineMapGroups"]} == {"FRONT", "SUPPORT"}
+    assert not s.base.hidden
+
+
+def test_missing_scope_defaults_to_front_only_and_rejects_invalid_values() -> None:
+    s = scenario()
+    option = next(
+        o for o in s.plugin.options if o.identifier == "realisticcas.includeArmorGroups"
+    )
+    assert option.get_value is False
+    # Missing saved keys follow the same default as a newly loaded manifest.
+    s.plugin.options.remove(option)
+    config = prepare_campaign(s.g, [s.plugin])
+    assert config is not None
+    assert "BASE" not in {g["name"] for g in config["registry"]["groups"]}
+    s.plugin.options.append(option)
+    option.set_value(1)
+    with pytest.raises(ValueError, match="armor group discovery must be boolean"):
+        prepare_campaign(s.g, [s.plugin])
+
+
+@pytest.mark.parametrize("include_armor", [False, True])
+def test_enabled_f10_is_serialized_and_its_scripts_compile(
+    tmp_path: Path, include_armor: bool
+) -> None:
     from zipfile import ZipFile
     from dcs.lua import loads
     from game.missiongenerator.luagenerator import LuaGenerator
     from game.missiongenerator.realisticcascampaign import inject_campaign
 
     s = scenario()
+    s.g.unit_map.theater_objects[s.base.units[0].name] = NS(
+        theater_unit=NS(ground_object=NS(category="armor", name="ARMOR"))
+    )
+    next(
+        o for o in s.plugin.options if o.identifier == "realisticcas.includeArmorGroups"
+    ).set_value(include_armor)
     next(
         o
         for o in s.plugin.options
@@ -127,6 +200,20 @@ def test_enabled_f10_is_serialized_and_its_scripts_compile(tmp_path: Path) -> No
         lua.execute(archive.read("mission").decode())
         for _, action in lua.globals().mission.trig.actions.items():
             lua.compile(action)
+        # Inspect the startup payload actually written into the generated MIZ.
+        lua.execute("RealisticCAS={startMission=function(c) captured=c;return {} end}")
+        for trigger in mission["trigrules"].values():
+            for action in trigger["actions"].values():
+                source = action.get("text", "")
+                if source.startswith(
+                    "do local ok, instance, why = pcall(RealisticCAS.startMission"
+                ):
+                    lua.execute(source)
+        exported = lua.globals().captured.registry
+        assert ("BASE" in {g.name for g in exported.groups.values()}) is include_armor
+        assert (
+            "BASE" in {g.name for g in exported.knownGroundGroups.values()}
+        ) is not include_armor
 
 
 @pytest.mark.parametrize("infantry", [False, True])

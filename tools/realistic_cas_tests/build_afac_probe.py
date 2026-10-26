@@ -86,6 +86,7 @@ def build_mission(
         ),
     )
     flights, mappings, theater_objects = [], {}, {}
+    frontline_groups: set[str] = set()
     cases = (
         (UH_1H, "UH-1H Iroquois", FlightType.AFAC_AREA, False),
         (MQ_9_Reaper, "MQ-9 Reaper", FlightType.AFAC_FRONTLINE, False),
@@ -176,6 +177,7 @@ def build_mission(
             group_size=2,
         )
         target_group.add_waypoint(center.point_from_heading(90, 1200), speed=12)
+        frontline_groups.add(target_group.name)
         if safety:
             kind = (
                 AirDefence.ZSU_57_2,
@@ -199,7 +201,14 @@ def build_mission(
                         ground_object=NS(category="aa", name=f"PROBE_AA_{index}")
                     )
                 )
-    data = NS(flights=flights, jtacs=[], tic_groups=[])
+            else:
+                frontline_groups.add(defence.name)
+    data = NS(
+        flights=flights,
+        jtacs=[],
+        tic_groups=[],
+        frontline_visibility_groups=frontline_groups,
+    )
     mapping: Any = NS(theater_objects=theater_objects, flight=mappings.get)
     plugin = LuaPlugin.from_json(
         "realisticcas", Path("resources/plugins/realisticcas/plugin.json")
