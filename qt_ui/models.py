@@ -728,6 +728,9 @@ class GameModel:
     def __init__(self, game: Optional[Game], sim_controller: SimController) -> None:
         self.game: Optional[Game] = game
         self.sim_controller = sim_controller
+        from qt_ui.groundmovement import GroundMovementCommands
+
+        self.ground_movement_commands = GroundMovementCommands(self)
         self.transfer_model = TransferModel(self)
         self.blue_air_wing_model = AirWingModel(self, player=Player.BLUE)
         self.red_air_wing_model = AirWingModel(self, player=Player.RED)
