@@ -197,6 +197,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Campaign]** Preserve aircraft inventory and workshop capacity when loading saves with overfull bases.
 * **[AFAC]** Allow recovery to native low-level RADIO waypoints without rejecting their planned height against the generic diversion clearance.
 * **[Realistic CAS]** Attempt discovery on the first valid observation and remove the initial search-time option; retain bounded probability retries.
 * **[AFAC]** Restrict AFAC missions to AI pilots in flight creation, roster editing and mission generation.

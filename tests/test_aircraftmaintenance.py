@@ -950,3 +950,56 @@ def test_instant_relocation_cannot_sell_a_damaged_loan(world: Any) -> None:
     assert world.sq.location is world.base
     assert len(maintenance.repairs(world.sq)) == 1
     assert world.blue.budget == 10
+
+
+def _migrate_squadron_inventory(world: Any) -> None:
+    from game.ato import FlightType
+    from game.migrator import Migrator
+
+    world.sq.aircraft.task_priorities = {FlightType.CAS: 1}
+    world.sq.aircraft.helicopter = True
+    world.sq.country = SimpleNamespace()
+    world.base.squadrons = [world.sq]
+    world.enemy.squadrons = []
+    world.base.unclaimed_parking = lambda parking: 1 - world.sq.owned_aircraft
+    world.blue.air_wing.squadron_defs = {}
+    world.red = world.game.red
+    world.red.air_wing.squadron_defs = {}
+    migrator = Migrator.__new__(Migrator)
+    migrator.game = world.game
+    migrator.is_liberation = False
+    migrator._update_squadrons()
+
+
+def test_overfull_save_keeps_inventory_and_admits_new_damage(world: Any) -> None:
+    world.sq.owned_aircraft = 4
+    world.game.turn = 9
+    assert maintenance.admit(world.game, world.sq, "previous-mission", 0.7)
+    world.game.turn = 10
+    world.sq.untasked_aircraft = 1  # Two healthy airframes already assigned.
+    old_job = world.sq.aircraft_repairs[0]
+    debrief = _debrief(world, {"health": 0.4, "recovered": True, "x": 10, "z": 5})
+    _migrate_squadron_inventory(world)
+    _migrate_squadron_inventory(world)
+    assert world.sq.owned_aircraft == 4
+    assert world.sq.aircraft_repairs == [old_job]
+    assert world.sq.untasked_aircraft == 1
+
+    maintenance.commit_reports(world.game, debrief)
+    maintenance.commit_reports(world.game, debrief)
+    assert maintenance.damaged_count(world.sq) == 2
+    world.game.turn = 11
+    maintenance.advance(world.game)
+    jobs = maintenance.base_jobs(world.game, world.base)
+    assert len(jobs) == 1
+    assert jobs[0][1].source == "mission:unit"
+    assert jobs[0][1].health == pytest.approx(0.4)
+    assert len(list(maintenance.recoverable_damage(world.game, debrief))) == 1
+    assert world.sq.owned_aircraft == 4
+    assert world.blue.budget == 10
+
+
+def test_negative_saved_inventory_is_still_clamped_to_zero(world: Any) -> None:
+    world.sq.owned_aircraft = -2
+    _migrate_squadron_inventory(world)
+    assert world.sq.owned_aircraft == 0

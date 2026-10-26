@@ -134,6 +134,10 @@ to sell a specific damaged airframe immediately. Default resale is 50% of its
 normal price; both the price factor and mechanic cost are configurable. Regular
 aircraft sales sell idle healthy aircraft, not workshop jobs.
 
+Loading a campaign with an overfull base preserves its owned aircraft and workshop
+jobs. Resolve parking shortages through aircraft sales or squadron relocation;
+loading the save does not remove aircraft to make them fit.
+
 Before relocating, read `relocation_workshop_quote` /
 `GET /retribution-ai/workshops/relocation-quote`. Damaged aircraft cannot transfer:
 both repairing and queued airframes must be sold automatically with explicit
