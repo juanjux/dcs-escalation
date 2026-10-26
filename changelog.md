@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Ground Movement]** Add opt-in settings, Motor Pool dependency and saved transport-order foundations; movement dispatch is not enabled yet.
 * **[Realistic CAS]** Add configurable contact discovery, firing-reveal and expiry notices, and observed unit types on F10 contact pins.
 * **[Realistic CAS]** Increase detection probability by 50% for moving targets, capped at 100%.
 * **[Realistic CAS]** Add optional BLUE-view F10 frontline contact pins using existing discovery and expiry, including infantry and MANPADS.

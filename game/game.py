@@ -28,6 +28,7 @@ from game.ground_forces.ai_ground_planner import GroundPlanner
 from game.mfd import remember_positions
 from game.models.game_stats import GameStats
 from game.plugins import LuaPluginManager
+from game.groundmovement.orders import GroundMovementOrders
 from game.utils import Distance
 from . import naming, persistency
 from .ato import Flight
@@ -142,6 +143,7 @@ class Game:
         self.theater = theater
         self.campaign_name = campaign_name
         self.turn = 0
+        self.ground_movements = GroundMovementOrders()
         self._aircraft_repair_sequence = 0
         self._aircraft_workshop_turn = -1
         self._aircraft_maintenance_applied: set[str] = set()
@@ -225,6 +227,8 @@ class Game:
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)
+        if not hasattr(self, "ground_movements"):
+            self.ground_movements = GroundMovementOrders()
         # Heal carcass lists bloated by old saves. Guarded like laser_code_registry
         # below: __destroyed_units postdates the oldest saves, so a pre-2020 save
         # arrives without it and must not AttributeError here.

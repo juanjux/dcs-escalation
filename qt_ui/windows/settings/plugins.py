@@ -14,7 +14,7 @@ from html import escape
 from math import ceil, floor
 from typing import Dict, List, Optional
 
-from PySide6.QtCore import QLocale, Qt, QTimer
+from PySide6.QtCore import QLocale, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -243,9 +243,12 @@ class PluginOptionsDialog(QDialog):
 class PluginRow(QWidget):
     """A switch, the plugin's name, a gear if it has anything to set, then why."""
 
+    changed = Signal()
+
     def __init__(self, plugin: LuaPlugin) -> None:
         super().__init__()
         self.plugin = plugin
+        self.settings = plugin.settings
 
         column = QVBoxLayout()
         column.setContentsMargins(0, 4, 0, 10)
@@ -260,7 +263,7 @@ class PluginRow(QWidget):
         self.checkbox = QCheckBox()
         self.checkbox.setFixedWidth(SWITCH_WIDTH)
         self.checkbox.setChecked(plugin.get_value)
-        self.checkbox.toggled.connect(plugin.set_value)
+        self.checkbox.toggled.connect(self.set_enabled)
         head.addWidget(self.checkbox)
 
         name = QLabel(plugin.name)
@@ -274,6 +277,8 @@ class PluginRow(QWidget):
             # plug belongs to the plugin list, not to its options.
             self.gear = gear_button(f"{plugin.name} options")
             self.gear.clicked.connect(self.open_options)
+            if plugin.identifier == "groundmovement":
+                self.gear.setEnabled(plugin.enabled)
             head.addWidget(self.gear)
         head.addStretch()
 
@@ -292,6 +297,22 @@ class PluginRow(QWidget):
 
         self.dialog: Optional[PluginOptionsDialog] = None
 
+    def set_enabled(self, value: bool) -> None:
+        if self.plugin.identifier == "groundmovement":
+            from qt_ui.windows.settings.groundmovement import change_movement
+
+            if not change_movement(self, self.settings, value):
+                blocked = self.checkbox.blockSignals(True)
+                self.checkbox.setChecked(
+                    bool(self.settings.plugin_option_or("groundmovement", False))
+                )
+                self.checkbox.blockSignals(blocked)
+                return
+            self.gear.setEnabled(value)
+        else:
+            self.settings.set_plugin_option(self.plugin.identifier, value)
+        self.changed.emit()
+
     def open_options(self, flash: Optional[str] = None) -> None:
         self.dialog = PluginOptionsDialog(self.plugin, self)
         if flash is not None:
@@ -302,6 +323,8 @@ class PluginRow(QWidget):
 
 class PluginsPage(QWidget):
     """Every plugin, one row each."""
+
+    changed = Signal()
 
     def __init__(self, sc: SettingsContainer) -> None:
         super().__init__()
@@ -317,6 +340,7 @@ class PluginsPage(QWidget):
             if not plugin.show_in_ui:
                 continue
             row = PluginRow(plugin)
+            row.changed.connect(self.changed)
             layout.addWidget(row)
             self.rows.append(row)
 
@@ -331,7 +355,10 @@ class PluginsPage(QWidget):
         LuaPluginManager.load_settings(self.sc.settings)
         enabled = self.sc.settings.plugins
         for row in self.rows:
+            row.settings = self.sc.settings
             if row.plugin.identifier in enabled:
                 blocked = row.checkbox.blockSignals(True)
                 row.checkbox.setChecked(enabled[row.plugin.identifier])
                 row.checkbox.blockSignals(blocked)
+            if row.plugin.identifier == "groundmovement":
+                row.gear.setEnabled(row.plugin.enabled)

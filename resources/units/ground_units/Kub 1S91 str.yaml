@@ -1,4 +1,6 @@
 class: SearchTrackRadar
+ground_mobility:
+  mode: self_propelled
 price: 22
 variants:
   SAM SA-6 Kub "Straight Flush" STR: null

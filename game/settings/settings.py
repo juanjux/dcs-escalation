@@ -3167,6 +3167,12 @@ class Settings:
             return default
 
     def set_plugin_option(self, identifier: str, value: Any) -> None:
+        if (
+            identifier == "groundmovement"
+            and value is True
+            and not self.motorpool_enabled
+        ):
+            raise ValueError("Ground Movement requires Motor Pool")
         self.plugins[self.plugin_settings_key(identifier)] = value
 
     def __setstate__(self, state: dict[str, Any]) -> None:

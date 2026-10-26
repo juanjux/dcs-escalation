@@ -1,4 +1,6 @@
 class: Tank
+ground_mobility:
+  mode: self_propelled
 description: The M1 Abrams is a third-generation American main battle tank designed
   by Chrysler Defense (now General Dynamics Land Systems)[9] and named for General
   Creighton Abrams. Conceived for modern armored ground warfare and now one of the
