@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from dcs import Point
 from dcs.point import PointAction
+from dcs.task import OptAlarmState
 
 from game.groundmovement.dispatch import active_transit, validate_transit
 from game.groundmovement.orders import GroundPosition
@@ -63,6 +64,11 @@ def generate_armor_movement(generator: GroundObjectGenerator) -> None:
         departure.speed = 0
         departure.action = PointAction.OffRoad
         return
+    # Use the convoy's default alert posture, not a parked site's alarm override.
+    # Keep unrelated initial commands such as EPLRS and ROE.
+    departure.tasks[:] = [
+        task for task in departure.tasks if not isinstance(task, OptAlarmState)
+    ]
     first = journey.route.segments[journey.segment_index]
     departure.action = PointAction.OnRoad if first.on_road else PointAction.OffRoad
     departure.speed = kph(40 if first.on_road else 20).meters_per_second

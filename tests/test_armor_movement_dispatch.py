@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 from dcs import Mission
 from dcs.point import PointAction
+from dcs.task import OptAlarmState, OptROE
 import pytest
 
 from game.debriefing import Debriefing
@@ -245,6 +246,30 @@ def test_paused_detachment_stays_attackable_with_loaded_cargo(world: Any) -> Non
     group, unit_map = native(world, transit)
     assert len(group.points) == 1 and group.points[0].speed == 0
     assert len(unit_map.ground_transport_cargo) == 2
+    assert any(isinstance(task, OptAlarmState) for task in group.points[0].tasks)
+
+
+@pytest.mark.parametrize("red_alert", [False, True])
+def test_moving_detachments_drop_only_the_stationary_alarm_override(
+    world: Any, red_alert: bool
+) -> None:
+    world.game.settings.perf_red_alert_state = red_alert
+    transit = dispatch(world)
+    with patch.object(
+        GroundObjectGenerator,
+        "set_coastal_engagement",
+        side_effect=lambda group: group.points[0].tasks.append(
+            OptROE(OptROE.Values.WeaponFree)
+        ),
+    ):
+        group, _ = native(world, transit)
+    tasks = group.points[0].tasks
+    assert not any(isinstance(task, OptAlarmState) for task in tasks)
+    assert any(isinstance(task, OptROE) for task in tasks)
+    initial = group.dict()["route"]["points"][1]["task"]["params"]["tasks"]
+    assert all(
+        task["params"]["action"]["params"].get("name") != 9 for task in initial.values()
+    )
 
 
 def test_frontline_arrivals_enter_supporting_base_stock(world: Any) -> None:
