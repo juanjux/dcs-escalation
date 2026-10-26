@@ -11,6 +11,7 @@ from dcs.unit import Vehicle
 from dcs.unitgroup import VehicleGroup
 
 from game.dcs.groundunittype import GroundUnitType
+from game.groundmovement.settings import enabled as movement_enabled
 from game.missiongenerator.groundforcepainter import GroundForcePainter
 from game.transfers import Convoy
 from game.unitmap import UnitMap
@@ -39,6 +40,8 @@ class ConvoyGenerator:
     def generate_convoy(
         self, convoy: Convoy, used: set[str] | None = None
     ) -> VehicleGroup:
+        if isinstance(convoy, Convoy) and movement_enabled(self.game.settings):
+            convoy.prepare_ground_movement(self.game.turn)
         # Two convoys can share a name in a campaign saved before the name counters
         # stopped being reset per mission (see namegen.reset_numbers). Their units then
         # collide in the unit map and mission generation dies, stranding the save. Give
@@ -61,7 +64,21 @@ class ConvoyGenerator:
 
         spawns_tuple = convoy.origin.convoy_spawns.get(convoy.destination)
 
-        if spawns_tuple:
+        journey = convoy.ground_journey
+        if journey is not None and journey.travelled_distance > 0:
+            # Place survivors behind the lead on the saved route, never at the old
+            # base's authored spawn positions when regenerating a later turn.
+            for index, unit in enumerate(group.units):
+                distance = max(0, journey.travelled_distance - index * 20)
+                position = journey.route.position_at(distance)
+                ahead = journey.route.position_at(distance + 1)
+                unit.position = convoy.origin.position.new_in_same_map(
+                    position.x, position.z
+                )
+                unit.heading = unit.position.heading_between_point(
+                    convoy.origin.position.new_in_same_map(ahead.x, ahead.z)
+                )
+        elif spawns_tuple:
             spawns = list(spawns_tuple)
             last_unit = group.units[0]
             spawns.pop(0)
@@ -81,8 +98,17 @@ class ConvoyGenerator:
                     break
 
         wpts: List[Point] = []
-        route = convoy.origin.convoy_route_to(convoy.destination)
-        if self.game.settings.convoys_travel_full_distance:
+        route = (
+            convoy.mission_route()
+            if convoy.ground_managed
+            else convoy.origin.convoy_route_to(convoy.destination)
+        )
+        if convoy.ground_managed and len(route) == 1:
+            # A paused movement remains attackable at its saved position.
+            for point in group.points:
+                point.speed = 0
+                point.action = PointAction.OffRoad
+        elif self.game.settings.convoys_travel_full_distance:
             wpts.extend(route)
         else:
             # convoys_travel_full_distance is disabled, so have the convoy only move the

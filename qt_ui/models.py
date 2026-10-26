@@ -529,6 +529,11 @@ class TransferModel(QAbstractListModel):
         """Cancels the planned unit transfer at the given index."""
         if not self._is_transfer_authorized(transfer):
             return
+        if reason := getattr(transfer, "cancellation_error", None):
+            from PySide6.QtWidgets import QMessageBox
+
+            QMessageBox.warning(None, "Cannot cancel transfer", reason)
+            return
         transfers = self._transfers_for(self.owner_of(transfer))
         visible_transfers = self._all_transfers()
         if transfer not in visible_transfers:

@@ -1,10 +1,4 @@
-"""Convoys leaving this base: where each is going, what is in it, and a strike on it.
-
-A convoy is the one time-critical thing on an enemy base -- it is here this turn and
-gone the next -- and it was a group box titled "Convoy 002 to FARP B2" with a column
-of unit icons and a button called "Attack", which does not create an attack but plans
-a package.
-"""
+"""Convoy destinations, cargo, progress and package planning from a base."""
 
 from __future__ import annotations
 
@@ -18,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from game.theater import ControlPoint
-from game.transfers import MultiGroupTransport
+from game.transfers import Convoy, MultiGroupTransport
 from qt_ui.dialogs import Dialog
 from qt_ui.models import GameModel
 from qt_ui.uiconstants import VEHICLES_ICONS
@@ -71,7 +65,13 @@ class ConvoyCard(QWidget):
         row.addWidget(name)
 
         total = sum(self.convoy.units.values())
-        note = QLabel(f"{total} unit{'' if total == 1 else 's'} · departs this turn")
+        progress = (
+            self.convoy.movement_summary()
+            if isinstance(self.convoy, Convoy)
+            else "departs this turn"
+        )
+        note = QLabel(f"{total} unit{'' if total == 1 else 's'} · {progress}")
+        note.setWordWrap(True)
         note.setStyleSheet(
             f"font-size: 11px; color: {CAPTION}; background: transparent;"
             " border: none;"

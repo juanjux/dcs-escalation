@@ -1,6 +1,6 @@
 {
     "nameInUI": "Ground Movement (experimental)",
-    "descriptionInUI": "Requires Motor Pool. Saves ground movement settings and planned transport orders. Movement commands and convoy dispatch are not available yet. Disabling the plugin pauses orders without removing their units. Off by default.",
+    "descriptionInUI": "Requires Motor Pool. Existing road convoys advance by a configurable distance per turn and resume from their saved position. Long road legs take several turns. Disabling the plugin pauses its existing journeys without removing their units. Armor-group and SAM movement commands are not available yet. Off by default.",
     "defaultValue": false,
     "specificOptions": [
         {
