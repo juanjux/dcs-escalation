@@ -365,6 +365,43 @@ def test_old_convoy_map_save_initializes_empty_transit_list() -> None:
     assert result.in_transit == [] and list(result) == []
 
 
+@pytest.mark.parametrize("resume", [False, True])
+@pytest.mark.parametrize("full_route", [False, True])
+def test_moving_convoy_has_no_zero_length_departure_leg(
+    world: Any, resume: bool, full_route: bool
+) -> None:
+    world.game.settings.convoys_travel_full_distance = full_route
+    bend = world.a.position.new_in_same_map(
+        world.a.position.x + 1000, world.a.position.y + 1000
+    )
+    world.a.convoy_routes[world.b] = (world.a.position, bend, world.b.position)
+    order = _order(world)
+    if resume:
+        _advance(world)
+    convoy = order.transport
+    assert isinstance(convoy, Convoy)
+    route = convoy.mission_route()
+    group = ConvoyGenerator(Mission(), world.game, UnitMap()).generate_convoy(convoy)
+
+    assert group.points[0].position.distance_to_point(route[0]) < 0.01
+    assert group.points[0].speed == pytest.approx(40 / 3.6)
+    assert not group.points[0].ETA_locked
+    assert group.units[0].heading == pytest.approx(
+        route[0].heading_between_point(route[1])
+    )
+    assert len(group.points) == (len(route) if full_route else 2)
+    assert all(
+        start.position.distance_to_point(end.position) > 0.01
+        for start, end in zip(group.points, group.points[1:])
+    )
+    assert (
+        group.points[-1].position.distance_to_point(
+            route[-1] if full_route else route[1]
+        )
+        < 0.01
+    )
+
+
 def test_intermediate_base_remains_a_stop_and_cancel_refunds_there(world: Any) -> None:
     c = _CP(world.game, "C", world.b.position.x + 300 * METERS_PER_MILE)
     world.b.convoy_routes[c] = (world.b.position, c.position)

@@ -109,7 +109,9 @@ class ConvoyGenerator:
                 point.speed = 0
                 point.action = PointAction.OffRoad
         elif self.game.settings.convoys_travel_full_distance:
-            wpts.extend(route)
+            # vehicle_group already creates the departure waypoint. Repeating it
+            # gives DCS a zero-length first leg at the convoy's spawn position.
+            wpts.extend(route[1:] if convoy.ground_managed else route)
         else:
             # convoys_travel_full_distance is disabled, so have the convoy only move the
             # first segment on the route. This option aims to remove long routes for
@@ -119,6 +121,12 @@ class ConvoyGenerator:
             # the convoy spawns at the origin CP. This allows the convoy to be targeted
             # by BAI flights and starts it within the protection umbrella of the CP.
             wpts.append(route[1])
+
+        if convoy.ground_managed and wpts:
+            departure = group.points[0]
+            departure.speed = kph(40).meters_per_second
+            departure.ETA_locked = False
+            group.units[0].heading = departure.position.heading_between_point(wpts[0])
 
         for wpt in wpts:
             group.add_waypoint(
