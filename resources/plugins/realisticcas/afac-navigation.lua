@@ -117,6 +117,7 @@ do
     local function recoveryInput(r,p,index)
       local destination=r.meta.navigation.route[index]
       local q={x=destination.x,z=destination.y,landing=destination.type=='Land',
+        radioAltitude=destination.alt_type=='RADIO' and destination.alt or nil,
         altitude=destination.alt+(destination.alt_type=='RADIO' and
           land.getHeight({x=destination.x,y=destination.y})or 0)}
       local n=r.meta.navigation

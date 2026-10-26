@@ -102,3 +102,60 @@ local plan=A.recovery(input)
 assert(plan.mode=='return' and #plan.path==1 and plan.altitude==2000)
 assert(math.abs(A.distance(plan.path[1],input.destination)-10800)<0.01)
 """)
+
+    def test_native_low_level_radio_destination_uses_its_planned_clearance(self):
+        self.lua.execute("""
+input.threats={};input.source.y=500
+input.destination={x=20000,z=0,altitude=60.95999804928006,radioAltitude=60.95999804928006}
+local plan=A.recovery(input)
+assert(plan.mode=='return' and #plan.path==0)
+local route={{x=20000,y=0,alt=60.95999804928006,alt_type='RADIO',type='Turning Point'}}
+assert(A.recoverySafe(input,route,1,1,false))
+-- The exception belongs to the native RADIO leg, not invented diversion points.
+input.destination.radioAltitude=nil
+assert(A.recovery(input).mode=='hold')
+route[1].alt_type='BARO';assert(not A.recoverySafe(input,route,1,1,false))
+""")
+
+    def test_radio_recovery_follows_terrain_but_keeps_baro_and_threat_checks(self):
+        self.lua.execute("""
+input.source={x=0,y=500,z=0};input.threats={}
+input.destination={x=20000,z=0,altitude=61,radioAltitude=61}
+input.height=function(p)return p.x>9000 and p.x<11000 and 200 or 0 end
+assert(A.recovery(input).mode=='return')
+local route={{x=20000,y=0,alt=61,alt_type='RADIO',type='Turning Point'}}
+assert(A.recoverySafe(input,route,1,1,false))
+route[1].alt_type='BARO';assert(not A.recoverySafe(input,route,1,1,false))
+route[1].alt_type='RADIO'
+input.height=function()return 0 end
+input.threats={{point={x=20000,y=0,z=0},radius=7000,ceiling=4000}}
+assert(A.recovery(input).mode~='return')
+assert(not A.recoverySafe(input,route,1,1,false))
+""")
+
+    def test_radio_recovery_cannot_use_high_endpoint_terrain_to_ignore_a_threat(self):
+        self.lua.execute("""
+input.source={x=0,y=3000,z=0}
+input.destination={x=20000,z=0,altitude=2700,radioAltitude=700}
+input.height=function(p)return p.x>18000 and 2000 or 0 end
+input.threats={{point={x=10000,y=0,z=0},radius=5000,ceiling=1000}}
+local route={{x=20000,y=0,alt=700,alt_type='RADIO',type='Turning Point'}}
+assert(not A.recoverySafe(input,route,1,1,false))
+local plan=A.recovery(input)
+assert(plan.mode~='return' or #plan.path>0)
+-- Any invented BARO diversion still needs the normal terrain clearance.
+input.source.y=500;input.destination.altitude=61;input.destination.radioAltitude=61
+input.height=function(p)return math.abs(p.z)>100 and 600 or 0 end
+assert(A.recovery(input).mode~='return')
+""")
+
+    def test_safe_overflight_cannot_descend_into_a_radio_threat_using_escape(self):
+        self.lua.execute("""
+input.source={x=0,y=3000,z=0}
+input.destination={x=20000,z=0,altitude=61,radioAltitude=61}
+input.threats={{point={x=0,y=0,z=0},radius=5000,ceiling=1000}}
+local route={{x=20000,y=0,alt=61,alt_type='RADIO',type='Turning Point'}}
+assert(not A.recoverySafe(input,route,1,1,false))
+local plan=A.recovery(input)
+assert(plan.mode~='return' or #plan.path>0)
+""")
