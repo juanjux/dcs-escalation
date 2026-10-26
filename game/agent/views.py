@@ -265,6 +265,25 @@ class RebuildView(BaseModel):
     # a different thing to plan against
 
 
+class GroundMovementView(BaseModel):
+    status: str
+    pause_reason: str | None = None
+    distance_travelled_m: float
+    distance_remaining_m: float | None = None
+    route_distance_m: float | None = None
+    progress_percent: float
+
+
+class GroundConvoyView(BaseModel):
+    name: str
+    origin: str
+    next_stop: str
+    final_destinations: list[str]
+    pos: list[float]
+    composition: dict[str, int]
+    movement: GroundMovementView
+
+
 class TargetView(BaseModel):
     health: HealthStatus | None = None
     id: str
@@ -319,6 +338,7 @@ class TargetView(BaseModel):
         # front it feeds is to falling.
     )
     destination: str | None = None  # convoys/cargo ships: the base it is reinforcing
+    ground_movement: GroundMovementView | None = None
     route: list[list[float]] | None = (
         None  # convoys/cargo ships: [[lat,lng] start, [lat,lng] end] of the leg it is
         # driving/sailing. It is MOVING: plan the intercept along this line, not at pos.
@@ -540,6 +560,9 @@ class TurnContextView(BaseModel):
         RepairView
     ]  # YOUR damaged assets you can pay to repair (with `repair`)
     buyable_ground: list[GroundUnitView]  # ground units this faction can buy
+    ground_convoys: list[GroundConvoyView] | None = (
+        None  # Own persistent road transports, including paused ones.
+    )
     leave_requests: list[LeaveRequestView] = (
         []
     )  # pilots asking for leave this turn; empty most turns. Answer them with
@@ -1078,9 +1101,10 @@ def _build_transport_targets(game: Game, player: Player) -> list[TargetView]:
     """Enemy convoys and cargo ships, as the player's Departing Convoys tab lists them.
 
     They carry no id of their own (the UI has a standing TODO about that), so the
-    generated name is the handle -- it is unique and stable for the turn, which is as
-    long as a convoy lives.
+    generated name is the handle and stays stable while the convoy is in transit.
     """
+    from game.transfers import Convoy
+
     enemy = game.coalition_for(player).opponent
     out: list[TargetView] = []
     for transports, kind, task in (
@@ -1123,9 +1147,49 @@ def _build_transport_targets(game: Game, player: Player) -> list[TargetView]:
                     destination=transport.destination.name,
                     route=ends,
                     composition=units,
+                    ground_movement=(
+                        GroundMovementView(**info)
+                        if isinstance(transport, Convoy)
+                        and (info := transport.movement_info()) is not None
+                        else None
+                    ),
                 )
             )
     return out
+
+
+def build_ground_convoys(game: Game, side: str) -> list[GroundConvoyView] | None:
+    """Only this side's cargo and progress; hidden enemy inventories are excluded."""
+    from game.transfers import Convoy
+
+    transfers = getattr(game.coalition_for(player_for_side(side)), "transfers", None)
+    if transfers is None:
+        return None
+    rows = []
+    for convoy in transfers.convoys:
+        if (
+            not isinstance(convoy, Convoy)
+            or not convoy.size
+            or (info := convoy.movement_info()) is None
+        ):
+            continue
+        point = convoy.position.latlng()
+        rows.append(
+            GroundConvoyView(
+                name=convoy.name,
+                origin=convoy.origin.name,
+                next_stop=convoy.destination.name,
+                final_destinations=sorted(
+                    {t.destination.name for t in convoy.transfers if t.size}
+                ),
+                pos=[_r(point.lat), _r(point.lng)],
+                composition={
+                    str(unit): count for unit, count in convoy.units.items() if count
+                },
+                movement=GroundMovementView(**info),
+            )
+        )
+    return rows or None
 
 
 def build_targets(game: Game, side: str) -> list[TargetView]:
@@ -1536,6 +1600,7 @@ def build_turn_context(game: Game, side: str = "red") -> TurnContextView:
         repairs=build_repairs(game, side),
         buyable_ground=build_buyable_ground(game, side),
         leave_requests=build_leave_requests(game, side),
+        ground_convoys=build_ground_convoys(game, side),
     )
 
 

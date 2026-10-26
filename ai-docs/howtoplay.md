@@ -157,9 +157,24 @@ Ground Movement on and Motor Pool off disable Ground Movement.
 
 The road budget defaults to 120 statute miles per turn (193.1 km), and the
 off-road budget to 60 miles (96.6 km). Both are configurable in the plugin's
-options. This first delivery adds saved planning and transport reservations;
-movement commands and convoy progression are not enabled yet. Existing campaign
-units remain in place and existing convoys retain their current behaviour.
+options. Existing road convoys use this budget and retain their position between
+turns. Distance follows the authored campaign route; native DCS road following
+between waypoints can differ. Intermediate bases remain stops, and air/sea legs
+keep their existing rules. Progress is applied once at the turn boundary after
+mission casualties, not when generating a mission or according to its duration.
+
+Convoy cards and supply routes show progress and remaining distance. A convoy
+already on the road stays at its saved position when the plugin is disabled or
+its next base becomes hostile, and resumes when those conditions allow it. Its
+owner is retained even if its origin is captured. Fresh departures do not join a
+convoy already en route. Cancellation is blocked mid-road to avoid returning units
+instantly; at an intermediate base it returns them to that base's stock.
+
+The API's `turn_context.ground_convoys` reports this side's road transports with
+position, cargo, progress, distances in metres and any pause reason. Enemy convoy
+targets expose the same progress in `ground_movement`. Armor-group and SAM movement
+commands are not available yet. Convoys created while the plugin is disabled keep
+their legacy behaviour; journeys already managed by it remain paused.
 
 ## 1. What this game is
 
