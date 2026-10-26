@@ -1,11 +1,12 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[Ground Movement]** Add persistent armor detachment travel and tractor/cargo losses; player dispatch controls remain pending.
+* **[Ground Movement]** Add armor dispatch and stop controls with route confirmation, progress, and matching API commands.
+* **[Ground Movement]** Add persistent armor detachment travel and tractor/cargo losses.
 * **[Ground Movement]** Add armor transport warnings and read-only route previews with tractor assignment, terrain checks and travel estimates.
 * **[Realistic CAS]** Limit discovery to frontline units by default and add an option to include campaign armor groups while retaining known AFAC targets and threats.
 * **[Ground Movement]** Advance road convoys by distance per turn, retain their positions and survivors, and report progress and pauses in the UI and API.
-* **[Ground Movement]** Add opt-in settings, Motor Pool dependency and saved transport-order foundations; movement dispatch is not enabled yet.
+* **[Ground Movement]** Add opt-in settings, Motor Pool dependency and saved transport-order foundations.
 * **[Realistic CAS]** Add configurable contact discovery, firing-reveal and expiry notices, and observed unit types on F10 contact pins.
 * **[Realistic CAS]** Increase detection probability by 50% for moving targets, capped at 100%.
 * **[Realistic CAS]** Add optional BLUE-view F10 frontline contact pins using existing discovery and expiry, including infantry and MANPADS.

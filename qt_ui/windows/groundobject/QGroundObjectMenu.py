@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import math
+from uuid import UUID
 from functools import partial
 from typing import Optional
 
@@ -21,6 +22,8 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
+    QProgressBar,
     QPushButton,
     QScrollArea,
     QSpinBox,
@@ -35,6 +38,8 @@ from game.config import REWARDS
 from game.cruise_raids import tgo_magazines
 from game.data.building_data import FORTIFICATION_BUILDINGS
 from game.groundmovement.planning import armor_movement_options
+from game.groundmovement.dispatch import active_transit
+from game.groundmovement.report import movement_reports, destination_label
 from game.groundmovement.settings import enabled as ground_movement_enabled
 from game.server import EventStream
 from game.sim.gameupdateevents import GameUpdateEvents
@@ -102,6 +107,7 @@ class QGroundObjectMenu(QDialog):
         self.ground_object = ground_object
         self.cp = cp
         self.game_model = gm
+        self.campaign = gm.game
         self.total_value = 0
         self.cruise_missile_rows: list[tuple[str, int]] = []
         self.heading_selector: Optional[QSpinBox] = None
@@ -118,6 +124,21 @@ class QGroundObjectMenu(QDialog):
         self.column.setSpacing(0)
         self.setLayout(self.column)
         self._build()
+        signal = GameUpdateSignal.get_instance()
+        if signal is not None:
+            signal.ground_movements_changed.connect(
+                self._refresh_movement, Qt.ConnectionType.QueuedConnection
+            )
+            signal.gameupdated.connect(
+                self._refresh_movement, Qt.ConnectionType.QueuedConnection
+            )
+
+    def _refresh_movement(self) -> None:
+        if self.game_model.game is not self.campaign:
+            self.reject()
+            return
+        self.cp = self.ground_object.control_point
+        self._rebuild()
 
     @property
     def game(self) -> Game:
@@ -176,6 +197,7 @@ class QGroundObjectMenu(QDialog):
             widget = item.widget() if item is not None else None
             if widget is not None:
                 widget.setParent(None)
+                widget.deleteLater()
         self._build()
 
     # --------------------------------------------------------------------- cards
@@ -221,33 +243,98 @@ class QGroundObjectMenu(QDialog):
         return holder
 
     def _ground_transport(self) -> Optional[QWidget]:
-        if (
-            not self._friendly
-            or not ground_movement_enabled(self.game.settings)
-            or not isinstance(self.ground_object, VehicleGroupGroundObject)
+        if not self._friendly or not isinstance(
+            self.ground_object, VehicleGroupGroundObject
         ):
             return None
+        reports = movement_reports(self.game, self.ground_object.id, self._viewer)
+        if not ground_movement_enabled(self.game.settings) and not reports:
+            return None
         options = armor_movement_options(self.game, self.ground_object.id, self._viewer)
-        if not options.units:
+        in_transit = active_transit(self.game, self.ground_object.id) is not None
+        if not options.units and not reports:
             return None
         holder = QWidget()
         make_transparent(holder)
         column = QVBoxLayout(holder)
         column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(5)
-        column.addWidget(
-            label(
-                f"{options.available_tractors} tractors available · "
-                f"{options.towed_pieces} pieces need towing",
-                12,
-                TEXT_BASE,
+        if not in_transit:
+            column.addWidget(
+                label(
+                    f"{options.available_tractors} tractors available · "
+                    f"{options.towed_pieces} pieces need towing",
+                    12,
+                    TEXT_BASE,
+                )
             )
-        )
-        for warning in options.warnings:
-            notice = label(warning, 11, AMBER)
-            notice.setWordWrap(True)
-            column.addWidget(notice)
+            for warning in options.warnings:
+                notice = label(warning, 11, AMBER)
+                notice.setWordWrap(True)
+                column.addWidget(notice)
+        for report in reports:
+            if report.status not in ("moving", "paused"):
+                continue
+            title = (
+                f"To {destination_label(self.game, report.destination)}\n"
+                f"{report.status.title()} · {report.surviving_units}/{report.original_units} units · "
+                f"{report.remaining_distance_m / 1000:.1f} km remaining"
+            )
+            if report.remaining_turns is not None:
+                title += f" · {report.remaining_turns} turn(s)"
+            text = label(title, 11, TEXT_BASE)
+            text.setWordWrap(True)
+            column.addWidget(text)
+            progress = QProgressBar()
+            progress.setRange(0, 100)
+            progress.setValue(round(report.progress * 100))
+            column.addWidget(progress)
+            if report.pause_reason:
+                reason = label(report.pause_reason, 11, AMBER)
+                reason.setWordWrap(True)
+                column.addWidget(reason)
+            stop = QPushButton("Stop at current position…")
+            stop.setObjectName("stop-ground-movement")
+            stop.clicked.connect(partial(self._stop_movement, report.order_id))
+            column.addWidget(stop)
+        if not in_transit:
+            move = QPushButton("Move units…")
+            move.setObjectName("dispatch-ground-movement")
+            move.setEnabled(
+                options.enabled and any(unit.selectable for unit in options.units)
+            )
+            move.clicked.connect(self._move_units)
+            column.addWidget(move)
         return captioned("Ground transport", holder)
+
+    def _move_units(self) -> None:
+        from qt_ui.windows.groundobject.movementdialog import ArmorMovementDialog
+
+        dialog = ArmorMovementDialog(
+            self.game_model, self.ground_object.id, self._viewer, self
+        )
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.show()
+
+    def _stop_movement(self, order_id: UUID) -> None:
+        if (
+            QMessageBox.question(
+                self,
+                "Stop movement?",
+                "The surviving units will form an armor group at their current campaign position. "
+                "They will not return to the source or be refunded. Stop this movement?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            != QMessageBox.StandardButton.Yes
+        ):
+            return
+        try:
+            self.game_model.ground_movement_commands.stop(
+                self.game, order_id, self._viewer
+            )
+        except (ValueError, PermissionError) as exc:
+            QMessageBox.warning(self, "Cannot stop movement", str(exc))
 
     def _high_command_line(self) -> Optional[QWidget]:
         """The line saying this is an order's objective, if it is."""

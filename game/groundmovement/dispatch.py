@@ -43,6 +43,7 @@ class ArmorTransit:
     journey: GroundJourney
     finished: bool = False
     pause_reason: str | None = None
+    final_unit_count: int | None = None
 
 
 def active_transit(game: Game, tgo_id: UUID) -> ArmorTransit | None:
@@ -131,6 +132,10 @@ def _relocate(tgo: VehicleGroupGroundObject, point: GroundPosition) -> None:
 
 
 def _finish(game: Game, transit: ArmorTransit) -> None:
+    if transit.final_unit_count is None:
+        transit.final_unit_count = sum(
+            unit.alive for unit in game.db.tgos.get(transit.detachment_id).units
+        )
     transit.finished = True
     transit.pause_reason = None
     order = game.ground_movements.orders[transit.order_id]
@@ -157,6 +162,9 @@ def stop_armor(
     if transit.finished:
         return
     _cargo_losses(game, transit, events)
+    transit.final_unit_count = sum(
+        unit.alive for unit in game.db.tgos.get(transit.detachment_id).units
+    )
     transit.finished = True
     game.ground_movements.cancel(order_id)
     _unload(game, transit)
@@ -273,6 +281,7 @@ def advance_armor(game: Game, events: GameUpdateEvents) -> None:
                     assert isinstance(unit_type, GroundUnitType)
                     survivors[unit_type] += 1
             base.base.commission_units(dict(survivors))
+            transit.final_unit_count = sum(survivors.values())
             # Remove delivered units, so they cannot be spawned or repaired twice.
             for group in tgo.groups:
                 group.units.clear()
