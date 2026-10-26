@@ -348,6 +348,13 @@ A standalone Cobra test validated search, engagement and timed departure in DCS;
 full campaign and other-aircraft validation remain separate checks. Native AI
 does not guarantee destruction of every detected target.
 
+Realistic CAS conceals only frontline groups from AI by default, including support
+infantry and MANPADS. **Include armor groups in discovery** extends this to campaign
+armor groups on both sides; it is off by default, including in existing saves.
+Other ground groups remain known AFAC targets and threats without discovery or
+expiry notices. This does not change MFD threat intelligence. Regenerate the mission
+after changing the option; F10 visibility is controlled separately below.
+
 The optional **Hide frontline contacts on the F10 map until discovered** plugin
 setting hides RED frontline icons, including support infantry and MANPADS, and shows BLUE-only pins
 using the existing discovery and contact lifetime. Pins show the last observed
