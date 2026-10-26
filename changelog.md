@@ -2,7 +2,7 @@
 
 ## Features/Improvements
 
-* **[Ground Movement]** Persistent convoy and armor transport, with Motor Pool support, route previews and loss tracking; player armor dispatch controls remain pending.
+* **[Ground Movement]** Persistent convoy and armor transport with Motor Pool support, route previews, dispatch/stop controls, progress and loss tracking, and API commands.
 * **[Realistic CAS]** AI-only AFAC area and frontline missions with skill-based reconnaissance, coordinated laser/IR/smoke marking, threat avoidance, pilot experience and protected UAV operators.
 * **[Realistic CAS]** Progressive ground-target discovery, AI search patrols and optional F10 contact reports, with terrain, weather, daylight and movement effects.
 * **[Live Pilots]** Per-squadron pilot capacities, reserve slots for new campaign squadrons, bulk roster actions and seniority/cohesion-based crew selection.

@@ -178,8 +178,8 @@ instantly; at an intermediate base it returns them to that base's stock.
 
 The API's `turn_context.ground_convoys` reports this side's road transports with
 position, cargo, progress, distances in metres and any pause reason. Enemy convoy
-targets expose the same progress in `ground_movement`. Armor-group and SAM movement
-commands are not available yet. Convoys created while the plugin is disabled keep
+targets expose the same progress in `ground_movement`. SAM movement commands are
+not available yet. Convoys created while the plugin is disabled keep
 their legacy behaviour; journeys already managed by it remain paused.
 
 Friendly armor-group dialogs show a Ground transport card when the plugin is on.
@@ -188,6 +188,21 @@ needed, and identifies types whose mobility has not been defined. A mounted gun
 is self-propelled; it does not count as a spare tractor. Dead units and existing
 planning reservations are excluded from available transport capacity.
 Transported or towed pieces cannot fire while loaded and are lost with their assigned tractor.
+
+Choose **Move units** in a friendly armor group's Ground transport card. Select
+units and a destination: coordinates copied from the map, a friendly land base,
+or an active frontline. Coordinate input accepts DDM, DMS, decimal degrees and
+MGRS. **Preview route** shows automatically included tractors, units remaining at
+the source, road/off-road distances and estimated arrival turns. Change the
+selection and preview again before choosing **Dispatch**. A stale preview cannot
+be confirmed after the turn, inventory or route changes. Orders cannot change
+while a mission is in progress.
+
+Dispatched groups and their sources show progress, survivors and pause reasons.
+**Stop at current position** unloads survivors into an armor group where the
+campaign last placed it, without returning units or refunding them. This remains
+available when Ground Movement is disabled. Base and frontline arrivals join the
+supporting base's inventory, with deployment caps determining reserves.
 
 Armor movement can be inspected through two read-only endpoints:
 `GET /tgos/{id}/ground-movement/options` lists this player's unit IDs and transport
@@ -204,9 +219,17 @@ point and estimated turns. Road access uses the nearest reachable corridor from
 the campaign's authored friendly road network, not every road in DCS. Access and
 road segments must stay on mapped land and clear exclusion zones. Missing terrain
 data or an unverified water/bridge crossing blocks the preview. With no friendly
-road corridors, only a validated direct off-road route is available. These
-previews do not dispatch armor groups; movement commands and the SAM workflow are
-still pending.
+road corridors, only a validated direct off-road route is available.
+
+To dispatch through the API, send the preview request plus its returned
+`preview_token` to `POST /tgos/{id}/ground-movement`. The token is a stale-preview
+check, not authorization. `GET /tgos/{id}/ground-movement` reports departures from
+that group and its own journey, including order/detachment IDs, status, position,
+remaining distance, progress (0–1), estimated turns when moving, survivors and
+tractor assignments. Stop with
+`POST /tgos/{id}/ground-movement/{order_id}/stop`. Repeated stops are harmless;
+repeated dispatches cannot duplicate units. These endpoints expose BLUE movements
+only; they do not implement autonomous RED movement or the SAM workflow.
 
 ## 1. What this game is
 

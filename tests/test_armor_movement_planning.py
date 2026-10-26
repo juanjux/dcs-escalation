@@ -38,6 +38,7 @@ from game.groundmovement.settings import set_enabled
 from game.point_with_heading import PointWithHeading
 from game.server.dependencies import GameContext
 from game.server.tgos import router
+from game.server.tgos.groundmovement import commands
 from game.settings import Settings
 from game.theater.controlpoint import Fob
 from game.theater.landmap import Landmap
@@ -157,6 +158,7 @@ def test_missing_map_excluded_destination_and_zero_length_rejected() -> None:
 def world() -> Any:
     terrain = Caucasus()
     game: Any = SimpleNamespace(
+        turn=1,
         settings=Settings(),
         db=GameDb(),
         ground_movements=GroundMovementOrders(),
@@ -379,10 +381,13 @@ def client(world: Any) -> TestClient:
     app = FastAPI()
     app.include_router(router)
     app.dependency_overrides[GameContext.require] = lambda: world.game
+    app.dependency_overrides[commands] = lambda: SimpleNamespace(
+        run=lambda action: action(), inspect=lambda game, action: action()
+    )
     return TestClient(app)
 
 
-def test_rest_preview_has_distances_towing_and_no_dispatch_or_mutation(
+def test_rest_preview_has_distances_towing_and_does_not_mutate(
     world: Any, client: TestClient
 ) -> None:
     before = pickle.dumps(world.game)
@@ -400,7 +405,7 @@ def test_rest_preview_has_distances_towing_and_no_dispatch_or_mutation(
     result = response.json()
     assert result["automatically_included_ids"] == [5, 6]
     assert result["remaining_unit_ids"] == [3, 4, 7]
-    assert result["towing"] == [[1, 5], [2, 6]] and not result["dispatch_available"]
+    assert result["towing"] == [[1, 5], [2, 6]] and result["dispatch_available"]
     assert result["road_distance_m"] > 0 and result["offroad_distance_m"] > 0
     assert pickle.dumps(world.game) == before
 
@@ -441,7 +446,11 @@ def test_ground_transport_card_warns_about_missing_tractors(
     app = QApplication.instance() or QApplication([])
     world.a._coalition.player = owner
     window: Any = SimpleNamespace(
-        game=world.game, ground_object=world.source, _friendly=True, _viewer=owner
+        game=world.game,
+        ground_object=world.source,
+        _friendly=True,
+        _viewer=owner,
+        _move_units=lambda: None,
     )
     card = QGroundObjectMenu._ground_transport(window)
     assert app is not None and card is not None
