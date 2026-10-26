@@ -1,4 +1,6 @@
 class: Tank
+ground_mobility:
+  mode: self_propelled
 description: 'The T-90 is a third-generation Russian main battle tank that entered
   service in 1993. The tank is a modern variation of the T-72B and incorporates many
   features found on the T-80U. Originally called the T-72BU, but later renamed to

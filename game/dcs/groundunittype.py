@@ -11,6 +11,7 @@ from dcs.vehicles import vehicle_map
 
 from game.data.units import UnitClass
 from game.dcs.unittype import UnitType
+from game.groundmovement.mobility import GroundMobility
 
 
 @dataclass
@@ -99,6 +100,8 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
 
     #: Set only on the handful of unit types that deny GPS. None everywhere else.
     gps_jamming: Optional[GpsJammingProperties] = None
+
+    ground_mobility: GroundMobility = GroundMobility()
 
     _by_name: ClassVar[dict[str, GroundUnitType]] = {}
     _by_unit_type: ClassVar[dict[type[VehicleType], list[GroundUnitType]]] = (
@@ -228,4 +231,5 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
             ),
             reversed_heading=data.get("reversed_heading", False),
             gps_jamming=GpsJammingProperties.from_data(data.get("gps_jamming")),
+            ground_mobility=GroundMobility.from_data(data.get("ground_mobility")),
         )

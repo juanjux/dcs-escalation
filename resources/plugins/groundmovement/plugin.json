@@ -1,0 +1,26 @@
+{
+    "nameInUI": "Ground Movement (experimental)",
+    "descriptionInUI": "Requires Motor Pool. Saves ground movement settings and planned transport orders. Movement commands and convoy dispatch are not available yet. Disabling the plugin pauses orders without removing their units. Off by default.",
+    "defaultValue": false,
+    "specificOptions": [
+        {
+            "nameInUI": "Road distance per turn (miles)",
+            "descriptionInUI": "Road travel budget per turn, in statute miles. Default 120 miles (193.1 km). Long journeys continue over several turns. Road and off-road portions share one turn's budget.",
+            "mnemonic": "roadMilesPerTurn",
+            "defaultValue": 120,
+            "minimumValue": 1,
+            "maximumValue": 1000
+        },
+        {
+            "nameInUI": "Off-road distance per turn (miles)",
+            "descriptionInUI": "Cross-country travel budget per turn, in statute miles. Default 60 miles (96.6 km), half the road budget. Includes access to and from roads.",
+            "mnemonic": "offRoadMilesPerTurn",
+            "defaultValue": 60,
+            "minimumValue": 1,
+            "maximumValue": 1000
+        }
+    ],
+    "scriptsWorkOrders": [],
+    "configurationWorkOrders": [],
+    "otherResourceFiles": []
+}

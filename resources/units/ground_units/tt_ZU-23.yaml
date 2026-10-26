@@ -1,4 +1,6 @@
 class: AAA
+ground_mobility:
+  mode: self_propelled
 price: 6
 variants:
   SPAAA LC with ZU-23: null

@@ -1,4 +1,6 @@
 class: APC
+ground_mobility:
+  mode: self_propelled
 description: The M113 is a fully tracked armored personnel carrier (APC) that was
   developed and produced by the Food Machinery and Chemical Corporation (FMC). The
   M113 was sent to United States Army Europe to replace the mechanized infantry's

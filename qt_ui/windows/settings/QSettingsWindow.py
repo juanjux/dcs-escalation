@@ -762,7 +762,16 @@ class AutoSettingsLayout(QGridLayout):
         def on_toggle(value: bool) -> None:
             if description.invert:
                 value = not value
-            self.sc.settings.__dict__[name] = value
+            if name == "motorpool_enabled":
+                from qt_ui.windows.settings.groundmovement import change_motorpool
+
+                if not change_motorpool(checkbox, self.sc.settings, value):
+                    blocked = checkbox.blockSignals(True)
+                    checkbox.setChecked(self.sc.settings.motorpool_enabled)
+                    checkbox.blockSignals(blocked)
+                    return
+            else:
+                self.sc.settings.__dict__[name] = value
             self.settings_changed()
             if description.causes_expensive_game_update:
                 self.write_full_settings()
@@ -1317,6 +1326,8 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         self._page_scrolls: dict[int, QScrollArea] = {}
 
         self.pluginsPage = PluginsPage(self)
+        self.pluginsPage.changed.connect(self.refresh_all_pages)
+        self.pluginsPage.changed.connect(self.applySettings)
 
         self.updating_ui = False
 
@@ -1608,7 +1619,14 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
 
     def refresh_all_pages(self) -> None:
         """Re-evaluate every page that has been built, not just the one in front."""
+        self.pluginsPage.update_from_settings()
         for page in self.pages.values():
+            for group in page.groups:
+                motorpool = group.layout.settings_map.get("motorpool_enabled")
+                if isinstance(motorpool, QCheckBox):
+                    blocked = motorpool.blockSignals(True)
+                    motorpool.setChecked(self.settings.motorpool_enabled)
+                    motorpool.blockSignals(blocked)
             page.refresh_page()
 
     def update_from_settings(self) -> None:

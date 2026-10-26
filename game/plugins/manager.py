@@ -47,5 +47,8 @@ class LuaPluginManager:
 
     @classmethod
     def load_settings(cls, settings: Settings) -> None:
+        from game.groundmovement.settings import reconcile
+
+        reconcile(settings)
         for plugin in cls.plugins():
             plugin.set_settings(settings)

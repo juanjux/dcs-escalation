@@ -154,6 +154,19 @@ its ship writes off immobile damaged aircraft without a resale refund. Returning
 a loan removes its workshop jobs along with that squadron. Disabling maintenance
 releases existing repair jobs at the next turn boundary without selling airframes.
 
+## Ground Movement (experimental)
+
+Ground Movement is an opt-in Mission Plugin. Enabling it offers to enable Motor
+Pool if necessary. Disabling Motor Pool asks before also disabling Ground
+Movement; saved movement orders are retained and paused. Imported settings with
+Ground Movement on and Motor Pool off disable Ground Movement.
+
+The road budget defaults to 120 statute miles per turn (193.1 km), and the
+off-road budget to 60 miles (96.6 km). Both are configurable in the plugin's
+options. This first delivery adds saved planning and transport reservations;
+movement commands and convoy progression are not enabled yet. Existing campaign
+units remain in place and existing convoys retain their current behaviour.
+
 ## 1. What this game is
 
 DCS Escalation is a **turn-based strategic campaign** on top of DCS World. Each
