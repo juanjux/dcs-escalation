@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Ground Movement]** Add armor transport warnings and read-only route previews with tractor assignment, terrain checks and travel estimates.
 * **[Ground Movement]** Advance road convoys by distance per turn, retain their positions and survivors, and report progress and pauses in the UI and API.
 * **[Ground Movement]** Add opt-in settings, Motor Pool dependency and saved transport-order foundations; movement dispatch is not enabled yet.
 * **[Realistic CAS]** Add configurable contact discovery, firing-reveal and expiry notices, and observed unit types on F10 contact pins.

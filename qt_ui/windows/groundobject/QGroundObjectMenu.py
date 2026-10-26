@@ -34,12 +34,17 @@ from game.ato import FlightType
 from game.config import REWARDS
 from game.cruise_raids import tgo_magazines
 from game.data.building_data import FORTIFICATION_BUILDINGS
+from game.groundmovement.planning import armor_movement_options
+from game.groundmovement.settings import enabled as ground_movement_enabled
 from game.server import EventStream
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater import ControlPoint, Player, TheaterGroundObject
 from game.mfd import band_of, is_manpads, is_mobile, shows_on_mfd
 from game.theater.iadsnetwork.iadsexplain import IadsPicture, describe
-from game.theater.theatergroundobject import BuildingGroundObject
+from game.theater.theatergroundobject import (
+    BuildingGroundObject,
+    VehicleGroupGroundObject,
+)
 from game.theater.locationcheat import destroy_all, revive_all
 from game.theater.theatergroup import TheaterUnit
 from game.utils import Heading
@@ -63,6 +68,7 @@ from qt_ui.windows.groundobject.iadscard import IadsCard
 from qt_ui.windows.groundobject.unitcard import UnitCard, price_of, repairable_units
 from qt_ui.windows.pilot.common import (
     ACCENT,
+    AMBER,
     Clickable,
     EMPTY,
     GREEN,
@@ -140,6 +146,9 @@ class QGroundObjectMenu(QDialog):
                 body.addWidget(income)
         else:
             body.addWidget(self._units())
+            transport = self._ground_transport()
+            if transport is not None:
+                body.addWidget(transport)
             if iads is not None:
                 body.addWidget(self._iads_card(iads))
             if self.cruise_missile_rows:
@@ -210,6 +219,35 @@ class QGroundObjectMenu(QDialog):
         )
         holder.setLayout(column)
         return holder
+
+    def _ground_transport(self) -> Optional[QWidget]:
+        if (
+            not self._friendly
+            or not ground_movement_enabled(self.game.settings)
+            or not isinstance(self.ground_object, VehicleGroupGroundObject)
+        ):
+            return None
+        options = armor_movement_options(self.game, self.ground_object.id, self._viewer)
+        if not options.units:
+            return None
+        holder = QWidget()
+        make_transparent(holder)
+        column = QVBoxLayout(holder)
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(5)
+        column.addWidget(
+            label(
+                f"{options.available_tractors} tractors available · "
+                f"{options.towed_pieces} pieces need towing",
+                12,
+                TEXT_BASE,
+            )
+        )
+        for warning in options.warnings:
+            notice = label(warning, 11, AMBER)
+            notice.setWordWrap(True)
+            column.addWidget(notice)
+        return captioned("Ground transport", holder)
 
     def _high_command_line(self) -> Optional[QWidget]:
         """The line saying this is an order's objective, if it is."""
