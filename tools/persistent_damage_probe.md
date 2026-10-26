@@ -29,3 +29,7 @@ startup pulse restoration path, not the native action tested here. Small balance
 pulses keep each hit above DCS's minimum damage threshold while limiting splash;
 restoration accepts a two-percentage-point tolerance. Nearby fragile or
 overlapping objects prevent these pulses from being applied.
+Native neighbour queries can also return objects outside the requested sphere.
+A fragile candidate is ignored only when a sphere enclosing its entire model box
+cannot reach the protected 10 m area. Nearby, large or unreadable bounds still
+block restoration; this filtering does not increase pulse power.

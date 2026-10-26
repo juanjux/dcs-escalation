@@ -203,6 +203,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Persistent Damage]** Filter distant neighbour-search candidates conservatively while retaining safeguards for close, large or unreadable objects.
 * **[Campaign]** Preserve aircraft inventory and workshop capacity when loading saves with overfull bases.
 * **[AFAC]** Allow recovery to native low-level RADIO waypoints without rejecting their planned height against the generic diversion clearance.
 * **[Realistic CAS]** Attempt discovery on the first valid observation and remove the initial search-time option; retain bounded probability retries.
