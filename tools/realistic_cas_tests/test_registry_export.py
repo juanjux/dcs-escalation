@@ -46,6 +46,7 @@ class RegistryTests(unittest.TestCase):
         self.air.units[1].pylons = {4: {"CLSID": "{ALQ_164_RF_Jammer}"}}
         self.data = NS(
             tic_groups=[],
+            frontline_visibility_groups={"GROUND"},
             jtacs=[],
             flights=[NS(flight_type=NS(value="BAI"), units=self.air.units)],
         )
@@ -67,6 +68,7 @@ class RegistryTests(unittest.TestCase):
         )
         self.g.units[0].type = "Strela-10M3"
         front.units[0].type = "Strela-10M3"
+        self.data.frontline_visibility_groups.add("FRONT")
         mapping = NS(
             theater_objects={
                 self.g.units[0].name: NS(
@@ -86,7 +88,8 @@ class RegistryTests(unittest.TestCase):
         self.assertFalse(threats[front.units[0].name]["known"])
         self.assertIsNone(threats[front.units[0].name]["ceiling"])
 
-    def test_bai_ground_object_is_not_exempt_for_having_a_known_position(self):
+    def test_armor_discovery_requires_explicit_opt_in(self):
+        self.data.frontline_visibility_groups.clear()
         mapping = NS(
             theater_objects={
                 self.g.units[0].name: NS(
@@ -95,7 +98,13 @@ class RegistryTests(unittest.TestCase):
             }
         )
         r = self.collect(unit_map=mapping)
+        self.assertEqual(r["targets"], [])
+        self.assertEqual(r["groups"], [])
+        self.assertEqual(len(r["afacKnownTargets"]), 2)
+        self.assertEqual([g["name"] for g in r["knownGroundGroups"]], ["GROUND"])
+        r = self.collect(unit_map=mapping, include_armor_groups=True)
         self.assertEqual(len(r["targets"]), 2)
+        self.assertEqual(r["knownGroundGroups"], [])
         self.assertEqual(r["knownAirDefenseGroups"], [])
 
     def test_disabled_has_no_reads_or_effects(self):

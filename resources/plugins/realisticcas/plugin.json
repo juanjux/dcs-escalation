@@ -1,8 +1,15 @@
 {
     "nameInUI": "Realistic CAS (experimental)",
-    "descriptionInUI": "Gradual ground-target discovery for both sides. Firing reveals a group immediately; visual/EO/IR/ground radar observations reveal nearby groups. Fixed map SAM sites are exempt, frontline SAMs are not. Optional BLUE-view F10 frontline contacts. Temporarily omits generated legacy JTACs. CTLD logistics may stay enabled with 'JTAC autolase targets' off; disable TIC and Moose Autolase. Combined Arms JTAC slots are unrelated. Runtime-created units are not yet registered in the fog. Terrain and cloud cover are approximations; campaign-scale validation is pending. Off by default.",
+    "descriptionInUI": "Gradual frontline ground-target discovery for both sides, with optional armor group discovery. Firing reveals a concealed group immediately; visual/EO/IR/ground radar observations reveal nearby groups. Fixed map SAM sites remain known, frontline SAMs do not. Optional BLUE-view F10 frontline contacts. Temporarily omits generated legacy JTACs. CTLD logistics may stay enabled with 'JTAC autolase targets' off; disable TIC and Moose Autolase. Combined Arms JTAC slots are unrelated. Runtime-created units are not yet registered in the fog. Terrain and cloud cover are approximations; campaign-scale validation is pending. Off by default.",
     "defaultValue": false,
     "specificOptions": [
+        {
+            "section": "Discovery scope",
+            "nameInUI": "Include armor groups in discovery",
+            "descriptionInUI": "Off by default: only frontline units, including support infantry and MANPADS, are concealed from AI until discovered. Other ground groups remain known to AFACs and visible to AI. Enable to conceal campaign armor groups as well, including their air defences. Applies to both coalitions and to discovery, firing-reveal and expiry notices. Fixed SAM sites remain known. Does not change F10 icons or MFD threat intelligence; F10 hiding remains a separate frontline-only option. Regenerate the mission after changing this setting.",
+            "mnemonic": "includeArmorGroups",
+            "defaultValue": false
+        },
         {
             "section": "Contact reports",
             "nameInUI": "Report enemy contact discoveries and expiry",

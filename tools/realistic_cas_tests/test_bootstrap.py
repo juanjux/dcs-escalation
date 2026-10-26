@@ -81,6 +81,14 @@ class BootstrapTests(unittest.TestCase):
         assert(#commands==before and not RealisticCAS.mission)
         """)
 
+    def test_known_ground_group_overlap_is_rejected_before_hide(self):
+        self.check("""
+        local before=#commands
+        cfg.registry.knownGroundGroups={{name='red',coalition=1}}
+        assert(not pcall(RealisticCAS.startMission,cfg))
+        assert(#commands==before and not RealisticCAS.mission)
+        """)
+
     def test_disabled_no_callbacks_and_mission_end_cleanup(self):
         self.check("""
         local n=#pending;local c=#commands

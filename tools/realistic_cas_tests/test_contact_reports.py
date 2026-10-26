@@ -44,6 +44,19 @@ class ContactReportTests(unittest.TestCase):
         p={x=1000,y=0,z=2000}
         """)
 
+    def test_known_ground_groups_stay_visible_without_discovery_or_expiry_reports(self):
+        self.rt.execute("""
+        cfg.registry.groups={};cfg.registry.targets={}
+        cfg.registry.knownGroundGroups={{name='red',coalition=1}}
+        local m=assert(RealisticCAS.startMission(cfg))
+        assert(not red.hidden and not m.fog.service:isRegistered(1))
+        assert(not m.fog:observe('red',2,p,'visual:scout','SA-18'))
+        emit(world.event.S_EVENT_SHOT,red)
+        run(100)
+        assert(not red.hidden and #messages==0)
+        assert(m:stop())
+        """)
+
     def test_discovery_renewal_expiry_and_rediscovery(self):
         self.rt.execute("""
         local m=assert(RealisticCAS.startMission(cfg));assert(#messages==0)
