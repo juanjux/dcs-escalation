@@ -77,6 +77,7 @@ class UnitMap:
         self.front_line_groups: Dict[str, FrontLineUnit] = {}
         self.motorpool_units: Dict[str, FrontLineUnit] = {}
         self.theater_objects: Dict[str, TheaterUnitMapping] = {}
+        self.ground_transport_cargo: dict[str, list[TheaterUnitMapping]] = {}
         self.scenery_objects: Dict[str, SceneryObjectMapping] = {}
         self.convoys: Dict[str, ConvoyUnit] = {}
         self.cargo_ships: Dict[str, CargoShip] = {}

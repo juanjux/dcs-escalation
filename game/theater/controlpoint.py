@@ -1086,6 +1086,9 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
 
     # TODO: Should be Airbase specific.
     def capture(self, game: Game, events: GameUpdateEvents, for_player: Player) -> None:
+        from game.groundmovement.dispatch import rehome_before_capture
+
+        rehome_before_capture(game, self, events)
         new_coalition = game.coalition_for(for_player)
         self.ground_unit_orders.refund_all(self.coalition)
         self.retreat_ground_units(game)

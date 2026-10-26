@@ -49,6 +49,8 @@ class TheaterUnit:
     repair_turns_remaining: Optional[int] = None
     # Fraction of original health; older saves inherit full health.
     health: float = 1.0
+    # Loaded at mission start; the piece shares its tractor's campaign loss.
+    transported_by_id: int | None = None
 
     @property
     def health_fraction(self) -> float:
@@ -161,6 +163,8 @@ class TheaterUnit:
 
     @property
     def repairable(self) -> bool:
+        if getattr(self.ground_object, "in_transit", False):
+            return False
         # Only ground objects with a priced UnitType are repairable. Ships/naval are
         # not part of the repair economy (losses are permanent, and their price is 0),
         # so exclude them — otherwise a dead cruiser wrongly showed a "Repair [0M]".
@@ -168,11 +172,15 @@ class TheaterUnit:
 
     @property
     def detection_range(self) -> Distance:
+        if self.transported_by_id is not None:
+            return meters(0)
         unit_range = getattr(self.type, "detection_range", None)
         return meters(unit_range if unit_range is not None and self.alive else 0)
 
     @property
     def threat_range(self) -> Distance:
+        if self.transported_by_id is not None:
+            return meters(0)
         unit_range = getattr(self.type, "threat_range", None)
         return meters(unit_range if unit_range is not None and self.alive else 0)
 

@@ -13,6 +13,7 @@ from game.groundmovement.settings import enabled
 from game.theater.player import Player
 
 if TYPE_CHECKING:
+    from game.groundmovement.dispatch import ArmorTransit
     from game.dcs.groundunittype import GroundUnitType
     from game.settings import Settings
 
@@ -132,23 +133,31 @@ class GroundMovementOrder:
     manifest: TransportManifest
     created_turn: int
     cancelled: bool = False
+    completed: bool = False
 
     def status(self, settings: Settings) -> str:
         if self.cancelled:
             return "cancelled"
+        if self.completed:
+            return "completed"
         return "planned" if enabled(settings) else "paused"
 
 
 @dataclass
 class GroundMovementOrders:
     orders: dict[UUID, GroundMovementOrder] = field(default_factory=dict)
+    transits: dict[UUID, ArmorTransit] = field(default_factory=dict)
+
+    def __setstate__(self, state: dict[str, object]) -> None:
+        self.__dict__.update(state)
+        self.__dict__.setdefault("transits", {})
 
     @property
     def reserved_unit_ids(self) -> set[int]:
         return {
             unit_id
             for order in self.orders.values()
-            if not order.cancelled
+            if not order.cancelled and not order.completed
             for unit_id in order.manifest.unit_ids
         }
 
@@ -200,4 +209,6 @@ class GroundMovementOrders:
 
     def cancel(self, order_id: UUID) -> None:
         """Release a planning reservation; no travel or inventory has been applied."""
+        if order_id in self.transits and not self.transits[order_id].finished:
+            raise ValueError("Stop the dispatched detachment at its current position")
         self.orders[order_id] = replace(self.orders[order_id], cancelled=True)
