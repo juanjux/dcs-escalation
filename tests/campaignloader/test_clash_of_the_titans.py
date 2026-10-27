@@ -1,4 +1,4 @@
-"""Clash of the Titans has reachable, redundant infrastructure for both sides."""
+"""Clash of the Titans retains usable forces, supply and redundant infrastructure."""
 
 from collections import Counter
 from copy import deepcopy
@@ -15,11 +15,14 @@ import pytest
 
 from game import Game, persistency
 from game.ato.closestairfields import ObjectiveDistanceCache
+from game.ato.flighttype import FlightType
 from game.campaignloader.campaign import Campaign
+from game.dcs.afaccapabilities import capabilities_for
 from game.factions import Faction
 from game.naming import namegen
 from game.settings import Settings
 from game.theater import Player
+from game.theater.controlpoint import ParkingType
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsstate import IadsState, IadsStateMap
 from game.theater.start_generator import GameGenerator, GeneratorSettings, ModSettings
@@ -68,6 +71,49 @@ def test_campaign_recommends_modern_factions_and_enables_its_features(
     assert campaign.settings["motorpool_enabled"]
     assert campaign.settings["plugins"]["skynetiads"]
     assert campaign.settings["plugins"]["gpsjamming"]
+    assert campaign.settings["squadrons_start_full"]
+    assert "squadron_start_full" not in campaign.settings
+
+
+def test_ground_axis_is_supplied_without_connecting_air_assault_objectives(
+    authored: Any,
+) -> None:
+    _, theater, _, _ = authored
+    expected = {
+        frozenset(pair)
+        for pair in (
+            ("Bagram", "Kabul"),
+            ("Kabul", "Ghazni Heliport"),
+            ("Ghazni Heliport", "FOB Lagman"),
+            ("FOB Lagman", "Kandahar Heliport"),
+            ("Kandahar Heliport", "Camp Bastion"),
+        )
+    }
+    actual = {
+        frozenset((cp.name, other.name))
+        for cp in theater.controlpoints
+        for other in cp.connected_points
+    }
+    assert actual == expected
+    assert {cp.name for cp in theater.controlpoints if cp.is_isolated} == {
+        "Kandahar",
+        "Tarinkot",
+        "Sharana",
+        "Camp Bastion Heliport",
+        "FOB Zeebrugge",
+        "FOB Nawa",
+        "FOB Khayr Kot Castle",
+        "FOB Frontenac",
+    }
+    for cp in theater.controlpoints:
+        assert len(cp.connected_points) == len(set(cp.connected_points))
+        for other, route in cp.convoy_routes.items():
+            assert cp is not other
+            assert route == tuple(reversed(other.convoy_routes[cp]))
+            assert all(a.distance_to_point(b) > 0 for a, b in zip(route, route[1:]))
+            assert theater.closest_control_point(route[0]) is cp
+            assert theater.closest_control_point(route[-1]) is other
+            assert len(cp.convoy_spawns[other]) >= 60
 
 
 def test_every_base_has_a_depot_clear_of_all_capture_zones(authored: Any) -> None:
@@ -241,6 +287,167 @@ def generated(request: pytest.FixtureRequest, tmp_path_factory: Any) -> Iterator
             random.setstate(random_state)
             for key, value in names.items():
                 setattr(namegen, key, value)
+
+
+def test_generated_squadrons_match_the_template_and_fit_their_bases(
+    generated: Game,
+) -> None:
+    campaign = Campaign.from_file(CAMPAIGN)
+    config = campaign.load_air_wing_config(generated.theater)
+    assert sum(1 for cp in generated.theater.controlpoints for _ in cp.squadrons) == 40
+    for cp, definitions in config.by_location.items():
+        expected: Counter[tuple[Any, str, int]] = Counter()
+        for definition in definitions:
+            preferred = next(
+                name
+                for name in definition.aircraft
+                if any(a.variant_id == name for a in cp.coalition.faction.all_aircrafts)
+            )
+            expected[definition.primary, preferred, definition.max_size] += 1
+        actual = Counter(
+            (s.primary_task, s.aircraft.variant_id, s.max_size) for s in cp.squadrons
+        )
+        assert actual == expected, cp.name
+        assert sum(s.max_size for s in cp.squadrons) <= cp.total_aircraft_parking(
+            ParkingType(True, True, True)
+        ), cp.name
+        for squadron in cp.squadrons:
+            assert cp.can_operate(squadron.aircraft), squadron.aircraft
+            assert squadron.aircraft.capable_of(
+                squadron.primary_task
+            ), squadron.aircraft
+            assert squadron.pilot_limit == squadron.max_size + 4
+
+
+def test_each_side_can_supply_its_ground_front_from_a_factory(generated: Game) -> None:
+    for coalition in (generated.blue, generated.red):
+        bases = list(generated.theater.control_points_for(coalition.player))
+        front_bases = [
+            cp
+            for cp in bases
+            if any(
+                not other.captured.is_neutral and other.captured is not coalition.player
+                for other in cp.connected_points
+            )
+        ]
+        assert front_bases
+        for cp in front_bases:
+            accessible = {cp, *cp.transitive_connected_friendly_points()}
+            assert any(source.has_factory for source in accessible), cp.name
+    # Retain the original economy apart from the additional $10M axis factory.
+    from game.income import Income
+
+    assert Income(generated, Player.BLUE).total == 162.5
+    assert Income(generated, Player.RED).total == 206.5
+    bastion = generated.theater.control_point_named("Camp Bastion")
+    heliport = generated.theater.control_point_named("Camp Bastion Heliport")
+    assert bastion.has_factory
+    assert heliport.has_factory
+    assert heliport.is_isolated
+
+
+def test_both_sides_have_transport_and_afac_capable_squadrons(generated: Game) -> None:
+    for coalition in (generated.blue, generated.red):
+        squadrons = list(coalition.air_wing.iter_squadrons())
+        for task in (
+            FlightType.TRANSPORT,
+            FlightType.AIR_ASSAULT,
+            FlightType.AFAC_AREA,
+            FlightType.AFAC_FRONTLINE,
+        ):
+            assert any(s.aircraft.capable_of(task) for s in squadrons), (
+                coalition.player,
+                task,
+            )
+
+
+def test_support_and_air_assault_are_not_missing_or_assigned_to_combat(
+    generated: Game,
+) -> None:
+    for coalition in (generated.blue, generated.red):
+        squadrons = list(coalition.air_wing.iter_squadrons())
+        for task, minimum in (
+            (FlightType.AEWC, 2),
+            (FlightType.REFUELING, 2),
+            (FlightType.TRANSPORT, 4),
+        ):
+            assert (
+                sum(s.max_size for s in squadrons if s.primary_task is task) >= minimum
+            )
+        assault = [s for s in squadrons if s.primary_task is FlightType.AIR_ASSAULT]
+        assert len(assault) == 1
+        assert assault[0].aircraft.helicopter
+        assert assault[0].max_size == 4
+        expected = {FlightType.AIR_ASSAULT}
+        if assault[0].aircraft.capable_of(FlightType.TRANSPORT):
+            expected.add(FlightType.TRANSPORT)
+        assert assault[0].auto_assignable_mission_types == expected
+
+
+def test_dedicated_afacs_have_thermal_designators_and_both_patrol_modes(
+    generated: Game,
+) -> None:
+    for coalition, aircraft in (
+        (generated.blue, "MQ-9 Reaper"),
+        (generated.red, "WingLoong-I"),
+    ):
+        squadron = next(
+            s
+            for s in coalition.air_wing.iter_squadrons()
+            if s.primary_task is FlightType.AFAC_AREA
+        )
+        assert squadron.aircraft.variant_id == aircraft
+        assert squadron.max_size == 4
+        profile = capabilities_for(squadron.aircraft.dcs_id)
+        assert profile is not None
+        assert profile.eo and profile.ir and profile.laser and profile.ir_pointer
+        assert profile.remote_operator
+        tasks = {FlightType.AFAC_AREA, FlightType.AFAC_FRONTLINE}
+        with pytest.MonkeyPatch.context() as patch:
+            patch.setitem(generated.settings.plugins, "realisticcas", True)
+            patch.setitem(generated.settings.plugins, "realisticcas.afacEnabled", True)
+            patch.setattr(
+                squadron,
+                "auto_assignable_mission_types",
+                squadron.auto_assignable_mission_types,
+            )
+            squadron.set_auto_assignable_mission_types(tasks)
+            assert squadron.auto_assignable_mission_types == tasks
+            assert all(squadron.can_auto_assign(task) for task in tasks)
+            patch.setitem(generated.settings.plugins, "realisticcas", False)
+            assert not any(squadron.can_auto_assign(task) for task in tasks)
+
+
+def test_authored_force_caps_limit_stealth_and_retain_red_modern_fighters(
+    generated: Game,
+) -> None:
+    blue = list(generated.blue.air_wing.iter_squadrons())
+    red = list(generated.red.air_wing.iter_squadrons())
+    assert sum(s.max_size for s in blue) == 140
+    assert sum(s.max_size for s in red) == 170
+    assert all(s.max_size == 4 for s in blue if s.aircraft.variant_id == "[CH] B-21")
+    assert all(s.max_size == 8 for s in blue if s.aircraft.variant_id == "F-22A Raptor")
+    assert any(
+        s.max_size == 12
+        and s.aircraft.variant_id in {"Su-30SM Flanker-H", "Su-30 Flanker-C"}
+        for s in red
+    )
+    assert any(
+        s.max_size == 16 and s.aircraft.variant_id == "MiG-29S Fulcrum-C" for s in red
+    )
+    assert any(s.aircraft.variant_id == "Tu-16 Badger" and s.max_size == 8 for s in red)
+    assert any(
+        s.primary_task is FlightType.ESCORT
+        and s.max_size == 12
+        and s.aircraft.variant_id in {"Su-57 Felon", "Su-30 Flanker-C"}
+        for s in red
+    )
+    assert any(s.aircraft.dcs_id == "A-10C_2" and s.max_size == 8 for s in blue)
+    assert any(
+        s.aircraft.variant_id == "Su-25T Frogfoot" and s.max_size == 16 for s in red
+    )
+    assert generated.settings.player_skill == generated.settings.enemy_skill
+    assert generated.blue.budget == generated.red.budget == 2000
 
 
 def test_generated_network_is_operational_and_exports_to_skynet(

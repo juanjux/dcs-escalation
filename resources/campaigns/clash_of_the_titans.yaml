@@ -7,17 +7,22 @@ recommended_enemy_faction: Redfor (Russia) 2020
 description:
   <p><strong>This campaign utilises both Afghanistan East and West. It is intended to be run with CurrentHill's USA, Russia, and 
   China Asset Packs installed, although this is not mandatory.</strong></p>
+  <p>F-22A, Super Hornet/Growler and Su-57 mods are optional; stock aircraft are used as fallbacks when disabled.</p>
   <p>In the rugged heart of Afghanistan, the balance of power is tipping. Clash of the Titans is a high-stakes campaign set during 
   a fictional escalation in 2020, where US-led BLUFOR forces face off against a resurgent and well-equipped REDFOR coalition.
   BLUFOR holds the vital eastern corridor, anchored by the fortified positions at Bagram Airfield, the strategic capital of Kabul, 
   and the forward base at Sharana. A recent offensive has resulted in REDFOR now controlling the southern and western strongholds of 
-  Kandahar, Camp Bastion, and Tarinkot, with each having been since been heavily fortified. Air superiority is hotly contested, and both 
+  Kandahar, Camp Bastion, and Tarinkot, each heavily fortified. Air superiority is hotly contested, and both
   sides are committing rotary and fixed-wing assets to interdiction, close air support, and deep strike missions. This is no border 
   skirmish. This is a theatre-wide confrontation where every flight counts and every decision could tilt the balance. Welcome to 
   Clash of the Titans. The skies over Afghanistan have never been more dangerous.</p>
   <p>Both sides have sector-based IADS with alternate command centres, redundant communications and power,
   and separate GPS jamming sites. Vehicle depots hold strikeable reserves at every base, including the neutral FOBs.
   Capture territory and attack the infrastructure to weaken the opposing network.</p>
+  <p>The main ground axis runs from Bagram through Kabul, Ghazni and Lagman to Kandahar Heliport and Camp Bastion.
+  A factory at Camp Bastion supplies the southern axis. Disconnected bases and neutral FOBs remain air-assault objectives.</p>
+  <p>Both sides field early warning, tankers, airlift, dedicated air-assault helicopters and AFAC drones.
+  Enable Realistic CAS and its AFAC option to use the MQ-9 and Wing Loong reconnaissance squadrons.</p>
 miz: clash_of_the_titans.miz
 performance: 1
 recommended_start_date: 2020-01-27
@@ -28,7 +33,8 @@ settings:
   usamilitaryassetspack: true
   f22_raptor: true
   fa_18efg: true
-  squadron_start_full: true
+  su57_felon: true
+  squadrons_start_full: true
   motorpool_enabled: true
   plugins:
     skynetiads: true
@@ -436,8 +442,8 @@ squadrons:
       aircraft:
         - "[CH] B-21"
         - F-16CM Fighting Falcon (Block 50)
-      size: 12
-      pilots: 16
+      size: 4
+      pilots: 8
     - primary: CAS
       secondary: air-to-ground
       aircraft:
@@ -468,8 +474,8 @@ squadrons:
       aircraft:
         - F-22A Raptor
         - F-15C Eagle
-      size: 16
-      pilots: 20
+      size: 8
+      pilots: 12
   #Sharana
   22:
     - primary: SEAD Sweep
@@ -485,9 +491,17 @@ squadrons:
       size: 4
       pilots: 8
     - primary: Air Assault
-      secondary: any
+      secondary:
+        - Transport
       aircraft:
         - CH-47F Block I
+      size: 4
+      pilots: 8
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
       size: 4
       pilots: 8
   #Ghazni Heliport
@@ -512,6 +526,20 @@ squadrons:
         - JF-17 Thunder
       size: 12
       pilots: 16
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 4
+      pilots: 8
+    - primary: Escort
+      secondary: air-to-air
+      aircraft:
+        - Su-57 Felon
+        - Su-30 Flanker-C
+      size: 12
+      pilots: 16
   #Kandahar
   7:
     - primary: Strike
@@ -520,8 +548,15 @@ squadrons:
         - Tu-95MS Bear-H
       size: 8
       pilots: 12
-    - primary: BAI
+    - primary: BARCAP
       secondary: any
+      aircraft:
+        - Su-30SM Flanker-H
+        - Su-30 Flanker-C
+      size: 12
+      pilots: 16
+    - primary: BAI
+      secondary: air-to-ground
       aircraft:
         - Tu-16 Badger
       size: 8
@@ -553,7 +588,6 @@ squadrons:
   # Kandahar Heliport
   15:
     - primary: Air Assault
-      secondary: any
       aircraft:
         - Mi-24P Hind-F
       size: 4
@@ -595,8 +629,8 @@ squadrons:
       secondary: any
       aircraft:
         - IL-76MD
-      size: 2
-      pilots: 6
+      size: 4
+      pilots: 8
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
@@ -606,7 +640,7 @@ squadrons:
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
-        - MIG-29-FULCRUM
+        - MiG-29S Fulcrum-C
       size: 16
       pilots: 20
   #Camp Bastion Heliport
