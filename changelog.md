@@ -77,6 +77,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Keep site repairs responsive by batching updates and avoiding rebuilds of closed location windows.
 * **[Ground Movement]** Define mobility for stock and mod vehicles, towed guns and tractors so normal armor groups can be dispatched.
 
 * **[Campaign]** Preserve aircraft inventory and workshop capacity when loading saves with overfull bases.

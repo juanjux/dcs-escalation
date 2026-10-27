@@ -13,7 +13,8 @@ from uuid import UUID
 from functools import partial
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -112,6 +113,11 @@ class QGroundObjectMenu(QDialog):
         self.cruise_missile_rows: list[tuple[str, int]] = []
         self.heading_selector: Optional[QSpinBox] = None
         self.compass: Optional[Compass] = None
+        self._needs_refresh = False
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setSingleShot(True)
+        self._refresh_timer.timeout.connect(self._refresh_view)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
         self.setWindowTitle(f"Location — {ground_object.obj_name} ({cp.name})")
         self.setWindowIcon(EVENT_ICONS["capture"])
@@ -137,8 +143,26 @@ class QGroundObjectMenu(QDialog):
         if self.game_model.game is not self.campaign:
             self.reject()
             return
+        self._needs_refresh = True
+        # Movement and game updates can describe the same change. Rebuild once,
+        # and leave hidden windows alone until they are shown again.
+        if self.isVisible() and not self._refresh_timer.isActive():
+            self._refresh_timer.start(0)
+
+    def _refresh_view(self) -> None:
+        if self.game_model.game is not self.campaign:
+            self.reject()
+            return
+        if not self.isVisible():
+            return
+        self._needs_refresh = False
         self.cp = self.ground_object.control_point
         self._rebuild()
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        if self._needs_refresh:
+            self._refresh_timer.start(0)
 
     @property
     def game(self) -> Game:
@@ -711,7 +735,6 @@ class QGroundObjectMenu(QDialog):
             else:
                 unit.repair_turns_remaining = turns
                 logging.info(f"Scheduled unit repair: {unit.unit_name}")
-            GameUpdateSignal.get_instance().updateGame(self.game)
         if refresh:
             self._update_game()
 
@@ -727,7 +750,6 @@ class QGroundObjectMenu(QDialog):
             else:
                 unit.repair_turns_remaining = turns
                 logging.info(f"Scheduled building repair: {unit.unit_name}")
-            GameUpdateSignal.get_instance().updateGame(self.game)
         if refresh:
             self._update_game()
 
@@ -775,7 +797,6 @@ class QGroundObjectMenu(QDialog):
         replan_opfor_if_targeted(self.game, self.ground_object, events)
         EventStream.put_nowait(events)
         GameUpdateSignal.get_instance().updateGame(self.game)
-        self._rebuild()
 
 
 def replan_opfor_if_targeted(
