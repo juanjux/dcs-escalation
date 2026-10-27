@@ -51,6 +51,8 @@ class TheaterUnit:
     health: float = 1.0
     # Loaded at mission start; the piece shares its tractor's campaign loss.
     transported_by_id: int | None = None
+    # Base stock may distinguish variants sharing the same native DCS model.
+    ground_unit_variant: str | None = None
 
     @property
     def health_fraction(self) -> float:
@@ -86,6 +88,8 @@ class TheaterUnit:
     @property
     def unit_type(self) -> Optional[UnitType[Any]]:
         if issubclass(self.type, VehicleType):
+            if self.ground_unit_variant is not None:
+                return GroundUnitType.named(self.ground_unit_variant)
             return next(GroundUnitType.for_dcs_type(self.type))
         elif issubclass(self.type, ShipType):
             return next(ShipUnitType.for_dcs_type(self.type))

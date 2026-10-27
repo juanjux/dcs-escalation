@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 class MovementSource(Enum):
     ARMOR = "armor"
     SAM = "sam"
+    BASE = "base"
 
 
 class DestinationKind(Enum):

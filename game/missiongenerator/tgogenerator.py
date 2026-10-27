@@ -362,7 +362,12 @@ class GroundObjectGenerator:
                 self.enable_eplrs(vehicle_group, unit.type)
                 self.enable_ewr(vehicle_group)
                 vehicle_group.units[0].name = unit.unit_name
-                self.set_alarm_state(vehicle_group)
+                reserve = getattr(self.ground_object, "reserve_from_base", False)
+                self.set_alarm_state(vehicle_group, force_red=reserve)
+                if reserve:
+                    vehicle_group.points[0].tasks.append(
+                        OptROE(OptROE.Values.WeaponFree)
+                    )
                 self.set_coastal_engagement(vehicle_group)
                 GroundForcePainter(faction, vehicle_group.units[0]).apply_livery()
             else:

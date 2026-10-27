@@ -44,6 +44,7 @@ class ArmorTransit:
     finished: bool = False
     pause_reason: str | None = None
     final_unit_count: int | None = None
+    arrival_positions: dict[int, GroundPosition] | None = None
 
 
 def active_transit(game: Game, tgo_id: UUID) -> ArmorTransit | None:
@@ -89,6 +90,7 @@ def dispatch_armor(
         TheaterGroup.from_template(group_id, detachment.name, units, detachment)
     ]
     detachment.in_transit = True
+    detachment.reserve_from_base = getattr(source, "reserve_from_base", False)
     order = game.ground_movements.plan(
         game.settings,
         source_id=source_id,
@@ -148,6 +150,10 @@ def _unload(game: Game, transit: ArmorTransit) -> None:
     tgo.in_transit = False
     for unit in tgo.units:
         unit.transported_by_id = None
+        positions = getattr(transit, "arrival_positions", None)
+        if transit.journey.completed and positions and unit.id in positions:
+            unit.position.x = positions[unit.id].x
+            unit.position.y = positions[unit.id].z
     tgo.invalidate_threat_poly()
 
 
@@ -215,10 +221,8 @@ def rehome_before_capture(
     if movements is None:
         return
     for transit in movements.transits.values():
-        if transit.finished:
-            continue
         tgo = game.db.tgos.get(transit.detachment_id)
-        if tgo.control_point is not base:
+        if tgo.control_point is not base or not any(unit.alive for unit in tgo.units):
             continue
         owner = game.ground_movements.orders[transit.order_id].owner
         candidates = [
