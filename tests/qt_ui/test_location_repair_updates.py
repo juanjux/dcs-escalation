@@ -6,6 +6,7 @@ import os
 from types import SimpleNamespace
 from typing import Any, Iterator
 from unittest.mock import Mock
+from uuid import uuid4
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -60,6 +61,7 @@ def location(monkeypatch: pytest.MonkeyPatch) -> Iterator[Any]:
     cp: Any = SimpleNamespace(name="Base")
     site = Mock(
         spec=menu.BuildingGroundObject,
+        id=uuid4(),
         obj_name="Site",
         control_point=cp,
         units=units,

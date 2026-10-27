@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from game.server.combat.models import FrozenCombatJs
 from game.server.controlpoints.models import ControlPointJs
@@ -40,6 +40,7 @@ class GameUpdateEventsJs(BaseModel):
     updated_front_lines: list[FrontLineJs]
     deleted_front_lines: set[UUID]
     updated_tgos: list[TgoJs]
+    deleted_tgos: set[UUID] = Field(default_factory=set)
     updated_control_points: list[ControlPointJs]
     updated_iads: list[IadsConnectionJs]
     deleted_iads: set[UUID]
@@ -140,6 +141,7 @@ class GameUpdateEventsJs(BaseModel):
                 TgoJs.for_tgo(tgo)
                 for tgo in sorted(events.updated_tgos, key=lambda tgo: tgo.id)
             ],
+            deleted_tgos=events.deleted_tgos,
             updated_control_points=[
                 ControlPointJs.for_control_point(cp)
                 for cp in events.updated_control_points

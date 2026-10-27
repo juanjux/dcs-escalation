@@ -41,6 +41,7 @@ COMMIT_STEPS = [
     "commit_air_assault_remain",
     "commit_aircraft_damage",
     "commit_front_line_battle_impact",
+    "commit_frontline_reserves",
     "record_carcasses",
 ]
 
@@ -118,3 +119,8 @@ def test_battle_impact_scored_before_captures_flip_ownership() -> None:
     assert calls.index("commit_front_line_battle_impact") < calls.index(
         "commit_captures"
     ), "front-line scoring must run before bases are captured"
+    assert (
+        calls.index("commit_front_line_battle_impact")
+        < calls.index("commit_frontline_reserves")
+        < calls.index("commit_captures")
+    )

@@ -36,6 +36,7 @@ class GameUpdateEvents:
     updated_front_lines: set[FrontLine] = field(default_factory=set)
     deleted_front_lines: set[UUID] = field(default_factory=set)
     updated_tgos: set[TheaterGroundObject] = field(default_factory=set)
+    deleted_tgos: set[UUID] = field(default_factory=set)
     updated_control_points: set[ControlPoint] = field(default_factory=set)
     updated_iads: set[IadsNetworkNode] = field(default_factory=set)
     deleted_iads_connections: set[UUID] = field(default_factory=set)
@@ -129,7 +130,20 @@ class GameUpdateEvents:
         return self
 
     def update_tgo(self, tgo: TheaterGroundObject) -> GameUpdateEvents:
-        self.updated_tgos.add(tgo)
+        from game.theater.theatergroundobject import VehicleGroupGroundObject
+
+        if (
+            isinstance(tgo, VehicleGroupGroundObject)
+            and tgo.absorbed_into_frontline is not None
+        ):
+            return self.delete_tgo(tgo)
+        if tgo.id not in self.deleted_tgos:
+            self.updated_tgos.add(tgo)
+        return self
+
+    def delete_tgo(self, tgo: TheaterGroundObject) -> GameUpdateEvents:
+        self.updated_tgos.discard(tgo)
+        self.deleted_tgos.add(tgo.id)
         return self
 
     def update_motorpools_at(self, *control_points: ControlPoint) -> GameUpdateEvents:

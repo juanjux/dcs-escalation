@@ -1,4 +1,6 @@
 import { handleStreamedEvents } from "./eventstream";
+import tgosReducer, { deleteTgo, updateTgo } from "./tgosSlice";
+import { Tgo } from "./liberationApi";
 
 jest.mock("./gamestate", () => ({ __esModule: true, default: jest.fn() }));
 
@@ -52,4 +54,22 @@ it("does not refresh pins on unrelated simulation updates", () => {
   handleStreamedEvents(jest.fn(), emptyEvents);
   expect(listener).not.toHaveBeenCalled();
   window.removeEventListener("saved-points-changed", listener);
+});
+
+it("deletes absorbed markers after any stale update in the same event", () => {
+  const reserve = { id: "reserve" } as Tgo;
+  const sam = { id: "sam" } as Tgo;
+  const dispatch = jest.fn();
+  handleStreamedEvents(dispatch, {
+    ...emptyEvents,
+    updated_tgos: [reserve],
+    deleted_tgos: ["reserve"],
+  });
+  expect(dispatch).toHaveBeenCalledWith(deleteTgo(["reserve"]));
+  const initial = tgosReducer(undefined, updateTgo([reserve, sam]));
+  const state = dispatch.mock.calls.reduce(
+    (current, [action]) => tgosReducer(current, action),
+    initial,
+  );
+  expect(state.tgos).toEqual({ sam });
 });
