@@ -58,6 +58,21 @@ local function failBuilding(entry, reason)
     restoring[entry.name] = nil
 end
 
+local function boundingRadius(object)
+    local ok, box = pcall(function() return object:getDesc().box end)
+    if not ok or type(box) ~= "table" or type(box.min) ~= "table" or type(box.max) ~= "table" then return nil end
+    local squared = 0
+    for _, axis in ipairs({"x", "y", "z"}) do
+        local low, high = box.min[axis], box.max[axis]
+        if type(low) ~= "number" or type(high) ~= "number" or low ~= low or high ~= high
+            or math.abs(low) == math.huge or math.abs(high) == math.huge or low > high then return nil end
+        -- A sphere enclosing the entire local box remains conservative at any attitude.
+        local extent = math.max(math.abs(low), math.abs(high))
+        squared = squared + extent * extent
+    end
+    return math.sqrt(squared)
+end
+
 local function safeBuildingPulse(item)
     local point = item.object:getPoint()
     local safe = true
@@ -71,7 +86,14 @@ local function safeBuildingPulse(item)
                 if life and life > 0 then
                     local p = other:getPoint()
                     local distance = (p.x - point.x)^2 + (p.z - point.z)^2
-                    if distance < 25 or baseline(other, life) < item.maximum / 4 then safe = false end
+                    if distance ~= distance or distance == math.huge or distance < 25 then safe = false
+                    elseif baseline(other, life) < item.maximum / 4 then
+                        -- Native searches can return objects well outside the query sphere.
+                        -- Discard a fragile candidate only when its entire bounding sphere
+                        -- is outside the protected area. Unknown bounds still block pulses.
+                        local radius = boundingRadius(other)
+                        if radius == nil or distance <= (10 + radius)^2 then safe = false end
+                    end
                 end
             end
             return safe

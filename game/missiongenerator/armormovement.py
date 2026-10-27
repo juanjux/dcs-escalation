@@ -72,7 +72,8 @@ def generate_armor_movement(generator: GroundObjectGenerator) -> None:
     first = journey.route.segments[journey.segment_index]
     departure.action = PointAction.OnRoad if first.on_road else PointAction.OffRoad
     departure.speed = kph(40 if first.on_road else 20).meters_per_second
-    departure.ETA_locked = False
+    # Keep the mission-start time anchor required by the native editor.
+    departure.ETA_locked = True
     departure.speed_locked = True
     group.units[0].heading = departure.position.heading_between_point(
         Point(points[1].x, points[1].z, generator.m.terrain)

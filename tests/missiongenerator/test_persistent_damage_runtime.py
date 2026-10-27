@@ -278,3 +278,103 @@ def test_damage_during_initialization_stops_further_pulses() -> None:
     finish_building_initialization(lua)
     assert lua.eval("#explosions") == 1
     assert lua.eval("escalationPersistentDamage.snapshot().factory") == 0.2
+
+
+def coarse_search(lua: Any) -> None:
+    """Model native queries returning candidates beyond their requested radius."""
+    lua.execute("""
+        world.searchObjects=function(category, volume, visit)
+            for _, obj in pairs(objects) do
+                if obj.category==category and visit(obj)==false then break end
+            end
+        end
+    """)
+
+
+@pytest.mark.parametrize("category", [1, 3, 5])
+@pytest.mark.parametrize(
+    "distance,maximum,low,high",
+    [
+        (21.891, 5, (-4.4112, -1.2771, -3.9952), (4.4112, 1.2780, 3.9952)),
+        (28.178, 100, (-3.0220, -10.0115, -5.9868), (3.0579, 2.9721, 5.9868)),
+    ],
+)
+def test_coarse_query_distant_fragile_bounds_do_not_block_pulses(
+    category: int,
+    distance: float,
+    maximum: int,
+    low: tuple[float, float, float],
+    high: tuple[float, float, float],
+) -> None:
+    lua = runtime()
+    coarse_search(lua)
+    lua.execute(f"""
+        factory=add('factory',10,800)
+        fragile=add('fragile',11,{maximum});fragile.x=factory.x+{distance};fragile.category={category}
+        fragile.getDesc=function() return {{box={{
+            min={{x={low[0]},y={low[1]},z={low[2]}}},
+            max={{x={high[0]},y={high[1]},z={high[2]}}}
+        }}}} end
+        ESCALATION_PERSISTENT_DAMAGE[#ESCALATION_PERSISTENT_DAMAGE+1]={{
+            name='factory',health=.5663,building=true}}
+        scheduled[1](nil,2)
+    """)
+    finish_building_initialization(lua)
+    assert lua.eval("#explosions") > 0
+    assert lua.eval("fragile.life") == maximum
+    assert lua.eval("escalationPersistentDamage.snapshot().factory") == pytest.approx(
+        0.5663, abs=0.020001
+    )
+    assert lua.eval("#warnings") == 0
+
+
+@pytest.mark.parametrize(
+    "distance,description",
+    [
+        (14, "return {box={min={x=-5,y=-1,z=-3},max={x=5,y=1,z=3}}}"),
+        (80, "return {box={min={x=-100,y=-5,z=-5},max={x=100,y=5,z=5}}}"),
+        (30, "return {}"),
+        (30, "error('unavailable')"),
+        (30, "return {box={min={x=0/0,y=0,z=0},max={x=1,y=1,z=1}}}"),
+        (30, "return {box={min={x=0,y=0,z=0},max={x=math.huge,y=1,z=1}}}"),
+        (30, "return {box={min={x=2,y=0,z=0},max={x=1,y=1,z=1}}}"),
+        (30, "return {box={min={x=0,y=0},max={x=1,y=1}}}"),
+    ],
+)
+def test_coarse_query_near_large_or_unknown_fragile_bounds_still_block(
+    distance: int, description: str
+) -> None:
+    lua = runtime()
+    coarse_search(lua)
+    lua.execute(f"""
+        factory=add('factory',10,800)
+        fragile=add('fragile',11,5);fragile.x=factory.x+{distance}
+        fragile.getDesc=function() {description} end
+        ESCALATION_PERSISTENT_DAMAGE[#ESCALATION_PERSISTENT_DAMAGE+1]={{
+            name='factory',health=.5663,building=true}}
+        scheduled[1](nil,2)
+    """)
+    finish_building_initialization(lua)
+    assert lua.eval("#explosions") == 0
+    assert lua.eval("fragile.life") == 5
+    assert lua.eval("escalationPersistentDamage.snapshot().factory") is None
+    assert lua.eval("#warnings") == 1
+
+
+@pytest.mark.parametrize("position", ["0/0", "math.huge"])
+def test_coarse_query_unreadable_neighbour_position_blocks_pulses(
+    position: str,
+) -> None:
+    lua = runtime()
+    coarse_search(lua)
+    lua.execute(f"""
+        factory=add('factory',10,800)
+        fragile=add('fragile',11,5);fragile.x={position}
+        fragile.getDesc=function()return {{box={{min={{x=-1,y=0,z=0}},max={{x=1,y=0,z=0}}}}}}end
+        ESCALATION_PERSISTENT_DAMAGE[#ESCALATION_PERSISTENT_DAMAGE+1]={{
+            name='factory',health=.5663,building=true}}
+        scheduled[1](nil,2)
+    """)
+    finish_building_initialization(lua)
+    assert lua.eval("#explosions") == 0
+    assert lua.eval("escalationPersistentDamage.snapshot().factory") is None
