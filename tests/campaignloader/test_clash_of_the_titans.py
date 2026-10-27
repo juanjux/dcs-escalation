@@ -294,7 +294,7 @@ def test_generated_squadrons_match_the_template_and_fit_their_bases(
 ) -> None:
     campaign = Campaign.from_file(CAMPAIGN)
     config = campaign.load_air_wing_config(generated.theater)
-    assert sum(1 for cp in generated.theater.controlpoints for _ in cp.squadrons) == 40
+    assert sum(1 for cp in generated.theater.controlpoints for _ in cp.squadrons) == 69
     for cp, definitions in config.by_location.items():
         expected: Counter[tuple[Any, str, int]] = Counter()
         for definition in definitions:
@@ -317,6 +317,68 @@ def test_generated_squadrons_match_the_template_and_fit_their_bases(
                 squadron.primary_task
             ), squadron.aircraft
             assert squadron.pilot_limit == squadron.max_size + 4
+
+
+def test_every_airframe_can_have_a_compatible_native_parking_slot(
+    generated: Game,
+) -> None:
+    for cp in generated.theater.controlpoints:
+        if not hasattr(cp, "airport"):
+            continue
+        candidates = [
+            [
+                slot.crossroad_idx
+                for slot in cp.airport.free_parking_slots(s.aircraft.dcs_unit_type)
+            ]
+            for s in cp.squadrons
+            for _ in range(s.max_size)
+        ]
+        # Shared pads can fit either a helicopter or a fighter, not both. Match
+        # every airframe to one distinct, dimension-compatible native DCS slot.
+        candidates.sort(key=len)
+        occupied: dict[int, int] = {}
+
+        def assign(airframe: int, seen: set[int]) -> bool:
+            for slot in candidates[airframe]:
+                if slot in seen:
+                    continue
+                seen.add(slot)
+                if slot not in occupied or assign(occupied[slot], seen):
+                    occupied[slot] = airframe
+                    return True
+            return False
+
+        for airframe in range(len(candidates)):
+            assert assign(airframe, set()), (cp.name, airframe, candidates[airframe])
+
+
+def test_no_runway_holds_half_the_fleet_or_all_critical_support(
+    generated: Game,
+) -> None:
+    for coalition, limit in ((generated.blue, 46), (generated.red, 70)):
+        wing = list(coalition.air_wing.iter_squadrons())
+        by_base: Counter[Any] = Counter()
+        for squadron in wing:
+            by_base[squadron.location] += squadron.max_size
+        assert max(by_base.values()) <= limit
+        for task in (FlightType.AEWC, FlightType.REFUELING, FlightType.TRANSPORT):
+            sources = {s.location for s in wing if s.primary_task is task}
+            assert len(sources) >= 2, task
+        for task, names in (
+            (
+                FlightType.ESCORT,
+                {"F-22A Raptor", "F-15C Eagle", "Su-57 Felon", "Su-30 Flanker-C"},
+            ),
+            (FlightType.CAS, {"A-10C Thunderbolt II (Suite 7)"}),
+            (FlightType.SEAD, {"F/A-18C Hornet (Lot 20)"}),
+        ):
+            assigned = [
+                s
+                for s in wing
+                if s.primary_task is task and s.aircraft.variant_id in names
+            ]
+            if assigned:
+                assert len({s.location for s in assigned}) >= 2, names
 
 
 def test_each_side_can_supply_its_ground_front_from_a_factory(generated: Game) -> None:
@@ -391,31 +453,36 @@ def test_dedicated_afacs_have_thermal_designators_and_both_patrol_modes(
         (generated.blue, "MQ-9 Reaper"),
         (generated.red, "WingLoong-I"),
     ):
-        squadron = next(
+        squadrons = [
             s
             for s in coalition.air_wing.iter_squadrons()
             if s.primary_task is FlightType.AFAC_AREA
-        )
-        assert squadron.aircraft.variant_id == aircraft
-        assert squadron.max_size == 4
-        profile = capabilities_for(squadron.aircraft.dcs_id)
-        assert profile is not None
-        assert profile.eo and profile.ir and profile.laser and profile.ir_pointer
-        assert profile.remote_operator
-        tasks = {FlightType.AFAC_AREA, FlightType.AFAC_FRONTLINE}
-        with pytest.MonkeyPatch.context() as patch:
-            patch.setitem(generated.settings.plugins, "realisticcas", True)
-            patch.setitem(generated.settings.plugins, "realisticcas.afacEnabled", True)
-            patch.setattr(
-                squadron,
-                "auto_assignable_mission_types",
-                squadron.auto_assignable_mission_types,
-            )
-            squadron.set_auto_assignable_mission_types(tasks)
-            assert squadron.auto_assignable_mission_types == tasks
-            assert all(squadron.can_auto_assign(task) for task in tasks)
-            patch.setitem(generated.settings.plugins, "realisticcas", False)
-            assert not any(squadron.can_auto_assign(task) for task in tasks)
+        ]
+        assert len(squadrons) == 2
+        assert len({s.location for s in squadrons}) == 2
+        for squadron in squadrons:
+            assert squadron.aircraft.variant_id == aircraft
+            assert squadron.max_size == 2
+            profile = capabilities_for(squadron.aircraft.dcs_id)
+            assert profile is not None
+            assert profile.eo and profile.ir and profile.laser and profile.ir_pointer
+            assert profile.remote_operator
+            tasks = {FlightType.AFAC_AREA, FlightType.AFAC_FRONTLINE}
+            with pytest.MonkeyPatch.context() as patch:
+                patch.setitem(generated.settings.plugins, "realisticcas", True)
+                patch.setitem(
+                    generated.settings.plugins, "realisticcas.afacEnabled", True
+                )
+                patch.setattr(
+                    squadron,
+                    "auto_assignable_mission_types",
+                    squadron.auto_assignable_mission_types,
+                )
+                squadron.set_auto_assignable_mission_types(tasks)
+                assert squadron.auto_assignable_mission_types == tasks
+                assert all(squadron.can_auto_assign(task) for task in tasks)
+                patch.setitem(generated.settings.plugins, "realisticcas", False)
+                assert not any(squadron.can_auto_assign(task) for task in tasks)
 
 
 def test_authored_force_caps_limit_stealth_and_retain_red_modern_fighters(
@@ -425,26 +492,34 @@ def test_authored_force_caps_limit_stealth_and_retain_red_modern_fighters(
     red = list(generated.red.air_wing.iter_squadrons())
     assert sum(s.max_size for s in blue) == 140
     assert sum(s.max_size for s in red) == 170
-    assert all(s.max_size == 4 for s in blue if s.aircraft.variant_id == "[CH] B-21")
-    assert all(s.max_size == 8 for s in blue if s.aircraft.variant_id == "F-22A Raptor")
-    assert any(
-        s.max_size == 12
-        and s.aircraft.variant_id in {"Su-30SM Flanker-H", "Su-30 Flanker-C"}
-        for s in red
+    assert all(s.max_size == 2 for s in blue if s.aircraft.variant_id == "[CH] B-21")
+    assert all(s.max_size == 4 for s in blue if s.aircraft.variant_id == "F-22A Raptor")
+    assert (
+        sum(
+            s.max_size
+            for s in red
+            if s.primary_task is FlightType.BARCAP
+            and s.aircraft.variant_id in {"Su-30SM Flanker-H", "Su-30 Flanker-C"}
+        )
+        == 12
     )
-    assert any(
-        s.max_size == 16 and s.aircraft.variant_id == "MiG-29S Fulcrum-C" for s in red
+    assert (
+        sum(s.max_size for s in red if s.aircraft.variant_id == "MiG-29S Fulcrum-C")
+        == 16
     )
-    assert any(s.aircraft.variant_id == "Tu-16 Badger" and s.max_size == 8 for s in red)
-    assert any(
-        s.primary_task is FlightType.ESCORT
-        and s.max_size == 12
-        and s.aircraft.variant_id in {"Su-57 Felon", "Su-30 Flanker-C"}
-        for s in red
+    assert sum(s.max_size for s in red if s.aircraft.variant_id == "Tu-16 Badger") == 8
+    assert (
+        sum(
+            s.max_size
+            for s in red
+            if s.primary_task is FlightType.ESCORT
+            and s.aircraft.variant_id in {"Su-57 Felon", "Su-30 Flanker-C"}
+        )
+        == 12
     )
-    assert any(s.aircraft.dcs_id == "A-10C_2" and s.max_size == 8 for s in blue)
-    assert any(
-        s.aircraft.variant_id == "Su-25T Frogfoot" and s.max_size == 16 for s in red
+    assert sum(s.max_size for s in blue if s.aircraft.dcs_id == "A-10C_2") == 8
+    assert (
+        sum(s.max_size for s in red if s.aircraft.variant_id == "Su-25T Frogfoot") == 16
     )
     assert generated.settings.player_skill == generated.settings.enemy_skill
     assert generated.blue.budget == generated.red.budget == 2000

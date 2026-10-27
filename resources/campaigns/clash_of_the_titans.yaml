@@ -23,6 +23,8 @@ description:
   A factory at Camp Bastion supplies the southern axis. Disconnected bases and neutral FOBs remain air-assault objectives.</p>
   <p>Both sides field early warning, tankers, airlift, dedicated air-assault helicopters and AFAC drones.
   Enable Realistic CAS and its AFAC option to use the MQ-9 and Wing Loong reconnaissance squadrons.</p>
+  <p>Aircraft are dispersed across compatible airfields, with separate detachments for critical support and stealth assets.
+  Losing one runway does not ground half the initial fleet or remove all early-warning, tanker or AFAC coverage.</p>
 miz: clash_of_the_titans.miz
 performance: 1
 recommended_start_date: 2020-01-27
@@ -388,22 +390,92 @@ iads_config:
       - Red IADS Command Kandahar
 
 squadrons:
-  #Bagram
+  # Bagram
   16:
     - primary: Strike
       secondary: any
       aircraft:
         - B-52H Stratofortress
-      size: 4
-      pilots: 8
+      size: 2
+      pilots: 6
     - primary: AEW&C
       aircraft:
         - E-3A
-      size: 2
-      pilots: 6
+      size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
+      size: 1
+      pilots: 5
+    - primary: Transport
+      secondary: any
+      aircraft:
+        - C-130J-30
+      size: 2
+      pilots: 6
+    - primary: Strike
+      secondary: any
+      aircraft:
+        - F-14B(U) Tomcat
+      size: 6
+      pilots: 10
+    - primary: BARCAP
+      secondary: any
+      aircraft:
+        - F-15C Eagle
+      size: 6
+      pilots: 10
+    - primary: Armed Recon
+      secondary: any
+      aircraft:
+        - F-15E Strike Eagle (Suite 4+)
+      size: 4
+      pilots: 8
+    - primary: DEAD
+      secondary: any
+      aircraft:
+        - '[CH] B-21'
+        - F-16CM Fighting Falcon (Block 50)
+      size: 2
+      pilots: 6
+    - primary: CAS
+      secondary: air-to-ground
+      aircraft:
+        - A-10C Thunderbolt II (Suite 7)
+      size: 4
+      pilots: 8
+    - primary: SEAD Escort
+      secondary: any
+      aircraft:
+        - EA-18G Growler
+        - F/A-18C Hornet (Lot 20)
+      size: 6
+      pilots: 10
+    - primary: Escort
+      secondary: any
+      aircraft:
+        - F-22A Raptor
+        - F-15C Eagle
+      size: 4
+      pilots: 8
+    - primary: SEAD Sweep
+      secondary: air-to-ground
+      aircraft:
+        - AV-8B Harrier II Night Attack
+      size: 8
+      pilots: 12
+  # Kabul
+  17:
+    - primary: Strike
+      secondary: any
+      aircraft:
+        - B-52H Stratofortress
+      size: 2
+      pilots: 6
+    - primary: AEW&C
+      aircraft:
+        - E-3A
       size: 1
       pilots: 5
     - primary: Refueling
@@ -415,75 +487,86 @@ squadrons:
       secondary: any
       aircraft:
         - C-130J-30
-      size: 4
-      pilots: 8
+      size: 2
+      pilots: 6
     - primary: Strike
       secondary: any
       aircraft:
         - F-14B(U) Tomcat
-      size: 12
-      pilots: 16
+      size: 6
+      pilots: 10
     - primary: BARCAP
       secondary: any
       aircraft:
         - F-15C Eagle
-      size: 12
-      pilots: 16
+      size: 6
+      pilots: 10
     - primary: Armed Recon
       secondary: any
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
-      size: 12
-      pilots: 16
-  #Kabul
-  17:
-    - primary: DEAD
-      secondary: any
-      aircraft:
-        - "[CH] B-21"
-        - F-16CM Fighting Falcon (Block 50)
-      size: 4
-      pilots: 8
-    - primary: CAS
-      secondary: air-to-ground
-      aircraft:
-        - A-10C Thunderbolt II (Suite 7)
       size: 8
       pilots: 12
     - primary: DEAD
       secondary: any
       aircraft:
+        - '[CH] B-21'
         - F-16CM Fighting Falcon (Block 50)
-      size: 12
-      pilots: 16
+      size: 2
+      pilots: 6
     - primary: SEAD Escort
       secondary: any
       aircraft:
         - EA-18G Growler
         - F/A-18C Hornet (Lot 20)
+      size: 6
+      pilots: 10
+    - primary: SEAD
+      secondary: any
+      aircraft:
+        - F/A-18C Hornet (Lot 20)
+      size: 6
+      pilots: 10
+    - primary: Escort
+      secondary: any
+      aircraft:
+        - F-22A Raptor
+        - F-15C Eagle
+      size: 4
+      pilots: 8
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
+  # Sharana
+  22:
+    - primary: CAS
+      secondary: air-to-ground
+      aircraft:
+        - A-10C Thunderbolt II (Suite 7)
+      size: 4
+      pilots: 8
+    - primary: DEAD
+      secondary: any
+      aircraft:
+        - F-16CM Fighting Falcon (Block 50)
       size: 12
       pilots: 16
     - primary: SEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
-      size: 12
-      pilots: 16
-    - primary: Escort
-      secondary: any
-      aircraft:
-        - F-22A Raptor
-        - F-15C Eagle
-      size: 8
-      pilots: 12
-  #Sharana
-  22:
+      size: 6
+      pilots: 10
     - primary: SEAD Sweep
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
-      size: 16
-      pilots: 20
+      size: 8
+      pilots: 12
     - primary: CAS
       secondary: any
       aircraft:
@@ -502,9 +585,9 @@ squadrons:
         - AFAC — Frontline
       aircraft:
         - MQ-9 Reaper
-      size: 4
-      pilots: 8
-  #Ghazni Heliport
+      size: 2
+      pilots: 6
+  # Ghazni Heliport
   21:
     - primary: Escort
       secondary: any
@@ -518,73 +601,107 @@ squadrons:
         - AH-64D Apache Longbow
       size: 4
       pilots: 8
-  #Tarinkot
+  # Tarinkot
   9:
     - primary: SEAD Escort
       secondary: any
       aircraft:
         - JF-17 Thunder
-      size: 12
-      pilots: 16
+      size: 4
+      pilots: 8
+    - primary: Armed Recon
+      secondary: air-to-ground
+      aircraft:
+        - Su-25T Frogfoot
+      size: 8
+      pilots: 12
+  # Kandahar
+  7:
     - primary: AFAC — Area
       secondary:
         - AFAC — Frontline
       aircraft:
         - WingLoong-I
-      size: 4
-      pilots: 8
+      size: 2
+      pilots: 6
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - Su-57 Felon
         - Su-30 Flanker-C
-      size: 12
-      pilots: 16
-  #Kandahar
-  7:
+      size: 6
+      pilots: 10
     - primary: Strike
       secondary: any
       aircraft:
         - Tu-95MS Bear-H
-      size: 8
-      pilots: 12
+      size: 4
+      pilots: 8
     - primary: BARCAP
       secondary: any
       aircraft:
         - Su-30SM Flanker-H
         - Su-30 Flanker-C
-      size: 12
-      pilots: 16
+      size: 6
+      pilots: 10
     - primary: BAI
       secondary: air-to-ground
       aircraft:
         - Tu-16 Badger
-      size: 8
-      pilots: 12
+      size: 6
+      pilots: 10
     - primary: OCA/Runway
       secondary: any
       aircraft:
         - Tu-22M3 Backfire-C
-      size: 8
-      pilots: 12
+      size: 6
+      pilots: 10
     - primary: SEAD
       secondary: air-to-ground
       aircraft:
         - Su-24M Fencer-D
-      size: 16
-      pilots: 20
+      size: 8
+      pilots: 12
     - primary: Armed Recon
       secondary: air-to-ground
       aircraft:
         - Su-25T Frogfoot
-      size: 16
-      pilots: 20
+      size: 4
+      pilots: 8
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - Su-27 Flanker-B
-      size: 16
-      pilots: 20
+      size: 8
+      pilots: 12
+    - primary: AEW&C
+      aircraft:
+        - A-50
+      size: 1
+      pilots: 5
+    - primary: Refueling
+      aircraft:
+        - IL-78M
+      size: 1
+      pilots: 5
+    - primary: Transport
+      secondary: any
+      aircraft:
+        - IL-76MD
+      size: 2
+      pilots: 6
+    - primary: DEAD
+      secondary: air-to-ground
+      aircraft:
+        - Su-34 Fullback
+      size: 8
+      pilots: 12
+    - primary: BARCAP
+      secondary: air-to-air
+      aircraft:
+        - MiG-29S Fulcrum-C
+      size: 8
+      pilots: 12
   # Kandahar Heliport
   15:
     - primary: Air Assault
@@ -595,55 +712,118 @@ squadrons:
     - primary: Escort
       secondary: any
       aircraft:
-         - Ka-50 Hokum III
+        - Ka-50 Hokum III
       size: 4
       pilots: 8
-  #FOB Lagman
+  # FOB Lagman
   FOB Lagman:
     - primary: CAS
       secondary: any
       aircraft:
-         - "[CH] Ka-52"
-         - Ka-50 Hokum
+        - '[CH] Ka-52'
+        - Ka-50 Hokum
       size: 4
       pilots: 8
     - primary: Escort
       secondary: any
       aircraft:
-         - Mi-28N Havoc
+        - Mi-28N Havoc
       size: 4
       pilots: 8
-  #Camp Bastion
+  # Camp Bastion
   10:
+    - primary: SEAD Escort
+      secondary: any
+      aircraft:
+        - JF-17 Thunder
+      size: 8
+      pilots: 12
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
+    - primary: Escort
+      secondary: air-to-air
+      aircraft:
+        - Su-57 Felon
+        - Su-30 Flanker-C
+      size: 6
+      pilots: 10
+    - primary: Strike
+      secondary: any
+      aircraft:
+        - Tu-95MS Bear-H
+      size: 4
+      pilots: 8
+    - primary: BARCAP
+      secondary: any
+      aircraft:
+        - Su-30SM Flanker-H
+        - Su-30 Flanker-C
+      size: 6
+      pilots: 10
+    - primary: BAI
+      secondary: air-to-ground
+      aircraft:
+        - Tu-16 Badger
+      size: 2
+      pilots: 6
+    - primary: OCA/Runway
+      secondary: any
+      aircraft:
+        - Tu-22M3 Backfire-C
+      size: 2
+      pilots: 6
+    - primary: SEAD
+      secondary: air-to-ground
+      aircraft:
+        - Su-24M Fencer-D
+      size: 8
+      pilots: 12
+    - primary: Armed Recon
+      secondary: air-to-ground
+      aircraft:
+        - Su-25T Frogfoot
+      size: 4
+      pilots: 8
+    - primary: Escort
+      secondary: air-to-air
+      aircraft:
+        - Su-27 Flanker-B
+      size: 8
+      pilots: 12
     - primary: AEW&C
       aircraft:
         - A-50
-      size: 2
-      pilots: 6
+      size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - IL-78M
-      size: 2
-      pilots: 6
+      size: 1
+      pilots: 5
     - primary: Transport
       secondary: any
       aircraft:
         - IL-76MD
-      size: 4
-      pilots: 8
+      size: 2
+      pilots: 6
     - primary: DEAD
       secondary: air-to-ground
       aircraft:
         - Su-34 Fullback
-      size: 16
-      pilots: 20
+      size: 8
+      pilots: 12
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
         - MiG-29S Fulcrum-C
-      size: 16
-      pilots: 20
-  #Camp Bastion Heliport
+      size: 8
+      pilots: 12
+  # Camp Bastion Heliport
   13:
     - primary: Transport
       secondary: any
