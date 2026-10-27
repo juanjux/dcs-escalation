@@ -140,6 +140,77 @@ def test_duplicate_dispatch_cannot_duplicate_units(world: Any, controls: Any) ->
     assert pickle.dumps(world.game) == after
 
 
+def gps_body(world: Any, x: float, z: float) -> dict[str, Any]:
+    latlng = Point(x, z, world.game.theater.terrain).latlng()
+    return {
+        "unit_ids": [7],
+        "destination_kind": "position",
+        "position": {"lat": latlng.lat, "lng": latlng.lng},
+    }
+
+
+def test_api_and_dialog_reject_enemy_gps_without_mutation(
+    world: Any, controls: Any
+) -> None:
+    before = pickle.dumps(world.game)
+    body = gps_body(world, 195, 10)
+    for suffix, extra in (("/preview", {}), ("", {"preview_token": "0" * 64})):
+        response = controls.request(
+            "POST", controls.url + suffix, json={**body, **extra}
+        )
+        assert response.status_code == 403 and "friendly territory" in response.text
+    dialog = ArmorMovementDialog(controls.model, world.source.id, Player.BLUE)
+    dialog.units[7].setChecked(True)
+    dialog.coordinates.setText(
+        format_latlng(
+            Point(195, 10, world.game.theater.terrain).latlng(), CoordinateFormat.DDM
+        )
+    )
+    dialog.calculate()
+    assert dialog.preview is None and not dialog.dispatch_button.isEnabled()
+    assert dialog.details.property("movementBlocked") is True
+    assert "friendly territory" in dialog.details.text()
+    assert pickle.dumps(world.game) == before and not controls.sent
+    dialog.deleteLater()
+
+
+def test_api_gps_dispatch_rechecks_territory_after_preview(
+    world: Any, controls: Any
+) -> None:
+    body = gps_body(world, 110, 10)
+    response = controls.request("POST", controls.url + "/preview", json=body)
+    assert response.status_code == 200, response.text
+    world.b._coalition.player = Player.RED
+    before = pickle.dumps(world.game)
+    response = controls.request(
+        "POST",
+        controls.url,
+        json={**body, "preview_token": response.json()["preview_token"]},
+    )
+    assert response.status_code == 403
+    assert pickle.dumps(world.game) == before and not controls.sent
+
+
+def test_existing_gps_order_pauses_after_capture_and_can_be_stopped(
+    world: Any, controls: Any
+) -> None:
+    body = gps_body(world, 110, 10)
+    preview = controls.request("POST", controls.url + "/preview", json=body).json()
+    response = controls.request(
+        "POST", controls.url, json={**body, "preview_token": preview["preview_token"]}
+    )
+    assert response.status_code == 200, response.text
+    order = response.json()
+    transit = next(iter(world.game.ground_movements.transits.values()))
+    world.b._coalition.player = Player.RED
+    world.game.turn += 1
+    advance_armor(world.game, GameUpdateEvents())
+    assert not transit.finished and transit.journey.travelled_distance == 0
+    assert "friendly territory" in transit.pause_reason
+    stopped = controls.request("POST", f"{controls.url}/{order['order_id']}/stop")
+    assert stopped.status_code == 200 and stopped.json()["status"] == "stopped"
+
+
 @pytest.mark.parametrize(
     "change",
     ["turn", "inventory", "budget", "destination", "mission", "campaign", "disabled"],

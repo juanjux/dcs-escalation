@@ -226,6 +226,12 @@ and clear exclusion zones. Missing terrain data or an unverified water/bridge
 crossing outside the authored roads blocks the preview. With no friendly road
 corridors, only a validated direct off-road route is available.
 
+GPS destinations must be in friendly territory, determined by the nearest land
+base or authored road sector. Roads between opposing bases are divided at the
+current frontline. Fleets do not claim land; neutral or tied sectors are not
+eligible. This check applies to previews, dispatch and ongoing orders: an order
+pauses if its GPS destination is no longer friendly. It does not capture territory.
+
 To dispatch through the API, send the preview request plus its returned
 `preview_token` to `POST /tgos/{id}/ground-movement`. The token is a stale-preview
 check, not authorization. `GET /tgos/{id}/ground-movement` reports departures from

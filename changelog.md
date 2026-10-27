@@ -77,6 +77,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Ground Movement]** Restrict GPS destinations to friendly ground sectors and pause orders when destination control changes.
 * **[UI]** Keep site repairs responsive by batching updates and avoiding rebuilds of closed location windows.
 * **[Ground Movement]** Define mobility for stock and mod vehicles, towed guns and tractors so normal armor groups can be dispatched.
 
