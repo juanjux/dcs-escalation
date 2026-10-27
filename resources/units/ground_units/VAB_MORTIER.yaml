@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 price: 10
 variants:
   VAB MORTIER: null

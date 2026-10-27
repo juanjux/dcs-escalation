@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Artillery
 description: The Archer Artillery System or Artillerisystem 08 is a
   self-propelled gun system of Sweden. The main piece of the system is

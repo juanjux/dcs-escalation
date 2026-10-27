@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: 'The FV101 Scorpion is a British armoured reconnaissance vehicle and light tank. It was the lead vehicle and the fire support type in the Combat Vehicle Reconnaissance
   (Tracked), CVR(T), family of seven armoured vehicles. Manufactured by Alvis, it was introduced into service with the British Army in 1973 and was withdrawn in 1994.

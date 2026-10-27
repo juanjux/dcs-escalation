@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: "The Eagle IV is a mine-resistant patrol vehicle on a Duro chassis, used by the German Army for protected transport and reconnaissance."
 introduced: 2008

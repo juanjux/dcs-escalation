@@ -1,3 +1,6 @@
+ground_mobility:
+  mode: self_propelled
+  can_tow: true
 class: Logistics
 description: The HEMTT M977 Truck is a highly versatile cargo and troop transport. Equipped with a 450
   horsepower diesel engine the M977 excels in transporting supplies, equipment and personnel in challenging

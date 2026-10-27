@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 introduced: 2009
 manufacturer: Norinco

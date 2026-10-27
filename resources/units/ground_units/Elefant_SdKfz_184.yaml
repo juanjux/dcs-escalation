@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description:
   The Elefant (German for "elephant") was a heavy tank destroyer used by German

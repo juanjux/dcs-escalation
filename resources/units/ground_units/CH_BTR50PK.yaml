@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: "The BTR-50 (BTR stands for Bronetransporter (Russian: \xd0\x91\xd0\xa2\xd0\xa0\x2c\x20\xd0\x91\xd1\x80\xd0\xbe\xd0\xbd\xd0\xb5\xd1\x82\xd1\x80\xd0\xb0\xd0\xbd\xd1\x81\xd0\xbf\xd0\xbe\xd1\x80\xd1\x82\xd0\xb5\xd1\x80),
   literally 'armoured transporter') is a Soviet tracked amphibious armoured personnel carrier (APC) based on 

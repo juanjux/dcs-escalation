@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Artillery
 description: "The BM-21 \"Grad\" (Russian: \u0411\u041C-21 \"\u0413\u0440\u0430\u0434\
   \", lit.\u2009'hail') is a Soviet truck-mounted 122 mm multiple rocket launcher."

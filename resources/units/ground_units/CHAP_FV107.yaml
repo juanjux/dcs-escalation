@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: 'The FV107 Scimitar is an armoured tracked military reconnaissance vehicle (sometimes classed as a light tank) formerly used by the British Army,
   until it was retired from active service in April 2023. It was manufactured by Alvis in Coventry. It is very similar to the FV101 Scorpion, but mounts a 

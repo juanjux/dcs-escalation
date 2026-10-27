@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description: 'The Jagdpanther (German: "hunting Panther"), Sd.Kfz. 173, was a tank
   destroyer (Jagdpanzer, a self-propelled anti-tank gun) built by Germany during World

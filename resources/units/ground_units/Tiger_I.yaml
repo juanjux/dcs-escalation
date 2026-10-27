@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The Tiger I was a German heavy tank of World War II that operated beginning
   in 1942 in Africa and in the Soviet Union, usually in independent heavy tank battalions.

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: "The BMPT \"Terminator\" is an armored fighting vehicle (AFV), designed and manufactured by 
   the Russian company Uralvagonzavod. This vehicle was designed for supporting tanks and other AFVs in urban areas.

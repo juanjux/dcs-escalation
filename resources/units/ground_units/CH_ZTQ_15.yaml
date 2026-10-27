@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: "The Type 15 (Chinese: \u0031\u0035\u5f0f\u8f7b\u578b\u5766\u514b;
   pinyin: \u0079\u012b\u0077\u01d4\u0020\u0073\u0068\u00ec\u0020\u0071\u012b\u006e\u0067\u0078\u00ed\u006e\u0067\u0020\u0074\u01ce\u006e\u006b\u00e8,

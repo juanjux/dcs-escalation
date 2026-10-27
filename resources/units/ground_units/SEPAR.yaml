@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Recon
 description: The AMX-10 RC is a reconnaissance vehicle built by GIAT. Over 240 are
   in service in the French Army. In addition, 108 vehicles were sold to Morocco and

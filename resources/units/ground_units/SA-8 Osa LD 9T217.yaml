@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Logistics
 description: "The 9K33 Osa (Russian: 9\u041A33 \xAB\u041E\u0441\u0430\xBB, literally\
   \ \"wasp\"; NATO reporting name SA-8 Gecko) is a highly mobile, low-altitude, short-range\

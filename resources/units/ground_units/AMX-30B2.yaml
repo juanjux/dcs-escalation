@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: 'The AMX-30 is a main battle tank designed by Ateliers de construction
   d''Issy-les-Moulineaux (AMX, then GIAT) and first delivered to the French Army in

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The T-64 is a Soviet second-generation main battle tank, designed by
   Kharkiv Morozov Machine Building Design Bureau in Ukraine, introduced in the early

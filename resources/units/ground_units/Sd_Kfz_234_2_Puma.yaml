@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Recon
 description:
   The Sd.Kfz. 234 (Sonderkraftfahrzeug 234, Special Purpose Vehicle 234), was a

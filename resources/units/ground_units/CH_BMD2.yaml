@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: "The BMD-2 is a Soviet airborne infantry fighting vehicle, introduced in 1985. It is a variant of
   BMD-1 with a new turret and changes to the hull. BMD stands for Boyevaya Mashina Desanta 

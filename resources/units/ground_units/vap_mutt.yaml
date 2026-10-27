@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Logistics
 price: 3
 variants:

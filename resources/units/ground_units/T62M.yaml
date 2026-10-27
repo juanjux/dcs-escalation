@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: "The T-62 is a Soviet main battle tank that was first introduced in 1961.
   As a further development of the T-55 series, the T-62 retained many similar design

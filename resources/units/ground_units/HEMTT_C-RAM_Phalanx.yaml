@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: "Counter rocket, artillery, and mortar, abbreviated C-RAM or counter-RAM, is a set of
  systems used to detect and/or destroy incoming rockets, artillery, and mortar rounds in the air

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The T-54/55 series was the most-produced tank in history. Estimated production
   numbers for the series range from 86,000 to 100,000. They were replaced by the T-62,

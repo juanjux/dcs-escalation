@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Logistics
 description: The jeep became the primary light wheeled transport vehicle of the United
   States military and its allies, with President Eisenhower once calling it "one of

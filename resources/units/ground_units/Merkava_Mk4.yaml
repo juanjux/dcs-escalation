@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: 'The Merkava is a main battle tank used by the Israel Defense Forces.
   The tank began development in 1970, and entered official service in 1979. Four main

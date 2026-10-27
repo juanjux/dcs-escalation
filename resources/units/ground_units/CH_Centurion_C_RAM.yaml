@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: The Centurion C-RAM is a land-based mobile countermeasure system designed to
   protect military installations and assets form incoming artillery, rockets and mortary fire.

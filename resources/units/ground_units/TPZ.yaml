@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: The TPz (Transportpanzer) Fuchs ("fox") is a German armoured personnel
   carrier originally developed by Daimler-Benz but manufactured and further developed

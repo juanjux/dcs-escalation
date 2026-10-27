@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description: The M551 Sheridan was developed as a high movile air-droppable armored vehicle
   designed for reconnaissance and light combat. Equipped with a 152mm M81 gun/launcher

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: towed
 class: AAA
 description:
   The 8.8 cm Flak 18/36/37/41 is a German 88 mm anti-aircraft and anti-tank

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Logistics
 description: The Land Rover Wolf is a light utility vehicle used for troop transport, liaison, and general support tasks across British Army units.
 introduced: 1990

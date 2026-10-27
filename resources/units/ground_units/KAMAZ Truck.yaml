@@ -1,3 +1,6 @@
+ground_mobility:
+  mode: self_propelled
+  can_tow: true
 class: Logistics
 price: 1
 variants:

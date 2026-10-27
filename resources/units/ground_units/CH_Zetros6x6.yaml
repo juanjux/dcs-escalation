@@ -1,3 +1,6 @@
+ground_mobility:
+  mode: self_propelled
+  can_tow: true
 class: Logistics
 description: "The Zetros is a bonneted off-road truck used by the German Army where the cab-over HX cannot go."
 introduced: 2008

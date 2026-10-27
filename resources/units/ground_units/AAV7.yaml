@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: "The Assault Amphibious Vehicle (AAV)\u2014official designation AAVP-7A1\
   \ (formerly known as Landing Vehicle, Tracked, Personnel-7 abbr. LVTP-7)\u2014is\

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Recon
 price: 4
 role: Recon

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Recon
 description: "The BRDM-2 is an amphibious armoured scout car designed and developed in the Soviet Union. It was also known under the designations BTR-40PB, 
   BTR-40P-2, and GAZ 41-08. This vehicle, like many other Soviet designs, has been exported extensively and is in use in at least 38 countries. 

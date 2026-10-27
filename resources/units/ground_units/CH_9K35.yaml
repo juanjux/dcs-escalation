@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: "The 9K35 Strela-10 (Russian: \x39\xd0\x9a\x33\x35\x20\xc2\xab\xd0\xa1\xd1\x82\xd1\x80\xd0\xb5\xd0\xbb\xd0\xb0\x2d\x31\x30\xc2\xbb;
  English: arrow) is a Soviet highly mobile, short-range surface-to-air missile system. It is visually aimed, and utilizes optical/infrared-guidance. 

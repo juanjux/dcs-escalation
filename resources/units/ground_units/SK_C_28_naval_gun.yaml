@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: fixed
 class: AAA
 price: 0
 variants:

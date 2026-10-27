@@ -272,11 +272,35 @@ def test_dialog_external_change_and_invalid_coordinates(
     dialog.coordinates.setText("invalid")
     dialog.calculate()
     assert "valid coordinates" in dialog.details.text()
+    assert dialog.details.property("movementBlocked") is True
+    assert "Movement blocked" in dialog.details.text()
+    assert "border-left" in dialog.details.styleSheet()
     controls.signal.ground_movements_changed.emit()
     controls.app.processEvents()
     assert (
         not dialog.preview_button.isEnabled() and not dialog.dispatch_button.isEnabled()
     )
+    dialog.deleteLater()
+
+
+def test_dialog_clears_blocking_banner_after_correcting_selection(
+    world: Any, controls: Any
+) -> None:
+    dialog = ArmorMovementDialog(controls.model, world.source.id, Player.BLUE)
+    dialog.kind.setCurrentIndex(dialog.kind.findData(DestinationKind.BASE))
+    dialog.calculate()
+    assert dialog.details.property("movementBlocked") is True
+    assert dialog.preview is None and not dialog.dispatch_button.isEnabled()
+    dialog.units[7].setChecked(True)
+    assert dialog.details.property("movementBlocked") is False
+    assert not dialog.details.styleSheet()
+    dialog.calculate()
+    assert getattr(dialog, "preview") is not None and dialog.dispatch_button.isEnabled()
+    assert dialog.details.property("movementBlocked") is False
+    dialog.game.turn += 1
+    dialog.dispatch()
+    assert dialog.preview is None and not dialog.dispatch_button.isEnabled()
+    assert dialog.details.property("movementBlocked") is True
     dialog.deleteLater()
 
 
@@ -362,6 +386,8 @@ def test_stopped_history_is_stable_after_redispatch(world: Any, controls: Any) -
 def test_location_refreshes_after_commands_and_closes_on_campaign_change(
     world: Any, controls: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    import shiboken6
+    from PySide6.QtCore import QCoreApplication, QEvent
     from PySide6.QtGui import QIcon
     from qt_ui.windows.groundobject.QGroundObjectMenu import QGroundObjectMenu
     from qt_ui.uiconstants import EVENT_ICONS
@@ -373,9 +399,10 @@ def test_location_refreshes_after_commands_and_closes_on_campaign_change(
     window.show()
     controls.signal.ground_movements_changed.emit()
     controls.app.processEvents()
+    controls.app.processEvents()
     assert len(builds) == 2
     controls.model.game = None
     controls.signal.ground_movements_changed.emit()
     controls.app.processEvents()
-    assert not window.isVisible() and len(builds) == 2
-    window.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    assert not shiboken6.isValid(window) and len(builds) == 2
