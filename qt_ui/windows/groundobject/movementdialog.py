@@ -35,6 +35,7 @@ from game.groundmovement.planning import (
 from game.groundmovement.report import preview_token
 from game.theater.player import Player
 from qt_ui.widgets.searchablecombo import SearchableComboBox
+from qt_ui.widgets.map.grounddestination import GroundDestinationDialog
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.pilot.common import PANEL, AMBER, RED
 
@@ -126,6 +127,9 @@ class ArmorMovementDialog(QDialog):
         self.paste = QPushButton("Paste")
         self.paste.clicked.connect(self.paste_coordinates)
         coordinates.addWidget(self.paste)
+        self.pick_on_map = QPushButton("Choose on map…")
+        self.pick_on_map.clicked.connect(self.choose_on_map)
+        coordinates.addWidget(self.pick_on_map)
         layout.addLayout(coordinates)
         self.details = QLabel("Choose units and a destination, then preview the route.")
         self.details.setWordWrap(True)
@@ -168,6 +172,40 @@ class ArmorMovementDialog(QDialog):
     def paste_coordinates(self) -> None:
         self.coordinates.setText(QApplication.clipboard().text())
 
+    def choose_on_map(self) -> None:
+        selected = self.selected_ids()
+
+        def preview(position: GroundPosition) -> ArmorMovementPreview:
+            if not self.preview_button.isEnabled():
+                raise ValueError("The campaign changed. Close and reopen this dialog")
+            return preview_armor_movement(
+                self.game,
+                self.source_id,
+                self.owner,
+                selected,
+                movement_destination(
+                    self.game, self.owner, DestinationKind.POSITION, position=position
+                ),
+            )
+
+        try:
+            self.model.ground_movement_commands.require_planning(self.game)
+            if not selected:
+                raise ValueError("Select units before choosing a destination")
+            source = self.game.db.tgos.get(self.source_id)
+            picker = GroundDestinationDialog(
+                self.model, source.position, source.name, preview, self
+            )
+            try:
+                if picker.exec() == QDialog.DialogCode.Accepted and picker.selected:
+                    at = picker.selected
+                    self.coordinates.setText(f"{at.lat:.10f}, {at.lng:.10f}")
+                    self.calculate()
+            finally:
+                picker.deleteLater()
+        except (ValueError, PermissionError, RuntimeError) as exc:
+            self.set_details(str(exc), blocked=True)
+
     def invalidate(self) -> None:
         self.preview = None
         self.dispatch_button.setEnabled(False)
@@ -187,6 +225,7 @@ class ArmorMovementDialog(QDialog):
     def campaign_changed(self) -> None:
         self.invalidate()
         self.preview_button.setEnabled(False)
+        self.pick_on_map.setEnabled(False)
         self.set_details(
             "The campaign or movement orders changed. Close and reopen this dialog.",
             blocked=True,
@@ -198,6 +237,7 @@ class ArmorMovementDialog(QDialog):
         self.target.setVisible(not position)
         self.coordinates.setVisible(position)
         self.paste.setVisible(position)
+        self.pick_on_map.setVisible(position)
         self.target.clear()
         if not position:
             for base in sorted(self.game.theater.controlpoints, key=lambda cp: cp.name):

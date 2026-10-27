@@ -417,6 +417,9 @@ class NewUnitTransferDialog(QDialog):
             lambda: self.coordinates.setText(QApplication.clipboard().text())
         )
         coordinate_row.addWidget(paste)
+        self.pick_on_map = QPushButton("Choose on map…")
+        self.pick_on_map.clicked.connect(self.choose_on_map)
+        coordinate_row.addWidget(self.pick_on_map)
         gps_layout.addLayout(coordinate_row)
         self.details = QLabel(
             "Select units and GPS coordinates, then preview the route."
@@ -475,6 +478,7 @@ class NewUnitTransferDialog(QDialog):
         self.preview = None
         self.submit_button.setEnabled(False)
         self.preview_button.setEnabled(False)
+        self.pick_on_map.setEnabled(False)
         self.set_details(
             "The campaign or inventory changed. Close and reopen this dialog.",
             blocked=True,
@@ -495,6 +499,35 @@ class NewUnitTransferDialog(QDialog):
             raise ValueError("Enter valid coordinates or paste them from the map")
         point = Point.from_latlng(latlng, self.game.theater.terrain)
         return GroundPosition(point.x, point.y)
+
+    def choose_on_map(self) -> None:
+        from qt_ui.widgets.map.grounddestination import GroundDestinationDialog
+
+        selected = dict(self.transfer_panel.transfers)
+
+        def preview(position: GroundPosition) -> BaseMovementPreview:
+            if self.stale:
+                raise ValueError("The campaign changed. Close and reopen this dialog")
+            return preview_base_movement(
+                self.game, self.origin.id, self.owner, selected, position
+            )
+
+        try:
+            self.game_model.ground_movement_commands.require_planning(self.game)
+            if not any(selected.values()):
+                raise ValueError("Select units before choosing a destination")
+            picker = GroundDestinationDialog(
+                self.game_model, self.origin.position, self.origin.name, preview, self
+            )
+            try:
+                if picker.exec() == QDialog.DialogCode.Accepted and picker.selected:
+                    at = picker.selected
+                    self.coordinates.setText(f"{at.lat:.10f}, {at.lng:.10f}")
+                    self.calculate()
+            finally:
+                picker.deleteLater()
+        except (ValueError, PermissionError, RuntimeError) as exc:
+            self.set_details(str(exc), blocked=True)
 
     def calculate(self) -> None:
         self.on_transfer_quantity_changed()

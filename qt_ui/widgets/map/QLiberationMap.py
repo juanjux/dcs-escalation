@@ -3,9 +3,10 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QUrl, QUrlQuery
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWidgets import QWidget
 
 from game.server.settings import ServerSettings
 from qt_ui.liberation_install import server_port
@@ -29,22 +30,29 @@ class LoggingWebPage(QWebEnginePage):
 
 
 class QLiberationMap(QWebEngineView):
-    def __init__(self, game_model: GameModel, dev: bool, parent) -> None:
+    def __init__(
+        self,
+        game_model: GameModel,
+        dev: bool,
+        parent: QWidget | None,
+        *,
+        query: dict[str, str] | None = None,
+    ) -> None:
         super().__init__(parent)
         self.game_model = game_model
         self.setMinimumSize(800, 600)
 
-        self.page = LoggingWebPage(self)
+        page = LoggingWebPage(self)
         # Required to allow "cross-origin" access from file:// scoped canvas.html to the
         # localhost HTTP backend.
-        self.page.settings().setAttribute(
+        page.settings().setAttribute(
             QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
         )
 
         # The map copies coordinates to the clipboard through execCommand, which the web
         # view blocks unless this is on. The asynchronous clipboard API is not an
         # alternative: it is defined on a file:// page but rejects every write.
-        self.page.settings().setAttribute(
+        page.settings().setAttribute(
             QWebEngineSettings.WebAttribute.JavascriptCanAccessClipboard, True
         )
 
@@ -57,9 +65,13 @@ class QLiberationMap(QWebEngineView):
         if host.startswith("::"):
             host = f"[{host}]"
         port = server_settings.server_port
-        url.setQuery(f"server={host}:{port}")
-        self.page.load(url)
-        self.setPage(self.page)
+        parameters = QUrlQuery()
+        parameters.addQueryItem("server", f"{host}:{port}")
+        for key, value in (query or {}).items():
+            parameters.addQueryItem(key, value)
+        url.setQuery(parameters)
+        page.load(url)
+        self.setPage(page)
 
     def discard_renderer(self) -> None:
         """Stop the QtWebEngine renderer process for this map.
@@ -72,11 +84,11 @@ class QLiberationMap(QWebEngineView):
         the map's splitter slot.
         """
         try:
-            self.page.setLifecycleState(QWebEnginePage.LifecycleState.Discarded)
+            self.page().setLifecycleState(QWebEnginePage.LifecycleState.Discarded)
             # setLifecycleState is a silent no-op (not an exception) if the page is
             # still visible or hasn't finished loading, so confirm it actually took --
             # otherwise the renderer stays alive and the panel can still deadlock.
-            if self.page.lifecycleState() != QWebEnginePage.LifecycleState.Discarded:
+            if self.page().lifecycleState() != QWebEnginePage.LifecycleState.Discarded:
                 logging.warning(
                     "Map renderer not discarded (page still active/loading?); "
                     "the mission panel may still hit the desktop-GL deadlock."
@@ -87,6 +99,6 @@ class QLiberationMap(QWebEngineView):
     def restore_renderer(self) -> None:
         """Reactivate the renderer discarded by :meth:`discard_renderer` (reloads)."""
         try:
-            self.page.setLifecycleState(QWebEnginePage.LifecycleState.Active)
+            self.page().setLifecycleState(QWebEnginePage.LifecycleState.Active)
         except (AttributeError, RuntimeError):
             logging.exception("Failed to reactivate the map renderer")

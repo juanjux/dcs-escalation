@@ -47,35 +47,28 @@ Read 1-4 once, then work from 5 and 8 each turn; 9 is the field-by-field referen
 ## Aircraft damage and workshops
 
 With Live Pilots and morale enabled, a confirmed damaged return to friendly
-territory adds a small morale penalty (default -3), configurable under Live
-Pilots > Morale events. Zero disables it. The normal mission-complete reward
-still applies, and rank/hardening reduce the penalty as usual. This event does
-not change survival or wounds, does not count unknown or airborne outcomes,
-and works independently of aircraft workshops. Regenerate missions to include
-the required telemetry.
+territory adds a small morale penalty (default -3). The campaign setting
+`morale_damaged_return` controls it; zero disables it. The normal mission-complete
+reward still applies, and rank/hardening reduce the penalty as usual. This event
+does not change survival or wounds, does not count unknown or airborne outcomes,
+and works independently of aircraft workshops.
 
-Campaign Management > Persistent damage & repairs contains separate boxes for
-aircraft workshops, surviving ship/building damage, and reconstruction times.
-Persistent aircraft damage is off by default. Its dependent controls are greyed
-out until enabled; ship/building recovery has its own independent switch.
+Persistent aircraft damage is off by default; ship/building recovery has its own
+independent setting. Read the enabled settings before planning around repairs.
 Both coalitions use the same rules. A damaged aircraft remains owned and occupies
 parking and its squadron slot, but cannot fly until repaired. Use `workshops` /
 `GET /retribution-ai/workshops` to inspect your own airframes' remaining health,
 repairing/queued status, repair duration, readiness forecast and mechanic capacity.
-The air-wing view reports `damaged`; `untasked` and `flyable` exclude those airframes.
-The debriefing's **Damaged aircraft** section counts confirmed friendly recoveries
-by aircraft/helicopter model, separately from permanent losses, and is retained in
-the saved report. It uses the same recovery rules as workshop admission and does
-not reveal enemy workshop inventories. A visibly damaged aircraft is counted only
-when telemetry confirms numerical damage or a hit with unknown remaining health.
-For carrier returns, the native landing name is resolved through the mission's
-ship mapping: DCS runtime airbase IDs can be text and need not match editor IDs.
+The API's air-wing data reports `damaged`; `untasked` and `flyable` exclude those
+airframes.
+Workshop admission requires confirmed damage: numerical health loss or a hit with
+unknown remaining health. Do not infer enemy workshop inventories from these reports.
 
 Initial mechanics are total physical fixed-wing/helicopter parking divided by 10,
 rounded up, with a minimum of two; the ratio is configurable. Mechanics are shared
-between all squadrons at a base. First assign one mechanic per aircraft in admission
-order, then distribute spare mechanics among those aircraft, up to what each needs
-to finish that turn. Each mechanic restores up to 50 percentage points of maximum
+between all squadrons at a base. The workshop automatically assigns one mechanic
+per aircraft in admission order, then distributes spare mechanics up to what each
+needs to finish that turn. Each mechanic restores up to 50 percentage points of maximum
 health per working turn by default: one mechanic needs two turns for severe damage,
 but two can finish it in one. A mechanic cannot work on a second aircraft in the
 same turn. Confirmed damage without a valid health percentage needs one mechanic
@@ -89,7 +82,8 @@ next boundary to become ready in N+2. Waiting in a queue can extend this. Skippe
 turns advance repairs, but reloading or regenerating a mission does not.
 
 Recovery requires a native landing event and a living aircraft stationary on the
-ground for 30 seconds. Use the actual position, not DCS's airport attribution:
+ground for 30 seconds. Eligibility uses the actual position, not DCS's airport
+attribution:
 off-field landings may still name a nearby airport. A landing closer to a friendly
 base than an enemy base is eligible, including an emergency landing. Recovered
 airframes enter their squadron's base workshop. A confirmed return to the intended
@@ -99,18 +93,8 @@ never recover their aircraft. With "Non-combat (crash) aircraft losses don't cou
 enabled, an otherwise non-combat crash with damage recorded before impact also
 enters the workshop. With that option off it remains a loss. Missing units, a final
 impact reading, or last positive health alone never establish recovery. Telemetry
-does not model every subsystem; canopy jettison alone did not reduce measured life.
+does not model every subsystem; visible damage alone does not prove a health loss.
 Old missions without this telemetry retain their existing behavior.
-
-Ship health is restored with native mission-trigger actions. Placed buildings
-receive small initial damage pulses, accepting a two-percentage-point tolerance
-because DCS ignores very small hits. Initialization can take about 90 simulated
-seconds for severe damage. Buildings with dangerously close or fragile neighbours
-are skipped, as is partial restoration of baked terrain scenery. A warning names
-skipped buildings, and their stored campaign health is retained instead of being
-overwritten by a full-health reading. Health telemetry starts after initialization.
-Regenerate a mission to use updated restoration actions; an already loaded
-mission retains its embedded scripts and triggers.
 
 A confirmed damaged landing that fails recovery eligibility is a permanent
 airframe write-off, not a healthy aircraft returned next turn. It reduces owned
@@ -124,12 +108,6 @@ maximum radius. A confirmed friendly carrier return bypasses that comparison.
 The non-combat crash exception still recovers recorded pre-impact damage when its
 doctrine is enabled. Missing telemetry, missing positions, an aircraft still in
 flight or a healthy return do not establish a new write-off.
-
-Future CSAR work must keep aircraft recoverability separate from pilot rescue:
-an airframe written off does not automatically kill its pilot. A surviving pilot
-nearer enemy territory may generate a CSAR mission. Preserve survivor positions
-and times for that feature, and use the pilot's position rather than assuming the
-aircraft's recovery decision determines the crew's fate.
 
 Use `hire_aircraft_mechanic` / `POST /retribution-ai/workshops/hire` to buy permanent
 additional mechanics at your own base: $50,000 each by default, configured in
@@ -147,19 +125,27 @@ loading the save does not remove aircraft to make them fit.
 Before relocating, read `relocation_workshop_quote` /
 `GET /retribution-ai/workshops/relocation-quote`. Damaged aircraft cannot transfer:
 both repairing and queued airframes must be sold automatically with explicit
-`confirm_damaged_sale: true` on the relocation request. The UI asks for confirmation
-with the healthy transfer count, damaged sale count and proceeds. Canceling changes
-nothing, and an invalid relocation never sells aircraft. Losing a base or sinking
-its ship writes off immobile damaged aircraft without a resale refund. Returning
+`confirm_damaged_sale: true` on the relocation request. The quote reports
+operational aircraft, damaged aircraft to sell and sale proceeds. An invalid
+relocation never sells aircraft. Losing a base or sinking its ship writes off
+immobile damaged aircraft without a resale refund. Returning
 a loan removes its workshop jobs along with that squadron. Disabling maintenance
 releases existing repair jobs at the next turn boundary without selling airframes.
 
 ## Ground Movement (experimental)
 
-Ground Movement is an opt-in Mission Plugin. Enabling it offers to enable Motor
-Pool if necessary. Disabling Motor Pool asks before also disabling Ground
-Movement; saved movement orders are retained and paused. Imported settings with
-Ground Movement on and Motor Pool off disable Ground Movement.
+Ground Movement is an opt-in Mission Plugin that requires Motor Pool. Disabling
+either dependency pauses saved movement orders without deleting them. Imported
+settings with Ground Movement on and Motor Pool off disable Ground Movement.
+
+**Your current command limits:** the `/control-points/{id}/ground-movement` and
+`/tgos/{id}/ground-movement` API families are BLUE-only. Do not call them to deploy
+RED reserves, move RED armor groups or stop their orders. Autonomous RED reserve
+movement and SAM movement commands are not available yet. You can still move RED
+base stock between friendly bases with `transfer_ground` /
+`POST /retribution-ai/ground/transfer`; use `turn_context.ground_convoys` to track
+those transports. The reserve-group rules below describe campaign behaviour, not
+additional actions available to you.
 
 The road budget defaults to 120 statute miles per turn (193.1 km), and the
 off-road budget to 60 miles (96.6 km). Both are configurable in the plugin's
@@ -169,10 +155,9 @@ between waypoints can differ. Intermediate bases remain stops, and air/sea legs
 keep their existing rules. Progress is applied once at the turn boundary after
 mission casualties, not when generating a mission or according to its duration.
 
-Convoy cards and supply routes show progress and remaining distance. A convoy
-already on the road stays at its saved position when the plugin is disabled or
-its next base becomes hostile, and resumes when those conditions allow it. Its
-owner is retained even if its origin is captured. Fresh departures do not join a
+A convoy already on the road stays at its saved position when the plugin is
+disabled or its next base becomes hostile, and resumes when those conditions
+allow it. Its owner is retained even if its origin is captured. Fresh departures do not join a
 convoy already en route. Cancellation is blocked mid-road to avoid returning units
 instantly; at an intermediate base it returns them to that base's stock.
 
@@ -182,9 +167,8 @@ targets expose the same progress in `ground_movement`. SAM movement commands are
 not available yet. Convoys created while the plugin is disabled keep
 their legacy behaviour; journeys already managed by it remain paused.
 
-Friendly armor-group dialogs show a Ground transport card when the plugin is on.
-It reports available tractors and towed pieces, warns when a smaller detachment is
-needed, and identifies types whose mobility has not been defined. Vehicle-mounted
+Reserve armor movements require enough tractors for their towed pieces; otherwise
+only a smaller detachment can move. Vehicle-mounted
 weapons, including types already paired with their truck, need no extra tractor
 and do not count as spare tractors. Reviewed tanks, armored vehicles, mobile air
 defences, artillery and cargo trucks have explicit mobility data, including mod
@@ -192,13 +176,11 @@ variants. Stationary and unreviewed types remain unavailable. Dead units and exi
 planning reservations are excluded from available transport capacity.
 Transported or towed pieces cannot fire while loaded and are lost with their assigned tractor.
 
-From a land base's **Transfer units** dialog, choose **GPS — create Reserve Armor
-Group** to deploy any mix of available base units to friendly coordinates. This
-requires Ground Movement and Motor Pool. The selection can include frontline
-stock, not just the undeployed surplus; units promised to transfers still waiting
-at the base are unavailable. Existing base-to-base transfers remain unchanged.
-Preview the route before dispatching. Required tractors are included from the
-base's stock, not created for free. GPS movement does not use airlift.
+Deploying base stock to friendly coordinates creates a Reserve Armor Group.
+The selection can include frontline stock, not just the undeployed surplus;
+units promised to transfers still waiting at the base are unavailable. Existing
+base-to-base transfers remain unchanged. Required tractors come from the base's
+stock, not created for free. GPS movement does not use airlift.
 
 Dispatch deducts the units once and creates a persistent Reserve Armor Group.
 Travel, losses, pauses and stopping follow the normal ground-movement rules.
@@ -222,44 +204,14 @@ in the supporting base's Motor Pool. A campaign log entry records the transfer
 for either side. No automatic integration occurs while the plugin or Motor Pool
 is disabled.
 
-The base API provides `GET /control-points/{id}/ground-movement/options`,
-`POST /control-points/{id}/ground-movement/preview`,
-`POST /control-points/{id}/ground-movement` and
-`GET /control-points/{id}/ground-movement`. Preview with `units` (unit variant ID
-to quantity) and `position` (`lat`, `lng`); dispatch with the same fields plus
-the returned `preview_token`. Replies identify automatically added tractors and
-the new detachment. Use the detachment's normal TGO movement endpoints to stop
-or move it again. These API operations expose BLUE stock only.
-
-Choose **Move units** in a friendly armor group's Ground transport card. Select
-units and a destination: coordinates copied from the map, a friendly land base,
-or an active frontline. Coordinate input accepts DDM, DMS, decimal degrees and
-MGRS. **Preview route** shows automatically included tractors, units remaining at
-the source, road/off-road distances and estimated arrival turns. Change the
-selection and preview again before choosing **Dispatch**. A stale preview cannot
-be confirmed after the turn, inventory or route changes. Orders cannot change
-while a mission is in progress.
-
-Dispatched groups and their sources show progress, survivors and pause reasons.
-**Stop at current position** unloads survivors into an armor group where the
+Stopping a movement unloads survivors into an armor group where the
 campaign last placed it, without returning units or refunding them. This remains
 available when Ground Movement is disabled. Base and frontline arrivals join the
 supporting base's inventory, with deployment caps determining reserves.
 
-Armor movement can be inspected through two read-only endpoints:
-`GET /tgos/{id}/ground-movement/options` lists this player's unit IDs and transport
-requirements; `POST /tgos/{id}/ground-movement/preview` validates a selection and
-destination without reserving or moving anything. Send `unit_ids` and
-`destination_kind`: `position` with a `position` (`lat`, `lng`), `base` with
-`base_id`, or `frontline` with both `base_id` and `opposing_base_id`. Only friendly
-land bases and current enemy fronts are valid. Frontline reinforcements target
-the supporting base's stock; deployment caps determine the reserve slice.
-
-The preview includes automatically assigned tractors, the units left behind,
-individual road/off-road segments, their distances, the first turn's stopping
-point and estimated turns. Road access uses the nearest reachable corridor from
-the campaign's authored friendly road network, not every road in DCS. These road
-corridors have the same permissions as supply convoys: coarse terrain exclusions
+Road access uses the nearest reachable corridor from the campaign's authored
+friendly road network, not every road in DCS. These road corridors have the same
+permissions as supply convoys: coarse terrain exclusions
 do not cut an established convoy road. Off-road access must stay on mapped land
 and clear exclusion zones. Missing terrain data or an unverified water/bridge
 crossing outside the authored roads blocks the preview. With no friendly road
@@ -270,16 +222,6 @@ base or authored road sector. Roads between opposing bases are divided at the
 current frontline. Fleets do not claim land; neutral or tied sectors are not
 eligible. This check applies to previews, dispatch and ongoing orders: an order
 pauses if its GPS destination is no longer friendly. It does not capture territory.
-
-To dispatch through the API, send the preview request plus its returned
-`preview_token` to `POST /tgos/{id}/ground-movement`. The token is a stale-preview
-check, not authorization. `GET /tgos/{id}/ground-movement` reports departures from
-that group and its own journey, including order/detachment IDs, status, position,
-remaining distance, progress (0–1), estimated turns when moving, survivors and
-tractor assignments. Stop with
-`POST /tgos/{id}/ground-movement/{order_id}/stop`. Repeated stops are harmless;
-repeated dispatches cannot duplicate units. These endpoints expose BLUE movements
-only; they do not implement autonomous RED movement or the SAM workflow.
 
 ## 1. What this game is
 
@@ -335,8 +277,8 @@ you lose if they capture yours. Think in terms of a campaign, not a single turn.
 
 ### Automatic ground purchases
 
-Campaign Management > HQ Automation > **Automate front-line purchases** buys a
-mix based on the faction's doctrine and its actual purchasable roster. AAA and
+The **Automate front-line purchases** setting buys a mix based on the faction's
+doctrine and its actual purchasable roster. AAA and
 MANPADS count toward the short-range air-defense role. Existing units, pending
 orders and incoming transfers all count when comparing the force's value by role.
 Each purchase is evaluated against the resulting composition, so an expensive
@@ -350,43 +292,41 @@ unchanged; existing campaigns use the new selection without editing their save.
 
 ### Persistent ship and building damage
 
-Campaign Management > Persistent damage & repairs contains **Persistent ship and building damage**
-(enabled by default) and **Ship and building damage repaired per turn (%)**
-(default 34). Surviving naval units and placed buildings keep their remaining
-health in the next mission, subject to the restoration limits above. Armor groups and SAM units do
-not retain partial damage and continue to recover fully between turns.
+**Persistent ship and building damage** is enabled by default.
+**Ship and building damage repaired per turn (%)** defaults to 34. Surviving
+naval units and placed buildings keep their remaining health in the next mission
+where DCS supports partial restoration. Armor groups and SAM units do not retain
+partial damage and continue to recover fully between turns.
 
 At each turn boundary, including a skipped turn, add the configured percentage
 points of **original maximum health**, capped at 100%, not a fraction of remaining
 damage. With 30 configured, 20% health becomes 50%, then 80%, then 100%.
 The default 34 points restores any surviving unit in at most three turns.
-Set repair to 0 for no automatic recovery or 100 for full recovery.
+A repair setting of 0 means no automatic recovery; 100 means full recovery.
 Destroyed units stay destroyed; their existing paid repair/rebuild rules still
 apply. Switching persistence off restores surviving units at the turn boundary.
 Partial damage does not reduce a surviving building's income or disable its IADS
 role; destruction still controls those effects.
 
-The same settings subpage contains reconstruction times for destroyed ground
+Separate campaign settings control reconstruction times for destroyed ground
 object units (default two turns), buildings (four), and runways (four, now
 configurable). Zero means instant repair. These durations apply to manual and
-automatic orders independently of damage persistence, so they remain editable
-when persistence is off. Existing repair countdowns are unchanged. Automatic
-repair switches and AI purchasing priorities remain in HQ Automation.
+automatic orders independently of damage persistence, including when persistence
+is off. Existing repair countdowns are unchanged. Automatic repair switches and
+AI purchasing priorities are separate settings.
 Existing campaigns retain saved repair percentages and costs; new defaults do
 not overwrite custom values.
 
-The map and location dialog show a partially filled orange health bar for
-surviving damaged units. The API exposes a `health` object on targets, your own
-ground objects and naval groups, and on map TGOs/fleet control points. It contains
-`health_percent`, `damage_repaired_per_turn_percent`, `repair_next_turn_percent`
-and `health_next_turn_percent`, plus a `units` list with the same figures and a
+The API exposes a `health` object on targets, your own ground objects and naval
+groups. It contains `health_percent`, `damage_repaired_per_turn_percent`,
+`repair_next_turn_percent` and `health_next_turn_percent`, plus a `units` list with the same figures and a
 `persistent` flag per unit. Repair gain is expressed in percentage points of
 original health. Group health is the average across its original units, including
 destroyed ones at zero. Use these values to judge whether a follow-up strike is
 needed before the enemy recovers. Older mission state files without health data
 leave previously recorded damage unchanged.
 
-- **Air wing → squadrons**: your aircraft live in **squadrons** based at your
+- **Squadrons**: your aircraft live in **squadrons** based at your
   airfields/carriers. Each squadron has one **airframe** type, a number of
   **aircraft**, and **pilots**. You can only field airframes your faction allows.
   New campaign templates with explicit aircraft `size` use `size + 4` pilot slots:
@@ -409,12 +349,11 @@ leave previously recorded damage unchanged.
   weapon it was made with, what he has survived, how he died and who did it, everything
   that has ever moved his morale, and what he thinks of each man around him — ask
   `GET /squadrons/{squadron_id}/pilots/{pilot_name}/record`. It is a call of its own
-  because it is far too much to carry for every pilot of every squadron on every turn;
-  it is exactly what the player reads in the pilot dialog.
+  because it is far too much to carry for every pilot of every squadron on every turn.
 
   `GET /flights/{flight_id}/crew` shows who is in each seat of one flight plus the free
   pilots, and `POST /flights/crew` `{flight_id, seat, pilot_name}` puts a named pilot in
-  a seat — the same move as the player's Edit Flight dropdown. A null `pilot_name`
+  a seat. A null `pilot_name`
   empties the seat. It refuses anyone dead, wounded, on leave or already flying: a pilot
   can only be in one place.
 
@@ -533,27 +472,17 @@ leave previously recorded damage unchanged.
   within budget. (Income multipliers etc. are fixed campaign settings; you read
   them, you don't change them.)
 - **Every setting is readable.** `GET /settings` carries the handful worth planning
-  around as named fields, and `all_settings` beneath them: every box on the campaign's
-  settings pages with its page, section, label, current value and the explanation the
-  player reads — mission durations, doctrine distances, difficulty, all of it. Read it
+  around as named fields, and `all_settings` beneath them: the complete setting
+  metadata, current values and descriptions — mission durations, doctrine distances,
+  difficulty, all of it. Read it
   **once at the start of a campaign**, not every turn: it is around two hundred entries.
 
 ## 4. Missions: packages, flights, and roles
-
-Hover **WEATHER** to read sunrise and sunset for the mission date, in local
-mission time. These are approximate times at the campaign reference position;
-twilight continues after sunset. Polar conditions show unavailable times.
 
 Realistic CAS discovery attempts use the first valid sensor and terrain line-of-sight observation,
 without a continuous-observation delay. Optional probability rolls still apply;
 failed attempts retry on later valid scans. Known contacts renew without rolls.
 Older saved search-time values are ignored.
-The **Contact reports** plugin options enable notices for discoveries, groups
-revealing themselves by firing, and forgotten contacts. They are on by default;
-duration defaults to 15 seconds. Only the observing coalition receives them,
-and renewals do not repeat them. Turning them off also silences AFAC discovery
-notices, while marking and safety reports continue. F10 contact pins show the
-types actually observed, without listing unseen members of the enemy group.
 Moving targets have a 50% higher detection probability, capped at 100% (40%
 becomes 60%). This applies to both sides and all sensors; normal visibility and
 line-of-sight requirements still apply.
@@ -567,24 +496,13 @@ engagement orders have matching time and 20% fuel stop conditions, including
 during combat. Search corners check those limits before following the original
 exit route; only the last corner loops back. Player/mixed flights, other roles
 and disabled-plugin routes are unchanged.
-A standalone Cobra test validated search, engagement and timed departure in DCS;
-full campaign and other-aircraft validation remain separate checks. Native AI
-does not guarantee destruction of every detected target.
+Native AI does not guarantee destruction of every detected target.
 
 Realistic CAS conceals only frontline groups from AI by default, including support
 infantry and MANPADS. **Include armor groups in discovery** extends this to campaign
 armor groups on both sides; it is off by default, including in existing saves.
 Other ground groups remain known AFAC targets and threats without discovery or
-expiry notices. This does not change MFD threat intelligence. Regenerate the mission
-after changing the option; F10 visibility is controlled separately below.
-
-The optional **Hide frontline contacts on the F10 map until discovered** plugin
-setting hides RED frontline icons, including support infantry and MANPADS, and shows BLUE-only pins
-using the existing discovery and contact lifetime. Pins show the last observed
-position, update on observation and disappear when contact expires. BLUE friends
-and non-frontline groups retain their normal icons. It is off by default, enables
-F10 Map User Marks for that mission and requires regeneration. RED players also
-lose the native icons of those groups; this version is for BLUE play.
+expiry.
 
 The plugin's separate **AFAC** switch enables **AFAC — Area** and **AFAC — Frontline**
 missions for compatible aircraft. They search without attacking and mark observed
@@ -611,11 +529,6 @@ exists. Routes retain station/fuel limits; player flights are not automatically
 steered. Threat ranges,
 cloud layers and turn footprints are approximations, not protection from
 interception or hidden defences.
-
-AFAC smoke markers use green, red, orange and blue, never white. Each aircraft
-with smoke ammunition keeps a stable colour, included in its marking report.
-Each coalition uses all four colours before reusing them. Smoke remains limited
-by the aircraft's payload; manually fired smoke is unchanged.
 
 A mission is a **package** aimed at a **target**. A package contains one or more
 **flights**. A **flight** is a group of aircraft from one squadron with a single
@@ -745,9 +658,8 @@ The DCS AI that actually flies these missions is limited. Plan robustly around i
   glide bomb — the aircraft flies **past** its own launch range to the 45 nm ingress **without
   firing** (the attack task isn't active until it reaches the ingress), straight into the
   target's defenses, and is shot down or aborts before it ever shoots — the classic "flew
-  straight in and never launched". **Fix it exactly like the human does** (a player routinely
-  drags an ingress out — e.g. a Harpoon to ~85 nm — and the AI then attacks from there): after
-  creating the package, `GET /waypoints/{flight_id}`, find the **INGRESS**, and MOVE it out to
+  straight in and never launched". After creating the package,
+  `GET /waypoints/{flight_id}`, find the **INGRESS**, and MOVE it out to
   roughly the weapon's launch range (e.g. ~140 nm for a ~160 nm missile) with `/waypoints/edit`
   — push it straight **away from the target**, on the bearing it already sits. Move it, don't
   delete it; the engine respects a moved ingress. **Rule of thumb: whenever a flight's weapon
@@ -827,13 +739,13 @@ as `tot_minutes`. Before that moment there is nothing in the sky. That much is e
 trap is **where** it appears:
 
 > **`start: In Flight` materialises the flight over its home base**, or on the route out
-> of it — **not** on the racetrack you dragged it to.
+> of it — **not** on the racetrack you moved it to.
 
-Dragging RACETRACK START and END moves the *patrol*. It does not move the *spawn*. There
+Editing RACETRACK START and END through `/waypoints/edit` moves the *patrol*, not the *spawn*. There
 is no OPFOR trick that makes a squadron appear a hundred miles from its own airfield.
 
 What that cost, once: a BARCAP was launched from an airfield sitting 9 nm from an enemy
-Ticonderoga, with the racetrack dragged ~100 nm south to safety and `start: In Flight`
+Ticonderoga, with the racetrack moved ~100 nm south to safety and `start: In Flight`
 chosen precisely to skip the dangerous climb-out. Nine fighters — four Su-27, four MiG-29
 and a MiG-31 — appeared **over the airfield**, inside the ship's ring, and all nine were
 shot down by SM-2ER before reaching the station they were supposed to defend.
@@ -863,7 +775,7 @@ Every BARCAP, after `POST /packages`, per **flight** (not per package):
 
 1. `GET /waypoints/{flight_id}` and look at both racetrack pins.
 2. **Does the track actually sit over what it defends?** If a pin is tens of miles off in
-   empty theater, drag it back. A racetrack that covers nothing is a wasted squadron.
+   empty theater, reposition it with `/waypoints/edit`. A racetrack that covers nothing is a wasted squadron.
 3. **Is it clear of enemy SAM umbrellas?** DCS AI does not respect a ring: if the track
    starts inside one, or the AI chases a fleeing striker into one, you lose the flight.
    Keep the track far enough out that it cannot drift in.
@@ -882,8 +794,8 @@ remainder — which then flies its own plan, on its own station, with none of th
 you just checked. Two per flight, and a second package if you want four aircraft.
 
 **AEW&C and tankers get the same treatment.** Their racetrack defaults to a quiet corner
-of the map, and a BARCAP parked over your airfields is not covering it. Drag the AWACS
-and the tanker onto the **same station as a BARCAP**, or the enemy will find them alone
+of the map, and a BARCAP parked over your airfields is not covering it. Move the AWACS
+and tanker racetrack waypoints onto the **same station as a BARCAP**, or the enemy will find them alone
 and unescorted — losing the AWACS costs you the whole picture, and losing the tanker
 shortens every flight that was counting on it.
 
@@ -1504,7 +1416,7 @@ This is a long campaign — many turns in one session. Don't let your own contex
 
 ### Turn 0: the shopping turn
 
-A campaign opens on **turn 0**, before the player presses BEGIN CAMPAIGN. Nothing flies
+A campaign opens on **turn 0**, before combat turns begin. Nothing flies
 on it: there is no mission, no TOT, no debrief afterwards. It exists so both sides can
 spend their opening budget and set their posture.
 
@@ -1543,12 +1455,12 @@ You act **only as a player could**, through the same actions:
 
 - New squadrons start at **0 aircraft** — buy them up; you cannot get aircraft for
   free. **There is no endpoint to create or delete squadrons**: even with the player's
-  air-wing cheat enabled, only the human can add one, from the Air Wing window. Ask
+  air-wing cheat enabled, only the human can add one. Ask
   them if you need one.
 - You can only use airframes your faction already has. You **cannot** change the set
   of airframes your faction may field — but if you think you need a different type
   (for balance, or to counter something the player is fielding), **ask the player to
-  add it in the Air Wing window**; they decide.
+  add the capability**; they decide.
 - No cheats: you can't set your budget, capture bases directly, or place/teleport
   units. Ship moves and waypoint edits are allowed but only within the game's normal
   limits.
@@ -1575,19 +1487,16 @@ this, make sure they know to do that — see the top of this briefing).
 
 You and the player work **in parallel** — they do **not** wait for you. While you
 plan red, they plan blue, edit the map, etc. You don't block them; the only hard
-sync is **Take Off**: the mission can't launch while you're active. A robot icon in
-the toolbar lights up for a few seconds on **every** call you make — so it stays lit
-while you're working and goes idle once you stop, and Take Off is blocked while lit.
+sync is mission launch: it is blocked while you are active. Every API call renews
+your activity briefly; it expires automatically once you stop making calls.
 
 1. **Wait for the player to say "your turn"** in chat. If they go quiet when a turn
    is clearly due, gently remind them that's how they hand the turn to you.
-2. **Just start** — there is no on/off. The toolbar robot turns from grayscale to
-   colour on its own with your first call. Optionally post a status line with
+2. **Just start** — there is no on/off call. Optionally post a status line with
    `POST /ai/status?text=…` (the MCP tool is `set_ai_status`; same thing) and
    **update it before each phase** ("Evaluating last turn…",
-   "Buying aircraft…", "Planning packages…"); the player sees it (and a "last update
-   X ago") by clicking the robot icon. **The player can cancel you** from that
-   window — if you've been cancelled, `turn_status` shows it and your next write is
+   "Buying aircraft…", "Planning packages…"). **The player can cancel you** —
+   if you've been cancelled, `turn_status` shows it and your next write is
    rejected; **stop planning gracefully** if that happens.
 3. **Read** the situation (turn context, previous turns, your notes, your High
    Command's requests, optionally the map image).
@@ -1602,10 +1511,9 @@ while you're working and goes idle once you stop, and Take Off is blocked while 
    Re-read `threats` and confirm no package flies through a top threat unsuppressed.
    Cheap insurance.
 6. **Save** your strategy notes to the scratchpad.
-7. **Stop when you're done** — no "done" call is needed. The robot goes idle a few
-   seconds after your last call and Take Off unblocks. The player can review red's
-   plan (the "View red's plan" button lights up) and, while you're learning, flag any
-   mistake in chat for you to fix.
+7. **Stop when you're done** — no "done" call is needed. Activity expires a few
+   seconds after your last call and mission launch unblocks. The player can review
+   red's plan and flag any mistake in chat for you to fix.
 
 Plan boldly and coherently. A good OPFOR turn looks like a real operation: a clear
 objective, the air defenses dealt with, the strike escorted and supported, the
@@ -1636,8 +1544,7 @@ are being given to you), `turn`; `requests[]` {`objective`, `kind`, `base`, `ask
     preset's name), `base_ft`? (cloud base, omitted when clear), `precip`?
     (rain / thunderstorm), `vis_nm`? (omitted unless something limits visibility),
     `wind_gl` and `wind_fl26`? as `"dir/kts"` (FL26 omitted when it matches the
-    surface), `temp_c`}. The same weather the human reads on the turn panel, and the
-    same weather the mission will be flown in.
+    surface), `temp_c`}. These are the weather conditions the mission will be flown in.
 - `economy` {`budget`, `income_next_turn`};
 - `control_points[]` {`id`, `name`, `type` (AIRBASE / *_CARRIER_GROUP / LHA_GROUP /
   FOB / FARP), `owner` (red/blue/neutral), `pos` `[lat,lng]`, `sqns`?,
@@ -1652,8 +1559,7 @@ are being given to you), `turn`; `requests[]` {`objective`, `kind`, `base`, `ask
   ORDERED here, arriving next turn — the ground counterpart of a squadron's `pending`;
   what you just bought shows here, not in `ground`), `ground`? (armor on hand,
   `{unit: count}` — what you can `ground/transfer`), `air`? (aircraft based there
-  grouped by role, `{"CAP": {"F-16CM …": 7}, "CAS": {"AH-64D …": 6}}` — the same
-  breakdown the human reads on that base's Intel tab, for BOTH sides. **On an enemy
+  grouped by role, `{"CAP": {"F-16CM …": 7}, "CAS": {"AH-64D …": 6}}`, for BOTH sides. **On an enemy
   field this is what decides an OCA/Aircraft package**: seven fighters is worth a
   strike, two transports is not, and the count is aircraft PRESENT, not ordered or in
   transit. On YOUR OWN base it is inventory, **not availability** — an airframe counted
@@ -1983,11 +1889,11 @@ Write bodies:
   errors?:{pylon: reason}}` — check a custom payload is valid for the airframe before you
   use it (unknown weapon, wrong pylon, etc.).
 - `POST /waypoints/edit` `{side, flight_id, waypoint_idx, lat?, lng?, alt_m?}` → move/adjust
-  a flight's waypoint (position and/or altitude), like dragging it on the map. Waypoint 0
+  a flight's waypoint position and/or altitude. Waypoint 0
   (takeoff) is immovable, and waypoints can NEVER be deleted (a deleted waypoint crashes
   the AI flight plan). Read a flight's waypoints first with `GET /waypoints/{flight_id}`.
 - `POST /flights/loadout` `{side, flight_id, loadout}` → re-arm a flight that ALREADY
-  exists, the way the player uses the Payload tab. `loadout` is a name from
+  exists. `loadout` is a name from
   `GET /aircraft/loadouts` or a custom `{pylon: clsid}` map. `POST /packages` already arms
   what it creates, so this is for flights the engine made for you — above all the ferry
   flights of a `squadron/relocate`, which launch **Empty**. Arm those before they cross
