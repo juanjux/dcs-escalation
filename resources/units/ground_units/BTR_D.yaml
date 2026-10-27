@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: "The BTR-D is a Soviet airborne multi-purpose tracked armoured personnel\
   \ carrier which was introduced in 1974 and first seen by the West in 1979 during\

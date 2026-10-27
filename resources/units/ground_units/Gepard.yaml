@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: The Flugabwehrkanonenpanzer Gepard ("anti-aircraft cannon tank Cheetah",
   better known as the Flakpanzer Gepard) is an all-weather-capable German self-propelled

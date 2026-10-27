@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Recon
 description: The Ajax is a tracked armored reconnaissance vehicle family for the British Army, designed for surveillance, target acquisition, and protected mobility in contested environments.
 introduced: 2017

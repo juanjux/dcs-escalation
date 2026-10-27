@@ -1,3 +1,6 @@
+ground_mobility:
+  mode: self_propelled
+  can_tow: true
 class: Logistics
 description: "The HX77 is the 8x8 cargo truck of the HX family, used for supply and as a carrier for mission modules."
 introduced: 2010

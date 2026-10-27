@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Artillery
 description: The AS-90 is a 155 mm self-propelled howitzer operated by the British Army, built to provide mobile indirect fire support for armored and mechanized formations.
 introduced: 1992

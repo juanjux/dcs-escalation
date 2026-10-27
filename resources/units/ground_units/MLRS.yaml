@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Artillery
 description: The M270 Multiple Launch Rocket System (M270 MLRS) is an armored, self-propelled,
   multiple rocket launcher (a type of rocket artillery). Since the first M270s were

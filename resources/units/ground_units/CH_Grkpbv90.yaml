@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Artillery
 description: The Combat Vehicle 90 (CV90), Swedish Stridsfordon 90 (Strf 90),
   is a family of Swedish tracked armored combat vehicles. The

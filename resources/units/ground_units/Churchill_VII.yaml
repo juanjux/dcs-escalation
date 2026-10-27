@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The Tank, Infantry, Mk IV (A22) Churchill was a British heavy infantry
   tank used in the Second World War, best known for its heavy armour, large longitudinal

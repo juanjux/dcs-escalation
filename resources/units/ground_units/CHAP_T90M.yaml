@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: "The T-90 is a third-generation Russian main battle tank developed from, and designed to replace 
   the T-72. It uses a 125 mm 2A46 smoothbore main gun, the 1A45T fire-control system, an upgraded engine, 

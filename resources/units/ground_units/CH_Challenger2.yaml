@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: Challenger 2 is the main battle tank of the British Army, combining heavy armor protection and a 120 mm main gun for frontline armored warfare.
 introduced: 1998

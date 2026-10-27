@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: The Sd.Kfz. 251 (Sonderkraftfahrzeug 251) half-track was a World War
   II German armored personnel carrier designed by the Hanomag company, based on its

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The Leopard (or Leopard 1) is a main battle tank designed and produced
   by Porsche in West Germany that first entered service in 1965. Developed in an era

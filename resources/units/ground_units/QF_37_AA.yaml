@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: towed
 class: SHORAD
 description: The QF 3.7-inch AA was Britain's primary heavy anti-aircraft gun during
   World War II. It was roughly the equivalent of the German 88 mm FlaK and American

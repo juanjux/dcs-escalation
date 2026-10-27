@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: Abrams M1A2 SEPv3 is a modernised configuration of the Abrams main battle tank (MBT) in service with the US Army.The new version offers enhanced protection and survivability, as well as higher lethality than its predecessors. The tank also features various advancements in technology, including improved armour, communications, reliability, sustainment, and fuel efficiency.
 introduced: 2017

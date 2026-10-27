@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Artillery
 description: The PLZ-07 or Type 07 is a Chinese 122 mm self-propelled artillery made by 
   the China North Industries Group Corporation (NORINCO). The PLZ-07 was developed to replace 

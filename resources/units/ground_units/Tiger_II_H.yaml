@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The Tiger II was the successor to the Tiger I, combining the latter's
   thick armour with the armour sloping used on the Panther medium tank. The tank weighed

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: "The BMP-3 is a Soviet and Russian infantry fighting vehicle, successor\
   \ to the BMP-1 and BMP-2. The abbreviation BMP stands for boevaya mashina pehoty\

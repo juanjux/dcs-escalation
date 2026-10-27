@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: The Luftvärnskanonvagn (lvkv) 9040 is a self-propelled anti-aircraft gun
   vehicle, fitted with PS-95 radar from Thomson CSF Harfang (now Thales Group) and a

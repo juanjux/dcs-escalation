@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The Stridsvagn 103 (Strv 103), also known as the S-tank, is a Swedish
   post-World War II main battle tank, designed and manufactured in Sweden. Developed

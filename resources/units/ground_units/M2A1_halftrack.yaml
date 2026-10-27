@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: 'The M2 half-track car is an armored half-track produced by the United
   States during World War II. '

@@ -178,8 +178,11 @@ their legacy behaviour; journeys already managed by it remain paused.
 
 Friendly armor-group dialogs show a Ground transport card when the plugin is on.
 It reports available tractors and towed pieces, warns when a smaller detachment is
-needed, and identifies types whose mobility has not been defined. A mounted gun
-is self-propelled; it does not count as a spare tractor. Dead units and existing
+needed, and identifies types whose mobility has not been defined. Vehicle-mounted
+weapons, including types already paired with their truck, need no extra tractor
+and do not count as spare tractors. Reviewed tanks, armored vehicles, mobile air
+defences, artillery and cargo trucks have explicit mobility data, including mod
+variants. Stationary and unreviewed types remain unavailable. Dead units and existing
 planning reservations are excluded from available transport capacity.
 Transported or towed pieces cannot fire while loaded and are lost with their assigned tractor.
 

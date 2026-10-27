@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description: The VAB HOT Mephisto is a wheeled armoured vehicle personnel carrier
   VAB fitted with anti-tank missile launcher turret.

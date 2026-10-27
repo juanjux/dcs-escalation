@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: "The ZSU-23-4 'Shilka' is a lightly armoured Soviet self-propelled, radar-guided anti-aircraft 
   weapon system (SPAAG). It was superseded by the 2K22 Tunguska (SA-19 Grison)."

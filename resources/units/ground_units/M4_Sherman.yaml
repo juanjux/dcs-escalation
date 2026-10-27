@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The M4 Sherman, officially Medium Tank, M4, was the most widely used
   medium tank by the United States and Western Allies in World War II. The M4 Sherman

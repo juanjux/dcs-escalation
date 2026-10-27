@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: "The BMD-1 is a Soviet airborne amphibious tracked infantry fighting\
   \ vehicle, which was introduced in 1969 and first seen by the West in 1970. BMD\

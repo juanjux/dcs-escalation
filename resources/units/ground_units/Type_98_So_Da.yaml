@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: Armored Personnel Carrier Type 98 So Da
 introduced: 1938

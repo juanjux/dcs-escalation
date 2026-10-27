@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: "The infanterikanonvagn 91 (ikv 91), was a high 
   mobility assault gun that was developed to meet the operational requirements of the Swedish 

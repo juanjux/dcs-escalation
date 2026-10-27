@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: 'The ICV (Infantry Carrier Vehicle) Stryker is a family of eight-wheeled
   armored fighting vehicles derived from the Canadian LAV III. '

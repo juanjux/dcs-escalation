@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The Leopard 2 is a main battle tank developed by Krauss-Maffei in the
   1970s for the West German Army. The tank first entered service in 1979 and succeeded

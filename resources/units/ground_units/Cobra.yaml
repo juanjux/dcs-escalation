@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Recon
 description: 'The Cobra (Turkish: Kobra) is an armoured tactical vehicle developed
   by Turkish firm Otokar.'

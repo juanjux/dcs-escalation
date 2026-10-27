@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: SHORAD
 description: Mistral Missile on a Truck.
 introduced: 1993

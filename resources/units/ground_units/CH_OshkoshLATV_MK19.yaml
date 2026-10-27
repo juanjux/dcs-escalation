@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Recon
 description: A highly versatile and agile combat vehicle developed to replace the aging Humvee
   fleet in the 2010s. It features enhances mobility, survivability and payload capacity over its

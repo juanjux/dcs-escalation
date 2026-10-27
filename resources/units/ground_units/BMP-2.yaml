@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: "The BMP-2 (Boyevaya Mashina Pekhoty, Russian: \u0411\u043E\u0435\u0432\
   \u0430\u044F \u041C\u0430\u0448\u0438\u043D\u0430 \u041F\u0435\u0445\u043E\u0442\

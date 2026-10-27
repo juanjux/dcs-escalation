@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Artillery
 description: The PLZ-05 or the Type 05 is a 155 mm self-propelled howitzer developed
   by the People's Liberation Army of China to replace the Type 59-1 130mm. The PLZ-05

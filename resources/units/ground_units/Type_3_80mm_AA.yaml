@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: towed
 class: AAA
 description: Type 3 80mm Anti-Aircraft Artillery
 introduced: 1943

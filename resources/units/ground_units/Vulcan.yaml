@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: "The M163 had a fairly limited range from the start. Its 20x102mm round\
   \ gave it a low effective range of only 1,200 meters, and its standard air-defense\

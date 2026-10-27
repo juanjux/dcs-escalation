@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description: The Jagdpanzer IV, Sd.Kfz. 162, was a German tank destroyer based on
   the Panzer IV chassis.

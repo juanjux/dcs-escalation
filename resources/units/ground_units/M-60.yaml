@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: "The M60 reached operational capability with fielding to US Army units\
   \ in Europe beginning in December 1960. The first combat usage of the M60 was with\

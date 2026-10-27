@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: SHORAD
 description: The M6 Linebacker short-range air defense system was developed by Boeing
   to meet the US Army requirements. The new vehicle was intended to counter the threat

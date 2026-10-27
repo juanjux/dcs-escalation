@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: BV 410, a tracked all-terrain armoured vehicle.
 introduced: 2013

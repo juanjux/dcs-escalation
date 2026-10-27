@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: The ZBD-04 or Type 04 (industrial designation WZ502) is a Chinese infantry
   fighting vehicle. It bears some external resemblance to the BMP-3, particularly

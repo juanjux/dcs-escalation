@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The FV4034 Challenger 2 is a third generation British main battle tank
   (MBT) in service with the armies of the United Kingdom and Oman. It has seen operational

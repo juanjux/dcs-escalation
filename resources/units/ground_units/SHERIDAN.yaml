@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description: The M551 Sheridan AR/AAV (Armored Reconnaissance/Airborne Assault Vehicle)
   is a light tank developed by the United States and named after General Philip Sheridan,
