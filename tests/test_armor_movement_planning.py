@@ -136,6 +136,27 @@ def test_unverified_water_crossing_is_not_treated_as_a_bridge() -> None:
         planner.plan(P(0, 0), P(100, 0), 100, 50)
 
 
+def test_disconnected_roads_do_not_report_missing_access() -> None:
+    planner = CampaignGroundRouter(
+        landmap(box(40, -10000, 60, 10000)),
+        [road((0, 0), (30, 0), (70, 0), (100, 0))],
+    )
+    with pytest.raises(GroundRouteError, match="Both ends can reach a road"):
+        planner.plan(P(0, 10), P(100, 10), 100, 50)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_blocked_access_identifies_the_affected_endpoint(reverse: bool) -> None:
+    planner = CampaignGroundRouter(
+        landmap(box(-10000, 40, 10000, 60)), [road((0, 0), (100, 0))]
+    )
+    endpoints = (P(0, 100), P(100, 10))
+    origin, destination = endpoints[::-1] if reverse else endpoints
+    label = "destination" if reverse else "group"
+    with pytest.raises(GroundRouteError, match=f"access connects the {label}"):
+        planner.plan(origin, destination, 100, 50)
+
+
 @pytest.mark.parametrize("budget", [0, -1, True, math.inf, math.nan])
 def test_invalid_budget_rejected(budget: Any) -> None:
     with pytest.raises(GroundRouteError, match="budgets"):

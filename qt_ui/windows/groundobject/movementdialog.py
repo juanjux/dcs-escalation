@@ -36,7 +36,7 @@ from game.groundmovement.report import preview_token
 from game.theater.player import Player
 from qt_ui.widgets.searchablecombo import SearchableComboBox
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
-from qt_ui.windows.pilot.common import PANEL, AMBER
+from qt_ui.windows.pilot.common import PANEL, AMBER, RED
 
 if TYPE_CHECKING:
     from game.groundmovement.planning import ArmorMovementPreview
@@ -171,13 +171,25 @@ class ArmorMovementDialog(QDialog):
     def invalidate(self) -> None:
         self.preview = None
         self.dispatch_button.setEnabled(False)
-        self.details.setText("Selection changed. Preview the route before dispatching.")
+        self.set_details("Selection changed. Preview the route before dispatching.")
+
+    def set_details(self, text: str, *, blocked: bool = False) -> None:
+        self.details.setProperty("movementBlocked", blocked)
+        self.details.setStyleSheet(
+            f"QLabel {{ color: {AMBER}; background: #352b25; "
+            f"border: 1px solid {RED}; border-left: 4px solid {RED}; "
+            "border-radius: 3px; padding: 10px; font-weight: bold; }"
+            if blocked
+            else ""
+        )
+        self.details.setText(f"Movement blocked\n{text}" if blocked else text)
 
     def campaign_changed(self) -> None:
         self.invalidate()
         self.preview_button.setEnabled(False)
-        self.details.setText(
-            "The campaign or movement orders changed. Close and reopen this dialog."
+        self.set_details(
+            "The campaign or movement orders changed. Close and reopen this dialog.",
+            blocked=True,
         )
 
     def change_kind(self) -> None:
@@ -249,7 +261,7 @@ class ArmorMovementDialog(QDialog):
                 self.destination(),
             )
         except (ValueError, PermissionError) as exc:
-            self.details.setText(str(exc))
+            self.set_details(str(exc), blocked=True)
             return
         self.preview = result
         automatic = set(result.manifest.unit_ids) - set(self.selected_ids())
@@ -257,7 +269,7 @@ class ArmorMovementDialog(QDialog):
             ", ".join(self.units[unit_id].text() for unit_id in sorted(automatic))
             or "none"
         )
-        self.details.setText(
+        self.set_details(
             f"{len(result.manifest.unit_ids)} units moving · {len(result.remaining_unit_ids)} remain\n"
             f"Automatically added tractors: {included}\n"
             f"Road: {result.road_distance_m / 1000:.1f} km · Off-road: {result.offroad_distance_m / 1000:.1f} km\n"
@@ -284,6 +296,6 @@ class ArmorMovementDialog(QDialog):
             )
         except (ValueError, PermissionError) as exc:
             self.preview = None
-            self.details.setText(str(exc))
+            self.set_details(str(exc), blocked=True)
             return
         self.accept()

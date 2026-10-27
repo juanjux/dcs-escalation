@@ -213,20 +213,33 @@ class CampaignGroundRouter:
 
         graph = self._graph()
         components = self._components(graph)
+        entries = self._entries(origin, components)
+        destination_entries = self._entries(destination, components)
+        for reachable, endpoint in (
+            (entries, "group"),
+            (destination_entries, "destination"),
+        ):
+            if not reachable:
+                raise GroundRouteError(
+                    f"No validated off-road access connects the {endpoint} to a campaign road. "
+                    "Access is blocked by mapped water or exclusion zones."
+                )
         exits: dict[int, RoadAccess] = {}
-        for entry in self._entries(destination, components):
+        for entry in destination_entries:
             exits.setdefault(entry.component, entry)
         pair = next(
             (
                 (entry, exits[entry.component])
-                for entry in self._entries(origin, components)
+                for entry in entries
                 if entry.component in exits
             ),
             None,
         )
         if pair is None:
             raise GroundRouteError(
-                "No connected campaign road has validated access at both ends"
+                "Both ends can reach a road, but the campaign road network between "
+                "them is disconnected. Mapped water or exclusion zones may block "
+                "intermediate road segments."
             )
         entry, exit = pair
         for point in (entry, exit):
