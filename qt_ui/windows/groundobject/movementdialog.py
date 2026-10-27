@@ -120,7 +120,7 @@ class ArmorMovementDialog(QDialog):
         coordinates = QHBoxLayout()
         self.coordinates = QLineEdit()
         self.coordinates.setPlaceholderText(
-            "Coordinates copied from the map (DDM, DMS, decimal or MGRS)"
+            "Friendly-territory coordinates (DDM, DMS, decimal or MGRS)"
         )
         coordinates.addWidget(self.coordinates, 1)
         self.paste = QPushButton("Paste")
