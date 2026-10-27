@@ -2,22 +2,32 @@
 name: Afghanistan - Clash of the Titans
 theater: Afghanistan
 authors: Starfire, modified by juanjux
-recommended_player_faction: Blufor Current
+recommended_player_faction: USA 2020
 recommended_enemy_faction: Redfor (Russia) 2020
 description:
   <p><strong>This campaign utilises both Afghanistan East and West. It is intended to be run with CurrentHill's USA, Russia, and 
   China Asset Packs installed, although this is not mandatory.</strong></p>
+  <p>F-22A, Super Hornet and Su-57 mods are optional; stock aircraft are used as fallbacks when disabled.</p>
   <p>In the rugged heart of Afghanistan, the balance of power is tipping. Clash of the Titans is a high-stakes campaign set during 
-  a fictional escalation in 2006, where NATO-led BLUFOR forces face off against a resurgent and well-equipped REDFOR coalition. 
+  a fictional escalation in 2020, where US-led BLUFOR forces face off against a resurgent and well-equipped REDFOR coalition.
   BLUFOR holds the vital eastern corridor, anchored by the fortified positions at Bagram Airfield, the strategic capital of Kabul, 
   and the forward base at Sharana. A recent offensive has resulted in REDFOR now controlling the southern and western strongholds of 
-  Kandahar, Camp Bastion, and Tarinkot, with each having been since been heavily fortified. Air superiority is hotly contested, and both 
+  Kandahar, Camp Bastion, and Tarinkot, each heavily fortified. Air superiority is hotly contested, and both
   sides are committing rotary and fixed-wing assets to interdiction, close air support, and deep strike missions. This is no border 
   skirmish. This is a theatre-wide confrontation where every flight counts and every decision could tilt the balance. Welcome to 
   Clash of the Titans. The skies over Afghanistan have never been more dangerous.</p>
+  <p>Both sides have sector-based IADS with alternate command centres, redundant communications and power,
+  and separate GPS jamming sites. Vehicle depots hold strikeable reserves at every base, including the neutral FOBs.
+  Capture territory and attack the infrastructure to weaken the opposing network.</p>
+  <p>The main ground axis runs from Bagram through Kabul, Ghazni and Lagman to Kandahar Heliport and Camp Bastion.
+  A factory at Camp Bastion supplies the southern axis. Disconnected bases and neutral FOBs remain air-assault objectives.</p>
+  <p>Both sides field early warning, tankers, airlift, dedicated air-assault helicopters and AFAC drones.
+  Enable Realistic CAS and its AFAC option to use the MQ-9 and Wing Loong reconnaissance squadrons.</p>
+  <p>Aircraft are dispersed across compatible airfields, with separate detachments for critical support and stealth assets.
+  Losing one runway does not ground half the initial fleet or remove all early-warning, tanker or AFAC coverage.</p>
 miz: clash_of_the_titans.miz
 performance: 1
-recommended_start_date: 2006-01-27
+recommended_start_date: 2020-01-27
 version: "10.9"
 settings:
   russianmilitaryassetspack: true
@@ -25,30 +35,447 @@ settings:
   usamilitaryassetspack: true
   f22_raptor: true
   fa_18efg: true
-  squadron_start_full: true
-# GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
-# most of its own air defences. No radar on it, so it is a STRIKE target, not
-# SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
+  su57_felon: true
+  squadrons_start_full: true
+  motorpool_enabled: true
+  plugins:
+    skynetiads: true
+    gpsjamming: true
+
+advanced_iads: true
+
+# Keep all four original EWRs as radars. Jammers use separate EWR markers.
 ground_forces:
-  Ground-71: GPS Jamming Site (Red)
+  Blue GPS Jammer Bagram: GPS Jamming Site (Blue)
+  Blue GPS Jammer Kabul: GPS Jamming Site (Blue)
+  Blue GPS Jammer Ghazni: GPS Jamming Site (Blue)
+  Blue GPS Jammer Sharana: GPS Jamming Site (Blue)
+  Red GPS Jammer Bastion: GPS Jamming Site (Red)
+  Red GPS Jammer Tarinkot: GPS Jamming Site (Red)
+  Red GPS Jammer Kandahar: GPS Jamming Site (Red)
+  Red GPS Jammer Lagman: GPS Jamming Site (Red)
+
+# Local towers reach 15 nm and power grids 35 nm. Each active SAM/EWR/jammer
+# has at least two of each, and both of its coalition's command centres.
+# Command links represent the long-haul backbone; local links stay in range.
+# Neutral FOBs remain outside either network until captured.
+iads_config:
+  - Ground-63:
+      - Red Comms Kandahar East
+      - Red Comms Kandahar East Backup
+      - Red Power Kandahar East
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-42:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-10:
+      - Red Comms Tarinkot West
+      - Red Comms Tarinkot West Backup
+      - Red Power Tarinkot West
+      - Red Power Tarinkot Central
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-13:
+      - Red Comms Tarinkot North
+      - Red Comms Tarinkot North Backup
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-21:
+      - Red Comms Tarinkot Town
+      - Red Comms Tarinkot Town Backup
+      - Red Power Tarinkot Central
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-22:
+      - Red Comms Tarinkot Town
+      - Red Comms Tarinkot Town Backup
+      - Red Power Tarinkot Central
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-71:
+      - Red Comms Tarinkot North
+      - Red Comms Tarinkot North Backup
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red GPS Jammer Tarinkot:
+      - Red Comms Tarinkot Town
+      - Red Comms Tarinkot Town Backup
+      - Red Power Tarinkot Central
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-11:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-23:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red GPS Jammer Bastion:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red IADS Command Bastion:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+  - Ground-14:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-69:
+      - Red Comms Bastion West
+      - Red Comms Bastion West Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-44:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-12:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red GPS Jammer Kandahar:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red EWR Kandahar:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red IADS Command Kandahar:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+  - Ground-5:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-43:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-34:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-68:
+      - Blue Comms Bagram East
+      - Blue Comms Bagram East Backup
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue GPS Jammer Bagram:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue IADS Command Bagram:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+  - Ground-28:
+      - Blue Comms Kabul North
+      - Blue Comms Kabul South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-61:
+      - Blue Comms Kabul North
+      - Blue Comms Kabul South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue GPS Jammer Kabul:
+      - Blue Comms Kabul North
+      - Blue Comms Kabul South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-7:
+      - Blue Comms Ghazni West
+      - Blue Comms Ghazni East
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-30:
+      - Blue Comms Ghazni West
+      - Blue Comms Ghazni East
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-32:
+      - Blue Comms Ghazni West
+      - Blue Comms Ghazni East
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-70:
+      - Blue Comms Ghazni North
+      - Blue Comms Ghazni North Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue GPS Jammer Ghazni:
+      - Blue Comms Ghazni West
+      - Blue Comms Ghazni East
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-6:
+      - Blue Comms Sharana East
+      - Blue Comms Sharana East Backup
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-29:
+      - Blue Comms Sharana West
+      - Blue Comms Sharana West Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-31:
+      - Blue Comms Sharana West
+      - Blue Comms Sharana West Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue GPS Jammer Sharana:
+      - Blue Comms Sharana West
+      - Blue Comms Sharana West Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue EWR Sharana:
+      - Blue Comms Sharana East
+      - Blue Comms Sharana East Backup
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue IADS Command Sharana:
+      - Blue Comms Sharana West
+      - Blue Comms Sharana West Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+  - Ground-56:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-57:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-58:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-59:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red GPS Jammer Lagman:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red EWR Lagman:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
 
 squadrons:
-  #Bagram
+  # Bagram
   16:
     - primary: Strike
       secondary: any
       aircraft:
         - B-52H Stratofortress
-      size: 4
-      pilots: 8
+      size: 2
+      pilots: 6
     - primary: AEW&C
       aircraft:
         - E-3A
-      size: 2
-      pilots: 6
+      size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
+      size: 1
+      pilots: 5
+    - primary: Transport
+      secondary: any
+      aircraft:
+        - C-130J-30
+      size: 2
+      pilots: 6
+    - primary: Strike
+      secondary: any
+      aircraft:
+        - F-14B(U) Tomcat
+      size: 6
+      pilots: 10
+    - primary: BARCAP
+      secondary: any
+      aircraft:
+        - F-15C Eagle
+      size: 6
+      pilots: 10
+    - primary: Armed Recon
+      secondary: any
+      aircraft:
+        - F-15E Strike Eagle (Suite 4+)
+      size: 4
+      pilots: 8
+    - primary: DEAD
+      secondary: any
+      aircraft:
+        - '[CH] B-21'
+        - F-16CM Fighting Falcon (Block 50)
+      size: 2
+      pilots: 6
+    - primary: CAS
+      secondary: air-to-ground
+      aircraft:
+        - A-10C Thunderbolt II (Suite 7)
+      size: 4
+      pilots: 8
+    - primary: SEAD Escort
+      secondary: any
+      aircraft:
+        - F/A-18E Super Hornet
+        - F/A-18C Hornet (Lot 20)
+      size: 6
+      pilots: 10
+    - primary: Escort
+      secondary: any
+      aircraft:
+        - F-22A Raptor
+        - F-15C Eagle
+      size: 4
+      pilots: 8
+    - primary: SEAD Sweep
+      secondary: air-to-ground
+      aircraft:
+        - AV-8B Harrier II Night Attack
+      size: 8
+      pilots: 12
+  # Kabul
+  17:
+    - primary: Strike
+      secondary: any
+      aircraft:
+        - B-52H Stratofortress
+      size: 2
+      pilots: 6
+    - primary: AEW&C
+      aircraft:
+        - E-3A
       size: 1
       pilots: 5
     - primary: Refueling
@@ -60,75 +487,86 @@ squadrons:
       secondary: any
       aircraft:
         - C-130J-30
-      size: 4
-      pilots: 8
+      size: 2
+      pilots: 6
     - primary: Strike
       secondary: any
       aircraft:
         - F-14B(U) Tomcat
-      size: 12
-      pilots: 16
+      size: 6
+      pilots: 10
     - primary: BARCAP
       secondary: any
       aircraft:
         - F-15C Eagle
-      size: 12
-      pilots: 16
+      size: 6
+      pilots: 10
     - primary: Armed Recon
       secondary: any
       aircraft:
         - F-15E Strike Eagle (Suite 4+)
-      size: 12
-      pilots: 16
-  #Kabul
-  17:
-    - primary: DEAD
-      secondary: any
-      aircraft:
-        - "[CH] B-21"
-        - F-16CM Fighting Falcon (Block 50)
-      size: 12
-      pilots: 16
-    - primary: CAS
-      secondary: air-to-ground
-      aircraft:
-        - A-10C Thunderbolt II (Suite 7)
       size: 8
       pilots: 12
     - primary: DEAD
       secondary: any
       aircraft:
+        - '[CH] B-21'
         - F-16CM Fighting Falcon (Block 50)
-      size: 12
-      pilots: 16
+      size: 2
+      pilots: 6
     - primary: SEAD Escort
       secondary: any
       aircraft:
-        - EA-18G Growler
+        - F/A-18E Super Hornet
         - F/A-18C Hornet (Lot 20)
+      size: 6
+      pilots: 10
+    - primary: SEAD
+      secondary: any
+      aircraft:
+        - F/A-18C Hornet (Lot 20)
+      size: 6
+      pilots: 10
+    - primary: Escort
+      secondary: any
+      aircraft:
+        - F-22A Raptor
+        - F-15C Eagle
+      size: 4
+      pilots: 8
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
+  # Sharana
+  22:
+    - primary: CAS
+      secondary: air-to-ground
+      aircraft:
+        - A-10C Thunderbolt II (Suite 7)
+      size: 4
+      pilots: 8
+    - primary: DEAD
+      secondary: any
+      aircraft:
+        - F-16CM Fighting Falcon (Block 50)
       size: 12
       pilots: 16
     - primary: SEAD
       secondary: any
       aircraft:
         - F/A-18C Hornet (Lot 20)
-      size: 12
-      pilots: 16
-    - primary: Escort
-      secondary: any
-      aircraft:
-        - F-22A Raptor
-        - F-15C Eagle
-      size: 16
-      pilots: 20
-  #Sharana
-  22:
+      size: 6
+      pilots: 10
     - primary: SEAD Sweep
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
-      size: 16
-      pilots: 20
+      size: 8
+      pilots: 12
     - primary: CAS
       secondary: any
       aircraft:
@@ -136,12 +574,20 @@ squadrons:
       size: 4
       pilots: 8
     - primary: Air Assault
-      secondary: any
+      secondary:
+        - Transport
       aircraft:
         - CH-47F Block I
       size: 4
       pilots: 8
-  #Ghazni Heliport
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
+  # Ghazni Heliport
   21:
     - primary: Escort
       secondary: any
@@ -155,93 +601,89 @@ squadrons:
         - AH-64D Apache Longbow
       size: 4
       pilots: 8
-  #Tarinkot
+  # Tarinkot
   9:
     - primary: SEAD Escort
       secondary: any
       aircraft:
         - JF-17 Thunder
-      size: 12
-      pilots: 16
-  #Kandahar
-  7:
-    - primary: Strike
-      secondary: any
-      aircraft:
-        - Tu-95MS Bear-H
-      size: 8
-      pilots: 12
-    - primary: BAI
-      secondary: any
-      aircraft:
-        - Tu-16 Badger
-      size: 8
-      pilots: 12
-    - primary: OCA/Runway
-      secondary: any
-      aircraft:
-        - Tu-22M3 Backfire-C
-      size: 8
-      pilots: 12
-    - primary: SEAD
-      secondary: air-to-ground
-      aircraft:
-        - Su-24M Fencer-D
-      size: 16
-      pilots: 20
+      size: 4
+      pilots: 8
     - primary: Armed Recon
       secondary: air-to-ground
       aircraft:
         - Su-25T Frogfoot
-      size: 16
-      pilots: 20
+      size: 8
+      pilots: 12
+  # Kandahar
+  7:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
+    - primary: Escort
+      secondary: air-to-air
+      aircraft:
+        - Su-57 Felon
+        - Su-30 Flanker-C
+      size: 6
+      pilots: 10
+    - primary: Strike
+      secondary: any
+      aircraft:
+        - Tu-95MS Bear-H
+      size: 4
+      pilots: 8
+    - primary: BARCAP
+      secondary: any
+      aircraft:
+        - Su-30SM Flanker-H
+        - Su-30 Flanker-C
+      size: 6
+      pilots: 10
+    - primary: BAI
+      secondary: air-to-ground
+      aircraft:
+        - Tu-16 Badger
+      size: 6
+      pilots: 10
+    - primary: OCA/Runway
+      secondary: any
+      aircraft:
+        - Tu-22M3 Backfire-C
+      size: 6
+      pilots: 10
+    - primary: SEAD
+      secondary: air-to-ground
+      aircraft:
+        - Su-24M Fencer-D
+      size: 8
+      pilots: 12
+    - primary: Armed Recon
+      secondary: air-to-ground
+      aircraft:
+        - Su-25T Frogfoot
+      size: 4
+      pilots: 8
     - primary: Escort
       secondary: air-to-air
       aircraft:
         - Su-27 Flanker-B
-      size: 16
-      pilots: 20
-  # Kandahar Heliport
-  15:
-    - primary: Air Assault
-      secondary: any
-      aircraft:
-        - Mi-24P Hind-F
-      size: 4
-      pilots: 8
-    - primary: Escort
-      secondary: any
-      aircraft:
-         - Ka-50 Hokum III
-      size: 4
-      pilots: 8
-  #FOB Lagman
-  FOB Lagman:
-    - primary: CAS
-      secondary: any
-      aircraft:
-         - "[CH] Ka-52"
-         - Ka-50 Hokum
-      size: 4
-      pilots: 8
-    - primary: Escort
-      secondary: any
-      aircraft:
-         - Mi-28N Havoc
-      size: 4
-      pilots: 8
-  #Camp Bastion
-  10:
+      size: 8
+      pilots: 12
     - primary: AEW&C
       aircraft:
         - A-50
-      size: 2
-      pilots: 6
+      size: 1
+      pilots: 5
     - primary: Refueling
       aircraft:
         - IL-78M
-      size: 2
-      pilots: 6
+      size: 1
+      pilots: 5
     - primary: Transport
       secondary: any
       aircraft:
@@ -252,15 +694,136 @@ squadrons:
       secondary: air-to-ground
       aircraft:
         - Su-34 Fullback
-      size: 16
-      pilots: 20
+      size: 8
+      pilots: 12
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
-        - MIG-29-FULCRUM
-      size: 16
-      pilots: 20
-  #Camp Bastion Heliport
+        - MiG-29S Fulcrum-C
+      size: 8
+      pilots: 12
+  # Kandahar Heliport
+  15:
+    - primary: Air Assault
+      aircraft:
+        - Mi-24P Hind-F
+      size: 4
+      pilots: 8
+    - primary: Escort
+      secondary: any
+      aircraft:
+        - Ka-50 Hokum III
+      size: 4
+      pilots: 8
+  # FOB Lagman
+  FOB Lagman:
+    - primary: CAS
+      secondary: any
+      aircraft:
+        - '[CH] Ka-52'
+        - Ka-50 Hokum
+      size: 4
+      pilots: 8
+    - primary: Escort
+      secondary: any
+      aircraft:
+        - Mi-28N Havoc
+      size: 4
+      pilots: 8
+  # Camp Bastion
+  10:
+    - primary: SEAD Escort
+      secondary: any
+      aircraft:
+        - JF-17 Thunder
+      size: 8
+      pilots: 12
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
+    - primary: Escort
+      secondary: air-to-air
+      aircraft:
+        - Su-57 Felon
+        - Su-30 Flanker-C
+      size: 6
+      pilots: 10
+    - primary: Strike
+      secondary: any
+      aircraft:
+        - Tu-95MS Bear-H
+      size: 4
+      pilots: 8
+    - primary: BARCAP
+      secondary: any
+      aircraft:
+        - Su-30SM Flanker-H
+        - Su-30 Flanker-C
+      size: 6
+      pilots: 10
+    - primary: BAI
+      secondary: air-to-ground
+      aircraft:
+        - Tu-16 Badger
+      size: 2
+      pilots: 6
+    - primary: OCA/Runway
+      secondary: any
+      aircraft:
+        - Tu-22M3 Backfire-C
+      size: 2
+      pilots: 6
+    - primary: SEAD
+      secondary: air-to-ground
+      aircraft:
+        - Su-24M Fencer-D
+      size: 8
+      pilots: 12
+    - primary: Armed Recon
+      secondary: air-to-ground
+      aircraft:
+        - Su-25T Frogfoot
+      size: 4
+      pilots: 8
+    - primary: Escort
+      secondary: air-to-air
+      aircraft:
+        - Su-27 Flanker-B
+      size: 8
+      pilots: 12
+    - primary: AEW&C
+      aircraft:
+        - A-50
+      size: 1
+      pilots: 5
+    - primary: Refueling
+      aircraft:
+        - IL-78M
+      size: 1
+      pilots: 5
+    - primary: Transport
+      secondary: any
+      aircraft:
+        - IL-76MD
+      size: 2
+      pilots: 6
+    - primary: DEAD
+      secondary: air-to-ground
+      aircraft:
+        - Su-34 Fullback
+      size: 8
+      pilots: 12
+    - primary: BARCAP
+      secondary: air-to-air
+      aircraft:
+        - MiG-29S Fulcrum-C
+      size: 8
+      pilots: 12
+  # Camp Bastion Heliport
   13:
     - primary: Transport
       secondary: any
