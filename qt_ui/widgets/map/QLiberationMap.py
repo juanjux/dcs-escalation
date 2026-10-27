@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
+from uuid import uuid4
 
-from PySide6.QtCore import QUrl, QUrlQuery
+from PySide6.QtCore import QFile, QIODevice, QUrl, QUrlQuery
+from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QWidget
@@ -11,6 +15,9 @@ from PySide6.QtWidgets import QWidget
 from game.server.settings import ServerSettings
 from qt_ui.liberation_install import server_port
 from qt_ui.models import GameModel
+
+if TYPE_CHECKING:
+    from qt_ui.widgets.map.grounddestination import GroundDestinationBridge
 
 
 class LoggingWebPage(QWebEnginePage):
@@ -35,11 +42,12 @@ class QLiberationMap(QWebEngineView):
         game_model: GameModel,
         dev: bool,
         parent: QWidget | None,
-        *,
-        query: dict[str, str] | None = None,
     ) -> None:
         super().__init__(parent)
         self.game_model = game_model
+        self._ground_bridge: GroundDestinationBridge | None = None
+        self._ground_channel: QWebChannel | None = None
+        self._ground_session: str | None = None
         self.setMinimumSize(800, 600)
 
         page = LoggingWebPage(self)
@@ -67,11 +75,56 @@ class QLiberationMap(QWebEngineView):
         port = server_settings.server_port
         parameters = QUrlQuery()
         parameters.addQueryItem("server", f"{host}:{port}")
-        for key, value in (query or {}).items():
-            parameters.addQueryItem(key, value)
         url.setQuery(parameters)
         page.load(url)
         self.setPage(page)
+
+    def begin_ground_selection(self, bridge: GroundDestinationBridge) -> None:
+        if self._ground_bridge is not None:
+            raise RuntimeError("A destination is already being selected")
+        library = QFile(":/qtwebchannel/qwebchannel.js")
+        if not library.open(QIODevice.OpenModeFlag.ReadOnly):
+            raise RuntimeError("Qt WebChannel is unavailable")
+        source = bytes(library.readAll().data()).decode("utf-8")
+        library.close()
+        self._ground_bridge = bridge
+        self._ground_session = str(uuid4())
+        self._ground_channel = QWebChannel(self.page())
+        self._ground_channel.registerObject("groundDestination", bridge)
+        self.page().setWebChannel(self._ground_channel)
+        self.loadStarted.connect(bridge.dismiss)
+        self.renderProcessTerminated.connect(bridge.dismiss)
+        session = json.dumps(self._ground_session)
+        self.page().runJavaScript(
+            source + "\nwindow.groundDestinationSession = " + session + ";"
+            "new QWebChannel(qt.webChannelTransport, function(channel) {"
+            f"if (window.groundDestinationSession !== {session}) return;"
+            "const bridge = channel.objects.groundDestination;"
+            "if (!window.groundDestinationModeReady) { bridge.dismiss(); return; }"
+            "window.dispatchEvent(new CustomEvent('ground-destination-start',"
+            f"{{detail: {{id: {session}, bridge: bridge}}}}));"
+            "});"
+        )
+
+    def end_ground_selection(self, bridge: GroundDestinationBridge) -> None:
+        if self._ground_bridge is not bridge:
+            return
+        session = json.dumps(self._ground_session)
+        self.page().runJavaScript(
+            f"if (window.groundDestinationSession === {session}) {{"
+            "window.groundDestinationSession = null;"
+            "window.dispatchEvent(new CustomEvent('ground-destination-end',"
+            f"{{detail: {{id: {session}}}}}));}}"
+        )
+        self.loadStarted.disconnect(bridge.dismiss)
+        self.renderProcessTerminated.disconnect(bridge.dismiss)
+        self.page().setWebChannel(None)
+        if self._ground_channel is not None:
+            self._ground_channel.deregisterObject(bridge)
+            self._ground_channel.deleteLater()
+        self._ground_bridge = None
+        self._ground_channel = None
+        self._ground_session = None
 
     def discard_renderer(self) -> None:
         """Stop the QtWebEngine renderer process for this map.

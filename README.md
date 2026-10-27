@@ -107,9 +107,11 @@ base, including groups in transit. Normal deployment limits apply, with surplus
 kept in the Motor Pool. Ground Movement requires Motor Pool.
 
 Select units, then use **Choose on map…** in the movement dialog or Transfer Units'
-GPS mode. Move the cursor to preview the route, distance and arrival estimate;
-an X marks blocked positions. Click a valid destination to return to the dialog,
-then confirm with **Dispatch**. Escape or Cancel leaves orders unchanged.
+GPS mode. The main map temporarily switches to destination selection without
+loading a second map. Move the cursor to preview the route, distance and arrival
+estimate; an X marks blocked positions. Click a valid destination to return to the dialog,
+then confirm with **Dispatch**. Escape or Cancel leaves orders unchanged. The
+previous map view and campaign controls are restored when selection ends.
 
 ## Interface
 

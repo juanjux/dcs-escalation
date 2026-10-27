@@ -17,6 +17,7 @@ const ok: RoutePreview = {
 
 function setup() {
   const bridge: DestinationBridge = {
+    ready: jest.fn(),
     initial: jest.fn(),
     preview: jest.fn(),
     pick: jest.fn(),

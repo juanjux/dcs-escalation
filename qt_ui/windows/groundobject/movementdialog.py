@@ -35,7 +35,7 @@ from game.groundmovement.planning import (
 from game.groundmovement.report import preview_token
 from game.theater.player import Player
 from qt_ui.widgets.searchablecombo import SearchableComboBox
-from qt_ui.widgets.map.grounddestination import GroundDestinationDialog
+from qt_ui.widgets.map.grounddestination import GroundDestinationPicker
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.pilot.common import PANEL, AMBER, RED
 
@@ -193,7 +193,7 @@ class ArmorMovementDialog(QDialog):
             if not selected:
                 raise ValueError("Select units before choosing a destination")
             source = self.game.db.tgos.get(self.source_id)
-            picker = GroundDestinationDialog(
+            picker = GroundDestinationPicker(
                 self.model, source.position, source.name, preview, self
             )
             try:

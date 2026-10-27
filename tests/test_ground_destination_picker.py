@@ -174,7 +174,7 @@ def test_armor_dialog_returns_to_preview_without_dispatch(
     world: Any, controls: Any, monkeypatch: pytest.MonkeyPatch, accepted: bool
 ) -> None:
     monkeypatch.setattr(
-        "qt_ui.windows.groundobject.movementdialog.GroundDestinationDialog",
+        "qt_ui.windows.groundobject.movementdialog.GroundDestinationPicker",
         fake_picker(at(world) if accepted else None),
     )
     dialog = ArmorMovementDialog(controls.model, world.source.id, Player.BLUE)
@@ -194,7 +194,7 @@ def test_base_dialog_returns_to_preview_without_dispatch(
 
     controls.model.transfer_model = InventoryModel()
     monkeypatch.setattr(
-        "qt_ui.widgets.map.grounddestination.GroundDestinationDialog",
+        "qt_ui.widgets.map.grounddestination.GroundDestinationPicker",
         fake_picker(at(stock)),
     )
     dialog = NewUnitTransferDialog(controls.model, stock.a)
@@ -215,7 +215,7 @@ def test_empty_selection_does_not_open_map(
         pytest.fail("The map must not open without a selection")
 
     monkeypatch.setattr(
-        "qt_ui.windows.groundobject.movementdialog.GroundDestinationDialog", unexpected
+        "qt_ui.windows.groundobject.movementdialog.GroundDestinationPicker", unexpected
     )
     dialog = ArmorMovementDialog(controls.model, world.source.id, Player.BLUE)
     dialog.choose_on_map()
