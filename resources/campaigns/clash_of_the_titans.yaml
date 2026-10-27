@@ -2,22 +2,25 @@
 name: Afghanistan - Clash of the Titans
 theater: Afghanistan
 authors: Starfire, modified by juanjux
-recommended_player_faction: Blufor Current
+recommended_player_faction: USA 2020
 recommended_enemy_faction: Redfor (Russia) 2020
 description:
   <p><strong>This campaign utilises both Afghanistan East and West. It is intended to be run with CurrentHill's USA, Russia, and 
   China Asset Packs installed, although this is not mandatory.</strong></p>
   <p>In the rugged heart of Afghanistan, the balance of power is tipping. Clash of the Titans is a high-stakes campaign set during 
-  a fictional escalation in 2006, where NATO-led BLUFOR forces face off against a resurgent and well-equipped REDFOR coalition. 
+  a fictional escalation in 2020, where US-led BLUFOR forces face off against a resurgent and well-equipped REDFOR coalition.
   BLUFOR holds the vital eastern corridor, anchored by the fortified positions at Bagram Airfield, the strategic capital of Kabul, 
   and the forward base at Sharana. A recent offensive has resulted in REDFOR now controlling the southern and western strongholds of 
   Kandahar, Camp Bastion, and Tarinkot, with each having been since been heavily fortified. Air superiority is hotly contested, and both 
   sides are committing rotary and fixed-wing assets to interdiction, close air support, and deep strike missions. This is no border 
   skirmish. This is a theatre-wide confrontation where every flight counts and every decision could tilt the balance. Welcome to 
   Clash of the Titans. The skies over Afghanistan have never been more dangerous.</p>
+  <p>Both sides have sector-based IADS with alternate command centres, redundant communications and power,
+  and separate GPS jamming sites. Vehicle depots hold strikeable reserves at every base, including the neutral FOBs.
+  Capture territory and attack the infrastructure to weaken the opposing network.</p>
 miz: clash_of_the_titans.miz
 performance: 1
-recommended_start_date: 2006-01-27
+recommended_start_date: 2020-01-27
 version: "10.9"
 settings:
   russianmilitaryassetspack: true
@@ -26,11 +29,357 @@ settings:
   f22_raptor: true
   fa_18efg: true
   squadron_start_full: true
-# GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
-# most of its own air defences. No radar on it, so it is a STRIKE target, not
-# SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
+  motorpool_enabled: true
+  plugins:
+    skynetiads: true
+    gpsjamming: true
+
+advanced_iads: true
+
+# Keep all four original EWRs as radars. Jammers use separate EWR markers.
 ground_forces:
-  Ground-71: GPS Jamming Site (Red)
+  Blue GPS Jammer Bagram: GPS Jamming Site (Blue)
+  Blue GPS Jammer Kabul: GPS Jamming Site (Blue)
+  Blue GPS Jammer Ghazni: GPS Jamming Site (Blue)
+  Blue GPS Jammer Sharana: GPS Jamming Site (Blue)
+  Red GPS Jammer Bastion: GPS Jamming Site (Red)
+  Red GPS Jammer Tarinkot: GPS Jamming Site (Red)
+  Red GPS Jammer Kandahar: GPS Jamming Site (Red)
+  Red GPS Jammer Lagman: GPS Jamming Site (Red)
+
+# Local towers reach 15 nm and power grids 35 nm. Each active SAM/EWR/jammer
+# has at least two of each, and both of its coalition's command centres.
+# Command links represent the long-haul backbone; local links stay in range.
+# Neutral FOBs remain outside either network until captured.
+iads_config:
+  - Ground-63:
+      - Red Comms Kandahar East
+      - Red Comms Kandahar East Backup
+      - Red Power Kandahar East
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-42:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-10:
+      - Red Comms Tarinkot West
+      - Red Comms Tarinkot West Backup
+      - Red Power Tarinkot West
+      - Red Power Tarinkot Central
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-13:
+      - Red Comms Tarinkot North
+      - Red Comms Tarinkot North Backup
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-21:
+      - Red Comms Tarinkot Town
+      - Red Comms Tarinkot Town Backup
+      - Red Power Tarinkot Central
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-22:
+      - Red Comms Tarinkot Town
+      - Red Comms Tarinkot Town Backup
+      - Red Power Tarinkot Central
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-71:
+      - Red Comms Tarinkot North
+      - Red Comms Tarinkot North Backup
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red GPS Jammer Tarinkot:
+      - Red Comms Tarinkot Town
+      - Red Comms Tarinkot Town Backup
+      - Red Power Tarinkot Central
+      - Red Power Tarinkot Town
+      - Red Power Tarinkot North
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-11:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-23:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red GPS Jammer Bastion:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red IADS Command Bastion:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+  - Ground-14:
+      - Red Comms Bastion East
+      - Red Comms Bastion East Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-69:
+      - Red Comms Bastion West
+      - Red Comms Bastion West Backup
+      - Red Power Bastion East
+      - Red Power Bastion West
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-44:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-12:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red GPS Jammer Kandahar:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red EWR Kandahar:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red IADS Command Kandahar:
+      - Red Comms Kandahar West
+      - Red Comms Kandahar West Backup
+      - Red Power Kandahar
+      - Red Power Kandahar East
+  - Ground-5:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-43:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-34:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-68:
+      - Blue Comms Bagram East
+      - Blue Comms Bagram East Backup
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue GPS Jammer Bagram:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue IADS Command Bagram:
+      - Blue Comms Bagram North
+      - Blue Comms Bagram South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+  - Ground-28:
+      - Blue Comms Kabul North
+      - Blue Comms Kabul South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-61:
+      - Blue Comms Kabul North
+      - Blue Comms Kabul South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue GPS Jammer Kabul:
+      - Blue Comms Kabul North
+      - Blue Comms Kabul South
+      - Blue Power Bagram
+      - Blue Power Bagram East
+      - Blue Power Kabul
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-7:
+      - Blue Comms Ghazni West
+      - Blue Comms Ghazni East
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-30:
+      - Blue Comms Ghazni West
+      - Blue Comms Ghazni East
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-32:
+      - Blue Comms Ghazni West
+      - Blue Comms Ghazni East
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-70:
+      - Blue Comms Ghazni North
+      - Blue Comms Ghazni North Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue GPS Jammer Ghazni:
+      - Blue Comms Ghazni West
+      - Blue Comms Ghazni East
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-6:
+      - Blue Comms Sharana East
+      - Blue Comms Sharana East Backup
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-29:
+      - Blue Comms Sharana West
+      - Blue Comms Sharana West Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Ground-31:
+      - Blue Comms Sharana West
+      - Blue Comms Sharana West Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue GPS Jammer Sharana:
+      - Blue Comms Sharana West
+      - Blue Comms Sharana West Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue EWR Sharana:
+      - Blue Comms Sharana East
+      - Blue Comms Sharana East Backup
+      - Blue Power Sharana East
+      - Blue Power Sharana
+      - Blue IADS Command Bagram
+      - Blue IADS Command Sharana
+  - Blue IADS Command Sharana:
+      - Blue Comms Sharana West
+      - Blue Comms Sharana West Backup
+      - Blue Power Ghazni
+      - Blue Power Sharana East
+      - Blue Power Sharana
+  - Ground-56:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-57:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-58:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Ground-59:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red GPS Jammer Lagman:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
+  - Red EWR Lagman:
+      - Red Comms Lagman North
+      - Red Comms Lagman South
+      - Red Power Lagman West
+      - Red Power Lagman
+      - Red IADS Command Bastion
+      - Red IADS Command Kandahar
 
 squadrons:
   #Bagram

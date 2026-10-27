@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Campaigns]** Modernize Clash of the Titans with redundant IADS, separate GPS jammers and vehicle depots at every base.
 
 * **[Ground Movement]** Reuse the main map for GPS destination selection without opening or loading another map.
 * **[Ground Movement]** Choose GPS destinations on the map with live route, distance, arrival estimates and blocked-position feedback.
