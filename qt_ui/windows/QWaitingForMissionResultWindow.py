@@ -226,12 +226,16 @@ class QWaitingForMissionResultWindow(QDialog):
             with logged_duration("Turn processing"):
                 self.sim_controller.process_results(self.debriefing)
                 self.game.pass_turn()
+                turn_state = self.game.check_win_loss()
 
                 GameUpdateSignal.get_instance().sendDebriefing(self.debriefing)
                 GameUpdateSignal.get_instance().updateGame(self.game)
         finally:
             progress.close()
         self.close()
+        # Finish processing and close the waiting window before the end-game
+        # handler closes dialogs and opens the victory or defeat prompt.
+        GameUpdateSignal.get_instance().gameStateChanged(turn_state)
 
     def closeEvent(self, evt):
         super(QWaitingForMissionResultWindow, self).closeEvent(evt)
