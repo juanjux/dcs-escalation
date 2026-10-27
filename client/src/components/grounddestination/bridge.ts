@@ -11,6 +11,7 @@ export interface RoutePreview {
 }
 
 export interface DestinationBridge {
+  ready: () => void;
   initial: (done: (json: string) => void) => void;
   preview: (lat: number, lng: number, done: (json: string) => void) => void;
   pick: (lat: number, lng: number, done: (json: string) => void) => void;
@@ -19,7 +20,7 @@ export interface DestinationBridge {
 
 declare global {
   interface Window {
-    groundDestinationBridge?: DestinationBridge;
+    groundDestinationModeReady?: boolean;
   }
 }
 

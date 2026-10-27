@@ -1,8 +1,6 @@
 export {};
 
-it("does not open an event-stream connection for a destination picker", () => {
-  const original = window.location.href;
-  window.history.replaceState({}, "", "?groundDestination=1");
+it("keeps one campaign socket while destination mode starts and stops", () => {
   const socket = jest
     .spyOn(window, "WebSocket")
     .mockImplementation(() => ({}) as WebSocket);
@@ -10,9 +8,14 @@ it("does not open an event-stream connection for a destination picker", () => {
     jest.isolateModules(() => {
       require("../socketprovider/socketprovider");
     });
-    expect(socket).not.toHaveBeenCalled();
+    window.dispatchEvent(
+      new CustomEvent("ground-destination-start", { detail: { id: "one" } }),
+    );
+    window.dispatchEvent(
+      new CustomEvent("ground-destination-end", { detail: { id: "one" } }),
+    );
+    expect(socket).toHaveBeenCalledTimes(1);
   } finally {
-    window.history.replaceState({}, "", original);
     socket.mockRestore();
   }
 });

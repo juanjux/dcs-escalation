@@ -501,7 +501,7 @@ class NewUnitTransferDialog(QDialog):
         return GroundPosition(point.x, point.y)
 
     def choose_on_map(self) -> None:
-        from qt_ui.widgets.map.grounddestination import GroundDestinationDialog
+        from qt_ui.widgets.map.grounddestination import GroundDestinationPicker
 
         selected = dict(self.transfer_panel.transfers)
 
@@ -516,7 +516,7 @@ class NewUnitTransferDialog(QDialog):
             self.game_model.ground_movement_commands.require_planning(self.game)
             if not any(selected.values()):
                 raise ValueError("Select units before choosing a destination")
-            picker = GroundDestinationDialog(
+            picker = GroundDestinationPicker(
                 self.game_model, self.origin.position, self.origin.name, preview, self
             )
             try:

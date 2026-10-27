@@ -9,8 +9,10 @@ from typing import Callable, TYPE_CHECKING
 
 from dcs import Point
 from dcs.mapping import LatLng
-from PySide6.QtCore import QFile, QIODevice, QObject, QTimer, Slot
-from PySide6.QtWidgets import QDialog, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtCore import QEvent, QEventLoop, QObject, QTimer, Qt, Signal, Slot
+from PySide6.QtGui import QAction, QKeySequence, QShortcut
+from PySide6.QtWidgets import QApplication, QDialog, QWidget
+from shiboken6 import isValid
 
 from game.groundmovement.orders import GroundPosition
 
@@ -22,6 +24,13 @@ if TYPE_CHECKING:
 
 class GroundDestinationBridge(QObject):
     """Keep campaign access on the GUI thread; never dispatch from a map click."""
+
+    connected = Signal()
+
+    @Slot()
+    def ready(self) -> None:
+        if not self.closed:
+            self.connected.emit()
 
     def __init__(
         self,
@@ -105,11 +114,15 @@ class GroundDestinationBridge(QObject):
 
     @Slot()
     def dismiss(self) -> None:
+        if self.closed:
+            return
         self.closed = True
         self.cancel()
 
 
-class GroundDestinationDialog(QDialog):
+class GroundDestinationPicker(QObject):
+    """Temporarily lend the main map to a movement dialog, without reloading it."""
+
     def __init__(
         self,
         model: GameModel,
@@ -118,46 +131,135 @@ class GroundDestinationDialog(QDialog):
         preview: Callable[[GroundPosition], ArmorMovementPreview | BaseMovementPreview],
         parent: QWidget,
     ) -> None:
-        super().__init__(parent)
-        # Import lazily: tests of campaign previews need no WebEngine renderer.
-        from PySide6.QtWebChannel import QWebChannel
-        from PySide6.QtWebEngineCore import QWebEngineScript
-        from qt_ui.widgets.map.QLiberationMap import QLiberationMap
-
+        super().__init__()
+        self.owner = parent
+        ancestor: QWidget | None = parent
+        while ancestor is not None and not hasattr(ancestor, "liberation_map"):
+            ancestor = ancestor.parentWidget()
+        if ancestor is None:
+            raise RuntimeError("The main campaign map is unavailable")
+        self.window = ancestor
+        self.map = ancestor.liberation_map  # type: ignore[attr-defined]
         self.selected: LatLng | None = None
-        self.setWindowTitle("Choose ground movement destination")
-        self.resize(1200, 800)
-        layout = QVBoxLayout(self)
-        self.map = QLiberationMap(model, False, self, query={"groundDestination": "1"})
-        layout.addWidget(self.map)
-        cancel = QPushButton("Cancel")
-        cancel.clicked.connect(self.reject)
-        layout.addWidget(cancel)
+        self.loop = QEventLoop(self)
+        self.finished = False
+        self.closing: set[QObject] = set()
+        self.error: str | None = None
         self.bridge = GroundDestinationBridge(
             model, origin, name, preview, self.choose, self.reject, self
         )
-        self.finished.connect(lambda _: setattr(self.bridge, "closed", True))
-        self.channel = QWebChannel(self.map.page())
-        self.channel.registerObject("groundDestination", self.bridge)
-        self.map.page().setWebChannel(self.channel)
-        library = QFile(":/qtwebchannel/qwebchannel.js")
-        if not library.open(QIODevice.OpenModeFlag.ReadOnly):
-            raise RuntimeError("Qt WebChannel is unavailable")
-        source = bytes(library.readAll().data()).decode("utf-8")
-        library.close()
-        script = QWebEngineScript()
-        script.setName("ground-destination-bridge")
-        script.setInjectionPoint(QWebEngineScript.InjectionPoint.DocumentCreation)
-        script.setWorldId(QWebEngineScript.ScriptWorldId.MainWorld)
-        script.setRunsOnSubFrames(False)
-        script.setSourceCode(
-            source + "\nnew QWebChannel(qt.webChannelTransport, function(channel) {"
-            "window.groundDestinationBridge = channel.objects.groundDestination;"
-            "window.dispatchEvent(new Event('ground-destination-ready'));"
-            "});"
+        self.timeout = QTimer(self)
+        self.timeout.setSingleShot(True)
+        self.timeout.timeout.connect(self.connection_failed)
+        self.bridge.connected.connect(self.timeout.stop)
+        self.owner.destroyed.connect(self.reject)
+
+    def exec(self) -> QDialog.DialogCode:
+        hidden: list[QDialog] = []
+        disabled: list[QWidget] = []
+        actions = [a for a in self.window.findChildren(QAction) if a.isEnabled()]
+        focus = QApplication.focusWidget()
+        escape = QShortcut(QKeySequence(Qt.Key.Key_Escape), self.window)
+        escape.setContext(Qt.ShortcutContext.WindowShortcut)
+        escape.activated.connect(self.reject)
+        self.window.installEventFilter(self)
+        self.owner.installEventFilter(self)
+        from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
+
+        signals = GameUpdateSignal.get_instance()
+        if signals is not None:
+            signals.gameupdated.connect(self.reject)
+            signals.ground_movements_changed.connect(self.reject)
+        try:
+            for action in actions:
+                action.setEnabled(False)
+            # Disable siblings along the map's ancestry, not the map itself.
+            # This prevents campaign edits while preserving map pan and zoom.
+            child = self.map
+            while child is not self.window:
+                container = child.parentWidget()
+                if container is None:
+                    raise RuntimeError("The main campaign map is unavailable")
+                for sibling in container.findChildren(
+                    QWidget, options=Qt.FindChildOption.FindDirectChildrenOnly
+                ):
+                    if sibling is not child and not sibling.isWindow():
+                        if sibling.isEnabled():
+                            disabled.append(sibling)
+                            sibling.setEnabled(False)
+                child = container
+            for widget in QApplication.topLevelWidgets():
+                ancestor = widget.parentWidget()
+                while ancestor is not None and ancestor is not self.window:
+                    ancestor = ancestor.parentWidget()
+                if (
+                    isinstance(widget, QDialog)
+                    and widget.isVisible()
+                    and ancestor is self.window
+                ):
+                    hidden.append(widget)
+                    widget.hide()
+            self.timeout.start(10000)
+            self.map.begin_ground_selection(self.bridge)
+            self.map.setFocus()
+            if not self.finished:
+                self.loop.exec()
+        finally:
+            self.bridge.closed = True
+            self.timeout.stop()
+            if isValid(self.map):
+                self.map.end_ground_selection(self.bridge)
+            if isValid(escape):
+                escape.setEnabled(False)
+                escape.deleteLater()
+            if isValid(self.window):
+                self.window.removeEventFilter(self)
+            if isValid(self.owner):
+                self.owner.removeEventFilter(self)
+            if signals is not None and isValid(signals):
+                signals.gameupdated.disconnect(self.reject)
+                signals.ground_movements_changed.disconnect(self.reject)
+            for action in actions:
+                if isValid(action):
+                    action.setEnabled(True)
+            for widget in disabled:
+                if isValid(widget):
+                    widget.setEnabled(True)
+            if isValid(self.window) and self.window.isVisible():
+                for dialog in hidden:
+                    if isValid(dialog) and dialog not in self.closing:
+                        dialog.show()
+                if isValid(self.owner) and self.owner.isVisible():
+                    self.owner.raise_()
+                    self.owner.activateWindow()
+                if focus is not None and isValid(focus):
+                    focus.setFocus()
+        if self.error:
+            raise RuntimeError(self.error)
+        return (
+            QDialog.DialogCode.Accepted
+            if self.selected is not None
+            else QDialog.DialogCode.Rejected
         )
-        self.map.page().scripts().insert(script)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.Close:
+            self.closing.add(watched)
+            self.reject()
+        return False
+
+    def reject(self) -> None:
+        self.finished = True
+        self.bridge.closed = True
+        self.loop.quit()
+
+    def connection_failed(self) -> None:
+        self.error = (
+            "The main map did not respond. Close and reopen the movement dialog"
+        )
+        self.reject()
 
     def choose(self, position: LatLng) -> None:
         self.selected = position
-        QTimer.singleShot(0, self.accept)
+        # Let WebChannel return the click response before releasing this bridge.
+        QTimer.singleShot(0, self, self.reject)

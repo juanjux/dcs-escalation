@@ -51,8 +51,8 @@ const mapSlice = createSlice({
       state.hoveredEmitterSource = action.payload?.source ?? null;
     },
     // Where the map should be looking. The map watches this rather than being moved
-    // directly, because it re-centres itself on what the store says after every
-    // render -- a flyTo of its own would be undone by the next one.
+    // directly. Panning and temporary selection modes keep their own view until
+    // an explicit change here requests another centre.
     setMapCenter(state, action: PayloadAction<LatLngLiteral>) {
       state.center = action.payload;
       state.zoom = null;

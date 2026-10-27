@@ -1,24 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { BasemapLayer } from "react-esri-leaflet";
 import {
   CircleMarker,
-  MapContainer,
-  Marker,
   Polyline,
   Pane,
-  ScaleControl,
-  Tooltip,
   useMap,
   useMapEvents,
 } from "react-leaflet";
 import { DomEvent, LatLngLiteral } from "leaflet";
-import { useAppSelector } from "../../app/hooks";
-import { selectControlPoints } from "../../api/controlPointsSlice";
-import { selectTgos } from "../../api/tgosSlice";
-import { selectFrontLines } from "../../api/frontLinesSlice";
-import { selectSupplyRoutes } from "../../api/supplyRoutesSlice";
-import { iconForControlPoint } from "../controlpoints/Icons";
-import { iconForTgo } from "../tgos/shared";
 import {
   bridgeCall,
   DestinationBridge,
@@ -31,66 +19,6 @@ import "./GroundDestinationMap.css";
 interface Origin {
   origin: LatLngLiteral;
   name: string;
-}
-
-function Background() {
-  const bases = useAppSelector(selectControlPoints).controlPoints;
-  const tgos = useAppSelector(selectTgos).tgos;
-  const roads = useAppSelector(selectSupplyRoutes).routes;
-  const fronts = useAppSelector(selectFrontLines).fronts;
-  return (
-    <>
-      <BasemapLayer name="ImageryClarity" />
-      {Object.values(roads)
-        .filter((road) => !road.is_sea)
-        .map((road) => (
-          <Polyline
-            key={road.id}
-            positions={road.points}
-            interactive={false}
-            pathOptions={{
-              color: road.front_active
-                ? "#c85050"
-                : road.blue
-                  ? "#8b9daa"
-                  : "#8c1414",
-              weight: 5,
-            }}
-          />
-        ))}
-      {Object.values(fronts).map((front) => (
-        <Polyline
-          key={front.id}
-          positions={front.extents}
-          interactive={false}
-          pathOptions={{ color: "#fe7d0a", weight: 12 }}
-        />
-      ))}
-      {Object.values(tgos)
-        .filter((tgo) => !tgo.dead)
-        .map((tgo) => (
-          <Marker
-            key={tgo.id}
-            position={tgo.position}
-            icon={iconForTgo(tgo)}
-            interactive={false}
-          />
-        ))}
-      {Object.values(bases).map((base) => (
-        <Marker
-          key={base.id}
-          position={base.position}
-          icon={iconForControlPoint(base)}
-          interactive={false}
-          zIndexOffset={1000}
-        >
-          <Tooltip permanent direction="right">
-            {base.name}
-          </Tooltip>
-        </Marker>
-      ))}
-    </>
-  );
 }
 
 export function DestinationInteraction({
@@ -106,6 +34,25 @@ export function DestinationInteraction({
   const [pending, setPending] = useState(false);
   const controller = useRef<DestinationPreviewController>();
   const banner = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const center = map.getCenter();
+    const zoom = map.getZoom();
+    const doubleClickZoom = map.doubleClickZoom.enabled();
+    const container = map.getContainer();
+    map.stop();
+    map.closePopup();
+    container.classList.add("ground-destination-map");
+    map.doubleClickZoom.disable();
+    map.setView(origin.origin, Math.max(zoom, 10), { animate: false });
+    bridge.ready();
+    return () => {
+      container.classList.remove("ground-destination-map");
+      map.stop();
+      map.setView(center, zoom, { animate: false });
+      if (doubleClickZoom) map.doubleClickZoom.enable();
+    };
+  }, [map, bridge, origin]);
 
   useEffect(() => {
     if (banner.current) {
@@ -128,12 +75,41 @@ export function DestinationInteraction({
     );
     controller.current = instance;
     const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") bridge.dismiss();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        bridge.dismiss();
+      } else if (event.key === "Enter" || event.key === " ") {
+        if (
+          !(
+            event.target instanceof Element &&
+            event.target.closest(".gd-banner")
+          )
+        ) {
+          // Marker keyboard activation must not open normal campaign dialogs.
+          event.preventDefault();
+          event.stopImmediatePropagation();
+        }
+      } else if (
+        ![
+          "Tab",
+          "+",
+          "-",
+          "=",
+          "ArrowUp",
+          "ArrowDown",
+          "ArrowLeft",
+          "ArrowRight",
+        ].includes(event.key)
+      ) {
+        // Normal layers remain mounted. Do not let their edit shortcuts run.
+        event.stopImmediatePropagation();
+      }
     };
-    window.addEventListener("keydown", escape);
+    window.addEventListener("keydown", escape, true);
     return () => {
       instance.dispose();
-      window.removeEventListener("keydown", escape);
+      window.removeEventListener("keydown", escape, true);
     };
   }, [bridge]);
 
@@ -185,6 +161,9 @@ export function DestinationInteraction({
     <>
       <div ref={banner} className="gd-banner" role="status" aria-live="polite">
         <strong>Choose the armor group/SAM destination and click</strong>
+        <button className="gd-cancel" onClick={() => bridge.dismiss()}>
+          Cancel
+        </button>
         <div className="gd-source">
           From {origin.name}. Selecting a position does not dispatch units.
         </div>
@@ -256,56 +235,55 @@ export function DestinationInteraction({
   );
 }
 
-export default function GroundDestinationMap() {
+export default function GroundDestinationMode({
+  onActiveChange,
+}: {
+  onActiveChange: (active: boolean) => void;
+}) {
   const [ready, setReady] = useState<{
+    id: string;
     bridge: DestinationBridge;
     origin: Origin;
   } | null>(null);
-  const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
-    let connecting = false;
-    const connect = async () => {
-      const bridge = window.groundDestinationBridge;
-      if (!bridge || connecting) return;
-      connecting = true;
+    let current: { id: string; bridge: DestinationBridge } | null = null;
+    const connect = async (event: Event) => {
+      const session = (event as CustomEvent).detail as {
+        id: string;
+        bridge: DestinationBridge;
+      };
+      current = session;
+      setReady(null);
+      onActiveChange(true);
       try {
-        const origin = await bridgeCall<Origin>((done) => bridge.initial(done));
-        if (active) setReady({ bridge, origin });
+        const origin = await bridgeCall<Origin>((done) =>
+          session.bridge.initial(done),
+        );
+        if (active && current === session) setReady({ ...session, origin });
       } catch (error) {
-        if (active) setError(String(error));
+        if (active && current === session) {
+          console.error("Cannot start destination selection", error);
+          session.bridge.dismiss();
+        }
       }
     };
-    window.addEventListener("ground-destination-ready", connect);
-    connect();
-    const timeout = setTimeout(() => {
-      if (active && !connecting)
-        setError(
-          "The map could not connect to the campaign. Close and reopen the selector.",
-        );
-    }, 10000);
+    const end = (event: Event) => {
+      if ((event as CustomEvent).detail.id !== current?.id) return;
+      current = null;
+      setReady(null);
+      onActiveChange(false);
+    };
+    window.addEventListener("ground-destination-start", connect);
+    window.addEventListener("ground-destination-end", end);
+    window.groundDestinationModeReady = true;
     return () => {
       active = false;
-      clearTimeout(timeout);
-      window.removeEventListener("ground-destination-ready", connect);
+      window.groundDestinationModeReady = false;
+      window.removeEventListener("ground-destination-start", connect);
+      window.removeEventListener("ground-destination-end", end);
+      current?.bridge.dismiss();
     };
-  }, []);
-  if (!ready)
-    return (
-      <div className="gd-loading" role="status">
-        {error || "Loading destination map…"}
-      </div>
-    );
-  return (
-    <MapContainer
-      className="ground-destination-map"
-      center={ready.origin.origin}
-      zoom={10}
-      doubleClickZoom={false}
-    >
-      <ScaleControl />
-      <Background />
-      <DestinationInteraction {...ready} />
-    </MapContainer>
-  );
+  }, [onActiveChange]);
+  return ready ? <DestinationInteraction key={ready.id} {...ready} /> : null;
 }

@@ -1,9 +1,23 @@
-import { act, render, screen } from "@testing-library/react";
-import { DestinationInteraction } from "./GroundDestinationMap";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import GroundDestinationMode, {
+  DestinationInteraction,
+} from "./GroundDestinationMap";
 import { DestinationBridge } from "./bridge";
 
 const mockContainer = document.createElement("div");
-const mockMap = { getContainer: () => mockContainer };
+const mockMap = {
+  getContainer: () => mockContainer,
+  getCenter: () => ({ lat: 40, lng: 39 }),
+  getZoom: () => 8,
+  stop: jest.fn(),
+  closePopup: jest.fn(),
+  setView: jest.fn(),
+  doubleClickZoom: {
+    enabled: () => true,
+    disable: jest.fn(),
+    enable: jest.fn(),
+  },
+};
 let mockHandlers: Record<string, (event: any) => void>;
 jest.mock("react-leaflet", () => ({
   Pane: ({ children, style }: any) => (
@@ -30,6 +44,7 @@ function event(lat = 42, lng = 41) {
 }
 function setup() {
   const bridge: DestinationBridge = {
+    ready: jest.fn(),
     initial: jest.fn(),
     preview: jest.fn(),
     pick: jest.fn(),
@@ -43,7 +58,10 @@ function setup() {
   );
   return { bridge, ...view };
 }
-beforeEach(() => jest.useFakeTimers());
+beforeEach(() => {
+  jest.useFakeTimers();
+  jest.clearAllMocks();
+});
 afterEach(() => {
   jest.clearAllTimers();
   jest.useRealTimers();
@@ -148,4 +166,105 @@ it("ignores the banner and clears the preview on leaving the map", () => {
   expect(mockContainer.dataset.destinationStatus).toBe("idle");
   unmount();
   expect(mockContainer.dataset.destinationStatus).toBeUndefined();
+});
+
+it("reuses the map and restores its view and interactions on exit", () => {
+  const { bridge, unmount } = setup();
+  expect(bridge.ready).toHaveBeenCalledTimes(1);
+  expect(mockMap.setView).toHaveBeenCalledWith({ lat: 42, lng: 41 }, 10, {
+    animate: false,
+  });
+  expect(mockContainer).toHaveClass("ground-destination-map");
+  expect(mockMap.doubleClickZoom.disable).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(bridge.dismiss).toHaveBeenCalledTimes(1);
+  const editing = jest.fn();
+  document.addEventListener("keydown", editing);
+  fireEvent.keyDown(document, { key: "Delete" });
+  fireEvent.keyDown(document, { key: "Enter" });
+  expect(editing).not.toHaveBeenCalled();
+  unmount();
+  expect(mockMap.setView).toHaveBeenLastCalledWith({ lat: 40, lng: 39 }, 8, {
+    animate: false,
+  });
+  expect(mockContainer).not.toHaveClass("ground-destination-map");
+  expect(mockMap.doubleClickZoom.enable).toHaveBeenCalledTimes(1);
+  fireEvent.keyDown(document, { key: "Delete" });
+  expect(editing).toHaveBeenCalledTimes(1);
+  document.removeEventListener("keydown", editing);
+});
+
+it("can enter and leave selection repeatedly without a second map", async () => {
+  const changed = jest.fn();
+  const bridge: DestinationBridge = {
+    ready: jest.fn(),
+    initial: (done) =>
+      done(
+        JSON.stringify({ origin: { lat: 42, lng: 41 }, name: "Reserve Alpha" }),
+      ),
+    preview: jest.fn(),
+    pick: jest.fn(),
+    dismiss: jest.fn(),
+  };
+  const { unmount } = render(
+    <GroundDestinationMode onActiveChange={changed} />,
+  );
+  expect(window.groundDestinationModeReady).toBe(true);
+  for (const id of ["first", "second"]) {
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent("ground-destination-start", { detail: { id, bridge } }),
+      );
+    });
+    expect(changed).toHaveBeenLastCalledWith(true);
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("ground-destination-end", {
+          detail: { id: "old-session" },
+        }),
+      );
+    });
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("ground-destination-end", { detail: { id } }),
+      );
+    });
+    expect(changed).toHaveBeenLastCalledWith(false);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  }
+  expect(bridge.ready).toHaveBeenCalledTimes(2);
+  unmount();
+  expect(window.groundDestinationModeReady).toBe(false);
+});
+
+it("discards an initial response received after cancellation", async () => {
+  const changed = jest.fn();
+  const bridge: DestinationBridge = {
+    ready: jest.fn(),
+    initial: jest.fn(),
+    preview: jest.fn(),
+    pick: jest.fn(),
+    dismiss: jest.fn(),
+  };
+  render(<GroundDestinationMode onActiveChange={changed} />);
+  act(() => {
+    window.dispatchEvent(
+      new CustomEvent("ground-destination-start", {
+        detail: { id: "late", bridge },
+      }),
+    );
+    window.dispatchEvent(
+      new CustomEvent("ground-destination-end", { detail: { id: "late" } }),
+    );
+  });
+  await act(async () => {
+    (bridge.initial as jest.Mock).mock.calls[0][0](
+      JSON.stringify({ origin: { lat: 42, lng: 41 }, name: "Reserve Alpha" }),
+    );
+  });
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(bridge.ready).not.toHaveBeenCalled();
+  expect(changed).toHaveBeenLastCalledWith(false);
 });
