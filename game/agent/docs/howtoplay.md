@@ -222,6 +222,18 @@ in the supporting base's Motor Pool. A campaign log entry records the transfer
 for either side. No automatic integration occurs while the plugin or Motor Pool
 is disabled.
 
+For GPS destinations, select units first and click **Choose on map…** in either
+the Move Reserve Armor Group dialog or Transfer Units' GPS mode. The map starts
+at the source and shows campaign roads, fronts, bases and objectives as read-only
+references. Move the cursor to preview the route: yellow lines are road travel,
+cyan dashed lines are off-road access. The banner shows total route distance,
+the road/off-road split and estimated arrival in turns. Invalid positions show
+an X cursor and the blocking reason; pending or outdated previews cannot be
+selected. A valid click revalidates the route and returns to the original dialog
+with a fresh preview. Click **Dispatch** there to issue the order. Escape or
+Cancel closes the map without changing the order or inventory. Coordinate entry
+and clipboard paste remain available.
+
 The base API provides `GET /control-points/{id}/ground-movement/options`,
 `POST /control-points/{id}/ground-movement/preview`,
 `POST /control-points/{id}/ground-movement` and

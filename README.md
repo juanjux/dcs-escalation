@@ -100,8 +100,10 @@ The optional Ground Movement plugin moves convoys and reserve armor groups over
 multiple turns, with route previews, transport requirements and persistent losses.
 From a base's Transfer Units dialog, deploy a custom mix of available vehicles to
 friendly GPS coordinates. Survivors form an active Reserve Armor Group that can
-defend its position or be moved again. Groups reached or passed by their front
-automatically reinforce its supporting base, including groups in transit. Normal
+defend its position or be moved again. Choose a GPS destination on an interactive
+map with route highlighting, distance, estimated arrival and validity feedback.
+Groups reached or passed by their front automatically reinforce its supporting
+base, including groups in transit. Normal
 deployment limits apply, with surplus kept in the Motor Pool. Ground Movement
 requires Motor Pool.
 
