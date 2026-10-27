@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The Type 96 or ZTZ96 is a Chinese second generation main battle tank
   (MBT). The final evolution of the Type 88 design, the Type 96 entered service with

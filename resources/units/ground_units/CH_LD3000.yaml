@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: The land-based variant of Type 1130 CIWS, the LD-3000 is a Chinese eleven-barrelled
   30 mm Gatling gun/rotary cannon CIWS. It is mounted in an enclosed automatic turret and

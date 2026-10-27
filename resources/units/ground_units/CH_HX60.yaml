@@ -1,3 +1,6 @@
+ground_mobility:
+  mode: self_propelled
+  can_tow: true
 class: Logistics
 description: "The HX60 is the light member of the Rheinmetall MAN HX family, the German Army's standard tactical truck."
 introduced: 2010

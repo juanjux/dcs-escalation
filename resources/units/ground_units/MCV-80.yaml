@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: "The Warrior tracked vehicle family is a series of British armoured vehicles,\
   \ originally developed to replace the older FV430 series of armoured vehicles. The\

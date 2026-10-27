@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: SHORAD
 description: 'The MBT Series and MAVr Models are Medium Repulser Tanks manufactured by Kuat Subsidiaries. 
 The MAVr’s are considered quick and nimble for an armored fighting vehicle and are able to enter a fight quickly,

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: "Self-propelled air defense vehicle based on BMP-3 chassis fitted with a 57 mm autocannon
   and passive reconnaissance and target tracking equipment. It is designed to shoot down unmanned aerial

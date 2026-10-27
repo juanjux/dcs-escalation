@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Artillery
 description: "The SO-152 (Russian: CO-152), usually known by its GRAU designation 2S3 (Russian: 2C3), 
   is a Soviet 152.4 mm self-propelled gun developed in 1968, as a response to the American 155 mm M109 

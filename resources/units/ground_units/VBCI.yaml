@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: IFV
 description: "The Véhicule Blindé de Combat d'Infanterie (VBCI : Armoured vehicle for infantry combat) is a French Infantry fighting vehicle designed to replace the AMX-10P."
 introduced: 2005

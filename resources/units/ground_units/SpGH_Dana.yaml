@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Artillery
 description: "The DANA (the name being derived from \"d\u011Blo automobiln\xED nab\xED\
   jen\xE9 automaticky\" (gun on truck loaded automatically)) is a wheeled self-propelled\

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: towed
 class: AAA
 description: The Bofors 40 mm gun, often referred to simply as the Bofors gun, is
   an anti-aircraft autocannon designed in the 1930s by the Swedish arms manufacturer

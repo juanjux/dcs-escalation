@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: SHORAD
 description: A highly mobile self-propelled anti-aircraft vehicle designed to provide defense for ground units
   on the front line. It combines both radar guided ground to air missiles and a high volume of close in gunfire from

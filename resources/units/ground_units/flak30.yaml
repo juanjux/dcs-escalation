@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: towed
 class: AAA
 description: The Flak 38 (Flugzeugabwehrkanone 30) and improved Flak 38 were 20 mm
   anti-aircraft guns used by various German forces throughout World War II. It was

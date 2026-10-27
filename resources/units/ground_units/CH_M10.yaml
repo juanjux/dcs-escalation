@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description: THe M10 Light Tank features a 105mm M35 rifled cannon, providing effective
   firepower against enemy infantry, light vehicles, and armored threats. The M10's enhanced

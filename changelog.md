@@ -77,6 +77,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Ground Movement]** Define mobility for stock and mod vehicles, towed guns and tractors so normal armor groups can be dispatched.
 
 * **[Campaign]** Preserve aircraft inventory and workshop capacity when loading saves with overfull bases.
 * **[Performance]** Accelerate ground-unit placement with prepared and indexed land/sea geometry queries.

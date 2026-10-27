@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: Type 94 25mm Self-Propelled Anti-Aircraft Gun
 introduced: 1934

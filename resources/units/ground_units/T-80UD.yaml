@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: The T-80 is a main battle tank (MBT) designed and manufactured in the
   Soviet Union. When it entered service in 1976, it was the second MBT in the world

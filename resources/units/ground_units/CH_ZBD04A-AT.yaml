@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description: ZBD-04A's chassis works as the mobile launching platform for AFT-10 (HJ-10)
   anti-tank missiles. Noted the AFT-10 is a specific version of the HJ-10 missile that is

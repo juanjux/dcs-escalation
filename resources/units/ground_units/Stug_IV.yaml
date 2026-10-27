@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description:
   The Sturmgeschütz IV (StuG IV) (Sd.Kfz. 167) was a German assault gun variant

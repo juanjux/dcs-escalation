@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: AAA
 description: "The ZSU-57-2 Ob'yekt 500 is a Soviet self-propelled anti-aircraft gun\
   \ (SPAAG), armed with two 57 mm autocannons. 'ZSU' stands for Zenitnaya Samokhodnaya\

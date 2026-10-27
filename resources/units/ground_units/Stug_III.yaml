@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: ATGM
 description:
   The Sturmgeschtz III (StuG III) assault gun was Germany's most-produced fully

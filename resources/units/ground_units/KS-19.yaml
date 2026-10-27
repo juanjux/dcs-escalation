@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: towed
 class: AAA
 description:
   "100 mm air defence gun KS-19 (Russian: 100-мм зенитная пушка КС-19) was a Soviet anti-aircraft gun.\

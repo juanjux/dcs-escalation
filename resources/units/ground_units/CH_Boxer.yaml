@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: APC
 description: "The Boxer is a wheeled modular armoured vehicle built around swappable mission modules; this one carries a remote weapon station."
 introduced: 2011

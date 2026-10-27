@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: 'The Cromwell tank, officially Tank, Cruiser, Mk VIII, Cromwell (A27M),
   was one of the series of cruiser tanks fielded by Britain in the Second World War.

@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: SHORAD
 description: Stormer HVM is a short-range mobile air defence vehicle armed with Starstreak high velocity missiles for rapid engagement of low-flying threats.
 introduced: 1997

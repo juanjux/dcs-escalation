@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: Tank
 description: MBT Type 89 I Go
 introduced: 1929

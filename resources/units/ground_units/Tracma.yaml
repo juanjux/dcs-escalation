@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 price: 2
 variants:
   Tracma TD 1500: null
