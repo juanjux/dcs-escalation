@@ -524,8 +524,8 @@ class QLiberationWindow(QMainWindow):
 
         self.top_panel.setControls(False)
 
-        title = "Victory!" if TurnState.WIN else "Defeat!"
-        msgvar = "won" if TurnState.WIN else "lost"
+        title = "Victory!" if state is TurnState.WIN else "Defeat!"
+        msgvar = "won" if state is TurnState.WIN else "lost"
         msg = f"You have {msgvar} the campaign, do you wish to start a new one?"
         result = QMessageBox.information(
             QApplication.focusWidget(),
