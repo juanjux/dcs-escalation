@@ -7,7 +7,7 @@ recommended_enemy_faction: Redfor (Russia) 2020
 description:
   <p><strong>This campaign utilises both Afghanistan East and West. It is intended to be run with CurrentHill's USA, Russia, and 
   China Asset Packs installed, although this is not mandatory.</strong></p>
-  <p>F-22A, Super Hornet/Growler and Su-57 mods are optional; stock aircraft are used as fallbacks when disabled.</p>
+  <p>F-22A, Super Hornet and Su-57 mods are optional; stock aircraft are used as fallbacks when disabled.</p>
   <p>In the rugged heart of Afghanistan, the balance of power is tipping. Clash of the Titans is a high-stakes campaign set during 
   a fictional escalation in 2020, where US-led BLUFOR forces face off against a resurgent and well-equipped REDFOR coalition.
   BLUFOR holds the vital eastern corridor, anchored by the fortified positions at Bagram Airfield, the strategic capital of Kabul, 
@@ -448,7 +448,7 @@ squadrons:
     - primary: SEAD Escort
       secondary: any
       aircraft:
-        - EA-18G Growler
+        - F/A-18E Super Hornet
         - F/A-18C Hornet (Lot 20)
       size: 6
       pilots: 10
@@ -517,7 +517,7 @@ squadrons:
     - primary: SEAD Escort
       secondary: any
       aircraft:
-        - EA-18G Growler
+        - F/A-18E Super Hornet
         - F/A-18C Hornet (Lot 20)
       size: 6
       pilots: 10

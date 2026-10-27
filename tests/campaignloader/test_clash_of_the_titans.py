@@ -381,6 +381,26 @@ def test_no_runway_holds_half_the_fleet_or_all_critical_support(
                 assert len({s.location for s in assigned}) >= 2, names
 
 
+def test_blue_sead_escorts_use_super_hornets_with_a_stock_fallback(
+    generated: Game,
+) -> None:
+    squadrons = list(generated.blue.air_wing.iter_squadrons())
+    assert not any(s.aircraft.dcs_id == "EA-18G" for s in squadrons)
+    escorts = [s for s in squadrons if s.primary_task is FlightType.SEAD_ESCORT]
+    expected = (
+        "F/A-18E Super Hornet"
+        if any(
+            a.variant_id == "F/A-18E Super Hornet"
+            for a in generated.blue.faction.all_aircrafts
+        )
+        else "F/A-18C Hornet (Lot 20)"
+    )
+    assert {s.aircraft.variant_id for s in escorts} == {expected}
+    assert {s.location.name for s in escorts} == {"Bagram", "Kabul"}
+    assert len(escorts) == 2
+    assert all(s.max_size == 6 and s.pilot_limit == 10 for s in escorts)
+
+
 def test_each_side_can_supply_its_ground_front_from_a_factory(generated: Game) -> None:
     for coalition in (generated.blue, generated.red):
         bases = list(generated.theater.control_points_for(coalition.player))
