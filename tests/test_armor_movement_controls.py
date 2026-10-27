@@ -362,6 +362,8 @@ def test_stopped_history_is_stable_after_redispatch(world: Any, controls: Any) -
 def test_location_refreshes_after_commands_and_closes_on_campaign_change(
     world: Any, controls: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    import shiboken6
+    from PySide6.QtCore import QCoreApplication, QEvent
     from PySide6.QtGui import QIcon
     from qt_ui.windows.groundobject.QGroundObjectMenu import QGroundObjectMenu
     from qt_ui.uiconstants import EVENT_ICONS
@@ -373,9 +375,10 @@ def test_location_refreshes_after_commands_and_closes_on_campaign_change(
     window.show()
     controls.signal.ground_movements_changed.emit()
     controls.app.processEvents()
+    controls.app.processEvents()
     assert len(builds) == 2
     controls.model.game = None
     controls.signal.ground_movements_changed.emit()
     controls.app.processEvents()
-    assert not window.isVisible() and len(builds) == 2
-    window.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    assert not shiboken6.isValid(window) and len(builds) == 2
