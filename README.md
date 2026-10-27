@@ -103,9 +103,13 @@ friendly GPS coordinates. Survivors form an active Reserve Armor Group that can
 defend its position or be moved again. Choose a GPS destination on an interactive
 map with route highlighting, distance, estimated arrival and validity feedback.
 Groups reached or passed by their front automatically reinforce its supporting
-base, including groups in transit. Normal
-deployment limits apply, with surplus kept in the Motor Pool. Ground Movement
-requires Motor Pool.
+base, including groups in transit. Normal deployment limits apply, with surplus
+kept in the Motor Pool. Ground Movement requires Motor Pool.
+
+Select units, then use **Choose on map…** in the movement dialog or Transfer Units'
+GPS mode. Move the cursor to preview the route, distance and arrival estimate;
+an X marks blocked positions. Click a valid destination to return to the dialog,
+then confirm with **Dispatch**. Escape or Cancel leaves orders unchanged.
 
 ## Interface
 
