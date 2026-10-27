@@ -59,7 +59,7 @@ class ArmorMovementDialog(QDialog):
         self.source_id = source_id
         self.owner = owner
         self.preview: ArmorMovementPreview | None = None
-        self.setWindowTitle("Move armor group")
+        self.setWindowTitle("Move Reserve Armor Group")
         self.setMinimumWidth(620)
         self.setStyleSheet(f"QDialog {{ background: {PANEL}; }}")
         layout = QVBoxLayout(self)
@@ -107,7 +107,7 @@ class ArmorMovementDialog(QDialog):
             layout.addWidget(text)
         self.kind = QComboBox()
         for title, kind in (
-            ("Position — create a new armor group", DestinationKind.POSITION),
+            ("Position — create a new Reserve Armor Group", DestinationKind.POSITION),
             ("Base — join its ground inventory", DestinationKind.BASE),
             ("Frontline — reinforce its supporting base", DestinationKind.FRONTLINE),
         ):

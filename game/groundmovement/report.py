@@ -19,9 +19,12 @@ from game.theater.player import Player
 if TYPE_CHECKING:
     from game import Game
     from game.groundmovement.planning import ArmorMovementPreview
+    from game.groundmovement.base import BaseMovementPreview
 
 
-def preview_token(game: Game, preview: ArmorMovementPreview) -> str:
+def preview_token(
+    game: Game, preview: ArmorMovementPreview | BaseMovementPreview
+) -> str:
     """Reject confirmation of a preview from an older turn or inventory state."""
     return hashlib.sha256(repr((game.turn, preview)).encode()).hexdigest()
 

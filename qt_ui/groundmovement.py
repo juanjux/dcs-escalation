@@ -9,7 +9,8 @@ from uuid import UUID
 from PySide6.QtCore import QObject, QThread, Qt, Signal, Slot
 
 from game.groundmovement.dispatch import dispatch_armor, stop_armor
-from game.groundmovement.orders import MovementDestination
+from game.groundmovement.base import preview_base_movement, dispatch_base_movement
+from game.groundmovement.orders import MovementDestination, GroundPosition
 from game.groundmovement.planning import preview_armor_movement
 from game.groundmovement.report import preview_token
 from game.sim.gameupdateevents import GameUpdateEvents
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
     from game import Game
     from game.groundmovement.dispatch import ArmorTransit
     from qt_ui.models import GameModel
+    from game.dcs.groundunittype import GroundUnitType
 
 T = TypeVar("T")
 
@@ -98,6 +100,36 @@ class GroundMovementCommands(QObject):
         events = GameUpdateEvents()
         stop_armor(game, order_id, owner, events)
         self.publish(events)
+
+    def dispatch_base(
+        self,
+        game: Game,
+        source_id: UUID,
+        owner: Player,
+        selected: dict[GroundUnitType, int],
+        position: GroundPosition,
+        expected_preview: str,
+    ) -> ArmorTransit:
+        self.require_planning(game)
+        preview = preview_base_movement(game, source_id, owner, selected, position)
+        if preview_token(game, preview) != expected_preview:
+            raise MovementCommandError(
+                "The base stock or movement changed; request a new preview"
+            )
+        events = GameUpdateEvents()
+        result = dispatch_base_movement(
+            game, source_id, owner, selected, position, events
+        )
+        self.publish(events)
+        transfer_model = getattr(self.model, "transfer_model", None)
+        if transfer_model is not None:
+            transfer_model.inventory_changed.emit()
+        from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
+
+        signal = GameUpdateSignal.get_instance()
+        if signal is not None:
+            signal.budgetupdated.emit(game)
+        return result
 
     @staticmethod
     def publish(events: GameUpdateEvents) -> None:

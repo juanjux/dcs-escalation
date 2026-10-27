@@ -105,7 +105,7 @@ NAME_BY_CATEGORY = {
     "aa": "AA Defense Site",
     "allycamp": "Camp",
     "ammo": "Ammo depot",
-    "armor": "Armor group",
+    "armor": "Reserve Armor Group",
     "coastal": "Coastal defense",
     "commandcenter": "Command Center",
     "comms": "Communications tower",
@@ -871,6 +871,8 @@ class SamGroundObject(IadsGroundObject):
 
 
 class VehicleGroupGroundObject(TheaterGroundObject):
+    reserve_from_base: bool = False
+
     def __init__(
         self,
         name: str,

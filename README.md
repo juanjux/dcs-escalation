@@ -94,6 +94,14 @@ Still to come:
   [#432](https://github.com/juanjux/dcs-escalation/pull/432),
   [#433](https://github.com/juanjux/dcs-escalation/pull/433))
 
+## Ground Movement
+
+The optional Ground Movement plugin moves convoys and reserve armor groups over
+multiple turns, with route previews, transport requirements and persistent losses.
+From a base's Transfer Units dialog, deploy a custom mix of available vehicles to
+friendly GPS coordinates. Survivors form an active Reserve Armor Group that can
+defend its position or be moved again. Ground Movement requires Motor Pool.
+
 ## Interface
 
 - **The interface has been rebuilt.** Dialogs, lists and panels were redrawn to one

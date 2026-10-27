@@ -176,7 +176,7 @@ def kind_of(ground_object: TheaterGroundObject) -> str:
         if isinstance(ground_object, EwrGroundObject):
             return "EWR"
         return "SAM"
-    return "ARMOR"
+    return "RESERVE ARMOR GROUP"
 
 
 #: The reach of an air-defence site, in the words a player would use for it. The task

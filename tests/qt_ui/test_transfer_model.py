@@ -1227,6 +1227,8 @@ def test_transfer_submit_requires_eligible_destination(
     )
     monkeypatch.setattr(NewUnitTransferDialog, "close", lambda _self: None)
     dialog = NewUnitTransferDialog.__new__(NewUnitTransferDialog)
+    cast(Any, dialog).stale = False
+    cast(Any, dialog).gps_mode = False
     cast(Any, dialog).submit_button = QPushButton()
     cast(Any, dialog).transfer_panel = SimpleNamespace(transfers={"tank": 1})
     cast(Any, dialog).dest_panel = SimpleNamespace(current=None, request_airlift=False)

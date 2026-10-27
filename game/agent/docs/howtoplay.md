@@ -192,6 +192,30 @@ variants. Stationary and unreviewed types remain unavailable. Dead units and exi
 planning reservations are excluded from available transport capacity.
 Transported or towed pieces cannot fire while loaded and are lost with their assigned tractor.
 
+From a land base's **Transfer units** dialog, choose **GPS — create Reserve Armor
+Group** to deploy any mix of available base units to friendly coordinates. This
+requires Ground Movement and Motor Pool. The selection can include frontline
+stock, not just the undeployed surplus; units promised to transfers still waiting
+at the base are unavailable. Existing base-to-base transfers remain unchanged.
+Preview the route before dispatching. Required tractors are included from the
+base's stock, not created for free. GPS movement does not use airlift.
+
+Dispatch deducts the units once and creates a persistent Reserve Armor Group.
+Travel, losses, pauses and stopping follow the normal ground-movement rules.
+On arrival, survivors remain as a separated, combat-ready group at the chosen
+location instead of joining a base inventory. It can be moved again, including
+back to a base. Capturing its original base does not delete a remote group.
+These groups do not yet automatically join a frontline that reaches them.
+
+The base API provides `GET /control-points/{id}/ground-movement/options`,
+`POST /control-points/{id}/ground-movement/preview`,
+`POST /control-points/{id}/ground-movement` and
+`GET /control-points/{id}/ground-movement`. Preview with `units` (unit variant ID
+to quantity) and `position` (`lat`, `lng`); dispatch with the same fields plus
+the returned `preview_token`. Replies identify automatically added tractors and
+the new detachment. Use the detachment's normal TGO movement endpoints to stop
+or move it again. These API operations expose BLUE stock only.
+
 Choose **Move units** in a friendly armor group's Ground transport card. Select
 units and a destination: coordinates copied from the map, a friendly land base,
 or an active frontline. Coordinate input accepts DDM, DMS, decimal degrees and

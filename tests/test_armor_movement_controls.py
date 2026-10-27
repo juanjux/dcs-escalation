@@ -28,6 +28,7 @@ from game.groundmovement.settings import set_enabled
 from game.server import EventStream
 from game.server.dependencies import GameContext
 from game.server.tgos import router
+from game.server.controlpoints import router as base_router
 from game.server.tgos.groundmovement import commands
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater.player import Player
@@ -56,6 +57,7 @@ def controls(world: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
     monkeypatch.setattr(EventStream, "put_nowait", sent.append)
     api = FastAPI()
     api.include_router(router)
+    api.include_router(base_router)
     api.dependency_overrides[GameContext.require] = lambda: world.game
     api.dependency_overrides[commands] = lambda: service
     client = TestClient(api)
