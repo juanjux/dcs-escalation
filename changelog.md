@@ -77,7 +77,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
-* **[Ground Movement]** Highlight blocked movement previews and distinguish missing road access from disconnected road corridors.
+* **[Ground Movement]** Use convoy road permissions for armor movements, retain off-road terrain checks and highlight blocked previews.
 * **[Ground Movement]** Define mobility for stock and mod vehicles, towed guns and tractors so normal armor groups can be dispatched.
 
 * **[Campaign]** Preserve aircraft inventory and workshop capacity when loading saves with overfull bases.

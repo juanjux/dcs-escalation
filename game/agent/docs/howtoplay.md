@@ -219,10 +219,12 @@ the supporting base's stock; deployment caps determine the reserve slice.
 The preview includes automatically assigned tractors, the units left behind,
 individual road/off-road segments, their distances, the first turn's stopping
 point and estimated turns. Road access uses the nearest reachable corridor from
-the campaign's authored friendly road network, not every road in DCS. Access and
-road segments must stay on mapped land and clear exclusion zones. Missing terrain
-data or an unverified water/bridge crossing blocks the preview. With no friendly
-road corridors, only a validated direct off-road route is available.
+the campaign's authored friendly road network, not every road in DCS. These road
+corridors have the same permissions as supply convoys: coarse terrain exclusions
+do not cut an established convoy road. Off-road access must stay on mapped land
+and clear exclusion zones. Missing terrain data or an unverified water/bridge
+crossing outside the authored roads blocks the preview. With no friendly road
+corridors, only a validated direct off-road route is available.
 
 To dispatch through the API, send the preview request plus its returned
 `preview_token` to `POST /tgos/{id}/ground-movement`. The token is a stale-preview

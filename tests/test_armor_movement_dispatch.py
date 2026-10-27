@@ -249,6 +249,33 @@ def test_paused_detachment_stays_attackable_with_loaded_cargo(world: Any) -> Non
     assert any(isinstance(task, OptAlarmState) for task in group.points[0].tasks)
 
 
+def test_convoy_corridor_in_exclusion_keeps_moving_across_turns(world: Any) -> None:
+    from shapely.geometry import MultiPolygon, box
+
+    world.b.position.x = 2000
+    world.destination = replace(world.destination, position=GroundPosition(2000, 0))
+    world.game.theater.landmap = replace(
+        world.game.theater.landmap,
+        exclusion_zones=MultiPolygon([box(1000, -100, 1800, 100)]),
+    )
+    world.game.settings.set_plugin_option("groundmovement.roadMilesPerTurn", 1)
+    transit = dispatch(world, (7,))
+    world.game.turn += 1
+    advance_armor(world.game, GameUpdateEvents())
+    assert 1000 < transit.journey.position.x < 1800
+    assert not transit.finished and not transit.pause_reason
+    world.game.ground_movements = pickle.loads(
+        pickle.dumps(world.game.ground_movements)
+    )
+    transit = world.game.ground_movements.transits[transit.order_id]
+    group, _ = native(world, transit)
+    assert len(group.points) >= 2 and group.points[0].speed > 0
+    assert all(p.action == PointAction.OnRoad for p in group.points)
+    world.game.turn += 1
+    advance_armor(world.game, GameUpdateEvents())
+    assert transit.finished and world.b.base.armor[world.units[7]] == 1
+
+
 @pytest.mark.parametrize("red_alert", [False, True])
 def test_moving_detachments_drop_only_the_stationary_alarm_override(
     world: Any, red_alert: bool

@@ -157,6 +157,49 @@ def test_blocked_access_identifies_the_affected_endpoint(reverse: bool) -> None:
         planner.plan(origin, destination, 100, 50)
 
 
+def test_convoy_corridors_cross_coarse_exclusions_but_access_does_not() -> None:
+    planner = CampaignGroundRouter(
+        landmap(box(40, -100, 60, 100)),
+        [road((0, 0), (100, 0))],
+        convoy_corridors=True,
+    )
+    result = planner.plan(P(0, 10), P(100, 10), 100, 50)
+    assert sum(s.length for s in result.segments if s.on_road) == pytest.approx(100)
+    assert all(planner.allowed(s) for s in result.segments)
+    assert planner.allowed(GroundSegment(P(45, 0), P(55, 0)))
+    assert not planner.allowed(GroundSegment(P(45, 0), P(55, 0), False))
+    assert not planner.allowed(GroundSegment(P(0, 10), P(100, 10)))
+    with pytest.raises(GroundRouteError, match="exclusion zone"):
+        planner.plan(P(50, 10), P(100, 10), 100, 50)
+
+
+def test_authored_road_allows_interpolated_departure_inside_an_exclusion() -> None:
+    planner = CampaignGroundRouter(
+        landmap(box(40, -100, 60, 100)),
+        [road((0, 0), (100, 0))],
+        convoy_corridors=True,
+    )
+    result = planner.plan(P(50, 0), P(100, 10), 100, 50)
+    assert result.segments[0] == GroundSegment(P(50, 0), P(100, 0))
+    assert all(planner.allowed(s) for s in result.segments)
+
+
+def test_only_authored_convoy_water_crossings_are_accepted() -> None:
+    terrain = Landmap(
+        MultiPolygon([box(-10, -10, 40, 30), box(60, -10, 110, 30)]),
+        MultiPolygon(),
+        MultiPolygon([box(40, -10, 60, 30)]),
+    )
+    planner = CampaignGroundRouter(
+        terrain, [road((0, 0), (100, 0))], convoy_corridors=True
+    )
+    result = planner.plan(P(20, 0), P(80, 0), 100, 50)
+    assert result.length == pytest.approx(60)
+    assert all(planner.allowed(s) for s in result.segments)
+    assert not planner.allowed(GroundSegment(P(20, 10), P(80, 10)))
+    assert not planner.allowed(GroundSegment(P(20, 0), P(80, 0), False))
+
+
 @pytest.mark.parametrize("budget", [0, -1, True, math.inf, math.nan])
 def test_invalid_budget_rejected(budget: Any) -> None:
     with pytest.raises(GroundRouteError, match="budgets"):
@@ -263,6 +306,15 @@ def test_partial_preview_auto_includes_tractors_without_changing_a_save(
     assert result.first_turn_stop == world.destination.position
     assert result.arrival_in_turns == 1 and result.road_distance_m == pytest.approx(90)
     assert pickle.dumps(world.game) == before
+
+
+def test_game_router_uses_supply_convoy_permissions(world: Any) -> None:
+    world.game.theater.landmap = landmap(box(40, -100, 60, 100))
+    result = preview_armor_movement(
+        world.game, world.source.id, Player.BLUE, [7], world.destination
+    )
+    assert result.road_distance_m == pytest.approx(90)
+    assert result.offroad_distance_m == pytest.approx(10)
 
 
 def test_reservations_include_automatically_assigned_tractors(world: Any) -> None:
