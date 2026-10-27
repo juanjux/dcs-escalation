@@ -55,6 +55,7 @@ from .gameupdateevents import GameUpdateEvents
 from ..ato.airtaaskingorder import AirTaskingOrder
 
 if TYPE_CHECKING:
+    from game.groundmovement.frontline import FrontPosition
     from ..game import Game
     from ..coalition import Coalition
     from ..ato.flight import Flight
@@ -452,8 +453,13 @@ class MissionResultsProcessor:
             # side, so a base's defenders (origin == that base) would be
             # miscounted as the new owner's casualties once a capture flips
             # ownership, turning a win into a defeat.
+            from game.groundmovement.frontline import snapshot_fronts
+
+            front_positions = snapshot_fronts(self.game)
             with logged_duration("commit_front_line_battle_impact"):
                 self.commit_front_line_battle_impact(debriefing, events)
+            with logged_duration("commit_frontline_reserves"):
+                self.commit_frontline_reserves(front_positions, events)
             with logged_duration("commit_captures"):
                 self.commit_captures(debriefing, events)
             # After captures: base ownership is final, so we can tell whether a
@@ -470,6 +476,18 @@ class MissionResultsProcessor:
         from game.aircraftmaintenance import commit_reports
 
         commit_reports(self.game, debriefing)
+
+    def commit_frontline_reserves(
+        self, before: tuple[FrontPosition, ...], events: GameUpdateEvents
+    ) -> None:
+        from game.groundmovement.frontline import integrate_reached_reserves
+
+        # All battles have already been scored. Reinforcements must not change
+        # another battle's outcome, and must arrive before captures clear sites.
+        for state in before:
+            state.front.update_position()
+            events.update_front_line(state.front)
+        integrate_reached_reserves(self.game, before, events)
 
     def commit_persistent_damage(
         self, debriefing: Debriefing, events: GameUpdateEvents

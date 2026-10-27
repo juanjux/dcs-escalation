@@ -205,7 +205,22 @@ Travel, losses, pauses and stopping follow the normal ground-movement rules.
 On arrival, survivors remain as a separated, combat-ready group at the chosen
 location instead of joining a base inventory. It can be moved again, including
 back to a base. Capturing its original base does not delete a remote group.
-These groups do not yet automatically join a frontline that reaches them.
+With Ground Movement and Motor Pool enabled, stationary and moving Reserve Armor
+Groups automatically join the supporting base when their own front reaches or
+passes their position. This also applies to authored armor groups, not SAMs,
+ships or Motor Pool projections. The check follows the campaign road's changing
+front position and the usable frontline width, including terrain exclusions;
+it does not absorb distant groups just because a base has a front.
+
+Only survivors are incorporated, after mission losses and battle scoring but
+before base captures. A towed piece whose tractor was destroyed is lost, not
+recovered. An intercepted movement ends with status `integrated` and cannot
+continue into enemy territory or deliver the units a second time. The group is
+removed from active objectives and the map; its historical movement remains
+available. The normal frontline limit is unchanged, with all surplus retained
+in the supporting base's Motor Pool. A campaign log entry records the transfer
+for either side. No automatic integration occurs while the plugin or Motor Pool
+is disabled.
 
 The base API provides `GET /control-points/{id}/ground-movement/options`,
 `POST /control-points/{id}/ground-movement/preview`,

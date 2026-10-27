@@ -601,6 +601,12 @@ class Game:
         Args:
             skipped: True if the turn was skipped.
         """
+        from game.groundmovement.frontline import (
+            integrate_reached_reserves,
+            snapshot_fronts,
+        )
+
+        front_positions = snapshot_fronts(self)
         self.message("End of turn #" + str(self.turn), "-" * 40)
         self.turn += 1
 
@@ -617,6 +623,7 @@ class Game:
 
         from game.groundmovement.dispatch import advance_armor
 
+        integrate_reached_reserves(self, front_positions, events)
         advance_armor(self, events)
 
         for control_point in self.theater.controlpoints:
@@ -636,6 +643,10 @@ class Game:
                     front_line.update_position()
                     events.update_front_line(front_line)
                 cp.base.affect_strength(+PLAYER_BASE_STRENGTH_RECOVERY)
+
+        # Includes a moving group that reaches the line during this turn's
+        # distance budget, before the next mission is planned.
+        integrate_reached_reserves(self, front_positions, events)
 
         # We don't actually advance time or change the conditions between turn 0 and
         # turn 1.

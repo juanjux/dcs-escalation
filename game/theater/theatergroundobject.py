@@ -872,6 +872,7 @@ class SamGroundObject(IadsGroundObject):
 
 class VehicleGroupGroundObject(TheaterGroundObject):
     reserve_from_base: bool = False
+    absorbed_into_frontline: uuid.UUID | None = None
 
     def __init__(
         self,
@@ -902,7 +903,9 @@ class VehicleGroupGroundObject(TheaterGroundObject):
 
     @property
     def purchasable(self) -> bool:
-        return not getattr(self, "in_transit", False)
+        return self.absorbed_into_frontline is None and not getattr(
+            self, "in_transit", False
+        )
 
     @property
     def should_head_to_conflict(self) -> bool:

@@ -108,6 +108,8 @@ def movement_reports(
             status = "stopped"
         elif lost:
             status = "lost"
+        elif getattr(tgo, "absorbed_into_frontline", None) is not None:
+            status = "integrated"
         elif transit.finished:
             status = "arrived"
         else:
