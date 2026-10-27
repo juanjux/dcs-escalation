@@ -262,4 +262,4 @@ class GroundDestinationPicker(QObject):
     def choose(self, position: LatLng) -> None:
         self.selected = position
         # Let WebChannel return the click response before releasing this bridge.
-        QTimer.singleShot(0, self.reject)
+        QTimer.singleShot(0, self, self.reject)

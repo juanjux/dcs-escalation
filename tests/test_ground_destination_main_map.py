@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QCoreApplication, QEvent
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QDialog, QMainWindow, QPushButton, QVBoxLayout, QWidget
 import pytest
@@ -21,10 +21,11 @@ from tests.test_ground_destination_picker import at
     ["pick", "cancel", "campaign", "orders", "owner-close", "window-close", "timeout"],
 )
 def test_existing_map_restores_dialogs_controls_and_focus(
-    world: Any, controls: Any, finish: str
+    world: Any, controls: Any, finish: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     errors: list[BaseException] = []
     bridges: list[GroundDestinationBridge] = []
+    interactions: list[Any] = []
 
     class CampaignMap(QWidget):
         def begin_ground_selection(self, bridge: GroundDestinationBridge) -> None:
@@ -54,7 +55,7 @@ def test_existing_map_restores_dialogs_controls_and_focus(
                     errors.append(exc)
                     picker.reject()
 
-            QTimer.singleShot(0, interact)
+            interactions.append(interact)
 
         def end_ground_selection(self, bridge: GroundDestinationBridge) -> None:
             assert bridge is bridges[-1] and bridge.closed
@@ -92,6 +93,14 @@ def test_existing_map_restores_dialogs_controls_and_focus(
         lambda _: None,  # type: ignore[arg-type, return-value]
         dialog,
     )
+
+    def run_selection() -> int:
+        # Exercise the selection callbacks without starting a process-wide Qt
+        # loop, which would also run timers left by unrelated widget tests.
+        interactions.pop()()
+        return 0
+
+    monkeypatch.setattr(picker.loop, "exec", run_selection)
     try:
         if finish == "timeout":
             with pytest.raises(RuntimeError, match="main map did not respond"):
@@ -119,6 +128,7 @@ def test_existing_map_restores_dialogs_controls_and_focus(
         picker.deleteLater()
         window.close()
         window.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
 
 def test_missing_main_map_is_reported_without_opening_another_map(
