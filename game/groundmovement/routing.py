@@ -8,7 +8,8 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, TYPE_CHECKING
 
-from shapely.geometry import LineString, Point
+from shapely import prepare
+from shapely.geometry import LineString, MultiLineString, Point
 
 from game.groundmovement.journey import GroundRoute, GroundSegment
 from game.groundmovement.orders import GroundPosition
@@ -36,7 +37,8 @@ class CampaignGroundRouter:
 
     Crossings of road polylines do not imply a junction: they might be overpasses.
     Roads connect at shared points or via a validated access link at their base.
-    Missing terrain data and unverified water crossings fail closed.
+    Authored convoy corridors use the same road permissions as supply convoys;
+    terrain masks still validate off-road access and unverified road segments.
     """
 
     def __init__(
@@ -44,6 +46,8 @@ class CampaignGroundRouter:
         landmap: Landmap | None,
         roads: Iterable[GroundRoute],
         base_access: Iterable[GroundSegment] = (),
+        *,
+        convoy_corridors: bool = False,
     ) -> None:
         if landmap is None:
             raise GroundRouteError("Ground movement needs land and exclusion-zone data")
@@ -53,6 +57,19 @@ class CampaignGroundRouter:
             raise GroundRouteError(
                 "A campaign road corridor must contain road segments"
             )
+        # The land map is a coarse placement mask, not DCS's road network.
+        # Match the supply convoy policy only on these authored polylines. The
+        # one-micrometre buffer accommodates projected/interpolated positions;
+        # it is not an off-road corridor or permission to infer new bridges.
+        self._convoy_roads = (
+            MultiLineString(
+                [[(s.start.x, s.start.z), (s.end.x, s.end.z)] for s in self.roads]
+            ).buffer(1e-6)
+            if convoy_corridors
+            else None
+        )
+        if self._convoy_roads is not None:
+            prepare(self._convoy_roads)
         self.edges = list(
             {
                 frozenset((segment.start, segment.end)): segment
@@ -70,6 +87,12 @@ class CampaignGroundRouter:
         line = LineString(
             [(segment.start.x, segment.start.z), (segment.end.x, segment.end.z)]
         )
+        if (
+            segment.on_road
+            and self._convoy_roads is not None
+            and self._convoy_roads.covers(line)
+        ):
+            return True
         return bool(
             self.landmap.inclusion_zones.covers(line)
             and not self.landmap.exclusion_zones.intersects(line)
@@ -77,6 +100,8 @@ class CampaignGroundRouter:
 
     def _validate_position(self, position: GroundPosition) -> None:
         point = Point(position.x, position.z)
+        if self._convoy_roads is not None and self._convoy_roads.covers(point):
+            return
         if not self.landmap.inclusion_zones.covers(point):
             raise GroundRouteError("Ground movement position is outside mapped land")
         if self.landmap.exclusion_zones.intersects(point):
@@ -108,7 +133,7 @@ class CampaignGroundRouter:
                     position = GroundPosition(cp.position.x, cp.position.y)
                     if position != endpoint:
                         access.append(GroundSegment(position, endpoint, False))
-        return cls(game.theater.landmap, roads, access)
+        return cls(game.theater.landmap, roads, access, convoy_corridors=True)
 
     @staticmethod
     def _connect(
@@ -170,6 +195,13 @@ class CampaignGroundRouter:
                 edge.start.x + fraction * dx, edge.start.z + fraction * dz
             )
             segment = GroundSegment(position, projection, False)
+            if (
+                segment.length <= 1e-6
+                and self._convoy_roads is not None
+                and self._convoy_roads.covers(Point(position.x, position.z))
+            ):
+                projection = position
+                segment = GroundSegment(position, position, False)
             if segment.length == 0 or self.allowed(segment):
                 entries.append(
                     RoadAccess(
@@ -213,20 +245,38 @@ class CampaignGroundRouter:
 
         graph = self._graph()
         components = self._components(graph)
+        entries = self._entries(origin, components)
+        destination_entries = self._entries(destination, components)
+        for reachable, endpoint in (
+            (entries, "group"),
+            (destination_entries, "destination"),
+        ):
+            if not reachable:
+                raise GroundRouteError(
+                    f"No validated off-road access connects the {endpoint} to a campaign road. "
+                    "Access is blocked by mapped water or exclusion zones."
+                )
         exits: dict[int, RoadAccess] = {}
-        for entry in self._entries(destination, components):
+        for entry in destination_entries:
             exits.setdefault(entry.component, entry)
         pair = next(
             (
                 (entry, exits[entry.component])
-                for entry in self._entries(origin, components)
+                for entry in entries
                 if entry.component in exits
             ),
             None,
         )
         if pair is None:
+            reason = (
+                "The authored corridors are disconnected or a connecting off-road "
+                "access is blocked."
+                if self._convoy_roads is not None
+                else "Mapped water or exclusion zones may block intermediate road segments."
+            )
             raise GroundRouteError(
-                "No connected campaign road has validated access at both ends"
+                "Both ends can reach a road, but the campaign road network between "
+                f"them is disconnected. {reason}"
             )
         entry, exit = pair
         for point in (entry, exit):

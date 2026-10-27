@@ -241,8 +241,9 @@ def preview_armor_movement(
     offroad = sum(segment.length for segment in route.segments if not segment.on_road)
     turns = road / road_budget + offroad / offroad_budget
     warnings = [
-        "Road planning uses authored campaign corridors, not the complete DCS road network. "
-        "Unverified water crossings and bridges are unavailable."
+        "Road planning uses the same authored campaign corridors as supply convoys, "
+        "not the complete DCS road network. Off-road access must stay on mapped "
+        "land and clear exclusion zones."
     ]
     if road == 0:
         warnings.append("This route contains only validated off-road travel")
