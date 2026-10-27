@@ -19,6 +19,7 @@ from game.groundmovement.orders import (
 )
 from game.groundmovement.routing import CampaignGroundRouter
 from game.groundmovement.settings import distance_per_turn, enabled
+from game.groundmovement.territory import require_friendly_position
 from game.theater.player import Player
 from game.theater.theatergroundobject import VehicleGroupGroundObject
 
@@ -161,6 +162,7 @@ def movement_destination(
     if kind is DestinationKind.POSITION:
         if position is None or base_id is not None or opposing_base_id is not None:
             raise ValueError("A map destination requires only its position")
+        require_friendly_position(game, owner, position)
         return MovementDestination(kind, position)
     if kind not in (DestinationKind.BASE, DestinationKind.FRONTLINE):
         raise ValueError("Unknown ground movement destination")

@@ -78,6 +78,8 @@
 
 ## Fixes
 * **[Persistent Damage]** Filter distant neighbour-search candidates conservatively while retaining safeguards for close, large or unreadable objects.
+* **[Ground Movement]** Keep a locked departure time for convoys and armor groups so DCS can save their routes.
+* **[Ground Movement]** Restrict GPS destinations to friendly ground sectors and pause orders when destination control changes.
 * **[UI]** Keep site repairs responsive by batching updates and avoiding rebuilds of closed location windows.
 * **[Ground Movement]** Define mobility for stock and mod vehicles, towed guns and tractors so normal armor groups can be dispatched.
 
