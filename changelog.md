@@ -659,6 +659,7 @@ BAI/ANTISHIP/DEAD/STRIKE/BARCAP/CAS/OCA/AIR-ASSAULT (main) missions
 
 ## Fixes
 
+* **[Ground Movement]** Preserve authored road connections and interpolated stops when microscopic buffer geometry loses coverage.
 * **[Mission Generation]** Fixed issue where aircraft carriers would return after being killed.
 * **[Mission Generation]** Kneeboard STRIKE coordinates would sometimes get clipped when not fitting.
 * **[UI]** Fix exception when trying to add a waypoints to a flightplan.

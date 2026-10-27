@@ -8,8 +8,8 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, TYPE_CHECKING
 
-from shapely import prepare
-from shapely.geometry import LineString, MultiLineString, Point
+from shapely import STRtree
+from shapely.geometry import LineString, Point
 
 from game.groundmovement.journey import GroundRoute, GroundSegment
 from game.groundmovement.orders import GroundPosition
@@ -30,6 +30,60 @@ class RoadAccess:
     edge: int
     position: GroundPosition
     component: int
+
+
+class _ConvoyRoadCoverage:
+    """Recognize road centerlines without dissolving sub-millimetre polygons."""
+
+    _TOLERANCE = 1e-6
+
+    def __init__(self, segments: Iterable[GroundSegment]) -> None:
+        self.lines = [
+            LineString([(s.start.x, s.start.z), (s.end.x, s.end.z)]) for s in segments
+        ]
+        self.index = STRtree(self.lines)
+
+    def covers(self, geometry: Point | LineString) -> bool:
+        nearby = self.index.query(
+            geometry, predicate="dwithin", distance=self._TOLERANCE
+        )
+        if isinstance(geometry, Point):
+            return bool(len(nearby))
+        start, end = geometry.coords[0], geometry.coords[-1]
+        length = geometry.length
+        if length == 0:
+            return self.covers(Point(start))
+        ux, uz = (end[0] - start[0]) / length, (end[1] - start[1]) / length
+        intervals = []
+        for index in nearby:
+            road = self.lines[index]
+            # Testing endpoints on the same straight segment also handles very
+            # short interpolated remnants, whose own heading can lose precision.
+            if (
+                road.distance(Point(start)) <= self._TOLERANCE
+                and road.distance(Point(end)) <= self._TOLERANCE
+            ):
+                return True
+            a, b = road.coords
+            # Only collinear authored segments can cover this straight leg.
+            # Merely reaching a road at both ends must not authorize a shortcut.
+            if any(
+                abs((p[0] - start[0]) * uz - (p[1] - start[1]) * ux) > self._TOLERANCE
+                for p in (a, b)
+            ):
+                continue
+            lo, hi = sorted(
+                (p[0] - start[0]) * ux + (p[1] - start[1]) * uz for p in (a, b)
+            )
+            intervals.append((max(0.0, lo), min(length, hi)))
+        covered = 0.0
+        for lo, hi in sorted(intervals):
+            if lo > covered + self._TOLERANCE:
+                return False
+            covered = max(covered, hi)
+            if covered >= length - self._TOLERANCE:
+                return True
+        return False
 
 
 class CampaignGroundRouter:
@@ -59,17 +113,11 @@ class CampaignGroundRouter:
             )
         # The land map is a coarse placement mask, not DCS's road network.
         # Match the supply convoy policy only on these authored polylines. The
-        # one-micrometre buffer accommodates projected/interpolated positions;
+        # one-micrometre tolerance accommodates projected/interpolated positions;
         # it is not an off-road corridor or permission to infer new bridges.
         self._convoy_roads = (
-            MultiLineString(
-                [[(s.start.x, s.start.z), (s.end.x, s.end.z)] for s in self.roads]
-            ).buffer(1e-6)
-            if convoy_corridors
-            else None
+            _ConvoyRoadCoverage(self.roads) if convoy_corridors else None
         )
-        if self._convoy_roads is not None:
-            prepare(self._convoy_roads)
         self.edges = list(
             {
                 frozenset((segment.start, segment.end)): segment
