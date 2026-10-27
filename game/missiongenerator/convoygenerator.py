@@ -125,7 +125,8 @@ class ConvoyGenerator:
         if convoy.ground_managed and wpts:
             departure = group.points[0]
             departure.speed = kph(40).meters_per_second
-            departure.ETA_locked = False
+            # DCS requires a time anchor; later waypoints remain speed-driven.
+            departure.ETA_locked = True
             group.units[0].heading = departure.position.heading_between_point(wpts[0])
 
         for wpt in wpts:

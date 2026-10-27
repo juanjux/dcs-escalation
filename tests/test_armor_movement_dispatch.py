@@ -228,7 +228,13 @@ def test_native_loaded_guns_are_omitted_and_tractor_deaths_report_both_losses(
     group, unit_map = native(world, transit)
     assert len(group.units) == 2 and all(u.type == "Ural-375" for u in group.units)
     assert len(group.points) >= 2 and group.points[0].speed > 0
-    assert not group.points[0].ETA_locked
+    assert group.points[0].ETA_locked and group.points[0].ETA == 0
+    assert all(
+        not point.ETA_locked and point.speed_locked for point in group.points[1:]
+    )
+    exported = group.dict()["route"]["points"]
+    assert exported[1]["ETA_locked"] and exported[1]["ETA"] == 0
+    assert all(not point["ETA_locked"] for i, point in exported.items() if i > 1)
     assert group.points[0].action == PointAction.OffRoad
     assert group.points[1].position != group.points[0].position
     truck = group.units[0]
