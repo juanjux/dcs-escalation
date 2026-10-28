@@ -30,6 +30,10 @@
   color: #aebdcb;
   margin-bottom: 5px;
 }
+.gd-exclusion-key {
+  color: #ffb6a9;
+  margin-bottom: 5px;
+}
 .gd-valid {
   color: #9ae0aa;
 }

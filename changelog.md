@@ -8,6 +8,7 @@
 * **[Campaigns]** Modernize Clash of the Titans with redundant IADS, GPS jammers, depots, ground supply and balanced, dispersed air wings.
 
 * **[Ground Movement]** Reuse the main map for GPS destination selection without opening or loading another map.
+* **[Ground Movement]** Show exclusion zones while selecting a map destination without changing saved layer preferences.
 * **[Ground Movement]** Choose GPS destinations on the map with live route, distance, arrival estimates and blocked-position feedback.
 * **[Ground Movement]** Reserve groups reached by the front automatically reinforce their own side, closing active movements and keeping surplus in the Motor Pool.
 * **[Ground Movement]** Persistent convoy and armor transport with Motor Pool support, route previews, dispatch/stop controls, progress and loss tracking, and API commands.

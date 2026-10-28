@@ -19,9 +19,19 @@ const mockMap = {
   },
 };
 let mockHandlers: Record<string, (event: any) => void>;
+jest.mock("../terrainzones/TerrainZonesLayers", () => ({
+  ExclusionZonesLayer: () => <div data-testid="movement-exclusions" />,
+}));
 jest.mock("react-leaflet", () => ({
-  Pane: ({ children, style }: any) => (
-    <div data-testid="route-overlay" style={style}>
+  Pane: ({ children, style, name }: any) => (
+    <div
+      data-testid={
+        name === "ground-destination-route"
+          ? "route-overlay"
+          : "exclusion-overlay"
+      }
+      style={style}
+    >
       {children}
     </div>
   ),
@@ -86,6 +96,7 @@ it("shows missile range rings and aimpoint warnings instead of ground-route ETA"
     screen.getByText("Choose the missile target and click"),
   ).toBeInTheDocument();
   expect(screen.getAllByTestId("missile-ring")).toHaveLength(2);
+  expect(screen.queryByTestId("movement-exclusions")).not.toBeInTheDocument();
   act(() => {
     mockHandlers.mousemove(event());
     jest.advanceTimersByTime(150);
@@ -125,6 +136,18 @@ it("shows the requested instruction and cancels with Escape", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })),
   );
   expect(bridge.dismiss).toHaveBeenCalledTimes(1);
+});
+
+it("shows exclusion zones only while choosing a ground destination", () => {
+  const { unmount } = setup();
+  expect(screen.getByTestId("movement-exclusions")).toBeInTheDocument();
+  expect(screen.getByTestId("exclusion-overlay")).toHaveStyle({
+    zIndex: 410,
+    pointerEvents: "none",
+  });
+  expect(screen.getByText(/campaign roads may cross/)).toBeInTheDocument();
+  unmount();
+  expect(screen.queryByTestId("movement-exclusions")).not.toBeInTheDocument();
 });
 
 it("shows distance, ETA and a highlighted road/off-road route for a valid position", async () => {

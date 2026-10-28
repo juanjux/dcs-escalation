@@ -14,6 +14,7 @@ import {
   DestinationPreviewController,
   RoutePreview,
 } from "./bridge";
+import { ExclusionZonesLayer } from "../terrainzones/TerrainZonesLayers";
 import "../liberationmap/LiberationMap.css";
 import "./GroundDestinationMap.css";
 
@@ -178,6 +179,11 @@ export function DestinationInteraction({
             ? "Selecting a position does not assign the target."
             : "Selecting a position does not dispatch units."}
         </div>
+        {origin.mode !== "missile" && (
+          <div className="gd-exclusion-key">
+            Shaded areas: off-road exclusion zones (campaign roads may cross).
+          </div>
+        )}
         {at && (
           <div>
             {at.lat.toFixed(5)}, {at.lng.toFixed(5)}
@@ -225,6 +231,14 @@ export function DestinationInteraction({
           <div className="gd-error">{preview?.error ?? "No valid route"}</div>
         )}
       </div>
+      {origin.mode !== "missile" && (
+        <Pane
+          name="ground-destination-exclusions"
+          style={{ zIndex: 410, pointerEvents: "none" }}
+        >
+          <ExclusionZonesLayer movement />
+        </Pane>
+      )}
       <Pane
         name="ground-destination-route"
         style={{ zIndex: 640, pointerEvents: "none" }}
