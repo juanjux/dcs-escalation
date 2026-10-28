@@ -479,3 +479,84 @@ def test_location_refreshes_after_commands_and_closes_on_campaign_change(
     controls.app.processEvents()
     QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     assert not shiboken6.isValid(window) and len(builds) == 2
+
+
+@pytest.mark.parametrize("partial", [False, True])
+def test_location_follows_a_full_departure_but_not_a_partial_one(
+    world: Any, controls: Any, monkeypatch: pytest.MonkeyPatch, partial: bool
+) -> None:
+    from PySide6.QtGui import QIcon
+    from game.groundmovement.dispatch import dispatch_armor
+    from qt_ui.windows.groundobject.QGroundObjectMenu import QGroundObjectMenu
+    from qt_ui.uiconstants import EVENT_ICONS
+
+    world.source.groups[0].units[:] = [
+        unit for unit in world.source.units if unit.id in (5, 6, 7)
+    ]
+    monkeypatch.setitem(EVENT_ICONS, "capture", QIcon())
+    builds: list[Any] = []
+    monkeypatch.setattr(
+        QGroundObjectMenu, "_build", lambda self: builds.append(self.ground_object)
+    )
+    window = QGroundObjectMenu(None, world.source, world.a, controls.model)
+    window.show()
+    transit = dispatch_armor(
+        world.game,
+        world.source.id,
+        Player.BLUE,
+        (7,) if partial else (5, 6, 7),
+        world.destination,
+        GameUpdateEvents(),
+    )
+    moving = world.game.db.tgos.get(transit.detachment_id)
+    controls.signal.ground_movements_changed.emit()
+    controls.app.processEvents()
+    controls.app.processEvents()
+    expected = world.source if partial else moving
+    assert window.ground_object is expected and builds[-1] is expected
+    assert window.cp is expected.control_point
+    assert expected.obj_name in window.windowTitle()
+    reopened = QGroundObjectMenu(None, world.source, world.a, controls.model)
+    assert reopened.ground_object is expected
+    window.close()
+    reopened.close()
+
+
+def test_source_card_links_each_independent_departure(
+    world: Any, controls: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from game.groundmovement.dispatch import dispatch_armor
+    from qt_ui.windows.groundobject.QGroundObjectMenu import QGroundObjectMenu
+
+    moving = []
+    for selected in ((1, 2), (7,)):
+        transit = dispatch_armor(
+            world.game,
+            world.source.id,
+            Player.BLUE,
+            selected,
+            world.destination,
+            GameUpdateEvents(),
+        )
+        moving.append(world.game.db.tgos.get(transit.detachment_id))
+    opened: list[Any] = []
+    window: Any = SimpleNamespace(
+        game=world.game,
+        ground_object=world.source,
+        _friendly=True,
+        _viewer=Player.BLUE,
+        _stop_movement=lambda *args: None,
+        _move_units=lambda: None,
+        _open_site=opened.append,
+    )
+    card = QGroundObjectMenu._ground_transport(window)
+    assert card is not None
+    links = [
+        button
+        for button in card.findChildren(QPushButton)
+        if button.objectName() == "view-ground-detachment"
+    ]
+    assert len(links) == 2
+    for link in links:
+        link.click()
+    assert opened == moving

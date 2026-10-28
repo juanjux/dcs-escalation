@@ -291,3 +291,4 @@ def advance_armor(game: Game, events: GameUpdateEvents) -> None:
                 group.units.clear()
             events.update_control_point(base).update_motorpools_at(base)
         _finish(game, transit)
+        events.update_tgo(tgo)

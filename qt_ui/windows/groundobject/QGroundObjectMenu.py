@@ -40,6 +40,7 @@ from game.cruise_raids import tgo_magazines
 from game.data.building_data import FORTIFICATION_BUILDINGS
 from game.groundmovement.planning import armor_movement_options
 from game.groundmovement.dispatch import active_transit
+from game.groundmovement.presentation import departed_detachments
 from game.groundmovement.report import movement_reports, destination_label
 from game.groundmovement.settings import enabled as ground_movement_enabled
 from game.server import EventStream
@@ -119,7 +120,7 @@ class QGroundObjectMenu(QDialog):
         self._refresh_timer.timeout.connect(self._refresh_view)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
-        self.setWindowTitle(f"Location — {ground_object.obj_name} ({cp.name})")
+        self._follow_departed_group()
         self.setWindowIcon(EVENT_ICONS["capture"])
         self.setMinimumWidth(MIN_WIDTH)
         self.resize(WIDTH, self.height())
@@ -159,6 +160,7 @@ class QGroundObjectMenu(QDialog):
         if not self.isVisible():
             return
         self._needs_refresh = False
+        self._follow_departed_group()
         self.cp = self.ground_object.control_point
         self._rebuild()
 
@@ -175,6 +177,15 @@ class QGroundObjectMenu(QDialog):
         return game
 
     # ------------------------------------------------------------------ building
+
+    def _follow_departed_group(self) -> None:
+        detachments = departed_detachments(self.game, self.ground_object)
+        if len(detachments) == 1:
+            self.ground_object = detachments[0]
+            self.cp = self.ground_object.control_point
+        self.setWindowTitle(
+            f"Location — {self.ground_object.obj_name} ({self.cp.name})"
+        )
 
     def _build(self) -> None:
         self._update_total_value()
@@ -315,6 +326,15 @@ class QGroundObjectMenu(QDialog):
             text = label(title, 11, TEXT_BASE)
             text.setWordWrap(True)
             column.addWidget(text)
+            if report.detachment_id != self.ground_object.id:
+                view = QPushButton("View detachment…")
+                view.setObjectName("view-ground-detachment")
+                view.clicked.connect(
+                    partial(
+                        self._open_site, self.game.db.tgos.get(report.detachment_id)
+                    )
+                )
+                column.addWidget(view)
             progress = QProgressBar()
             progress.setRange(0, 100)
             progress.setValue(round(report.progress * 100))

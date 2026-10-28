@@ -130,12 +130,13 @@ class GameUpdateEvents:
         return self
 
     def update_tgo(self, tgo: TheaterGroundObject) -> GameUpdateEvents:
+        from game.groundmovement.presentation import empty_movement_group
         from game.theater.theatergroundobject import VehicleGroupGroundObject
 
         if (
             isinstance(tgo, VehicleGroupGroundObject)
             and tgo.absorbed_into_frontline is not None
-        ):
+        ) or empty_movement_group(tgo):
             return self.delete_tgo(tgo)
         if tgo.id not in self.deleted_tgos:
             self.updated_tgos.add(tgo)
