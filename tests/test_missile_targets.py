@@ -314,12 +314,13 @@ def test_base_and_carrier_target_panel_lists_all_launchers(
 
 @pytest.mark.parametrize("entry", ["location", "base"])
 def test_map_selection_does_not_finish_the_target_dialog(
-    missiles: Any, controls: Any, entry: str
+    missiles: Any, controls: Any, entry: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from PySide6.QtCore import QTimer
+    from PySide6.QtCore import QCoreApplication, QEvent
     from PySide6.QtWidgets import QDialog, QLabel, QMainWindow, QVBoxLayout, QWidget
     from qt_ui.windows.groundobject.missiletargetdialog import MissileTargetPanel
     from qt_ui.windows.groundobject.QGroundObjectMenu import QGroundObjectMenu
+    from qt_ui.widgets.map.grounddestination import GroundDestinationPicker
 
     w = missiles
     completions: list[int] = []
@@ -327,8 +328,6 @@ def test_map_selection_does_not_finish_the_target_dialog(
     class CampaignMap(QWidget):
         def begin_ground_selection(self, bridge: GroundDestinationBridge) -> None:
             bridge.ready()
-            at = w.target.position.latlng()
-            QTimer.singleShot(0, bridge, lambda: bridge.pick(at.lat, at.lng))
 
         def end_ground_selection(self, bridge: GroundDestinationBridge) -> None:
             pass
@@ -342,17 +341,34 @@ def test_map_selection_does_not_finish_the_target_dialog(
     window.show()
     parent.show()
 
-    def reject_targets() -> None:
-        for target_dialog in parent.findChildren(MissileTargetDialog):
-            target_dialog.reject()
+    def modal_exec(_: MissileTargetDialog) -> int:
+        pytest.fail("Target assignment must not start a modal event loop")
 
-    watchdog = QTimer(parent)
-    watchdog.setSingleShot(True)
-    watchdog.timeout.connect(reject_targets)
+    original_exec = GroundDestinationPicker.exec
+
+    def select_on_map(picker: GroundDestinationPicker) -> QDialog.DialogCode:
+        def select() -> int:
+            assert not dialog.isVisible() and not parent.isVisible()
+            assert window.liberation_map.isVisible()  # type: ignore[attr-defined]
+            at = w.target.position.latlng()
+            assert json.loads(picker.bridge.pick(at.lat, at.lng))["valid"]
+            picker.reject()
+            return 0
+
+        # Keep the real picker setup, bridge validation and window restoration,
+        # but do not run pending timers from unrelated tests in Qt's shared loop.
+        monkeypatch.setattr(picker.loop, "exec", select)
+        try:
+            return original_exec(picker)
+        finally:
+            picker.deleteLater()
+            QCoreApplication.sendPostedEvents(picker, QEvent.Type.DeferredDelete)
+
+    monkeypatch.setattr(MissileTargetDialog, "exec", modal_exec)
+    monkeypatch.setattr(GroundDestinationPicker, "exec", select_on_map)
     try:
         # Opening must return immediately: hiding a dialog running exec() to
         # borrow the map prematurely terminates that dialog's nested event loop.
-        watchdog.start(1000)
         if entry == "base":
             panel.open_target(w.site.id, panel.findChildren(QLabel)[0])
         else:
@@ -360,7 +376,6 @@ def test_map_selection_does_not_finish_the_target_dialog(
             location.game_model = controls.model
             location.ground_object = w.site
             QGroundObjectMenu._choose_missile_target(location)
-        watchdog.stop()
         dialogs = parent.findChildren(MissileTargetDialog)
         assert len(dialogs) == 1 and dialogs[0].isVisible()
         dialog = dialogs[0]
@@ -377,7 +392,6 @@ def test_map_selection_does_not_finish_the_target_dialog(
         assert not dialog.isVisible()
         assert mt.stored(w.site) is not None
     finally:
-        watchdog.stop()
         window.close()
         window.deleteLater()
 
