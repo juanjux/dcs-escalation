@@ -19,7 +19,8 @@
             "defaultValue": 4
         },
         {
-            "nameInUI": "Player call-for-fire max ship-to-target range (NM)",
+            "nameInUI": "Assigned targets and call-for-fire range limit (NM)",
+            "descriptionInUI": "Campaign range limit for persistent ship targets and F10 call-for-fire. A weapon's own engagement envelope can restrict it further. Automatic target selection retains its conservative 250 NM planning limit.",
             "mnemonic": "playerRangeNm",
             "defaultValue": 250
         },
