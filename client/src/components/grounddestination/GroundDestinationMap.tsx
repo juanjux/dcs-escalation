@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CircleMarker,
   Circle,
@@ -16,6 +16,7 @@ import {
 } from "./bridge";
 import "../liberationmap/LiberationMap.css";
 import "./GroundDestinationMap.css";
+import { snapMissileTarget, SnapTarget } from "./targetSnap";
 
 interface Origin {
   origin: LatLngLiteral;
@@ -23,6 +24,7 @@ interface Origin {
   mode?: "missile";
   min_range_m?: number;
   max_range_m?: number;
+  snap_targets?: SnapTarget[];
 }
 
 export function DestinationInteraction({
@@ -38,6 +40,10 @@ export function DestinationInteraction({
   const [pending, setPending] = useState(false);
   const controller = useRef<DestinationPreviewController>();
   const banner = useRef<HTMLDivElement>(null);
+  const targets = useMemo(
+    () => new Map(origin.snap_targets?.map((target) => [target.id, target])),
+    [origin.snap_targets],
+  );
 
   useEffect(() => {
     const center = map.getCenter();
@@ -140,16 +146,27 @@ export function DestinationInteraction({
         target.closest(".gd-banner, .leaflet-control")
       )
         return;
-      controller.current?.move({
+      const position = {
         lat: event.latlng.lat,
         lng: event.latlng.lng,
-      });
+      };
+      controller.current?.move(
+        origin.mode === "missile"
+          ? snapMissileTarget(map, event.originalEvent, position, targets)
+          : position,
+      );
     },
-    click: (event) =>
-      controller.current?.pick({
+    click: (event) => {
+      const position = {
         lat: event.latlng.lat,
         lng: event.latlng.lng,
-      }),
+      };
+      controller.current?.pick(
+        origin.mode === "missile"
+          ? snapMissileTarget(map, event.originalEvent, position, targets)
+          : position,
+      );
+    },
     mouseout: (event) => {
       const related = event.originalEvent.relatedTarget;
       if (related instanceof Node && map.getContainer().contains(related))

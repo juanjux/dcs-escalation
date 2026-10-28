@@ -347,6 +347,17 @@ def test_map_selection_does_not_finish_the_target_dialog(
     original_exec = GroundDestinationPicker.exec
 
     def select_on_map(picker: GroundDestinationPicker) -> QDialog.DialogCode:
+        assert json.loads(picker.bridge.initial())["snap_targets"] == [
+            {
+                "id": str(w.target.id),
+                "name": w.target.obj_name,
+                "position": {
+                    "lat": w.target.position.latlng().lat,
+                    "lng": w.target.position.latlng().lng,
+                },
+            }
+        ]
+
         def select() -> int:
             assert not dialog.isVisible() and not parent.isVisible()
             assert window.liberation_map.isVisible()  # type: ignore[attr-defined]

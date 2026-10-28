@@ -37,6 +37,10 @@ describe("isRepairing", () => {
 });
 
 describe("iconForTgo health-bar colour", () => {
+  it("identifies normal and modified objective icons for map snapping", () => {
+    expect(iconForTgo(fakeTgo(false, "2", false)).tgoId).toBe("id");
+    expect(iconForTgo(fakeTgo(true, "3", true)).tgoId).toBe("id");
+  });
   it("recolours the yellow damaged bar to orange for a fully-dead repairing group", () => {
     const url = iconForTgo(fakeTgo(true, "3", true)).options.iconUrl ?? "";
     const svg = decodeURIComponent(url.slice(url.indexOf(",") + 1));

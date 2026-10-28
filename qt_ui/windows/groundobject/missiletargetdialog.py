@@ -194,6 +194,17 @@ class MissileTargetDialog(QDialog):
                     "mode": "missile",
                     "min_range_m": min(w.minimum for w in weapons),
                     "max_range_m": max(w.maximum for w in weapons),
+                    "snap_targets": [
+                        {
+                            "id": str(target.id),
+                            "name": target.obj_name,
+                            "position": {
+                                "lat": target.position.latlng().lat,
+                                "lng": target.position.latlng().lng,
+                            },
+                        }
+                        for target in missiletargets.targets(self.game, Player.BLUE)
+                    ],
                 },
             )
             if picker.exec() == QDialog.DialogCode.Accepted and picker.selected:

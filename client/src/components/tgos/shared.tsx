@@ -4,7 +4,8 @@ import {
 } from "../../api/liberationApi";
 import SplitLines from "../splitlines/SplitLines";
 import { hasPersistentDamage, healthBarSvg } from "../health/health";
-import { Icon, Point } from "leaflet";
+import { Point } from "leaflet";
+import TgoIcon from "./TgoIcon";
 import ms from "milsymbol";
 import { Tooltip } from "react-leaflet";
 
@@ -127,7 +128,7 @@ export function iconForTgo(tgo: TgoModel) {
   const iadsColor = iadsBarColor(tgo);
   const damaged = hasPersistentDamage(tgo.health);
   if (!repairing && !jammer && !store && !iadsColor && !damaged) {
-    return new Icon({ iconUrl: symbol.toDataURL(), iconAnchor });
+    return new TgoIcon(tgo.id, { iconUrl: symbol.toDataURL(), iconAnchor });
   }
   let svg = healthBarSvg(symbol.asSVG(), tgo.health);
   if (store) {
@@ -150,7 +151,7 @@ export function iconForTgo(tgo: TgoModel) {
   if (jammer) {
     svg = relabelAsGps(svg);
   }
-  return new Icon({
+  return new TgoIcon(tgo.id, {
     iconUrl: "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg),
     iconAnchor,
   });
