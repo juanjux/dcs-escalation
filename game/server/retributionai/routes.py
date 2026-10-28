@@ -426,6 +426,31 @@ def _movement_response(action):
         ) from exc
 
 
+@router.get("/missiles", operation_id="ai_missile_launchers")
+def missile_launchers(side: str = "red") -> list[dict]:
+    return _movement_response(lambda: service.missile_launchers(side))
+
+
+@router.get("/missiles/{source_id}", operation_id="ai_missile_options")
+def missile_options(source_id: str, side: str = "red") -> dict:
+    return _movement_response(lambda: service.missile_options(side, source_id))
+
+
+@router.post("/missiles/preview", operation_id="ai_preview_missile_target")
+def preview_missile_target(body: schemas.MissileTargetRequest) -> dict:
+    return _movement_response(lambda: service.preview_missile_target(body.side, body))
+
+
+@router.post("/missiles/target", operation_id="ai_assign_missile_target")
+def assign_missile_target(body: schemas.MissileTargetRequest) -> dict:
+    return _movement_response(lambda: service.assign_missile_target(body.side, body))
+
+
+@router.delete("/missiles/{source_id}/target", operation_id="ai_clear_missile_target")
+def clear_missile_target(source_id: str, side: str = "red") -> dict:
+    return _movement_response(lambda: service.clear_missile_target(side, source_id))
+
+
 @router.get("/ground/movement/options", operation_id="ai_ground_movement_options")
 def ground_movement_options(
     source_id: str, source_kind: str = "armor", side: str = "red"

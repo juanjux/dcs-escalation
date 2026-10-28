@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import math
-from typing import Callable, TYPE_CHECKING
+from typing import Any, Callable, TYPE_CHECKING
 
 from dcs import Point
 from dcs.mapping import LatLng
@@ -37,10 +37,14 @@ class GroundDestinationBridge(QObject):
         model: GameModel,
         origin: Point,
         name: str,
-        preview: Callable[[GroundPosition], ArmorMovementPreview | BaseMovementPreview],
+        preview: Callable[
+            [GroundPosition],
+            ArmorMovementPreview | BaseMovementPreview | dict[str, Any],
+        ],
         choose: Callable[[LatLng], None],
         cancel: Callable[[], None],
         parent: QObject | None = None,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(parent)
         self.model = model
@@ -52,11 +56,18 @@ class GroundDestinationBridge(QObject):
         self.choose = choose
         self.cancel = cancel
         self.closed = False
+        self.details = details or {}
 
     @Slot(result=str)
     def initial(self) -> str:
         at = self.origin.latlng()
-        return json.dumps({"origin": {"lat": at.lat, "lng": at.lng}, "name": self.name})
+        return json.dumps(
+            {
+                "origin": {"lat": at.lat, "lng": at.lng},
+                "name": self.name,
+                **self.details,
+            }
+        )
 
     def evaluate(self, lat: float, lng: float) -> dict[str, object]:
         if self.closed:
@@ -70,6 +81,8 @@ class GroundDestinationBridge(QObject):
             raise ValueError("Invalid latitude or longitude")
         point = Point.from_latlng(LatLng(lat, lng), self.game.theater.terrain)
         result = self.calculate(GroundPosition(point.x, point.y))
+        if isinstance(result, dict):
+            return {"valid": True, "position": {"lat": lat, "lng": lng}, **result}
 
         def coordinates(position: GroundPosition) -> dict[str, float]:
             at = Point(position.x, position.z, self.game.theater.terrain).latlng()
@@ -128,8 +141,12 @@ class GroundDestinationPicker(QObject):
         model: GameModel,
         origin: Point,
         name: str,
-        preview: Callable[[GroundPosition], ArmorMovementPreview | BaseMovementPreview],
+        preview: Callable[
+            [GroundPosition],
+            ArmorMovementPreview | BaseMovementPreview | dict[str, Any],
+        ],
         parent: QWidget,
+        details: dict[str, Any] | None = None,
     ) -> None:
         super().__init__()
         self.owner = parent
@@ -139,14 +156,14 @@ class GroundDestinationPicker(QObject):
         if ancestor is None:
             raise RuntimeError("The main campaign map is unavailable")
         self.window = ancestor
-        self.map = ancestor.liberation_map  # type: ignore[attr-defined]
+        self.map = getattr(ancestor, "liberation_map")
         self.selected: LatLng | None = None
         self.loop = QEventLoop(self)
         self.finished = False
         self.closing: set[QObject] = set()
         self.error: str | None = None
         self.bridge = GroundDestinationBridge(
-            model, origin, name, preview, self.choose, self.reject, self
+            model, origin, name, preview, self.choose, self.reject, self, details
         )
         self.timeout = QTimer(self)
         self.timeout.setSingleShot(True)

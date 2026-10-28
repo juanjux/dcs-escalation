@@ -10,6 +10,8 @@ with no entry has no minimum -- the Scud is the common case, and the reason a Sc
 lands its rounds somewhere near the target while an ATACMS site does not.
 """
 
+USABLE_RANGE_FRACTION = 0.85
+
 MISSILE_SITE_MIN_RANGE_M: dict[str, int] = {
     "CH_M270A1_ATACMS": 75000,
     "CHAP_9K720_HE": 75000,

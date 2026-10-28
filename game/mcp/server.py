@@ -478,6 +478,36 @@ def stop_ground_movement(order_id: str, side: str = "red") -> dict:
 
 
 @_tool()
+def missile_launchers(side: str = "red") -> list[dict]:
+    """Your operational land-attack missile sites/ships, engagement envelopes and assignments."""
+    return service.missile_launchers(side)
+
+
+@_tool()
+def missile_options(source_id: str, side: str = "red") -> dict:
+    """Own launcher ranges and known enemy objectives, with in-range flags."""
+    return service.missile_options(side, source_id)
+
+
+@_tool()
+def preview_missile_target(request: schemas.MissileTargetRequest) -> dict:
+    """Validate an enemy objective ID/code name or GPS aimpoint without assigning it."""
+    return service.preview_missile_target(request.side, request)
+
+
+@_tool()
+def assign_missile_target(request: schemas.MissileTargetRequest) -> dict:
+    """Persist a missile aimpoint until destroyed or cancelled. Empty GPS points require confirm_empty=true and keep firing each turn."""
+    return service.assign_missile_target(request.side, request)
+
+
+@_tool()
+def clear_missile_target(source_id: str, side: str = "red") -> dict:
+    """Cancel your own launcher's persistent missile target."""
+    return service.clear_missile_target(side, source_id)
+
+
+@_tool()
 def set_ai_status(text: str) -> dict:
     """Set the one-line status shown in the robot info window (optional flavor; the robot
     lights up on its own with every call, so you don't need to toggle anything)."""

@@ -115,6 +115,14 @@ tool/resource of the same name.
 - `POST /stances` (front-line stance)
 
 **Plan — map moves (player-legal)**
+- `GET /missiles` — own operational missile sites/land-attack ships and assignments.
+- `GET /missiles/{source_id}` — weapon engagement envelopes and known enemy objectives,
+  including in-range flags. These source IDs are TGO IDs, not carrier control-point IDs.
+- `POST /missiles/preview` — check `{side, source_id, target_id}` or `target_name`, or
+  decimal-degree `lat` + `lng`, without assigning it. Choose exactly one selection method.
+- `POST /missiles/target` — persist the same aimpoint. Empty GPS points require explicit
+  `confirm_empty:true` and keep firing each turn until cancelled. Destroyed objectives clear.
+- `DELETE /missiles/{source_id}/target` — cancel your own launcher's assignment.
 - `GET /ground/movement/options?source_id=…&source_kind=armor` — own reserve units,
   mobility, tractors and destinations. Use `source_kind=base` for available base stock.
 - `POST /ground/movement/preview` — validate a RED reserve move or base-stock GPS

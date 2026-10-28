@@ -37,6 +37,9 @@ jest.mock("react-leaflet", () => ({
     />
   ),
   CircleMarker: () => null,
+  Circle: (props: any) => (
+    <div data-testid="missile-ring" data-radius={props.radius} />
+  ),
 }));
 
 function event(lat = 42, lng = 41) {
@@ -58,6 +61,49 @@ function setup() {
   );
   return { bridge, ...view };
 }
+
+it("shows missile range rings and aimpoint warnings instead of ground-route ETA", async () => {
+  const bridge: DestinationBridge = {
+    ready: jest.fn(),
+    initial: jest.fn(),
+    preview: jest.fn(),
+    pick: jest.fn(),
+    dismiss: jest.fn(),
+  };
+  render(
+    <DestinationInteraction
+      bridge={bridge}
+      origin={{
+        origin: { lat: 42, lng: 41 },
+        name: "SCUD",
+        mode: "missile",
+        min_range_m: 10000,
+        max_range_m: 250000,
+      }}
+    />,
+  );
+  expect(
+    screen.getByText("Choose the missile target and click"),
+  ).toBeInTheDocument();
+  expect(screen.getAllByTestId("missile-ring")).toHaveLength(2);
+  act(() => {
+    mockHandlers.mousemove(event());
+    jest.advanceTimersByTime(150);
+  });
+  await act(async () => {
+    (bridge.preview as jest.Mock).mock.calls[0][2](
+      JSON.stringify({
+        valid: true,
+        distance_m: 50000,
+        target_name: "GPS position",
+        warning: "No known enemy target here",
+      }),
+    );
+  });
+  expect(screen.getByText(/50.0 km · GPS position/)).toBeInTheDocument();
+  expect(screen.getByText("No known enemy target here")).toBeInTheDocument();
+  expect(screen.queryByText(/turn\(s\)/)).not.toBeInTheDocument();
+});
 beforeEach(() => {
   jest.useFakeTimers();
   jest.clearAllMocks();

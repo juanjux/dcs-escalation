@@ -1203,14 +1203,31 @@ reports `cruise_missiles_remaining` in `naval[]`.
   aimpoint is whatever a strike package would bleed for — a command center or comms node
   ringed by SAMs, a factory deep behind the front — not something a couple of bombers
   could flatten in safety. Never spend them on a target you were going to kill anyway.
-- **You cannot task a raid through the API.** With `cruise_missile_auto_raids` on, each
-  turn one raid per side is committed automatically at the best reachable enemy ground
-  object, and it spends from your magazine whether or not you planned around it. So read
-  `cruise_missiles_remaining` each turn as a *budget line falling on its own*, and plan
-  your air tasking on the assumption that the highest-value enemy fixed target within
-  ~250 nm of your ships may already be getting hit — don't also frag a strike package at
-  it. If the setting is off, the number only moves when a human fires a salvo in the
-  mission.
+- **Assign a persistent target through the API.** Read `missile_launchers` /
+  `GET /retribution-ai/missiles`, then `missile_options` /
+  `GET /retribution-ai/missiles/{source_id}` for an own launcher's weapon envelopes and
+  known enemy objectives. Use those source IDs, not a carrier's control-point ID.
+  `preview_missile_target` / `POST /retribution-ai/missiles/preview` accepts
+  `{side:"red", source_id, target_id}` or an unambiguous `target_name` code name,
+  or `lat` + `lng` in decimal degrees. Choose exactly one method. Minimum as well as
+  maximum range matters; the ship campaign range limit and the missile-site safety
+  margin still apply. Never infer cruise-missile range from a ship's anti-air threat ring.
+- **Commit deliberately.** `assign_missile_target` /
+  `POST /retribution-ai/missiles/target` accepts the same fields. An empty GPS point is
+  flagged by preview and requires `confirm_empty:true`; it will keep firing there
+  every turn until cancelled. Do not confirm that without a deliberate reason.
+  For MCP preview and assignment, put the fields inside `request`.
+  `clear_missile_target` / `DELETE /retribution-ai/missiles/{source_id}/target` cancels
+  an assignment, even if its ship has run dry. Only your own launchers are accessible.
+- **Persistence is not an ammunition grant.** A ship fires one normal magazine-capped
+  salvo per assigned group per mission, even with automatic raids off. The cruise
+  missile plugin must still be enabled. Land batteries require the missile-site firing
+  setting. Assignments persist in the save until the linked objective is destroyed,
+  captured or no longer exists, or you cancel them. Out-of-range assignments hold fire
+  rather than silently shooting another target. Named objectives track their campaign
+  position; free GPS coordinates remain exact. Re-generating a mission spends nothing.
+  Automatic ship raids, when enabled, only use unassigned groups. Avoid allocating
+  an aircraft strike to a target your missiles are already attacking.
 - **Sinking a launcher destroys its missiles too**, on both sides. A blue destroyer with a
   full magazine is worth much more than its hull: killing it denies every future salvo,
   which is a far better ANTISHIP argument than the ship's own SAM umbrella. And the mirror
