@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
 from game.highcommand.prizes import CannotGive, Choice, Step
 from qt_ui.widgets.cards import card, make_transparent
 from qt_ui.widgets.controls import button, style_button
+from qt_ui.widgets.maphover import bind_map_hover
 from qt_ui.windows.highcommand import model as data
 from qt_ui.windows.highcommand import palette as ink
 from qt_ui.windows.highcommand.model import TicketView
@@ -222,6 +223,7 @@ class ChoiceRow(QWidget):
                 "normal",
                 lambda: self.show_on_map.emit(choice.position),
             )
+            bind_map_hover(self.map_button, lambda: self.choice.position)
             row = QHBoxLayout()
             row.setContentsMargins(0, 0, 10, 0)
             row.addStretch()
@@ -372,6 +374,7 @@ class SpendPane(QWidget):
         column.addLayout(footer)
         self.setLayout(column)
         self.site: Any = None
+        bind_map_hover(self.show_site, lambda: self.site)
         self.show_site.clicked.connect(
             lambda: self.show_on_map.emit(self.site.position if self.site else None)
         )

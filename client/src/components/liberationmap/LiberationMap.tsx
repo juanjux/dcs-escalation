@@ -4,6 +4,7 @@ import MapLayersControl from "../maplayers/MapLayersControl";
 import CoordinatePicker from "../coordinatepicker";
 import SavedPointPins from "../savedpointpins/SavedPointPins";
 import MapSearch from "../mapsearch";
+import MapButtonHover from "../maphover/MapButtonHover";
 import LeafletRuler from "../ruler/Ruler";
 import GroundDestinationMode from "../grounddestination/GroundDestinationMap";
 import "./LiberationMap.css";
@@ -40,6 +41,7 @@ export default function LiberationMap() {
       ref={map}
     >
       <ScaleControl />
+      <MapButtonHover />
       <MapLayersControl groundDestination={groundDestination} />
       {!selecting && <LeafletRuler />}
       {!selecting && <MapSearch />}

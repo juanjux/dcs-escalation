@@ -56,6 +56,17 @@ it("does not refresh pins on unrelated simulation updates", () => {
   window.removeEventListener("saved-points-changed", listener);
 });
 
+it("forwards transient button hovers without moving or reloading the map", () => {
+  const listener = jest.fn();
+  const dispatch = jest.fn();
+  const hover = { owner: "button", target_id: "target", position: { lat: 33, lng: 69 } };
+  window.addEventListener("map-button-hover", listener);
+  handleStreamedEvents(dispatch, { ...emptyEvents, map_hover: hover });
+  expect(listener.mock.calls[0][0].detail).toEqual(hover);
+  expect(dispatch).not.toHaveBeenCalled();
+  window.removeEventListener("map-button-hover", listener);
+});
+
 it("deletes absorbed markers after any stale update in the same event", () => {
   const reserve = { id: "reserve" } as Tgo;
   const sam = { id: "sam" } as Tgo;

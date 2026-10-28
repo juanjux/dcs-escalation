@@ -23,6 +23,12 @@ if TYPE_CHECKING:
     from game.theater import ControlPoint
 
 
+class MapHoverJs(BaseModel):
+    owner: UUID
+    target_id: UUID | None
+    position: LeafletPoint | None
+
+
 class GameUpdateEventsJs(BaseModel):
     updated_flight_positions: dict[UUID, LeafletPoint]
     new_combats: list[FrozenCombatJs]
@@ -48,6 +54,7 @@ class GameUpdateEventsJs(BaseModel):
     reset_on_map_center: LeafletPoint | None
     fly_to: LeafletPoint | None
     fly_to_zoom: int | None
+    map_hover: MapHoverJs | None = None
     game_unloaded: bool
     new_turn: bool
 
@@ -152,6 +159,19 @@ class GameUpdateEventsJs(BaseModel):
             reset_on_map_center=events.reset_on_map_center,
             fly_to=events.fly_to,
             fly_to_zoom=events.fly_to_zoom,
+            map_hover=(
+                MapHoverJs(
+                    owner=events.map_hover[0],
+                    target_id=events.map_hover[1],
+                    position=(
+                        LeafletPoint.from_latlng(events.map_hover[2])
+                        if events.map_hover[2] is not None
+                        else None
+                    ),
+                )
+                if events.map_hover is not None
+                else None
+            ),
             game_unloaded=events.game_unloaded,
             new_turn=events.new_turn,
         )

@@ -7,7 +7,7 @@ import { LatLngLiteral } from "leaflet";
 // highlight is symmetric (hovering either lights up the other), but hovering a
 // ring also marks its emitter with a blob so you can find it; hovering the
 // emitter does not blob the icon you're already pointing at.
-export type EmitterHoverSource = "emitter" | "ring";
+export type EmitterHoverSource = "emitter" | "ring" | "button";
 
 interface MapState {
   center: LatLngLiteral;
@@ -43,6 +43,12 @@ const mapSlice = createSlice({
   name: "map",
   initialState: initialState,
   reducers: {
+    clearButtonHover(state) {
+      if (state.hoveredEmitterSource === "button") {
+        state.hoveredEmitterId = null;
+        state.hoveredEmitterSource = null;
+      }
+    },
     setHoveredEmitter(
       state,
       action: PayloadAction<{ id: string; source: EmitterHoverSource } | null>,
@@ -95,6 +101,7 @@ const mapSlice = createSlice({
 });
 
 export const {
+  clearButtonHover,
   setHoveredEmitter,
   setHighlightEmitters,
   setMapCenter,
