@@ -86,6 +86,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Label missile sites correctly in the location header instead of Reserve Armor Group.
 * **[Missiles]** Keep target selection usable after borrowing the main map, without leaving a modal dialog blocking the interface.
 * **[UI]** Improve default button contrast, including missile targeting, ground movement and disabled actions.
 * **[UI]** Show the campaign outcome after accepting mission results and use the correct text for defeats.
