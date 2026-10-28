@@ -17,7 +17,12 @@ from game.missiongenerator.motorpoolpopulator import (
 )
 from game.server.leaflet import LeafletPoint
 from game.theater.iadsnetwork.iadsstate import IadsStatus
-from game.theater.theatergroundobject import MotorpoolGroundObject, ShipGroundObject
+from game.theater.theatergroundobject import (
+    AirDefenceKind,
+    IadsGroundObject,
+    MotorpoolGroundObject,
+    ShipGroundObject,
+)
 
 if TYPE_CHECKING:
     from game import Game
@@ -125,6 +130,13 @@ class TgoJs(BaseModel):
 
     @staticmethod
     def for_tgo(tgo: TheaterGroundObject) -> TgoJs:
+        category = tgo.category
+        if isinstance(tgo, IadsGroundObject):
+            kind = tgo.air_defence_kind
+            if kind is AirDefenceKind.BATTERY:
+                category = "aa"
+            elif kind is AirDefenceKind.RADAR:
+                category = "ewr"
         # Only include non-zero ranges: a zero-radius circle renders as a stray
         # dot (normally hidden under the unit icon, but visible once the icon is
         # hidden by the destroyed-object layers). Matches ControlPointJs.
@@ -202,7 +214,7 @@ class TgoJs(BaseModel):
             id=tgo.id,
             name=tgo.name,
             control_point_name=tgo.control_point.name,
-            category=tgo.category,
+            category=category,
             blue=blue,
             position=tgo.position.latlng(),
             units=[unit.display_name for unit in tgo.units],

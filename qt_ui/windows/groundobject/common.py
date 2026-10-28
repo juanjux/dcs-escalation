@@ -25,7 +25,7 @@ from game.theater import (
 from game.theater.iadsnetwork.iadsexplain import LinkTone
 from game.theater.theatergroundobject import (
     BuildingGroundObject,
-    EwrGroundObject,
+    AirDefenceKind,
     IadsGroundObject,
     MissileSiteGroundObject,
     NavalGroundObject,
@@ -174,9 +174,10 @@ def kind_of(ground_object: TheaterGroundObject) -> str:
     if isinstance(ground_object, MissileSiteGroundObject):
         return "MISSILE SITE"
     if isinstance(ground_object, IadsGroundObject):
-        if ground_object.carries_gps_jammer:
+        kind = ground_object.air_defence_kind
+        if kind is AirDefenceKind.JAMMER:
             return "GPS JAMMER"
-        if isinstance(ground_object, EwrGroundObject):
+        if kind is AirDefenceKind.RADAR:
             return "EWR"
         return "SAM"
     return "RESERVE ARMOR GROUP"
@@ -208,6 +209,11 @@ def kind_chip_text(ground_object: TheaterGroundObject, cp: ControlPoint) -> str:
     task: Optional[GroupTask] = (
         None if parts[0] == "GPS JAMMER" else getattr(ground_object, "task", None)
     )
+    # A site can hold a battery in an old radar slot, or the reverse.
+    if (parts[0] == "SAM" and task is GroupTask.EARLY_WARNING_RADAR) or (
+        parts[0] == "EWR" and task is not GroupTask.EARLY_WARNING_RADAR
+    ):
+        task = None
     reach = TASK_NAMES.get(task) if task is not None else None
     if reach is not None and reach != parts[0]:
         parts.append(reach)
