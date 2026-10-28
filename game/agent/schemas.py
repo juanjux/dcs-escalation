@@ -6,7 +6,10 @@ for the same token-economy reasons as the read DTOs in ``views.py``.
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from typing import Literal
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, StrictInt
 
 from game.agent import views
 
@@ -265,6 +268,36 @@ class TransferGroundRequest(BaseModel):
     unit_name: str
     quantity: int = 1
     by_air: bool = False
+
+
+class GroundMovementRequest(BaseModel):
+    """Preview an existing armor detachment or deploy counted base stock."""
+
+    model_config = ConfigDict(extra="forbid")
+    side: str = "red"
+    source_id: UUID
+    source_kind: Literal["armor", "base"] = "armor"
+    unit_ids: list[StrictInt] | None = Field(
+        default=None, min_length=1, max_length=1000
+    )
+    units: dict[str, StrictInt] | None = Field(
+        default=None, min_length=1, max_length=1000
+    )
+    destination_kind: Literal["position", "base", "frontline"] = "position"
+    lat: FiniteFloat | None = Field(default=None, ge=-90, le=90)
+    lng: FiniteFloat | None = Field(default=None, ge=-180, le=180)
+    base_id: UUID | None = None
+    opposing_base_id: UUID | None = None
+
+
+class GroundMovementDispatchRequest(GroundMovementRequest):
+    preview_token: str = Field(min_length=64, max_length=64)
+
+
+class StopGroundMovementRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    side: str = "red"
+    order_id: UUID
 
 
 class MoveShipRequest(BaseModel):

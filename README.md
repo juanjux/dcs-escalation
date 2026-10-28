@@ -105,6 +105,8 @@ map with route highlighting, distance, estimated arrival and validity feedback.
 Groups reached or passed by their front automatically reinforce its supporting
 base, including groups in transit. Normal deployment limits apply, with surplus
 kept in the Motor Pool. Ground Movement requires Motor Pool.
+The OPFOR REST/MCP API supports the same reserve movements and base-stock deployments
+under BLUE's territory, transport and distance rules. SAM-site movement is not supported yet.
 
 Select units, then use **Choose on map…** in the movement dialog or Transfer Units'
 GPS mode. The main map temporarily switches to destination selection without

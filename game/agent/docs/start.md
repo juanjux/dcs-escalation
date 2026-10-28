@@ -58,7 +58,8 @@ tool/resource of the same name.
   `targets`, **`threats`** (blue's air-defense umbrellas ranked by reach, incl. SAM-armed
   ships like SM-6 frigates — **read every turn and respect them**), `naval` (YOUR own
   movable ship groups and carriers — reposition them with `POST /naval/move`), and
-  `repairs` (YOUR damaged SAMs/buildings/runways you can pay to fix with `POST /repair`).
+  `repairs` (YOUR damaged SAMs/buildings/runways you can pay to fix with `POST /repair`),
+  and optional `ground_movement` (YOUR reserve groups and their saved journeys).
 - `GET /prev_turns?n=1` — after-action of prior turns (losses, who-killed-what, captures)
 - `GET /packages?side=red` — current packages/flights (each with `id` + pilots + waypoints)
 - `GET /waypoints/{flight_id}` — a flight's waypoints
@@ -107,13 +108,22 @@ tool/resource of the same name.
 **Plan — economy & forces**
 - `POST /buy/aircraft` · `POST /sell/aircraft` · `POST /buy/ground`
 - `POST /ground/transfer` `{side, origin_cp_id, dest_cp_id, unit_name, quantity, by_air}`
-  — move ground units between your bases. This is the only transfer endpoint; there is
-  no list or cancel.
+  — move ground units between your bases. Reserve-group movement uses the separate
+  preview/dispatch workflow below; this endpoint has no list or cancel.
 - `GET /ground/options/{tgo_id}` · `POST /ground/rebuild` — what a destroyed SAM/EWR/
   armor/ship/coastal site can be rebuilt into, and rebuilding it.
 - `POST /stances` (front-line stance)
 
 **Plan — map moves (player-legal)**
+- `GET /ground/movement/options?source_id=…&source_kind=armor` — own reserve units,
+  mobility, tractors and destinations. Use `source_kind=base` for available base stock.
+- `POST /ground/movement/preview` — validate a RED reserve move or base-stock GPS
+  deployment without changing anything. Returns distance, arrival estimate and `preview_token`.
+- `POST /ground/movement/dispatch` — send the same request plus its `preview_token`;
+  revalidates ownership, territory, inventory and route. Requires Ground Movement + Motor Pool.
+- `GET /ground/movement` — own saved reserve orders, positions, losses, progress and pause reasons.
+- `POST /ground/movement/stop` `{side, order_id}` — stop at the saved campaign position;
+  no refund or teleport. SAM movement is not supported. See howtoplay for request fields.
 - `POST /naval/move` `{side, ship_id, lat, lng}` — reposition one of your own naval groups
   — a ship group or a carrier/LHA (an `id` from `turn_context.naval`) — up to ~80 nm over
   water; applies at turn end. Omit `lat`+`lng` to cancel a pending move.

@@ -541,6 +541,43 @@ class LeaveRequestView(BaseModel):
     aircraft: int  # airframes it owns -- fewer spare pilots than these means idle jets
 
 
+class ReserveArmorGroupView(BaseModel):
+    id: str
+    name: str
+    base_id: str
+    pos: list[float]
+    composition: dict[str, int]
+    selectable_units: int
+    in_transit: bool
+
+
+class ArmorMovementView(BaseModel):
+    order_id: str
+    source_id: str
+    detachment_id: str
+    status: str
+    pause_reason: str | None = None
+    destination_kind: str
+    destination: list[float]
+    base_id: str | None = None
+    opposing_base_id: str | None = None
+    pos: list[float]
+    total_distance_m: float
+    remaining_distance_m: float
+    progress_percent: float
+    remaining_turns: int | None = None
+    surviving_units: int | None = None
+    original_units: int
+
+
+class GroundMovementContextView(BaseModel):
+    enabled: bool
+    road_distance_per_turn_m: float
+    offroad_distance_per_turn_m: float
+    reserve_groups: list[ReserveArmorGroupView]
+    orders: list[ArmorMovementView]
+
+
 class TurnContextView(BaseModel):
     side: str
     situation: SituationView
@@ -563,6 +600,7 @@ class TurnContextView(BaseModel):
     ground_convoys: list[GroundConvoyView] | None = (
         None  # Own persistent road transports, including paused ones.
     )
+    ground_movement: GroundMovementContextView | None = None
     leave_requests: list[LeaveRequestView] = (
         []
     )  # pilots asking for leave this turn; empty most turns. Answer them with
@@ -1578,6 +1616,8 @@ def build_leave_requests(game: Game, side: str) -> list[LeaveRequestView]:
 
 
 def build_turn_context(game: Game, side: str = "red") -> TurnContextView:
+    from game.agent.groundmovement import context as ground_movement_context
+
     side = side.lower()
     coalition = coalition_for_side(game, side)
     targets = build_targets(game, side)
@@ -1601,6 +1641,7 @@ def build_turn_context(game: Game, side: str = "red") -> TurnContextView:
         buyable_ground=build_buyable_ground(game, side),
         leave_requests=build_leave_requests(game, side),
         ground_convoys=build_ground_convoys(game, side),
+        ground_movement=ground_movement_context(game, player_for_side(side)),
     )
 
 

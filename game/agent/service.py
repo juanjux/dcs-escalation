@@ -18,6 +18,7 @@ from game.agent import views
 
 if TYPE_CHECKING:
     from game import Game
+    from game.agent import schemas
 
 
 #: The coalition this API commands. The planner is OPFOR: it plans RED's turn and
@@ -206,6 +207,8 @@ def capabilities() -> dict:
             " how well the crew flies together)",
             "ground/mine (YOUR OWN ground objects with their ids -- turn_context.targets is the enemy's, so this is the only place to get an id to rebuild/upgrade one of yours)",
             "ground/options/{tgo_id} (what a SAM/EWR/armor/ship site can be rebuilt into + costs)",
+            "ground/movement/options (own reserve units, available base stock and destinations)",
+            "ground/movement (own persistent reserve movements, progress and pause reasons)",
             "validate",
             "prev_turns",
             "turn_status",
@@ -233,6 +236,9 @@ def capabilities() -> dict:
             "stances",
             "squadron/relocate",
             "ground/transfer",
+            "ground/movement/preview (validate a reserve move or base-stock GPS deployment; returns a confirmation token)",
+            "ground/movement/dispatch (confirm the preview; Ground Movement and Motor Pool required)",
+            "ground/movement/stop (stop own reserve movement at its saved position; no refund or teleport)",
             "naval/move (reposition one of your ship groups or carriers, <=80nm over water)",
             "repair (pay to repair a damaged SAM/EWR unit, building, or runway)",
             "ai/status",
@@ -560,6 +566,66 @@ def ground_object_options(side, tgo_id):
     from game.agent import views
 
     return views.build_ground_object_options(_require_game(), side, tgo_id)
+
+
+def _movement_call(action: Callable[..., Any]) -> Any:
+    """Serialize movement reads and writes with the live Qt campaign."""
+    from game.server import GameContext
+
+    game = _require_game()
+    commands = GameContext.get_model().ground_movement_commands
+    return commands.run(lambda: commands.inspect(game, lambda: action(game, commands)))
+
+
+@opfor_only
+def ground_movement_options(
+    side: str, source_id: str, source_kind: str = "armor"
+) -> dict:
+    from uuid import UUID
+    from game.agent import groundmovement
+
+    return _movement_call(
+        lambda game, _: groundmovement.options(game, UUID(source_id), source_kind)
+    )
+
+
+@opfor_only
+def preview_ground_movement(side: str, request: schemas.GroundMovementRequest) -> dict:
+    from game.agent import groundmovement
+
+    return _movement_call(lambda game, _: groundmovement.preview_view(game, request))
+
+
+@opfor_only
+def dispatch_ground_movement(
+    side: str, request: schemas.GroundMovementDispatchRequest
+) -> dict:
+    from game.agent import groundmovement
+
+    return _movement_call(
+        lambda game, commands: groundmovement.dispatch(game, commands, request)
+    )
+
+
+@opfor_only
+def ground_movements(side: str = "red") -> list[dict]:
+    from game.agent import groundmovement
+
+    return _movement_call(
+        lambda game, _: [
+            row.model_dump(exclude_none=True) for row in groundmovement.orders(game)
+        ]
+    )
+
+
+@opfor_only
+def stop_ground_movement(side: str, order_id: str) -> dict:
+    from uuid import UUID
+    from game.agent import groundmovement
+
+    return _movement_call(
+        lambda game, commands: groundmovement.stop(game, commands, UUID(order_id))
+    )
 
 
 @opfor_only

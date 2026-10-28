@@ -6,7 +6,7 @@ Every route requires the per-process token (``?token=`` or ``X-API-Key``).
 Per-turn reads serialise with ``exclude_none`` to stay token-frugal.
 """
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import PlainTextResponse
 
 from game.agent import schemas, service, views
@@ -407,6 +407,53 @@ def transfer_ground(body: schemas.TransferGroundRequest) -> schemas.OpResult:
         body.unit_name,
         body.quantity,
         body.by_air,
+    )
+
+
+def _movement_response(action):
+    from qt_ui.groundmovement import MovementCommandError
+
+    try:
+        return action()
+    except (ValueError, PermissionError) as exc:
+        raise HTTPException(
+            status_code=(
+                403
+                if isinstance(exc, PermissionError)
+                else 409 if isinstance(exc, MovementCommandError) else 400
+            ),
+            detail=str(exc),
+        ) from exc
+
+
+@router.get("/ground/movement/options", operation_id="ai_ground_movement_options")
+def ground_movement_options(
+    source_id: str, source_kind: str = "armor", side: str = "red"
+) -> dict:
+    return _movement_response(
+        lambda: service.ground_movement_options(side, source_id, source_kind)
+    )
+
+
+@router.post("/ground/movement/preview", operation_id="ai_preview_ground_movement")
+def preview_ground_movement(body: schemas.GroundMovementRequest) -> dict:
+    return _movement_response(lambda: service.preview_ground_movement(body.side, body))
+
+
+@router.post("/ground/movement/dispatch", operation_id="ai_dispatch_ground_movement")
+def dispatch_ground_movement(body: schemas.GroundMovementDispatchRequest) -> dict:
+    return _movement_response(lambda: service.dispatch_ground_movement(body.side, body))
+
+
+@router.get("/ground/movement", operation_id="ai_ground_movements")
+def ground_movements(side: str = "red") -> list[dict]:
+    return _movement_response(lambda: service.ground_movements(side))
+
+
+@router.post("/ground/movement/stop", operation_id="ai_stop_ground_movement")
+def stop_ground_movement(body: schemas.StopGroundMovementRequest) -> dict:
+    return _movement_response(
+        lambda: service.stop_ground_movement(body.side, str(body.order_id))
     )
 
 

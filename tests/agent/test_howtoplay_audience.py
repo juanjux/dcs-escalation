@@ -47,7 +47,8 @@ def test_briefing_retains_operational_rules_and_real_agent_commands() -> None:
         "stop planning gracefully",
     ):
         assert command in text
-    assert "API families are BLUE-only" in text
-    assert "Do not call them to deploy" in text
+    assert "remain BLUE-only; never use them for RED" in text
+    assert "RED-only `/retribution-ai/ground/movement`" in text
+    assert "same request plus its" in text and "`preview_token`" in text
     assert "120 statute miles" in text
     assert "surplus retained" in text

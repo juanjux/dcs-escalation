@@ -138,14 +138,51 @@ Ground Movement is an opt-in Mission Plugin that requires Motor Pool. Disabling
 either dependency pauses saved movement orders without deleting them. Imported
 settings with Ground Movement on and Motor Pool off disable Ground Movement.
 
-**Your current command limits:** the `/control-points/{id}/ground-movement` and
-`/tgos/{id}/ground-movement` API families are BLUE-only. Do not call them to deploy
-RED reserves, move RED armor groups or stop their orders. Autonomous RED reserve
-movement and SAM movement commands are not available yet. You can still move RED
-base stock between friendly bases with `transfer_ground` /
-`POST /retribution-ai/ground/transfer`; use `turn_context.ground_convoys` to track
-those transports. The reserve-group rules below describe campaign behaviour, not
-additional actions available to you.
+**Your commands:** use the RED-only `/retribution-ai/ground/movement` API family
+(or its matching MCP tools) to move your reserve armor groups and deploy base stock
+to friendly GPS positions. SAM-site movement is not supported. The player-facing
+`/control-points/{id}/ground-movement` and `/tgos/{id}/ground-movement` API families
+remain BLUE-only; never use them for RED. Base-to-base stock transfers still use
+`transfer_ground` / `POST /retribution-ai/ground/transfer`; track those separately
+in `turn_context.ground_convoys`.
+
+1. Read `turn_context.ground_movement`: `enabled`, per-turn distance budgets,
+   `reserve_groups` (own IDs, composition, position and `in_transit`) and `orders`
+   (status, progress, survivors and pause reason). If absent or disabled, do not
+   plan new reserve movements. Existing orders remain readable and stoppable.
+2. Call `ground_movement_options` /
+   `GET /retribution-ai/ground/movement/options?source_id=…&source_kind=armor`.
+   Select real `unit_ids` from its selectable units, not names or counts. Required
+   tractors are added automatically from the same source. Its `bases` and `fronts`
+   list valid friendly destination IDs, but route validation can still block them.
+3. Call `preview_ground_movement` / `POST /retribution-ai/ground/movement/preview`
+   with `{side:"red", source_kind:"armor", source_id, unit_ids, destination_kind}`.
+   For `destination_kind:"position"`, supply `lat` and `lng` in decimal degrees.
+   For `"base"`, supply `base_id`. For `"frontline"`, supply the friendly `base_id`
+   and enemy `opposing_base_id` from a current front. GPS routes and destinations
+   must stay on your side. A front delivery reinforces its supporting base's stock;
+   normal deployment caps and Motor Pool surplus rules still apply.
+4. Check the returned distance, `arrival_in_turns`, `first_turn_stop`, warnings
+   and automatically included tractors. Confirm through `dispatch_ground_movement` /
+   `POST /retribution-ai/ground/movement/dispatch` with **the same request plus its
+   `preview_token`**. An older turn or changed route/selection invalidates it; preview
+   again, never retry with an invented token. Neither preview nor dispatch advances time.
+5. Read `ground_movements` / `GET /retribution-ai/ground/movement` for progress.
+   `stop_ground_movement` / `POST /retribution-ai/ground/movement/stop`
+   `{side:"red", order_id}` unloads survivors at the saved position, without refunding
+   stock or returning them to their origin. Stop an active detachment before rerouting
+   it. Dispatch and stop are blocked while a mission is running.
+
+To create a new reserve group from a base, use `source_kind:"base"` and its base ID
+in options/preview/dispatch. Supply `units:{"variant_id":quantity}` using the exact
+unit-type identifiers and available counts returned by options, **not `unit_ids`**.
+Only a GPS destination is supported for this operation; tractors come from available
+base stock and are shown in `automatically_added`. Dispatch debits this stock once.
+For MCP preview and dispatch, put these fields inside the `request` argument.
+
+Use reserves for defence in depth and reinforcement of threatened fronts; do not
+empty every base indiscriminately. Account for travel time, towing capacity and
+exposure on the road. No command grants units, changes settings or crosses enemy territory.
 
 The road budget defaults to 120 statute miles per turn (193.1 km), and the
 off-road budget to 60 miles (96.6 km). Both are configurable in the plugin's
