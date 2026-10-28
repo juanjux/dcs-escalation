@@ -27,6 +27,7 @@ from game.theater.theatergroundobject import (
     BuildingGroundObject,
     EwrGroundObject,
     IadsGroundObject,
+    MissileSiteGroundObject,
     NavalGroundObject,
 )
 from game.utils import Heading
@@ -170,6 +171,8 @@ def kind_of(ground_object: TheaterGroundObject) -> str:
         return BUILDING_NAMES.get(category, category.upper())
     if isinstance(ground_object, NavalGroundObject):
         return "NAVAL"
+    if isinstance(ground_object, MissileSiteGroundObject):
+        return "MISSILE SITE"
     if isinstance(ground_object, IadsGroundObject):
         if ground_object.carries_gps_jammer:
             return "GPS JAMMER"
