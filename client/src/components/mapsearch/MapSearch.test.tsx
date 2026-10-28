@@ -75,6 +75,8 @@ const state = {
       silkworm: tgo("silkworm", "SILKWORM", "factory", ["Workshop A"], true),
       arapaima: tgo("arapaima", "ARAPAIMA", "ware", ["Warehouse"]),
       lobster: tgo("lobster", "LOBSTER", "fuel", ["Fuel tank"]),
+      scud: tgo("scud", "COBRA", "missile", ["Scud-B"]),
+      atacms: tgo("atacms", "OTTER", "missile", ["ATACMS"], true),
     },
   },
   controlPoints: {
@@ -159,6 +161,28 @@ describe("MapSearch", () => {
     open();
     fireEvent.click(screen.getByText("Bases"));
     expect(names()).toEqual(["Creech AFB"]);
+  });
+
+  it("filters missile sites separately from air defence", () => {
+    open();
+    fireEvent.click(screen.getByText("Missile sites"));
+    expect(names()).toEqual(["COBRA", "OTTER"]);
+    fireEvent.click(screen.getByText("Missile sites"));
+    fireEvent.click(screen.getByText("Air defence"));
+    expect(names()).toContain("MINK");
+    expect(names()).not.toContain("COBRA");
+    expect(names()).not.toContain("OTTER");
+  });
+
+  it("combines missile-site filtering with side and search text", () => {
+    open();
+    fireEvent.click(screen.getByText("Missile sites"));
+    fireEvent.click(screen.getByText("Enemy"));
+    expect(names()).toEqual(["COBRA"]);
+    type("scud");
+    expect(names()).toEqual(["COBRA"]);
+    type("missile site");
+    expect(names()).toEqual(["COBRA"]);
   });
 
   it("tells the three kinds of stores apart", () => {
