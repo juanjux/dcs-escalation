@@ -3,6 +3,9 @@ import GroundDestinationMode, {
   DestinationInteraction,
 } from "./GroundDestinationMap";
 import { DestinationBridge } from "./bridge";
+import { Marker } from "leaflet";
+import TgoIcon from "../tgos/TgoIcon";
+import { SnapTarget } from "./targetSnap";
 
 const mockContainer = document.createElement("div");
 const mockMap = {
@@ -12,6 +15,7 @@ const mockMap = {
   stop: jest.fn(),
   closePopup: jest.fn(),
   setView: jest.fn(),
+  eachLayer: jest.fn(),
   doubleClickZoom: {
     enabled: () => true,
     disable: jest.fn(),
@@ -43,9 +47,14 @@ jest.mock("react-leaflet", () => ({
 }));
 
 function event(lat = 42, lng = 41) {
-  return { latlng: { lat, lng }, originalEvent: { target: mockContainer } };
+  return {
+    latlng: { lat, lng },
+    originalEvent: { target: mockContainer, clientX: 30, clientY: 30 },
+  };
 }
-function setup() {
+function setup(
+  options: { mode?: "missile"; snap_targets?: SnapTarget[] } = {},
+) {
   const bridge: DestinationBridge = {
     ready: jest.fn(),
     initial: jest.fn(),
@@ -56,7 +65,11 @@ function setup() {
   const view = render(
     <DestinationInteraction
       bridge={bridge}
-      origin={{ origin: { lat: 42, lng: 41 }, name: "Reserve Alpha" }}
+      origin={{
+        origin: { lat: 42, lng: 41 },
+        name: "Reserve Alpha",
+        ...options,
+      }}
     />,
   );
   return { bridge, ...view };
@@ -107,6 +120,103 @@ it("shows missile range rings and aimpoint warnings instead of ground-route ETA"
 beforeEach(() => {
   jest.useFakeTimers();
   jest.clearAllMocks();
+  mockMap.eachLayer.mockReset();
+  mockContainer.replaceChildren();
+});
+
+function targetIcon() {
+  const target = {
+    id: "enemy",
+    name: "MINK",
+    position: { lat: 42.1, lng: 41.1 },
+  };
+  const marker = new Marker([42.1, 41.1], {
+    icon: new TgoIcon(target.id, { iconUrl: "enemy.svg" }),
+  });
+  const icon = document.createElement("img");
+  mockContainer.appendChild(icon);
+  jest.spyOn(marker, "getElement").mockReturnValue(icon);
+  jest.spyOn(icon, "getBoundingClientRect").mockReturnValue({
+    left: 20,
+    right: 60,
+    top: 20,
+    bottom: 60,
+    width: 40,
+    height: 40,
+  } as DOMRect);
+  mockMap.eachLayer.mockImplementation((visit) => visit(marker));
+  return target;
+}
+
+it("uses the same snapped coordinates for preview and click anywhere within an icon", async () => {
+  const target = targetIcon();
+  const { bridge } = setup({ mode: "missile", snap_targets: [target] });
+  act(() => {
+    mockHandlers.mousemove(event());
+    jest.advanceTimersByTime(150);
+  });
+  expect(bridge.preview).toHaveBeenCalledWith(42.1, 41.1, expect.any(Function));
+  await act(async () => {
+    (bridge.preview as jest.Mock).mock.calls[0][2](
+      JSON.stringify({
+        valid: true,
+        target_name: "MINK",
+        distance_m: 50000,
+      }),
+    );
+  });
+  expect(screen.getByText(/50.0 km · MINK/)).toBeInTheDocument();
+  act(() => {
+    mockHandlers.mousemove(event(42.05, 41.05));
+    mockHandlers.click(event(42.08, 41.08));
+  });
+  expect(bridge.preview).toHaveBeenCalledTimes(1);
+  expect(bridge.pick).toHaveBeenCalledWith(42.1, 41.1, expect.any(Function));
+});
+
+it("returns to free aimpoints after leaving an icon and keeps ground movement unsnapped", () => {
+  const target = targetIcon();
+  const first = setup({ mode: "missile", snap_targets: [target] });
+  act(() => {
+    mockHandlers.mousemove({
+      ...event(),
+      originalEvent: { target: mockContainer, clientX: 80, clientY: 80 },
+    });
+    jest.advanceTimersByTime(150);
+  });
+  expect(first.bridge.preview).toHaveBeenCalledWith(
+    42,
+    41,
+    expect.any(Function),
+  );
+  first.unmount();
+  const second = setup({ snap_targets: [target] });
+  act(() => {
+    mockHandlers.mousemove(event());
+    jest.advanceTimersByTime(150);
+  });
+  expect(second.bridge.preview).toHaveBeenCalledWith(
+    42,
+    41,
+    expect.any(Function),
+  );
+});
+
+it("does not allow clicking an out-of-range snapped target", async () => {
+  const target = targetIcon();
+  const { bridge } = setup({ mode: "missile", snap_targets: [target] });
+  act(() => {
+    mockHandlers.mousemove(event());
+    jest.advanceTimersByTime(150);
+  });
+  await act(async () => {
+    (bridge.preview as jest.Mock).mock.calls[0][2](
+      JSON.stringify({ valid: false, error: "Outside missile range" }),
+    );
+  });
+  act(() => mockHandlers.click(event()));
+  expect(bridge.pick).not.toHaveBeenCalled();
+  expect(screen.getByText("Outside missile range")).toBeInTheDocument();
 });
 afterEach(() => {
   jest.clearAllTimers();

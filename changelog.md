@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Missiles]** Snap map aimpoints to visible enemy objective icons at any zoom level.
 * **[UI]** Persistent campaign alert bell with counts, actionable notices and turn-by-turn reminders for unresolved problems.
 * **[Missiles]** Persistent objective/GPS assignments for missile sites and land-attack ships, with range validation, main-map picking and OPFOR REST/MCP support.
 * **[Map]** Filter missile sites separately from air defences in map search.
