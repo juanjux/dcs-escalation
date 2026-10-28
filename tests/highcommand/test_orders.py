@@ -83,7 +83,12 @@ def _game(
         settings=settings or _settings(),
         theater=SimpleNamespace(
             ground_objects=[
-                SimpleNamespace(name=name, is_dead=True, control_point=ENEMY_BASE)
+                SimpleNamespace(
+                    name=name,
+                    is_dead=True,
+                    control_point=ENEMY_BASE,
+                    units=[SimpleNamespace(alive=False)],
+                )
                 for name in dead
             ]
             + list(ground_objects),
