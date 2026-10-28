@@ -93,6 +93,7 @@ class CampaignGroundRouter:
     Roads connect at shared points or via a validated access link at their base.
     Authored convoy corridors use the same road permissions as supply convoys;
     terrain masks still validate off-road access and unverified road segments.
+    When road access is unavailable, allow only a validated direct off-road route.
     """
 
     def __init__(
@@ -279,14 +280,16 @@ class CampaignGroundRouter:
         self._validate_position(destination)
         if origin == destination:
             raise GroundRouteError("The ground group is already at that position")
+        direct = GroundSegment(origin, destination, False)
         if not self.roads:
-            direct = GroundSegment(origin, destination, False)
             if not self.allowed(direct):
                 raise GroundRouteError(
                     "No roads or validated direct off-road route are available"
                 )
             return GroundRoute((direct,))
         if not self.edges:
+            if self.allowed(direct):
+                return GroundRoute((direct,))
             raise GroundRouteError(
                 "Campaign roads cross water or exclusion zones; no verified route"
             )
@@ -295,6 +298,10 @@ class CampaignGroundRouter:
         components = self._components(graph)
         entries = self._entries(origin, components)
         destination_entries = self._entries(destination, components)
+        if (not entries or not destination_entries) and self.allowed(direct):
+            # Roads in another region must not block an otherwise valid local
+            # move. Keep the whole fallback off-road, with its lower budget.
+            return GroundRoute((direct,))
         for reachable, endpoint in (
             (entries, "group"),
             (destination_entries, "destination"),

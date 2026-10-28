@@ -88,6 +88,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Ground Movement]** Allow valid off-road moves without accessible campaign roads.
 * **[Ground Movement]** Hide evacuated group placeholders instead of marking them destroyed, and show their actual detachments in location windows.
 * **[UI]** Classify radar and SAM labels and map filters by their current units after replacements, including existing saves.
 * **[UI]** Label missile sites correctly in the location header instead of Reserve Armor Group.
