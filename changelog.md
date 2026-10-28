@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Realistic CAS]** Show discovery times on F10 contact markers.
 * **[UI]** Highlight visible map icons when hovering over Show on map buttons.
 * **[Missiles]** Snap map aimpoints to visible enemy objective icons at any zoom level.
 * **[UI]** Persistent campaign alert bell with counts, actionable notices and turn-by-turn reminders for unresolved problems.
@@ -89,6 +90,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Realistic CAS]** Remove destroyed-group contacts without forgotten notices.
 * **[High Command]** Do not reward empty groups as destroyed targets.
 * **[Ground Movement]** Allow valid off-road moves without accessible campaign roads.
 * **[Ground Movement]** Hide evacuated group placeholders instead of marking them destroyed, and show their actual detachments in location windows.
