@@ -63,6 +63,7 @@ from qt_ui.windows.airwingconfig.common import CHEAT_BORDER, CHEAT_HINT
 from qt_ui.windows.groundobject.QBuildingInfo import QBuildingInfo
 from qt_ui.windows.groundobject.QGroundObjectBuyMenu import QGroundObjectBuyMenu
 from qt_ui.widgets.controls import button
+from qt_ui.widgets.maphover import bind_map_hover
 from qt_ui.windows.groundobject.buildingcard import (
     BuildingCard,
     buildings_of,
@@ -642,7 +643,9 @@ class QGroundObjectMenu(QDialog):
         )
         if self._can_trade:
             row.addWidget(button("Buy / replace…", handler=self._buy_group))
-        row.addWidget(button("Show on map  ↗", handler=self._show_on_map))
+        show = button("Show on map  ↗", handler=self._show_on_map)
+        bind_map_hover(show, lambda: self.ground_object)
+        row.addWidget(show)
         row.addWidget(button("Close", "primary", handler=self._close))
         holder.setLayout(row)
         return holder

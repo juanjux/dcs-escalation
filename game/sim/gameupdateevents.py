@@ -47,6 +47,9 @@ class GameUpdateEvents:
     #: there is none.
     fly_to: LatLng | None = None
     fly_to_zoom: int | None = None
+    #: Transient button hover: owner, optional object identity, and position.
+    #: A position of None clears only this owner's highlight.
+    map_hover: tuple[UUID, UUID | None, LatLng | None] | None = None
     game_unloaded: bool = False
     new_turn: bool = False
     shutting_down: bool = False

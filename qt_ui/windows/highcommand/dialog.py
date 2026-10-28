@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
 
 from qt_ui.widgets.cards import card, make_transparent
 from qt_ui.widgets.controls import button, mono
+from qt_ui.widgets.maphover import bind_map_hover
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.groundobject.header import KIND_FILL
 from game.theater.player import Player
@@ -607,6 +608,10 @@ class HighCommandWindow(QDialog):
         self.headline.row.addWidget(self.side_switch)
         self.tabs = TabStrip(self.TABS)
         self.orders = OrdersPage(self.show_on_map)
+        bind_map_hover(
+            self.orders.detail.map_button,
+            lambda: self.orders.selected.position if self.orders.selected else None,
+        )
         self.tickets = TicketsPage(self.spend, self.ticket_spent, self.show_place)
         self.pages = QStackedWidget()
         self.pages.addWidget(self.orders)

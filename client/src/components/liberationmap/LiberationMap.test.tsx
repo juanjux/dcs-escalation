@@ -31,6 +31,7 @@ jest.mock("../maplayers/MapLayersControl", () => {
 jest.mock("../coordinatepicker", () => () => null);
 jest.mock("../savedpointpins/SavedPointPins", () => () => null);
 jest.mock("../mapsearch", () => () => null);
+jest.mock("../maphover/MapButtonHover", () => () => null);
 jest.mock("../ruler/Ruler", () => () => null);
 jest.mock(
   "../grounddestination/GroundDestinationMap",

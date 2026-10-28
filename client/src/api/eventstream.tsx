@@ -61,6 +61,11 @@ interface GameUpdateEvents {
   reset_on_map_center: LatLng | null;
   fly_to: LatLng | null;
   fly_to_zoom: number | null;
+  map_hover?: {
+    owner: string;
+    target_id: string | null;
+    position: { lat: number; lng: number } | null;
+  } | null;
   game_unloaded: boolean;
   new_turn: boolean;
 }
@@ -69,6 +74,11 @@ export const handleStreamedEvents = (
   dispatch: AppDispatch,
   events: GameUpdateEvents
 ) => {
+  if (events.map_hover != null) {
+    window.dispatchEvent(
+      new CustomEvent("map-button-hover", { detail: events.map_hover }),
+    );
+  }
   if (
     events.saved_points_updated ||
     events.new_flights.length > 0 ||
