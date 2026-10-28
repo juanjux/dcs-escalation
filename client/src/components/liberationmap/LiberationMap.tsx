@@ -16,11 +16,16 @@ export default function LiberationMap() {
   const mapCenter = useAppSelector(selectMapCenter);
   const wantedZoom = useAppSelector(selectMapZoom);
   const [selecting, setSelecting] = useState(false);
+  const [groundDestination, setGroundDestination] = useState(false);
   const selectingRef = useRef(false);
-  const selectionChanged = useCallback((active: boolean) => {
-    selectingRef.current = active;
-    setSelecting(active);
-  }, []);
+  const selectionChanged = useCallback(
+    (active: boolean, mode?: "ground" | "missile") => {
+      selectingRef.current = active;
+      setSelecting(active);
+      setGroundDestination(active && mode === "ground");
+    },
+    [],
+  );
   useEffect(() => {
     if (selectingRef.current) return;
     map.current?.setView(mapCenter, wantedZoom ?? map.current?.getZoom() ?? 8, {
@@ -35,7 +40,7 @@ export default function LiberationMap() {
       ref={map}
     >
       <ScaleControl />
-      <MapLayersControl />
+      <MapLayersControl groundDestination={groundDestination} />
       {!selecting && <LeafletRuler />}
       {!selecting && <MapSearch />}
       {!selecting && <CoordinatePicker />}

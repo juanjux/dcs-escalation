@@ -4,7 +4,8 @@ import LiberationMap from "./LiberationMap";
 const mockMap = { setView: jest.fn(), getZoom: () => 8 };
 const mockLayersMounted = jest.fn();
 const mockLayersUnmounted = jest.fn();
-let mockChangeMode: (active: boolean) => void;
+const mockGroundDestination = jest.fn();
+let mockChangeMode: (active: boolean, mode?: "ground" | "missile") => void;
 jest.mock("../../app/hooks", () => ({ useAppSelector: () => null }));
 jest.mock("react-leaflet", () => {
   const React = require("react");
@@ -18,7 +19,8 @@ jest.mock("react-leaflet", () => {
 });
 jest.mock("../maplayers/MapLayersControl", () => {
   const React = require("react");
-  return () => {
+  return ({ groundDestination }: any) => {
+    mockGroundDestination(groundDestination);
     React.useEffect(() => {
       mockLayersMounted();
       return mockLayersUnmounted;
@@ -39,12 +41,26 @@ jest.mock(
     },
 );
 
+it("forces exclusions only for ground selection and clears the override on exit", () => {
+  render(<LiberationMap />);
+  expect(mockGroundDestination).toHaveBeenLastCalledWith(false);
+  act(() => mockChangeMode(true));
+  expect(mockGroundDestination).toHaveBeenLastCalledWith(false);
+  act(() => mockChangeMode(true, "ground"));
+  expect(mockGroundDestination).toHaveBeenLastCalledWith(true);
+  act(() => mockChangeMode(false));
+  expect(mockGroundDestination).toHaveBeenLastCalledWith(false);
+  act(() => mockChangeMode(true, "missile"));
+  expect(mockGroundDestination).toHaveBeenLastCalledWith(false);
+});
+
 it("keeps the existing map and basemap layers mounted while changing modes", () => {
   const { getByTestId, unmount } = render(<LiberationMap />);
   const map = getByTestId("main-map");
   const recentres = mockMap.setView.mock.calls.length;
+  const changeMode = mockChangeMode;
   for (const active of [true, false, true, false])
-    act(() => mockChangeMode(active));
+    act(() => changeMode(active));
   expect(getByTestId("main-map")).toBe(map);
   expect(mockLayersMounted).toHaveBeenCalledTimes(1);
   expect(mockLayersUnmounted).not.toHaveBeenCalled();
