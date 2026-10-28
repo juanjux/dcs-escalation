@@ -94,6 +94,15 @@ Still to come:
   [#432](https://github.com/juanjux/dcs-escalation/pull/432),
   [#433](https://github.com/juanjux/dcs-escalation/pull/433))
 
+## Campaign alerts
+
+The bell at the top right highlights campaign events and problems requiring attention:
+very low pilot morale, weak fronts, captures and losses, completed buildings, and
+missile assignments needing review. Open an alert to reach its pilot, base or site.
+Acknowledgements persist in the campaign save; unresolved conditions return next turn,
+including confirmed missile GPS assignments with no known target. Weapon-stock alerts
+are reserved for a future stock system.
+
 ## Missile target assignments
 
 Assign a persistent land-attack target to a missile site or capable ship from its

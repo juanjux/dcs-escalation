@@ -1,6 +1,7 @@
 """External community links belong to Help, not the toolbar."""
 
 import os
+from types import SimpleNamespace
 from typing import Any
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -14,6 +15,8 @@ from qt_ui.windows.QLiberationWindow import QLiberationWindow
 def test_community_links_are_only_in_help() -> None:
     app = QApplication.instance() or QApplication([])
     window: Any = QMainWindow()
+    window.game_model = SimpleNamespace(game=None)
+    window.open_campaign_notice = lambda notice: None
     for name in (
         "newGameAction",
         "openAction",
@@ -33,6 +36,13 @@ def test_community_links_are_only_in_help() -> None:
         setattr(window, name, QAction(name, window))
     QLiberationWindow.initToolbar(window)
     QLiberationWindow.initMenuBar(window)
+    assert (
+        window.menu_strip.layout()
+        .itemAt(window.menu_strip.layout().count() - 1)
+        .widget()
+        is window.notification_bell
+    )
+    assert window.notification_bell.accessibleName() == "Campaign alerts: 0"
     toolbar_actions = [
         button.defaultAction() for button in window.menu_strip.findChildren(QToolButton)
     ]
