@@ -10,6 +10,7 @@ from game.dcs.groundunittype import GroundUnitType
 from game.health import HealthStatus
 from game.persistentdamage import report_for_tgo
 from game.ground_forces.ai_ground_planner import reserve_armor_for
+from game.groundmovement.presentation import empty_movement_group
 from game.missiongenerator.motorpoolpopulator import (
     MotorpoolPopulator,
     motorpools_at,
@@ -249,6 +250,6 @@ class TgoJs(BaseModel):
         tgos = []
         for control_point in game.theater.controlpoints:
             for tgo in control_point.connected_objectives:
-                if not tgo.is_control_point:
+                if not tgo.is_control_point and not empty_movement_group(tgo):
                     tgos.append(TgoJs.for_tgo(tgo))
         return tgos
