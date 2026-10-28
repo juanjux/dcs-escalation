@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   CircleMarker,
+  Circle,
   Polyline,
   Pane,
   useMap,
@@ -19,6 +20,9 @@ import "./GroundDestinationMap.css";
 interface Origin {
   origin: LatLngLiteral;
   name: string;
+  mode?: "missile";
+  min_range_m?: number;
+  max_range_m?: number;
 }
 
 export function DestinationInteraction({
@@ -160,12 +164,19 @@ export function DestinationInteraction({
   return (
     <>
       <div ref={banner} className="gd-banner" role="status" aria-live="polite">
-        <strong>Choose the armor group/SAM destination and click</strong>
+        <strong>
+          {origin.mode === "missile"
+            ? "Choose the missile target and click"
+            : "Choose the armor group/SAM destination and click"}
+        </strong>
         <button className="gd-cancel" onClick={() => bridge.dismiss()}>
           Cancel
         </button>
         <div className="gd-source">
-          From {origin.name}. Selecting a position does not dispatch units.
+          From {origin.name}.{" "}
+          {origin.mode === "missile"
+            ? "Selecting a position does not assign the target."
+            : "Selecting a position does not dispatch units."}
         </div>
         {at && (
           <div>
@@ -173,24 +184,43 @@ export function DestinationInteraction({
           </div>
         )}
         {!at ? (
-          <div>Move the cursor to preview a route. Escape to cancel.</div>
-        ) : pending ? (
-          <div>Checking route…</div>
-        ) : preview?.valid ? (
           <div>
-            {(
-              ((preview.road_distance_m ?? 0) +
-                (preview.offroad_distance_m ?? 0)) /
-              1000
-            ).toFixed(1)}{" "}
-            km · {preview.arrival_in_turns} turn(s)
-            <div>
-              Road: {((preview.road_distance_m ?? 0) / 1000).toFixed(1)} km ·
-              Off-road: {((preview.offroad_distance_m ?? 0) / 1000).toFixed(1)}{" "}
-              km
-            </div>
-            <div className="gd-valid">Click to use this destination</div>
+            {origin.mode === "missile"
+              ? "Move the cursor to check missile range. Escape to cancel."
+              : "Move the cursor to preview a route. Escape to cancel."}
           </div>
+        ) : pending ? (
+          <div>
+            {origin.mode === "missile"
+              ? "Checking missile range…"
+              : "Checking route…"}
+          </div>
+        ) : preview?.valid ? (
+          origin.mode === "missile" ? (
+            <div>
+              {((preview.distance_m ?? 0) / 1000).toFixed(1)} km ·{" "}
+              {preview.target_name}
+              {preview.warning && (
+                <div className="gd-error">{preview.warning}</div>
+              )}
+              <div className="gd-valid">Click to use this aimpoint</div>
+            </div>
+          ) : (
+            <div>
+              {(
+                ((preview.road_distance_m ?? 0) +
+                  (preview.offroad_distance_m ?? 0)) /
+                1000
+              ).toFixed(1)}{" "}
+              km · {preview.arrival_in_turns} turn(s)
+              <div>
+                Road: {((preview.road_distance_m ?? 0) / 1000).toFixed(1)} km ·
+                Off-road:{" "}
+                {((preview.offroad_distance_m ?? 0) / 1000).toFixed(1)} km
+              </div>
+              <div className="gd-valid">Click to use this destination</div>
+            </div>
+          )
         ) : (
           <div className="gd-error">{preview?.error ?? "No valid route"}</div>
         )}
@@ -205,6 +235,33 @@ export function DestinationInteraction({
           interactive={false}
           pathOptions={{ color: "#ffffff", weight: 3, fillOpacity: 0 }}
         />
+        {origin.mode === "missile" && origin.max_range_m && (
+          <Circle
+            center={origin.origin}
+            radius={origin.max_range_m}
+            interactive={false}
+            pathOptions={{ color: "#ffdc61", fillOpacity: 0, dashArray: "8 6" }}
+          />
+        )}
+        {origin.mode === "missile" && !!origin.min_range_m && (
+          <Circle
+            center={origin.origin}
+            radius={origin.min_range_m}
+            interactive={false}
+            pathOptions={{
+              color: "#ff6b6b",
+              fillOpacity: 0.08,
+              dashArray: "8 6",
+            }}
+          />
+        )}
+        {origin.mode === "missile" && at && preview?.valid && (
+          <Polyline
+            positions={[origin.origin, at]}
+            interactive={false}
+            pathOptions={{ color: "#ffdc61", weight: 2 }}
+          />
+        )}
         {at && (
           <CircleMarker
             center={at}

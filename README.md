@@ -94,6 +94,15 @@ Still to come:
   [#432](https://github.com/juanjux/dcs-escalation/pull/432),
   [#433](https://github.com/juanjux/dcs-escalation/pull/433))
 
+## Missile target assignments
+
+Assign a persistent land-attack target to a missile site or capable ship from its
+location dialog, using an enemy objective's code name, GPS coordinates or the main
+map. Selection checks minimum and maximum range and the campaign's launch limits.
+Linked objectives are cleared when destroyed or captured; empty GPS points require
+confirmation and keep firing each turn until cancelled. Ships retain their finite
+campaign magazines. OPFOR has equivalent REST/MCP commands and target discovery.
+
 ## Ground Movement
 
 The optional Ground Movement plugin moves convoys and reserve armor groups over

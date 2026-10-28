@@ -76,6 +76,25 @@ class QBaseMenuTabs(QTabWidget):
                 disabled_because="Ground units cannot be based here.",
             )
 
+        if game is not None and cp.captured.is_blue:
+            from game import missiletargets
+            from qt_ui.windows.groundobject.missiletargetdialog import (
+                MissileTargetPanel,
+            )
+
+            sources = [
+                source
+                for source in cp.ground_objects
+                if missiletargets.stored(source)
+                or (not source.is_dead and missiletargets.launchers(game, source))
+            ]
+            if sources:
+                self._add(
+                    MissileTargetPanel(game_model, sources),
+                    "Missile targets",
+                    count=len(sources),
+                )
+
         self._add(self._flights(), "Flights", count=self._flight_count())
         if game is not None and game.settings.aircraft_maintenance_enabled and parking:
             from .QAircraftWorkshop import QAircraftWorkshop

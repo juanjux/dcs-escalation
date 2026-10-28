@@ -138,6 +138,9 @@ class QGroundObjectMenu(QDialog):
             signal.gameupdated.connect(
                 self._refresh_movement, Qt.ConnectionType.QueuedConnection
             )
+            signal.missile_targets_changed.connect(
+                self._refresh_movement, Qt.ConnectionType.QueuedConnection
+            )
 
     def _refresh_movement(self) -> None:
         if self.game_model.game is not self.campaign:
@@ -198,6 +201,9 @@ class QGroundObjectMenu(QDialog):
                 body.addWidget(self._iads_card(iads))
             if self.cruise_missile_rows:
                 body.addWidget(self._cruise_missiles())
+            target_card = self._missile_target()
+            if target_card is not None:
+                body.addWidget(target_card)
             body.addWidget(self._heading())
             if self.ground_object.is_iads and not self._friendly:
                 body.addWidget(self._mfd_switch())
@@ -405,6 +411,32 @@ class QGroundObjectMenu(QDialog):
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         make_transparent(area)
         return area
+
+    def _missile_target(self) -> QWidget | None:
+        if not self._friendly:
+            return None
+        from game import missiletargets
+
+        source = self.ground_object
+        if not missiletargets.stored(source) and not missiletargets.launchers(
+            self.game, source
+        ):
+            return None
+        holder = QWidget()
+        layout = QHBoxLayout(holder)
+        order = missiletargets.stored(source)
+        layout.addWidget(QLabel(order.name if order else "No assigned target"), 1)
+        choose = QPushButton("Assign missile target…")
+        choose.clicked.connect(self._choose_missile_target)
+        layout.addWidget(choose)
+        return captioned("Missile target", holder)
+
+    def _choose_missile_target(self) -> None:
+        from qt_ui.windows.groundobject.missiletargetdialog import MissileTargetDialog
+
+        dialog = MissileTargetDialog(self.game_model, self.ground_object.id, self)
+        dialog.exec()
+        self._rebuild()
 
     def _cruise_missiles(self) -> QWidget:
         stack = Stack()

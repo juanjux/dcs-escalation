@@ -102,7 +102,7 @@ from game.data.missile_ranges import MISSILE_SITE_MIN_RANGE_M
 
 # How much of a launcher's nominal envelope is worth using. The last few per cent
 # are brochure range: the round leaves but does not arrive where it was sent.
-USABLE_RANGE_FRACTION = 0.85
+from game.data.missile_ranges import USABLE_RANGE_FRACTION
 
 # Offset (meters) from airport position to place the portable TACAN beacon
 _PORTABLE_TACAN_OFFSET_M = 50
@@ -637,14 +637,30 @@ class MissileSiteGenerator(GroundObjectGenerator):
                 )
                 continue
 
-            targets = self.possible_missile_targets()
-            if not targets:
-                logging.info(
-                    "Couldn't setup missile site to fire, no valid target in range."
-                )
-                continue
+            from game import missiletargets
+            from types import SimpleNamespace
 
-            target = random.choice(targets)
+            assignment = missiletargets.stored(self.ground_object)
+            target: Any
+            if assignment is not None:
+                try:
+                    point = missiletargets.aimpoint(self.game, self.ground_object)
+                    if point is None or not missiletargets.in_range(
+                        self.game, self.ground_object, point, group.group_name
+                    ):
+                        continue
+                except ValueError:
+                    logging.info(
+                        "Missile site's assigned target is unavailable; holding fire"
+                    )
+                    continue
+                target = SimpleNamespace(position=point, name=assignment.name)
+            else:
+                targets = self.possible_missile_targets()
+                if not targets:
+                    logging.info("No valid missile-site target in range")
+                    continue
+                target = random.choice(targets)
             hold = ControlledTask(Hold())
             hold.stop_after_duration(
                 random.randint(

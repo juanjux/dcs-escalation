@@ -300,6 +300,17 @@ class StopGroundMovementRequest(BaseModel):
     order_id: UUID
 
 
+class MissileTargetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    side: str = "red"
+    source_id: UUID
+    target_id: UUID | None = None
+    target_name: str | None = Field(default=None, max_length=200)
+    lat: FiniteFloat | None = Field(default=None, ge=-90, le=90)
+    lng: FiniteFloat | None = Field(default=None, ge=-180, le=180)
+    confirm_empty: bool = False
+
+
 class MoveShipRequest(BaseModel):
     side: str = "red"
     ship_id: str  # a ship-group OR carrier id from turn_context.naval

@@ -611,7 +611,9 @@ class Game:
         self.turn += 1
 
         from game.persistentdamage import repair_damage
+        from game.missiletargets import remove_invalid as remove_invalid_missile_targets
 
+        remove_invalid_missile_targets(self)
         repair_damage(self, events)
 
         # The coalition-specific turn finalization *must* happen before unit deliveries,

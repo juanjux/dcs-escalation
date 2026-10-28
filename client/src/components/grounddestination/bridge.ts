@@ -7,6 +7,9 @@ export interface RoutePreview {
   road_distance_m?: number;
   offroad_distance_m?: number;
   arrival_in_turns?: number;
+  distance_m?: number;
+  target_name?: string;
+  warning?: string;
   segments?: { start: LatLngLiteral; end: LatLngLiteral; on_road: boolean }[];
 }
 

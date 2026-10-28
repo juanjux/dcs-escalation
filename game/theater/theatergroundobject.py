@@ -31,6 +31,7 @@ from ..data.groups import GroupTask
 from ..utils import Distance, Heading, meters, nautical_miles
 
 if TYPE_CHECKING:
+    from game.missiletargets import MissileTarget
     from game.ato.flighttype import FlightType
     from game.dcs.groundunittype import GroundUnitType
     from game.threatzones import ThreatPoly
@@ -144,6 +145,7 @@ class TheaterGroundObject(MissionTarget, SidcDescribable, ABC):
         self.sea_object = sea_object
         self.groups: List[TheaterGroup] = []
         self.in_transit = False
+        self.missile_target: MissileTarget | None = None
         self.original_name = location.original_name
         self._threat_poly: ThreatPoly | None = None
         self.task = task
@@ -163,6 +165,7 @@ class TheaterGroundObject(MissionTarget, SidcDescribable, ABC):
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         state["_threat_poly"] = None
+        state.setdefault("missile_target", None)
         self.__dict__.update(state)
 
     @property

@@ -14,7 +14,8 @@ campaign half of the feature; the ``cruisemissiles`` Lua plugin is the in-missio
   (``cruise_missile_magazines``, keyed by the stable ``TheaterGroup.group_name``).
   There is no rearm and no resupply: the magazine is the whole war's stock.
 * **Auto raids** — :func:`plan_cruise_raids` commits at most one raid per side per
-  turn, against the highest-value reachable enemy ground object.
+  turn, against the highest-value reachable enemy ground object. Persistent manual
+  assignments take precedence for their groups and do not require auto raids.
 
 Only :func:`reconcile_cruise_missiles` — which runs at the turn boundary from what
 the plugin reported actually leaving the tubes — ever writes a magazine. Everything
@@ -27,8 +28,7 @@ The missiles are real DCS weapons fired by a real, tracked ship, so kills are re
 through the ordinary debrief path, point defense gets to intercept them, and sinking
 the shooter ends the raids. Symmetric: red Kalibr hulls raid blue exactly the same way.
 
-Gated by the ``cruisemissiles`` plugin (the magazines and its F10 call-for-fire) and
-by that plugin's ``autoRaids`` option (the planner).
+Gated by the ``cruisemissiles`` plugin; ``autoRaids`` controls only automatic picks.
 """
 
 from __future__ import annotations
@@ -184,7 +184,7 @@ def lacm_ships(game: Game) -> list[LacmShip]:
 
 
 def plan_cruise_raids(game: Game) -> list[CruiseRaid]:
-    """At most one auto raid per side this turn.
+    """Assigned salvos plus at most one automatic raid per side this turn.
 
     A pure function of game state, so it is safe to call once per mission generation, on
     every briefing render and from the culling pass: the plan is identical every time and
@@ -193,11 +193,43 @@ def plan_cruise_raids(game: Game) -> list[CruiseRaid]:
     settings = game.settings
     if not settings.plugin_option_or("cruisemissiles", False):
         return []
+    from game import missiletargets
+
+    raids: list[CruiseRaid] = []
+    assigned: set[str] = set()
+    ships = {ship.group_name: ship for ship in lacm_ships(game)}
+    for cp in game.theater.controlpoints:
+        for source in cp.ground_objects:
+            order = missiletargets.stored(source)
+            if order is None:
+                continue
+            assigned.update(group.group_name for group in source.groups)
+            try:
+                point = missiletargets.aimpoint(game, source)
+            except ValueError:
+                continue
+            if point is None:
+                continue
+            for group in source.groups:
+                ship = ships.get(group.group_name)
+                if ship is None or not missiletargets.in_range(
+                    game, source, point, group.group_name
+                ):
+                    continue
+                raids.append(
+                    CruiseRaid(
+                        group.group_name,
+                        ship.coalition,
+                        order.name,
+                        point.x,
+                        point.y,
+                        min(RAID_SALVO, ship.remaining),
+                    )
+                )
     if not settings.plugin_option_or("cruisemissiles.autoRaids", False):
-        return []
-    raids = []
+        return raids
     for side in ("blue", "red"):
-        raid = _plan_side_raid(game, side)
+        raid = _plan_side_raid(game, side, assigned)
         if raid is not None:
             raids.append(raid)
     return raids
@@ -289,8 +321,14 @@ def debrief_expenditures(
     return rows
 
 
-def _plan_side_raid(game: Game, side: str) -> Optional[CruiseRaid]:
-    ships = [s for s in lacm_ships(game) if s.coalition == side]
+def _plan_side_raid(
+    game: Game, side: str, assigned: set[str] | None = None
+) -> Optional[CruiseRaid]:
+    ships = [
+        s
+        for s in lacm_ships(game)
+        if s.coalition == side and s.group_name not in (assigned or set())
+    ]
     if not ships:
         return None
 

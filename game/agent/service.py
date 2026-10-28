@@ -209,6 +209,7 @@ def capabilities() -> dict:
             "ground/options/{tgo_id} (what a SAM/EWR/armor/ship site can be rebuilt into + costs)",
             "ground/movement/options (own reserve units, available base stock and destinations)",
             "ground/movement (own persistent reserve movements, progress and pause reasons)",
+            "missiles (own land-attack launchers, engagement envelopes and assigned targets)",
             "validate",
             "prev_turns",
             "turn_status",
@@ -239,6 +240,8 @@ def capabilities() -> dict:
             "ground/movement/preview (validate a reserve move or base-stock GPS deployment; returns a confirmation token)",
             "ground/movement/dispatch (confirm the preview; Ground Movement and Motor Pool required)",
             "ground/movement/stop (stop own reserve movement at its saved position; no refund or teleport)",
+            "missiles/preview and missiles/target (validate and assign a persistent enemy objective or GPS aimpoint)",
+            "missiles/{source_id}/target (delete: cancel an own missile assignment)",
             "naval/move (reposition one of your ship groups or carriers, <=80nm over water)",
             "repair (pay to repair a damaged SAM/EWR unit, building, or runway)",
             "ai/status",
@@ -575,6 +578,88 @@ def _movement_call(action: Callable[..., Any]) -> Any:
     game = _require_game()
     commands = GameContext.get_model().ground_movement_commands
     return commands.run(lambda: commands.inspect(game, lambda: action(game, commands)))
+
+
+def _missile_intel(game: Game) -> set[str]:
+    return {target.id for target in views.build_targets(game, "red")}
+
+
+@opfor_only
+def missile_options(side: str, source_id: str) -> dict:
+    from uuid import UUID
+    from game import missiletargets
+    from game.theater.player import Player
+
+    return _movement_call(
+        lambda game, _: missiletargets.options(
+            game, UUID(source_id), Player.RED, _missile_intel(game)
+        )
+    )
+
+
+@opfor_only
+def missile_launchers(side: str = "red") -> list[dict]:
+    from game import missiletargets
+    from game.theater.player import Player
+
+    def read(game: Game, _: Any) -> list[dict]:
+        known = _missile_intel(game)
+        result = []
+        for cp in game.theater.controlpoints:
+            if not cp.is_friendly(Player.RED):
+                continue
+            for source in cp.ground_objects:
+                if not missiletargets.stored(source) and (
+                    source.is_dead or not missiletargets.launchers(game, source)
+                ):
+                    continue
+                item = missiletargets.options(game, source.id, Player.RED, known)
+                item.pop("targets", None)
+                result.append(item)
+        return result
+
+    return _movement_call(read)
+
+
+@opfor_only
+def preview_missile_target(side: str, request: schemas.MissileTargetRequest) -> dict:
+    from game import missiletargets
+    from game.theater.player import Player
+
+    data = request.model_dump(exclude={"side", "confirm_empty"})
+    return _movement_call(
+        lambda game, _: missiletargets.preview(
+            game, owner=Player.RED, allowed=_missile_intel(game), **data
+        )[1]
+    )
+
+
+@opfor_only
+def assign_missile_target(side: str, request: schemas.MissileTargetRequest) -> dict:
+    from game.theater.player import Player
+    from qt_ui.missiletargets import apply
+
+    data = request.model_dump(exclude={"side", "source_id"})
+    return _movement_call(
+        lambda game, commands: apply(
+            game,
+            commands,
+            request.source_id,
+            Player.RED,
+            {**data, "allowed": _missile_intel(game)},
+        )
+    )
+
+
+@opfor_only
+def clear_missile_target(side: str, source_id: str) -> dict:
+    from uuid import UUID
+    from game.theater.player import Player
+    from qt_ui.missiletargets import apply
+
+    return _movement_call(
+        lambda game, commands: apply(game, commands, UUID(source_id), Player.RED, None)
+    )
 
 
 @opfor_only
