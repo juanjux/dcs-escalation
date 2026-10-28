@@ -9,7 +9,7 @@ blue ------------------------ #2D3E50
 dark blue ------------------- #1D2731
 med/grey/blue --------------- #435466
 dark grey ------------------- #4E5760
-button blue/grey gradient --- qlineargradient(x1:0, y1:0, x2:1, y2:1,stop:0 #A4B3B9, stop:1 #85989D);
+button blue ----------------- #2B506D
 button green gradient --- qlineargradient(x1:0, y1:0, x2:1, y2:1,stop:0 #82A466, stop:1 #5C863F);
 
 Text
@@ -104,29 +104,29 @@ QTopPanel * {
 
 /*QPushButton*/
 QPushButton {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,stop:0 #A4B3B9, stop:1 #85989D);
-    border: 1px solid #97A9A9;
-    color:#fff;
+    background: #2B506D;
+    border: 1px solid #3F6B8C;
+    color: #DCE9F4;
     padding: 6px 10px;
     border-radius:2px;
 }
 
 QPushButton:hover {
-    background: #6c7b7f;
+    background: #34617F;
 }
 
 /*btn-primary*/
 QPushButton[style="btn-primary"]{
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,stop:0 #A4B3B9, stop:1 #85989D);
-    border: 1px solid #97A9A9;
-    color:#fff;
+    background: #2B506D;
+    border: 1px solid #3F6B8C;
+    color: #DCE9F4;
     padding: 6px;
     border-radius:2px;
     font-weight:bold;
     text-transform:uppercase;
 }
 QPushButton[style="btn-primary"]:hover{
-    background: #6c7b7f;
+    background: #34617F;
 }
 
 
@@ -220,9 +220,10 @@ QPushButton[style="btn-accept"]:hover {
     background-color:#5C863F;
 }
 
-QPushButton:disabled{
-
-    background:#d6d6d6;
+QPushButton:disabled, QPushButton[style]:disabled {
+    background: #1B2530;
+    color: #8295A6;
+    border-color: #28333D;
 }
 
 /* ── Finances dialog: income / expense / net hierarchy ─────────── */

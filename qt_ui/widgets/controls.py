@@ -208,9 +208,7 @@ def on_click(button: QPushButton, handler: Callable[[], None]) -> QPushButton:
     return button
 
 
-#: The app-wide QPushButton is a light grey gradient with white text on it, which is
-#: hard to read anywhere and unreadable on a dark panel. These are the same three
-#: meanings in the palette the rest of these controls use.
+#: Dialog button roles share the dark palette used by the DCS theme.
 BUTTON_KINDS = {
     "normal": (IDLE_BG, BORDER, VALUE, "#31424F"),
     "primary": ("#2B506D", "#3F6B8C", "#DCE9F4", "#34617F"),
