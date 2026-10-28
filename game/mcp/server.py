@@ -13,7 +13,7 @@ from typing import Any, Callable
 from mcp.server.fastmcp import FastMCP, Image
 from mcp.server.transport_security import TransportSecuritySettings
 
-from game.agent import service
+from game.agent import schemas, service
 
 mcp = FastMCP(
     "DCS Escalation OPFOR AI",
@@ -443,6 +443,38 @@ def transfer_ground(
             side, origin_cp_id, dest_cp_id, unit_name, quantity, by_air
         )
     )
+
+
+@_tool()
+def ground_movement_options(
+    source_id: str, source_kind: str = "armor", side: str = "red"
+) -> dict:
+    """Read your armor group's unit IDs/mobility, or a base's available stock (source_kind=base)."""
+    return service.ground_movement_options(side, source_id, source_kind)
+
+
+@_tool()
+def preview_ground_movement(request: schemas.GroundMovementRequest) -> dict:
+    """Read-only route/ETA preview. Select armor unit_ids or base units; destinations are position, base or frontline. Returns the preview_token needed to dispatch."""
+    return service.preview_ground_movement(request.side, request)
+
+
+@_tool()
+def dispatch_ground_movement(request: schemas.GroundMovementDispatchRequest) -> dict:
+    """Confirm the exact preview with its token. No teleportation: survivors advance after mission results. Re-preview if the turn, route or stock changed."""
+    return service.dispatch_ground_movement(request.side, request)
+
+
+@_tool()
+def ground_movements(side: str = "red") -> list[dict]:
+    """Your saved reserve movements: positions, progress, losses, arrival estimates and pause reasons."""
+    return service.ground_movements(side)
+
+
+@_tool()
+def stop_ground_movement(order_id: str, side: str = "red") -> dict:
+    """Stop your order and unload survivors at its campaign position. No return or refund; works with Ground Movement disabled."""
+    return service.stop_ground_movement(side, order_id)
 
 
 @_tool()
