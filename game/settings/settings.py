@@ -1720,6 +1720,7 @@ class Settings:
             "Spawns the faction's JTAC aircraft on each front line. Off, no JTAC is "
             "generated even for a faction that defines one. Separate from the number "
             "of JTAC controller slots below, which are Combined Arms seats."
+            " Disable this option when using Realistic CAS to avoid conflicting JTAC generation."
         ),
     )
     jtac_count: int = bounded_int_option(
