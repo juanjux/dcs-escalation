@@ -29,6 +29,7 @@ from game.mfd import remember_positions
 from game.models.game_stats import GameStats
 from game.plugins import LuaPluginManager
 from game.groundmovement.orders import GroundMovementOrders
+from game.notifications import CampaignNotifications
 from game.utils import Distance
 from . import naming, persistency
 from .ato import Flight
@@ -144,6 +145,7 @@ class Game:
         self.campaign_name = campaign_name
         self.turn = 0
         self.ground_movements = GroundMovementOrders()
+        self.campaign_notifications = CampaignNotifications()
         self._aircraft_repair_sequence = 0
         self._aircraft_workshop_turn = -1
         self._aircraft_maintenance_applied: set[str] = set()
@@ -737,6 +739,9 @@ class Game:
             self.initialize_turn(events)
         self.refresh_high_command()
 
+        from game.notifications import refresh as refresh_notifications
+
+        refresh_notifications(self)
         EventStream.put_nowait(events)
 
         # Autosave progress

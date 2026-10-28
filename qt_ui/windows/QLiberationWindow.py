@@ -27,6 +27,7 @@ from game import Game, VERSION, persistency, Migrator
 from game.ato import Flight
 from game.debriefing import Debriefing
 from game.game import TurnState
+from game.notifications import CampaignNotice
 from game.server import EventStream, GameContext
 from game.server.dependencies import QtCallbacks, QtContext
 from game.theater import ControlPoint, MissionTarget, TheaterGroundObject
@@ -308,7 +309,35 @@ class QLiberationWindow(QMainWindow):
                 )
                 row.addWidget(button)
         row.addStretch()
+        from qt_ui.widgets.notifications import NotificationBell
+
+        self.notification_bell = NotificationBell(
+            self.game_model, self.open_campaign_notice, self.menu_strip
+        )
+        row.addWidget(self.notification_bell)
         self.setMenuWidget(self.menu_strip)
+
+    def open_campaign_notice(self, notice: CampaignNotice) -> None:
+        game = self.game_model.game
+        if game is None:
+            return
+        if notice.target_kind == "pilot":
+            for squadron in game.blue.air_wing.iter_squadrons():
+                for pilot in squadron.current_roster:
+                    if str(pilot.id) == notice.target_id:
+                        self.open_pilot_dialog(pilot)
+                        return
+        elif notice.target_kind == "base":
+            for cp in game.theater.controlpoints:
+                if str(cp.id) == notice.target_id:
+                    self.control_point_info_signal.emit(cp)
+                    return
+        elif notice.target_kind == "tgo":
+            for cp in game.theater.controlpoints:
+                for source in cp.ground_objects:
+                    if str(source.id) == notice.target_id:
+                        self.tgo_info_signal.emit(source)
+                        return
 
     def initMenuBar(self):
         # The strip's own bar: self.menuBar() would build a second, empty one, because

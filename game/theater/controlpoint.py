@@ -1270,6 +1270,10 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
             what = f"{ground_object.obj_name} ({ground_object})"
             if not ground_object.has_pending_repairs:
                 game.message(f"{who} finished repairs at {what}")
+                if is_player:
+                    from game.notifications import building_ready
+
+                    building_ready(game, ground_object)
             elif is_player:
                 turns_remaining = ControlPoint._max_pending_repair_turns(ground_object)
                 if turns_remaining is not None:
