@@ -28,8 +28,9 @@ const KINDS: { id: string; label: string; categories: string[] }[] = [
   {
     id: "airdefense",
     label: "Air defence",
-    categories: ["aa", "missile", "coastal"],
+    categories: ["aa", "coastal"],
   },
+  { id: "missile", label: "Missile sites", categories: ["missile"] },
   { id: "radar", label: "Radar", categories: ["ewr"] },
   {
     id: "command",
