@@ -3,6 +3,7 @@
 ## Features/Improvements
 * **[UI]** Persistent campaign alert bell with counts, actionable notices and turn-by-turn reminders for unresolved problems.
 * **[Missiles]** Persistent objective/GPS assignments for missile sites and land-attack ships, with range validation, main-map picking and OPFOR REST/MCP support.
+* **[Map]** Filter missile sites separately from air defences in map search.
 * **[OPFOR AI]** RED reserve movement and base-stock deployment through REST/MCP, with the same rules as BLUE.
 * **[Campaigns]** Modernize Clash of the Titans with redundant IADS, GPS jammers, depots, ground supply and balanced, dispersed air wings.
 
