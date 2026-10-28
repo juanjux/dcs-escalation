@@ -85,6 +85,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Improve default button contrast, including missile targeting, ground movement and disabled actions.
 * **[UI]** Show the campaign outcome after accepting mission results and use the correct text for defeats.
 * **[Persistent Damage]** Filter distant neighbour-search candidates conservatively while retaining safeguards for close, large or unreadable objects.
 * **[Ground Movement]** Keep a locked departure time for convoys and armor groups so DCS can save their routes.
