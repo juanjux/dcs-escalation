@@ -435,8 +435,8 @@ class QGroundObjectMenu(QDialog):
         from qt_ui.windows.groundobject.missiletargetdialog import MissileTargetDialog
 
         dialog = MissileTargetDialog(self.game_model, self.ground_object.id, self)
-        dialog.exec()
-        self._rebuild()
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.show()
 
     def _cruise_missiles(self) -> QWidget:
         stack = Stack()
@@ -789,7 +789,7 @@ class QGroundObjectMenu(QDialog):
         unit.alive = True
         destroyed = self.game.get_destroyed_units()
         for dead in list(destroyed):
-            point = Point(dead["x"], dead["z"], self.game.theater.terrain)
+            point = Point(float(dead["x"]), float(dead["z"]), self.game.theater.terrain)
             if point.distance_to_point(unit.position) < 15:
                 destroyed.remove(dead)
                 logging.info(f"Removed destroyed units {dead}")

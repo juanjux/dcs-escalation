@@ -6,6 +6,7 @@ from typing import Any
 from uuid import UUID
 
 from dcs import Point
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -25,6 +26,7 @@ from qt_ui.models import GameModel
 from qt_ui.missiletargets import apply
 from qt_ui.widgets.searchablecombo import SearchableComboBox
 from qt_ui.widgets.map.grounddestination import GroundDestinationPicker
+from shiboken6 import isValid
 
 
 class MissileTargetDialog(QDialog):
@@ -230,9 +232,18 @@ class MissileTargetPanel(QWidget):
 
     def open_target(self, source_id: UUID, status: QLabel) -> None:
         dialog = MissileTargetDialog(self.model, source_id, self)
-        dialog.exec()
-        source = self.model.get().db.tgos.get(source_id)
-        order = missiletargets.stored(source)
-        status.setText(
-            f"{source.obj_name}: {order.name if order else 'No assigned target'}"
-        )
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        def update_status() -> None:
+            if self.model.get() is not dialog.game or not isValid(status):
+                return
+            source = dialog.game.db.tgos.get(source_id)
+            order = missiletargets.stored(source)
+            status.setText(
+                f"{source.obj_name}: {order.name if order else 'No assigned target'}"
+            )
+
+        dialog.finished.connect(update_status)
+        # The map picker temporarily hides this window. QDialog.exec() would
+        # finish its nested event loop on hide, before an assignment is made.
+        dialog.show()

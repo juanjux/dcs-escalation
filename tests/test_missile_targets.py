@@ -312,6 +312,90 @@ def test_base_and_carrier_target_panel_lists_all_launchers(
     panel.deleteLater()
 
 
+@pytest.mark.parametrize("entry", ["location", "base"])
+def test_map_selection_does_not_finish_the_target_dialog(
+    missiles: Any, controls: Any, entry: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from PySide6.QtCore import QCoreApplication, QEvent
+    from PySide6.QtWidgets import QDialog, QLabel, QMainWindow, QVBoxLayout, QWidget
+    from qt_ui.windows.groundobject.missiletargetdialog import MissileTargetPanel
+    from qt_ui.windows.groundobject.QGroundObjectMenu import QGroundObjectMenu
+    from qt_ui.widgets.map.grounddestination import GroundDestinationPicker
+
+    w = missiles
+    completions: list[int] = []
+
+    class CampaignMap(QWidget):
+        def begin_ground_selection(self, bridge: GroundDestinationBridge) -> None:
+            bridge.ready()
+
+        def end_ground_selection(self, bridge: GroundDestinationBridge) -> None:
+            pass
+
+    window = QMainWindow()
+    window.liberation_map = CampaignMap(window)  # type: ignore[attr-defined]
+    window.setCentralWidget(window.liberation_map)  # type: ignore[attr-defined]
+    parent = QDialog(window)
+    panel = MissileTargetPanel(controls.model, [w.site])
+    QVBoxLayout(parent).addWidget(panel)
+    window.show()
+    parent.show()
+
+    def modal_exec(_: MissileTargetDialog) -> int:
+        pytest.fail("Target assignment must not start a modal event loop")
+
+    original_exec = GroundDestinationPicker.exec
+
+    def select_on_map(picker: GroundDestinationPicker) -> QDialog.DialogCode:
+        def select() -> int:
+            assert not dialog.isVisible() and not parent.isVisible()
+            assert window.liberation_map.isVisible()  # type: ignore[attr-defined]
+            at = w.target.position.latlng()
+            assert json.loads(picker.bridge.pick(at.lat, at.lng))["valid"]
+            picker.reject()
+            return 0
+
+        # Keep the real picker setup, bridge validation and window restoration,
+        # but do not run pending timers from unrelated tests in Qt's shared loop.
+        monkeypatch.setattr(picker.loop, "exec", select)
+        try:
+            return original_exec(picker)
+        finally:
+            picker.deleteLater()
+            QCoreApplication.sendPostedEvents(picker, QEvent.Type.DeferredDelete)
+
+    monkeypatch.setattr(MissileTargetDialog, "exec", modal_exec)
+    monkeypatch.setattr(GroundDestinationPicker, "exec", select_on_map)
+    try:
+        # Opening must return immediately: hiding a dialog running exec() to
+        # borrow the map prematurely terminates that dialog's nested event loop.
+        if entry == "base":
+            panel.open_target(w.site.id, panel.findChildren(QLabel)[0])
+        else:
+            location: Any = parent
+            location.game_model = controls.model
+            location.ground_object = w.site
+            QGroundObjectMenu._choose_missile_target(location)
+        dialogs = parent.findChildren(MissileTargetDialog)
+        assert len(dialogs) == 1 and dialogs[0].isVisible()
+        dialog = dialogs[0]
+        dialog.finished.connect(completions.append)
+        for _ in range(2):
+            dialog.pick()
+            assert dialog.isVisible() and not completions
+            assert controls.app.activeModalWidget() is None
+            assert parent.isEnabled() and window.isEnabled()
+            assert dialog.assign_button.isEnabled()
+            assert mt.stored(w.site) is None
+        dialog.assign()
+        assert completions == [QDialog.DialogCode.Accepted]
+        assert not dialog.isVisible()
+        assert mt.stored(w.site) is not None
+    finally:
+        window.close()
+        window.deleteLater()
+
+
 def test_currenthill_ship_minimum_and_weapon_range_are_not_sam_range(
     missiles: Any,
 ) -> None:
