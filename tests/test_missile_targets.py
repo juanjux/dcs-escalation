@@ -312,6 +312,76 @@ def test_base_and_carrier_target_panel_lists_all_launchers(
     panel.deleteLater()
 
 
+@pytest.mark.parametrize("entry", ["location", "base"])
+def test_map_selection_does_not_finish_the_target_dialog(
+    missiles: Any, controls: Any, entry: str
+) -> None:
+    from PySide6.QtCore import QTimer
+    from PySide6.QtWidgets import QDialog, QLabel, QMainWindow, QVBoxLayout, QWidget
+    from qt_ui.windows.groundobject.missiletargetdialog import MissileTargetPanel
+    from qt_ui.windows.groundobject.QGroundObjectMenu import QGroundObjectMenu
+
+    w = missiles
+    completions: list[int] = []
+
+    class CampaignMap(QWidget):
+        def begin_ground_selection(self, bridge: GroundDestinationBridge) -> None:
+            bridge.ready()
+            at = w.target.position.latlng()
+            QTimer.singleShot(0, bridge, lambda: bridge.pick(at.lat, at.lng))
+
+        def end_ground_selection(self, bridge: GroundDestinationBridge) -> None:
+            pass
+
+    window = QMainWindow()
+    window.liberation_map = CampaignMap(window)  # type: ignore[attr-defined]
+    window.setCentralWidget(window.liberation_map)  # type: ignore[attr-defined]
+    parent = QDialog(window)
+    panel = MissileTargetPanel(controls.model, [w.site])
+    QVBoxLayout(parent).addWidget(panel)
+    window.show()
+    parent.show()
+
+    def reject_targets() -> None:
+        for target_dialog in parent.findChildren(MissileTargetDialog):
+            target_dialog.reject()
+
+    watchdog = QTimer(parent)
+    watchdog.setSingleShot(True)
+    watchdog.timeout.connect(reject_targets)
+    try:
+        # Opening must return immediately: hiding a dialog running exec() to
+        # borrow the map prematurely terminates that dialog's nested event loop.
+        watchdog.start(1000)
+        if entry == "base":
+            panel.open_target(w.site.id, panel.findChildren(QLabel)[0])
+        else:
+            location: Any = parent
+            location.game_model = controls.model
+            location.ground_object = w.site
+            QGroundObjectMenu._choose_missile_target(location)
+        watchdog.stop()
+        dialogs = parent.findChildren(MissileTargetDialog)
+        assert len(dialogs) == 1 and dialogs[0].isVisible()
+        dialog = dialogs[0]
+        dialog.finished.connect(completions.append)
+        for _ in range(2):
+            dialog.pick()
+            assert dialog.isVisible() and not completions
+            assert controls.app.activeModalWidget() is None
+            assert parent.isEnabled() and window.isEnabled()
+            assert dialog.assign_button.isEnabled()
+            assert mt.stored(w.site) is None
+        dialog.assign()
+        assert completions == [QDialog.DialogCode.Accepted]
+        assert not dialog.isVisible()
+        assert mt.stored(w.site) is not None
+    finally:
+        watchdog.stop()
+        window.close()
+        window.deleteLater()
+
+
 def test_currenthill_ship_minimum_and_weapon_range_are_not_sam_range(
     missiles: Any,
 ) -> None:
