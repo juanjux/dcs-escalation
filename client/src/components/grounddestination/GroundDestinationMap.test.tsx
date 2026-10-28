@@ -23,19 +23,9 @@ const mockMap = {
   },
 };
 let mockHandlers: Record<string, (event: any) => void>;
-jest.mock("../terrainzones/TerrainZonesLayers", () => ({
-  ExclusionZonesLayer: () => <div data-testid="movement-exclusions" />,
-}));
 jest.mock("react-leaflet", () => ({
-  Pane: ({ children, style, name }: any) => (
-    <div
-      data-testid={
-        name === "ground-destination-route"
-          ? "route-overlay"
-          : "exclusion-overlay"
-      }
-      style={style}
-    >
+  Pane: ({ children, style }: any) => (
+    <div data-testid="route-overlay" style={style}>
       {children}
     </div>
   ),
@@ -109,7 +99,6 @@ it("shows missile range rings and aimpoint warnings instead of ground-route ETA"
     screen.getByText("Choose the missile target and click"),
   ).toBeInTheDocument();
   expect(screen.getAllByTestId("missile-ring")).toHaveLength(2);
-  expect(screen.queryByTestId("movement-exclusions")).not.toBeInTheDocument();
   act(() => {
     mockHandlers.mousemove(event());
     jest.advanceTimersByTime(150);
@@ -248,18 +237,6 @@ it("shows the requested instruction and cancels with Escape", () => {
   expect(bridge.dismiss).toHaveBeenCalledTimes(1);
 });
 
-it("shows exclusion zones only while choosing a ground destination", () => {
-  const { unmount } = setup();
-  expect(screen.getByTestId("movement-exclusions")).toBeInTheDocument();
-  expect(screen.getByTestId("exclusion-overlay")).toHaveStyle({
-    zIndex: 410,
-    pointerEvents: "none",
-  });
-  expect(screen.getByText(/campaign roads may cross/)).toBeInTheDocument();
-  unmount();
-  expect(screen.queryByTestId("movement-exclusions")).not.toBeInTheDocument();
-});
-
 it("shows distance, ETA and a highlighted road/off-road route for a valid position", async () => {
   const { bridge } = setup();
   act(() => {
@@ -395,7 +372,7 @@ it("can enter and leave selection repeatedly without a second map", async () => 
         new CustomEvent("ground-destination-start", { detail: { id, bridge } }),
       );
     });
-    expect(changed).toHaveBeenLastCalledWith(true);
+    expect(changed).toHaveBeenLastCalledWith(true, "ground");
     expect(screen.getByRole("status")).toBeInTheDocument();
     act(() => {
       window.dispatchEvent(
@@ -446,4 +423,32 @@ it("discards an initial response received after cancellation", async () => {
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
   expect(bridge.ready).not.toHaveBeenCalled();
   expect(changed).toHaveBeenLastCalledWith(false);
+});
+
+it("reports missile selection without forcing the ground exclusion overlay", async () => {
+  const changed = jest.fn();
+  const bridge: DestinationBridge = {
+    ready: jest.fn(),
+    initial: (done) =>
+      done(
+        JSON.stringify({
+          origin: { lat: 42, lng: 41 },
+          name: "SCUD",
+          mode: "missile",
+        }),
+      ),
+    preview: jest.fn(),
+    pick: jest.fn(),
+    dismiss: jest.fn(),
+  };
+  render(<GroundDestinationMode onActiveChange={changed} />);
+  await act(async () => {
+    window.dispatchEvent(
+      new CustomEvent("ground-destination-start", {
+        detail: { id: "missile", bridge },
+      }),
+    );
+  });
+  expect(changed).toHaveBeenLastCalledWith(true, "missile");
+  expect(changed).not.toHaveBeenCalledWith(true, "ground");
 });

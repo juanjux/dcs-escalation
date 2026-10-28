@@ -355,7 +355,9 @@ function loadPersisted(): {
   }
 }
 
-export default function MapLayersControl() {
+export default function MapLayersControl({
+  groundDestination = false,
+}: { groundDestination?: boolean } = {}) {
   const map = useMap();
   const dispatch = useAppDispatch();
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
@@ -537,7 +539,9 @@ export default function MapLayersControl() {
       {/* Outside the toggles on purpose: see SelectedFlightPlanLayer. */}
       <SelectedFlightPlanLayer />
       {ALL_IDS.map((id) =>
-        visible[id] ? <Fragment key={id}>{OVERLAYS[id].node}</Fragment> : null
+        visible[id] || (groundDestination && id === "exclusionZones") ? (
+          <Fragment key={id}>{OVERLAYS[id].node}</Fragment>
+        ) : null
       )}
       {portalEl && createPortal(panel, portalEl)}
     </>
