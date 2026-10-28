@@ -136,6 +136,55 @@ def test_unverified_water_crossing_is_not_treated_as_a_bridge() -> None:
         planner.plan(P(0, 0), P(100, 0), 100, 50)
 
 
+@pytest.mark.parametrize("missing_access", ["origin", "destination", "both"])
+def test_unreachable_roads_allow_validated_direct_travel_at_offroad_speed(
+    missing_access: str,
+) -> None:
+    barrier = {
+        "origin": box(-10, 40, 60, 60),
+        "destination": box(40, 40, 110, 60),
+        "both": box(-10000, 40, 10000, 60),
+    }[missing_access]
+    planner = CampaignGroundRouter(landmap(barrier), [road((0, 0), (100, 0))])
+    result = planner.plan(P(0, 100), P(100, 100), 100, 50)
+    assert result.segments == (GroundSegment(P(0, 100), P(100, 100), False),)
+    journey = GroundJourney(result)
+    journey.advance(1, 100, 50)
+    assert not journey.completed and journey.position == P(50, 100)
+    journey.advance(2, 100, 50)
+    assert journey.completed
+
+
+def test_all_road_edges_blocked_still_allow_a_clear_offroad_move() -> None:
+    planner = CampaignGroundRouter(
+        landmap(box(-10, -10, 110, 10)), [road((0, 0), (100, 0))]
+    )
+    assert not planner.edges
+    result = planner.plan(P(0, 100), P(100, 100), 100, 50)
+    assert result.segments == (GroundSegment(P(0, 100), P(100, 100), False),)
+
+
+@pytest.mark.parametrize("water", [False, True])
+def test_direct_fallback_does_not_cross_water_or_exclusions(water: bool) -> None:
+    mask = landmap(box(-10000, 40, 10000, 60), box(40, 90, 60, 110))
+    if water:
+        mask = Landmap(
+            mask.inclusion_zones.difference(box(40, 90, 60, 110)),
+            MultiPolygon([box(-10000, 40, 10000, 60)]),
+            MultiPolygon([box(40, 90, 60, 110)]),
+        )
+    planner = CampaignGroundRouter(mask, [road((0, 0), (100, 0))])
+    with pytest.raises(GroundRouteError, match="No validated off-road access"):
+        planner.plan(P(0, 100), P(100, 100), 100, 50)
+
+
+def test_available_roads_are_preferred_over_a_shorter_direct_offroad_route() -> None:
+    planner = CampaignGroundRouter(landmap(), [road((0, 0), (100, 0))])
+    result = planner.plan(P(0, 100), P(100, 100), 100, 50)
+    assert any(segment.on_road for segment in result.segments)
+    assert result.length > 100
+
+
 def test_disconnected_roads_do_not_report_missing_access() -> None:
     planner = CampaignGroundRouter(
         landmap(box(40, -10000, 60, 10000)),
@@ -315,6 +364,28 @@ def test_game_router_uses_supply_convoy_permissions(world: Any) -> None:
     )
     assert result.road_distance_m == pytest.approx(90)
     assert result.offroad_distance_m == pytest.approx(10)
+
+
+@pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
+def test_reserve_preview_allows_local_travel_with_only_inaccessible_remote_roads(
+    world: Any,
+    owner: Player,
+) -> None:
+    world.a._coalition.player = owner
+    world.b._coalition.player = owner
+    terrain = world.game.theater.terrain
+    world.a.convoy_routes[world.b] = (
+        Point(0, -200, terrain),
+        Point(100, -200, terrain),
+    )
+    world.b.convoy_routes[world.a] = tuple(reversed(world.a.convoy_routes[world.b]))
+    world.game.theater.landmap = landmap(box(-10000, -100, 10000, -50))
+    result = preview_armor_movement(
+        world.game, world.source.id, owner, [7], world.destination
+    )
+    assert result.road_distance_m == 0
+    assert result.offroad_distance_m == pytest.approx(math.hypot(90, 10))
+    assert "This route contains only validated off-road travel" in result.warnings
 
 
 def test_reservations_include_automatically_assigned_tractors(world: Any) -> None:
