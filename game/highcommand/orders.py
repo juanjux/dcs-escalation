@@ -340,12 +340,12 @@ def _outcome(
         ]
         if any(tgo.control_point.captured != enemy for tgo in tgos):
             return Outcome.GONE
-        # A motorpool's vehicles are drawn afresh for every mission: an empty one has
-        # not been destroyed. Its losses come in through note_results.
+        # Empty movement sources and disbanded slots are not destroyed formations.
+        # A motorpool's vehicles are drawn afresh; its losses use note_results.
         if (
             tgos
             and not any(isinstance(tgo, MotorpoolGroundObject) for tgo in tgos)
-            and all(tgo.is_dead for tgo in tgos)
+            and all(tgo.is_dead and any(tgo.units) for tgo in tgos)
         ):
             return Outcome.ACHIEVED
     else:
