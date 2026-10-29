@@ -436,7 +436,9 @@ and it is longer than this section.
 - **Finite anti-ship magazines, and a staggered weapons release** — a warship group
   carries a campaign stock of anti-ship missiles that never rearms, and a group that runs
   dry drops to return-fire. Optionally, ships spawn on return-fire and are released to
-  weapons-free one group at a time. Both off by default.
+  weapons-free one group at a time. Enemy attacks release the target and nearby friendly
+  groups in one hop. A configurable six-missile limit applies per group per mission;
+  under attack, a group may exceed it and fire one extra salvo past an empty magazine.
   ([#106](https://github.com/juanjux/dcs-escalation/pull/106), porting 414Ret #766)
   
 - **The AI buys its better ground units more often** — the ground buy rolled uniformly

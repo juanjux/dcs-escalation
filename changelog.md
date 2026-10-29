@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Naval]** Release attacked formations locally and limit anti-ship salvos per mission, with defensive exceptions and persistent shot accounting (adapted from RetLab).
 * **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries and dispersed placement.
 * **[Units]** Add eight stock CurrentHill ground units from DCS 2.9.31 and missing Iraqi aircraft availability without requiring mod packs (adapted from RetLab #1413).
 * **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries, dispersed placement and TIC formation support.
@@ -15,7 +16,6 @@
 * **[Map]** Filter missile sites separately from air defences in map search.
 * **[OPFOR AI]** RED reserve movement and base-stock deployment through REST/MCP, with the same rules as BLUE.
 * **[Campaigns]** Modernize Clash of the Titans with redundant IADS, GPS jammers, depots, ground supply and balanced, dispersed air wings.
-
 * **[Ground Movement]** Reuse the main map for GPS destination selection without opening or loading another map.
 * **[Ground Movement]** Show exclusion zones while selecting a map destination without changing saved layer preferences.
 * **[Ground Movement]** Choose GPS destinations on the map with live route, distance, arrival estimates and blocked-position feedback.
