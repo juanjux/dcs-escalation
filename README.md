@@ -37,6 +37,20 @@ or any other LLM that has a local interface, and start playing with it controlli
 changes the engagement and fun factor of every campaign. While the current version still keeps the inherited dumb OPFOR planner, 
 it will probably be removed in the future.
 
+## Frontline MANPADS teams
+
+Frontline MANPADS use a vehicle-based allowance rather than a chance per group.
+By default, each side receives one team per eight combat vehicles on each front,
+rounded to the nearest team, minus any MANPADS already deployed there. Trucks and
+infantry do not increase the allowance. Each added team has one launcher and a
+rifleman from its faction when available. Teams are spread among formations,
+prefer APCs/IFVs, and join their host's TIC formation when that plugin is enabled,
+even with normal infantry generation off. Without TIC, teams defend their initial
+positions. The ratio is configurable under Difficulty; zero or switching off
+*Manpads on frontlines* disables additional teams. Generated support teams are
+still recreated for each mission; persistent losses and stock-based replacements
+are not implemented yet.
+
 ## Live Pilots
 
 A squadron of people instead of a list of slots with RPG-like interactions. Switched on, a pilot has a name, a

@@ -80,6 +80,7 @@ _DEPLOYABLE_UNIT_CLASSES = frozenset(
         UnitClass.SHORAD,
         UnitClass.AAA,
         UnitClass.RECON,
+        UnitClass.MANPAD,
     }
 )
 
@@ -191,7 +192,7 @@ class GroundPlanner:
             elif unit_class is UnitClass.ATGM:
                 collection = self.atgm_group
                 role = CombatGroupRole.ATGM
-            elif unit_class in [UnitClass.SHORAD, UnitClass.AAA]:
+            elif unit_class in [UnitClass.SHORAD, UnitClass.AAA, UnitClass.MANPAD]:
                 collection = self.shorad_groups
                 role = CombatGroupRole.SHORAD
             elif unit_class is UnitClass.RECON:

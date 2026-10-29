@@ -216,9 +216,9 @@ def test_enabled_f10_is_serialized_and_its_scripts_compile(
         ) is not include_armor
 
 
-@pytest.mark.parametrize("infantry", [False, True])
+@pytest.mark.parametrize("tic", [False, True])
 def test_support_infantry_and_manpads_are_tagged_without_jtac_or_inventory_maps(
-    infantry: bool,
+    tic: bool,
 ) -> None:
     from game.missiongenerator.flotgenerator import FlotGenerator
     from game.theater.player import Player
@@ -227,16 +227,15 @@ def test_support_infantry_and_manpads_are_tagged_without_jtac_or_inventory_maps(
     mission = Mission()
     side = mission.country("USA")
     p = Point(0, 0, mission.terrain)
-    parent = mission.vehicle_group(side, "PARENT", Unarmed.Ural_375, p)
     u = MagicMock(dcs_unit_type=Unarmed.Ural_375, spawn_weight=1)
-    faction = NS(infantry_with_class=lambda _: [u])
+    faction: Any = NS(infantry_with_class=lambda _: [u])
     data = MissionData()
     generator: Any = NS(
         mission=mission,
         mission_data=data,
         conflict=NS(find_ground_position=lambda *args: p, theater=mission.terrain),
         game=NS(
-            settings=NS(perf_infantry=infantry, manpads=True),
+            settings=NS(player_skill="High"),
             faction_for=lambda _: faction,
         ),
     )
@@ -244,9 +243,16 @@ def test_support_infantry_and_manpads_are_tagged_without_jtac_or_inventory_maps(
     with patch("game.missiongenerator.flotgenerator.GroundForcePainter"), patch(
         "game.missiongenerator.flotgenerator.namegen.next_infantry_name",
         side_effect=lambda *args: f"SUPPORT{next(sequence)}",
-    ), patch("game.missiongenerator.flotgenerator.random.choice", return_value=True):
-        FlotGenerator.gen_infantry_group_for_group(
-            generator, parent, Player.BLUE, side, Heading.from_degrees(0)
+    ):
+        FlotGenerator._generate_support_soldier(
+            generator,
+            u,
+            p,
+            side,
+            faction,
+            Player.BLUE,
+            Heading.from_degrees(0),
+            "PARENT" if tic else None,
         )
-    support = {g.name for g in side.vehicle_group if g is not parent}
+    support = {g.name for g in side.vehicle_group}
     assert support and support == data.frontline_visibility_groups
