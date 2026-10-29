@@ -5,7 +5,8 @@ from types import SimpleNamespace
 from typing import Any
 from uuid import uuid4
 
-from PySide6.QtWidgets import QLabel
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel, QPushButton, QToolButton, QWidget
 import pytest
 
 from game import notifications as n
@@ -250,3 +251,95 @@ def test_bell_counter_popup_read_navigation_and_game_switch(
     popup.dismiss([item])
     bell.close()
     bell.deleteLater()
+
+
+@pytest.fixture
+def morale_popup(alerts: Any, controls: Any) -> Any:
+    w = alerts
+    w.roster.current_roster.append(
+        SimpleNamespace(id=uuid4(), name="Second Pilot", alive=True, morale=0)
+    )
+    shown: list[n.CampaignNotice] = []
+    bell = NotificationBell(controls.model, shown.append)
+    bell.show_alerts()
+    popup = bell.popup
+    assert popup is not None
+    yield SimpleNamespace(world=w, bell=bell, popup=popup, shown=shown)
+    popup.close()
+    bell.close()
+    bell.deleteLater()
+
+
+def test_morale_alerts_start_collapsed_without_hiding_other_categories(
+    morale_popup: Any,
+) -> None:
+    p = morale_popup
+    toggles = p.popup.findChildren(QToolButton, "low-morale-toggle")
+    assert len(toggles) == 1
+    toggle = toggles[0]
+    assert toggle.text() == "Low morale (2)" and not toggle.isChecked()
+    assert toggle.arrowType() == Qt.ArrowType.RightArrow
+    content = p.popup.findChild(QWidget, "low-morale-notices")
+    assert content.isHidden()
+    assert len(content.findChildren(QPushButton)) == 4
+    titles = [
+        label.text() for label in p.popup.findChildren(QLabel) if label.isVisible()
+    ]
+    assert any("no assigned missile target" in text for text in titles)
+    assert any("Few ground units" in text for text in titles)
+    assert not any("very low morale" in text for text in titles)
+    assert len(p.bell.notices) == 4 and "4" in p.bell.accessibleName()
+    assert len(n.state(p.world.game).read) == 0
+
+
+def test_morale_expansion_survives_refresh_and_individual_dismissal(
+    morale_popup: Any,
+) -> None:
+    p = morale_popup
+    p.popup.findChild(QToolButton, "low-morale-toggle").click()
+    content = p.popup.findChild(QWidget, "low-morale-notices")
+    assert content.isVisible()
+    dismiss = next(
+        b for b in content.findChildren(QPushButton) if b.text() == "Mark as read"
+    )
+    dismiss.click()
+    toggle = p.popup.findChild(QToolButton, "low-morale-toggle")
+    assert toggle.isChecked() and toggle.text() == "Low morale (1)"
+    assert toggle.arrowType() == Qt.ArrowType.DownArrow
+    assert p.popup.findChild(QWidget, "low-morale-notices").isVisible()
+    assert len(p.bell.notices) == 3
+    p.world.game.turn += 1
+    p.bell.refresh()
+    toggle = p.popup.findChild(QToolButton, "low-morale-toggle")
+    assert toggle.isChecked() and toggle.text() == "Low morale (2)"
+    toggle.click()
+    p.popup.update_notices()
+    assert not p.popup.findChild(QToolButton, "low-morale-toggle").isChecked()
+    assert p.popup.findChild(QWidget, "low-morale-notices").isHidden()
+    for pilot in p.world.roster.current_roster:
+        pilot.morale = 50
+    p.bell.refresh()
+    assert p.popup.findChild(QToolButton, "low-morale-toggle") is None
+    assert len(p.bell.notices) == 2
+
+
+def test_grouped_morale_notice_still_navigates_to_its_pilot(morale_popup: Any) -> None:
+    p = morale_popup
+    p.popup.findChild(QToolButton, "low-morale-toggle").click()
+    content = p.popup.findChild(QWidget, "low-morale-notices")
+    next(b for b in content.findChildren(QPushButton) if b.text() == "Show").click()
+    assert len(p.shown) == 1 and p.shown[0].category == "pilot_morale"
+    assert p.shown[0] not in p.bell.notices
+    assert not p.popup.isVisible()
+
+
+def test_mark_all_as_read_includes_collapsed_morale_notices(morale_popup: Any) -> None:
+    p = morale_popup
+    next(
+        b for b in p.popup.findChildren(QPushButton) if b.text() == "Mark all as read"
+    ).click()
+    assert p.bell.notices == []
+    assert p.popup.findChild(QToolButton, "low-morale-toggle") is None
+    assert any(
+        label.text() == "No campaign alerts." for label in p.popup.findChildren(QLabel)
+    )
