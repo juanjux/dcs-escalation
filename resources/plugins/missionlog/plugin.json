@@ -19,7 +19,7 @@
             "defaultValue": false
         },
         {
-            "nameInUI": "Our losses (shot down, ejections, deaths)",
+            "nameInUI": "Our losses (aircraft, ground units, SAMs and ships)",
             "mnemonic": "losses",
             "defaultValue": true
         },
