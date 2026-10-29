@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 from game.db import Database
 from game.utils import Distance, Speed, max_optional_distance
@@ -41,6 +41,7 @@ class Package(RadioFrequencyContainer):
         auto_asap: bool = False,
         custom_name: str | None = None,
         frequency: RadioFrequency | None = None,
+        auto_coordinated: bool = False,
     ) -> None:
         self.target = target
         self._db = db
@@ -51,6 +52,9 @@ class Package(RadioFrequencyContainer):
         # change. This is really a UI property rather than a game property, but we want
         # it to persist in the save.
         self.auto_asap = auto_asap
+        self.auto_coordinated = auto_coordinated
+        if auto_coordinated:
+            self.auto_asap = False
         self.flights: list[Flight] = []
 
         # Desired TOT as an offset from mission start. Obviously datetime.min is bogus,
@@ -59,6 +63,10 @@ class Package(RadioFrequencyContainer):
         # the old behavior?
         self.time_over_target: datetime = datetime.min
         self.waypoints: PackageWaypoints | None = None
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        self.__dict__.setdefault("auto_coordinated", False)
 
     @property
     def has_players(self) -> bool:
@@ -354,6 +362,7 @@ class Package(RadioFrequencyContainer):
     @staticmethod
     def clone_package(package: Package) -> Package:
         clone = Package(package.target, package._db, package.auto_asap)
+        clone.auto_coordinated = package.auto_coordinated
         clone.time_over_target = deepcopy(package.time_over_target)
         for f in package.flights:
             cf = Flight.clone_flight(f)

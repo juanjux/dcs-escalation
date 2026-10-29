@@ -41,6 +41,7 @@
 * **[Flight Plans]** Fuel-aware planning with route and refuelling estimates, automatic tanker support and prompts when edits change fuel requirements.
 * **[Planning]** Add optional pre-push and pre-station tanker stops with configurable refuelling time and boom/probe matching (adapted from RetLab).
 * **[UI]** Redesigned flight and package editors with crew controls, timelines, task colours and direct switching between flights.
+* **[Planning]** Add Coordinated package timing behind covering SEAD/DEAD, with ASAP fallback and warnings (adapted from RetLab).
 * **[UI]** Intel statistics and history with independent faction and metric comparisons.
 * **[UI]** Shared campaign and per-pilot aircraft notes in Player Aircrafts.
 * **[Escalation]** DCS Escalation branding and simplified navigation, preserving existing campaign data and save paths.

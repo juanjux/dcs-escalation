@@ -1975,6 +1975,9 @@ Write bodies:
   time you thought. When you stagger a SEAD ahead of a strike, stagger from the floor, not from
   zero — `evaluate_package` reports the transit before you commit, and `validate` flags any
   committed package whose TOT is below its floor with `earliest_tot_minutes`.
+  This command selects manual timing or ASAP, disabling automatic Coordinated timing
+  if the package used it. The API does not expose a switch to enable Coordinated mode;
+  sequence your SEAD/DEAD and attacks through evaluated TOTs and `tot_offset_min`.
 - `POST /buy/aircraft` · `POST /sell/aircraft` `{side, squadron_id, quantity}` — a buy
   is refused when the squadron is at its `max_ac` cap, its base has no free parking, or
   you lack budget. An aircraft bought at a base whose runway is cratered is born

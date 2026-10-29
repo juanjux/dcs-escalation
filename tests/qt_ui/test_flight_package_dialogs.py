@@ -397,6 +397,9 @@ def test_new_package_save_and_cancel(
     gm = package_dialog.game_model
     gm.game = SimpleNamespace(db=SimpleNamespace(flights=Database()))
     dialog = QNewPackageDialog(gm, package_dialog.package_model.mission_target)
+    assert dialog.auto_coordinated.isChecked()
+    assert not dialog.auto_asap.isChecked()
+    assert not dialog.tot_spinner.isEnabled()
     monkeypatch.setattr(dialog.package_model.package, "set_tot_asap", lambda _: None)
     if save:
         dialog.save_button.click()
@@ -406,3 +409,27 @@ def test_new_package_save_and_cancel(
         gm.ato_model.add_package.assert_not_called()
     dialog.deleteLater()
     qt_app.processEvents()
+
+
+def test_package_timing_modes_are_exclusive_and_allow_manual_time(
+    package_dialog: Any,
+) -> None:
+    dialog = package_dialog
+    dialog.auto_coordinated.click()
+    assert dialog.package_model.package.auto_coordinated
+    assert not dialog.auto_asap.isChecked()
+    assert not dialog.tot_spinner.isEnabled()
+    dialog.auto_asap.click()
+    assert not dialog.package_model.package.auto_coordinated
+    assert not dialog.auto_coordinated.isChecked()
+    dialog.auto_asap.click()
+    assert dialog.tot_spinner.isEnabled()
+
+
+def test_package_tot_redraw_does_not_write_the_spinner_back(
+    package_dialog: Any,
+) -> None:
+    package_dialog.package_model.set_tot = Mock()
+    package_dialog.package_model.package.time_over_target = datetime(2026, 1, 1, 13, 30)
+    package_dialog.update_tot()
+    package_dialog.package_model.set_tot.assert_not_called()
