@@ -101,6 +101,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[DTC]** Preload Hornet TACAN and recovery navigation settings without requiring custom waypoints.
 * **[Squadrons]** Allow empty relocations from damaged runways after selling all aircraft, including when reloading a campaign.
 * **[Payload]** Match Shrike seekers independently of date restrictions, preserve manual weapon settings and correct AGM-45/78 head tables (adapted from RetLab #1366).
 * **[OPFOR AI]** Keep the commander briefing focused on API actions and planning rules, with clearer sales and turn-zero rebuild guidance.
