@@ -8,12 +8,14 @@ from zipfile import ZipFile
 
 import pytest
 from dcs import Mission
+from dcs.action import DoScript
 
 from game.missiongenerator.luagenerator import LuaGenerator
 from game.theater.theatergroup import SceneryUnit
+from game.theater.player import Player
 
 
-def generated_mission() -> Mission:
+def generated_mission(owner: Player = Player.RED) -> Mission:
     generator: Any = object.__new__(LuaGenerator)
     units = [
         Mock(spec=SceneryUnit, alive=True, position=SimpleNamespace(x=100, y=200)),
@@ -23,13 +25,24 @@ def generated_mission() -> Mission:
     generator.game = SimpleNamespace(
         theater=SimpleNamespace(
             ground_objects=[
-                SimpleNamespace(name="Factory", category="factory", units=units)
+                SimpleNamespace(
+                    name="Factory",
+                    category="factory",
+                    units=units,
+                    control_point=SimpleNamespace(captured=owner),
+                )
             ]
         )
     )
     generator.mission = Mission()
     generator._seed_scenery_objectives()
     return generator.mission
+
+
+def scenery_preamble(owner: Player = Player.RED) -> str:
+    action = generated_mission(owner).triggerrules.triggers[0].actions[0]
+    assert isinstance(action, DoScript)
+    return str(action.text.id)
 
 
 def runtime() -> Any:
@@ -74,6 +87,7 @@ def test_generated_miz_matches_and_credits_once(tmp_path: Path, legacy: bool) ->
         )
     zone, distance = lua.eval("scenery_zone_for(object_at(100, 200))")
     assert (zone.name, zone.objective, distance) == ("alive", "Factory", 0)
+    assert zone.coalition == 1
     assert lua.eval("credit_test(object_at(131, 200))") is False
     assert lua.eval("credit_test(object_at(100, 200))") is True
     assert lua.eval("credit_test(object_at(100, 200))") is False
@@ -87,3 +101,12 @@ def test_current_table_takes_precedence_even_when_empty() -> None:
         "ESCALATION_SCENERY_ZONES={}; RETRIBUTION_SCENERY_ZONES={{name='old',x=0,y=0}}"
     )
     assert lua.eval("scenery_zone_for(object_at(0, 0))") == (None, None)
+
+
+@pytest.mark.parametrize(
+    "owner,side", [(Player.BLUE, 2), (Player.RED, 1), (Player.NEUTRAL, 0)]
+)
+def test_generated_zone_has_the_campaign_owner(owner: Player, side: int) -> None:
+    lua = runtime()
+    lua.execute(scenery_preamble(owner))
+    assert lua.globals().ESCALATION_SCENERY_ZONES[1].coalition == side
