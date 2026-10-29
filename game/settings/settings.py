@@ -228,8 +228,9 @@ class Settings:
         detail=(
             "Add vehicle-based MANPADS teams on each side of each front. Each team "
             "has one launcher and a rifleman when the faction has one. Teams are "
-            "independent of infantry squad generation and join their host's TIC "
-            "formation when enabled. Existing deployed MANPADS count toward the allowance."
+            "independent of infantry squad generation and defend their initial "
+            "positions near host vehicles. Existing deployed MANPADS count toward "
+            "the allowance."
         ),
     )
     frontline_manpad_vehicles_per_team: int = bounded_int_option(

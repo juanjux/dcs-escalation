@@ -272,7 +272,6 @@ def test_final_registry_exports_zone_skill_and_thermal_equipment(variant: str) -
     pilot = object()
     squadron = NS(pilot_skill=lambda _: CADET_SKILL)
     data: Any = NS(
-        tic_groups=[],
         jtacs=[],
         flights=[
             NS(

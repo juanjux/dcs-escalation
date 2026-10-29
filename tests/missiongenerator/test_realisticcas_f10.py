@@ -216,10 +216,9 @@ def test_enabled_f10_is_serialized_and_its_scripts_compile(
         ) is not include_armor
 
 
-@pytest.mark.parametrize("tic", [False, True])
-def test_support_infantry_and_manpads_are_tagged_without_jtac_or_inventory_maps(
-    tic: bool,
-) -> None:
+def test_support_infantry_and_manpads_are_tagged_without_jtac_or_inventory_maps() -> (
+    None
+):
     from game.missiongenerator.flotgenerator import FlotGenerator
     from game.theater.player import Player
     from game.utils import Heading
@@ -252,7 +251,6 @@ def test_support_infantry_and_manpads_are_tagged_without_jtac_or_inventory_maps(
             faction,
             Player.BLUE,
             Heading.from_degrees(0),
-            "PARENT" if tic else None,
         )
     support = {g.name for g in side.vehicle_group}
     assert support and support == data.frontline_visibility_groups

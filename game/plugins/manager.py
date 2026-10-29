@@ -49,6 +49,10 @@ class LuaPluginManager:
     def load_settings(cls, settings: Settings) -> None:
         from game.groundmovement.settings import reconcile
 
+        # Retired plugin options can remain in old campaigns and settings presets.
+        for key in list(settings.plugins):
+            if key == "tic" or key.startswith("tic."):
+                del settings.plugins[key]
         reconcile(settings)
         for plugin in cls.plugins():
             plugin.set_settings(settings)

@@ -206,7 +206,6 @@ def build_mission(
     data = NS(
         flights=flights,
         jtacs=[],
-        tic_groups=[],
         frontline_visibility_groups=frontline_groups,
     )
     mapping: Any = NS(theater_objects=theater_objects, flight=mappings.get)
