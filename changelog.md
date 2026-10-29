@@ -73,6 +73,7 @@
 * **[UI]** A site's window has Show on map, which moves the map to the site without zooming.
 * **[Campaigns]** Battle for Area 51: red's IADS is one network instead of three with its three power stations feeding a single grid, and blue gets the radars, comms towers and power stations it never had.
 * **[IADS]** Clear power, communications and autonomous-site status on the map and in site dialogs, with configurable infrastructure coverage.
+* **[IADS]** Check terrain visibility when associating ground radars with SAM sites, so batteries without usable cover can operate autonomously (adapted from RetLab).
 * **[UI]** The map has a search box: find a place by its code name, by what is parked there ("Patriot", "Linebacker") or by what kind of thing it is, with filters by side and by kind.
 * **[UI]** Searchable long combo-box lists with visible draggable scrollbars.
 * **[Mission Generator]** New *Use JTAC if the faction has one defined* option under Gameplay, beside *Number of JTAC controllers*, so the JTAC aircraft can be switched off mid-campaign instead of only in the new-game wizard.
