@@ -30,6 +30,7 @@ from game.squadrons import Squadron
 from qt_ui.uiconstants import app_settings
 from qt_ui.models import AirWingModel
 from qt_ui.widgets.squadrondelegate import GroupHeaderRole
+from qt_ui.widgets.squadroninventory import aircraft_on_hand
 
 TOOLBAR_HEIGHT = 54
 FIELD_HEIGHT = 30
@@ -127,7 +128,7 @@ class SquadronFilterProxy(QSortFilterProxyModel):
             )
         if self.order == "aircraft":
             # Most aircraft first: the question behind this sort is what you have.
-            return (-squadron.owned_aircraft, squadron.aircraft.display_name.lower())
+            return (-aircraft_on_hand(squadron), squadron.aircraft.display_name.lower())
         if self.order == "cohesion":
             # The crews first, the lists of names last.
             cohesion = squadron.cohesion
@@ -310,6 +311,7 @@ class SquadronPanel(QWidget):
         self.setLayout(layout)
 
         self.delegate = squadron_list.itemDelegate()
+        self.grouped.modelReset.connect(self.update_totals)
         self.update_totals()
         self.restore_sort()
         self.restore_grouping()
@@ -364,6 +366,6 @@ class SquadronPanel(QWidget):
         for row in range(shown):
             squadron = self.proxy.index(row, 0).data(AirWingModel.SquadronRole)
             if isinstance(squadron, Squadron):
-                aircraft += squadron.owned_aircraft
+                aircraft += aircraft_on_hand(squadron)
         counted = f"{shown} of {total}" if shown != total else str(total)
         self.totals.setText(f"{counted} squadrons · {aircraft} aircraft")

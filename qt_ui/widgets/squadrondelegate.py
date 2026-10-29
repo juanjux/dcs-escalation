@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 from game.ato.flighttype import FlightType
 from game.squadrons import Squadron, friendship
 from qt_ui.models import AirWingModel
+from qt_ui.widgets.squadroninventory import aircraft_on_hand
 from qt_ui.widgets.squadronloan import squadron_loan_text
 
 ROW_HEIGHT = 48
@@ -234,7 +235,7 @@ class SquadronDelegate(QStyledItemDelegate):
 
         selected = bool(option.state & QStyle.StateFlag.State_Selected)
         hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
-        depleted = squadron.owned_aircraft == 0
+        depleted = aircraft_on_hand(squadron) == 0
 
         painter.save()
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -568,7 +569,7 @@ class SquadronDelegate(QStyledItemDelegate):
         # The aircraft count is the scarce number, so it leads at 15px.
         count_font = self._font(option, 15, QFont.Weight.DemiBold)
         count_metrics = QFontMetrics(count_font)
-        count = str(squadron.owned_aircraft)
+        count = str(aircraft_on_hand(squadron))
         count_colour = (
             RUST if depleted else (TEXT_SELECTED if selected else TEXT_PRIMARY)
         )
