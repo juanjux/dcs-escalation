@@ -1133,10 +1133,13 @@ died on climb-out, twice, in two different turns.
    side, run the racetrack across the threat axis rather than along it, and never let a
    CAP chase a fleeing target into the ring.
 
-- **Every fleet — yours and the enemy's — starts HOT and shoots on its own.** Ship groups
-  are generated on a RED alarm state with weapon-free ROE, so a ship fires autonomously at
+- **Fleet behaviour depends on the naval-magazine settings.** Ship groups use RED
+  alarm state and normally weapon-free ROE, so a ship fires autonomously at
   anything that enters its weapon range: naval SAMs at aircraft, anti-ship missiles/guns/
-  torpedoes at enemy ships. There is no passive/warm-up window and no first-pass freebie —
+  torpedoes at enemy ships. Optional staggered release delays offensive fire, but an
+  enemy SHOT with a resolvable target, or a HIT, releases the targeted group and friendly
+  groups within the configured formation radius (about 8.1 nm by default), not the whole
+  fleet. Do not assume a free first pass:
   the enemy fleet is dangerous from minute one, and the performance "red alert state"
   setting does NOT disarm it (that toggle only lets *ground* SAMs start dark for the IADS).
   Consequences: an ANTISHIP package must arrive with stand-off weapons, saturation and
@@ -1144,6 +1147,11 @@ died on climb-out, twice, in two different turns.
   transports, helos or tankers within a ship's `threat_nm`; and two opposing groups that
   drift into missile range of each other WILL trade fire without being tasked — so when you
   `naval/move`, check what your bearing sails you into.
+  With naval magazines enabled, anti-ship stock persists across turns. Each group also
+  has a configurable per-mission salvo limit (six by default); it resets for the next
+  generated mission, not at midnight. Attacked groups can exceed that limit and fire
+  up to one additional salvo past empty stock before holding fire. Every real anti-ship
+  shot is charged, and stock never becomes negative. Land-attack stock is separate.
 - **Keep your naval groups MOVING.** Coordinate-guided weapons (JSOW/JDAM-class) can only
   be assigned against a STATIONARY naval group — parked ships are free kills at known
   coordinates; sailing ones can't even be targeted that way. Each turn, `naval/move` every

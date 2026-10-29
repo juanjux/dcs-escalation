@@ -1,8 +1,24 @@
 {
     "nameInUI": "Naval magazines & weapons release",
-    "descriptionInUI": "The fleet's anti-ship missiles, made finite. With the stagger on, warships spawn on ReturnFire and are released to weapons-free one group at a time, so a fleet that out-ranges the theatre develops the exchange instead of emptying its tubes in the first minute -- and still defends itself while it waits. With magazines on, every missile fired is charged to that group's campaign stock, a group that runs dry falls back to ReturnFire, and the expenditure is reported for the turn debit; there is no rearm. Land-attack shots are left to the cruise-missile plugin, so nothing is charged twice. Inert unless one of the two naval settings is on and a naval group exists.",
+    "descriptionInUI": "Finite campaign anti-ship magazines, optional staggered weapons release and a per-mission salvo limit. Enemy attacks release the target and nearby friendly groups, not the whole coalition. Under attack, ships may exceed their salvo limit and spend up to one extra salvo past an empty campaign magazine to defend themselves. All anti-ship shots are counted; land-attack missiles use the separate cruise-missile magazine.",
     "defaultValue": true,
     "specificOptions": [
+        {
+            "nameInUI": "Formation release radius (NM; 0 releases only the target)",
+            "descriptionInUI": "An enemy attack releases friendly groups within this distance of the attacked group. Neighbours do not release further groups. The default is approximately 15 km.",
+            "mnemonic": "formationReleaseNm",
+            "defaultValue": 8.1,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
+        {
+            "nameInUI": "Anti-ship missiles per group per turn/mission (0 disables limit)",
+            "descriptionInUI": "Limits a group's offensive anti-ship expenditure in each generated mission, independently of its persistent campaign stock. Under attack the group may exceed this limit; after the campaign stock is empty it can fire up to one additional salvo before holding fire. Zero removes both salvo limits. Land-attack missiles are not affected.",
+            "mnemonic": "salvoPerMission",
+            "defaultValue": 6,
+            "minimumValue": 0,
+            "maximumValue": 100
+        },
         {
             "nameInUI": "Weapons-release window opens (s after mission start)",
             "mnemonic": "releaseMinS",
