@@ -924,6 +924,15 @@ so it is not emitting for an anti-radiation missile to home on and not visible u
 is already shooting. That is what a belt buys you over the same launchers standing alone
 — and it is what you take away from blue by cutting their power and comms.
 
+**Mountains also limit which ground radars can cue a SAM.** Skynet checks terrain
+visibility from each covering radar to a point 10,000 ft above the battery. A radar
+behind a ridge cannot keep a battery dark merely because its nominal range reaches
+it. Without another usable covering radar, the battery follows its autonomous
+behaviour, normally using its own radar. This is an approximate airspace-coverage
+check, not a guarantee of detecting low targets. AWACS coverage still uses range;
+DCS determines which aircraft each radar actually detects. Coverage is checked when
+Skynet builds its radar links, not on every contact update.
+
 **Detection ranges are nominal, not a fence.** The figure on a site is its database
 range. What it actually detects is decided per unit, per moment, by terrain, the radar
 horizon and the target's altitude. It is usually **shorter** — a contact down in a valley

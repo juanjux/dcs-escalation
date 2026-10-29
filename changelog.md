@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[IADS]** Check terrain visibility when associating ground radars with SAM sites, so batteries without usable cover can operate autonomously (adapted from RetLab).
 * **[High Command]** Balance reward score ranges, avoid redundant support loans, and show difficulty separately from priority.
 * **[Live Pilots]** Share small, configurable morale gains from squadron mates' air and ground victories.
 * **[UI]** Allow missile sites to be disbanded for a refund after campaign start.
