@@ -1,4 +1,4 @@
-"""Vehicle-based MANPADS budgets, support teams and TIC formation membership."""
+"""Vehicle-based MANPADS budgets, active support teams and native frontlines."""
 
 from __future__ import annotations
 
@@ -90,7 +90,7 @@ def test_ratio_is_configurable(ratio: int, expected: int) -> None:
     assert additional_manpad_teams([combat(15)], ratio) == expected
 
 
-def scenario(*, infantry: bool = False, tic: bool = True, blue: bool = False) -> Any:
+def scenario(*, infantry: bool = False, blue: bool = False) -> Any:
     mission = Mission()
     side = mission.country("USA" if blue else "Russia")
     settings = Settings()
@@ -105,7 +105,6 @@ def scenario(*, infantry: bool = False, tic: bool = True, blue: bool = False) ->
     generator: Any = object.__new__(FlotGenerator)
     generator.mission = mission
     generator.mission_data = MissionData()
-    generator.tic_enabled = tic
     generator.game = NS(settings=settings, faction_for=lambda _: faction)
     generator.conflict = NS(
         heading=Heading.from_degrees(0),
@@ -117,14 +116,13 @@ def scenario(*, infantry: bool = False, tic: bool = True, blue: bool = False) ->
         group = combat(size)
         vehicle = mission.vehicle_group(
             side,
-            ("TIC:" if tic else "") + f"HOST{index}",
+            f"HOST{index}",
             Unarmed.Ural_375,
             Point(index * 4000, 0, mission.terrain),
             group_size=size,
         )
-        vehicle.late_activation = tic
         vehicle.add_waypoint(Point(index * 4000, 1000, mission.terrain)).name = (
-            "t+5 roe=simulate mount"
+            "ADVANCE"
         )
         groups.append((vehicle, group))
     return NS(
@@ -151,7 +149,6 @@ def generate(s: Any) -> list[Any]:
                     s.player,
                     s.side,
                     Heading.from_degrees(0),
-                    str(host.name).removeprefix("TIC:") if s.gen.tic_enabled else None,
                 )
         s.gen.gen_manpad_teams(s.groups, s.player)
     parents = {id(host) for host, _ in s.groups}
@@ -159,12 +156,11 @@ def generate(s: Any) -> list[Any]:
 
 
 @pytest.mark.parametrize("infantry", [False, True])
-@pytest.mark.parametrize("tic", [False, True])
 @pytest.mark.parametrize("blue", [False, True])
 def test_two_teams_independent_of_infantry_setting_and_side(
-    infantry: bool, tic: bool, blue: bool
+    infantry: bool, blue: bool
 ) -> None:
-    s = scenario(infantry=infantry, tic=tic, blue=blue)
+    s = scenario(infantry=infantry, blue=blue)
     groups = generate(s)
     launchers = [g for g in groups if g.units[0].type == "SA-18 Igla manpad"]
     assert len(launchers) == 2
@@ -172,20 +168,8 @@ def test_two_teams_independent_of_infantry_setting_and_side(
     assert {g.name for g in groups} == s.gen.mission_data.frontline_visibility_groups
     for g in groups:
         assert len(g.units) == 1 and g.hidden_on_mfd
-        assert g.late_activation is tic
+        assert not g.late_activation
         assert g.units[0].skill.value == ("Excellent" if blue else "High")
-    if tic:
-        assert set(s.gen.mission_data.tic_groups) == {g.name for g in groups}
-        for launcher in launchers:
-            formation = launcher.name.split("#")[0]
-            assert any(host.name == formation for host, _ in s.groups)
-            assert any(
-                g.units[0].type == "Soldier M4" and g.name.startswith(formation + "#")
-                for g in groups
-            )
-    else:
-        assert not s.gen.mission_data.tic_groups
-        assert all(not g.name.startswith("TIC:") for g in groups)
 
 
 def test_teams_and_auxiliaries_are_near_hosts_and_spread_apart() -> None:
@@ -194,12 +178,14 @@ def test_teams_and_auxiliaries_are_near_hosts_and_spread_apart() -> None:
     launchers = [g for g in groups if g.units[0].type == "SA-18 Igla manpad"]
     assert launchers[0].position.distance_to_point(launchers[1].position) >= 100
     for launcher in launchers:
-        host = next(
-            host for host, _ in s.groups if host.name == launcher.name.split("#")[0]
+        host = min(
+            (host for host, _ in s.groups),
+            key=lambda host: launcher.position.distance_to_point(host.position),
         )
         assert launcher.position.distance_to_point(host.position) <= 150
-        auxiliary = next(
-            g for g in groups if g is not launcher and g.name.split("#")[0] == host.name
+        auxiliary = min(
+            (g for g in groups if g.units[0].type == "Soldier M4"),
+            key=lambda g: launcher.position.distance_to_point(g.position),
         )
         assert 5 <= auxiliary.position.distance_to_point(launcher.position) <= 10.001
 
@@ -260,18 +246,16 @@ def test_zero_weight_candidates_are_not_selected() -> None:
     assert not generate(s)
 
 
-def test_fallback_hosts_and_route_copy_do_not_copy_attack_tasks() -> None:
+def test_fallback_hosts_do_not_inherit_movement_or_attack_tasks() -> None:
     s = scenario()
     for host, group in s.groups:
         group.role = CombatGroupRole.ARTILLERY
-        host.name = str(host.name).removeprefix("TIC:")
     groups = generate(s)
     assert len(groups) == 4
     for g in groups:
-        assert g.name.startswith("TIC:") and g.late_activation
-        assert len(g.points) == 2
-        assert g.points[1].name == "t+5 roe=simulate mount"
-        assert not g.points[1].tasks
+        assert not g.late_activation
+        assert len(g.points) == 1
+        assert all(task.id == "WrappedAction" for task in g.points[0].tasks)
 
 
 def test_prefers_carriers_and_spreads_teams_before_reusing_hosts() -> None:
@@ -284,29 +268,12 @@ def test_prefers_carriers_and_spreads_teams_before_reusing_hosts() -> None:
     assert select_manpad_hosts(s.groups, 0, []) == []
 
 
-def test_transport_orders_board_between_bounds_and_deploy_on_arrival() -> None:
-    s = scenario()
-    host = s.groups[0][0]
-    host.add_waypoint(Point(0, 2000, s.mission.terrain)).name = "t+20 roe=simulate"
-    host.add_waypoint(Point(0, 3000, s.mission.terrain)).name = "t+40 roe=simulate"
-    generate(s)
-    assert host.points[0].name.endswith("mount")
-    assert [point.name for point in host.points[1:]] == [
-        "t+5 roe=simulate dismount",
-        "t+18 mount",
-        "t+20 roe=simulate dismount",
-        "t+38 mount",
-        "t+40 roe=simulate dismount",
-    ]
-    assert host.points[2].position == host.points[1].position
-    assert host.points[4].position == host.points[3].position
-
-
-def test_stationary_tic_carrier_does_not_hide_its_team_inside() -> None:
+def test_stationary_carrier_keeps_its_team_active() -> None:
     s = scenario()
     for host, _ in s.groups:
         host.points[:] = host.points[:1]
-    generate(s)
+    teams = generate(s)
+    assert all(not team.late_activation for team in teams)
     assert all("mount" not in (host.points[0].name or "") for host, _ in s.groups)
 
 
@@ -318,7 +285,7 @@ def test_no_remote_terrain_snap_for_team_positions() -> None:
     assert position is origin
 
 
-def test_round_trip_miz_contains_two_teams_and_their_tic_hosts(tmp_path: Path) -> None:
+def test_round_trip_miz_contains_active_teams_and_native_hosts(tmp_path: Path) -> None:
     s = scenario()
     generate(s)
     output = tmp_path / "teams.miz"
@@ -330,12 +297,12 @@ def test_round_trip_miz_contains_two_teams_and_their_tic_hosts(tmp_path: Path) -
         for country in mission["coalition"]["red"]["country"].values()
         for g in country.get("vehicle", {}).get("group", {}).values()
     ]
-    teams = [g for g in groups if "#SUPPORT" in g["name"]]
+    teams = [g for g in groups if g["name"].startswith("SUPPORT")]
     assert len(teams) == 4
     assert sum(g["units"][1]["type"] == "SA-18 Igla manpad" for g in teams) == 2
     for g in teams:
-        assert g["lateActivation"] and g["hiddenOnMFD"]
-        assert g["name"].split("#")[0] in {parent["name"] for parent in groups}
+        assert not g.get("lateActivation", False) and g["hiddenOnMFD"]
+    assert all(not g["name"].startswith("TIC:") for g in groups)
 
 
 def test_old_settings_keep_manpads_off_and_get_the_default_ratio() -> None:

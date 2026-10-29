@@ -127,6 +127,3 @@ class MissionData:
     enemy_frontline_groups: list[FrontlineUnitGroupsInfo] = field(default_factory=list)
     # Includes support infantry/MANPADS, independently of JTAC or inventory tracking.
     frontline_visibility_groups: set[str] = field(default_factory=set)
-    # Names of frontline ground groups handed over to the Troops In Contact
-    # script (TIC plugin). Non-empty means TIC_v1.1.lua must be injected.
-    tic_groups: list[str] = field(default_factory=list)

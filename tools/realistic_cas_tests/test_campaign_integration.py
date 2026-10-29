@@ -95,7 +95,7 @@ class CampaignIntegrationTests(unittest.TestCase):
         self.assertTrue(suppress_legacy_jtac([self.p]))
 
     def test_incompatible_plugins_and_legacy_jtac_rejected_before_injection(self):
-        for name in ("tic", "ctld", "MooseAutolase"):
+        for name in ("ctld", "MooseAutolase"):
             with self.assertRaisesRegex(ValueError, name):
                 prepare_campaign(self.g, [self.p, NS(identifier=name, enabled=True)])
             self.assertEqual(len(self.m.triggerrules.triggers), 0)
@@ -311,8 +311,6 @@ class CampaignIntegrationTests(unittest.TestCase):
                 self.g, "_seed_pilot_roster"
             ), patch.object(self.g, "_seed_scenery_objectives"), patch.object(
                 self.g, "_seed_persistent_damage"
-            ), patch.object(
-                self.g, "_inject_tic_script"
             ), patch.object(
                 self.g, "_inject_aircraft_maintenance"
             ):

@@ -45,7 +45,6 @@ class RegistryTests(unittest.TestCase):
         self.air.units[0].pylons = {4: {"CLSID": "{AN_ASQ_228}"}}
         self.air.units[1].pylons = {4: {"CLSID": "{ALQ_164_RF_Jammer}"}}
         self.data = NS(
-            tic_groups=[],
             frontline_visibility_groups={"GROUND"},
             jtacs=[],
             flights=[NS(flight_type=NS(value="BAI"), units=self.air.units)],
@@ -139,11 +138,6 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(
             {o["coalition"] for o in r["observers"] if o["category"] == "air"}, {1}
         )
-
-    def test_tic_rejected_until_adapter_exists(self):
-        self.data.tic_groups = ["GROUND"]
-        with self.assertRaisesRegex(ValueError, "TIC"):
-            self.collect()
 
     def test_mixed_flight_excludes_only_human_observer(self):
         self.air.units[0].skill = Skill.Client

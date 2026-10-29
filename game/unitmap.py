@@ -58,7 +58,7 @@ class AirliftUnits:
     transfer: TransferOrder
 
 
-# Unit name of a clone spawned by the TIC (Troops In Contact) script. TIC
+# Compatibility with results from missions generated before TIC was retired. TIC
 # despawns each late-activated original group and respawns every unit as its
 # own single-unit group via MOOSE SPAWN, which renames units to
 # "<original group name>-<index>#<spawn:03d>-<unit:02d>" (the "-<index>#<NNN>"

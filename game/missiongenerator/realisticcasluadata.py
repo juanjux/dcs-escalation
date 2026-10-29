@@ -121,7 +121,7 @@ def render_startup(config: Mapping[str, Any]) -> str | None:
     """Render the final action after SCRIPT_ORDER, without mutating the mission.
 
     The caller supplies an explicit environment and the final registry. This is
-    not wired to the campaign plugin checkbox yet: JTAC/TIC adapters remain open.
+    not wired to the campaign plugin checkbox yet: external visibility adapters remain open.
     """
     if config.get("enabled") is not True:
         return None
@@ -259,8 +259,7 @@ def collect_registry(
 ) -> dict[str, Any] | None:
     """Collect declared units without modifying pydcs or activating any Lua.
 
-    Off short-circuits before touching either argument. TIC must be adapted before
-    use; refusing its combination is safer than silently fighting its Cloak calls.
+    Off short-circuits before touching either argument.
     Explicit exclusions and ANY waypoint invisibility owner (even SetInvisible
     false) are preserved. Runtime-created groups/trigger-owned visibility require
     adapters and are NOT certified by this registry's waypoint inspection alone.
@@ -272,10 +271,6 @@ def collect_registry(
     if unit_map is None:
         raise ValueError(
             "Realistic CAS requires UnitMap to distinguish SAM objectives from frontline SAMs"
-        )
-    if mission_data.tic_groups:
-        raise ValueError(
-            "Realistic CAS: TIC visibility/clone adapter is not integrated yet"
         )
     result: dict[str, Any] = {
         "schemaVersion": 1,

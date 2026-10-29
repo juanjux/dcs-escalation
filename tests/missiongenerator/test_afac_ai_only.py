@@ -135,7 +135,6 @@ def test_registry_rejects_human_afac_aircraft(skill: Skill) -> None:
     s = scenario()
     s.group.units[0].skill = skill
     data: Any = NS(
-        tic_groups=[],
         jtacs=[],
         flights=[NS(flight_type=FlightType.AFAC_AREA, units=s.group.units)],
     )

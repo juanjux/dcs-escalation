@@ -9,7 +9,7 @@ search and marking missions; existing campaign settings are not enabled on load.
 Campaign injection and final-pydcs environment export now have automated coverage,
 including saving/reloading a MIZ and compiling its scripts. This is NOT yet a
 full generated-campaign DCS acceptance or campaign-scale performance measurement.
-Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
+Adapters for arbitrary CTLD/MOOSE runtime-created units remain unsupported.
 
 ## Enabling the plugin
 
@@ -17,7 +17,7 @@ Adapters for arbitrary TIC/CTLD/MOOSE runtime-created units remain unsupported.
   immediate discovery attempts, detection rolls on, contact lifetime600s,
   approximate theater cover,
   debug off. The plugin itself remains off by default.
-- Disable **TIC and Moose Autolase**. TIC has a separate visibility/clone conflict.
+- Disable **Moose Autolase**.
   **CTLD logistics may stay enabled**: turn off its **JTAC autolase targets**
   option. This also prevents autolase from deployed troops/vehicles, not just
   generated JTACs. Smoke and laser-code settings do nothing with autolase off.
@@ -175,7 +175,7 @@ Hover an option's label or control for its explanation.
   physical concealment may lag under backlog. Measure/tune this in campaign tests.
 - Explicit visibility ownership: targets require `originalInvisible=false`.
   The adapter cannot query original invisibility from DCS; the caller/generator
-  must certify it. Never list TIC helpers or protected groups. No scan of all groups.
+  must certify it. Never list protected groups. No scan of all groups.
 - Expiry visibility errors are logged and retried on a bounded timer. Initial
   registration/reveal failures return failure and require a new registration/event
   or observation; shutdown restoration failures require another `stop()` call.
@@ -277,8 +277,8 @@ fog:stop()
 ```
 
 Allowlisted late births register on BIRTH; a new group incarnation with the same
-name replaces its old registration without touching unrelated IDs. This is not
-yet a TIC clone adapter. Unregistered/dead-group lifecycle pruning beyond explicit
+name replaces its old registration without touching unrelated IDs.
+Unregistered/dead-group lifecycle pruning beyond explicit
 unregister/replacement is left to the forthcoming generator/lifecycle integration.
 
 Revealing a group is not a guarantee that a terminated AttackUnit task restarts.
@@ -467,7 +467,7 @@ mission-end event stop detectors and restore visibility. A failed restoration
 keeps the recovery handle for a later retry; it is not silently reported as success.
 Lua integration tests cover these paths using DCS doubles, not native engine
 acceptance. The experimental campaign hook rejects active CTLD autolase, Moose
-Autolase and TIC, not CTLD logistics. AFAC search and marking use the same
+Autolase, not CTLD logistics. AFAC search and marking use the same
 visibility and compatibility rules.
 In-engine controls 35–37 additionally passed night/IR, controlled cloud
 transmission, and RBM/GMTI with live DCS radar-on/target velocities. These validate
@@ -486,8 +486,7 @@ invented role. Integrated sensor capabilities remain in the Lua profile table.
 serialization do not mutate the mission or activate scripts. Explicitly excluded
 groups and ground groups with waypoint visibility commands remain outside its
 ownership. Arbitrary script/trigger visibility ownership still needs integration;
-this inspection is not a certificate of universal compatibility. TIC campaigns
-are rejected at this boundary until the clone/visibility adapter exists.
+this inspection is not a certificate of universal compatibility.
 
 `LuaGenerator.generate` now preflights the registry/environment/options and injects
 the source files in `SCRIPT_ORDER`, then the typed startup action. Missing

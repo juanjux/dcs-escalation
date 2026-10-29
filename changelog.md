@@ -1,7 +1,8 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries, dispersed placement and TIC formation support.
+* **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries and dispersed placement.
+* **[Ground Forces]** Remove the Troops In Contact plugin; frontlines use native DCS combat and movement.
 * **[High Command]** Balance reward score ranges, avoid redundant support loans, and show difficulty separately from priority.
 * **[Live Pilots]** Share small, configurable morale gains from squadron mates' air and ground victories.
 * **[UI]** Allow missile sites to be disbanded for a refund after campaign start.
