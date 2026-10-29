@@ -92,6 +92,7 @@ def test_generated_mission_contains_each_guns_selected_ammunition(
     )
     generator = FlightGroupConfigurator.__new__(FlightGroupConfigurator)
     generator.game = SimpleNamespace(settings=SimpleNamespace(restrict_weapons_by_date=False))  # type: ignore[assignment]
+    generator.flight = SimpleNamespace(package=SimpleNamespace(target=None))  # type: ignore[assignment]
     for unit, ammo in zip(group.units, (1, 2, 3, None)):
         generator.setup_payload(
             unit, FlightMember(None, Loadout("Ammo", {}, None, ammo_type=ammo))

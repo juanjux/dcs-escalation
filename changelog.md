@@ -2,7 +2,8 @@
 
 ## Features/Improvements
 * **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries and dispersed placement.
-* **[Ground Forces]** Remove the Troops In Contact plugin; frontlines use native DCS combat and movement.
+* **[Units]** Add eight stock CurrentHill ground units from DCS 2.9.31 and missing Iraqi aircraft availability without requiring mod packs (adapted from RetLab #1413).
+* **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries, dispersed placement and TIC formation support.
 * **[High Command]** Balance reward score ranges, avoid redundant support loans, and show difficulty separately from priority.
 * **[Live Pilots]** Share small, configurable morale gains from squadron mates' air and ground victories.
 * **[UI]** Allow missile sites to be disbanded for a refund after campaign start.
@@ -99,6 +100,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Payload]** Match Shrike seekers independently of date restrictions, preserve manual weapon settings and correct AGM-45/78 head tables (adapted from RetLab #1366).
 * **[OPFOR AI]** Keep the commander briefing focused on API actions and planning rules, with clearer sales and turn-zero rebuild guidance.
 * **[Mission Log]** Use campaign ownership for scenery objectives and avoid bad-news prefixes for unknown ground targets.
 * **[Mission Log]** Report own ground, SAM and ship losses under the losses setting.
