@@ -93,7 +93,7 @@ local function record(fields)
         return
     end
     recorded = recorded + 1
-    fields.t = timer.getTime()
+    fields.t = fields.t or timer.getTime()
     mission_log_events[recorded] = fields
 end
 
@@ -421,12 +421,50 @@ end
 -- A shot-down aircraft fires S_EVENT_KILL and then S_EVENT_CRASH. Without this
 -- the crash would be reported a second time as if nobody had shot it.
 local killed = {}
+local pending_crashes = {}
+local reported_crashes = {}
+
+-- Native CRASH and KILL events can arrive in either order in the same frame.
+-- Keep the crash provisional briefly so a combat loss gets one announcement.
+CRASH_CONFIRM_SECONDS = 3
 
 local function remember_killed(unit)
     local name
     if pcall(function() name = unit:getName() end) and name then
         killed[tostring(name)] = true
+        pending_crashes[tostring(name)] = nil
     end
+end
+
+local function confirm_crash(entry)
+    if pending_crashes[entry.key] ~= entry then
+        return
+    end
+    pending_crashes[entry.key] = nil
+    if entry.name ~= nil and killed[entry.name] then
+        return
+    end
+    reported_crashes[entry.key] = true
+    record({kind = "crash", side = entry.side, t = entry.t,
+            actor_type = entry.actor_type, actor_pilot = entry.actor_pilot})
+    announce(entry.side, "crashes", cheer(false, entry.text))
+end
+
+local function queue_crash(unit, side)
+    local name = name_of(unit)
+    local key = name or unit
+    if pending_crashes[key] or reported_crashes[key] then
+        return
+    end
+    local kind, pilot = unit_fields(unit)
+    -- Snapshot before the destroyed native object becomes unavailable.
+    local entry = {key = key, name = name, side = side, t = timer.getTime(),
+                   actor_type = kind, actor_pilot = pilot,
+                   text = string.format("%s CRASHED", describe(unit))}
+    pending_crashes[key] = entry
+    timer.scheduleFunction(function(value)
+        confirm_crash(value)
+    end, entry, timer.getTime() + CRASH_CONFIRM_SECONDS)
 end
 
 local function was_killed(unit)
@@ -648,6 +686,9 @@ function handler:onEvent(event)
         local killer_text = describe(event.initiator)
         local victim_text = describe(event.target)
         if is_aircraft(event.target) then
+            if was_killed(event.target) then
+                return
+            end
             remember_killed(event.target)
             local killer_type, killer_pilot = unit_fields(event.initiator)
             local victim_type, victim_pilot = unit_fields(event.target)
@@ -739,11 +780,7 @@ function handler:onEvent(event)
         end
         local side = side_of(event.initiator)
         if side then
-            local kind, pilot = unit_fields(event.initiator)
-            record({kind = "crash", side = side,
-                    actor_type = kind, actor_pilot = pilot})
-            announce(side, "crashes",
-                cheer(false, string.format("%s CRASHED", describe(event.initiator))))
+            queue_crash(event.initiator, side)
         end
         return
     end
