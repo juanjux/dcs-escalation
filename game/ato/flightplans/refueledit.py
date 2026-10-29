@@ -55,6 +55,11 @@ def refuel_verdict(flight: Flight) -> RefuelVerdict:
     if not _could_meet_a_tanker(flight):
         return RefuelVerdict.NOTHING_TO_DO
 
+    if getattr(flight.flight_plan.layout, "pre_push_refuel", None) is not None:
+        # An explicitly requested early top-off is not an unnecessary automatic
+        # detour just because the aircraft could also get home without it.
+        return RefuelVerdict.NOTHING_TO_DO
+
     estimate = estimate_fuel(flight)
     if estimate is None:
         return RefuelVerdict.NOTHING_TO_DO

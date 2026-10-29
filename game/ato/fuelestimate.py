@@ -270,6 +270,10 @@ def _estimate_fuel_segments(flight: Flight, *, refuel: bool) -> list[FuelEstimat
             taxi = 0
             external = loadout_fuel(flight.roster.members[0].loadout)
             carried = kgs(flight.unit_type.dcs_unit_type.fuel_max + external.kgs)
+            if b is getattr(getattr(plan, "layout", None), "pre_push_refuel", None):
+                # The early AI stop ends at 90% of internal capacity. Do not
+                # credit a full refill of drop tanks that the task does not promise.
+                carried = kgs(0.9 * flight.unit_type.dcs_unit_type.fuel_max)
 
     segments.append(finish_segment())
     return segments

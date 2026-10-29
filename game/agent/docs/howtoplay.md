@@ -748,6 +748,20 @@ The DCS AI that actually flies these missions is limited. Plan robustly around i
   a fighter in that geometry and has killed Felons and Su-30s doing it. Kill helicopters
   with radar missiles from an angle, never by merging at the same altitude.
 
+### CAP endurance and tanker availability
+
+A refuel waypoint after a CAP track does not make the flight interrupt its orbit,
+refuel and resume. DCS can order RTB at BINGO before the planned station ends.
+For long coverage, stagger replacement patrols rather than assuming one flight
+can remain for two hours. Plan compatible theater tankers early enough for the
+flights using them; a package tanker scheduled for the return leg is not an
+outbound fuel source.
+
+The OPFOR API does not expose `refuel_before_push` or `tanking_minutes`. Do not
+invent these fields in package requests. Inspect existing refuel waypoints and
+reported timing; if an outbound stop is required but cannot be configured through
+the available API, ask the human rather than assuming it has been enabled.
+
 ### "In Flight" spawns you at the BASE, not on the racetrack
 
 This one has killed a whole turn's fighters, so read it twice.

@@ -39,6 +39,7 @@
 * **[Live Pilots]** Configurable rank names and promotion XP thresholds, with updated defaults for new campaigns.
 * **[Mission Log]** Configurable combat commentary with clearer coalition and pilot identification and separate monitoring/interception controls.
 * **[Flight Plans]** Fuel-aware planning with route and refuelling estimates, automatic tanker support and prompts when edits change fuel requirements.
+* **[Planning]** Add optional pre-push and pre-station tanker stops with configurable refuelling time and boom/probe matching (adapted from RetLab).
 * **[UI]** Redesigned flight and package editors with crew controls, timelines, task colours and direct switching between flights.
 * **[UI]** Intel statistics and history with independent faction and metric comparisons.
 * **[UI]** Shared campaign and per-pilot aircraft notes in Player Aircrafts.

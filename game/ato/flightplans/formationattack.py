@@ -15,6 +15,7 @@ from game.theater import MissionTarget
 from game.theater.theatergroundobject import MotorpoolGroundObject
 from game.utils import meters, nautical_miles, Speed, feet
 from . import alignpoint
+from .. import prerefuel
 from .refuelneed import needs_refuelling
 from .flightplan import FlightPlan
 from .formation import FormationFlightPlan, FormationLayout
@@ -123,6 +124,8 @@ class FormationAttackFlightPlan(FormationFlightPlan, ABC):
                 )
                 break
             total += self.travel_time_between_waypoints(previous_waypoint, waypoint)
+            if previous_waypoint is self.layout.pre_push_refuel:
+                total += prerefuel.tanking_time(self.flight)
         else:
             raise PlanningError(
                 f"Did not find destination waypoint {destination} in "
@@ -136,6 +139,34 @@ class FormationAttackFlightPlan(FormationFlightPlan, ABC):
             self.layout.join, self.layout.ingress
         )
         return self.ingress_time - travel_time
+
+    def total_time_between_waypoints(
+        self, a: FlightWaypoint, b: FlightWaypoint
+    ) -> timedelta:
+        duration = super().total_time_between_waypoints(a, b)
+        if a is self.layout.pre_push_refuel:
+            duration += prerefuel.tanking_time(self.flight)
+        return duration
+
+    @property
+    def push_time(self) -> datetime:
+        if self.layout.pre_push_refuel is None or self.layout.hold is None:
+            return super().push_time
+        points = [
+            self.layout.hold,
+            self.layout.pre_push_refuel,
+            *self.layout.nav_to,
+            self.layout.join,
+        ]
+        duration = sum(
+            (
+                self.total_time_between_waypoints(a, b)
+                for a, b in zip(points, points[1:])
+            ),
+            timedelta(),
+        )
+        # The hold's dwell is planned before its departure, not after it.
+        return self.join_time - duration + self.hold_duration
 
     @property
     def split_time(self) -> datetime:
@@ -177,6 +208,10 @@ class FormationAttackFlightPlan(FormationFlightPlan, ABC):
             return self.initial_time
         elif waypoint in self.layout.targets:
             return self.tot
+        elif waypoint is self.layout.pre_push_refuel and self.layout.hold is not None:
+            return self.push_time + self.travel_time_between_waypoints(
+                self.layout.hold, waypoint
+            )
         return super().tot_for_waypoint(waypoint)
 
 
@@ -186,11 +221,23 @@ class FormationAttackLayout(FormationLayout):
     targets: list[FlightWaypoint]
     initial: Optional[FlightWaypoint] = None
     lineup: Optional[FlightWaypoint] = None
+    pre_push_refuel: Optional[FlightWaypoint] = None
+
+    def delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
+        if waypoint is self.pre_push_refuel:
+            self.pre_push_refuel = None
+            return True
+        return super().delete_waypoint(waypoint)
+
+    def can_delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
+        return waypoint is self.pre_push_refuel or super().can_delete_waypoint(waypoint)
 
     def iter_waypoints(self) -> Iterator[FlightWaypoint]:
         yield self.departure
         if self.hold:
             yield self.hold
+        if self.pre_push_refuel is not None:
+            yield self.pre_push_refuel
         yield from self.nav_to
         yield self.join
         if self.lineup:
@@ -265,6 +312,7 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
         join = builder.join(join_pos)
         split = builder.split(self._get_split())
         refuel = self._build_refuel(builder)
+        pre_refuel = prerefuel.build_stop(self.flight, join.position) if hold else None
 
         ingress = builder.ingress(
             ingress_type, self.package.waypoints.ingress, self.package.target
@@ -291,8 +339,13 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
         return FormationAttackLayout(
             departure=builder.takeoff(self.flight.departure),
             hold=hold,
+            pre_push_refuel=pre_refuel,
             nav_to=builder.nav_path(
-                hold.position if hold else self.flight.departure.position,
+                (
+                    pre_refuel.position
+                    if pre_refuel
+                    else (hold.position if hold else self.flight.departure.position)
+                ),
                 join.position if join else ingress.position,
                 ingress_egress_altitude,
                 use_agl_ingress_egress,

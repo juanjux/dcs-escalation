@@ -31,6 +31,14 @@ class StandardLayout(Layout, ABC):
         # in the nav lists -- which the split is not in. Asked by identity instead, so
         # adding a waypoint after it still puts it on the way home. getattr because
         # only a FormationLayout has a split, and importing it here would be a cycle.
+        if wpt is getattr(self, "pre_push_refuel", None):
+            if hasattr(self, "hold"):
+                self.nav_to.insert(0, new_wpt)
+            else:
+                # A patrol's pre-station stop precedes the station directly.
+                # Do not put an outbound point on the return route.
+                return False
+            return True
         if wpt is getattr(self, "split", None):
             self.nav_from.insert(0, new_wpt)
             return True

@@ -9,6 +9,7 @@ from .capbuilder import CapBuilder
 from .refuelneed import needs_refuelling
 from .patrolling import PatrollingFlightPlan, PatrollingLayout
 from .waypointbuilder import WaypointBuilder
+from .. import prerefuel
 
 if TYPE_CHECKING:
     from ..flightwaypoint import FlightWaypoint
@@ -88,6 +89,7 @@ class Builder(CapBuilder[TarCapFlightPlan, TarCapLayout]):
         orbit0p, orbit1p = self.cap_racetrack_for_objective(location, barcap=False)
 
         start, end = builder.race_track(orbit0p, orbit1p, patrol_alt)
+        pre_refuel = prerefuel.build_stop(self.flight, start.position)
 
         refuel = None
         nav_from_origin = orbit1p
@@ -118,12 +120,15 @@ class Builder(CapBuilder[TarCapFlightPlan, TarCapLayout]):
         return TarCapLayout(
             departure=builder.takeoff(self.flight.departure),
             nav_to=builder.nav_path(
-                self.flight.departure.position, orbit0p, patrol_alt
+                self.flight.departure.position,
+                pre_refuel.position if pre_refuel else orbit0p,
+                patrol_alt,
             ),
             nav_from=builder.nav_path(
                 nav_from_origin, self.flight.arrival.position, patrol_alt
             ),
             patrol_start=start,
+            pre_push_refuel=pre_refuel,
             patrol_end=end,
             refuel=refuel,
             arrival=builder.land(self.flight.arrival),
