@@ -126,6 +126,9 @@ class Cartridge(ABC):
     #: do not, they are on the kneeboard only.
     takes_saved_points = True
 
+    #: Whether DCS needs the mission route to preload this aircraft's settings.
+    requires_route_for_preload = False
+
     def front_points(self, boxes: int) -> int:
         """How many points the front line can have beside this many boxes."""
         return self.max_line_points
@@ -150,10 +153,9 @@ class Cartridge(ABC):
     ) -> dict[str, Any]:
         """The part of the cartridge's ``data`` tree this aircraft fills.
 
-        ``navigation`` is empty when there is nothing to add to the flight plan, and
-        then no navigation section is written at all: the mission's own route is what
-        the aircraft starts with, and rewriting it to say the same thing is risk for
-        nothing.
+        ``navigation`` normally contains a route only when saved points are added.
+        Profiles requiring it for settings preload also receive the mission route
+        without saved points.
         """
 
 
@@ -178,6 +180,7 @@ class HornetCartridge(Cartridge):
     # selected one, as with FLOT, so the tanker that matters most goes first.
     max_boxes = 3
     refuels_from = "drogue"
+    requires_route_for_preload = True
 
     def campaign_sections(
         self,
@@ -1411,11 +1414,11 @@ def navigation_set(
     """The aircraft's whole navigation set: the flight plan, then what was written
     down for it.
 
-    Empty when there is nothing written down, and empty when the flight plan alone
-    fills the module -- a truncated route is worse than the mirror this replaces, and
-    a cartridge with no navigation section leaves the mirror where it was.
+    The Hornet also needs the actual route without saved points: a settings-only
+    WYPT section does not preload TACAN/ICLS. Other profiles retain mission-route
+    mirroring when no saved points are present. Never truncate the flight plan.
     """
-    if not saved:
+    if not saved and not profile.requires_route_for_preload:
         return []
     numbers = range(profile.first_point, profile.last_point + 1)
     if len(route) > len(numbers):

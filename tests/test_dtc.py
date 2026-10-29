@@ -769,7 +769,8 @@ def test_generated_mission_binds_each_flights_new_dtc_sections(tmp_path: Path) -
     assert len(hornet_data["SA"]["CORRIDORS"][0]["points"]) == 14
     assert hornet_data["SA"]["mirror_MEZ_THRTS"] is True
     assert hornet_data["WYPT"]["NAV_SETTINGS"]["TACAN"]["Channel"] == 74
-    assert "NAV_PTS" not in hornet_data["WYPT"]
+    assert len(hornet_data["WYPT"]["NAV_PTS"]) == len(hornet.waypoints)
+    assert hornet_data["WYPT"]["mirror_NAV_PTS"] is False
     assert [p["note"] for p in cards["dtc_validation VIPER11"]["MPD"]["GEO_LINES"]] == [
         "CAS"
     ] * 5
@@ -1027,11 +1028,74 @@ def _nav(profile: dtc.Cartridge, route: int, saved: int) -> list[dtc.NavPoint]:
     return dtc.navigation_set(profile, _route(route), points)
 
 
-def test_nothing_written_down_leaves_the_navigation_set_alone() -> None:
-    """The mission's own route is what the aircraft starts with. Rewriting it to say
-    the same thing is risk for nothing, so no navigation section is written at all."""
-    assert _nav(dtc.HornetCartridge(), route=13, saved=0) == []
-    assert "WYPT" not in dtc.HornetCartridge().sections([], [])
+def test_other_profiles_still_mirror_routes_without_saved_points() -> None:
+    assert _nav(dtc.ViperCartridge(), route=13, saved=0) == []
+
+
+@pytest.mark.parametrize(
+    "aircraft", ["FA-18C_hornet", "FA-18E", "FA-18F", "EA-18G", "FA-18ET", "FA-18FT"]
+)
+def test_hornet_preload_includes_only_real_route_points(aircraft: str) -> None:
+    profile = dtc.CARTRIDGES[aircraft]
+    route = _route(13)
+    points = dtc.navigation_set(profile, route, [])
+    assert [point.number for point in points] == list(range(13))
+    assert [point.name for point in points] == [wp.display_name for wp in route]
+    assert [(point.x, point.y, point.alt_m) for point in points] == [
+        (wp.position.x, wp.position.y, wp.alt.meters) for wp in route
+    ]
+    assert all(point.on_route for point in points)
+    section = profile.sections([], points)["WYPT"]
+    assert section["mirror_NAV_PTS"] is False
+    assert len(section["NAV_PTS"]) == len(route)
+    assert all(point["R1"] and not point["R2"] for point in section["NAV_PTS"])
+
+
+@pytest.mark.parametrize("saved", [0, 1])
+def test_hornet_preload_never_truncates_an_oversized_route(saved: int) -> None:
+    assert _nav(dtc.HornetCartridge(), route=59, saved=saved) == []
+
+
+def test_hornet_preload_accepts_a_full_route_without_saved_points() -> None:
+    points = _nav(dtc.HornetCartridge(), route=58, saved=0)
+    assert [point.number for point in points] == list(range(58))
+
+
+@pytest.mark.parametrize("carrier", [False, True])
+@pytest.mark.parametrize(
+    "aircraft", ["FA-18C_hornet", "FA-18E", "FA-18F", "EA-18G", "FA-18ET", "FA-18FT"]
+)
+def test_embedded_hornet_navaids_preload_without_custom_points(
+    tmp_path: Path, aircraft: str, carrier: bool
+) -> None:
+    mission = tmp_path / "navigation.miz"
+    with zipfile.ZipFile(mission, "w") as archive:
+        archive.writestr("mission", "-- a mission")
+    flight = _flight_data(aircraft=aircraft)
+    runway = _recovery_runway()
+    if not carrier:
+        runway = RunwayData(
+            "Land base", runway.runway_heading, runway.runway_name, tacan=runway.tacan
+        )
+    flight.departure = flight.arrival = runway
+    dtc.write_into_mission(_game(), _mission_data(flight), mission)
+    with zipfile.ZipFile(mission) as archive:
+        card = json.loads(archive.read("DTC/navigation ENFIELD11.dtc"))
+    section = card["data"]["WYPT"]
+    assert section["mirror_NAV_PTS"] is False
+    assert [point["text_note"] for point in section["NAV_PTS"]] == [
+        wp.display_name for wp in flight.waypoints
+    ]
+    assert [point["wypt_num"] for point in section["NAV_PTS"]] == list(range(4))
+    assert section["NAV_SETTINGS"]["TACAN"] == {
+        "Mode": 1,
+        "Channel": 74,
+        "ChannelMode": 1,
+        "OnOff": True,
+    }
+    assert ("ICLS" in section["NAV_SETTINGS"]) is carrier
+    assert ("ACLS" in section["NAV_SETTINGS"]) is carrier
+    assert flight.saved_points == []
 
 
 def test_the_route_comes_first_and_keeps_its_numbers() -> None:
