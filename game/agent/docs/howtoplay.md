@@ -624,27 +624,6 @@ Common roles and what they're for:
 Air-to-air/support tasks (SWEEP, TARCAP, ESCORT, AEWC, REFUELING) attach over any
 enemy target; BARCAP protects any friendly one.
 
-### Package timing: Coordinated, ASAP or manual
-
-New packages created from the map default to **Coordinated**. Strike, BAI, OCA
-and CAS packages wait for SEAD/DEAD packages attacking enemy SAM sites whose
-threat rings cover their target. The window opens two minutes after the latest
-covering suppressor's TOT and lasts eight minutes. Arrival is never earlier than
-the whole package can reach it. This schedules an opportunity; it does not assume
-the SAM was actually destroyed or suppressed.
-
-The package window identifies the suppressors and warns about covering radar
-SAMs without suppression. If the window has already closed or cannot be reached
-within the mission duration, the package falls back to ASAP and explains why.
-A package's own SEAD escort avoids the missing-suppression warning but does not
-create an earlier, independent suppression window.
-
-Choose **ASAP** for the earliest possible arrival. Untick both automatic modes
-to enter a manual TOT. Non-attack tasks use ASAP when Coordinated is selected.
-Existing saves keep their previous timing mode. Coordinated times are recalculated
-when editing the package and before Take Off; active flights are not rescheduled.
-The OPFOR API's explicit set/reset TOT command switches back to manual/ASAP.
-
 ### Composing a good package
 
 Sequence and combined arms matter:
@@ -1993,6 +1972,9 @@ Write bodies:
   time you thought. When you stagger a SEAD ahead of a strike, stagger from the floor, not from
   zero — `evaluate_package` reports the transit before you commit, and `validate` flags any
   committed package whose TOT is below its floor with `earliest_tot_minutes`.
+  This command selects manual timing or ASAP, disabling automatic Coordinated timing
+  if the package used it. The API does not expose a switch to enable Coordinated mode;
+  sequence your SEAD/DEAD and attacks through evaluated TOTs and `tot_offset_min`.
 - `POST /buy/aircraft` · `POST /sell/aircraft` `{side, squadron_id, quantity}` — a buy
   is refused when the squadron is at its `max_ac` cap, its base has no free parking, or
   you lack budget. An aircraft bought at a base whose runway is cratered is born
