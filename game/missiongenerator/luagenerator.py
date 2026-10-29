@@ -57,10 +57,28 @@ class LuaGenerator:
         self._inject_aircraft_maintenance()
         self._seed_scenery_objectives()
         self._seed_persistent_damage()
+        self._inject_barcap_refuelling()
         inject_campaign(self, realistic_cas)
         for t in existing_start_triggers:
             self.mission.triggerrules.triggers.remove(t)
             self.mission.triggerrules.triggers.append(t)
+
+    def _inject_barcap_refuelling(self) -> None:
+        from dcs.lua import dumps
+        from .barcaprefuelling import configure
+
+        config = configure(self.game, self.mission, self.mission_data)
+        if not config:
+            return
+        trigger = TriggerStart(comment="BARCAP reactive refuelling")
+        trigger.add_action(
+            DoScript(String("ESCALATION_BARCAP_REFUELLING=" + dumps(config)))
+        )
+        script = Path("resources/plugins/base/barcap_refuelling.lua")
+        trigger.add_action(
+            DoScriptFile(self.mission.map_resource.add_resource_file(script))
+        )
+        self.mission.triggerrules.triggers.append(trigger)
 
     def _inject_aircraft_maintenance(self) -> None:
         settings = self.game.settings
