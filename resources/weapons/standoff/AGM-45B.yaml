@@ -7,6 +7,8 @@ clsids:
   - "{AGM_45B}"
   - "{LAU_34_AGM_45B}"
   - "{LAU_34_AGM_45B_SWA}"
+# Overrides, note: overrides are prioritized from top to bottom. The first rule
+# naming any radar at the target wins; a target no rule names gets the fallback.
 target_overrides:
   - unit_ids:
       - "snr s-125 tr" # SA-3 S-125 Low Blow TR
@@ -22,16 +24,21 @@ target_overrides:
       "NFP_rfgu_type": 9 # Mk 49 Mod 1
 
   - unit_ids:
+      - "SNR_75V" # SA-2 / HQ-2 Fan Song TR
+    settings:
+      "NFP_rfgu_type": 5 # Mk 25, DCS's Fan Song head
+
+  - unit_ids:
       - "Tor 9A331" # SAM SA-15 Tor Gauntlet
       - "CHAP_PantsirS1" # SA-22 Pantsir S1
       - "2S6 Tunguska"
-      - "SNR_75V" # SAM SA-2 Fan Song TR
     settings:
       "NFP_rfgu_type": 10 # Mk 50
 
   - unit_ids:
       - "S-300PS 64H6E sr" # SA-10 S-300 Big Bird SR
       - "S-300PS 40B6MD sr_19J6" # SA-10 S-300 Tin Shield SR
+      - "SON_9" # Fire Can AAA radar
     settings:
       "NFP_rfgu_type": 2 # Mk 23
 
@@ -39,3 +46,6 @@ target_overrides:
       - "p-19 s-125 sr" # SA-2/3/5 P19 Flat Face SR
     settings:
       "NFP_rfgu_type": 7 # Mk 37
+
+target_overrides_fallback:
+  "NFP_rfgu_type": 10 # Mk 50, the broadest head

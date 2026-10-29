@@ -249,20 +249,17 @@ class Loadout:
         This applies weapon-specific settings defined in the weapon YAML files
         for the given target type to all weapons in this loadout.
         """
-        # Convert loadout to pydcs payload format for reuse of adjust_payload_for_target
-        payload = [
-            (pylon_num, {"clsid": weapon.clsid, "settings": {}})
-            for pylon_num, weapon in self.pylons.items()
-            if weapon is not None
-        ]
-
-        # Use the existing method to apply target-based settings
-        adjusted_payload = self.adjust_payload_for_target(payload, target)
-
-        # Extract the updated settings and apply them to our loadout
-        for pylon_number, pylon_data in adjusted_payload:
-            if "settings" in pylon_data and pylon_data["settings"]:
-                self.pylon_settings[pylon_number] = pylon_data["settings"]
+        targets = self.target_unit_ids(target)
+        if not targets:
+            return
+        for pylon_number, weapon in self.pylons.items():
+            if weapon is None:
+                continue
+            settings = weapon.settings_for_target(
+                self.pylon_settings.get(pylon_number), targets
+            )
+            if settings:
+                self.pylon_settings[pylon_number] = settings
 
     @classmethod
     def iter_for(cls, flight: Flight) -> Iterator[Loadout]:
@@ -456,6 +453,24 @@ class Loadout:
     def empty_loadout(cls) -> Loadout:
         return Loadout("Empty", {}, date=None)
 
+    @staticmethod
+    def target_unit_ids(target: Optional[MissionTarget]) -> tuple[str, ...]:
+        """The DCS unit type ids at a target, for weapon target overrides."""
+        from game.theater import TheaterGroundObject
+        from game.transfers import Convoy
+
+        targets: tuple[str, ...] = ()
+        unit: Any
+        if isinstance(target, Convoy):
+            for unit in target.units:
+                if unit.dcs_unit_type and unit.dcs_unit_type.id:
+                    targets += (unit.dcs_unit_type.id,)
+        elif isinstance(target, TheaterGroundObject):
+            for unit in target.units:
+                if unit.type and unit.type.id:
+                    targets += (unit.type.id,)
+        return targets
+
     @classmethod
     def adjust_payload_for_target(cls, payload: Any, target: MissionTarget) -> Any:
         """
@@ -471,23 +486,7 @@ class Loadout:
         Returns:
             The payload with adjusted weapon settings, or the original if no adjustments apply
         """
-        if not target:
-            return payload
-
-        from game.theater import TheaterGroundObject
-        from game.transfers import Convoy
-
-        targets: tuple[Any, ...] = ()
-        unit: Any
-        if isinstance(target, Convoy):
-            for unit in target.units:
-                if unit.dcs_unit_type and unit.dcs_unit_type.id:
-                    targets += (unit.dcs_unit_type.id,)
-        elif isinstance(target, TheaterGroundObject):
-            for unit in target.units:
-                if unit.type and unit.type.id:
-                    targets += (unit.type.id,)
-
+        targets = cls.target_unit_ids(target)
         if not targets:
             return payload
 
@@ -503,9 +502,8 @@ class Loadout:
             if weapon is None:
                 continue
 
-            # Get target-based overrides from the weapon definition
-            target_overrides = weapon.get_target_overrides(targets)
-            if target_overrides:
-                pylon_data["settings"] = target_overrides
+            settings = weapon.settings_for_target(pylon_data.get("settings"), targets)
+            if settings:
+                pylon_data["settings"] = settings
 
         return adjusted_payload
