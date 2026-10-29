@@ -102,20 +102,22 @@ def test_the_score_is_the_difficulty_plus_the_importance() -> None:
 def test_every_kind_works_out_at_every_score_it_can_be_won_with() -> None:
     faction = _faction(GroupTask.SHORAD, GroupTask.MERAD, GroupTask.LORAD)
     for kind in KINDS:
-        for score in range(kind.min_score, MAX_SCORE + 1):
+        for score in range(kind.min_score, kind.max_score + 1):
             prize = _prize(kind.key, score, faction)
             assert prize.line.endswith("."), prize.line
             assert (prize.score, prize.ticket) == (score, kind.ticket)
 
 
-def test_a_kind_is_drawn_only_from_its_lowest_score_up() -> None:
+def test_modest_utility_rewards_and_combat_loans_have_separate_score_ranges() -> None:
     prizes = Prizes(_settings(), *_side(GroupTask.SHORAD))
 
     at_five = {prize.kind for s in range(300) if (prize := prizes.draw(5, s))}
     at_ten = {prize.kind for s in range(300) if (prize := prizes.draw(10, s))}
 
-    assert not at_five & {"runway", "heal"}
-    assert {"runway", "heal"} <= at_ten
+    assert {"runway", "heal"} <= at_five
+    assert "squadron" not in at_five
+    assert "squadron" in at_ten
+    assert not at_ten & {"runway", "heal", "hospital", "awacs", "tanker"}
 
 
 def test_a_kind_the_game_cannot_give_yet_is_never_drawn() -> None:
@@ -176,9 +178,10 @@ def test_the_numbers_are_worked_out_from_the_score() -> None:
 
 def test_a_squadron_on_loan_is_dearer_the_higher_the_score() -> None:
     # The tanker is no combat aircraft, however dear.
-    assert _prize("squadron", 2).term("type") == "F-5E"
+    assert _prize("squadron", 7).term("type") == "F-5E"
+    assert _prize("squadron", 7).term("aircraft") == 6
     assert _prize("squadron", 10).line == (
-        "A ticket for a squadron of 20 F-15E on loan for 5 turns."
+        "A ticket for a squadron of 12 F-15E on loan for 5 turns."
     )
 
 

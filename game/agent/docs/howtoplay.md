@@ -1419,6 +1419,8 @@ and adaptation to the enemy.
 When the campaign has the High Command on, your High Command gives you **requests**
 every turn: a few of the player's objectives it would like taken, one from each tier of
 them ranked by difficulty plus importance (three by default: high, medium and low).
+These tiers express priority, not difficulty alone: a low-priority objective can still
+be dangerous. Check its separate difficulty, hazards and approach before planning.
 `GET /high_command` lists them.
 
 - **They are optional.** Ignoring a request, or letting it run out, costs you nothing.

@@ -104,6 +104,22 @@ def test_the_top_and_bottom_tiers_get_their_own_colours() -> None:
     ]
 
 
+def test_low_priority_keeps_its_separate_high_difficulty(objectives: None) -> None:
+    from PySide6.QtCore import Qt
+    from qt_ui.windows.highcommand.rows import OrdersModel
+
+    [view] = data.order_views(_game(_order("TURKEY", 0, TURN + 3)))
+    assert view.tier_chip == "LOW" and view.difficulty_label == "Difficulty 4/5"
+    model = OrdersModel()
+    model.set_orders([view])
+    tooltip = model.data(model.index(0), Qt.ItemDataRole.ToolTipRole)
+    assert "Priority: LOW" in tooltip and "Difficulty 4/5" in tooltip
+    assert "Strategic importance: 3/5" in tooltip
+    assert "Difficulty 4/5" in model.data(
+        model.index(0), Qt.ItemDataRole.AccessibleTextRole
+    )
+
+
 def test_the_headline_counts_the_orders_in_their_last_turn() -> None:
     game = _game(_order("TURKEY", 2, TURN + 3), _order("HERRING", 0, TURN + 1))
 
@@ -197,6 +213,41 @@ def qt_app() -> Any:
     if GameUpdateSignal.get_instance() is None:
         GameUpdateSignal()
     return app
+
+
+def test_order_delegate_paints_difficulty_separately_from_priority(
+    qt_app: Any, objectives: None, monkeypatch: Any
+) -> None:
+    from PySide6.QtCore import QRect
+    from PySide6.QtGui import QPainter, QPixmap
+    from PySide6.QtWidgets import QStyleOptionViewItem
+    from qt_ui.windows.highcommand import rows
+
+    [view] = data.order_views(_game(_order("TURKEY", 0, TURN + 3)))
+    model = rows.OrdersModel()
+    model.set_orders([view])
+    text: list[str] = []
+    original = rows.draw
+
+    def capture(
+        painter: Any, x: int, baseline: int, label: str, face: Any, colour: str
+    ) -> int:
+        text.append(label)
+        return original(painter, x, baseline, label, face, colour)
+
+    monkeypatch.setattr(rows, "draw", capture)
+    image = QPixmap(650, rows.ORDER_ROW)
+    painter = QPainter(image)
+    option = QStyleOptionViewItem()
+    option.rect = QRect(0, 0, image.width(), image.height())
+    try:
+        rows.OrderDelegate().paint(painter, option, model.index(0))
+    finally:
+        painter.end()
+    assert any(
+        label.startswith("Difficulty 4/5 · Destroy every unit") for label in text
+    )
+    assert view.tier_chip == "LOW"
 
 
 def test_the_window_opens_on_the_order_asked_for(qt_app: Any, objectives: None) -> None:

@@ -111,6 +111,14 @@ class OrdersModel(QAbstractListModel):
             return order
         if role == Qt.ItemDataRole.DisplayRole:
             return order.name
+        if role == Qt.ItemDataRole.ToolTipRole:
+            return (
+                f"Priority: {order.tier_chip}\n{order.difficulty_label}\n"
+                f"Strategic importance: {order.importance}/5\n"
+                "Priority combines difficulty and strategic importance."
+            )
+        if role == Qt.ItemDataRole.AccessibleTextRole:
+            return f"{order.name}: {order.tier_chip} priority, {order.difficulty_label}, {order.asked}"
         return None
 
     def at(self, index: ModelIndex) -> Optional[OrderView]:
@@ -163,7 +171,7 @@ class OrderDelegate(QStyledItemDelegate):
             painter,
             rect.left() + LEFT,
             rect.top() + 42,
-            elide(face, order.asked, text_room),
+            elide(face, f"{order.difficulty_label} · {order.asked}", text_room),
             face,
             ink.BODY,
         )

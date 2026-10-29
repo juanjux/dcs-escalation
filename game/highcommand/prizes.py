@@ -1,11 +1,11 @@
 """What the High Command pays for taking an objective.
 
 An objective's score is its difficulty plus its importance, from 2 to 10. Each kind of
-prize (KINDS) says what it takes to be offered: the lowest score it can be won with,
-which for most of them is any, and whatever the campaign must have for it, such as
-pilots with morale. An objective's prize is drawn among the kinds its score reaches and
-worked out to that score when the objective is marked, so the player knows what taking
-it pays before trying.
+prize (KINDS) defines an eligible score range and any campaign needs it must fill.
+Modest utility rewards are excluded from high scores, and support aircraft are offered
+only when the coalition lacks operational aircraft for that role. A prize is drawn
+among the eligible kinds and scaled to that score when the objective is marked, so the
+player knows what taking it pays before trying.
 
 Most prizes take effect when the objective falls. A ticket is kept instead, and spent
 whenever the player chooses, on what its steps ask the player to pick. How a kind is
@@ -42,6 +42,8 @@ if TYPE_CHECKING:
 
 MIN_SCORE = 2
 MAX_SCORE = 10
+MIN_SQUADRON_SCORE = 7
+MIN_SQUADRON_AIRCRAFT = 6
 
 #: The five rungs of pilot skill, as the mission editor names them.
 RUNGS = ("Cadet", "Rookie", "Trained", "Veteran", "Ace")
@@ -123,6 +125,8 @@ class Context:
     side: Player = Player.BLUE
     #: Rewards already promised by this side's open requests.
     offered: tuple[Prize, ...] = ()
+    #: Live campaign state for rewards that must fill an actual need.
+    game: Optional[Game] = None
 
 
 #: A prize's line and terms at a score, or None when it cannot be given at that score.
@@ -186,8 +190,12 @@ class PrizeKind:
     give: Optional[Give] = None
     #: What spending it asks the player to pick, in order.
     steps: tuple[Step, ...] = ()
+    #: Modest utility rewards must not replace high-score rewards.
+    max_score: int = MAX_SCORE
 
     def prize(self, score: int, context: Context) -> Optional[Prize]:
+        if not self.min_score <= score <= self.max_score:
+            return None
         worked = self.work_out(score, context)
         if worked is None:
             return None
@@ -209,11 +217,14 @@ def _kind(
     key: str,
     *,
     min_score: int = MIN_SCORE,
+    max_score: int = MAX_SCORE,
     ticket: bool = False,
     needs: Callable[[Any], bool] = _always,
 ) -> Callable[[WorkOut], WorkOut]:
     def register(work_out: WorkOut) -> WorkOut:
-        KINDS.append(PrizeKind(key, work_out, min_score, ticket, needs))
+        KINDS.append(
+            PrizeKind(key, work_out, min_score, ticket, needs, max_score=max_score)
+        )
         return work_out
 
     return register
@@ -263,12 +274,14 @@ class Prizes:
         income: float,
         armed_forces: Any = None,
         side: Player = Player.BLUE,
+        game: Optional[Game] = None,
     ) -> None:
         self.settings = settings
         self.faction = faction
         self.income = income
         self.armed_forces = armed_forces
         self.side = side
+        self.game = game
 
     @classmethod
     def of(cls, game: Game, player: Player) -> Prizes:
@@ -279,6 +292,7 @@ class Prizes:
             Income(game, player).total,
             coalition.armed_forces,
             player,
+            game,
         )
 
     def draw(
@@ -290,7 +304,7 @@ class Prizes:
         kinds = [
             kind
             for kind in KINDS
-            if kind.min_score <= score
+            if kind.min_score <= score <= kind.max_score
             and kind.needs(self.settings)
             and kind.give is not None
         ]
@@ -303,6 +317,7 @@ class Prizes:
             self.armed_forces,
             self.side,
             offered,
+            self.game,
         )
         for kind in kinds:
             prize = kind.prize(score, context)
@@ -413,8 +428,10 @@ def _faster_repairs(score: int, context: Context) -> Worked:
     return line, {"percent": percent, "on": what, "turns": turns}
 
 
-@_kind("hospital", needs=_live_pilots)
+@_kind("hospital", max_score=6, needs=_live_pilots)
 def _hospital(score: int, context: Context) -> Worked:
+    if not _has_wounded_pilots(context):
+        return None
     turns = 1 if score <= 5 else 2
     return (
         f"Our wounded pilots leave hospital {_turns(turns)} early.",
@@ -485,12 +502,19 @@ def _armour(score: int, context: Context) -> Worked:
     )
 
 
-@_kind("runway", min_score=8, ticket=True)
+@_kind("runway", max_score=6, ticket=True)
 def _runway(score: int, context: Context) -> Worked:
+    if context.game is not None and not any(
+        isinstance(cp, Airfield)
+        and cp.captured is context.side
+        and cp.runway_status.damaged
+        for cp in context.game.theater.controlpoints
+    ):
+        return None
     return "A ticket for an instant repair of one of our runways.", {}
 
 
-@_kind("squadron", ticket=True)
+@_kind("squadron", min_score=MIN_SQUADRON_SCORE, ticket=True)
 def _squadron(score: int, context: Context) -> Worked:
     fleet = sorted(
         (
@@ -503,7 +527,11 @@ def _squadron(score: int, context: Context) -> Worked:
     if not fleet:
         return None
     # The better the score, the dearer the aircraft.
-    pick = round((score - MIN_SCORE) / (MAX_SCORE - MIN_SCORE) * (len(fleet) - 1))
+    pick = round(
+        (score - MIN_SQUADRON_SCORE)
+        / (MAX_SCORE - MIN_SQUADRON_SCORE)
+        * (len(fleet) - 1)
+    )
     promised_types = {
         dict(prize.terms).get("type")
         for prize in context.offered
@@ -517,7 +545,7 @@ def _squadron(score: int, context: Context) -> Worked:
     if not available:
         return None
     aircraft = fleet[min(available, key=lambda index: (abs(index - pick), index))]
-    count = 2 * score
+    count = MIN_SQUADRON_AIRCRAFT + 2 * (score - MIN_SQUADRON_SCORE)
     turns = half_up(score)
     return (
         f"A ticket for a squadron of {count} {aircraft.display_name} on loan for "
@@ -535,17 +563,21 @@ def _ace(score: int, context: Context) -> Worked:
     )
 
 
-@_kind("awacs", ticket=True)
+@_kind("awacs", max_score=6, ticket=True)
 def _awacs(score: int, context: Context) -> Worked:
-    if not _support_types(context.faction.awacs, FlightType.AEWC):
+    if not _support_types(context.faction.awacs, FlightType.AEWC) or not _needs_support(
+        context, FlightType.AEWC
+    ):
         return None
     turns = half_up(score)
     return f"A ticket for an extra AWACS for {_turns(turns)}.", {"turns": turns}
 
 
-@_kind("tanker", ticket=True)
+@_kind("tanker", max_score=6, ticket=True)
 def _tanker(score: int, context: Context) -> Worked:
-    if not _support_types(context.faction.tankers, FlightType.REFUELING):
+    if not _support_types(
+        context.faction.tankers, FlightType.REFUELING
+    ) or not _needs_support(context, FlightType.REFUELING):
         return None
     turns = half_up(score)
     return f"A ticket for an extra tanker for {_turns(turns)}.", {"turns": turns}
@@ -560,8 +592,35 @@ def _support_types(aircraft: Iterable[Any], task: FlightType) -> list[Any]:
     )
 
 
-@_kind("heal", min_score=6, ticket=True, needs=_live_pilots)
+def _needs_support(context: Context, task: FlightType) -> bool:
+    if context.game is None:
+        return True
+    from game.aircraftmaintenance import damaged_count
+
+    for squadron in context.game.coalition_for(context.side).air_wing.iter_squadrons():
+        if not squadron.capable_of(task):
+            continue
+        operational = (
+            squadron.owned_aircraft
+            + min(0, squadron.pending_deliveries)
+            - damaged_count(squadron)
+        )
+        if operational > 0:
+            return False
+    return True
+
+
+def _has_wounded_pilots(context: Context) -> bool:
+    return context.game is None or any(
+        pilot.status is PilotStatus.Wounded
+        for _, pilot in _our_pilots(context.game, context.side)
+    )
+
+
+@_kind("heal", max_score=5, ticket=True, needs=_live_pilots)
 def _heal(score: int, context: Context) -> Worked:
+    if not _has_wounded_pilots(context):
+        return None
     return (
         "A ticket to put one wounded pilot of our choice back on duty at once.",
         {},
