@@ -624,6 +624,27 @@ Common roles and what they're for:
 Air-to-air/support tasks (SWEEP, TARCAP, ESCORT, AEWC, REFUELING) attach over any
 enemy target; BARCAP protects any friendly one.
 
+### Package timing: Coordinated, ASAP or manual
+
+New packages created from the map default to **Coordinated**. Strike, BAI, OCA
+and CAS packages wait for SEAD/DEAD packages attacking enemy SAM sites whose
+threat rings cover their target. The window opens two minutes after the latest
+covering suppressor's TOT and lasts eight minutes. Arrival is never earlier than
+the whole package can reach it. This schedules an opportunity; it does not assume
+the SAM was actually destroyed or suppressed.
+
+The package window identifies the suppressors and warns about covering radar
+SAMs without suppression. If the window has already closed or cannot be reached
+within the mission duration, the package falls back to ASAP and explains why.
+A package's own SEAD escort avoids the missing-suppression warning but does not
+create an earlier, independent suppression window.
+
+Choose **ASAP** for the earliest possible arrival. Untick both automatic modes
+to enter a manual TOT. Non-attack tasks use ASAP when Coordinated is selected.
+Existing saves keep their previous timing mode. Coordinated times are recalculated
+when editing the package and before Take Off; active flights are not rescheduled.
+The OPFOR API's explicit set/reset TOT command switches back to manual/ASAP.
+
 ### Composing a good package
 
 Sequence and combined arms matter:
@@ -1235,27 +1256,6 @@ reports `cruise_missiles_remaining` in `naval[]`.
   losing one costs you stock you can never rebuy.
 
 ## 5. How to plan a strong turn
-
-### Package timing: Coordinated, ASAP or manual
-
-New packages created from the map default to **Coordinated**. Strike, BAI, OCA
-and CAS packages wait for SEAD/DEAD packages attacking enemy SAM sites whose
-threat rings cover their target. The window opens two minutes after the latest
-covering suppressor's TOT and lasts eight minutes. Arrival is never earlier than
-the whole package can reach it. This schedules an opportunity; it does not assume
-the SAM was actually destroyed or suppressed.
-
-The package window identifies the suppressors and warns about covering radar
-SAMs without suppression. If the window has already closed or cannot be reached
-within the mission duration, the package falls back to ASAP and explains why.
-A package's own SEAD escort avoids the missing-suppression warning but does not
-create an earlier, independent suppression window.
-
-Choose **ASAP** for the earliest possible arrival. Untick both automatic modes
-to enter a manual TOT. Non-attack tasks use ASAP when Coordinated is selected.
-Existing saves keep their previous timing mode. Coordinated times are recalculated
-when editing the package and before Take Off; active flights are not rescheduled.
-The OPFOR API's explicit set/reset TOT command switches back to manual/ASAP.
 
 **The ten things that cost the most aircraft when forgotten.** Each is explained in full
 somewhere above; this is the list to re-read before you plan.

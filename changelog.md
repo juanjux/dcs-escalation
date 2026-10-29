@@ -1,7 +1,6 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[Planning]** Add Coordinated package timing behind covering SEAD/DEAD, with ASAP fallback and warnings (adapted from RetLab).
 * **[High Command]** Balance reward score ranges, avoid redundant support loans, and show difficulty separately from priority.
 * **[Live Pilots]** Share small, configurable morale gains from squadron mates' air and ground victories.
 * **[UI]** Allow missile sites to be disbanded for a refund after campaign start.
@@ -39,6 +38,7 @@
 * **[Mission Log]** Configurable combat commentary with clearer coalition and pilot identification and separate monitoring/interception controls.
 * **[Flight Plans]** Fuel-aware planning with route and refuelling estimates, automatic tanker support and prompts when edits change fuel requirements.
 * **[UI]** Redesigned flight and package editors with crew controls, timelines, task colours and direct switching between flights.
+* **[Planning]** Add Coordinated package timing behind covering SEAD/DEAD, with ASAP fallback and warnings (adapted from RetLab).
 * **[UI]** Intel statistics and history with independent faction and metric comparisons.
 * **[UI]** Shared campaign and per-pilot aircraft notes in Player Aircrafts.
 * **[Escalation]** DCS Escalation branding and simplified navigation, preserving existing campaign data and save paths.
