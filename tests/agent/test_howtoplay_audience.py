@@ -30,6 +30,16 @@ def test_briefing_renders_agent_context_without_player_control_instructions(
         "F10 Map User Marks",
         "by clicking the robot icon",
         "Future CSAR work",
+        "Waypoints tab",
+        "Untick both automatic modes",
+        "Minutes on the tanker",
+        "Hornet COMM presets",
+        "CAP_PTS",
+        "optional YAML",
+        "Older saved search-time values",
+        "next navigation tick",
+        "only the last corner loops back",
+        "Rebuilding is free",
     ):
         assert player_instruction not in text
 
@@ -52,3 +62,22 @@ def test_briefing_retains_operational_rules_and_real_agent_commands() -> None:
     assert "same request plus its" in text and "`preview_token`" in text
     assert "120 statute miles" in text
     assert "surplus retained" in text
+
+
+def test_briefing_states_api_boundary_and_preserves_planning_constraints() -> None:
+    text = " ".join(service._render_doc("howtoplay.md", {}).split())
+    assert "Use the OPFOR API or its MCP tools" in text
+    assert "Settings are read-only" in text
+    assert "Read `/capabilities`" in text
+    assert "Audience rule:" not in text
+    for rule in (
+        "emergency landing",
+        "strictly closer",
+        "pilot survival and status still follow Live Pilots rules",
+        "known ground air defences",
+        "20% fuel",
+        "turns_remaining",
+        "loans",
+        "stock",
+    ):
+        assert rule in text
