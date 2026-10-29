@@ -36,16 +36,18 @@ def pilot_preamble(enabled: bool, empty: bool = False) -> str:
 def mission_log(enabled: bool, empty: bool = False) -> Any:
     lua = pytest.importorskip("lupa.lua51").LuaRuntime(unpack_returned_tuples=True)
     lua.execute("""
-        messages, logs = {}, {}
-        timer = {getTime=function() return 10 end, scheduleFunction=function() end}
+        messages, logs, scheduled = {}, {}, {}
+        timer = {getTime=function() return 10 end, scheduleFunction=function(f, arg, at)
+            scheduled[#scheduled+1]={f=f, arg=arg, at=at}
+        end}
         trigger = {action={outTextForCoalition=function(side, text)
             messages[#messages+1]={side=side, text=text}
         end}}
         mist = {Logger={new=function() return {info=function(_, text)
             logs[#logs+1]=text
         end} end}}
-        Unit = {Category={AIRPLANE=0, HELICOPTER=1}}
-        world = {event={S_EVENT_SHOT=1, S_EVENT_KILL=2},
+        Unit = {Category={AIRPLANE=0, HELICOPTER=1, GROUND_UNIT=2, SHIP=3}}
+        world = {event={S_EVENT_SHOT=1, S_EVENT_KILL=2, S_EVENT_DEAD=3, S_EVENT_UNIT_LOST=4},
                  addEventHandler=function(h) handler=h end}
         function aircraft(name, side)
             return {getName=function() return name end,

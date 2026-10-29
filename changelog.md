@@ -91,6 +91,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Mission Log]** Report own ground, SAM and ship losses under the losses setting.
 * **[Campaign]** Avoid misleading recapture-protection notices for unthreatened rear bases.
 * **[Realistic CAS]** Remove destroyed-group contacts without forgotten notices.
 * **[High Command]** Do not reward empty groups as destroyed targets.

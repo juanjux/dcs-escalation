@@ -470,7 +470,7 @@ end
 
 -- Takes a table: ten positional arguments was one too many to read.
 local function queue_ground(e)
-    if e.category == "groundkills" then
+    if e.category == "groundkills" or e.category == "losses" then
         forget_damage(e.target_id)
     end
     -- Whose the target was is part of the key: a friendly T-72 and an enemy
@@ -520,6 +520,8 @@ local function flush_ground()
             -- Ours only when what died was theirs: blue blowing up blue is not a
             -- moment for a cheer.
             line = cheer(bucket.enemy, line)
+        elseif bucket.category == "losses" then
+            line = cheer(false, line)
         end
         announce(bucket.side, bucket.category, line)
         pending_ground[key] = nil
@@ -552,6 +554,28 @@ local function ground_target(unit)
         return objective, name_of(unit), true
     end
     return (describe_bare(unit)), name_of(unit), false
+end
+
+local function ground_loss(target, attacker, event)
+    local side = side_of(target)
+    if (side ~= 1 and side ~= 2) or was_killed(target) then
+        return
+    end
+    local text, target_id, scenery = ground_target(target)
+    if text == nil then
+        return
+    end
+    remember_killed(target)
+    local attacker_side = side_of(attacker)
+    local hostile = (attacker_side == 1 or attacker_side == 2) and attacker_side ~= side
+    local kind, pilot = unit_fields(attacker)
+    queue_ground({side = side, category = "losses", enemy = false,
+        actor = attacker and describe(attacker, hostile) or "We",
+        verb = attacker and "DESTROYED" or "LOST", target = text,
+        weapon = attacker and weapon_suffix(event) or "",
+        weapon_name = attacker and weapon_name(event) or nil,
+        target_id = target_id, scenery = scenery,
+        actor_type = kind, actor_pilot = pilot})
 end
 
 local handler = {}
@@ -615,7 +639,7 @@ function handler:onEvent(event)
         return
     end
 
-    if id == e.S_EVENT_KILL and event.initiator and event.target then
+    if id == e.S_EVENT_KILL and event.target then
         -- Downing a missile is neither an air kill nor a ground target.
         if is_weapon(event.target) then
             return
@@ -642,9 +666,12 @@ function handler:onEvent(event)
                     "%s was SHOT DOWN by %s", victim_text,
                     describe(event.initiator, hostile)), event)))
             end
-        elseif shooter then
+        else
+            -- A surface loss is news to its owner, even with groundkills off.
+            -- Friendly fire is a loss only, not a second success announcement.
+            ground_loss(event.target, event.initiator, event)
             local text, target_id, scenery = ground_target(event.target)
-            if text ~= nil then
+            if shooter and shooter ~= victim and text ~= nil then
                 local kind, pilot = unit_fields(event.initiator)
                 local target_side = side_of(event.target)
                 local hostile_ground = shooter ~= nil and target_side ~= nil
@@ -656,6 +683,18 @@ function handler:onEvent(event)
                     target_id = target_id, scenery = scenery,
                     actor_type = kind, actor_pilot = pilot})
             end
+        end
+        return
+    end
+
+    if (id == e.S_EVENT_DEAD or id == e.S_EVENT_UNIT_LOST) and event.initiator then
+        -- Some surface deaths have no KILL event or identifiable attacker.
+        -- Require a surface category: an unavailable aircraft is not a vehicle.
+        local category
+        if pcall(function() category = event.initiator:getDesc().category end)
+                and (category == (Unit.Category.GROUND_UNIT or 2)
+                     or category == (Unit.Category.SHIP or 3)) then
+            ground_loss(event.initiator, nil, event)
         end
         return
     end
