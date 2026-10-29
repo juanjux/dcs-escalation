@@ -329,6 +329,7 @@ class BridgeTests(unittest.TestCase):
           function u:inAir()return self.airborne end
           function u:getPosition()return {p=self.point,x={x=1,y=0,z=0}}end
           function u:getRadar()return self.radar end
+          g.units=g.units or {};g.units[#g.units+1]=u
           units[name]=u;return u
         end
         red=group('red',1);blue=group('blue',2,2,0)

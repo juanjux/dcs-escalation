@@ -34,7 +34,7 @@ class LayerTests(unittest.TestCase):
         now=0;serial=100;marks={};ever={};ids={};removed={};removeFailure=false
         s=RealisticCAS.new({enabled=true,ttl=15,clock=function()return now end,setVisible=function()return true end})
         assert(s:register(1,1));assert(s:register(2,1));assert(s:register(22,1))
-        layer=RealisticCAS.newF10Contacts({groups={{name='front',id=1,coalition=1},{name='support',id=2,coalition=1}},
+        mapOptions={groups={{name='front',id=1,coalition=1},{name='support',id=2,coalition=1}},
           readContact=function(id,side)return s:getContact(id,side)end,
           allocateMarkId=function()serial=serial+1;return serial end,
           setMark=function(id,side,p,text)
@@ -44,7 +44,8 @@ class LayerTests(unittest.TestCase):
           removeMark=function(id)
             if removeFailure then return false end
             marks[id]=nil;removed[#removed+1]=id
-          end})
+          end}
+        layer=RealisticCAS.newF10Contacts(mapOptions)
         """)
 
     def test_reveal_renew_expire_and_rediscover_have_fresh_ids(self):
@@ -85,17 +86,17 @@ class LayerTests(unittest.TestCase):
     def test_labels_include_only_observed_types_and_refresh_at_the_same_position(self):
         self.rt.execute("""
         assert(s:observe(1,2,{x=10,y=0,z=20},'visual','T-72B'));layer:tick()
-        assert(marks[101].text=='Frontline contact: T-72B')
+        assert(marks[101].text=='Frontline contact: T-72B\\nDiscovered at 00:00:00')
         now=1;assert(s:observe(1,2,{x=10,y=0,z=20},'ir','T-72B'));layer:tick()
         assert(#ids==1)
         assert(s:observe(1,2,{x=10,y=0,z=20},'ir','BMP-2'));layer:tick()
         assert(#ids==2 and not marks[101])
-        assert(marks[102].text=='Frontline contact: BMP-2, T-72B')
+        assert(marks[102].text=='Frontline contact: BMP-2, T-72B\\nDiscovered at 00:00:00')
         local contact=s:getContact(1,2);contact.observedTypes[1]='UNSEEN SECRET UNIT'
         layer:tick();assert(#ids==2 and not marks[102].text:find('SECRET'))
         now=16;s:tick();layer:tick();assert(next(marks)==nil)
         assert(s:observe(1,2,{x=10,y=0,z=20},'fire','Ural-375'));layer:tick()
-        assert(marks[103].text=='Frontline contact: Ural-375')
+        assert(marks[103].text=='Frontline contact: Ural-375\\nDiscovered at 00:00:16')
         """)
 
     def test_large_allowlist_is_processed_in_bounded_round_robin_batches(self):
@@ -109,6 +110,33 @@ class LayerTests(unittest.TestCase):
         assert(map:tick(17)==17 and #visits==17)
         assert(map:tick(17)==17 and #visits==34 and visits[18]==18)
         assert(map:stop())
+        """)
+
+    def test_discovery_clock_is_stable_until_expiry_and_rediscovery(self):
+        self.rt.execute("""
+        assert(layer:stop());mapOptions.timeOffset=13*3600
+        layer=RealisticCAS.newF10Contacts(mapOptions)
+        now=5;assert(s:observe(1,2,{x=10,y=0,z=20},'visual','T-72B'))
+        now=8;layer:tick()
+        assert(marks[101].text:find('Discovered at 13:00:05',1,true))
+        now=9;assert(s:observe(1,2,{x=10,y=0,z=20},'ir','T-72B'));layer:tick()
+        assert(#ids==1 and s:getContact(1,2).discoveredAt==5)
+        assert(s:getContact(1,2).observedAt==9)
+        now=25;s:tick();layer:tick();assert(next(marks)==nil)
+        now=26;assert(s:observe(1,2,{x=10,y=0,z=20},'visual','T-72B'));layer:tick()
+        assert(marks[102].text:find('Discovered at 13:00:26',1,true))
+        """)
+
+    def test_clock_wraps_at_midnight_and_rejects_invalid_offsets(self):
+        self.rt.execute("""
+        assert(layer:stop());mapOptions.timeOffset=86397
+        layer=RealisticCAS.newF10Contacts(mapOptions)
+        now=5;assert(s:observe(1,2,{x=10,y=0,z=20}));layer:tick()
+        assert(marks[101].text:find('Discovered at 00:00:02',1,true))
+        for _,bad in ipairs({false,'13:00',0/0,math.huge})do
+          mapOptions.timeOffset=bad
+          assert(not pcall(RealisticCAS.newF10Contacts,mapOptions))
+        end
         """)
 
 
@@ -139,8 +167,51 @@ class AdapterTests(unittest.TestCase):
         self.rt.execute("""
         local display=RealisticCAS.startF10Contacts(fog,{groups={{name='red',id=1,coalition=1}}})
         assert(fog:observe('red',2,{x=10,y=0,z=20},'visual','T-72B'));run(2)
-        assert(marks[created[1]].text=='Frontline contact: T-72B')
+        assert(marks[created[1]].text=='Frontline contact: T-72B\\nDiscovered at 00:00:00')
         assert(display:stop())
+        """)
+
+    def test_native_marker_uses_mission_clock_not_elapsed_runtime(self):
+        self.rt.execute("""
+        timer.getAbsTime=function()return 13*3600+now end
+        local display=RealisticCAS.startF10Contacts(fog,{groups={{name='red',id=1,coalition=1}}})
+        assert(fog:observe('red',2,{x=10,y=0,z=20},'visual','T-72B'));run(2)
+        assert(marks[created[1]].text:find('Discovered at 13:00:00',1,true))
+        assert(display:stop())
+        """)
+
+    def test_destroyed_group_loses_its_marker_and_no_longer_has_a_contact(self):
+        self.rt.execute("""
+        local display=RealisticCAS.startF10Contacts(fog,{groups={{name='red',id=1,coalition=1}}})
+        assert(fog:observe('red',2,{x=10,y=0,z=20},'visual','T-72B'));run(2)
+        assert(next(marks))
+        target.life=0;run(4)
+        assert(next(marks)==nil and not fog.service:isRegistered(1))
+        assert(fog.service:getDiagnostics().scheduled==0)
+        assert(not fog:observe('red',2,{x=10,y=0,z=20}))
+        assert(display:stop())
+        """)
+
+    def test_surviving_units_keep_the_group_contact(self):
+        self.rt.execute("""
+        local survivor=unit('survivor',red,'BMP-2',6000,0)
+        local display=RealisticCAS.startF10Contacts(fog,{groups={{name='red',id=1,coalition=1}}})
+        assert(fog:observe('red',2,{x=10,y=0,z=20},'visual','T-72B'));run(2)
+        target.life=0;run(4)
+        assert(next(marks) and fog.service:isRegistered(1))
+        survivor.exists=false;run(4)
+        assert(next(marks)==nil and not fog.service:isRegistered(1))
+        assert(display:stop())
+        """)
+
+    def test_unavailable_liveness_query_does_not_erase_a_contact(self):
+        self.rt.execute("""
+        local display=RealisticCAS.startF10Contacts(fog,{groups={{name='red',id=1,coalition=1}}})
+        assert(fog:observe('red',2,{x=10,y=0,z=20}));run(2)
+        local getUnits=red.getUnits
+        red.getUnits=function()error('temporary native failure')end
+        run(4);assert(next(marks) and fog.service:isRegistered(1))
+        red.getUnits=getUnits;assert(display:stop())
         """)
 
 
