@@ -95,6 +95,7 @@
 
 ## Fixes
 * **[Mission Log]** Report own ground, SAM and ship losses under the losses setting.
+* **[Mission Log]** Suppress duplicate crash reports when DCS reports a crash immediately before an aircraft kill.
 * **[Campaign]** Avoid misleading recapture-protection notices for unthreatened rear bases.
 * **[Realistic CAS]** Remove destroyed-group contacts without forgotten notices.
 * **[High Command]** Do not reward empty groups as destroyed targets.
