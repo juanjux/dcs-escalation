@@ -2,6 +2,7 @@ import { selectMapCenter, selectMapZoom } from "../../api/mapSlice";
 import { useAppSelector } from "../../app/hooks";
 import MapLayersControl from "../maplayers/MapLayersControl";
 import CoordinatePicker from "../coordinatepicker";
+import DrawMode from "../coordinatepicker/DrawMode";
 import SavedPointPins from "../savedpointpins/SavedPointPins";
 import MapSearch from "../mapsearch";
 import MapButtonHover from "../maphover/MapButtonHover";
@@ -46,6 +47,7 @@ export default function LiberationMap() {
       {!selecting && <LeafletRuler />}
       {!selecting && <MapSearch />}
       {!selecting && <CoordinatePicker />}
+      {!selecting && <DrawMode />}
       {!selecting && <SavedPointPins />}
       <GroundDestinationMode onActiveChange={selectionChanged} />
     </MapContainer>

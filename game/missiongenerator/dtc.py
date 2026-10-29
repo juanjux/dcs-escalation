@@ -55,6 +55,7 @@ from game.missiongenerator.frontlineconflictdescription import (
     FrontLineConflictDescription,
 )
 from game.radio.tacan import TacanBand
+from game.missiongenerator.saveddrawings import cockpit_lines, append_apache_drawings
 from game.theater import Player
 
 if TYPE_CHECKING:
@@ -1491,9 +1492,33 @@ def cartridge(
     ):
         boxes = [work, *boxes][: profile.max_boxes]
     line = join_fronts(fronts_of(game.theater))
+    drawings = getattr(flight, "saved_drawings", []) if flight is not None else []
+    player_lines = [
+        Front(label, points) for label, points in cockpit_lines(aircraft, drawings)
+    ]
+    if isinstance(profile, ViperCartridge) and player_lines:
+        reserved = sum(len(shape.points) for shape in player_lines)
+        # Keep up to ten boundary points and use remaining slots for automatic boxes.
+        boxes = boxes[
+            : min(3 - len(player_lines), max(0, (15 - reserved) // BOX_POINTS))
+        ]
     room = profile.front_points(len(boxes))
+    if isinstance(profile, ViperCartridge):
+        room -= sum(len(shape.points) for shape in player_lines)
+    if isinstance(profile, ApacheCartridge) and drawings:
+        room = min(room, 10)  # Keep three FLOT segments; drawings use spare lines.
     fronts = [_fit(profile, line, room)] if line is not None else []
     data.update(profile.sections(fronts, navigation, boxes))
+    if isinstance(profile, HornetCartridge) and player_lines:
+        data["SA"]["FAOR_FLOT"]["FLOT"] = profile._lines(
+            "FLOT", [*fronts, *player_lines]
+        )
+        if not fronts:
+            data["SA"]["Default_FLOT_Line"] = 1
+    elif isinstance(profile, ViperCartridge) and player_lines:
+        data.update(profile.sections([*fronts, *player_lines], navigation, boxes))
+    elif isinstance(profile, ApacheCartridge) and drawings:
+        append_apache_drawings(data["NAV"]["Mission_1"], drawings)
     _merge(data, profile.campaign_sections(game, flight, mission_data))
     return {"name": name, "type": aircraft, "data": data}
 

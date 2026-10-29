@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
+from math import isfinite
 from typing import TYPE_CHECKING, Any, Iterable, Optional
 from uuid import UUID, uuid4
 
@@ -54,6 +55,45 @@ class SavedPoint:
     y: float
     altitude_ft: int = 0
     id: UUID = field(default_factory=uuid4, compare=False)
+
+
+@dataclass
+class SavedDrawing:
+    """A player-authored line or area in DCS world coordinates."""
+
+    name: str
+    points: list[tuple[float, float]]
+    closed: bool = False
+    id: UUID = field(default_factory=uuid4, compare=False)
+
+
+MAX_DRAWINGS = 50
+MAX_DRAWING_VERTICES = 64
+
+
+def drawings_of(flight: Flight) -> list[SavedDrawing]:
+    """Share drawings across the squadron and retain them when flights change."""
+    drawings = getattr(flight.squadron, "saved_drawings", None)
+    if drawings is None:
+        drawings = []
+        flight.squadron.saved_drawings = drawings
+    for drawing in drawings:
+        if not hasattr(drawing, "id"):
+            drawing.id = uuid4()
+    return drawings
+
+
+def add_drawing(flight: Flight, drawing: SavedDrawing) -> bool:
+    required = 3 if drawing.closed else 2
+    if (
+        not required <= len(drawing.points) <= MAX_DRAWING_VERTICES
+        or len(set(drawing.points)) < required
+        or not all(isfinite(v) for point in drawing.points for v in point)
+        or len(drawings_of(flight)) >= MAX_DRAWINGS
+    ):
+        return False
+    drawings_of(flight).append(drawing)
+    return True
 
 
 @dataclass(frozen=True)

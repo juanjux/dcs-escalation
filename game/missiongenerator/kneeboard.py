@@ -57,6 +57,7 @@ from game.weather.weather import Weather
 from .aircraft.flightdata import FlightData
 from .briefinggenerator import CommInfo, JtacInfo, MissionInfoGenerator
 from .kneeboard_page import KneeboardPage
+from .drawingspage import DrawingsPage
 from .kneeboard_recon import airport_imagery as _airport_imagery
 from .kneeboard_recon import generate_recon_pages
 from .kneeboard_recon.atis import (
@@ -1656,6 +1657,15 @@ class KneeboardGenerator(MissionInfoGenerator):
                     ),
                 )
             )
+
+        pages.extend(
+            DrawingsPage.paginate(
+                flight.callsign,
+                getattr(flight, "saved_drawings", []),
+                self.game.theater.terrain,
+                self.dark_kneeboard,
+            )
+        )
 
         # Recon overview + detail + airfield-departure pages (gated by settings).
         if self.game.settings.generate_target_recon_kneeboard:

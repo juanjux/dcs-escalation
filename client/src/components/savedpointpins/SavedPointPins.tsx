@@ -1,4 +1,5 @@
 import { HTTP_URL } from "../../api/backend";
+import SavedDrawing, { Drawing } from "./SavedDrawing";
 import "./SavedPointPins.css";
 import L, { Marker as LeafletMarker } from "leaflet";
 import { useEffect, useRef, useState } from "react";
@@ -18,6 +19,7 @@ interface Receiver {
   callsign: string;
   aircraft: string;
   points: SavedPoint[];
+  drawings?: Drawing[];
 }
 
 export const PIN = L.divIcon({
@@ -195,6 +197,7 @@ export default function SavedPointPins() {
 
   // Multiple player flights in one squadron share the same saved points.
   const seen = new Set<string>();
+  const seenDrawings = new Set<string>();
   return (
     <>
       {receivers.flatMap((receiver) =>
@@ -203,6 +206,24 @@ export default function SavedPointPins() {
           seen.add(point.id);
           return [
             <SavedPointPin key={point.id} receiver={receiver} point={point} />,
+          ];
+        }),
+      )}
+      {receivers.flatMap((receiver) =>
+        (receiver.drawings ?? []).flatMap((drawing) => {
+          if (
+            !drawing.id ||
+            seenDrawings.has(drawing.id) ||
+            drawing.points.length < 2
+          )
+            return [];
+          seenDrawings.add(drawing.id);
+          return [
+            <SavedDrawing
+              key={drawing.id}
+              drawing={drawing}
+              flightId={receiver.id}
+            />,
           ];
         }),
       )}

@@ -1,5 +1,6 @@
 import { act, render } from "@testing-library/react";
 import LiberationMap from "./LiberationMap";
+jest.mock("../coordinatepicker/DrawMode", () => () => null);
 
 const mockMap = { setView: jest.fn(), getZoom: () => 8 };
 const mockLayersMounted = jest.fn();

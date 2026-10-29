@@ -13,6 +13,10 @@ from game.ato.flight import Flight
 from game.ato.savedpoints import (
     PointKind,
     SavedPoint,
+    SavedDrawing,
+    MAX_DRAWING_VERTICES,
+    add_drawing,
+    drawings_of,
     add_point,
     kinds_for,
     points_of,
@@ -39,6 +43,13 @@ class SavedPointJs(BaseModel):
     altitude_ft: int
 
 
+class SavedDrawingJs(BaseModel):
+    id: UUID
+    name: str
+    points: list[LeafletPoint]
+    closed: bool
+
+
 class ReceiverJs(BaseModel):
     """One aircraft the player is flying, and what it will still take."""
 
@@ -57,6 +68,7 @@ class ReceiverJs(BaseModel):
     #: How many more of each kind it has room for, keyed by kind.
     room: dict[str, int]
     points: list[SavedPointJs]
+    drawings: list[SavedDrawingJs] = Field(default_factory=list)
 
 
 class NewPointJs(BaseModel):
@@ -75,6 +87,18 @@ class SavedPointPosition(BaseModel):
 class SavedPointEdit(BaseModel):
     name: str | None = None
     position: SavedPointPosition | None = None
+
+
+class NewDrawingJs(BaseModel):
+    name: str = ""
+    points: list[SavedPointPosition] = Field(
+        min_length=2, max_length=MAX_DRAWING_VERTICES
+    )
+    closed: bool = False
+
+
+class DrawingEditJs(BaseModel):
+    name: str = Field(min_length=1, max_length=24)
 
 
 def _kind(name: str) -> PointKind:
@@ -97,6 +121,18 @@ def _describe(game: Game, flight: object) -> ReceiverJs:
         departure=flight.departure.name,
         kinds=[kind.value for kind in kinds_for(aircraft)],
         room={kind.value: room_for(flight, kind) for kind in PointKind},
+        drawings=[
+            SavedDrawingJs(
+                id=drawing.id,
+                name=drawing.name,
+                closed=drawing.closed,
+                points=[
+                    LeafletPoint.from_latlng(Point(x, y, game.theater.terrain).latlng())
+                    for x, y in drawing.points
+                ],
+            )
+            for drawing in drawings_of(flight)
+        ],
         points=[
             SavedPointJs(
                 id=point.id,
@@ -140,6 +176,77 @@ def _point(game: Game, flight_id: UUID, point_id: UUID) -> SavedPoint:
         if point.id == point_id:
             return point
     raise HTTPException(status_code=404, detail="No such point")
+
+
+def _drawing(game: Game, flight_id: UUID, drawing_id: UUID) -> SavedDrawing:
+    for drawing in drawings_of(_player_flight(game, flight_id)):
+        if drawing.id == drawing_id:
+            return drawing
+    raise HTTPException(status_code=404, detail="No such drawing")
+
+
+@router.post(
+    "/{flight_id}/drawings",
+    operation_id="add_saved_drawing",
+    response_model=ReceiverJs,
+)
+def create_drawing(
+    flight_id: UUID,
+    drawing: NewDrawingJs,
+    game: Game = Depends(GameContext.require),
+) -> ReceiverJs:
+    flight = _player_flight(game, flight_id)
+    vertices = [
+        Point.from_latlng(LatLng(p.lat, p.lng), game.theater.terrain)
+        for p in drawing.points
+    ]
+    saved = SavedDrawing(
+        drawing.name.strip()[:24] or ("Area" if drawing.closed else "Line"),
+        [(p.x, p.y) for p in vertices],
+        drawing.closed,
+    )
+    if not add_drawing(flight, saved):
+        raise HTTPException(
+            status_code=409, detail="Invalid drawing or squadron drawing limit reached"
+        )
+    publish_points_changed()
+    return _describe(game, flight)
+
+
+@router.patch(
+    "/{flight_id}/drawings/{drawing_id}",
+    operation_id="rename_saved_drawing",
+    response_model=ReceiverJs,
+)
+def rename_drawing(
+    flight_id: UUID,
+    drawing_id: UUID,
+    change: DrawingEditJs,
+    game: Game = Depends(GameContext.require),
+) -> ReceiverJs:
+    drawing = _drawing(game, flight_id, drawing_id)
+    if not change.name.strip():
+        raise HTTPException(status_code=400, detail="A drawing needs a name")
+    drawing.name = change.name.strip()
+    publish_points_changed()
+    return _describe(game, _player_flight(game, flight_id))
+
+
+@router.delete(
+    "/{flight_id}/drawings/{drawing_id}",
+    operation_id="delete_saved_drawing",
+    response_model=ReceiverJs,
+)
+def delete_drawing(
+    flight_id: UUID,
+    drawing_id: UUID,
+    game: Game = Depends(GameContext.require),
+) -> ReceiverJs:
+    drawing = _drawing(game, flight_id, drawing_id)
+    flight = _player_flight(game, flight_id)
+    drawings_of(flight)[:] = [one for one in drawings_of(flight) if one is not drawing]
+    publish_points_changed()
+    return _describe(game, flight)
 
 
 @router.patch(

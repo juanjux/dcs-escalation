@@ -37,6 +37,19 @@ or any other LLM that has a local interface, and start playing with it controlli
 changes the engagement and fun factor of every campaign. While the current version still keeps the inherited dumb OPFOR planner, 
 it will probably be removed in the future.
 
+## Saved map drawings
+
+Use the map's Draw tool to add vertices, then save a named line or area to a
+player aircraft. Drawings belong to its squadron and survive flight replacement.
+Rename or delete them from the map or the Drawings page in Player Aircrafts;
+both stay synchronized. Drawings retain every vertex on the map and kneeboard.
+
+Cockpit export uses spare native DTC slots: two seven-point FLOT outlines for the
+Hornet/CJS family, up to three Viper HSD outlines sharing fifteen points, and
+available Apache TSD lines or four-corner areas. Hornet/Viper outlines are
+simplified when needed; overflow stays on the map and kneeboard. Other aircraft,
+including the A-10, have map and kneeboard drawings only.
+
 ## Frontline MANPADS teams
 
 Frontline MANPADS use a vehicle-based allowance rather than a chance per group.

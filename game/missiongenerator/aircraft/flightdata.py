@@ -6,7 +6,7 @@ from typing import Optional, TYPE_CHECKING
 
 from dcs.flyingunit import FlyingUnit
 
-from game.ato.savedpoints import SavedPoint
+from game.ato.savedpoints import SavedPoint, SavedDrawing
 from game.ato.starttype import StartType
 from game.callsigns import create_group_callsign_from_unit
 from game.squadrons import Squadron
@@ -83,6 +83,7 @@ class FlightData:
     #: of the flight plan: they get a kneeboard page of their own.
     saved_points: list[SavedPoint] = field(default_factory=list)
     aircraft_notes: list[tuple[str, str]] = field(default_factory=list, kw_only=True)
+    saved_drawings: list[SavedDrawing] = field(default_factory=list, kw_only=True)
 
     #: The DCS group's name, which is what the tanker and AEW&C records go by.
     group_name: str = ""

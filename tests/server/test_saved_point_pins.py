@@ -78,6 +78,60 @@ def test_uuid_upgrade_is_stable_and_survives_save_reload() -> None:
     assert migrated == SavedPoint(PointKind.WAYPOINT, "Old", 1, 2)
 
 
+def test_drawings_round_trip_share_squadron_and_delete_by_uuid(api: Any) -> None:
+    from game.ato.savedpoints import drawings_of
+
+    url = f"/saved-points/{api.flight.id}/drawings"
+    geometry = [{"lat": 42, "lng": 42}, {"lat": 42.1, "lng": 42.2}]
+    response = api.client.post(url, json={"name": " LINE ", "points": geometry})
+    assert response.status_code == 200
+    saved = response.json()["drawings"][0]
+    assert saved["name"] == "LINE"
+    assert saved["points"][1]["lat"] == pytest.approx(42.1)
+    drawing = drawings_of(api.flight)[0]
+    assert pickle.loads(pickle.dumps(drawing)).id == drawing.id
+    another = _flight()
+    another.squadron = api.flight.squadron
+    api.package.flights.append(another)
+    assert drawings_of(another)[0] is drawing
+    target = f"{url}/{drawing.id}"
+    assert api.client.patch(target, json={"name": "BRIDGE"}).status_code == 200
+    assert drawing.name == "BRIDGE"
+    assert api.client.delete(target).status_code == 200
+    assert not drawings_of(another)
+    assert api.client.patch(target, json={"name": "STALE"}).status_code == 404
+    assert api.notify.call_count == 3
+    assert points_of(api.flight) == [api.point]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"points": [{"lat": 42, "lng": 42}]},
+        {"points": [{"lat": 91, "lng": 42}, {"lat": 42, "lng": 42}]},
+        {"points": [{"lat": 42, "lng": 42}] * 65},
+        {"points": [{"lat": 42, "lng": 42}, {"lat": 42, "lng": 42}]},
+        {"closed": True, "points": [{"lat": 42, "lng": 42}, {"lat": 43, "lng": 43}]},
+    ],
+)
+def test_invalid_drawing_does_not_mutate_or_notify(api: Any, body: Any) -> None:
+    response = api.client.post(f"/saved-points/{api.flight.id}/drawings", json=body)
+    assert response.status_code in (409, 422)
+    assert not getattr(api.flight.squadron, "saved_drawings", [])
+    api.notify.assert_not_called()
+
+
+def test_drawings_do_not_allow_ai_or_cancelled_flights(api: Any) -> None:
+    url = f"/saved-points/{api.flight.id}/drawings"
+    body = {"points": [{"lat": 42, "lng": 42}, {"lat": 43, "lng": 43}]}
+    api.flight.client_count = 0
+    assert api.client.post(url, json=body).status_code == 403
+    api.flight.client_count = 1
+    api.package.flights.clear()
+    assert api.client.post(url, json=body).status_code == 403
+    api.notify.assert_not_called()
+
+
 def test_clipboard_paste_creates_independent_identities() -> None:
     source, target = _flight(), _flight()
     original = SavedPoint(PointKind.WAYPOINT, "Target", 1, 2)

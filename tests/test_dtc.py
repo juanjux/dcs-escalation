@@ -554,6 +554,54 @@ def test_the_fronts_are_written_because_no_mirror_invents_them() -> None:
     ]
 
 
+@pytest.mark.parametrize("aircraft", ["FA-18C_hornet", "F-16C_50", "AH-64D_BLK_II"])
+def test_saved_drawings_keep_route_and_native_line_limits(
+    aircraft: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from game.ato.savedpoints import SavedDrawing
+
+    monkeypatch.setattr(
+        dtc,
+        "fronts_of",
+        lambda _: [_bar("FLOT", *((float(n), float(n % 2)) for n in range(40)))],
+    )
+    flight = _flight_data(aircraft)
+    flight.saved_drawings = [
+        SavedDrawing("Drawn line", [(100.0 + n, 20.0 + n % 2) for n in range(12)]),
+        SavedDrawing("Drawn area", [(0, 0), (1, 0), (1, 1), (0, 1)], True),
+    ]
+    profile = dtc.CARTRIDGES[aircraft]
+    navigation = [dtc.NavPoint(1, "Route", 0, 0, 1000, 1, True)]
+    data = dtc.cartridge(
+        _game(),
+        Player.BLUE,
+        aircraft,
+        "Test",
+        navigation,
+        mission_data=_tankers(),
+        flight=flight,
+    )["data"]
+    if aircraft == "FA-18C_hornet":
+        lines = data["SA"]["FAOR_FLOT"]["FLOT"]
+        assert len(lines) == 3
+        assert len(lines[0]["points"]) <= 7
+        assert [line["note"] for line in lines[1:]] == ["Drawn line", "Drawn area"]
+        assert len(data["WYPT"]["NAV_PTS"]) == len(navigation)
+    elif aircraft == "F-16C_50":
+        lines = data["MPD"]["GEO_LINES"]
+        assert len(lines) <= 25
+        assert sum(bool(p["L1"]) for p in lines) >= 10
+        assert any(p["note"] == "Drawn line" for p in lines)
+        assert len(data["MPD"]["NAV_PTS"]) == len(navigation)
+    else:
+        mission = data["NAV"]["Mission_1"]
+        assert len(mission["Lines"]) <= 15
+        assert len(mission["Areas"]) == 1
+        assert any(line["note"] == "Drawn line" for line in mission["Lines"])
+    assert len(flight.saved_drawings[0].points) == 12
+
+
 def test_the_page_is_told_which_line_to_show() -> None:
     """DCS spells 4 as NONE and starts there, so a cartridge that says nothing about
     it carries a line nobody is ever shown."""

@@ -9,7 +9,7 @@ from typing import Any, List, Optional, TYPE_CHECKING
 from dcs import Point
 from dcs.planes import C_101CC, C_101EB, Su_33, FA_18C_hornet, C_130J_30
 
-from game.ato.savedpoints import SavedPoint, points_of
+from game.ato.savedpoints import SavedPoint, points_of, SavedDrawing, drawings_of
 from game.dcs.aircrafttype import AircraftType
 from game.theater import ControlPoint, MissionTarget
 from game.utils import max_optional_distance
@@ -254,6 +254,10 @@ class Flight(
         plan, and are kept on the squadron so cancelling the flight does not lose
         them."""
         return points_of(self)
+
+    @property
+    def saved_drawings(self) -> list[SavedDrawing]:
+        return drawings_of(self)
 
     @property
     def unit_type(self) -> AircraftType:
