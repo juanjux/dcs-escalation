@@ -92,6 +92,14 @@ class OrderView:
         return self.difficulty + self.importance
 
     @property
+    def difficulty_label(self) -> str:
+        return (
+            f"Difficulty {self.difficulty}/5"
+            if self.difficulty
+            else "Difficulty unknown"
+        )
+
+    @property
     def comical(self) -> bool:
         return self.importance == COMICAL_IMPORTANCE
 

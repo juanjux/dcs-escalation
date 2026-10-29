@@ -54,11 +54,11 @@ def test_squadron_loan_uses_a_different_type_even_at_the_same_score(
     drawer = Prizes(_settings(), *_side())
     offered: list[Prize] = []
     for _ in range(3):
-        prize = drawer.draw(5, "same", offered)
+        prize = drawer.draw(7, "same", offered)
         assert prize is not None and not repeats_offer(prize, offered)
         offered.append(prize)
     assert len({prize.term("type") for prize in offered}) == 3
-    assert drawer.draw(5, "same", offered) is None
+    assert drawer.draw(7, "same", offered) is None
 
 
 @pytest.mark.parametrize("side", [Player.BLUE, Player.RED])

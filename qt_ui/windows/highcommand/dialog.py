@@ -481,7 +481,7 @@ class OrdersPage(QWidget):
 
         heading = QHBoxLayout()
         heading.setContentsMargins(14, 8, 14, 8)
-        heading.addWidget(_caption("Request · highest tier first"))
+        heading.addWidget(_caption("Request · highest priority first"))
         heading.addStretch()
         heading.addWidget(_caption("Turns left"))
         head = QWidget()
