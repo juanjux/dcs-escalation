@@ -450,18 +450,18 @@ class FlightGroupConfigurator:
 
         loadout = member.loadout
         if self.game.settings.restrict_weapons_by_date:
-            # Always apply target overrides for AI, only for players if setting is enabled
-            should_apply_overrides = (
-                not member.is_player
-                or self.game.settings.apply_target_overrides_to_loadouts
-            )
-            target = self.flight.package.target if should_apply_overrides else None
             loadout = loadout.degrade_for_date(
                 self.flight.unit_type,
                 self.game.date,
                 self.flight.squadron.coalition.faction,
-                target,
             )
+        # Upstream matched seeker heads only under the date rule; the two are unrelated.
+        if (
+            not member.is_player
+            or self.game.settings.apply_target_overrides_to_loadouts
+        ):
+            loadout = loadout.clone()
+            loadout.apply_target_overrides(self.flight.package.target)
 
         if unit.type in GAU8_AIRCRAFT:
             ammo_type = (

@@ -262,7 +262,57 @@ class Weapon:
                     raise ValueError(
                         f"Error processing target overrides for {self.name}, targets: {targets}: {e}"
                     )
+            return dict(getattr(self.weapon_group, "target_overrides_fallback", {}))
         return {}
+
+    def settings_for_target(
+        self, stored: Optional[Dict[str, Any]], targets: tuple[Any, ...]
+    ) -> Optional[Dict[str, Any]]:
+        """The pylon settings to fly against these target unit ids.
+
+        A target-matched value replaces only a setting left at its default, so a
+        hand-set seeker head survives. The result is the full table, because DCS
+        reads an absent key as not fitted.
+        """
+        matched = self.get_target_overrides(targets)
+        if not matched:
+            return stored
+        settings = self.create_settings(stored)
+        if settings is None:
+            return stored
+        defaults = self._default_settings()
+        for key, value in matched.items():
+            current = (stored or {}).get(key, defaults.get(key))
+            if current == defaults.get(key):
+                settings.set_value(key, value)
+        return {**(stored or {}), **settings.to_dict()}
+
+    def strip_target_settings(
+        self,
+        saved: Dict[str, Any],
+        targets: tuple[Any, ...],
+        stored: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Undo `settings_for_target` for a value the player left as matched.
+
+        Stored at its default, it keeps following the target if the target changes.
+        """
+        matched = self.get_target_overrides(targets)
+        defaults = self._default_settings()
+        result = dict(saved)
+        for key, value in matched.items():
+            if (
+                key in result
+                and result[key] == value
+                and key in defaults
+                and (stored or {}).get(key, defaults[key]) == defaults[key]
+            ):
+                result[key] = defaults[key]
+        return result
+
+    def _default_settings(self) -> Dict[str, Any]:
+        settings = self.create_settings()
+        return settings.to_dict() if settings is not None else {}
 
 
 @unique
@@ -307,6 +357,9 @@ class WeaponGroup:
 
     #: Target-based overrides for weapon settings
     target_overrides: list[Dict[str, Any]] = field(init=False, default_factory=list)
+
+    #: Settings for a target that no override rule names
+    target_overrides_fallback: Dict[str, Any] = field(init=False, default_factory=dict)
 
     _by_name: ClassVar[dict[str, WeaponGroup]] = {}
     _loaded: ClassVar[bool] = False
@@ -367,6 +420,11 @@ class WeaponGroup:
 
             target_overrides = data.get("target_overrides", {})
             object.__setattr__(group, "target_overrides", target_overrides)
+            object.__setattr__(
+                group,
+                "target_overrides_fallback",
+                data.get("target_overrides_fallback", {}),
+            )
 
             for clsid in data["clsids"]:
                 weapon = Weapon(clsid, group)

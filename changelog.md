@@ -98,6 +98,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Payload]** Match Shrike seekers independently of date restrictions, preserve manual weapon settings and correct AGM-45/78 head tables (adapted from RetLab #1366).
 * **[OPFOR AI]** Keep the commander briefing focused on API actions and planning rules, with clearer sales and turn-zero rebuild guidance.
 * **[Mission Log]** Use campaign ownership for scenery objectives and avoid bad-news prefixes for unknown ground targets.
 * **[Mission Log]** Report own ground, SAM and ship losses under the losses setting.
