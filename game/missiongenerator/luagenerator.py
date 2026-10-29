@@ -191,10 +191,13 @@ class LuaGenerator:
                 # objective they belong to does.
                 objective = escape_string_for_lua(tgo.name)
                 category = escape_string_for_lua(str(tgo.category))
+                owner = tgo.control_point.captured
+                coalition = 2 if owner.is_blue else 1 if owner.is_red else 0
                 rows.append(
                     f'  {{ name = "{name}", x = {unit.position.x}, '
                     f"y = {unit.position.y}, dead = {dead}, "
-                    f'objective = "{objective}", category = "{category}" }},'
+                    f'objective = "{objective}", category = "{category}", '
+                    f"coalition = {coalition} }},"
                 )
         if not rows:
             return

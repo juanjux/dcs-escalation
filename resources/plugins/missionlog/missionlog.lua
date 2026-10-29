@@ -269,9 +269,9 @@ local function scenery_objective(unit)
         return nil
     end
     if zone.category ~= nil and zone.category ~= "" then
-        return string.format("%s %s", zone.category, zone.objective)
+        return string.format("%s %s", zone.category, zone.objective), zone.coalition
     end
-    return zone.objective
+    return zone.objective, zone.coalition
 end
 
 -- A formation, not a jet. An interception is something a flight does to another
@@ -307,6 +307,16 @@ local function describe_flight(group, enemy)
 end
 
 local function side_of(unit)
+    -- Map buildings have no reliable native coalition. Their campaign objective
+    -- owns them; do not assume that an unavailable coalition means friendly fire.
+    local name
+    if pcall(function() name = unit:getName() end) and type(name) == "number" then
+        local _, owner = scenery_objective(unit)
+        if owner == 0 or owner == 1 or owner == 2 then
+            return owner
+        end
+        return nil
+    end
     local side
     if pcall(function() side = unit:getCoalition() end) then
         return side
@@ -516,10 +526,10 @@ local function flush_ground()
                 scenery = bucket.scenery, weapon = bucket.weapon_name})
         local line = string.format(
             "%s %s %s%s", bucket.actor, bucket.verb, what, bucket.weapon)
-        if bucket.category == "groundkills" then
-            -- Ours only when what died was theirs: blue blowing up blue is not a
-            -- moment for a cheer.
-            line = cheer(bucket.enemy, line)
+        if bucket.category == "groundkills" and bucket.enemy then
+            -- Unknown or neutral ownership is neither a success nor a loss.
+            -- Friendly fire is reported through the owner's loss category.
+            line = cheer(true, line)
         elseif bucket.category == "losses" then
             line = cheer(false, line)
         end
@@ -674,7 +684,8 @@ function handler:onEvent(event)
             if shooter and shooter ~= victim and text ~= nil then
                 local kind, pilot = unit_fields(event.initiator)
                 local target_side = side_of(event.target)
-                local hostile_ground = shooter ~= nil and target_side ~= nil
+                local hostile_ground = (shooter == 1 or shooter == 2)
+                    and (target_side == 1 or target_side == 2)
                     and shooter ~= target_side
                 queue_ground({side = shooter, category = "groundkills",
                     enemy = hostile_ground,
@@ -711,7 +722,8 @@ function handler:onEvent(event)
                 local kind, pilot = unit_fields(event.initiator)
                 local damaged_side = side_of(event.target)
                 queue_ground({side = shooter, category = "damage",
-                    enemy = shooter ~= nil and damaged_side ~= nil
+                    enemy = (shooter == 1 or shooter == 2)
+                        and (damaged_side == 1 or damaged_side == 2)
                         and shooter ~= damaged_side,
                     actor = describe(event.initiator), verb = "hit", target = text,
                     weapon = weapon_suffix(event), weapon_name = weapon_name(event),
