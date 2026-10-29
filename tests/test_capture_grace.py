@@ -173,6 +173,9 @@ def test_exported_miz_resumes_capture_after_grace(
 
 @pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
 @pytest.mark.parametrize(
+    "neighbor", ["none", "friendly", "neutral", "enemy_empty", "enemy_armed"]
+)
+@pytest.mark.parametrize(
     "captured_turn,turn,defenders,expected",
     [
         (5, 6, 0, True),
@@ -184,6 +187,7 @@ def test_exported_miz_resumes_capture_after_grace(
 )
 def test_event_log_explains_empty_base_protection_without_capture_events(
     owner: Player,
+    neighbor: str,
     captured_turn: int | None,
     turn: int,
     defenders: int,
@@ -191,6 +195,16 @@ def test_event_log_explains_empty_base_protection_without_capture_events(
 ) -> None:
     cp = _base(owner)
     cp.last_capture_turn = captured_turn
+    if neighbor != "none":
+        side = (
+            owner
+            if neighbor == "friendly"
+            else Player.NEUTRAL if neighbor == "neutral" else owner.opponent
+        )
+        other = _base(side)
+        if neighbor != "enemy_empty":
+            other.base.commission_units({MagicMock(): 5})
+        cp.connected_points.append(other)
     if defenders:
         cp.base.commission_units({MagicMock(): defenders})
     game = MagicMock(turn=turn)
@@ -201,13 +215,15 @@ def test_event_log_explains_empty_base_protection_without_capture_events(
         cast(Any, SimpleNamespace(base_captures=[])), GameUpdateEvents()
     )
 
-    if expected:
+    if expected and neighbor == "enemy_armed":
         game.message.assert_called_once()
         title, text = game.message.call_args.args
         assert cp.name in title
-        assert "was not recaptured despite having no ground forces" in text
-        assert "first-turn protection" in text
+        assert "has no ground forces and faces enemy ground forces" in text
+        assert "First-turn protection" in text
         assert "expires next turn" in text
+        assert "was not recaptured" not in text
     else:
         game.message.assert_not_called()
     assert cp.captured == owner
+    assert cp.last_capture_turn == captured_turn

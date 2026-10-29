@@ -1571,19 +1571,24 @@ class MissionResultsProcessor:
         reconcile_naval_magazines(self.game, debriefing)
 
     def commit_captures(self, debriefing: Debriefing, events: GameUpdateEvents) -> None:
-        # Protected missions have no capture triggers, so there may be no event
-        # to reject. Report empty protected bases after losses, before deliveries
-        # and before this mission's new captures receive their timestamp.
+        # Protected missions have no capture triggers, so no rejected attempt can
+        # be inferred. Warn only about empty bases facing an armed enemy front,
+        # after losses and before deliveries or new capture timestamps.
         for cp in self.game.theater.controlpoints:
             if (
                 cp.is_capture_protected(self.game.turn)
                 and cp.last_capture_turn == self.game.turn - 1
                 and cp.base.total_armor == 0
+                and any(
+                    other.captured is cp.captured.opponent
+                    and other.base.total_armor > 0
+                    for other in cp.connected_points
+                )
             ):
                 self.game.message(
                     f"{cp.name}: recapture protection",
-                    f"{cp.name} was not recaptured despite having no ground forces "
-                    "because first-turn protection after capture is active. "
+                    f"{cp.name} has no ground forces and faces enemy ground forces "
+                    "on a connected front. First-turn protection after capture is active. "
                     "Protection expires next turn; bring in ground reinforcements.",
                 )
 
