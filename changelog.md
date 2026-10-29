@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Units]** Add eight stock CurrentHill ground units from DCS 2.9.31 and missing Iraqi aircraft availability without requiring mod packs (adapted from RetLab #1413).
 * **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries, dispersed placement and TIC formation support.
 * **[High Command]** Balance reward score ranges, avoid redundant support loans, and show difficulty separately from priority.
 * **[Live Pilots]** Share small, configurable morale gains from squadron mates' air and ground victories.
