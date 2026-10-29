@@ -1114,6 +1114,25 @@ control point. If you intend to hold, you need iron on the line: a stalemate is 
 against HOLD, or comparable mass on both sides. An empty front plus an enemy PUSH is a
 base lost in the debrief, with nothing to watch.
 
+### BARCAP endurance and tankers
+
+AI-only BARCAPs can interrupt their orbit to refuel and resume it without moving
+the planned station end. They leave before the estimated BINGO, reserving fuel
+for transit, ten minutes of queueing and four more minutes per additional aircraft
+in their own flight. Estimated burn includes a 25% margin. This uses actual fuel
+telemetry, not an exposed DCS-native BINGO event. A compatible tanker must be
+planned, alive, on station and reachable with transit and queueing fuel above the
+landing reserve; keep its station window long enough for transit, waiting and
+refuelling. These estimates do not guarantee service in a longer queue; avoid
+concentrating patrols at one tanker.
+
+Refuelling is attempted only when **more than twenty minutes** remain. Otherwise,
+or if no tanker is usable, the patrol returns home at BINGO. Tanker loss, reaching
+the landing reserve or a refuelling timeout also cause RTB. Refuelling does not
+extend coverage beyond the original patrol end, so plan replacement CAPs rather
+than relying on extra time.
+Player flights and TARCAPs are not managed by this rule.
+
 ### Naval warfare
 
 **Run this checklist every single turn.** An enemy cruiser parked off your coast is not
