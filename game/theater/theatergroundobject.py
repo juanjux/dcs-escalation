@@ -371,6 +371,11 @@ class TheaterGroundObject(MissionTarget, SidcDescribable, ABC):
         raise NotImplementedError
 
     @property
+    def sellable(self) -> bool:
+        """Whether the site's units can be disbanded for a refund."""
+        return self.purchasable
+
+    @property
     def repairable(self) -> bool:
         """Whether a destroyed group can be rebuilt or repaired, so the map should
         not treat it as a permanent loss. Re-purchasable groups (SAM/EWR/armor)
@@ -623,6 +628,10 @@ class MissileSiteGroundObject(TheaterGroundObject):
     @property
     def purchasable(self) -> bool:
         return self.control_point.coalition.game.turn == 0
+
+    @property
+    def sellable(self) -> bool:
+        return True
 
     @property
     def should_head_to_conflict(self) -> bool:

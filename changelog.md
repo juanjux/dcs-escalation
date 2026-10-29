@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Allow missile sites to be disbanded for a refund after campaign start.
 * **[Realistic CAS]** Show discovery times on F10 contact markers.
 * **[UI]** Highlight visible map icons when hovering over Show on map buttons.
 * **[Missiles]** Snap map aimpoints to visible enemy objective icons at any zoom level.

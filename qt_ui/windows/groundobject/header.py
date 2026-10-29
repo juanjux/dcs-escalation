@@ -120,7 +120,7 @@ class LocationHeader(QWidget):
             parts.append(f"threat {threat.nautical_miles:.0f} nm")
         if detection.meters > 0:
             parts.append(f"detection {detection.nautical_miles:.0f} nm")
-        if ground_object.purchasable and ground_object.value:
+        if ground_object.sellable and ground_object.value:
             parts.append(f"value ${ground_object.value}M")
         return "  ·  ".join(parts)
 

@@ -50,6 +50,7 @@ from game.mfd import band_of, is_manpads, is_mobile, shows_on_mfd
 from game.theater.iadsnetwork.iadsexplain import IadsPicture, describe
 from game.theater.theatergroundobject import (
     BuildingGroundObject,
+    MissileSiteGroundObject,
     VehicleGroupGroundObject,
 )
 from game.theater.locationcheat import destroy_all, revive_all
@@ -627,7 +628,13 @@ class QGroundObjectMenu(QDialog):
         cheats = self._cheat_block()
         if cheats is not None:
             row.addWidget(cheats)
-        if self._can_trade and self.total_value > 0:
+        if self._can_sell and (
+            self.total_value > 0
+            or (
+                isinstance(self.ground_object, MissileSiteGroundObject)
+                and self.ground_object.unit_count > 0
+            )
+        ):
             row.addWidget(
                 two_tone_button(
                     "Disband",
@@ -743,13 +750,19 @@ class QGroundObjectMenu(QDialog):
 
     @property
     def _can_trade(self) -> bool:
-        """Whether this side's units can be bought and sold at all."""
+        """Whether this side may buy or replace units at this site."""
         if not self.ground_object.purchasable or self.cp.captured.is_neutral:
             return False
         return self.cp.captured.is_blue or self.game.settings.enable_enemy_buy_sell
 
+    @property
+    def _can_sell(self) -> bool:
+        if not self.ground_object.sellable or self.cp.captured.is_neutral:
+            return False
+        return self.cp.captured.is_blue or self.game.settings.enable_enemy_buy_sell
+
     def _update_total_value(self) -> None:
-        if not self.ground_object.purchasable:
+        if not self.ground_object.sellable:
             self.total_value = 0
             return
         self.total_value = self.ground_object.value + self._pending_repair_value()
@@ -830,9 +843,13 @@ class QGroundObjectMenu(QDialog):
         self.close()
 
     def _sell_all(self) -> None:
+        if self.game_model.game is not self.campaign or not self._can_sell:
+            return
         self._update_total_value()
         self.ground_object.coalition.budget += self.total_value
         self.ground_object.clear()
+        if isinstance(self.ground_object, MissileSiteGroundObject):
+            self.ground_object.missile_target = None
         self._update_game()
 
     def _buy_group(self) -> None:
