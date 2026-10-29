@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 import random
+import re
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import List, Optional, TYPE_CHECKING, Tuple
@@ -41,6 +42,11 @@ from game.ground_forces.ai_ground_planner import (
     DISTANCE_FROM_FRONTLINE,
 )
 from game.ground_forces.combat_stance import CombatStance
+from game.ground_forces.manpads import (
+    DEFAULT_VEHICLES_PER_MANPAD_TEAM,
+    additional_manpad_teams,
+    select_manpad_hosts,
+)
 from game.naming import namegen
 from game.plugins import LuaPluginManager
 from game.radio.radios import RadioRegistry
@@ -56,6 +62,7 @@ from ..ato import FlightType
 
 if TYPE_CHECKING:
     from game import Game
+    from game.factions.faction import Faction
 
 SPREAD_DISTANCE_FACTOR = 0.1, 0.3
 SPREAD_DISTANCE_SIZE_FACTOR = 0.1
@@ -260,6 +267,9 @@ class FlotGenerator:
             self.conflict.blue_cp,
         )
 
+        self.gen_manpad_teams(player_groups, Player.BLUE)
+        self.gen_manpad_teams(enemy_groups, Player.RED)
+
         # Add JTAC
         if (
             self.game.settings.use_jtac
@@ -358,6 +368,9 @@ class FlotGenerator:
         forward_heading: Heading,
         tic_formation: Optional[str] = None,
     ) -> None:
+        if not self.game.settings.perf_infantry:
+            return
+
         infantry_position = self.conflict.find_ground_position(
             group.points[0].position.random_point_within(250, 50),
             500,
@@ -366,88 +379,217 @@ class FlotGenerator:
         )
 
         faction = self.game.faction_for(is_player)
-
-        def infantry_group_name(unit_type: GroundUnitType) -> str:
-            name = namegen.next_infantry_name(side, unit_type)
-            if tic_formation is not None:
-                # Join the carrier group's TIC formation. The "#" bookend
-                # keeps the DCS group name unique while TIC merges every
-                # group sharing the formation name.
-                return f"TIC:{tic_formation}#{name}"
-            return name
-
-        # Disable infantry unit gen if disabled
-        if not self.game.settings.perf_infantry:
-            if self.game.settings.manpads:
-                # 50% of armored units protected by manpad
-                if random.choice([True, False]):
-                    manpads = list(faction.infantry_with_class(UnitClass.MANPAD))
-                    if manpads:
-                        u = random.choices(
-                            manpads, weights=[m.spawn_weight for m in manpads]
-                        )[0]
-                        vg = self.mission.vehicle_group(
-                            side,
-                            namegen.next_infantry_name(side, u),
-                            u.dcs_unit_type,
-                            position=infantry_position,
-                            group_size=1,
-                            heading=forward_heading.degrees,
-                            move_formation=PointAction.OffRoad,
-                        )
-                        vehicle = vg.units[0]
-                        self.mission_data.frontline_visibility_groups.add(str(vg.name))
-                        GroundForcePainter(faction, vehicle).apply_livery()
-                        vg.hidden_on_mfd = True
+        infantry_choices = sorted(
+            (
+                u
+                for u in faction.infantry_with_class(UnitClass.INFANTRY)
+                if u.spawn_weight > 0
+            ),
+            key=lambda u: u.variant_id,
+        )
+        if not infantry_choices:
             return
-
-        possible_infantry_units = set(faction.infantry_with_class(UnitClass.INFANTRY))
-        if self.game.settings.manpads:
-            possible_infantry_units |= set(
-                faction.infantry_with_class(UnitClass.MANPAD)
-            )
-        if not possible_infantry_units:
-            return
-
-        infantry_choices = list(possible_infantry_units)
         units = random.choices(
             infantry_choices,
             weights=[u.spawn_weight for u in infantry_choices],
             k=INFANTRY_GROUP_SIZE,
         )
+        for index, unit in enumerate(units):
+            position = (
+                infantry_position
+                if index == 0
+                else infantry_position.random_point_within(55, 5)
+            )
+            self._generate_support_soldier(
+                unit, position, side, faction, is_player, forward_heading, tic_formation
+            )
+
+    def _generate_support_soldier(
+        self,
+        unit: GroundUnitType,
+        position: Point,
+        side: Country,
+        faction: Faction,
+        is_player: Player,
+        heading: Heading,
+        tic_formation: Optional[str],
+    ) -> VehicleGroup:
+        name = namegen.next_infantry_name(side, unit)
+        if tic_formation is not None:
+            name = f"TIC:{tic_formation}#{name}"
         vg = self.mission.vehicle_group(
             side,
-            infantry_group_name(units[0]),
-            units[0].dcs_unit_type,
-            position=infantry_position,
+            name,
+            unit.dcs_unit_type,
+            position=position,
             group_size=1,
-            heading=forward_heading.degrees,
+            heading=heading.degrees,
             move_formation=PointAction.OffRoad,
         )
-        vehicle = vg.units[0]
         self.mission_data.frontline_visibility_groups.add(str(vg.name))
-        GroundForcePainter(faction, vehicle).apply_livery()
+        GroundForcePainter(faction, vg.units[0]).apply_livery()
         vg.hidden_on_mfd = True
+        vg.points[0].tasks.append(OptAlarmState(2))
+        skill = (
+            self.game.settings.player_skill
+            if is_player.is_blue
+            else self.game.settings.enemy_vehicle_skill
+        )
+        vg.set_skill(ground_skill(Skill(skill)))
         if tic_formation is not None:
             vg.late_activation = True
+            self.mission_data.tic_groups.append(str(vg.name))
+        return vg
 
-        for unit in units[1:]:
-            position = infantry_position.random_point_within(55, 5)
-            vg = self.mission.vehicle_group(
-                side,
-                infantry_group_name(unit),
-                unit.dcs_unit_type,
-                position=position,
-                group_size=1,
-                heading=forward_heading.degrees,
-                move_formation=PointAction.OffRoad,
+    def _manpad_position(self, host: VehicleGroup, occupied: list[Point]) -> Point:
+        """Keep support near its host and avoid stacking teams where terrain permits."""
+        origin = host.points[0].position
+        best = origin
+        best_gap = min(
+            (origin.distance_to_point(p) for p in occupied), default=math.inf
+        )
+        for _ in range(32):
+            candidate = origin.random_point_within(150, 30)
+            if not self.conflict.theater.is_on_land(candidate):
+                continue
+            gap = min(
+                (candidate.distance_to_point(p) for p in occupied), default=math.inf
             )
-            vehicle = vg.units[0]
-            self.mission_data.frontline_visibility_groups.add(str(vg.name))
-            GroundForcePainter(faction, vehicle).apply_livery()
-            vg.hidden_on_mfd = True
-            if tic_formation is not None:
-                vg.late_activation = True
+            if gap >= 100:
+                return candidate
+            if gap > best_gap:
+                best, best_gap = candidate, gap
+        # Do not snap to a remote patch of land just to meet a spacing target.
+        return best
+
+    def gen_manpad_teams(
+        self, groups: list[tuple[VehicleGroup, CombatGroup]], is_player: Player
+    ) -> None:
+        if not self.game.settings.manpads:
+            return
+        count = additional_manpad_teams(
+            [group for _, group in groups],
+            getattr(
+                self.game.settings,
+                "frontline_manpad_vehicles_per_team",
+                DEFAULT_VEHICLES_PER_MANPAD_TEAM,
+            ),
+        )
+        if not count:
+            return
+        faction = self.game.faction_for(is_player)
+        manpads = sorted(
+            (
+                u
+                for u in faction.infantry_with_class(UnitClass.MANPAD)
+                if u.spawn_weight > 0
+            ),
+            key=lambda u: u.variant_id,
+        )
+        if not manpads:
+            return
+        riflemen = sorted(
+            (
+                u
+                for u in faction.infantry_with_class(UnitClass.INFANTRY)
+                if u.is_rifleman and u.spawn_weight > 0
+            ),
+            key=lambda u: u.variant_id,
+        )
+        side = self.mission.country(faction.country.name)
+        assert self.conflict.heading is not None
+        heading = (
+            self.conflict.heading.right
+            if is_player.is_blue
+            else self.conflict.heading.left
+        )
+        occupied = [
+            unit.position
+            for vehicle, group in groups
+            if group.unit_type.unit_class is UnitClass.MANPAD
+            for unit in vehicle.units
+        ]
+        prepared: set[str] = set()
+        carrier_names = {
+            str(vehicle.name)
+            for vehicle, group in groups
+            if group.role in (CombatGroupRole.APC, CombatGroupRole.IFV)
+        }
+        for host in select_manpad_hosts(groups, count, occupied):
+            position = self._manpad_position(host, occupied)
+            occupied.append(position)
+            # All members share the host's TIC formation even with normal infantry off.
+            # A non-TIC host gets a separate support formation with the same route.
+            host_name = str(host.name)
+            formation = None
+            if self.tic_enabled:
+                formation = host_name.removeprefix("TIC:")
+                if (
+                    host_name.startswith("TIC:")
+                    and host_name in carrier_names
+                    and host_name not in prepared
+                ):
+                    self._prepare_manpad_transport(host)
+                    prepared.add(host_name)
+            units = [
+                random.choices(manpads, weights=[u.spawn_weight for u in manpads])[0]
+            ]
+            if riflemen:
+                units.append(
+                    random.choices(
+                        riflemen, weights=[u.spawn_weight for u in riflemen]
+                    )[0]
+                )
+            for index, unit_type in enumerate(units):
+                soldier_position = position
+                if index:
+                    for _ in range(8):
+                        candidate = position.random_point_within(10, 5)
+                        if self.conflict.theater.is_on_land(candidate):
+                            soldier_position = candidate
+                            break
+                soldier = self._generate_support_soldier(
+                    unit_type,
+                    soldier_position,
+                    side,
+                    faction,
+                    is_player,
+                    heading,
+                    formation,
+                )
+                if self.tic_enabled and not host_name.startswith("TIC:"):
+                    # Copy only movement data, never artillery attack tasks.
+                    for waypoint in host.points[1:]:
+                        point = soldier.add_waypoint(
+                            waypoint.position, PointAction.OffRoad, speed=4
+                        )
+                        point.name = waypoint.name
+
+    @staticmethod
+    def _prepare_manpad_transport(host: VehicleGroup) -> None:
+        """Board before advances and deploy on arrival using TIC waypoint commands."""
+        route = list(host.points)
+        if len(route) < 2:
+            return
+        route[0].name = f"{route[0].name or ''} mount".strip()
+        points = [route[0]]
+        for index, waypoint in enumerate(route[1:]):
+            # TIC applies deployment commands on arrival. Before later advances,
+            # visit the same position to board again two minutes before step-off.
+            start = re.search(r"\bt\+(\d+)\b", waypoint.name or "")
+            if index and start is not None:
+                previous = route[index]
+                board = host.add_waypoint(
+                    previous.position, PointAction.OffRoad, speed=4
+                )
+                board.name = f"t+{max(0, int(start.group(1)) - 2)} mount"
+                points.append(board)
+            waypoint.name = (
+                re.sub(r"\b(?:mount|dismount)\b", "", waypoint.name or "").strip()
+                + " dismount"
+            )
+            points.append(waypoint)
+        host.points[:] = points
 
     def _earliest_tot_on_flot(self, player: Player) -> timedelta:
         tots = [

@@ -103,6 +103,9 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
 
     ground_mobility: GroundMobility = GroundMobility()
 
+    # Only plain riflemen can be selected as MANPADS team auxiliaries.
+    is_rifleman: bool = False
+
     _by_name: ClassVar[dict[str, GroundUnitType]] = {}
     _by_unit_type: ClassVar[dict[type[VehicleType], list[GroundUnitType]]] = (
         defaultdict(list)
@@ -232,4 +235,5 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
             reversed_heading=data.get("reversed_heading", False),
             gps_jamming=GpsJammingProperties.from_data(data.get("gps_jamming")),
             ground_mobility=GroundMobility.from_data(data.get("ground_mobility")),
+            is_rifleman=data.get("is_rifleman", False),
         )

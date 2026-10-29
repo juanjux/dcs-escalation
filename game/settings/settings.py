@@ -225,6 +225,28 @@ class Settings:
         page=DIFFICULTY_PAGE,
         section=MISSION_DIFFICULTY_SECTION,
         default=True,
+        detail=(
+            "Add vehicle-based MANPADS teams on each side of each front. Each team "
+            "has one launcher and a rifleman when the faction has one. Teams are "
+            "independent of infantry squad generation and join their host's TIC "
+            "formation when enabled. Existing deployed MANPADS count toward the allowance."
+        ),
+    )
+    frontline_manpad_vehicles_per_team: int = bounded_int_option(
+        "Combat vehicles per MANPADS team (0 disables additional teams)",
+        page=DIFFICULTY_PAGE,
+        section=MISSION_DIFFICULTY_SECTION,
+        default=8,
+        min=0,
+        max=100,
+        detail=(
+            "The vehicle count on each side of each front is divided by this value "
+            "and rounded to the nearest team (halves round up). At 8, fifteen "
+            "combat vehicles receive two teams. Trucks, infantry and MANPADS do "
+            "not increase the allowance. Requires Manpads on frontlines. Zero "
+            "disables additional teams, not MANPADS already in the base inventory. "
+            "Generated support teams are currently recreated for each mission."
+        ),
     )
     night_day_missions: NightMissions = choices_option(
         "Night/day mission options",

@@ -1,4 +1,5 @@
 class: Infantry
+is_rifleman: true
 price: 0
 spawn_weight: 5
 variants:
