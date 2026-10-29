@@ -3,7 +3,7 @@
 import logging
 from typing import Optional
 
-from PySide6.QtCore import QItemSelection, QTime, Qt, Signal
+from PySide6.QtCore import QItemSelection, QSignalBlocker, QTime, Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 from game.ato.flight import Flight
 from game.ato.flightplans.planningerror import PlanningError
 from game.ato.package import Package
+from game.commander.coordinatedtot import plan_coordinated_tot
 from game.game import Game
 from game.radio.radios import RadioFrequency
 from game.server import EventStream
@@ -155,6 +156,16 @@ class QPackageDialog(QDialog):
         )
         self.auto_asap.toggled.connect(self.set_asap)
         self.tot_column.addWidget(self.auto_asap)
+        self.auto_coordinated = QCheckBox("Coordinated")
+        self.auto_coordinated.setStyleSheet(self.auto_asap.styleSheet())
+        self.auto_coordinated.setToolTip(
+            "Time an attack behind SEAD/DEAD covering its target. The window "
+            "opens two minutes after the latest suppressor and lasts eight minutes. "
+            "An unreachable or missing window keeps ASAP timing with a warning."
+        )
+        self.auto_coordinated.setChecked(self.package_model.package.auto_coordinated)
+        self.auto_coordinated.toggled.connect(self.set_coordinated)
+        self.tot_column.addWidget(self.auto_coordinated)
         self.tot_column.addStretch()
 
         self.tot_help_label = QLabel(
@@ -270,6 +281,8 @@ class QPackageDialog(QDialog):
         self.save_tot()
 
     def save_tot(self) -> None:
+        if not self.tot_spinner.isEnabled():
+            return
         # TODO: This is going to break horribly around midnight.
         time = self.tot_spinner.time()
         self.package_model.set_tot(
@@ -280,11 +293,13 @@ class QPackageDialog(QDialog):
 
     def set_asap(self, checked: bool) -> None:
         self.package_model.set_asap(checked)
-        self.tot_spinner.setEnabled(not self.package_model.package.auto_asap)
-        self.update_tot()
+
+    def set_coordinated(self, checked: bool) -> None:
+        self.package_model.set_coordinated(checked)
 
     def update_tot(self) -> None:
-        self.tot_spinner.setTime(self.tot_qtime())
+        with QSignalBlocker(self.tot_spinner):
+            self.tot_spinner.setTime(self.tot_qtime())
 
     def on_selection_changed(
         self, selected: QItemSelection, _deselected: QItemSelection
@@ -405,8 +420,14 @@ class QPackageDialog(QDialog):
         self.edit_flight_button.setEnabled(selected)
         self.delete_flight_button.setEnabled(selected)
         waiting = package.all_flights_waiting_for_start()
-        self.tot_spinner.setEnabled(waiting and not package.auto_asap)
+        self.tot_spinner.setEnabled(
+            waiting and not package.auto_asap and not package.auto_coordinated
+        )
         self.auto_asap.setEnabled(waiting)
+        self.auto_coordinated.setEnabled(waiting)
+        with QSignalBlocker(self.auto_asap), QSignalBlocker(self.auto_coordinated):
+            self.auto_asap.setChecked(package.auto_asap)
+            self.auto_coordinated.setChecked(package.auto_coordinated)
         self.timing_hint.setText(
             "Timing is locked while flights are active."
             if not waiting
@@ -416,6 +437,19 @@ class QPackageDialog(QDialog):
                 else "Manual arrival time for this package."
             )
         )
+        if waiting and package.auto_coordinated and flights:
+            coalition = flights[0].coalition
+            plan = plan_coordinated_tot(
+                package,
+                coalition.ato.packages,
+                self.game_model.sim_controller.current_time_in_sim,
+                coalition.game.settings.desired_player_mission_duration,
+            )
+            timing = "ASAP: no applicable SEAD/DEAD window."
+            if plan.behind:
+                names = ", ".join(p.target.name for p in plan.behind)
+                timing = f"Coordinated behind SEAD/DEAD on {names}, {plan.tot:%H:%M}."
+            self.timing_hint.setText("\n".join([timing, *plan.warnings]))
         if not flights:
             self.package_context.setText("0 flights  ·  0 aircraft  ·  0 player slots")
             self.departures_label.setText("")
@@ -476,7 +510,8 @@ class QNewPackageDialog(QPackageDialog):
         super().__init__(
             game_model,
             PackageModel(
-                Package(target, game_model.game.db.flights, auto_asap=True), game_model
+                Package(target, game_model.game.db.flights, auto_coordinated=True),
+                game_model,
             ),
             parent=parent,
         )

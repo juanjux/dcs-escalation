@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
 from game.debriefing import Debriefing
+from game.commander.coordinatedtot import retime_coordinated_packages
 from game.missionarchive import archive_mission
 from game.missiongenerator import MissionGenerator
 from game.unitmap import UnitMap
@@ -31,6 +32,7 @@ class MissionSimulation:
         self.miz_generated_at: float = 0.0
 
     def begin_simulation(self) -> None:
+        retime_coordinated_packages(self.game)
         self.time = self.game.conditions.start_time
         self.aircraft_simulation.begin_simulation()
 

@@ -1053,6 +1053,7 @@ def set_package_tot(
             raise ValueError(f"no package at index {index}")
         pkg = ato.packages[index]
         now = game.conditions.start_time
+        pkg.auto_coordinated = False
         if tot_minutes is None:
             pkg.auto_asap = True
             pkg.set_tot_asap(now)

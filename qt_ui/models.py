@@ -18,6 +18,7 @@ from game.ato.flight import Flight
 from game.ato.flighttype import FlightType
 from game.ato.package import Package
 from game.ato.traveltime import TotEstimator
+from game.commander.coordinatedtot import apply_tot_mode
 from game.dcs.beacons import Beacons
 from game.game import Game
 from game.radio.RadioFrequencyContainer import RadioFrequencyContainer
@@ -230,6 +231,14 @@ class PackageModel(QAbstractListModel):
 
     def set_asap(self, asap: bool) -> None:
         self.package.auto_asap = asap
+        if asap:
+            self.package.auto_coordinated = False
+        self.update_tot()
+
+    def set_coordinated(self, coordinated: bool) -> None:
+        self.package.auto_coordinated = coordinated
+        if coordinated:
+            self.package.auto_asap = False
         self.update_tot()
 
     def push_tot_if_unreachable(self) -> None:
@@ -238,7 +247,7 @@ class PackageModel(QAbstractListModel):
         Sliding the whole package keeps the spacing its offsets asked for, which a
         flight left with an unreachable TOT does not.
         """
-        if self.package.auto_asap:
+        if self.package.auto_asap or self.package.auto_coordinated:
             # set_tot_asap already puts the TOT on the earliest reachable time.
             return
         now = self.game_model.sim_controller.current_time_in_sim
@@ -247,7 +256,15 @@ class PackageModel(QAbstractListModel):
             self.package.time_over_target = earliest
 
     def update_tot(self) -> None:
-        if self.package.auto_asap:
+        if self.package.auto_coordinated and self.package.flights:
+            coalition = self.package.flights[0].coalition
+            apply_tot_mode(
+                self.package,
+                coalition.ato.packages,
+                self.game_model.sim_controller.current_time_in_sim,
+                coalition.game.settings.desired_player_mission_duration,
+            )
+        elif self.package.auto_asap:
             self.package.set_tot_asap(
                 self.game_model.sim_controller.current_time_in_sim
             )

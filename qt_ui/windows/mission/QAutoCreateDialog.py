@@ -265,6 +265,8 @@ class QAutoCreateDialog(QDialog):
                 now = self.package_model.game_model.sim_controller.current_time_in_sim
                 package = pff.plan_mission(pm, 1, now, tracer, ignore_range=True)
                 if package:
+                    package.auto_coordinated = self.package.auto_coordinated
+                    package.auto_asap = self.package.auto_asap
                     package.set_tot_asap(now)
                     self.package = package
                     self.package_model.package = package
