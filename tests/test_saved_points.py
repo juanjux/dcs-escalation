@@ -44,9 +44,9 @@ def test_a_flight_starts_with_nothing_written_down() -> None:
 
 def test_each_airframe_takes_what_its_own_cartridge_holds() -> None:
     """The Hornet's navigation set is 59 with HOME and the bullseye spoken for; the
-    Viper's steerpoints stop at 25."""
+    Viper reserves steerpoint 25 for the bullseye."""
     assert capacity_for("FA-18C_hornet") == Capacity(waypoints=57, markpoints=0)
-    assert capacity_for("F-16C_50") == Capacity(waypoints=25, markpoints=0)
+    assert capacity_for("F-16C_50") == Capacity(waypoints=24, markpoints=0)
     # And an A-10's DTS database indexes two thousand waypoints.
     assert capacity_for("A-10C_2") == Capacity(waypoints=2050, markpoints=0)
     # The Super Hornets carry the Hornet's cartridge, section for section.
@@ -80,13 +80,13 @@ def test_writing_one_down_uses_up_its_room() -> None:
 
 
 def test_a_full_aircraft_refuses_another() -> None:
-    """The Viper's twenty-five steerpoints are the tightest measured ceiling."""
+    """The Viper's usable points stop before its bullseye slot."""
     flight = _flight("F-16C_50")
-    for _ in range(25):
+    for _ in range(24):
         assert add_point(cast(Any, flight), _point())
 
     assert not add_point(cast(Any, flight), _point())
-    assert len(points_of(cast(Any, flight))) == 25
+    assert len(points_of(cast(Any, flight))) == 24
 
 
 def test_one_can_be_taken_off_again() -> None:

@@ -1070,11 +1070,11 @@ def test_the_hornet_stops_before_home_and_the_bullseye() -> None:
     assert len(points) == 58
 
 
-def test_the_viper_counts_from_one_and_stops_at_twenty_five() -> None:
+def test_the_viper_counts_from_one_and_reserves_bullseye_twenty_five() -> None:
     points = _nav(dtc.ViperCartridge(), route=5, saved=40)
 
     assert [point.number for point in points[:2]] == [1, 2]
-    assert points[-1].number == 25
+    assert points[-1].number == 24
 
 
 def test_a_route_that_fills_the_module_is_left_alone() -> None:
@@ -1121,7 +1121,8 @@ def test_a_saved_point_is_numbered_as_the_aircraft_numbers_it() -> None:
 
 
 def test_the_numbering_stops_where_the_module_does() -> None:
-    assert dtc.steerpoint_numbers("F-16C_50", 24, 5) == [25]
+    assert dtc.steerpoint_numbers("F-16C_50", 23, 5) == [24]
+    assert dtc.steerpoint_numbers("F-16C_50", 24, 5) == []
     assert dtc.steerpoint_numbers("F-16C_50", 25, 5) == []
 
 
@@ -1282,8 +1283,8 @@ def test_man_1_is_flares_and_man_6_chaff_both_from_the_stick() -> None:
     # Every other program is the module's own, written whole.
     assert programs["MAN5"]["Chaff"]["SalvoQuantity"] == 20
     assert set(programs["AUTO2"]) == {"Chaff", "Flare", "Other1", "Other2"}
-    # The per-threat choice of automatic program stays the module's.
-    assert set(cmds) == {"CMDSBingoSettings", "CMDSProgramSettings"}
+    # Automatic choices also come from the module's exported threat table.
+    assert set(cmds) == {"CMDSBingoSettings", "CMDSProgramSettings", "CMDSPrograms"}
 
 
 @installed

@@ -106,7 +106,7 @@ CAPACITY: dict[str, Capacity] = {
     "EA-18G": Capacity(waypoints=57, markpoints=0),
     "FA-18ET": Capacity(waypoints=57, markpoints=0),
     "FA-18FT": Capacity(waypoints=57, markpoints=0),
-    "F-16C_50": Capacity(waypoints=25, markpoints=0),
+    "F-16C_50": Capacity(waypoints=24, markpoints=0),
     "A-10C": Capacity(waypoints=2050, markpoints=0),
     "A-10C_2": Capacity(waypoints=2050, markpoints=0),
 }

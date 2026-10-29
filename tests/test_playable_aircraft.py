@@ -131,10 +131,10 @@ def test_the_points_are_grouped_by_kind_keeping_their_place_in_the_list() -> Non
 
 
 def test_the_ceiling_is_what_the_aircraft_can_be_given() -> None:
-    """Not a guard figure: the Viper takes 25 steerpoints and no markpoint at all."""
+    """The Viper reserves steerpoint 25 for bullseye and cannot load markpoints."""
     one = data.Aircraft(_flight(aircraft="F-16C_50"))
 
-    assert one.ceiling == 25
+    assert one.ceiling == 24
     assert one.maximum(PointKind.MARKPOINT) == 0
 
 
@@ -207,14 +207,14 @@ def test_copying_takes_a_copy_rather_than_the_points_themselves() -> None:
 
 def test_pasting_writes_what_fits_and_says_how_many() -> None:
     source = data.Aircraft(_flight(points=[_point(name=f"P{n}") for n in range(30)]))
-    # The Viper's steerpoints stop at 25, which is the tightest measured ceiling.
+    # Steerpoint 25 is reserved for the Viper's bullseye.
     target = data.Aircraft(_flight(aircraft="F-16C_50"))
     clipboard = data.Clipboard()
     clipboard.take(source)
 
-    assert clipboard.fits(target) == 25
-    assert clipboard.paste_into(target) == 25
-    assert target.total_used == 25
+    assert clipboard.fits(target) == 24
+    assert clipboard.paste_into(target) == 24
+    assert target.total_used == 24
 
 
 def test_pasting_twice_does_not_give_two_aircraft_the_same_point() -> None:
