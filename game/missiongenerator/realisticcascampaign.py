@@ -50,8 +50,6 @@ def validate_compatibility(plugins: Any) -> None:
             )
             if autolase is not False:
                 incompatible.append("ctld: turn off 'JTAC autolase targets'")
-        elif plugin.identifier == "tic":
-            incompatible.append("tic: disable the plugin (visibility/clone conflict)")
         elif plugin.identifier == "MooseAutolase":
             incompatible.append("MooseAutolase: disable the autolase plugin")
     if incompatible:

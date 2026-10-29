@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-import textwrap
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -58,7 +57,6 @@ class LuaGenerator:
         self._inject_aircraft_maintenance()
         self._seed_scenery_objectives()
         self._seed_persistent_damage()
-        self._inject_tic_script()
         inject_campaign(self, realistic_cas)
         for t in existing_start_triggers:
             self.mission.triggerrules.triggers.remove(t)
@@ -261,58 +259,6 @@ class LuaGenerator:
         assert pilot is not None
         rank = flying_unit.flight.squadron.pilot_rank(pilot)
         return pilot.name if rank is None else f"{rank.abbreviation} {pilot.name}"
-
-    def _inject_tic_script(self) -> None:
-        """Inject TIC_v1.1.lua (Troops In Contact, by Grendel) as a core script.
-
-        Fires only when the TIC plugin is enabled and the FLOT generator handed
-        frontline groups over to TIC (mission_data.tic_groups non-empty). The
-        preamble pre-seeds the GLSCO config table from the plugin options
-        before the script's file-scope auto-initialization runs. MOOSE is
-        already loaded by the base plugin at this point in the trigger order.
-        """
-        if not self.mission_data.tic_groups:
-            return
-        script_path = Path("./resources/plugins/tic/TIC_v1.1.lua")
-        if not script_path.exists():
-            logging.error(
-                "TIC_v1.1.lua not found at %s — TIC-named frontline groups "
-                "will stay late-activated and never spawn",
-                script_path.resolve(),
-            )
-            return
-        init_path = Path("./resources/plugins/tic/tic_414_init.lua")
-        if not init_path.exists():
-            logging.error(
-                "tic_414_init.lua not found at %s — TIC battle would never "
-                "initialize; skipping TIC entirely",
-                init_path.resolve(),
-            )
-            return
-        preamble = textwrap.dedent("""\
-            -- Pre-seed TIC (GLSCO) configuration from Escalation plugin
-            -- options. TIC respects values that exist before it loads.
-            -- AutoInitialize/AutoStart are disabled because tic_414_init.lua
-            -- (loaded right after the main script) installs the 414th's
-            -- ambient-fire extension and then owns Initialize/Activate.
-            GLSCO = GLSCO or {}
-            GLSCO.AutoInitialize = false
-            GLSCO.AutoStart = false
-            if dcsRetribution and dcsRetribution.plugins
-                    and dcsRetribution.plugins.tic then
-                GLSCO.StormTrooperAI =
-                    dcsRetribution.plugins.tic.stormtrooper == true
-                GLSCO.CreateMenus =
-                    dcsRetribution.plugins.tic.createMenus == true
-            end
-            """)
-        trigger = TriggerStart(comment="Load TIC_v1.1 (frontline battle sim)")
-        trigger.add_action(DoScript(String(preamble)))
-        fileref = self.mission.map_resource.add_resource_file(script_path.resolve())
-        trigger.add_action(DoScriptFile(fileref))
-        init_fileref = self.mission.map_resource.add_resource_file(init_path.resolve())
-        trigger.add_action(DoScriptFile(init_fileref))
-        self.mission.triggerrules.triggers.append(trigger)
 
     def generate_plugin_data(self) -> None:
         lua_data = LuaData("dcsRetribution")

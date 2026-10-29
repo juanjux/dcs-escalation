@@ -1,3 +1,4 @@
+from . import native_currenthill
 from .SWPack import *
 from .a4ec import *
 from .a7e import *

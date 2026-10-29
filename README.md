@@ -44,9 +44,8 @@ By default, each side receives one team per eight combat vehicles on each front,
 rounded to the nearest team, minus any MANPADS already deployed there. Trucks and
 infantry do not increase the allowance. Each added team has one launcher and a
 rifleman from its faction when available. Teams are spread among formations,
-prefer APCs/IFVs, and join their host's TIC formation when that plugin is enabled,
-even with normal infantry generation off. Without TIC, teams defend their initial
-positions. The ratio is configurable under Difficulty; zero or switching off
+prefer APCs/IFVs, and defend their initial positions even with normal infantry
+generation off. The ratio is configurable under Difficulty; zero or switching off
 *Manpads on frontlines* disables additional teams. Generated support teams are
 still recreated for each mission; persistent losses and stock-based replacements
 are not implemented yet.
@@ -243,7 +242,7 @@ previous map view and campaign controls are restored when selection ends.
   time. Ground units also spot enemies, and revealing one vehicle reveals its group.
   Fixed map SAM sites stay known; frontline SAMs participate in the fog. F10 and
   weapon accuracy are unchanged. Enable **Realistic CAS (experimental)** in Mission
-  Plugins; **TIC and Moose Autolase must be disabled**. CTLD logistics can remain
+  Plugins; **Moose Autolase must be disabled**. CTLD logistics can remain
   enabled with **JTAC autolase targets** off; runtime-created units are not yet
   registered in the fog. Legacy generated JTACs are omitted.
 
@@ -370,8 +369,7 @@ These are adapted from the [**414Ret** fork](https://github.com/bradyccox/414Ret
 (414th Joint Fighter Group), with thanks to its authors — 414Ret bundles many
 more features; listed here are the ones incorporated into this fork, each
 crediting the original 414Ret author (the recent additions land via attributed
-PRs on `juanjux-dev`, so any can be reverted cleanly). TIC vendors Grendel's
-TIC script (MIT).
+PRs on `juanjux-dev`, so any can be reverted cleanly).
 
 414Ret moves fast, so its feature list is re-reviewed periodically and only a
 part of it is taken: every feature carried here is one more thing to reconcile
@@ -381,9 +379,6 @@ on each upstream sync, so the bar is "clearly worth the maintenance", not
 `git log --author=bradyccox` is the authoritative list of what has been taken,
 and it is longer than this section.
 
-- **Troops In Contact (TIC)** — a dynamic frontline: ground forces actually fight
-  along the FLOT (with ambient fire) instead of behaving as two static walls.
-  
 - **Mission Impact debrief summary** — bases captured/lost, runway damage and a
   both-sides loss overview above the casualty tables.
   
