@@ -47,6 +47,7 @@ from game.dcs.skills import SKILL_LADDER
 from game.squadrons import friendship
 from game.squadrons import hardening
 from game.squadrons import morale as morale_rules
+from game.theater.player import Player
 from game.squadrons.pilot import Pilot
 from game.squadrons.xplog import XpLog
 from game.profiling import logged_duration
@@ -896,21 +897,26 @@ class MissionResultsProcessor:
 
     def _victim_is_blue(self, victim: Any) -> Optional[bool]:
         """Which side the destroyed thing belonged to, where that can be established."""
+        owner = self._victim_owner(victim)
+        return bool(owner.is_blue) if owner is not None else None
+
+    @staticmethod
+    def _victim_owner(victim: Any) -> Any:
         flight = getattr(victim, "flight", None)
         if flight is not None:
-            return bool(flight.squadron.player.is_blue)
+            return flight.squadron.player
         for attr in ("origin", "airfield"):
             origin = getattr(victim, attr, None)
             if origin is not None and hasattr(origin, "captured"):
-                return bool(origin.captured.is_blue)
+                return origin.captured
         for attr in ("theater_unit", "ground_unit"):
             unit = getattr(victim, attr, None)
             tgo = getattr(unit, "ground_object", None)
             if tgo is not None:
-                return bool(tgo.control_point.captured.is_blue)
+                return tgo.control_point.captured
         convoy = getattr(victim, "convoy", None)
         if convoy is not None:
-            return bool(convoy.player_owned.is_blue)
+            return convoy.player_owned
         return None
 
     @staticmethod
@@ -1034,11 +1040,21 @@ class MissionResultsProcessor:
         """
         earned: dict[int, int] = {}
         credited: set[tuple[int, str]] = set()
+        shared: set[str] = set()
         for pilot, target, victim, flight, weapon in self._credited_events(
             debriefing.state_data.kill_details, debriefing, note_friendly_fire=True
         ):
             credited.add((id(pilot), target))
             kind = self._victim_kind(victim)
+            owner = self._victim_owner(victim)
+            if (
+                target not in shared
+                and kind.kind in (AIR, VEHICLE, BUILDING, SHIP)
+                and owner is not None
+                and owner is not Player.NEUTRAL
+            ):
+                shared.add(target)
+                self._note_squadron_victory(pilot, flight, kind.kind)
             xp = self._kill_xp(victim)
             if xp:
                 earned[id(pilot)] = earned.get(id(pilot), 0) + xp
@@ -1063,6 +1079,22 @@ class MissionResultsProcessor:
                 if not self._was_the_assigned_target(victim, flight):
                     self._note_morale(pilot, morale_rules.UNPLANNED_KILL)
         return earned, credited
+
+    def _note_squadron_victory(self, victor: Pilot, flight: Any, kind: str) -> None:
+        """Share a confirmed victory without paying the victor twice."""
+        settings = self.game.settings
+        if not settings.live_pilots_enabled or not settings.morale_enabled:
+            return
+        event = (
+            morale_rules.SQUADRON_AIR_KILL
+            if kind == AIR
+            else morale_rules.SQUADRON_GROUND_KILL
+        )
+        if event.amount(settings) == 0:
+            return
+        for pilot in getattr(flight.squadron, "current_roster", []):
+            if pilot is not victor and pilot.alive and pilot.has_morale:
+                self._note_morale(pilot, event)
 
     @staticmethod
     def _was_the_assigned_target(victim: Any, flight: Any) -> bool:

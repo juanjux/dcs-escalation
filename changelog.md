@@ -2,6 +2,7 @@
 
 ## Features/Improvements
 * **[High Command]** Balance reward score ranges, avoid redundant support loans, and show difficulty separately from priority.
+* **[Live Pilots]** Share small, configurable morale gains from squadron mates' air and ground victories.
 * **[UI]** Allow missile sites to be disbanded for a refund after campaign start.
 * **[Realistic CAS]** Show discovery times on F10 contact markers.
 * **[UI]** Highlight visible map icons when hovering over Show on map buttons.
@@ -92,6 +93,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Mission Log]** Report own ground, SAM and ship losses under the losses setting.
 * **[Campaign]** Avoid misleading recapture-protection notices for unthreatened rear bases.
 * **[Realistic CAS]** Remove destroyed-group contacts without forgotten notices.
 * **[High Command]** Do not reward empty groups as destroyed targets.
