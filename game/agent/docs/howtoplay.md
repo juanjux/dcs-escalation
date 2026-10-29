@@ -1236,6 +1236,25 @@ reports `cruise_missiles_remaining` in `naval[]`.
 
 ## 5. How to plan a strong turn
 
+### Extra DTC references
+
+The Hornet family, including CJS variants, receives selectable CAP references on
+its SA page: its own patrol track first, or its hold point on an attack, followed
+by friendly tanker and AWACS tracks. There are at most nine; the display shows the
+selected one, initially the first. Other flights' fighter patrols and enemy support
+tracks are not added. Tanker boxes, the attack corridor and the existing front line
+remain available.
+
+Hornet COMM presets carry short labels for known mission frequencies, preserving
+all generated channel frequencies. A radio without a complete generated preset
+table stays mirrored rather than being replaced by guessed defaults.
+
+With Viper countermeasure programs enabled, the cartridge includes the module's
+per-threat automatic table as well as the existing manual programs. Steerpoint 25
+is reserved for the Viper's bullseye; saved navigation exports stop at 24. Old saved
+points are not deleted, and a route too long to export safely is left mirrored
+instead of truncated. A-10 CDU export and terrain elevations are unchanged.
+
 **The ten things that cost the most aircraft when forgotten.** Each is explained in full
 somewhere above; this is the list to re-read before you plan.
 

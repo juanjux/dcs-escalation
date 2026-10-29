@@ -40,13 +40,16 @@ from __future__ import annotations
 import json
 import logging
 import math
+import re
 import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 from game.ato.flighttype import FlightType
+from game.ato.flightwaypointtype import FlightWaypointType
 from game.dcs.beacons import Beacon, Beacons
 from game.missiongenerator.frontlineconflictdescription import (
     FrontLineConflictDescription,
@@ -187,8 +190,16 @@ class HornetCartridge(Cartridge):
         if flight is None:
             return result
         lane = attack_corridor(flight)
+        caps = friendly_orbit_points(flight, mission_data)
+        if caps:
+            result["SA"] = {"CAP_PTS": caps, "Default_CAP_Point": 1}
         if lane:
-            result["SA"] = {"CORRIDORS": lane, "Default_CORRIDORS_Point": 1}
+            result.setdefault("SA", {}).update(
+                {"CORRIDORS": lane, "Default_CORRIDORS_Point": 1}
+            )
+        comms = hornet_radio_presets(flight, mission_data)
+        if comms:
+            result["COMM"] = comms
         runway = flight.arrival or flight.departure
         if runway is None:
             return result
@@ -341,9 +352,9 @@ class ViperCartridge(Cartridge):
     aircraft = "F-16C_50"
     max_lines = 4
     max_line_points = 25
-    # ``MPD/NAV_PTS.lua`` numbers its steerpoints from 1 and refuses a twenty-sixth.
+    # The native editor accepts 25, but DCS reserves point 25 for the bullseye.
     first_point = 1
-    last_point = 25
+    last_point = 24
     # One box per line after the front's, out of the same twenty-five points. Three
     # of them leave the front ten.
     max_boxes = 3
@@ -818,9 +829,8 @@ def roe_section(game: Game) -> dict[str, Any]:
 def countermeasure_programs() -> dict[str, Any]:
     """The Viper's CMDS section: the bingo counts and every program, whole.
 
-    The per-threat choice of automatic program is left out, so the module keeps its
-    own: DCS's loader merges a cartridge field by field, and its own sample cartridges
-    carry these two tables and nothing else.
+    Include the module's automatic per-threat table as well as manual programs,
+    adapted from RetLab #1159. No custom automatic threat choices are invented.
     """
 
     def dispense(values: Dispense) -> dict[str, float]:
@@ -851,7 +861,144 @@ def countermeasure_programs() -> dict[str, Any]:
             }
             for name, (chaff, flare) in CMDS_PROGRAMS.items()
         },
+        "CMDSPrograms": automatic_countermeasure_programs(),
     }
+
+
+@cache
+def _cmds_threats() -> dict[str, Any]:
+    with Path("resources/dtc/f16c_cmds_threats.json").open(encoding="utf-8") as source:
+        return dict(json.load(source))
+
+
+def automatic_countermeasure_programs() -> dict[str, Any]:
+    """The Viper editor's avionics table and its category grids."""
+    from copy import deepcopy
+
+    exported = _cmds_threats()
+    programs: dict[str, Any] = {
+        "CMDS_Avionics_Threat_Table": [],
+        "delayBetweenPrograms": exported["delayBetweenPrograms"],
+        "Air": {},
+        "Ground": {},
+        "Naval": {},
+        "Other": {},
+    }
+    for threat in exported["threats"]:
+        setting = {
+            "program": threat["program"],
+            "thresholds": deepcopy(threat["thresholds"]),
+            "default_threshold": deepcopy(threat["default_threshold"]),
+        }
+        programs["CMDS_Avionics_Threat_Table"].append(
+            {
+                "group_name": threat["group_name"],
+                "hint": threat["hint"],
+                "threats": deepcopy(threat["threats"]),
+                **setting,
+            }
+        )
+        if threat["category"] is not None:
+            programs[threat["category"]][threat["group_name"]] = deepcopy(setting)
+    return programs
+
+
+def friendly_orbit_points(
+    flight: Any, mission_data: Optional[Any]
+) -> list[dict[str, Any]]:
+    """Own CAP/hold first, then same-side tanker and AEW&C tracks (RetLab #74)."""
+    from game.missiongenerator.orbits import Orbit, orbit_of
+
+    tracks: list[Orbit] = []
+    own = orbit_of(flight)
+    if own is None:
+        for kind in (FlightWaypointType.LOITER, FlightWaypointType.JOIN):
+            point = next((p for p in flight.waypoints if p.waypoint_type is kind), None)
+            if point is not None:
+                own = Orbit(flight, point.position, point.position)
+                break
+    if own is not None:
+        tracks.append(own)
+    side = getattr(flight, "friendly", None)
+    for other in getattr(mission_data, "flights", []):
+        if other is flight or getattr(other, "friendly", None) != side:
+            continue
+        if other.flight_type not in (FlightType.REFUELING, FlightType.AEWC):
+            continue
+        track = orbit_of(other)
+        if track is not None:
+            tracks.append(track)
+    return [
+        {
+            "id": f"CAP_PTS_{number}",
+            "num": number,
+            "x": track.centre[0],
+            "y": track.centre[1],
+            "course": track.course,
+            "length": max(3704.0, track.length_m),
+            "diameter": 5 * 1852.0,
+            "turn_direction": "Left",
+            "note": track.flight.callsign[:24],
+        }
+        for number, track in enumerate(tracks[:9], start=1)
+    ]
+
+
+def hornet_radio_presets(flight: Any, mission_data: Optional[Any]) -> dict[str, Any]:
+    """Label assigned channels without changing their frequency or unused presets."""
+    assignments = getattr(flight, "frequency_to_channel_map", {})
+    if not assignments:
+        return {}
+    labels: dict[Any, str] = {}
+
+    def put(frequency: Any, label: str) -> None:
+        if frequency is not None:
+            labels.setdefault(frequency, re.sub(r"[^A-Z0-9 ]", "", label.upper())[:5])
+
+    put(getattr(flight, "intra_flight_channel", None), flight.callsign)
+    side = getattr(flight, "friendly", None)
+    for kind in ("awacs", "tankers", "jtacs"):
+        for support in getattr(mission_data, kind, []):
+            if getattr(support, "blue", None) != side:
+                continue
+            put(support.freq, "JTAC" if kind == "jtacs" else support.callsign)
+    put(getattr(getattr(flight, "package", None), "frequency", None), "PKG")
+    put(getattr(getattr(flight, "departure", None), "atc", None), "DEP")
+    put(getattr(getattr(flight, "arrival", None), "atc", None), "ARR")
+    put(getattr(getattr(flight, "divert", None), "atc", None), "DVT")
+    units = getattr(flight, "client_units", [])
+    radios = getattr(units[0], "radio", None) if units else None
+    if not radios:
+        return {}
+    result: dict[str, Any] = {
+        "COMM1": {},
+        "COMM2": {},
+        "mirror_COMM1": True,
+        "mirror_COMM2": True,
+    }
+    for radio_id in (1, 2):
+        channels = radios.get(radio_id, {}).get("channels", {})
+        if not all(number in channels for number in range(1, 21)):
+            continue
+        result[f"COMM{radio_id}"] = {
+            f"Channel_{number}": {
+                "frequency": channels[number],
+                "modulation": 1 if channels[number] < 88 else 0,
+                "name": f"CH {number}",
+            }
+            for number in range(1, 21)
+        }
+        result[f"mirror_COMM{radio_id}"] = False
+    for frequency, channels in assignments.items():
+        if frequency not in labels:
+            continue
+        for channel in channels:
+            if channel.radio_id not in (1, 2) or not 1 <= channel.channel <= 20:
+                continue
+            table = result[f"COMM{channel.radio_id}"]
+            if table:
+                table[f"Channel_{channel.channel}"]["name"] = labels[frequency]
+    return result if result["COMM1"] or result["COMM2"] else {}
 
 
 #: One per aircraft that can be handed any of this. An airframe missing from here

@@ -32,6 +32,7 @@
 * **[Campaign]** Protect newly captured bases from recapture for one full turn, with an event log notice for bases without ground forces.
 * **[Payload]** Select GAU-8 combat mix, HEI or practice ammunition for the A-10 family and save it with the loadout.
 * **[DTC]** Expanded Apache, Viper, Hornet and CJS aircraft cartridges with navigation, tactical overlays and recovery data (adapted from RetLab and Retribution #966).
+* **[DTC]** Add Hornet orbit references and radio labels, complete Viper automatic countermeasure tables and reserve its bullseye steerpoint (adapted from RetLab).
 * **[Flight Plans]** Configurable runway/carrier approach alignment and departure holds, with precise localizer geometry and shorter helicopter distances.
 * **[Payload]** Hide training, smoke, illumination and other non-combat stores by default, with an option to show them.
 * **[Live Pilots]** Configurable rank names and promotion XP thresholds, with updated defaults for new campaigns.

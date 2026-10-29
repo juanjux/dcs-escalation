@@ -111,9 +111,9 @@ def test_a_full_aircraft_is_greyed_rather_than_hidden(qt_app: Any) -> None:
     from game.ato.savedpoints import PointKind, SavedPoint, add_point
 
     flight = _flight()
-    # The Viper's steerpoints stop at 25, which is the tightest measured ceiling.
+    # Steerpoint 25 is reserved for the Viper's bullseye.
     flight.unit_type.dcs_unit_type.id = "F-16C_50"
-    for n in range(25):
+    for n in range(24):
         assert add_point(flight, SavedPoint(PointKind.WAYPOINT, f"P{n}", 0.0, 0.0))
     label = _label(qt_app, _game(flight))
 
