@@ -95,6 +95,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[OPFOR AI]** Keep the commander briefing focused on API actions and planning rules, with clearer sales and turn-zero rebuild guidance.
 * **[Mission Log]** Use campaign ownership for scenery objectives and avoid bad-news prefixes for unknown ground targets.
 * **[Mission Log]** Report own ground, SAM and ship losses under the losses setting.
 * **[Mission Log]** Suppress duplicate crash reports when DCS reports a crash immediately before an aircraft kill.

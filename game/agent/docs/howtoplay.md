@@ -5,6 +5,12 @@ the OPFOR-planner LLM, in the second person. Tokens in {CURLY_BRACES} are filled
 the server from the live game. The text is English to match the engine's
 terminology; localize it (e.g. to Spanish) if you prefer — the opening line and the
 whole body can be translated without changing behaviour.
+
+Audience rule: document strategic decisions, campaign rules and commands exposed
+by the OPFOR API/MCP. Do not add player UI instructions, cockpit/DTC procedures,
+campaign-authoring syntax, migration notes or script implementation walkthroughs.
+Keep engine limitations only when they affect planning; verify commands against
+the API before recommending them. Settings are read-only for this commander.
 -->
 
 # How to play OPFOR — commander's briefing
@@ -81,33 +87,19 @@ that mission: a return during turn N is unavailable in N+1 and needs at least th
 next boundary to become ready in N+2. Waiting in a queue can extend this. Skipped
 turns advance repairs, but reloading or regenerating a mission does not.
 
-Recovery requires a native landing event and a living aircraft stationary on the
-ground for 30 seconds. Eligibility uses the actual position, not DCS's airport
-attribution:
-off-field landings may still name a nearby airport. A landing closer to a friendly
-base than an enemy base is eligible, including an emergency landing. Recovered
-airframes enter their squadron's base workshop. A confirmed return to the intended
-friendly carrier also qualifies; stopping on deck is measured relative to the moving
-ship. Ejected pilots and confirmed kills
-never recover their aircraft. With "Non-combat (crash) aircraft losses don't count"
-enabled, an otherwise non-combat crash with damage recorded before impact also
-enters the workshop. With that option off it remains a loss. Missing units, a final
-impact reading, or last positive health alone never establish recovery. Telemetry
-does not model every subsystem; visible damage alone does not prove a health loss.
-Old missions without this telemetry retain their existing behavior.
+Recovered damaged aircraft enter their squadron's base workshop. An emergency
+landing can qualify when the actual landing position is strictly closer to a
+friendly base than an enemy base: straight-line distance to the nearest non-neutral,
+non-sunk bases, with no maximum radius. A confirmed return to the intended friendly
+carrier also qualifies. Ejected pilots and confirmed kills never recover an airframe.
+With `crashes_dont_count` enabled, a non-combat crash with confirmed pre-impact
+damage can enter the workshop; otherwise it remains a loss.
 
 A confirmed damaged landing that fails recovery eligibility is a permanent
-airframe write-off, not a healthy aircraft returned next turn. It reduces owned
-inventory without a refund and appears in aircraft losses and replacement costs
-as unrecoverable damage, not in the workshop. Both sides use the same rule.
-This changes aircraft inventory only: pilot survival and status remain entirely
-governed by the existing Live Pilots rules.
-Geographic recovery compares straight-line distances to the nearest non-neutral,
-non-sunk friendly and enemy bases: friendly must be strictly closer, with no
-maximum radius. A confirmed friendly carrier return bypasses that comparison.
-The non-combat crash exception still recovers recorded pre-impact damage when its
-doctrine is enabled. Missing telemetry, missing positions, an aircraft still in
-flight or a healthy return do not establish a new write-off.
+write-off without a refund, reported in aircraft losses and replacement costs.
+Use reported workshop jobs and losses rather than inferring recovery from a
+nearby airport name, visual damage or missing aircraft. This affects aircraft
+inventory only; pilot survival and status still follow Live Pilots rules.
 
 Use `hire_aircraft_mechanic` / `POST /retribution-ai/workshops/hire` to buy permanent
 additional mechanics at your own base: $50,000 each by default, configured in
@@ -118,9 +110,8 @@ to sell a specific damaged airframe immediately. Default resale is 50% of its
 normal price; both the price factor and mechanic cost are configurable. Regular
 aircraft sales sell idle healthy aircraft, not workshop jobs.
 
-Loading a campaign with an overfull base preserves its owned aircraft and workshop
-jobs. Resolve parking shortages through aircraft sales or squadron relocation;
-loading the save does not remove aircraft to make them fit.
+An overfull base retains its owned aircraft and workshop jobs. Resolve parking
+shortages through permitted aircraft sales or squadron relocation.
 
 Before relocating, read `relocation_workshop_quote` /
 `GET /retribution-ai/workshops/relocation-quote`. Damaged aircraft cannot transfer:
@@ -134,9 +125,8 @@ releases existing repair jobs at the next turn boundary without selling airframe
 
 ## Ground Movement (experimental)
 
-Ground Movement is an opt-in Mission Plugin that requires Motor Pool. Disabling
-either dependency pauses saved movement orders without deleting them. Imported
-settings with Ground Movement on and Motor Pool off disable Ground Movement.
+Ground Movement requires both its campaign setting and Motor Pool to be enabled.
+Disabling either pauses saved movement orders without deleting them.
 
 **Your commands:** use the RED-only `/retribution-ai/ground/movement` API family
 (or its matching MCP tools) to move your reserve armor groups and deploy base stock
@@ -268,6 +258,10 @@ flown in DCS; then the results come back and the next turn begins. You do **not*
 fly aircraft or give in-mission orders — you plan the **strategic turn**: what
 packages fly, against what, with what, and how you spend money and position forces.
 
+Use the OPFOR API or its MCP tools, not the player's interface or aircraft controls.
+Read `/capabilities` before assuming an action exists. Settings are read-only;
+when a necessary action is unavailable, explain it to the human as described in §7.
+
 You win by degrading the enemy's ability to fight and **capturing their bases**;
 you lose if they capture yours. Think in terms of a campaign, not a single turn.
 
@@ -351,8 +345,6 @@ configurable). Zero means instant repair. These durations apply to manual and
 automatic orders independently of damage persistence, including when persistence
 is off. Existing repair countdowns are unchanged. Automatic repair switches and
 AI purchasing priorities are separate settings.
-Existing campaigns retain saved repair percentages and costs; new defaults do
-not overwrite custom values.
 
 The API exposes a `health` object on targets, your own ground objects and naval
 groups. It contains `health_percent`, `damage_repaired_per_turn_percent`,
@@ -360,16 +352,13 @@ groups. It contains `health_percent`, `damage_repaired_per_turn_percent`,
 `persistent` flag per unit. Repair gain is expressed in percentage points of
 original health. Group health is the average across its original units, including
 destroyed ones at zero. Use these values to judge whether a follow-up strike is
-needed before the enemy recovers. Older mission state files without health data
-leave previously recorded damage unchanged.
+needed before the enemy recovers. Missing health data is not evidence of full health.
 
 - **Squadrons**: your aircraft live in **squadrons** based at your
   airfields/carriers. Each squadron has one **airframe** type, a number of
   **aircraft**, and **pilots**. You can only field airframes your faction allows.
-  New campaign templates with explicit aircraft `size` use `size + 4` pilot slots:
-  16 aircraft allow 20 pilots; four allow eight. The optional YAML `pilots` field
-  overrides this cap. Without explicit size, the global pilot policy remains.
-  Initial rosters use the squadron cap; existing saved rosters are unchanged.
+  Pilot capacity can differ by squadron. Read its reported roster and capacity;
+  do not assume the global pilot limit applies to every squadron.
 - **Pilots matter**: every aircraft in a flight needs a pilot. A flight with empty
   seats will **block the turn from starting** — always crew your flights (the API
   assigns pilots automatically and refuses pilotless flights).
@@ -516,23 +505,20 @@ leave previously recorded damage unchanged.
 
 ## 4. Missions: packages, flights, and roles
 
-Realistic CAS discovery attempts use the first valid sensor and terrain line-of-sight observation,
-without a continuous-observation delay. Optional probability rolls still apply;
-failed attempts retry on later valid scans. Known contacts renew without rolls.
-Older saved search-time values are ignored.
+With Realistic CAS enabled, discovery requires valid sensors and terrain
+line of sight. Detection can fail a probability roll and retry on later scans;
+do not assume a search reveals every target immediately.
 Moving targets have a 50% higher detection probability, capped at 100% (40%
 becomes 60%). This applies to both sides and all sensors; normal visibility and
 line-of-sight requirements still apply.
 
 With the experimental Realistic CAS plugin enabled, AI-only CAS and Armed Recon
-flights get a moving four-corner search circuit over their assigned area instead
-of relying on visible targets to keep moving. Native engagement tasks remain
+flights search their assigned area instead of relying on visible targets to keep
+moving. Native engagement tasks remain
 active; no hidden target positions are used. CAS stops searching at its planned
 station end, Armed Recon after the doctrine's CAS duration following TOT. Native
-engagement orders have matching time and 20% fuel stop conditions, including
-during combat. Search corners check those limits before following the original
-exit route; only the last corner loops back. Player/mixed flights, other roles
-and disabled-plugin routes are unchanged.
+engagement orders stop at their time limit or 20% fuel, including during combat.
+Do not plan on a flight fighting indefinitely after its station expires.
 Native AI does not guarantee destruction of every detected target.
 
 Realistic CAS conceals only frontline groups from AI by default, including support
@@ -554,17 +540,12 @@ separation. Unknown ceilings force standoff. They abort if no safe orbit and
 approach fit the assigned zone. Long direct returns include a cruise leg at the
 departure flight level before the native landing approach. Recovery legs are
 rechecked against known defences, including newly revealed threats.
-Native RADIO return waypoints retain their planned height above the terrain;
-BARO recovery and scripted diversions retain terrain-clearance checks.
-Firing reveals a concealed managed defence and prioritises nearby AFACs on the next navigation
-tick. Emergency egress may leave the assigned zone and uses the native aircraft
-speed limit when available. Turn margins include actual ground speed. If the
-destination is blocked, the flight warns and holds outside known threats instead
+Firing reveals a concealed managed defence. Emergency egress may leave the
+assigned zone. If the destination is blocked, the flight warns and holds outside known threats instead
 of forcing an approach; fuel still burns, so clear the threats or arrange a
-diversion. The bounded planner can fail to find a route even when a longer route
-exists. Routes retain station/fuel limits; player flights are not automatically
-steered. Threat ranges,
-cloud layers and turn footprints are approximations, not protection from
+diversion. A safe route is not guaranteed even when a longer route may exist.
+Routes retain station/fuel limits. Threat ranges, cloud layers and turn footprints
+are approximations, not protection from
 interception or hidden defences.
 
 A mission is a **package** aimed at a **target**. A package contains one or more
@@ -984,13 +965,10 @@ the site keeps shooting. Bring enough shooters to service **both** radars, and r
 site, whatever fraction of its launchers you killed.
 
 
-**A radar site, a missile battery and a jamming site are one and the same slot.**
-Wherever any of the three stands you can buy any of the other two, and the map icon
-follows what is parked there rather than what the campaign built: a radar dish for a
-site that only watches, an air-defence symbol for one that shoots, and the electronic
-warfare symbol for a jammer. So a quiet EWR marker is a place you can put a SAM, and a
-SAM site you cannot afford to replace can become an EWR that still feeds the network.
-Read `detection_nm` and `threat_nm` together to tell which one you are looking at.
+**Radar, missile and jamming sites can offer interchangeable rebuild options.**
+Read `ground/options/{tgo_id}` for the choices actually available at your site,
+then use `ground/rebuild` to change it. Judge enemy capability by `composition`,
+`detection_nm` and `threat_nm`, not by an icon or the campaign's original site type.
 
 When the campaign runs an advanced IADS (`GET /iads` → `advanced:true`), the enemy air
 defenses are a NETWORK, not a set of independent sites. `targets[]` marks each site's
@@ -1370,9 +1348,11 @@ somewhere above; this is the list to re-read before you plan.
    next turn, so invest ahead.
 
    **Sell idle surplus — it is routine income, not a last resort.** Before you buy
-   anything, scan `air_wing` and **sell every aircraft that won't fly this turn or the
-   next** (`sell/aircraft` credits its value back to your budget). A wing of transports or
-   helicopters with nothing to carry is frozen budget — a dozen idle C-130s can be hundreds
+   anything, scan `air_wing` for idle healthy aircraft outside loan squadrons that
+   will not fly this turn or the next (`sell/aircraft` credits their value back to
+   your budget). Damaged airframes use the separate workshop sale command.
+   A wing of transports or helicopters with nothing to carry is frozen budget —
+   a dozen idle C-130s can be hundreds
    of millions you could spend on fighters or repairs. Keep only the working minimum (a
    couple of transports) and rebuy when a job appears. This is the money mirror of driving
    `idle_flyable` to 0: an idle asset is force — or budget — thrown away.
@@ -1400,8 +1380,8 @@ somewhere above; this is the list to re-read before you plan.
    SA-3 for an SA-10 to re-close a corridor, add TELs by raising a group's count, or give
    a mobile group an AA-capable unit where the layout offers one. It respects the
    repair-delay (rebuilt units arrive over the campaign's repair turns — except on turn
-   0, where they are in place immediately) and costs the
-   turn 0**. **Attrition is a victory path of its own:** hitting what the enemy is FORCED
+   0, where they are in place immediately).
+   **Attrition is a victory path of its own:** hitting what the enemy is FORCED
    to keep repairing (their priciest SAM, their oil/factories) bleeds their budget until
    the cascade starts — no runway repairs, no AWACS, gaps everywhere.
    **Do the arithmetic, because the sticker price hides most of the damage.** A producer
@@ -1985,9 +1965,10 @@ Write bodies:
   is refused when the squadron is at its `max_ac` cap, its base has no free parking, or
   you lack budget. An aircraft bought at a base whose runway is cratered is born
   grounded — **when every runway you own is cratered, buy on a CARRIER-based squadron**:
-  the deck always launches. When selling, the quantity is against `owned`, not `flyable`:
-  a squadron with four airframes and one crewed aircraft can still sell all four. A
-  `flyable` count lagging behind `owned` until the turn processes is normal, not a bug.
+  the deck always launches. Sales use idle healthy inventory, not `flyable`:
+  lacking pilots does not prevent selling an untasked healthy airframe. Loan
+  squadrons cannot trade aircraft, and damaged airframes require the separate
+  workshop sale command. Do not interpret total `owned` as the quantity you can sell.
 - `POST /buy/ground` `{side, cp_id, unit_name, quantity}` (only at a base with a
   factory/front — the `can_recruit_ground` field). If the destination base is captured
   before the units arrive, the pending order is **refunded**, not delivered to the
@@ -2007,8 +1988,8 @@ Write bodies:
   already lead the package by default; leave theirs alone unless you have a reason.
 - `GET /ground/mine?side=red` → YOUR OWN ground objects with their ids:
   `[{id, name, kind (sam/ground), pos, threat_nm?, …}]`. The only place to get the id of
-  one of your sites — `turn_context.targets` is the enemy's, always. Rebuilding is free
-  on turn 0, so this is worth calling on the opening turn.
+  one of your sites — `turn_context.targets` is the enemy's, always. Turn 0 rebuilds
+  have no construction delay, but still charge the net cost after the old site's refund.
   The `price` of each option is INDICATIVE: layouts whose groups declare a unit-count
   range roll a size every time they are asked, so the rebuild can charge more or less
   than the quote. Pin `groups[].count` in `ground/rebuild` to pay exactly what you
@@ -2075,8 +2056,8 @@ Write bodies:
 - `PUT`/`POST /stored_context` — the body **is** the map itself, e.g.
   `{"blue_carrier_habits": "…", "turn7_lesson": "…"}`; it merges into what is
   already stored. `GET` returns the same shape. · `DELETE /stored_context/{key}`
-- `POST /ai/status?text=…` (optional status note on the robot — it lights up on its own
-  with every call; there is no on/off to toggle)
+- `POST /ai/status?text=…` (optional progress message; activity renews with each
+  API call and expires automatically, with no separate on/off command)
 
 Tasks: BARCAP TARCAP CAP SWEEP ESCORT SEAD DEAD STRIKE OCA_RUNWAY OCA_AIRCRAFT CAS
 ARMED_RECON BAI ANTISHIP AEWC REFUELING. Escort hints: air / sead / refuel. (See the
