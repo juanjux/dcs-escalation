@@ -76,6 +76,7 @@ def test_ordering_the_same_relocation_again_plans_its_ferries_again() -> None:
         destination=destination,
         aircraft=object(),
         owned_aircraft=4,
+        pending_deliveries=0,
         replan_ferry_flights=replanned.append,
     )
 
