@@ -767,6 +767,29 @@ The DCS AI that actually flies these missions is limited. Plan robustly around i
   a fighter in that geometry and has killed Felons and Su-30s doing it. Kill helicopters
   with radar missiles from an angle, never by merging at the same altitude.
 
+### Refuelling before the mission
+
+On the flight's Waypoints tab, formation attacks offer **Refuel before the push**;
+BARCAP and TARCAP offer **Refuel before station**. A compatible theater tanker
+must already be planned. A tanker attached to the attack package is not used for
+this stop, because it is scheduled for the return leg. Known boom/probe profiles
+are required; unreviewed aircraft are not assumed compatible.
+
+Enabling or disabling the option asks before rebuilding the route and replacing
+manual edits. An attack flies Hold, Refuel, Join; CAP tanks before entering its
+track. Departure moves earlier to preserve Join/TOT and station times. Check that
+the tanker will already be on station. **Minutes on the tanker** reserves planning
+time (four minutes per aircraft plus one by default, or 1-60 minutes); Reset restores
+the automatic allowance. This does not force a disconnect at the chosen time.
+AI flights top off to 90% of internal capacity. The fuel estimate does not credit
+full external tanks at that early stop. A post-mission stop is removed only when
+the remaining route can be flown with reserve on the early top-off.
+
+This is not reactive mid-patrol refuelling. A two-hour CAP can still reach BINGO
+before its station time ends and return to base under DCS's native fuel rules.
+Adding a refuel waypoint after the track does not make it interrupt the orbit,
+refuel and resume its patrol.
+
 ### "In Flight" spawns you at the BASE, not on the racetrack
 
 This one has killed a whole turn's fighters, so read it twice.
@@ -1235,29 +1258,6 @@ reports `cruise_missiles_remaining` in `naval[]`.
   losing one costs you stock you can never rebuy.
 
 ## 5. How to plan a strong turn
-
-### Refuelling before the mission
-
-On the flight's Waypoints tab, formation attacks offer **Refuel before the push**;
-BARCAP and TARCAP offer **Refuel before station**. A compatible theater tanker
-must already be planned. A tanker attached to the attack package is not used for
-this stop, because it is scheduled for the return leg. Known boom/probe profiles
-are required; unreviewed aircraft are not assumed compatible.
-
-Enabling or disabling the option asks before rebuilding the route and replacing
-manual edits. An attack flies Hold, Refuel, Join; CAP tanks before entering its
-track. Departure moves earlier to preserve Join/TOT and station times. Check that
-the tanker will already be on station. **Minutes on the tanker** reserves planning
-time (four minutes per aircraft plus one by default, or 1-60 minutes); Reset restores
-the automatic allowance. This does not force a disconnect at the chosen time.
-AI flights top off to 90% of internal capacity. The fuel estimate does not credit
-full external tanks at that early stop. A post-mission stop is removed only when
-the remaining route can be flown with reserve on the early top-off.
-
-This is not reactive mid-patrol refuelling. A two-hour CAP can still reach BINGO
-before its station time ends and return to base under DCS's native fuel rules.
-Adding a refuel waypoint after the track does not make it interrupt the orbit,
-refuel and resume its patrol.
 
 **The ten things that cost the most aircraft when forgotten.** Each is explained in full
 somewhere above; this is the list to re-read before you plan.
