@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Live Pilots]** Share small, configurable morale gains from squadron mates' air and ground victories.
 * **[UI]** Allow missile sites to be disbanded for a refund after campaign start.
 * **[Realistic CAS]** Show discovery times on F10 contact markers.
 * **[UI]** Highlight visible map icons when hovering over Show on map buttons.

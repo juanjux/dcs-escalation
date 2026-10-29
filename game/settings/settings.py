@@ -2498,6 +2498,34 @@ class Settings:
         max=50,
         detail=("Per enemy aircraft."),
     )
+    morale_squadron_air_kill: int = bounded_int_option(
+        "Squadron mate's air victory",
+        page=LIVE_PILOTS_PAGE,
+        section=LIVE_PILOTS_MORALE_SECTION,
+        subsection=LIVE_PILOTS_MORALE_EVENTS_SECTION,
+        default=2,
+        min=0,
+        max=50,
+        detail=(
+            "Per confirmed enemy aircraft destroyed by another pilot in the same"
+            " squadron, including victories by the player. Applies to surviving"
+            " squadron mates even if they did not fly. Set to 0 to disable."
+        ),
+    )
+    morale_squadron_ground_kill: int = bounded_int_option(
+        "Squadron mate's ground victory",
+        page=LIVE_PILOTS_PAGE,
+        section=LIVE_PILOTS_MORALE_SECTION,
+        subsection=LIVE_PILOTS_MORALE_EVENTS_SECTION,
+        default=1,
+        min=0,
+        max=50,
+        detail=(
+            "Per confirmed enemy ground unit, building or ship destroyed by another"
+            " pilot in the same squadron. Applies to surviving squadron mates even"
+            " if they did not fly. Set to 0 to disable."
+        ),
+    )
     morale_unplanned_kill: int = bounded_int_option(
         "Target of opportunity",
         page=LIVE_PILOTS_PAGE,

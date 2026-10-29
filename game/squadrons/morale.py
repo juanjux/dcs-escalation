@@ -117,6 +117,14 @@ LEAVE_CANCELLED = MoraleEvent("morale_leave_cancelled", -8, "leave cut short")
 #: Per enemy aircraft shot down.
 AIR_KILL = MoraleEvent("morale_air_kill", 10, "shot one down")
 
+#: Per confirmed victory by another pilot in the same squadron.
+SQUADRON_AIR_KILL = MoraleEvent(
+    "morale_squadron_air_kill", 2, "a squadron mate shot an enemy aircraft down"
+)
+SQUADRON_GROUND_KILL = MoraleEvent(
+    "morale_squadron_ground_kill", 1, "a squadron mate destroyed an enemy ground target"
+)
+
 #: Per thing destroyed that was not what his package was sent for.
 UNPLANNED_KILL = MoraleEvent("morale_unplanned_kill", 3, "took a target of opportunity")
 
@@ -149,6 +157,8 @@ MORALE_EVENTS: tuple[MoraleEvent, ...] = (
     LEAVE_REFUSED,
     LEAVE_CANCELLED,
     AIR_KILL,
+    SQUADRON_AIR_KILL,
+    SQUADRON_GROUND_KILL,
     UNPLANNED_KILL,
     MISSION_COMPLETE,
     PROMOTED,
