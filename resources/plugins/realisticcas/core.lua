@@ -117,7 +117,7 @@ do
       local t=currentTime()
       local fresh=r.expiresAt and t<r.expiresAt
       if not r.backendVisible and not apply(r,true) then return false,"reveal failed" end
-      if not fresh then r.types={} end
+      if not fresh then r.types={};r.discoveredAt=t end
       if typeName then r.types[typeName]=true end
       r.expiryReported=false
       r.lastPosition=p;r.observedAt=t;r.expiresAt=t+ttl;r.reason=reason or "observation"
@@ -147,7 +147,7 @@ do
       for name in pairs(r.types or {})do types[#types+1]=name end
       table.sort(types)
       -- Copies only: reading/sharing a contact never renews it or follows its object.
-      return {id=r.id,owner=r.owner,observedAt=r.observedAt,expiresAt=r.expiresAt,
+      return {id=r.id,owner=r.owner,discoveredAt=r.discoveredAt,observedAt=r.observedAt,expiresAt=r.expiresAt,
         lastPosition=position(r.lastPosition),reason=r.reason,observedTypes=types,
         revealed=self:isRevealed(id,coalition),backendVisible=r.backendVisible}
     end

@@ -44,6 +44,9 @@ function group(name,id,side,category)
   function g:getCoalition() return self.side end
   function g:getCategory() return self.category end
   function g:isExist() return self.exists end
+  function g:getUnits()
+    return self.units or {{isExist=function()return g.exists end,getLife=function()return 100 end}}
+  end
   g.controller={setCommand=function(_,c)
     if g.fail then error('controller failure') end
     commands[#commands+1]={id=g.id,hidden=c.params.value}
@@ -280,6 +283,27 @@ class DcsAdapterTests(unittest.TestCase):
         local found=false
         for _,line in ipairs(logs) do if line:find('BACKEND_ERROR',1,true) then found=true end end
         assert(found);r.fail=false;emit(15,r);assert(a.service:isRegistered(1))
+        """)
+
+    def test_destroyed_group_housekeeping_has_a_bounded_work_budget(self):
+        self.check("""
+        local targets={}
+        for i=1,500 do
+          local name='target'..i
+          group(name,i);targets[#targets+1]={name=name,originalInvisible=false}
+        end
+        a=RealisticCAS.start({enabled=true,targets=targets,expiryBudget=17})
+        for _,g in pairs(groups)do g.exists=false end
+        local original=Group.getByName
+        local reads=0
+        Group.getByName=function(name)reads=reads+1;return original(name)end
+        for i=1,30 do
+          local before=reads
+          now=i;pending[1].f(nil,now)
+          assert(reads-before<=17)
+        end
+        assert(a.service:getDiagnostics().registered==0)
+        assert(a.service:getDiagnostics().scheduled==0 and a:stop())
         """)
 
     def run_smoke(self, simulate_fire):

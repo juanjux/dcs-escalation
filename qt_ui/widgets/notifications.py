@@ -28,6 +28,7 @@ class NotificationList(QDialog):
         super().__init__(bell, Qt.WindowType.Popup)
         self.bell = bell
         self.game = bell.game
+        self.morale_expanded = False
         self.setWindowTitle("Campaign alerts")
         self.setObjectName("campaign-notifications")
         self.resize(590, 560)
@@ -56,35 +57,76 @@ class NotificationList(QDialog):
         column = QVBoxLayout(holder)
         if not self.bell.notices:
             column.addWidget(QLabel("No campaign alerts."))
+        morale = [n for n in self.bell.notices if n.category == "pilot_morale"]
+        grouped = False
         for notice in self.bell.notices:
-            card = QFrame()
-            card.setStyleSheet("QFrame { background: #1a2934; border-radius: 4px; }")
-            row = QVBoxLayout(card)
-            title = QLabel(notice.title)
-            title.setTextFormat(Qt.TextFormat.PlainText)
-            title.setWordWrap(True)
-            title.setStyleSheet("color: #f18a7b; font-weight: bold;")
-            row.addWidget(title)
-            detail = QLabel(f"Turn {notice.turn} · {notice.detail}")
-            detail.setTextFormat(Qt.TextFormat.PlainText)
-            detail.setWordWrap(True)
-            row.addWidget(detail)
-            buttons = QHBoxLayout()
-            show = QPushButton("Show")
-            show.clicked.connect(
-                lambda checked=False, item=notice: self.show_notice(item)
-            )
-            dismiss = QPushButton("Mark as read")
-            dismiss.clicked.connect(
-                lambda checked=False, item=notice: self.dismiss([item])
-            )
-            buttons.addWidget(show)
-            buttons.addStretch()
-            buttons.addWidget(dismiss)
-            row.addLayout(buttons)
-            column.addWidget(card)
+            if notice.category == "pilot_morale":
+                if not grouped:
+                    column.addWidget(self._morale_group(morale))
+                    grouped = True
+            else:
+                column.addWidget(self._notice_card(notice))
         column.addStretch()
         self.area.setWidget(holder)
+
+    def _morale_group(self, notices: list[CampaignNotice]) -> QWidget:
+        group = QWidget()
+        column = QVBoxLayout(group)
+        column.setContentsMargins(0, 0, 0, 0)
+        toggle = QToolButton()
+        toggle.setObjectName("low-morale-toggle")
+        toggle.setText(f"Low morale ({len(notices)})")
+        toggle.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        toggle.setCheckable(True)
+        toggle.setChecked(self.morale_expanded)
+        toggle.setMinimumHeight(32)
+        toggle.setStyleSheet(
+            "QToolButton { color: #f18a7b; background: #1a2934;"
+            " font-weight: bold; padding: 6px; border-radius: 4px; }"
+        )
+        column.addWidget(toggle)
+        content = QWidget()
+        content.setObjectName("low-morale-notices")
+        cards = QVBoxLayout(content)
+        cards.setContentsMargins(12, 0, 0, 0)
+        for notice in notices:
+            cards.addWidget(self._notice_card(notice))
+        column.addWidget(content)
+
+        def expand(expanded: bool) -> None:
+            self.morale_expanded = expanded
+            toggle.setArrowType(
+                Qt.ArrowType.DownArrow if expanded else Qt.ArrowType.RightArrow
+            )
+            content.setVisible(expanded)
+
+        expand(self.morale_expanded)
+        toggle.toggled.connect(expand)
+        return group
+
+    def _notice_card(self, notice: CampaignNotice) -> QWidget:
+        card = QFrame()
+        card.setStyleSheet("QFrame { background: #1a2934; border-radius: 4px; }")
+        row = QVBoxLayout(card)
+        title = QLabel(notice.title)
+        title.setTextFormat(Qt.TextFormat.PlainText)
+        title.setWordWrap(True)
+        title.setStyleSheet("color: #f18a7b; font-weight: bold;")
+        row.addWidget(title)
+        detail = QLabel(f"Turn {notice.turn} · {notice.detail}")
+        detail.setTextFormat(Qt.TextFormat.PlainText)
+        detail.setWordWrap(True)
+        row.addWidget(detail)
+        buttons = QHBoxLayout()
+        show = QPushButton("Show")
+        show.clicked.connect(lambda checked=False: self.show_notice(notice))
+        dismiss = QPushButton("Mark as read")
+        dismiss.clicked.connect(lambda checked=False: self.dismiss([notice]))
+        buttons.addWidget(show)
+        buttons.addStretch()
+        buttons.addWidget(dismiss)
+        row.addLayout(buttons)
+        return card
 
     def dismiss(self, notices: list[CampaignNotice]) -> None:
         if self.game is self.bell.model.game and self.game is not None:

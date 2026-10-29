@@ -20,9 +20,10 @@ class ContactSnapshotTests(unittest.TestCase):
         assert(s:observe('red',2,p,'ir','BMP-2'))
         local c=s:getContact('red',2)
         assert(table.concat(c.observedTypes,',')=='BMP-2,T-72B')
-        c.observedTypes[1]='MUTATED';c.lastPosition.x=999
+        c.observedTypes[1]='MUTATED';c.lastPosition.x=999;c.discoveredAt=999
         assert(s:getContact('red',2).lastPosition.x==10)
         assert(s:getContact('red',2).observedTypes[1]=='BMP-2')
+        assert(s:getContact('red',2).discoveredAt==0)
         now=11;assert(s:fire('red',p,'Ural-375'))
         assert(RealisticCAS.contactDescription(s:getContact('red',2))=='Ural-375')
         assert(s:getContact('red',1)==nil)
@@ -66,7 +67,7 @@ class ContactReportTests(unittest.TestCase):
         assert(messages[1].text:find('N 01 00.000 E 02 00.000',1,true))
         assert(m.fog:observe('red',2,p,'ir:scout','BMP-2'));assert(#messages==1)
         -- Forget reports keep the old position even if the real target moves.
-        target.point.x=90000;target.life=0
+        target.point.x=90000
         now=m.fog.service:getContact(1,2).expiresAt;m.fog.service:tick()
         assert(#messages==2 and messages[2].text:find('Enemy contact forgotten:',1,true))
         assert(messages[2].text:find('BMP%-2, T%-72B') and messages[2].text:find('N 01 00.000',1,true))
@@ -84,6 +85,27 @@ class ContactReportTests(unittest.TestCase):
         assert(messages[1].text:find('revealed by firing: T%-72B'))
         for h in pairs(handlers)do h:onEvent({id=world.event.S_EVENT_SHOOTING_START,initiator=target})end
         assert(#messages==1 and m.fog.service:isRevealed(1,2))
+        assert(m:stop())
+        """)
+
+    def test_destroyed_contacts_do_not_report_forgotten_even_before_cleanup_runs(self):
+        self.rt.execute("""
+        local m=assert(RealisticCAS.startMission(cfg))
+        assert(m.fog:observe('red',2,p,'visual','T-72B'));assert(#messages==1)
+        target.life=0
+        now=m.fog.service:getContact(1,2).expiresAt;m.fog.service:tick()
+        assert(#messages==1)
+        assert(m:stop())
+        """)
+
+    def test_destroyed_contact_is_removed_without_f10_or_contact_reports(self):
+        self.rt.execute("""
+        cfg.contactReports=false
+        local m=assert(RealisticCAS.startMission(cfg))
+        assert(m.fog:observe('red',2,p,'visual','T-72B'))
+        target.life=0;run(4)
+        assert(not m.fog.service:isRegistered(1) and #messages==0)
+        assert(m.fog.service:getDiagnostics().scheduled==0)
         assert(m:stop())
         """)
 
