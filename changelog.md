@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Allow missile sites to be disbanded for a refund after campaign start.
 * **[UI]** Highlight visible map icons when hovering over Show on map buttons.
 * **[Missiles]** Snap map aimpoints to visible enemy objective icons at any zoom level.
 * **[UI]** Persistent campaign alert bell with counts, actionable notices and turn-by-turn reminders for unresolved problems.
