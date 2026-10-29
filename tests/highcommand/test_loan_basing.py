@@ -260,6 +260,7 @@ def test_relocation_to_a_sunk_flight_deck_is_rejected(already_planned: bool) -> 
         location=SimpleNamespace(runway_is_operational=lambda: True),
         destination=wreck if already_planned else None,
         owned_aircraft=10,
+        pending_deliveries=0,
         expected_size_next_turn=10,
         aircraft=game.aircraft,
         coalition=SimpleNamespace(game=game),

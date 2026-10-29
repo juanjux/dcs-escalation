@@ -307,9 +307,12 @@ class Migrator:
         all the same, so an order like that still in a save is cancelled."""
         for coalition in (self.game.blue, self.game.red):
             for squadron in coalition.air_wing.iter_squadrons():
+                aircraft_remaining = squadron.owned_aircraft + min(
+                    0, squadron.pending_deliveries
+                )
                 if (
                     squadron.destination is None
-                    or not squadron.owned_aircraft
+                    or aircraft_remaining <= 0
                     or squadron.location.runway_is_operational()
                 ):
                     continue

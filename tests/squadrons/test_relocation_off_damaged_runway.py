@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 
 from game.migrator import Migrator
+from game.purchaseadapter import AircraftPurchaseAdapter
 from game.theater.controlpoint import NavalControlPoint
 from game.squadrons.squadron import Squadron
 from game.theater import Player
@@ -25,6 +26,10 @@ NOW = datetime(2026, 9, 21, 20, 0)
 class _Base(SimpleNamespace):
     def __str__(self) -> str:
         return str(self.name)
+
+
+class _Squadron(SimpleNamespace):
+    expected_size_next_turn = Squadron.expected_size_next_turn
 
 
 def _base(name: str, operational: bool, sunk: bool = False) -> Any:
@@ -39,13 +44,16 @@ def _base(name: str, operational: bool, sunk: bool = False) -> Any:
 
 def _squadron(location: Any, aircraft: int) -> Any:
     planned: list[datetime] = []
-    return SimpleNamespace(
+    return _Squadron(
         player=Player.BLUE,
         location=location,
         destination=None,
         owned_aircraft=aircraft,
-        expected_size_next_turn=aircraft,
-        aircraft=SimpleNamespace(helicopter=False, lha_capable=False, flyable=False),
+        untasked_aircraft=aircraft,
+        pending_deliveries=0,
+        aircraft=SimpleNamespace(
+            helicopter=False, lha_capable=False, flyable=False, price=10
+        ),
         coalition=SimpleNamespace(
             game=SimpleNamespace(
                 settings=SimpleNamespace(ground_start_ai_planes=True),
@@ -55,6 +63,18 @@ def _squadron(location: Any, aircraft: int) -> Any:
         replan_ferry_flights=planned.append,
         planned=planned,
     )
+
+
+def _sell(squadron: Any, quantity: int) -> AircraftPurchaseAdapter:
+    coalition = squadron.coalition
+    coalition.budget = 0
+    coalition.adjust_budget = lambda amount: setattr(
+        coalition, "budget", coalition.budget + amount
+    )
+    squadron.location.coalition = coalition
+    adapter = AircraftPurchaseAdapter(squadron.location)
+    adapter.sell(squadron, quantity)
+    return adapter
 
 
 def test_a_squadron_with_aircraft_cannot_leave_a_damaged_runway() -> None:
@@ -76,6 +96,88 @@ def test_an_empty_squadron_can_still_leave_it() -> None:
 
     assert squadron.destination is destination
     assert squadron.planned == [NOW]
+
+
+def test_selling_all_aircraft_allows_relocation_without_ferries() -> None:
+    squadron = _squadron(_base("Origin", operational=False), aircraft=4)
+    _sell(squadron, 4)
+    squadron.cancel_ferry_flights = lambda: None
+    squadron.plan_ferry_flights = lambda now: Squadron.plan_ferry_flights(squadron, now)
+    squadron.replan_ferry_flights = lambda now: Squadron.replan_ferry_flights(
+        squadron, now
+    )
+    destination = _base("Destination", operational=True)
+
+    Squadron.plan_relocation(squadron, destination, NOW)
+
+    assert squadron.destination is destination
+    assert squadron.owned_aircraft == 4
+    assert squadron.pending_deliveries == -4
+    assert squadron.untasked_aircraft == 0
+    assert squadron.coalition.budget == 40
+
+
+@pytest.mark.parametrize("sold", [0, 1, 3])
+def test_partial_sales_do_not_allow_relocation_off_a_damaged_runway(sold: int) -> None:
+    squadron = _squadron(_base("Origin", operational=False), aircraft=4)
+    _sell(squadron, sold)
+
+    with pytest.raises(RuntimeError, match="runway is damaged"):
+        Squadron.plan_relocation(squadron, _base("Destination", True), NOW)
+
+    assert squadron.destination is None
+    assert squadron.planned == []
+
+
+def test_buying_back_a_sold_aircraft_blocks_relocation_again() -> None:
+    squadron = _squadron(_base("Origin", operational=False), aircraft=4)
+    adapter = _sell(squadron, 4)
+    adapter.buy(squadron, 1)
+
+    with pytest.raises(RuntimeError, match="runway is damaged"):
+        Squadron.plan_relocation(squadron, _base("Destination", True), NOW)
+
+    assert squadron.pending_deliveries == -3
+    assert squadron.untasked_aircraft == 1
+    assert squadron.coalition.budget == 30
+
+
+def test_pending_purchases_do_not_need_a_runway_to_relocate() -> None:
+    squadron = _squadron(_base("Origin", operational=False), aircraft=0)
+    squadron.pending_deliveries = 2
+    destination = _base("Destination", True)
+
+    Squadron.plan_relocation(squadron, destination, NOW)
+
+    assert squadron.destination is destination
+
+
+def test_existing_flights_do_not_make_a_squadron_empty() -> None:
+    squadron = _squadron(_base("Origin", operational=False), aircraft=4)
+    squadron.untasked_aircraft = 0
+
+    with pytest.raises(RuntimeError, match="runway is damaged"):
+        Squadron.plan_relocation(squadron, _base("Destination", True), NOW)
+
+
+def test_loading_preserves_an_empty_relocation_after_pending_sales() -> None:
+    squadron = _squadron(_base("Origin", operational=False), aircraft=4)
+    _sell(squadron, 4)
+    destination = _base("Destination", True)
+    squadron.destination = destination
+    cancelled: list[Any] = []
+    squadron.cancel_ferry_flights = lambda: cancelled.append(squadron)
+    wing = SimpleNamespace(iter_squadrons=lambda: iter([squadron]))
+    migrator: Any = Migrator.__new__(Migrator)
+    migrator.game = SimpleNamespace(
+        blue=SimpleNamespace(air_wing=wing),
+        red=SimpleNamespace(air_wing=SimpleNamespace(iter_squadrons=lambda: iter([]))),
+    )
+
+    migrator._cancel_relocations_off_damaged_runways()
+
+    assert squadron.destination is destination
+    assert cancelled == []
 
 
 def test_an_order_already_given_off_a_damaged_runway_is_cancelled_on_load() -> None:

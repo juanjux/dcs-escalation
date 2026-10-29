@@ -1205,7 +1205,12 @@ class Squadron:
             raise RuntimeError(
                 "Damaged aircraft cannot transfer. Confirm their sale before relocating."
             )
-        if self.owned_aircraft - damaged and not self.location.runway_is_operational():
+        # Sales remove aircraft from use immediately, but owned_aircraft is only
+        # updated at turn end. Purchases do not need to fly from this base yet.
+        aircraft_to_ferry = (
+            self.owned_aircraft + min(0, self.pending_deliveries) - damaged
+        )
+        if aircraft_to_ferry > 0 and not self.location.runway_is_operational():
             # The mission leaves out a flight from a damaged runway, ferries included,
             # and the squadron used to arrive at the end of the turn all the same. An
             # empty squadron has nothing to take off, so it can still move.
