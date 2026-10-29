@@ -21,6 +21,9 @@ do
   function RealisticCAS.newF10Contacts(options)
     local o=options
     RealisticCAS.validateF10Contacts(o.groups)
+    local offset=o.timeOffset
+    if offset==nil then offset=0 end
+    assert(finite(offset),'invalid F10 mission time offset')
     for _,name in ipairs({'readContact','allocateMarkId','setMark','removeMark'})do
       assert(type(o[name])=='function',name..' callback required')
     end
@@ -60,6 +63,12 @@ do
           if type(c)=='table' and c.owner==g.coalition and c.revealed==true and point(c.lastPosition) then
             local p,old=c.lastPosition,drawn[g.id]
             local label='Frontline contact: '..RealisticCAS.contactDescription(c)
+            local discovered=c.discoveredAt or c.observedAt
+            if finite(discovered)then
+              local seconds=math.floor((discovered+offset)%86400)
+              label=label..string.format('\nDiscovered at %02d:%02d:%02d',
+                math.floor(seconds/3600),math.floor(seconds/60)%60,seconds%60)
+            end
             -- Renewals at the same position need no native marker replacement.
             if not next(pending) and (not old or old.label~=label or old.point.x~=p.x or old.point.y~=p.y or old.point.z~=p.z) then
               local allocated,id=call('allocateMarkId')
@@ -123,7 +132,8 @@ do
     end
     local nextLog=0
     layer=RealisticCAS.newF10Contacts({groups=o.groups,
-      readContact=function(id,side)return fog.service:getContact(id,side)end,
+      timeOffset=timer.getAbsTime and timer.getAbsTime()-timer.getTime() or 0,
+      readContact=function(id,side)return fog:getContact(id,side)end,
       allocateMarkId=function()
         local id=RealisticCAS._f10MarkSerial+1
         assert(id<=limit,'F10 marker ID space exhausted')

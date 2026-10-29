@@ -38,7 +38,8 @@ do
     local budget=o.expiryBudget or 128
     assert(type(interval)=="number" and interval>=0.1 and interval<=60,"invalid interval")
     assert(type(budget)=="number" and budget>=1 and budget<=4096 and budget==math.floor(budget),"invalid budget")
-    local allowed,managed={},{}
+    local allowed,managed,managedIds,managedIndex={},{},{},{}
+    local aliveCursor=1
     -- Validate the whole allowlist before changing mission state.
     for _,entry in ipairs(o.targets) do
       assert(type(entry)=="table","target entry must be a table")
@@ -53,7 +54,32 @@ do
           "|group="..tostring(id).."|"..tostring(detail))
       end
     end
+    local function alive(id)
+      local item=managed[id]
+      if not item then return false end
+      local ok,result=pcall(function()
+        local g=Group.getByName(item.name)
+        if not g or not g:isExist() or g:getID()~=id or g:getCoalition()~=item.owner then return false end
+        for _,u in ipairs(g:getUnits())do
+          if u:isExist() and u:getLife()>0 then return true end
+        end
+        return false
+      end)
+      -- A failed native query is not proof of destruction.
+      if not ok then log('ADAPTER_ERROR',id,result);return nil end
+      return result
+    end
+    local function forgetManaged(id)
+      local index=managedIndex[id]
+      if index then
+        local last=table.remove(managedIds)
+        if index<=#managedIds then managedIds[index]=last;managedIndex[last]=index end
+        managedIndex[id]=nil
+      end
+      managed[id]=nil
+    end
     local function report(kind,contact)
+      if kind=='EXPIRE' and alive(contact.id)==false then return end
       local side=contact.owner==1 and 2 or 1
       local action=kind=='EXPIRE' and 'Enemy contact forgotten: ' or
         (contact.reason=='fire' and 'Enemy contact revealed by firing: ' or 'Enemy contact discovered: ')
@@ -80,6 +106,16 @@ do
         return true -- Acceptance by DCS API, not independently observable engine visibility.
       end})
     local adapter={service=service,active=true}
+    local function retireDestroyed(id)
+      if alive(id)~=false then return false end
+      service:unregister(id,false)
+      forgetManaged(id)
+      return true
+    end
+    function adapter:getContact(id,side)
+      if managed[id] and retireDestroyed(id)then return nil end
+      return service:getContact(id,side)
+    end
     local function register(g)
       if not g or not g:isExist() or not allowed[g:getName()] then return false end
       if g:getCategory()~=Group.Category.GROUND then return false end
@@ -90,11 +126,12 @@ do
       end
       -- Replace a stale incarnation without restoring or modifying the new object.
       for old,item in pairs(managed) do
-        if item.name==name then service:unregister(old,false);managed[old]=nil end
+        if item.name==name then service:unregister(old,false);forgetManaged(old)end
       end
       managed[id]={name=name,owner=side}
       local ok,why=service:register(id,side)
-      if not ok then managed[id]=nil;log("ADAPTER_ERROR",id,why) end
+      if ok then managedIds[#managedIds+1]=id;managedIndex[id]=#managedIds
+      else managed[id]=nil;log("ADAPTER_ERROR",id,why) end
       return ok
     end
     function adapter:observe(groupName,coalition,point,reason,typeName)
@@ -103,6 +140,7 @@ do
       if not g or not g:isExist() then return false,"unmanaged group" end
       local item=managed[g:getID()]
       if not item or item.name~=groupName or item.owner~=g:getCoalition() then return false,"unmanaged group" end
+      if retireDestroyed(g:getID())then return false,'destroyed group'end
       return service:observe(g:getID(),coalition,point,reason,typeName)
     end
     local handler={}
@@ -119,6 +157,7 @@ do
         if not g or not allowed[g:getName()] then return end
         if not register(g) then return end
         if event.id~=world.event.S_EVENT_BIRTH then
+          if retireDestroyed(g:getID())then return end
           local p=u:getPoint()
           local typed,typeName=pcall(function()return u:getTypeName()end)
           local revealed=service:fire(g:getID(),p,typed and typeName or nil)
@@ -132,7 +171,7 @@ do
       self.stopping=true
       local restored=service:stop()
       for id in pairs(managed) do
-        if not service:isRegistered(id) then managed[id]=nil end
+        if not service:isRegistered(id) then forgetManaged(id)end
       end
       if not restored then
         log("WARNING",nil,"stop incomplete: retry stop to restore remaining groups")
@@ -146,7 +185,15 @@ do
     local function update(_,now)
       if not adapter.active then return nil end
       if adapter.stopping then return now+interval end
-      local ok,err=pcall(function() service:tick(budget) end)
+      local ok,err=pcall(function()
+        -- Bounded housekeeping, independent of whether reports or F10 are enabled.
+        for _=1,math.min(budget,#managedIds)do
+          if #managedIds==0 then break end
+          if aliveCursor>#managedIds then aliveCursor=1 end
+          if not retireDestroyed(managedIds[aliveCursor])then aliveCursor=aliveCursor+1 end
+        end
+        service:tick(budget)
+      end)
       if not ok then log("ADAPTER_ERROR",nil,err) end
       return now+interval
     end
