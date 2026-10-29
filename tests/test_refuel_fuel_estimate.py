@@ -73,6 +73,16 @@ def test_long_post_refuel_leg_is_still_short() -> None:
     assert not after.enough
 
 
+def test_early_stop_credits_only_the_ninety_percent_top_off() -> None:
+    flight = flight_for([(W.TAKEOFF, 0), (W.REFUEL, 20), (W.LANDING_POINT, 100)])
+    flight.flight_plan.layout = SimpleNamespace(
+        pre_push_refuel=flight.flight_plan.waypoints[1]
+    )
+    before, after = estimate_fuel_segments(flight)
+    assert before.carried.kgs == 1000
+    assert after.carried.kgs == pytest.approx(1800)
+
+
 def test_multiple_refuels_and_auxiliary_points() -> None:
     estimates = estimate_fuel_segments(
         flight_for(

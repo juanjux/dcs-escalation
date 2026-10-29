@@ -10,6 +10,7 @@ from game.ato.flightplans.standard import StandardFlightPlan, StandardLayout
 from game.typeguard import self_type_guard
 from game.utils import Distance, Speed, nautical_miles
 from .uizonedisplay import UiZone, UiZoneDisplay
+from .. import prerefuel
 
 if TYPE_CHECKING:
     from ..flightwaypoint import FlightWaypoint
@@ -29,10 +30,13 @@ class PatrollingLayout(StandardLayout):
     #: an in-progress campaign unpickles without a migrator. Keyword-only so a subclass
     #: (CAS has an ingress point) can still add fields of its own without a default.
     refuel: FlightWaypoint | None = field(default=None, kw_only=True)
+    pre_push_refuel: FlightWaypoint | None = field(default=None, kw_only=True)
 
     def iter_waypoints(self) -> Iterator[FlightWaypoint]:
         yield self.departure
         yield from self.nav_to
+        if self.pre_push_refuel is not None:
+            yield self.pre_push_refuel
         yield self.patrol_start
         yield self.patrol_end
         if self.refuel is not None:
@@ -45,16 +49,30 @@ class PatrollingLayout(StandardLayout):
         yield from self.custom_waypoints
 
     def delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
+        if waypoint is self.pre_push_refuel:
+            self.pre_push_refuel = None
+            return True
         if waypoint == self.refuel:
             self.refuel = None
             return True
         return super().delete_waypoint(waypoint)
+
+    def can_delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
+        return waypoint is self.pre_push_refuel or super().can_delete_waypoint(waypoint)
 
 
 LayoutT = TypeVar("LayoutT", bound=PatrollingLayout)
 
 
 class PatrollingFlightPlan(StandardFlightPlan[LayoutT], UiZoneDisplay, ABC):
+    def total_time_between_waypoints(
+        self, a: FlightWaypoint, b: FlightWaypoint
+    ) -> timedelta:
+        duration = super().total_time_between_waypoints(a, b)
+        if a is self.layout.pre_push_refuel:
+            duration += prerefuel.tanking_time(self.flight)
+        return duration
+
     @property
     @abstractmethod
     def patrol_duration(self) -> timedelta:

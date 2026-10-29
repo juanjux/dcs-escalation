@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Planning]** Add optional pre-push and pre-station tanker stops with configurable refuelling time and boom/probe matching (adapted from RetLab).
 * **[High Command]** Balance reward score ranges, avoid redundant support loans, and show difficulty separately from priority.
 * **[Live Pilots]** Share small, configurable morale gains from squadron mates' air and ground victories.
 * **[UI]** Allow missile sites to be disbanded for a refund after campaign start.

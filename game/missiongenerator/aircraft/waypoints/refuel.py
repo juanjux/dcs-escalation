@@ -11,7 +11,12 @@ TOPPED_OFF = 0.5
 
 class RefuelPointBuilder(PydcsWaypointBuilder):
     def add_tasks(self, waypoint: MovingPoint) -> None:
-        if not self.ai_despawn(waypoint, True):
+        early = self.waypoint is getattr(
+            self.flight.flight_plan.layout, "pre_push_refuel", None
+        )
+        # Airborne arrivals may despawn at a return-leg tanker. An outbound
+        # stop must never remove the flight before its mission starts.
+        if early or not self.ai_despawn(waypoint, True):
             refuel = ControlledTask(RefuelingTaskAction())
             # Stop condition only. There used to be a start condition as well --
             # "every unit is at or above 20%" -- which meant a flight that arrived
@@ -20,7 +25,9 @@ class RefuelPointBuilder(PydcsWaypointBuilder):
             # stop condition, a flight that does not need fuel breaks off the
             # moment it arrives (the condition is already true) and one that does
             # takes on fuel until it is half full.
-            refuel.stop_if_lua_predicate(self._get_lua_predicate(TOPPED_OFF))
+            refuel.stop_if_lua_predicate(
+                self._get_lua_predicate(0.9 if early else TOPPED_OFF)
+            )
             waypoint.add_task(refuel)
         return super().add_tasks(waypoint)
 

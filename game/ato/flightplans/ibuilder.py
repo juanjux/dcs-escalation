@@ -79,6 +79,16 @@ class IBuilder(ABC, Generic[FlightPlanT, LayoutT]):
         finally:
             IBuilder._flight_being_planned = outer
             self._building = False
+        if (
+            self._flight_plan is not None
+            and getattr(
+                getattr(self._flight_plan, "layout", None), "pre_push_refuel", None
+            )
+            is not None
+        ):
+            from ..prerefuel import remove_unneeded_post_stop
+
+            remove_unneeded_post_stop(self.flight)
 
     def _generate_package_waypoints_if_needed(self, dump_debug_info: bool) -> None:
         # Package waypoints are only valid for offensive missions. Skip this if the

@@ -101,6 +101,8 @@ class Flight(
         # to weapon range, so a stand-off decoy/harassment run can bait SAMs from
         # outside their reach. Player/planner toggled; honored by SEAD ingress.
         self.release_at_ingress = False
+        self.refuel_before_push = False
+        self.tanking_minutes: int | None = None
 
         # True for the stand-in flights that represent aircraft parked on the ramp.
         # They are given a squadron and a pilot so the debriefing code can account for
@@ -201,6 +203,8 @@ class Flight(
         if "use_same_loadout_for_all_members" not in state:
             state["use_same_loadout_for_all_members"] = True
         state.setdefault("release_at_ingress", False)
+        state.setdefault("refuel_before_push", False)
+        state.setdefault("tanking_minutes", None)
         state.setdefault("remain_at_destination", False)
         self.__dict__.update(state)
         if isinstance(self.roster, FlightRoster):
@@ -420,7 +424,7 @@ class Flight(
 
     @staticmethod
     def clone_flight(flight: Flight) -> Flight:
-        return Flight(
+        clone = Flight(
             flight.package,
             flight.squadron,
             flight.count,
@@ -428,3 +432,6 @@ class Flight(
             flight.start_type,
             flight.divert,
         )
+        clone.refuel_before_push = flight.refuel_before_push
+        clone.tanking_minutes = flight.tanking_minutes
+        return clone

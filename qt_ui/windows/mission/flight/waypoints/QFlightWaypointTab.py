@@ -35,6 +35,7 @@ from game.theater import Player
 from qt_ui.windows.mission.flight.waypoints.QFlightWaypointList import (
     QFlightWaypointList,
 )
+from qt_ui.windows.mission.flight.waypoints.QPreRefuelOptions import QPreRefuelOptions
 from qt_ui.windows.mission.flight.waypoints.QPredefinedWaypointSelectionWindow import (
     QPredefinedWaypointSelectionWindow,
 )
@@ -165,6 +166,8 @@ class QFlightWaypointTab(QFrame):
         rlayout.addLayout(
             carded("En-route altitude", altitude_box, "leaves the fixed points alone")
         )
+        self.pre_refuel_options = QPreRefuelOptions(self.flight, self.on_change)
+        rlayout.addLayout(carded("Pre-mission refuelling", self.pre_refuel_options))
 
         # --- regenerate -----------------------------------------------------
         # Nine stacked "Recreate as X" buttons, one per task the target accepts, was a

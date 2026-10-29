@@ -10,6 +10,7 @@ from .invalidobjectivelocation import InvalidObjectiveLocation
 from .patrolling import PatrollingFlightPlan, PatrollingLayout
 from .refuelneed import needs_refuelling
 from .waypointbuilder import WaypointBuilder
+from .. import prerefuel
 
 
 class BarCapFlightPlan(PatrollingFlightPlan[PatrollingLayout]):
@@ -45,6 +46,7 @@ class Builder(CapBuilder[BarCapFlightPlan, PatrollingLayout]):
         patrol_alt = builder.get_patrol_altitude
 
         start, end = builder.race_track(start_pos, end_pos, patrol_alt)
+        pre_refuel = prerefuel.build_stop(self.flight, start.position)
 
         # A BARCAP orbits for hours, so its laps -- not the transit -- are most of what
         # it burns, and it is the flight type most likely to need a tanker. Judging it
@@ -72,12 +74,15 @@ class Builder(CapBuilder[BarCapFlightPlan, PatrollingLayout]):
         return PatrollingLayout(
             departure=builder.takeoff(self.flight.departure),
             nav_to=builder.nav_path(
-                self.flight.departure.position, start.position, patrol_alt
+                self.flight.departure.position,
+                pre_refuel.position if pre_refuel else start.position,
+                patrol_alt,
             ),
             nav_from=builder.nav_path(
                 nav_from_origin, self.flight.arrival.position, patrol_alt
             ),
             patrol_start=start,
+            pre_push_refuel=pre_refuel,
             patrol_end=end,
             refuel=refuel,
             arrival=builder.land(self.flight.arrival),
