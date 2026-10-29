@@ -9,6 +9,9 @@ local MIN_STATION_LEFT = 20 * 60
 local INTERVAL = 5
 local TOPPED_OFF = .9
 local MAX_TANKING = 15 * 60
+local QUEUE_SECONDS = 10 * 60
+local TRANSIT_SPEED = 180 -- conservative cruise speed, m/s
+local BURN_MARGIN = 1.25
 
 local function living(name)
     local group = Group.getByName(name)
@@ -73,7 +76,10 @@ local function rtb(state, group, reason)
 end
 
 local function tanker(state, point, fuel, now)
-    local best, distance
+    local best, distance, threshold
+    local cfg = state.cfg
+    local queue = cfg.queueSeconds or QUEUE_SECONDS
+    local burn = cfg.burnPerMeter * math.max(TRANSIT_SPEED, cfg.patrolSpeed or 0) * BURN_MARGIN
     for _, candidate in ipairs(state.cfg.tankers) do
         local group = living(candidate.group)
         if group and now >= candidate.startTime and now < candidate.endTime then
@@ -81,18 +87,26 @@ local function tanker(state, point, fuel, now)
                 if unit:isExist() and unit:inAir() and unit:getFuel() > .1 then
                     local position = unit:getPoint()
                     local gap = math.sqrt((position.x-point.x)^2+(position.z-point.z)^2)
-                    -- Cruise estimate plus 25% detour allowance and landing reserve.
-                    local needed = gap * state.cfg.burnPerMeter * 1.25 + state.cfg.reserve
-                    local trip = gap / 180 -- conservative cruise speed, m/s
-                    if fuel > needed and now+trip+300 < candidate.endTime
+                    -- Leave before BINGO: budget transit and queueing above the
+                    -- homeward BINGO reserve, with 25% allowance on estimated burn.
+                    local travel = gap * cfg.burnPerMeter * BURN_MARGIN
+                    local joker = cfg.bingo + travel + queue * burn
+                    local trip = gap / TRANSIT_SPEED
+                    local duration = cfg.tankingSeconds or (MAX_TANKING + queue)
+                    -- Reject support that would cause an immediate top-up loop.
+                    -- If the monitor starts late, still require transit and
+                    -- queueing fuel above the minimum landing reserve.
+                    local needed = cfg.reserve + travel + queue * burn
+                    if fuel > needed and joker < TOPPED_OFF-.05
+                        and now+trip+duration < candidate.endTime
                         and (not distance or gap < distance) then
-                        best, distance = candidate, gap
+                        best, distance, threshold = candidate, gap, joker
                     end
                 end
             end
         end
     end
-    return best, distance
+    return best, distance, threshold
 end
 
 function api.done(name)
@@ -134,15 +148,27 @@ local function update(state, now)
             rtb(state,group,"tanker lost, reserve reached or refuelling timeout")
             return nil
         end
-    elseif fuel <= state.cfg.bingo then
+    else
         if state.cfg.endTime-now <= MIN_STATION_LEFT then
-            rtb(state,group,"twenty minutes or less remain on station")
-            return nil
+            if fuel <= state.cfg.bingo then
+                rtb(state,group,"twenty minutes or less remain on station")
+                return nil
+            end
+            return now+INTERVAL
         end
-        local selected, distance = tanker(state,point,fuel,now)
-        if not selected then rtb(state,group,"no reachable compatible tanker"); return nil end
+        local selected, distance, threshold = tanker(state,point,fuel,now)
+        if not selected then
+            if fuel <= state.cfg.bingo then
+                rtb(state,group,"no reachable compatible tanker")
+                return nil
+            end
+            return now+INTERVAL
+        end
+        if fuel > threshold then return now+INTERVAL end
         state.tanker, state.started, state.refuelling = selected, now, true
-        state.deadline = now + (state.cfg.tankingSeconds or MAX_TANKING) + distance/180
+        state.deadline = now + (state.cfg.tankingSeconds
+            or (MAX_TANKING + (state.cfg.queueSeconds or QUEUE_SECONDS)))
+            + distance/TRANSIT_SPEED
         local quoted = string.format("%q",state.cfg.group)
         group:getController():pushTask({
             id="ControlledTask", params={
@@ -150,7 +176,9 @@ local function update(state, now)
                 stopCondition={condition="return EscalationBARCAP.done("..quoted..")"},
             },
         })
-        env.info("BARCAP FUEL| "..state.cfg.group.." refuelling; station end unchanged")
+        env.info(string.format(
+            "BARCAP FUEL| %s refuelling at %.1f%% (departure %.1f%%, BINGO %.1f%%); station end unchanged",
+            state.cfg.group,fuel*100,threshold*100,state.cfg.bingo*100))
     end
     return now+INTERVAL
 end

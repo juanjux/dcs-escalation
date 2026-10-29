@@ -82,6 +82,7 @@ def configure(game: Any, mission: Any, mission_data: Any) -> list[dict[str, Any]
         if fuel.cruise <= 0:
             continue
         flag = f"barcap-station-{group.id}"
+        queue_seconds = 10 * 60 + 4 * 60 * (len(group.units) - 1)
         config = {
             "group": str(group.name),
             "flag": flag,
@@ -89,11 +90,13 @@ def configure(game: Any, mission: Any, mission_data: Any) -> list[dict[str, Any]
             "bingo": bingo / maximum,
             "reserve": fuel.min_safe / maximum,
             "burnPerMeter": fuel.cruise / maximum / 1852,
+            "patrolSpeed": group.points[start].speed,
+            "queueSeconds": queue_seconds,
             "tankers": available,
             "home": home,
             "unlimitedOutsideStation": bool(game.settings.ai_unlimited_fuel),
             "gunfighter": aircraft.gunfighter,
-            "tankingSeconds": max(900, (4 * len(group.units) + 1) * 60),
+            "tankingSeconds": queue_seconds + max(900, (4 * len(group.units) + 1) * 60),
         }
         result.append(config)
         quoted = escape_string_for_lua(flag)

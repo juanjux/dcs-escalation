@@ -1,7 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[BARCAP]** Refuel AI patrols at the estimated BINGO when more than twenty minutes remain, then resume the original station window, with safe RTB fallbacks.
+* **[BARCAP]** Refuel AI patrols before BINGO with transit and queueing fuel margins when more than twenty minutes remain, then resume the original station window, with safe RTB fallbacks.
 * **[Naval]** Release attacked formations locally and limit anti-ship salvos per mission, with defensive exceptions and persistent shot accounting (adapted from RetLab).
 * **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries and dispersed placement.
 * **[Units]** Add eight stock CurrentHill ground units from DCS 2.9.31 and missing Iraqi aircraft availability without requiring mod packs (adapted from RetLab #1413).

@@ -82,7 +82,7 @@ def runtime(*, end: int = 4000, tanker_start: int = 0) -> Any:
 
 def test_en_route_bingo_is_not_disabled_until_station_activation() -> None:
     lua = runtime()
-    lua.execute("groups.CAP.fuel=.25; tick(5)")
+    lua.execute("groups.CAP.fuel=.4; tick(5)")
     assert lua.eval("groups.CAP.controller.bingo") is True
     assert lua.eval("groups.CAP.controller.pushes") == 0
     lua.execute("flag=1; tick(10)")
@@ -96,14 +96,88 @@ def test_strictly_more_than_twenty_minutes_are_needed(
     expected: int,
 ) -> None:
     lua = runtime(end=remaining + 5)
-    lua.execute("flag=1; groups.CAP.fuel=.25; tick(5)")
+    lua.execute("flag=1; groups.CAP.fuel=.4; tick(5)")
     assert lua.eval("groups.CAP.controller.pushes") == expected
-    assert lua.eval("groups.CAP.controller.rtbs") == 1 - expected
+    assert lua.eval("groups.CAP.controller.rtbs") == 0
+
+
+def test_short_station_returns_home_at_bingo_not_at_early_refuel_threshold() -> None:
+    lua = runtime(end=1205)
+    lua.execute("flag=1; groups.CAP.fuel=.4; tick(5)")
+    assert lua.eval("groups.CAP.controller.rtbs") == 0
+    lua.execute("groups.CAP.fuel=.3; tick(10)")
+    assert lua.eval("groups.CAP.controller.rtbs") == 1
+
+
+def test_early_departure_leaves_transit_and_ten_minute_queue_above_bingo() -> None:
+    lua = runtime()
+    # 1.25% transit + 13.5% waiting + 30% BINGO = 44.75% departure.
+    lua.execute("flag=1; groups.CAP.fuel=.45; tick(5)")
+    assert lua.eval("groups.CAP.controller.pushes") == 0
+    lua.execute("groups.CAP.fuel=.447; tick(10)")
+    assert lua.eval("groups.CAP.controller.pushes") == 1
+    lua.execute("groups.CAP.fuel=.31; tick(600)")
+    assert lua.eval("groups.CAP.controller.rtbs") == 0
+    lua.execute("groups.CAP.fuel=.1; tick(605)")
+    assert lua.eval("groups.CAP.controller.rtbs") == 1
+
+
+@pytest.mark.parametrize(
+    "change,fuel",
+    [
+        ("groups.TANKER.x=100000", 0.55),
+        ("EscalationBARCAP.states.CAP.cfg.queueSeconds=1320", 0.6),
+        ("EscalationBARCAP.states.CAP.cfg.patrolSpeed=250", 0.49),
+    ],
+)
+def test_distance_flight_queue_and_patrol_speed_advance_departure(
+    change: str, fuel: float
+) -> None:
+    lua = runtime()
+    lua.execute(f"flag=1; groups.CAP.fuel={fuel}; tick(5)")
+    assert lua.eval("groups.CAP.controller.pushes") == 0
+    lua.execute(change + "; tick(10)")
+    assert lua.eval("groups.CAP.controller.pushes") == 1
+
+
+def test_no_tanker_does_not_send_patrol_home_before_bingo() -> None:
+    lua = runtime()
+    lua.execute("flag=1; groups.CAP.fuel=.4; groups.TANKER.alive=false; tick(5)")
+    assert lua.eval("groups.CAP.controller.rtbs") == 0
+    lua.execute("groups.CAP.fuel=.3; tick(10)")
+    assert lua.eval("groups.CAP.controller.rtbs") == 1
+
+
+def test_group_queue_is_included_in_refuelling_timeout() -> None:
+    lua = runtime()
+    lua.execute("""
+        flag=1; groups.CAP.fuel=.6
+        EscalationBARCAP.states.CAP.cfg.queueSeconds=1320
+        tick(5); tick(2000)
+    """)
+    assert lua.eval("groups.CAP.controller.pushes") == 1
+    assert lua.eval("groups.CAP.controller.rtbs") == 0
+    lua.execute("tick(2300)")
+    assert lua.eval("groups.CAP.controller.rtbs") == 1
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "groups.CAP.fuel=.24",  # Insufficient transit/queue fuel above reserve.
+        "EscalationBARCAP.states.CAP.cfg.bingo=.79",  # Top-up loop risk.
+        "EscalationBARCAP.states.CAP.cfg.tankers[1].endTime=1500",
+    ],
+)
+def test_unsafe_or_short_lived_support_does_not_trigger_refuel(change: str) -> None:
+    lua = runtime()
+    lua.execute("flag=1; groups.CAP.fuel=.8; " + change + "; tick(5)")
+    assert lua.eval("groups.CAP.controller.pushes") == 0
 
 
 def test_refuel_completion_resumes_suspended_orbit_without_resetting_end_time() -> None:
     lua = runtime()
-    lua.execute("flag=1; groups.CAP.fuel=.25; tick(5)")
+    lua.execute("flag=1; groups.CAP.fuel=.4; tick(5)")
     assert lua.eval('EscalationBARCAP.done("CAP")') is False
     lua.execute("groups.CAP.fuel=.95; tick(200)")
     assert lua.eval('EscalationBARCAP.done("CAP")') is True
@@ -111,7 +185,7 @@ def test_refuel_completion_resumes_suspended_orbit_without_resetting_end_time() 
     assert lua.eval("groups.CAP.controller.rtbs") == 0
     assert lua.eval("groups.CAP.controller.pushes") == 1
     # A later BINGO can send it back to the tanker before the original end.
-    lua.execute("groups.CAP.fuel=.25; tick(500)")
+    lua.execute("groups.CAP.fuel=.4; tick(500)")
     assert lua.eval("groups.CAP.controller.pushes") == 2
 
 
@@ -138,7 +212,7 @@ def test_no_usable_tanker_returns_home(change: str) -> None:
     [
         ("groups.TANKER.alive=false", 10),
         ("groups.CAP.fuel=.09", 10),
-        ("", 970),
+        ("", 1570),
         ("", 4000),
     ],
 )
@@ -151,7 +225,7 @@ def test_tanker_loss_low_reserve_timeout_or_station_end_aborts_refuel(
         "; ".join(
             filter(
                 None,
-                ["flag=1", "groups.CAP.fuel=.25", "tick(5)", change, f"tick({time})"],
+                ["flag=1", "groups.CAP.fuel=.4", "tick(5)", change, f"tick({time})"],
             )
         )
     )
@@ -255,6 +329,9 @@ def test_generation_keeps_orbit_and_uses_native_recovery_waypoints(
     assert config[0]["endTime"] == 4000
     assert [point["name"] for point in config[0]["home"]] == ["HOME NAV", "LANDING"]
     assert config[0]["tankers"][0]["group"] == "TANKER"
+    assert config[0]["queueSeconds"] == 600
+    assert config[0]["tankingSeconds"] == 1500
+    assert config[0]["patrolSpeed"] == s.group.points[1].speed
     assert _orbit_present(s.group.points[1])
     output = tmp_path / "barcap.miz"
     s.mission.save(output)
@@ -282,3 +359,11 @@ def test_generation_never_disables_unmanaged_native_rtb(change: str) -> None:
         s.data.tankers = []
     assert configure(s.game, s.mission, s.data) == []
     assert len(s.group.points[1].tasks) == 1
+
+
+def test_four_ship_budgets_waiting_for_its_own_wingmen() -> None:
+    s = scenario()
+    s.group.units = s.group.units * 4
+    config = configure(s.game, s.mission, s.data)[0]
+    assert config["queueSeconds"] == 600 + 3 * 240
+    assert config["tankingSeconds"] == 1320 + 17 * 60
