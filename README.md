@@ -37,6 +37,11 @@ or any other LLM that has a local interface, and start playing with it controlli
 changes the engagement and fun factor of every campaign. While the current version still keeps the inherited dumb OPFOR planner, 
 it will probably be removed in the future.
 
+## Saved map drawings
+
+Taken from Retlab: Use the map's Draw tool to add vertices, then save a named line or area to a
+player aircraft.
+
 ## Reactive BARCAP refuelling
 
 AI-only BARCAPs with compatible planned tanker support monitor the flight's
@@ -45,10 +50,6 @@ than twenty minutes remain and a live compatible tanker is reachable with reserv
 the flight pushes a native refuelling task and resumes its suspended orbit after
 topping off. Its original station end does not change.
 
-Without usable support, with twenty minutes or less remaining, on tanker loss,
-low reserve or a refuelling timeout, it returns along its generated recovery route.
-Player flights and TARCAPs are unchanged. Native BINGO remains enabled outside
-the managed station; Winchester and damage recovery are not overridden.
 
 ## Frontline MANPADS teams
 

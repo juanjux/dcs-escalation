@@ -15,7 +15,7 @@ from dcs.unit import Skill
 from dcs.unitgroup import FlyingGroup
 
 from game.ato import Flight, FlightType
-from game.ato.savedpoints import points_of
+from game.ato.savedpoints import points_of, drawings_of
 from game.ato.flightplans.uizonedisplay import UiZoneDisplay
 from game.ato.flightplans.shiprecoverytanker import RecoveryTankerFlightPlan
 from game.callsigns import callsign_for_support_unit
@@ -192,6 +192,7 @@ class FlightGroupConfigurator:
             laser_codes=laser_codes,
             start_type=self.flight.start_type,
             saved_points=list(points_of(self.flight)),
+            saved_drawings=list(drawings_of(self.flight)),
             aircraft_notes=notes_for_flight(self.flight),
             group_name=str(self.group.name),
             patrol_speed=(

@@ -112,3 +112,33 @@ def test_stale_qt_selection_does_not_delete_or_edit_the_next_point(dialog: Any) 
     window.delete_current()
     assert dialog.flight.squadron.saved_points == [other]
     assert other.name == "OTHER"
+
+
+def test_drawing_map_refresh_and_qt_delete_preserve_aircraft_selection(
+    dialog: Any,
+) -> None:
+    from game.ato.savedpoints import SavedDrawing, drawings_of
+
+    drawing = SavedDrawing("ZONE", [(0, 0), (100, 100)])
+    drawings_of(dialog.flight).append(drawing)
+    identical = SavedDrawing("ZONE", [(0, 0), (100, 100)])
+    drawings_of(dialog.flight).append(identical)
+    selected = dialog.window.selected
+    publish_points_changed()
+    dialog.app.processEvents()
+    pane = dialog.window.drawings
+    assert pane.list.count() == 2
+    pane.list.setCurrentRow(0)
+    drawing.name = "BRIDGE"
+    publish_points_changed()
+    dialog.app.processEvents()
+    assert pane._selected() is drawing
+    assert "BRIDGE" in pane.list.currentItem().text()
+    identical.name = "BRIDGE"
+    pane.refresh()
+    pane.list.setCurrentRow(1)
+    pane.delete_current()
+    assert len(drawings_of(dialog.flight)) == 1
+    assert drawings_of(dialog.flight)[0] is drawing
+    assert dialog.window.selected is selected
+    assert dialog.send.call_args.args[0].saved_points_updated

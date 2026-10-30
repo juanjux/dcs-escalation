@@ -1,0 +1,47 @@
+.map-draw-control {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.map-draw-toggle {
+  width: 32px;
+  height: 32px;
+  font-size: 22px;
+  background: #192732;
+  color: #f0d331;
+  border: 1px solid #557086;
+  cursor: pointer;
+}
+.map-draw-toggle.active {
+  background: #597b40;
+}
+.map-draw-panel {
+  width: 290px;
+  padding: 10px;
+  background: #192732;
+  color: #e4edf5;
+  border: 1px solid #557086;
+  font:
+    13px/1.5 system-ui,
+    sans-serif;
+}
+.map-draw-panel select,
+.map-draw-panel input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 4px 0;
+}
+.map-draw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0;
+}
+.map-draw-actions button {
+  flex: 1;
+  white-space: nowrap;
+}
+.map-draw-panel [role="alert"] {
+  color: #ffada6;
+}

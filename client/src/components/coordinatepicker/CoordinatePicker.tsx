@@ -59,6 +59,15 @@ export default function CoordinatePicker() {
   const [copied, setCopied] = useState(false);
   const marker = useRef<LeafletMarker | null>(null);
 
+  useEffect(() => {
+    const drawing = () => {
+      setPicking(false);
+      setPicked(null);
+    };
+    window.addEventListener("map-drawing-activated", drawing);
+    return () => window.removeEventListener("map-drawing-activated", drawing);
+  }, []);
+
   // A popup inside a marker is bound to it, not opened: react-leaflet only opens the
   // ones that hang from the map. The point was just clicked, so open it.
   useEffect(() => {
@@ -100,6 +109,7 @@ export default function CoordinatePicker() {
 
   // Switching it off closes any open popup.
   const toggle = () => {
+    window.dispatchEvent(new Event("gps-picker-activated"));
     setPicking((on) => !on);
     setPicked(null);
   };

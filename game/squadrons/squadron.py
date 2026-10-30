@@ -15,7 +15,7 @@ from faker import Faker
 
 from game.ato import Flight, FlightType, Package
 from game.aircraftmaintenance import AircraftRepair, damaged_count
-from game.ato.savedpoints import SavedPoint
+from game.ato.savedpoints import SavedPoint, SavedDrawing
 from game.settings import AutoAtoBehavior, Settings
 from game.theater import ParkingType
 from game.theater.player import Player
@@ -121,6 +121,10 @@ class Squadron:
         init=False, hash=False, compare=False, repr=False, default_factory=list
     )
 
+    saved_drawings: list[SavedDrawing] = field(
+        init=False, hash=False, compare=False, repr=False, default_factory=list
+    )
+
     def __setstate__(self, state: dict[str, Any]) -> None:
         if "id" not in state:
             state["id"] = uuid4()
@@ -139,6 +143,7 @@ class Squadron:
         if "purchased_aircraft" not in state:
             state["purchased_aircraft"] = 0
         state.setdefault("saved_points", [])
+        state.setdefault("saved_drawings", [])
         state.setdefault("aircraft_repairs", [])
         state.setdefault("damaged_aircraft_sale_income", 0.0)
         self.__dict__.update(state)
