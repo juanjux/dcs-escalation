@@ -37,6 +37,8 @@ export default function LiberationMap() {
   }, [mapCenter, wantedZoom]);
   return (
     <MapContainer
+      // Vector layers need a ready view before their mount effects run.
+      center={mapCenter}
       zoom={map.current?.getZoom() ?? 8}
       zoomControl={false}
       ref={map}
