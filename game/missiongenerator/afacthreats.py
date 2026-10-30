@@ -10,8 +10,15 @@ from game.data.units import ANTI_AIR_UNIT_CLASSES
 from game.dcs.groundunittype import GroundUnitType
 
 # DCS TechWeaponPack: ZSU_57_2.lua and LN_t.S_60_gun in weapons/cannon.lua
-# both define max_trg_alt = 4000 m. Do not infer ceilings from horizontal range.
-VERIFIED_CEILINGS = {"ZSU_57_2": 4000, "S-60_Type59_Artillery": 4000}
+# both define max_trg_alt = 4000 m. The same pack's Weapons/manpads_missiles.lua
+# defines Igla_1E (9M39 Igla) with H_max = 3500 m. Apply that ceiling only to the
+# matching SA-18 launcher, not to unverified MANPADS variants or modded systems.
+# Do not infer ceilings from horizontal range.
+VERIFIED_CEILINGS = {
+    "ZSU_57_2": 4000,
+    "S-60_Type59_Artillery": 4000,
+    "SA-18 Igla manpad": 3500,
+}
 
 
 @cache

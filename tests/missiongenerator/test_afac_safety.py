@@ -1,6 +1,7 @@
 """Pure threat routing geometry; native task acceptance uses standalone probes."""
 
 from pathlib import Path
+import re
 from typing import Any
 
 import pytest
@@ -30,6 +31,67 @@ def test_verified_ceilings_and_unknown_air_defence_are_conservative() -> None:
     assert stinger["ceiling"] is None
     assert envelope("M-1 Abrams") is None
     assert envelope("unknown mod") is None
+
+
+def test_sa18_exports_a_verified_ceiling_without_changing_other_manpads() -> None:
+    igla = envelope("SA-18 Igla manpad")
+    assert igla is not None and igla["radius"] > 0
+    assert igla["ceiling"] == 3500
+    igla_s = envelope("SA-18 Igla-S manpad")
+    assert igla_s is not None and igla_s["ceiling"] is None
+
+
+def test_sa18_ceiling_matches_installed_dcs_weapon_definition() -> None:
+    from dcs.installation import get_dcs_install_directory
+
+    root = get_dcs_install_directory()
+    if not root:
+        pytest.skip("DCS is not installed")
+    definition = (
+        Path(root)
+        / "CoreMods/tech/TechWeaponPack/Database/Weapons/manpads_missiles.lua"
+    )
+    if not definition.is_file():
+        pytest.skip("DCS MANPADS definitions are not available")
+    source = definition.read_text(encoding="utf-8")
+    igla = source.split("local igla =", 1)[1].split("declare_weapon(igla)", 1)[0]
+    ceiling = re.search(r"\bH_max\s*=\s*([\d.]+)", igla)
+    assert ceiling is not None
+    envelope_data = envelope("SA-18 Igla manpad")
+    assert envelope_data is not None
+    assert envelope_data["ceiling"] == float(ceiling.group(1))
+
+
+def test_high_planned_orbit_over_known_sa18_keeps_original_route(lua: Any) -> None:
+    igla = envelope("SA-18 Igla manpad")
+    assert igla is not None
+    lua.globals().iglaCeiling = igla["ceiling"]
+    lua.execute("""
+    t.typeName='SA-18 Igla manpad';t.radius=5200;t.ceiling=iglaCeiling
+    t.point.y=2133.6 -- 7,000 ft MSL terrain beneath the launcher.
+    input.altitude=6096;input.source.y=6096
+    -- A cloud-based observation cap must not force an already safe original
+    -- high-level route down into a low-altitude threat envelope.
+    input.maxAltitude=4818
+    assert(A.clear(input.source,{t},1000+input.footprint))
+    assert(A.orbit(input.points[1],input.altitude,input.zone,{t},input.footprint))
+    assert(not A.requirement(input))
+    assert(A.plan(input).mode=='original')
+    """)
+
+
+def test_sa18_ceiling_is_relative_to_launcher_height_with_safety_margin(
+    lua: Any,
+) -> None:
+    lua.execute("""
+    t.typeName='SA-18 Igla manpad';t.radius=5200;t.ceiling=3500;t.point.y=2133.6
+    local safeAbove=t.point.y+t.ceiling+300
+    assert(not A.clear({x=0,y=safeAbove,z=0},{t}))
+    assert(A.clear({x=0,y=safeAbove+1,z=0},{t}))
+    -- 5,500 m MSL is only 3,366.4 m above this elevated launcher.
+    assert(not A.leg({x=-10000,z=0},{x=10000,z=0},5500,{t}))
+    assert(A.leg({x=-10000,z=0},{x=10000,z=0},6096,{t}))
+    """)
 
 
 def test_clearance_and_route_segments_check_the_entire_ring(lua: Any) -> None:
