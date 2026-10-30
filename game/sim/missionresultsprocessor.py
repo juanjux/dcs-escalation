@@ -1757,8 +1757,7 @@ class MissionResultsProcessor:
                 # Handle the case where there are no casualties at all on either side but both sides still have units
                 if delta == 0.0:
                     print(status_msg)
-                    self.game.message(
-                        "Frontline Report",
+                    self.game.queue_frontline_report(
                         f"Our ground forces from {cp.name} reached a stalemate with enemy forces from {enemy_cp.name}.",
                     )
                 else:
@@ -1766,16 +1765,14 @@ class MissionResultsProcessor:
                         print(status_msg)
                         cp.base.affect_strength(delta)
                         enemy_cp.base.affect_strength(-delta)
-                        self.game.message(
-                            "Frontline Report",
+                        self.game.queue_frontline_report(
                             f"Our ground forces from {cp.name} are making progress toward {enemy_cp.name}. {status_msg}",
                         )
                     else:
                         print(status_msg)
                         enemy_cp.base.affect_strength(delta)
                         cp.base.affect_strength(-delta)
-                        self.game.message(
-                            "Frontline Report",
+                        self.game.queue_frontline_report(
                             f"Our ground forces from {cp.name} are losing ground against the enemy forces from "
                             f"{enemy_cp.name}. {status_msg}",
                         )

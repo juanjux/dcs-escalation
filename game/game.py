@@ -193,6 +193,7 @@ class Game:
         self.naval_magazines: dict[str, int] = {}
         self.ground_planners: dict[UUID, GroundPlanner] = {}
         self.informations: list[Information] = []
+        self.pending_frontline_reports: list[str] = []
         self.message("Game Start", "-" * 40)
         # Culling Zones are for areas around points of interest that contain things we may not wish to cull.
         self.__culling_zones: List[Point] = []
@@ -611,6 +612,10 @@ class Game:
         front_positions = snapshot_fronts(self)
         self.message("End of turn #" + str(self.turn), "-" * 40)
         self.turn += 1
+        reports = getattr(self, "pending_frontline_reports", [])
+        self.pending_frontline_reports = []
+        for text in reports:
+            self.message("Frontline Report", text)
 
         from game.persistentdamage import repair_damage
         from game.missiletargets import remove_invalid as remove_invalid_missile_targets
@@ -941,6 +946,12 @@ class Game:
 
     def message(self, title: str, text: str = "") -> None:
         self.informations.append(Information(title, text, turn=self.turn))
+
+    def queue_frontline_report(self, text: str) -> None:
+        """Keep battle results for the next turn's opening event log."""
+        if not hasattr(self, "pending_frontline_reports"):
+            self.pending_frontline_reports = []
+        self.pending_frontline_reports.append(text)
 
     @property
     def current_turn_time_of_day(self) -> TimeOfDay:
