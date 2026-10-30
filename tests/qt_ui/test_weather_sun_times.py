@@ -18,6 +18,7 @@ from game.theater.daytimecalculator import _sun_times
 from game.timeofday import TimeOfDay
 from game.utils import inches_hg
 from game.weather.conditions import Conditions
+from tests.weather.test_cloud_layers import _clouds, _install
 from game.weather.wind import WindConditions
 from qt_ui import uiconstants as CONST
 from qt_ui.widgets.conditions.QWeatherWidget import QWeatherWidget
@@ -55,6 +56,36 @@ def _conditions(start: dt.datetime) -> Conditions:
         ),
     )
     return Conditions(TimeOfDay.Dusk, start, weather)
+
+
+def test_tooltip_shows_each_active_layer_as_estimated_msl_bounds(
+    widget: QWeatherWidget, tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _install(tmp_path, monkeypatch)
+    conditions = _conditions(dt.datetime(2026, 10, 30, 12))
+    conditions.weather.clouds = _clouds()
+    widget.conditions = conditions
+    details = widget.weather_details()
+    assert "Layer 1 (est., MSL)" in details
+    assert "Layer 2 (est., MSL)" in details
+    assert "Layer 3" not in details
+    assert "4364m / 14317ft" in details
+    assert "10450m / 34284ft" in details
+    assert "Estimated base" in details
+
+
+def test_tooltip_keeps_configured_base_when_layer_data_is_unavailable(
+    widget: QWeatherWidget, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "qt_ui.liberation_install.get_dcs_install_directory", lambda: ""
+    )
+    conditions = _conditions(dt.datetime(2026, 10, 30, 12))
+    conditions.weather.clouds = _clouds()
+    widget.conditions = conditions
+    details = widget.weather_details()
+    assert "Cloud base" in details and "4364m / 14317ft" in details
+    assert "Layer 1" not in details
 
 
 def _theater(
