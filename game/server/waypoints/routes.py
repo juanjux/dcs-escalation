@@ -105,6 +105,10 @@ def _package_model_of(flight: Flight) -> Any:
 def _re_time_and_publish(flight: Flight, events: GameUpdateEvents) -> None:
     """Every edit changes the route, so the package is re-timed and the map redrawn."""
     from game.server import EventStream
+    from game.ato.sharedroute import synchronize
+
+    for changed in synchronize(flight.package, flight):
+        events.update_flight(changed)
 
     _package_model_of(flight).update_tot()
     EventStream.put_nowait(events.update_flight(flight))
@@ -321,8 +325,14 @@ def update_package_waypoints_if_primary_flight(
     flight: Flight,
     events: GameUpdateEvents,
 ) -> None:
+    from game.ato.sharedroute import enabled, synchronize
+
+    shared = enabled(flight.package)
+    if shared:
+        for changed in synchronize(flight.package, flight):
+            events.update_flight(changed)
     wpts = flight.package.waypoints
-    if flight is flight.package.primary_flight and wpts:
+    if (shared or flight is flight.package.primary_flight) and wpts:
         moved: FlightWaypointType | None = None
         if waypoint is formation_waypoint(flight, FlightWaypointType.JOIN):
             moved = FlightWaypointType.JOIN

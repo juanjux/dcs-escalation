@@ -296,6 +296,40 @@ def test_package_timing_and_name_controls(package_dialog: Any) -> None:
     assert "locked" in dialog.timing_hint.text()
 
 
+def test_shared_route_checkbox_defaults_and_incompatibility(
+    package_dialog: Any,
+) -> None:
+    from game.ato.flighttype import FlightType
+    from tests.test_shared_package_route import _package, FlightStub
+
+    dialog = package_dialog
+    assert not dialog.shared_route_checkbox.isEnabled()
+    flight = insert_flight(dialog)
+    flight = FlightStub(**vars(flight))
+    dialog.package_model.package.flights[0] = flight
+    flight.flight_type = FlightType.BARCAP
+    # Keep the timing fake used by the dialog; give it a real patrol layout.
+    plan = _package().flights[0].flight_plan
+    flight.flight_plan.layout = plan.layout
+    flight.flight_plan.waypoints = plan.waypoints
+    dialog.update_package_context()
+    assert dialog.shared_route_checkbox.isChecked()
+    assert dialog.shared_route_checkbox.isEnabled()
+    dialog.shared_route_checkbox.click()
+    assert (
+        getattr(dialog.package_model.package, "single_route_for_all_flights") is False
+    )
+    assert not dialog.shared_route_checkbox.isChecked()
+    dialog.shared_route_checkbox.click()
+    assert getattr(dialog.package_model.package, "single_route_for_all_flights") is True
+    assert dialog.shared_route_checkbox.isChecked()
+    flight.flight_type = FlightType.ESCORT
+    dialog.update_package_context()
+    assert not dialog.shared_route_checkbox.isChecked()
+    assert not dialog.shared_route_checkbox.isEnabled()
+    assert "dedicated waypoints" in dialog.shared_route_checkbox.toolTip()
+
+
 def test_accept_results_refresh_tolerates_a_cleared_package(
     package_dialog: Any,
 ) -> None:

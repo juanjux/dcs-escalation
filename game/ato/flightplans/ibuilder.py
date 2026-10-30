@@ -89,6 +89,9 @@ class IBuilder(ABC, Generic[FlightPlanT, LayoutT]):
             from ..prerefuel import remove_unneeded_post_stop
 
             remove_unneeded_post_stop(self.flight)
+        from ..sharedroute import synchronize
+
+        synchronize(self.package)
 
     def _generate_package_waypoints_if_needed(self, dump_debug_info: bool) -> None:
         # Package waypoints are only valid for offensive missions. Skip this if the

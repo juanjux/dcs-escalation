@@ -256,6 +256,8 @@ class PackageView(BaseModel):
     tot: str | None  # time over target, HH:MM
     desc: str | None = None
     flights: list[FlightView]
+    single_route_for_all_flights: bool = False
+    shared_route_unavailable_reason: str | None = None
 
 
 class RebuildView(BaseModel):
@@ -1783,6 +1785,8 @@ def build_flight(flight) -> FlightView:
 
 
 def build_package(index: int, pkg) -> PackageView:
+    from game.ato.sharedroute import enabled, unavailable_reason
+
     tot = pkg.time_over_target
     desc = getattr(pkg, "custom_name", None)  # the planner stores the rationale here
     if not desc:
@@ -1796,6 +1800,8 @@ def build_package(index: int, pkg) -> PackageView:
         tot=tot.strftime("%H:%M") if tot else None,
         desc=desc or None,
         flights=[build_flight(f) for f in pkg.flights],
+        single_route_for_all_flights=enabled(pkg),
+        shared_route_unavailable_reason=unavailable_reason(pkg),
     )
 
 

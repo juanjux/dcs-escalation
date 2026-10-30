@@ -273,6 +273,17 @@ def clear_packages(side: str = "red") -> schemas.OpResult:
     return service.clear_packages(side)
 
 
+@router.post(
+    "/packages/{index}/shared-route", operation_id="ai_set_package_shared_route"
+)
+def set_package_shared_route(
+    index: int, body: schemas.PackageSharedRouteRequest
+) -> schemas.OpResult:
+    return service.set_package_shared_route(
+        body.side, index, body.single_route_for_all_flights
+    )
+
+
 @router.delete(
     "/packages/{index}",
     operation_id="ai_delete_package",
