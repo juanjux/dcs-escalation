@@ -106,8 +106,9 @@ additional mechanics at your own base: $50,000 each by default, configured in
 dollars. The API reports `mechanic_cost_dollars` and retains `mechanic_price_m`
 for clients that use million-dollar budgets. Use
 `sell_damaged_aircraft` / `POST /retribution-ai/workshops/sell` with the repair ID
-to sell a specific damaged airframe immediately. Default resale is 50% of its
-normal price; both the price factor and mechanic cost are configurable. Regular
+to sell a specific damaged airframe immediately. Its workshop value defaults to
+50% of the normal price, multiplied by the equipment resale factor (85% by default,
+so the final default is 42.5%). Both factors and mechanic cost are configurable. Regular
 aircraft sales sell idle healthy aircraft, not workshop jobs.
 
 An overfull base retains its owned aircraft and workshop jobs. Resolve parking
@@ -1391,7 +1392,12 @@ somewhere above; this is the list to re-read before you plan.
    **Sell idle surplus — it is routine income, not a last resort.** Before you buy
    anything, scan `air_wing` for idle healthy aircraft outside loan squadrons that
    will not fly this turn or the next (`sell/aircraft` credits their value back to
-   your budget). Damaged airframes use the separate workshop sale command.
+   your budget). Equipment sales return 85% of the new price by default. This
+   campaign setting can be changed or disabled; `squadrons[].sale_price` reports
+   the current proceeds per healthy aircraft. Cancelling pending purchases refunds
+   their full cost; cancelling pending sales repays their original proceeds.
+   Damaged airframes use the separate workshop sale command, with the equipment
+   resale multiplier applied to the workshop's damaged-aircraft valuation.
    A wing of transports or helicopters with nothing to carry is frozen budget —
    a dozen idle C-130s can be hundreds
    of millions you could spend on fighters or repairs. Keep only the working minimum (a
@@ -1417,7 +1423,7 @@ somewhere above; this is the list to re-read before you plan.
    `GET /ground/mine` — **`turn_context.targets` is always the ENEMY's, never yours** —
    or from a `repairs[]` entry) lists the
    force-groups, layouts and selectable unit types/counts it can become and the net cost
-   (the old site's value is **refunded**), then `ground/rebuild` does it — e.g. swap an
+   (the old site's resale proceeds are credited), then `ground/rebuild` does it — e.g. swap an
    SA-3 for an SA-10 to re-close a corridor, add TELs by raising a group's count, or give
    a mobile group an AA-capable unit where the layout offers one. It respects the
    repair-delay (rebuilt units arrive over the campaign's repair turns — except on turn
@@ -2040,13 +2046,13 @@ Write bodies:
   planned for, and read the net cost the rebuild reports back.
 - `GET /ground/options/{tgo_id}?side=red` → what one of YOUR ground objects (a
   SAM/EWR/armor/ship/missile/coastal site) can be **rebuilt** into: `{tgo_id, name, role,
-  refund` (the old site's value, credited back on rebuild)`, budget, options:[{force_group,
+  refund` (resale proceeds plus cancelled pending work)`, budget, options:[{force_group,
   layout, price` (default), `groups:[{group_name, optional, default_count, max_count,
   unit_types:[{name, price}]}]}]}`. Read it before `/ground/rebuild`.
 - `POST /ground/rebuild` `{side, tgo_id, force_group, layout, groups?}` — replace/UPGRADE
   that site with the chosen `force_group` + `layout` (names from `/ground/options`). Optional
   `groups` overrides each group: `[{group_name, unit_type?` (a `name` from the options),
-  `count?, enabled?` (turn an optional group off)`]`. It **refunds** the old group's value and
+  `count?, enabled?` (turn an optional group off)`]`. It credits the old group's resale value and
   charges the net, and respects the repair-delay (rebuilt units arrive over
   the campaign's repair turns). Use it to swap a weak SAM for a stronger one, add TELs, or
   re-close a strike corridor.

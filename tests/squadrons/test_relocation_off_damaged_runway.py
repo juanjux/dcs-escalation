@@ -114,7 +114,7 @@ def test_selling_all_aircraft_allows_relocation_without_ferries() -> None:
     assert squadron.owned_aircraft == 4
     assert squadron.pending_deliveries == -4
     assert squadron.untasked_aircraft == 0
-    assert squadron.coalition.budget == 40
+    assert squadron.coalition.budget == 34
 
 
 @pytest.mark.parametrize("sold", [0, 1, 3])
@@ -139,7 +139,7 @@ def test_buying_back_a_sold_aircraft_blocks_relocation_again() -> None:
 
     assert squadron.pending_deliveries == -3
     assert squadron.untasked_aircraft == 1
-    assert squadron.coalition.budget == 30
+    assert squadron.coalition.budget == 25.5
 
 
 def test_pending_purchases_do_not_need_a_runway_to_relocate() -> None:

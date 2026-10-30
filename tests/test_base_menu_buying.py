@@ -46,7 +46,7 @@ def _squadron(
         has_aircraft_capacity_for=lambda _count: room,
         destination=None,
         aircraft=SimpleNamespace(
-            helicopter=helicopter, lha_capable=False, flyable=True
+            helicopter=helicopter, lha_capable=False, flyable=True, price=price
         ),
         coalition=SimpleNamespace(
             game=SimpleNamespace(
@@ -191,3 +191,10 @@ def test_clearing_the_order_undoes_orders_and_sales_alike(qt_app: Any) -> None:
 def test_the_order_cost_is_this_base_s_own_orders(qt_app: Any) -> None:
     menu = _menu([_squadron(pending=2, price=20), _squadron(pending=-1, price=45)])
     assert menu.order_cost() == 2 * 20 - 45
+
+
+def test_order_summary_uses_sale_receipts_not_new_prices(qt_app: Any) -> None:
+    sold = _squadron(pending=-2, price=45)
+    sold.pending_sale_values = [38.25, 22.5]
+    menu = _menu([_squadron(pending=2, price=20), sold])
+    assert menu.order_cost() == 40 - 38.25 - 22.5

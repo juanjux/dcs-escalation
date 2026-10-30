@@ -293,6 +293,49 @@ def test_rebuild_happy_path_charges_net_and_creates_group() -> None:
     assert game.theater.iads_network.renewed == [tgo]
 
 
+@pytest.mark.parametrize("enabled,percent", [(True, 85), (True, 40), (False, 85)])
+@pytest.mark.parametrize("side", ["red", "blue"])
+def test_rebuild_quote_and_charge_share_resale_policy(
+    enabled: bool, percent: int, side: str
+) -> None:
+    ug = _unit_group(size=2)
+    fg = _FakeForceGroup(
+        "SA-10", [_layout("Default", ug)], [_FakeUnitType("S-300 LN", 60, object)]
+    )
+    tgo: Any = _sam(Player.RED if side == "red" else Player.BLUE)
+    tgo.groups = [
+        SimpleNamespace(
+            units=[
+                SimpleNamespace(
+                    alive=True,
+                    unit_type=SimpleNamespace(price=3),
+                    repair_turns_remaining=None,
+                ),
+                SimpleNamespace(
+                    alive=False,
+                    unit_type=SimpleNamespace(price=7),
+                    repair_turns_remaining=2,
+                ),
+            ]
+        )
+    ]
+    game = _fake_game(tgo, budget=500)
+    game.settings.resale_depreciation_enabled = enabled
+    game.settings.resale_value_percent = percent
+    coalition = SimpleNamespace(
+        budget=500.0,
+        armed_forces=SimpleNamespace(groups_for_tasks=lambda tasks: [fg]),
+    )
+    game.coalition_for = lambda player: coalition
+    quote = views.build_ground_object_options(game, side, str(tgo.id))
+    expected = 7 + 3 * (percent / 100 if enabled else 1)
+    assert quote.refund == pytest.approx(expected)
+    assert quote.model_dump()["refund"] == pytest.approx(expected)
+    result = planner.rebuild_ground_object(game, side, str(tgo.id), "SA-10", "Default")
+    assert result.ok, result.error
+    assert coalition.budget == pytest.approx(500 - 120 + expected)
+
+
 def test_turn_zero_is_not_a_free_shopping_spree() -> None:
     """Ground objects used to cost nothing on turn 0 while the dialog still quoted a
     price, so a campaign could open with an S-300 belt bought for free."""

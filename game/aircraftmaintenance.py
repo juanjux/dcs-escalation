@@ -366,7 +366,13 @@ def admit(game: Game, squadron: Squadron, source: str, health: float | None) -> 
 
 
 def sale_value(game: Game, squadron: Squadron) -> float:
-    return squadron.aircraft.price * game.settings.damaged_aircraft_sale_percent / 100
+    from game.resale import resale_value
+
+    return (
+        resale_value(game.settings, squadron.aircraft.price)
+        * game.settings.damaged_aircraft_sale_percent
+        / 100
+    )
 
 
 def remove_damaged(

@@ -21,6 +21,7 @@ from dcs.weather import Weather as PydcsWeather, Wind
 from pydantic import BaseModel, Field
 
 from game.income import Income
+from game.resale import ground_object_sale_value, resale_value
 from game.health import HealthStatus
 from game.persistentdamage import health_report
 from game.theater.iadsnetwork.iadsstate import IadsStatus
@@ -197,6 +198,9 @@ class SquadronView(BaseModel):
     pending: int | None = None  # arriving next turn (omitted when 0)
     pilots: int
     price: int  # cost of ONE aircraft, so budget / price = how many you can afford
+    sale_price: float = (
+        0  # Proceeds per healthy aircraft; pending purchases refund fully.
+    )
     max_ac: int | None = (
         None  # squadron airframe cap: buy/aircraft refuses once owned+pending reaches
         # it (a cap of 1 marks an irreplaceable airframe, e.g. a lone AWACS); omitted
@@ -683,7 +687,7 @@ class GroundObjectOptionsView(BaseModel):
     tgo_id: str
     name: str
     role: str  # "air_defense" | "ground_force" | "naval" | "defenses"
-    refund: int  # tgo.value, refunded when rebuilding
+    refund: float  # Resale proceeds plus cancelled pending repairs/construction.
     budget: int
     options: list[LayoutOption]
 
@@ -957,6 +961,7 @@ def build_squadron(sq: Squadron, player: Player | None = None) -> SquadronView:
         pending=sq.pending_deliveries or None,
         pilots=sq.number_of_available_pilots,
         price=math.ceil(sq.aircraft.price),
+        sale_price=resale_value(sq.settings, sq.aircraft.price),
         max_ac=(sq.max_size if sq.settings.enable_squadron_aircraft_limits else None),
         grounded=grounded or None,
     )
@@ -1968,7 +1973,7 @@ def build_ground_object_options(
     and at what cost — the read behind the player's Buy-ground-object dialog. Lists every
     force-group + layout available to the faction for this TGO's role, each layout's
     selectable unit types and counts, and the default net price context (the old site's
-    ``value`` is refunded on rebuild)."""
+    resale value is credited on rebuild)."""
     tgo = _resolve_tgo(game, tgo_id, side)
     role, tasks = _ground_object_role_and_tasks(tgo)
     coalition = coalition_for_side(game, side)
@@ -1985,7 +1990,7 @@ def build_ground_object_options(
         tgo_id=str(tgo.id),
         name=tgo.name,
         role=role.name.lower(),
-        refund=int(tgo.value),
+        refund=ground_object_sale_value(game, tgo),
         budget=round(coalition.budget),
         options=options,
     )

@@ -112,7 +112,7 @@ class QGroundObjectMenu(QDialog):
         self.cp = cp
         self.game_model = gm
         self.campaign = gm.game
-        self.total_value = 0
+        self.total_value = 0.0
         self.cruise_missile_rows: list[tuple[str, int]] = []
         self.heading_selector: Optional[QSpinBox] = None
         self.compass: Optional[Compass] = None
@@ -638,7 +638,7 @@ class QGroundObjectMenu(QDialog):
             row.addWidget(
                 two_tone_button(
                     "Disband",
-                    f"+${self.total_value}M",
+                    f"+${self.total_value:g}M",
                     "#E8C5C5",
                     kind="danger",
                     handler=self._sell_all,
@@ -762,17 +762,9 @@ class QGroundObjectMenu(QDialog):
         return self.cp.captured.is_blue or self.game.settings.enable_enemy_buy_sell
 
     def _update_total_value(self) -> None:
-        if not self.ground_object.sellable:
-            self.total_value = 0
-            return
-        self.total_value = self.ground_object.value + self._pending_repair_value()
+        from game.resale import ground_object_sale_value
 
-    def _pending_repair_value(self) -> int:
-        return sum(
-            price_of(unit)
-            for unit in self.ground_object.units
-            if not unit.alive and unit.repair_turns_remaining is not None
-        )
+        self.total_value = ground_object_sale_value(self.game, self.ground_object)
 
     # ------------------------------------------------------------------- actions
 

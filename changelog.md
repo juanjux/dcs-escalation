@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Economy]** Configurable equipment resale value, enabled at 85% of the new price by default, shared by both coalitions.
 * **[Map]** [RetLab] Save named lines and areas per squadron, manage them in Player Aircrafts, and export them to kneeboards and supported DTCs (adapted from RetLab).
 * **[BARCAP]** Refuel AI patrols before BINGO with transit and queueing fuel margins when more than twenty minutes remain, then resume the original station window, with safe RTB fallbacks.
 * **[Naval]** Release attacked formations locally and limit anti-ship salvos per mission, with defensive exceptions and persistent shot accounting (adapted from RetLab).

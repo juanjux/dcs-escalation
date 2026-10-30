@@ -937,7 +937,9 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         return control_point.is_friendly(self.captured)
 
     def capture_equipment(self, game: Game) -> None:
-        total = self.base.total_armor_value
+        from game.resale import resale_value
+
+        total = resale_value(game.settings, self.base.total_armor_value)
         self.base.armor.clear()
         game.adjust_budget(
             total, player=Player.BLUE if self.captured.is_red else Player.RED
@@ -969,7 +971,9 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
                 destination = heapq.heappushpop(destinations, destination)
 
     def capture_aircraft(self, game: Game, airframe: AircraftType, count: int) -> None:
-        value = airframe.price * count
+        from game.resale import resale_value
+
+        value = resale_value(game.settings, airframe.price * count)
         game.adjust_budget(
             value, player=Player.BLUE if self.captured.is_red else Player.RED
         )

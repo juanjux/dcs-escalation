@@ -328,7 +328,7 @@ def buy_ground(body: schemas.BuyGroundRequest) -> schemas.OpResult:
 @router.get("/ground/options/{tgo_id}", operation_id="ai_ground_options")
 def ground_options(tgo_id: str, side: str = "red") -> views.GroundObjectOptionsView:
     """What a SAM/EWR/armor/ship/missile/coastal site can be rebuilt into: force-groups,
-    layouts, selectable unit types + counts, and the net cost (the old site is refunded).
+    layouts, selectable unit types + counts, and the net cost after resale proceeds.
     """
     return service.ground_object_options(side, tgo_id)
 

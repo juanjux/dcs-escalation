@@ -1709,12 +1709,14 @@ def rebuild_ground_object(
             )
 
         price = sum(count * unit_price for *_, count, unit_price in selections)
-        refund = int(tgo.value)
+        from game.resale import ground_object_sale_value
+
+        refund = ground_object_sale_value(game, tgo)
         cost = price - refund
         if cost > coalition.budget:
             raise ValueError(
-                f"need {int(cost)}M, have {round(coalition.budget)}M "
-                f"(price {int(price)}M - refund {refund}M)"
+                f"need {cost:g}M, have {coalition.budget:g}M "
+                f"(price {price:g}M - refund {refund:g}M)"
             )
 
         # Apply (mirror QGroundObjectTemplateLayout.buy_group).
@@ -1750,7 +1752,7 @@ def rebuild_ground_object(
             ok=True,
             detail=(
                 f"rebuilt {tgo.name} as {force_group}/{layout} "
-                f"(net {sign}{abs(int(cost))}M; budget {round(coalition.budget)}M)"
+                f"(net {sign}{abs(cost):g}M; budget {coalition.budget:g}M)"
             ),
         )
     except Exception as exc:

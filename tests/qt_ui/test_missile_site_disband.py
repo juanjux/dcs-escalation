@@ -68,20 +68,37 @@ def test_missile_sites_are_tradeable_and_rebuildable_throughout_campaign(
 def test_mid_campaign_footer_offers_disband_and_buy(location: Any) -> None:
     p = location
     assert p.world.game.turn > 0
-    assert p.window.total_value == p.world.site.value > 0
+    assert p.window.total_value == pytest.approx(p.world.site.value * 0.85)
+    assert p.window.total_value > 0
     assert any(label.text() == "Disband" for label in p.window.findChildren(QLabel))
     assert any(
         button.text() == "Buy / replace…"
         for button in p.window.findChildren(QPushButton)
     )
     price = p.world.site.value
-    assert price > 0 and p.window.total_value == price
+    assert price > 0 and p.window.total_value == pytest.approx(price * 0.85)
     assert f"value ${price}M" in LocationHeader._figures(p.world.site, p.world.a)
 
 
+@pytest.mark.parametrize("enabled,percent", [(True, 85), (True, 40), (False, 85)])
+def test_disband_uses_configured_fractional_proceeds(
+    location: Any, enabled: bool, percent: int
+) -> None:
+    p = location
+    w = p.world
+    w.game.settings.resale_depreciation_enabled = enabled
+    w.game.settings.resale_value_percent = percent
+    p.window._update_total_value()
+    expected = w.site.value * (percent / 100 if enabled else 1)
+    assert p.window.total_value == pytest.approx(expected)
+    p.window._sell_all()
+    assert w.game.blue.budget == pytest.approx(100 + expected)
+
+
 @pytest.mark.parametrize("repair_turns", [0, 2])
+@pytest.mark.parametrize("enabled,percent", [(True, 85), (True, 40), (False, 85)])
 def test_disbanded_site_can_be_bought_again_with_normal_price_and_delay(
-    location: Any, repair_turns: int
+    location: Any, repair_turns: int, enabled: bool, percent: int
 ) -> None:
     p = location
     w = p.world
@@ -113,6 +130,24 @@ def test_disbanded_site_can_be_bought_again_with_normal_price_and_delay(
     w.game.next_group_id = lambda: next(group_ids)
     w.game.next_unit_id = lambda: next(unit_ids)
     w.game.settings.ground_object_repair_turns = repair_turns
+    w.game.settings.resale_depreciation_enabled = enabled
+    w.game.settings.resale_value_percent = percent
+    p.window._update_total_value()
+    expected = w.site.value * (percent / 100 if enabled else 1)
+    quote = QGroundObjectBuyMenu(p.window, w.site, w.game, p.window.total_value)
+    assert quote.refund == pytest.approx(expected)
+    assert f"${expected:g}M" in quote._what_is_there()
+    assert quote.figures["Refund"].text() == f"+${expected:g}M"
+    # A fractional balance must not be truncated before the affordability check.
+    w.site.coalition.budget = quote.selection.price - quote.refund
+    quote._recount()
+    assert quote.buy_button.isEnabled()
+    assert quote.figures["Budget after"].text() == "$0M"
+    w.site.coalition.budget -= 0.01
+    quote._recount()
+    assert not quote.buy_button.isEnabled()
+    w.site.coalition.budget = 100
+    quote.close()
     w.site.missile_target = MissileTarget(Player.BLUE, 10000, 20000, "GPS")
     p.window._sell_all()
     assert not list(w.site.units) and stored(w.site) is None
@@ -159,7 +194,7 @@ def test_disband_refunds_survivors_and_pending_repairs_then_clears_order(
     w.site._threat_poly = object()
     price = alive.unit_type.price
     p.window._sell_all()
-    assert w.game.blue.budget == 100 + 2 * price
+    assert w.game.blue.budget == pytest.approx(100 + 1.85 * price)
     assert w.game.red.budget == 100
     assert list(w.site.units) == [] and w.site.is_dead
     assert stored(w.site) is None
@@ -170,7 +205,7 @@ def test_disband_refunds_survivors_and_pending_repairs_then_clears_order(
         w.site, p.controls.sent[0]
     )
     p.window._sell_all()
-    assert w.game.blue.budget == 100 + 2 * price
+    assert w.game.blue.budget == pytest.approx(100 + 1.85 * price)
 
 
 @pytest.mark.parametrize(

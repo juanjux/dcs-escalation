@@ -87,6 +87,9 @@ class Squadron:
     owned_aircraft: int = field(init=False, hash=False, compare=False, default=0)
     untasked_aircraft: int = field(init=False, hash=False, compare=False, default=0)
     pending_deliveries: int = field(init=False, hash=False, compare=False, default=0)
+    pending_sale_values: list[float] = field(
+        init=False, hash=False, compare=False, repr=False, default_factory=list
+    )
     aircraft_repairs: list[AircraftRepair] = field(
         init=False, hash=False, compare=False, repr=False, default_factory=list
     )
@@ -145,6 +148,7 @@ class Squadron:
         state.setdefault("saved_points", [])
         state.setdefault("saved_drawings", [])
         state.setdefault("aircraft_repairs", [])
+        state.setdefault("pending_sale_values", [])
         state.setdefault("damaged_aircraft_sale_income", 0.0)
         self.__dict__.update(state)
 
@@ -1095,9 +1099,16 @@ class Squadron:
         return self.can_provide_pilots(count) and self.untasked_aircraft >= count
 
     def refund_orders(self, count: Optional[int] = None) -> None:
+        from game.resale import pending_aircraft_sale_values
+
         if count is None:
             count = self.pending_deliveries
-        self.coalition.adjust_budget(self.aircraft.price * count)
+        if count < 0:
+            receipts = pending_aircraft_sale_values(self)
+            self.coalition.adjust_budget(-sum(receipts[count:]))
+            self.pending_sale_values = receipts[:count]
+        else:
+            self.coalition.adjust_budget(self.aircraft.price * count)
         self.pending_deliveries -= count
 
     def deliver_orders(self) -> None:
@@ -1105,6 +1116,7 @@ class Squadron:
         self.purchased_aircraft += self.pending_deliveries
         self.owned_aircraft += self.pending_deliveries
         self.pending_deliveries = 0
+        self.pending_sale_values = []
 
     def relocate_to(
         self, destination: ControlPoint, *, confirm_damaged_sale: bool = False

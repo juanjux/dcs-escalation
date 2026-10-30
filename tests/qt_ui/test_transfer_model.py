@@ -163,6 +163,9 @@ class FakePurchaseAdapter:
     def price_of(self, _item: str) -> int:
         return 1
 
+    def sell_or_cancel_price_of(self, _item: str) -> float:
+        return 0.85
+
     def can_buy(self, _item: str) -> bool:
         return True
 
