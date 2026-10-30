@@ -256,12 +256,12 @@ def test_explicit_damaged_sale_never_adds_healthy_inventory(world: Any) -> None:
     maintenance.admit(world.game, world.sq, "sale", 0.4)
     job = maintenance.repairs(world.sq)[0]
     value = maintenance.sell_damaged(world.game, world.sq, job.id)
-    assert value == 10
+    assert value == 8.5
     assert world.sq.owned_aircraft == 5 and world.sq.untasked_aircraft == 5
-    assert world.blue.budget == 20
+    assert world.blue.budget == 18.5
     with pytest.raises(ValueError, match="no longer"):
         maintenance.sell_damaged(world.game, world.sq, job.id)
-    assert world.blue.budget == 20
+    assert world.blue.budget == 18.5
 
 
 @pytest.mark.parametrize("cause", ["sunk", "captured"])
@@ -597,7 +597,7 @@ def test_validated_relocation_sells_only_damaged_aircraft(
     assert world.sq.owned_aircraft == 5
     assert world.sq.untasked_aircraft == 5
     assert not maintenance.repairs(world.sq)
-    assert world.blue.budget == 20
+    assert world.blue.budget == 18.5
 
 
 def test_failed_ferry_planning_does_not_sell_damaged_aircraft(

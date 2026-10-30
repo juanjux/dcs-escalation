@@ -8,6 +8,7 @@ from game.dcs.groundunittype import GroundUnitType
 from game.dcs.unittype import UnitType
 from game.highcommand.loans import LOAN_TRADE_ERROR, loan_for, require_owned_aircraft
 from game.squadrons import Squadron
+from game.resale import pending_aircraft_sale_values, resale_value
 from game.theater import ControlPoint, ParkingType
 
 ItemType = TypeVar("ItemType")
@@ -25,24 +26,42 @@ class PurchaseAdapter(Generic[ItemType]):
     def buy(self, item: ItemType, quantity: int) -> None:
         for _ in range(quantity):
             if self.has_pending_sales(item):
+                price = self.purchase_price_of(item)
                 self.do_cancel_sale(item)
             elif self.can_buy(item):
+                price = self.price_of(item)
                 self.do_purchase(item)
             else:
                 raise TransactionError(
                     f"Cannot buy more {item}: {self.why_cannot_buy(item)}"
                 )
-            self.coalition.adjust_budget(-self.price_of(item))
+            self.coalition.adjust_budget(-price)
 
     def sell(self, item: ItemType, quantity: int) -> None:
+        price: float
         for _ in range(quantity):
             if self.has_pending_orders(item):
+                price = self.price_of(item)
                 self.do_cancel_purchase(item)
             elif self.can_sell(item):
+                price = self.sale_price_of(item)
                 self.do_sale(item)
             else:
                 raise TransactionError(f"Cannot sell more {item}")
-            self.coalition.adjust_budget(self.price_of(item))
+            self.coalition.adjust_budget(price)
+
+    def sale_price_of(self, item: ItemType) -> float:
+        return resale_value(self.coalition.game.settings, self.price_of(item))
+
+    def purchase_price_of(self, item: ItemType) -> float:
+        return self.price_of(item)
+
+    def sell_or_cancel_price_of(self, item: ItemType) -> float:
+        return (
+            self.price_of(item)
+            if self.has_pending_orders(item)
+            else self.sale_price_of(item)
+        )
 
     def has_pending_orders(self, item: ItemType) -> bool:
         return self.pending_delivery_quantity(item) > 0
@@ -175,13 +194,22 @@ class AircraftPurchaseAdapter(PurchaseAdapter[Squadron]):
 
     def do_sale(self, item: Squadron) -> None:
         self._require_tradeable(item)
+        item.pending_sale_values = pending_aircraft_sale_values(item) + [
+            self.sale_price_of(item)
+        ]
         item.untasked_aircraft -= 1
         item.pending_deliveries -= 1
 
     def do_cancel_sale(self, item: Squadron) -> None:
         self._require_tradeable(item)
+        item.pending_sale_values = pending_aircraft_sale_values(item)[:-1]
         item.untasked_aircraft += 1
         item.pending_deliveries += 1
+
+    def purchase_price_of(self, item: Squadron) -> float:
+        if self.has_pending_sales(item):
+            return pending_aircraft_sale_values(item)[-1]
+        return self.price_of(item)
 
     def price_of(self, item: Squadron) -> int:
         return item.aircraft.price

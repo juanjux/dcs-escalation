@@ -342,7 +342,7 @@ def ground_object_options(tgo_id: str, side: str = "red") -> dict:
     """What one of YOUR ground objects (a SAM/EWR/armor/ship/missile/coastal site — a tgo
     id from turn_context.targets or your own sites) can be REBUILT into: the force-groups,
     layouts, and per-group selectable unit types + counts, with the default price and the
-    `refund` (the old site's value, credited back). Read this before rebuild_ground_object.
+    `refund` (resale proceeds plus cancelled pending work). Read this before rebuild_ground_object.
     Returns {tgo_id, name, role, refund, budget, options:[{force_group, layout, price,
     groups:[{group_name, optional, default_count, max_count, unit_types:[{name, price}]}]}]}.
     """

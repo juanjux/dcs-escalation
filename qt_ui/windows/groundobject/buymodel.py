@@ -250,7 +250,7 @@ def buy(
     selection: Selection,
     ground_object: TheaterGroundObject,
     game: Game,
-    refund: int,
+    refund: float,
 ) -> None:
     """Replace what stands here with the chosen composition.
 

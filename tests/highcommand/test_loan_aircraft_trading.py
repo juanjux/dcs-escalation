@@ -105,7 +105,7 @@ def test_same_name_permanent_squadron_is_still_tradeable(world: Any) -> None:
     assert loan_for(permanent) is None
     world.adapter.sell(permanent, 1)
     assert permanent.pending_deliveries == -1
-    assert world.coalition.budget == 1020
+    assert world.coalition.budget == 1017
     world.adapter.buy(permanent, 1)
     world.adapter.buy(permanent, 1)
     assert permanent.pending_deliveries == 1

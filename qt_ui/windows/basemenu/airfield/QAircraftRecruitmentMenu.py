@@ -225,9 +225,15 @@ class QAircraftRecruitmentMenu(UnitTransactionFrame[Squadron]):
         )
         return figures
 
-    def order_cost(self) -> int:
+    def order_cost(self) -> float:
+        from game.resale import pending_aircraft_sale_values
+
         return sum(
-            squadron.pending_deliveries * self.price_of(squadron)
+            (
+                squadron.pending_deliveries * self.price_of(squadron)
+                if squadron.pending_deliveries >= 0
+                else -sum(pending_aircraft_sale_values(squadron))
+            )
             for squadron in self.cp.squadrons
         )
 

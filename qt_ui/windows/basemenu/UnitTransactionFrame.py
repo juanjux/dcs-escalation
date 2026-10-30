@@ -160,7 +160,16 @@ class PurchaseGroup(QGroupBox, Generic[TransactionItemType]):
         self.sell_button.setVisible(self.recruiter.enable_sale(self.item))
         self.sell_button.setToolTip(
             self.recruiter.sell_tooltip(self.sell_button.isEnabled())
+            + (
+                f"\nRefund ${self.recruiter.purchase_adapter.sell_or_cancel_price_of(self.item):g}M each."
+                if self.sell_button.isEnabled()
+                else ""
+            )
         )
+        if self.pending_units < 0:
+            self.buy_button.setToolTip(
+                f"Cancel sale: repay ${self.recruiter.purchase_adapter.purchase_price_of(self.item):g}M."
+            )
         self.amount_bought.setText(f"<b>{self.pending_units}</b>")
         if self.stepper:
             colour = ORDERED_INK if self.pending_units else QUIET_INK

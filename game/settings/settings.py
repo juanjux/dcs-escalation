@@ -281,6 +281,23 @@ class Settings:
         },
         default=Views.All,
     )
+    resale_depreciation_enabled: bool = boolean_option(
+        "Reduce equipment resale value",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=GENERAL_SECTION,
+        default=True,
+        detail="Applies to both coalitions when selling aircraft or replacing/disbanding purchasable groups. Cancelling unfulfilled purchases or repairs still refunds their full cost. Disable to sell at full value.",
+    )
+    resale_value_percent: int = bounded_int_option(
+        "Equipment resale value (% of new price)",
+        page=CAMPAIGN_MANAGEMENT_PAGE,
+        section=GENERAL_SECTION,
+        default=85,
+        min=0,
+        max=100,
+        enabled_when=lambda s: s.resale_depreciation_enabled,
+        detail="Percentage of the new price received on sale. Also applied to the workshop's separate damaged-aircraft valuation.",
+    )
     aircraft_maintenance_enabled: bool = boolean_option(
         "Persistent aircraft damage and workshops",
         page=CAMPAIGN_MANAGEMENT_PAGE,
@@ -322,7 +339,7 @@ class Settings:
         default=50,
         min=0,
         max=100,
-        detail="Percentage of the normal aircraft price received when selling a damaged airframe from the workshop or confirming a squadron relocation.",
+        detail="Percentage of the normal aircraft price received when selling a damaged airframe from the workshop or confirming a squadron relocation. Also multiplied by equipment resale value when that option is enabled.",
         enabled_when=lambda s: s.aircraft_maintenance_enabled,
     )
     aircraft_mechanic_cost: int = bounded_int_option(

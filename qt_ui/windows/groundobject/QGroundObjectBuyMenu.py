@@ -79,12 +79,12 @@ class QGroundObjectBuyMenu(QDialog):
         parent: Optional[QWidget],
         ground_object: TheaterGroundObject,
         game: Game,
-        current_group_value: int,
+        current_group_value: float,
     ) -> None:
         super().__init__(parent)
         self.ground_object = ground_object
         self.game = game
-        self.refund = int(current_group_value)
+        self.refund = current_group_value
 
         self.offers = offers(ground_object)
         self.here = here_now(ground_object, self.offers)
@@ -168,9 +168,7 @@ class QGroundObjectBuyMenu(QDialog):
         parts = [cp.name, _slot_name(self.ground_object)]
         units = list(self.ground_object.units)
         if units:
-            parts.append(
-                f"{len(units)} units worth ${self.refund}M, disbanded and refunded"
-            )
+            parts.append(f"{len(units)} units, sale/refund proceeds ${self.refund:g}M")
         else:
             parts.append("nothing standing")
         return "  ·  ".join(parts)
@@ -378,14 +376,14 @@ class QGroundObjectBuyMenu(QDialog):
 
         price = self.selection.price
         net = price - self.refund
-        budget = int(self.ground_object.coalition.budget)
+        budget = self.ground_object.coalition.budget
         after = budget - net
 
         self.figures["New site"].setText(f"${price}M")
-        self.figures["Refund"].setText(f"+${self.refund}M")
-        self.figures["Net"].setText(f"{'-' if net > 0 else '+'}${abs(net)}M")
+        self.figures["Refund"].setText(f"+${self.refund:g}M")
+        self.figures["Net"].setText(f"{'-' if net > 0 else '+'}${abs(net):g}M")
         self.figures["Budget after"].setText(
-            f"${after}M" if after >= 0 else f"short ${abs(after)}M"
+            f"${after:g}M" if after >= 0 else f"short ${abs(after):g}M"
         )
         _ink(self.figures["Refund"], GREEN if self.refund else TEXT_LABEL)
         _ink(self.figures["Net"], RED if net > 0 else GREEN)
@@ -394,7 +392,7 @@ class QGroundObjectBuyMenu(QDialog):
         self.composition_caption.setToolTip("")
         affordable = net <= budget
         self.shortfall.setText(
-            "" if affordable else f"Short by ${net - budget}M for this composition"
+            "" if affordable else f"Short by ${net - budget:g}M for this composition"
         )
         self.buy_button.setText(f"Buy {_pretty(self.selection.layout.name)}")
         self.buy_button.setEnabled(affordable and self.selection.units > 0)
