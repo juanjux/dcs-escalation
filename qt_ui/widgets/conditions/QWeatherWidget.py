@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import (
@@ -16,7 +18,9 @@ from game.timeofday import TimeOfDay
 from game.utils import meters, mps
 from game.weather.atmosxliveweather import LiveWeather
 from game.weather.conditions import Conditions
+from game.weather.cloudlayers import estimated_layers
 from qt_ui import uiconstants as CONST
+from qt_ui import liberation_install
 
 #: The METAR refresh button. Big enough to be an easy target between planning and
 #: take-off, with the icon inset so the button reads as a button and not as a glyph.
@@ -265,6 +269,25 @@ class QWeatherWidget(QGroupBox):
                     if line.strip():
                         rows.append(("Layers", line.strip()))
             rows.append(("Cloud base", self.height(clouds.base)))
+            try:
+                install = liberation_install.get_dcs_install_directory()
+            except NameError:
+                install = ""
+            layers = estimated_layers(clouds, Path(install)) if install else []
+            if len(layers) > 1:
+                for index, layer in enumerate(layers, 1):
+                    rows.append(
+                        (
+                            f"Layer {index} (est., MSL)",
+                            f"{self.height(layer.base)} &mdash; {self.height(layer.top)}",
+                        )
+                    )
+                rows.append(
+                    (
+                        "Layer heights",
+                        "Estimated base &mdash; top from installed preset; local cloud edges vary.",
+                    )
+                )
             if clouds.thickness:
                 rows.append(("Cloud thickness", self.height(clouds.thickness)))
             if clouds.density:
