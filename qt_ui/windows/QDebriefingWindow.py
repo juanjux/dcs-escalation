@@ -911,7 +911,11 @@ class FactionLosses(QWidget):
         ground = self._ground_rows(debriefing, player)
         costs = debriefing.loss_costs(player)
         self._add_group(body, "AIRCRAFT", air, self._air_totals(costs))
-        self._add_group(body, "GROUND", ground, self._ground_totals(costs))
+        if ground:
+            body.addWidget(self._group_header("GROUND", ground))
+            for category, rows in debriefing.ground_rows_by_category(player).items():
+                self._add_group(body, category, rows, [])
+            self._add_totals(body, self._ground_totals(costs))
         if not air and not ground:
             body.addWidget(self._row("Nothing lost", "", FAINT, ""))
 
@@ -920,6 +924,15 @@ class FactionLosses(QWidget):
     ) -> None:
         if not rows:
             return
+        body.addWidget(self._group_header(title, rows))
+        for name, number, note in rows:
+            body.addWidget(
+                self._row(name, str(number), BODY if number else CAPTION, note)
+            )
+        self._add_totals(body, totals)
+
+    @staticmethod
+    def _group_header(title: str, rows: list) -> QWidget:
         head = QWidget()
         head.setFixedHeight(22)
         head.setStyleSheet("border: none;")
@@ -934,11 +947,9 @@ class FactionLosses(QWidget):
             " border: none;"
         )
         row.addWidget(count)
-        body.addWidget(head)
-        for name, number, note in rows:
-            body.addWidget(
-                self._row(name, str(number), BODY if number else CAPTION, note)
-            )
+        return head
+
+    def _add_totals(self, body: QVBoxLayout, totals: list[Total]) -> None:
         if totals:
             body.addWidget(self._divider())
         for words, amount, note in totals:

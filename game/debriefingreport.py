@@ -41,6 +41,7 @@ _NOTHING_LOST = SideLossCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
 #: name, how many, and a note when there is something to say about the count.
 LossRow = tuple[str, int, str]
+GROUND_CATEGORIES = ("SAMs", "Armor", "Buildings", "Ships")
 
 
 @dataclass
@@ -162,6 +163,10 @@ class DebriefingReport(SaveCompatible):
     losses: Dict[bool, SideLossCounts] = field(default_factory=dict)
     air: Dict[bool, list[LossRow]] = field(default_factory=dict)
     ground: Dict[bool, list[LossRow]] = field(default_factory=dict)
+    #: Category names and plain rows, captured before the mission's units disappear.
+    ground_categories: Dict[bool, dict[str, list[LossRow]]] = field(
+        default_factory=dict
+    )
     #: Recovered damaged airframes, separate from permanent losses, grouped by type.
     damaged_aircraft: Dict[bool, list[LossRow]] = field(default_factory=dict)
     #: What each side's losses cost it. Empty in a report saved before it was kept.
@@ -189,6 +194,26 @@ class DebriefingReport(SaveCompatible):
 
     def ground_rows(self, player: Player) -> list[LossRow]:
         return self.ground.get(player.is_blue, [])
+
+    def ground_rows_by_category(self, player: Player) -> dict[str, list[LossRow]]:
+        if player.is_blue in self.ground_categories:
+            return self.ground_categories[player.is_blue]
+        # Older reports kept only names. Resolve exact registered types, preserving
+        # unknown names separately instead of guessing that they were buildings.
+        categorized = []
+        for row in self.ground_rows(player):
+            name = row[0]
+            for suffix in (
+                " from motorpool",
+                " from convoy",
+                " from cargo ship",
+                " from airlift",
+            ):
+                if name.endswith(suffix):
+                    name = name[: -len(suffix)]
+                    break
+            categorized.append((ground_loss_category(name), row))
+        return _group_ground_rows(categorized)
 
     def damage_rows(self, player: Player) -> list[LossRow]:
         return self.damaged_aircraft.get(player.is_blue, [])
@@ -223,6 +248,9 @@ class DebriefingReport(SaveCompatible):
             report.losses[player.is_blue] = debriefing.loss_counts(player)
             report.air[player.is_blue] = air_rows(debriefing, player)
             report.ground[player.is_blue] = ground_rows(debriefing, player)
+            report.ground_categories[player.is_blue] = _group_ground_rows(
+                _categorized_ground_rows(debriefing, player)
+            )
             costs = _costs_if_known(debriefing, player)
             if costs is not None:
                 report.costs[player.is_blue] = costs
@@ -373,16 +401,85 @@ def loss_costs(debriefing: Debriefing, player: Player) -> LossCosts:
 
 def ground_rows(debriefing: Debriefing, player: Player) -> list[LossRow]:
     """What was lost on the ground and at sea, said with where it was going."""
-    rows: list[LossRow] = []
+    return [row for _, row in _categorized_ground_rows(debriefing, player)]
 
-    def collect(losses: Dict[T, int], make_name: Callable[[T], str]) -> None:
+
+def ground_loss_category(unit_type: Any) -> str:
+    """Classify the unit itself, not its name or the cargo's transport."""
+    from dcs.unittype import ShipType, StaticType, VehicleType
+    from dcs.vehicles import AirDefence
+    from game.data.units import ANTI_AIR_UNIT_CLASSES, UnitClass
+    from game.dcs.groundunittype import GroundUnitType
+    from game.dcs.helpers import unit_type_from_name
+
+    native = (
+        unit_type
+        if isinstance(unit_type, type)
+        else getattr(unit_type, "dcs_unit_type", None)
+    )
+    if isinstance(unit_type, str):
+        native = unit_type_from_name(unit_type)
+        if native is None and GroundUnitType.exists(unit_type):
+            unit_type = GroundUnitType.named(unit_type)
+            native = unit_type.dcs_unit_type
+    if isinstance(native, type) and issubclass(native, ShipType):
+        return "Ships"
+    if isinstance(native, type) and issubclass(native, StaticType):
+        return "Buildings"
+    unit_class = getattr(unit_type, "unit_class", None)
+    if isinstance(native, type) and issubclass(native, VehicleType):
+        variants = list(GroundUnitType.for_dcs_type(native))
+        if unit_class is None and variants:
+            unit_class = variants[0].unit_class
+        if native in vars(AirDefence).values():
+            return "SAMs"
+    if unit_class in ANTI_AIR_UNIT_CLASSES or unit_class in (
+        UnitClass.ELECTRONIC_WARFARE,
+        UnitClass.OPTICAL_TRACKER,
+        UnitClass.SEARCH_LIGHT,
+    ):
+        return "SAMs"
+    if (
+        isinstance(native, type)
+        and issubclass(native, VehicleType)
+        or unit_class is not None
+    ):
+        return "Armor"
+    return "Other ground"
+
+
+def _group_ground_rows(
+    categorized: list[tuple[str, LossRow]],
+) -> dict[str, list[LossRow]]:
+    groups: dict[str, list[LossRow]] = {}
+    for category in (*GROUND_CATEGORIES, "Other ground"):
+        rows = [row for kind, row in categorized if kind == category]
+        if rows:
+            groups[category] = rows
+    return groups
+
+
+def _categorized_ground_rows(
+    debriefing: Debriefing, player: Player
+) -> list[tuple[str, LossRow]]:
+    rows: list[tuple[str, LossRow]] = []
+
+    def collect(
+        losses: Dict[T, int],
+        make_name: Callable[[T], str],
+        category: str = "",
+        known_categories: Optional[dict[str, str]] = None,
+    ) -> None:
         for unit_type, count in losses.items():
             try:
                 name = make_name(unit_type)
             except AttributeError:
                 logging.exception(f"Could not make unit name for {unit_type}")
                 name = str(getattr(unit_type, "id", unit_type))
-            rows.append((name, count, ""))
+            kind = (known_categories or {}).get(str(unit_type))
+            rows.append(
+                (category or kind or ground_loss_category(unit_type), (name, count, ""))
+            )
 
     collect(debriefing.front_line_losses_by_type(player), lambda u: str(u))
     collect(
@@ -393,8 +490,22 @@ def ground_rows(debriefing: Debriefing, player: Player) -> list[LossRow]:
         debriefing.cargo_ship_losses_by_type(player), lambda u: f"{u} from cargo ship"
     )
     collect(debriefing.airlift_losses_by_type(player), lambda u: f"{u} from airlift")
-    collect(debriefing.ground_object_losses_by_type(player), lambda u: str(u))
-    collect(debriefing.scenery_losses_by_type(player), lambda u: str(u))
+    known_categories = {}
+    losses = getattr(debriefing, "ground_losses", None)
+    if losses is not None:
+        for loss in (
+            losses.player_ground_objects
+            if player.is_blue
+            else losses.enemy_ground_objects
+        ):
+            unit = loss.theater_unit
+            known_categories[unit.type.id] = ground_loss_category(unit.type)
+    collect(
+        debriefing.ground_object_losses_by_type(player),
+        lambda u: str(u),
+        known_categories=known_categories,
+    )
+    collect(debriefing.scenery_losses_by_type(player), lambda u: str(u), "Buildings")
     return rows
 
 
