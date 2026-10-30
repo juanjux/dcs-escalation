@@ -138,7 +138,8 @@ def _active(game: Game) -> list[CampaignNotice]:
                         f"morale:{pilot.id}:{game.turn}",
                         "pilot_morale",
                         f"{pilot.name}: very low morale",
-                        f"{squadron} · {morale.name} ({pilot.morale}). Consider rest or leave.",
+                        f"{squadron} · {squadron.aircraft.display_name} · "
+                        f"{morale.name} ({pilot.morale}). Consider rest or leave.",
                         game.turn,
                         "pilot",
                         str(pilot.id),

@@ -27,6 +27,7 @@ from tests.test_missile_targets import populate
 class Roster:
     def __init__(self, pilots: list[Any]) -> None:
         self.current_roster = pilots
+        self.aircraft = SimpleNamespace(display_name="A-10C Thunderbolt II (Suite 7)")
 
     def __str__(self) -> str:
         return "Test squadron"
@@ -115,6 +116,19 @@ def test_low_morale_uses_configured_bands(alerts: Any) -> None:
     assert not any(item.category == "pilot_morale" for item in n.refresh(w.game))
     w.game.settings.morale_state_shaken = 25
     assert any(item.category == "pilot_morale" for item in n.refresh(w.game))
+
+
+@pytest.mark.parametrize(
+    "aircraft", ["A-10C Thunderbolt II (Suite 7)", "F/A-18C Hornet"]
+)
+def test_morale_notice_includes_squadron_aircraft(alerts: Any, aircraft: str) -> None:
+    w = alerts
+    w.roster.aircraft.display_name = aircraft
+    notice = next(item for item in n.refresh(w.game) if item.category == "pilot_morale")
+    assert notice.title == f"{w.pilot.name}: very low morale"
+    assert f"Test squadron · {aircraft} ·" in notice.detail
+    assert "Consider rest or leave." in notice.detail
+    assert notice.target_kind == "pilot" and notice.target_id == str(w.pilot.id)
 
 
 def test_captures_and_losses_are_unread_events_not_recurring_conditions(
@@ -321,6 +335,16 @@ def test_morale_expansion_survives_refresh_and_individual_dismissal(
     p.bell.refresh()
     assert p.popup.findChild(QToolButton, "low-morale-toggle") is None
     assert len(p.bell.notices) == 2
+
+
+def test_expanded_morale_cards_show_the_aircraft(morale_popup: Any) -> None:
+    p = morale_popup
+    p.popup.findChild(QToolButton, "low-morale-toggle").click()
+    content = p.popup.findChild(QWidget, "low-morale-notices")
+    details = [
+        label.text() for label in content.findChildren(QLabel) if label.isVisible()
+    ]
+    assert sum("A-10C Thunderbolt II (Suite 7)" in text for text in details) == 2
 
 
 def test_grouped_morale_notice_still_navigates_to_its_pilot(morale_popup: Any) -> None:
