@@ -627,7 +627,7 @@ class MissileSiteGroundObject(TheaterGroundObject):
 
     @property
     def purchasable(self) -> bool:
-        return self.control_point.coalition.game.turn == 0
+        return True
 
     @property
     def sellable(self) -> bool:

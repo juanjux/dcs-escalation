@@ -34,6 +34,7 @@ def _squadron(side: Player = Player.BLUE, on_loan: bool = True) -> Any:
     squadron.location = SimpleNamespace(name="Carrier", is_fleet=True)
     squadron.primary_task = FlightType.CAS
     squadron.owned_aircraft = 10
+    squadron.pending_deliveries = 0
     squadron.destination = None
     squadron.cohesion = None
     squadron.fit_for_duty = [None] * 16

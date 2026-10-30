@@ -39,16 +39,17 @@ it will probably be removed in the future.
 
 ## Saved map drawings
 
-Use the map's Draw tool to add vertices, then save a named line or area to a
-player aircraft. Drawings belong to its squadron and survive flight replacement.
-Rename or delete them from the map or the Drawings page in Player Aircrafts;
-both stay synchronized. Drawings retain every vertex on the map and kneeboard.
+Taken from Retlab: Use the map's Draw tool to add vertices, then save a named line or area to a
+player aircraft.
 
-Cockpit export uses spare native DTC slots: two seven-point FLOT outlines for the
-Hornet/CJS family, up to three Viper HSD outlines sharing fifteen points, and
-available Apache TSD lines or four-corner areas. Hornet/Viper outlines are
-simplified when needed; overflow stays on the map and kneeboard. Other aircraft,
-including the A-10, have map and kneeboard drawings only.
+## Reactive BARCAP refuelling
+
+AI-only BARCAPs with compatible planned tanker support monitor the flight's
+estimated briefing BINGO against actual remaining fuel while on station. If more
+than twenty minutes remain and a live compatible tanker is reachable with reserve,
+the flight pushes a native refuelling task and resumes its suspended orbit after
+topping off. Its original station end does not change.
+
 
 ## Frontline MANPADS teams
 

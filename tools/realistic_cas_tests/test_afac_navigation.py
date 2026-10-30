@@ -71,6 +71,26 @@ class AfacNavigationTests(unittest.TestCase):
         assert(orbit(assigned[1]).params.altitude==4500)
         """)
 
+    def test_high_altitude_afac_does_not_abort_or_descend_for_known_sa18(self):
+        from game.missiongenerator.afacthreats import envelope
+
+        igla = envelope("SA-18 Igla manpad")
+        self.assertIsNotNone(igla)
+        self.rt.globals().iglaCeiling = igla["ceiling"]
+        self.rt.execute("""
+        local meta=config.observers[1].afac
+        meta.navigation.altitude=6096
+        observer.point.y=6096
+        gun.point.y=2133.6;gun.typeName='SA-18 Igla manpad'
+        local threat=config.airDefenseThreats[1]
+        threat.typeName='SA-18 Igla manpad';threat.ceiling=iglaCeiling;threat.radius=5200
+        config.afacAvoidance.clouds={base=5118}
+        known();beginNavigation();tick()
+        assert(#assigned==0 and not RealisticCAS.afacReturn.blue)
+        for i=1,15 do tick()end
+        assert(#assigned==0 and not RealisticCAS.afacAbort.blue)
+        """)
+
     def test_friendly_nasams_never_blocks_departure_or_marking(self):
         self.rt.execute("""
         local friendly=group('friendly-nasams',40,2,0)

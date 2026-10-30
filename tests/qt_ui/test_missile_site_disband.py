@@ -1,23 +1,30 @@
-"""Missile sites can be sold without enabling mid-campaign purchases."""
+"""Missile sites remain purchasable after being disbanded during a campaign."""
 
 from copy import copy
+from itertools import count
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import Mock
 
+from dcs.mapping import Point
 import pytest
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QLabel, QPushButton
 
 from game.missiletargets import MissileTarget, stored
+from game.armedforces.forcegroup import ForceGroup
+from game.data.groups import GroupTask
+from game.layout.layout import LayoutUnit, TgoLayout, TgoLayoutGroup, TgoLayoutUnitGroup
 from game.theater.player import Player
 from game.theater.presetlocation import PresetLocation
 from game.theater.theatergroundobject import (
     BuildingGroundObject,
     CoastalSiteGroundObject,
 )
+from game.utils import Heading
 from qt_ui.windows.groundobject import QGroundObjectMenu as menu
 from qt_ui.windows.groundobject.header import LocationHeader
+from qt_ui.windows.groundobject.QGroundObjectBuyMenu import QGroundObjectBuyMenu
 from tests.test_armor_movement_planning import world  # noqa: F401
 from tests.test_armor_movement_controls import controls  # noqa: F401
 from tests.test_missile_targets import missiles  # noqa: F401
@@ -48,29 +55,90 @@ def location(missiles: Any, controls: Any, monkeypatch: pytest.MonkeyPatch) -> A
 
 
 @pytest.mark.parametrize("turn", [0, 1, 15])
-def test_missile_sites_are_sellable_without_changing_purchase_or_repair_rules(
+def test_missile_sites_are_tradeable_and_rebuildable_throughout_campaign(
     location: Any, turn: int
 ) -> None:
     p = location
     p.world.game.turn = turn
     assert p.world.site.sellable and p.window._can_sell
-    assert p.world.site.purchasable == (turn == 0)
-    assert p.world.site.repairable == (turn == 0)
-    assert p.window._can_trade == (turn == 0)
+    assert p.world.site.purchasable and p.world.site.repairable
+    assert p.window._can_trade
 
 
-def test_mid_campaign_footer_offers_disband_but_not_buy(location: Any) -> None:
+def test_mid_campaign_footer_offers_disband_and_buy(location: Any) -> None:
     p = location
     assert p.world.game.turn > 0
     assert p.window.total_value == p.world.site.value > 0
     assert any(label.text() == "Disband" for label in p.window.findChildren(QLabel))
-    assert not any(
+    assert any(
         button.text() == "Buy / replace…"
         for button in p.window.findChildren(QPushButton)
     )
     price = p.world.site.value
     assert price > 0 and p.window.total_value == price
     assert f"value ${price}M" in LocationHeader._figures(p.world.site, p.world.a)
+
+
+@pytest.mark.parametrize("repair_turns", [0, 2])
+def test_disbanded_site_can_be_bought_again_with_normal_price_and_delay(
+    location: Any, repair_turns: int
+) -> None:
+    p = location
+    w = p.world
+    original = list(w.site.units)
+    launch_type, support_type = [unit.unit_type for unit in original]
+    terrain = w.game.theater.terrain
+    slots = [
+        TgoLayoutUnitGroup(
+            name=unit_type.variant_id,
+            layout_units=[
+                LayoutUnit(unit_type.variant_id, Point(i * 20, 0, terrain), 0)
+            ],
+            unit_types=[unit_type.dcs_unit_type],
+            unit_count=[1],
+        )
+        for i, unit_type in enumerate((launch_type, support_type))
+    ]
+    layout = TgoLayout("Missile")
+    layout.groups = [TgoLayoutGroup("Missile", 0, slots)]
+    force = ForceGroup(
+        "Missile", [launch_type, support_type], [], [GroupTask.MISSILE], [layout]
+    )
+    w.site.coalition.faction = SimpleNamespace(name="Test faction")
+    w.site.coalition.armed_forces = SimpleNamespace(
+        groups_for_tasks=lambda tasks: [force] if tasks == [GroupTask.MISSILE] else []
+    )
+    w.game.theater.heading_to_conflict_from = lambda position: Heading.from_degrees(90)
+    group_ids, unit_ids = count(2000), count(3000)
+    w.game.next_group_id = lambda: next(group_ids)
+    w.game.next_unit_id = lambda: next(unit_ids)
+    w.game.settings.ground_object_repair_turns = repair_turns
+    w.site.missile_target = MissileTarget(Player.BLUE, 10000, 20000, "GPS")
+    p.window._sell_all()
+    assert not list(w.site.units) and stored(w.site) is None
+    assert p.window._can_trade and w.site.repairable
+    p.window._update_total_value()
+    assert p.window.total_value == 0
+    footer = p.window._footer()
+    assert any(b.text() == "Buy / replace…" for b in footer.findChildren(QPushButton))
+
+    dialog = QGroundObjectBuyMenu(p.window, w.site, w.game, p.window.total_value)
+    assert dialog.here is None and dialog.offers == [force]
+    assert dialog.buy_button.isEnabled()
+    budget = w.site.coalition.budget
+    price = dialog.selection.price
+    assert price > 0
+    dialog._buy()
+    assert w.site.coalition.budget == budget - price
+    assert len(list(w.site.units)) == len(original)
+    assert {u.type for u in w.site.units} == {u.type for u in original}
+    assert all(u.id >= 3000 for u in w.site.units)
+    assert all(u.alive == (repair_turns == 0) for u in w.site.units)
+    assert all(u.repair_turns_remaining == (repair_turns or None) for u in w.site.units)
+    assert stored(w.site) is None
+    p.window._update_game()
+    assert w.site in p.controls.sent[-1].updated_tgos
+    dialog.close()
 
 
 def test_disband_refunds_survivors_and_pending_repairs_then_clears_order(
@@ -123,6 +191,7 @@ def test_disband_respects_ownership_and_enemy_trade_cheat(
     w.a.coalition.player = owner
     w.game.settings.enable_enemy_buy_sell = cheat
     assert p.window._can_sell is allowed
+    assert p.window._can_trade is allowed
     units = list(w.site.units)
     p.window._sell_all()
     assert (list(w.site.units) == []) is allowed

@@ -1,7 +1,8 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[Map]** Save named lines and areas per squadron, manage them in Player Aircrafts, and export them to kneeboards and supported DTCs (adapted from RetLab).
+* **[Map]** [RetLab] Save named lines and areas per squadron, manage them in Player Aircrafts, and export them to kneeboards and supported DTCs (adapted from RetLab).
+* **[BARCAP]** Refuel AI patrols before BINGO with transit and queueing fuel margins when more than twenty minutes remain, then resume the original station window, with safe RTB fallbacks.
 * **[Naval]** Release attacked formations locally and limit anti-ship salvos per mission, with defensive exceptions and persistent shot accounting (adapted from RetLab).
 * **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries and dispersed placement.
 * **[Units]** Add eight stock CurrentHill ground units from DCS 2.9.31 and missing Iraqi aircraft availability without requiring mod packs (adapted from RetLab #1413).
@@ -100,6 +101,8 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[UI]** Exclude sold aircraft from squadron counts, totals and sorting immediately.
+* **[Squadrons]** Allow empty relocations from damaged runways after selling all aircraft, including when reloading a campaign.
 * **[Payload]** Match Shrike seekers independently of date restrictions, preserve manual weapon settings and correct AGM-45/78 head tables (adapted from RetLab #1366).
 * **[OPFOR AI]** Keep the commander briefing focused on API actions and planning rules, with clearer sales and turn-zero rebuild guidance.
 * **[Mission Log]** Use campaign ownership for scenery objectives and avoid bad-news prefixes for unknown ground targets.

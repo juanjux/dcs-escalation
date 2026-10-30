@@ -85,7 +85,26 @@ class RegistryTests(unittest.TestCase):
         threats = {t["name"]: t for t in r["airDefenseThreats"]}
         self.assertTrue(threats[self.g.units[0].name]["known"])
         self.assertFalse(threats[front.units[0].name]["known"])
-        self.assertIsNone(threats[front.units[0].name]["ceiling"])
+        self.assertEqual(threats[front.units[0].name]["ceiling"], 3500)
+
+    def test_all_verified_ceilings_survive_registry_and_lua_export(self):
+        from game.missiongenerator.afacthreats import VERIFIED_CEILINGS
+        from pydcs_extensions import load_mods
+
+        load_mods()
+        lua = LuaRuntime()
+        for type_name, ceiling in VERIFIED_CEILINGS.items():
+            with self.subTest(type_name=type_name):
+                self.g.units[0].type = type_name
+                registry = self.collect()
+                threat = next(
+                    t
+                    for t in registry["airDefenseThreats"]
+                    if t["name"] == self.g.units[0].name
+                )
+                self.assertEqual(threat["ceiling"], ceiling)
+                lua.execute("threat=" + EXPORT.lua_literal(threat))
+                self.assertEqual(lua.globals().threat.ceiling, ceiling)
 
     def test_armor_discovery_requires_explicit_opt_in(self):
         self.data.frontline_visibility_groups.clear()
