@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from game.missiongenerator.afacthreats import envelope
+from game.missiongenerator.afacthreats import VERIFIED_CEILINGS, envelope
 
 
 @pytest.fixture
@@ -26,19 +26,19 @@ def lua() -> Any:
 
 def test_verified_ceilings_and_unknown_air_defence_are_conservative() -> None:
     assert envelope("ZSU_57_2") == {"radius": 7000, "ceiling": 4000}
-    stinger = envelope("Soldier stinger")
-    assert stinger is not None and stinger["radius"] == 4500
-    assert stinger["ceiling"] is None
+    # Unverified systems must still prohibit vertical overflight.
+    nasams = envelope("NASAMS_LN_B")
+    assert nasams is not None and nasams["ceiling"] is None
     assert envelope("M-1 Abrams") is None
     assert envelope("unknown mod") is None
 
 
-def test_sa18_exports_a_verified_ceiling_without_changing_other_manpads() -> None:
+def test_sa18_exports_verified_ceilings_for_both_native_variants() -> None:
     igla = envelope("SA-18 Igla manpad")
     assert igla is not None and igla["radius"] > 0
     assert igla["ceiling"] == 3500
     igla_s = envelope("SA-18 Igla-S manpad")
-    assert igla_s is not None and igla_s["ceiling"] is None
+    assert igla_s is not None and igla_s["ceiling"] == 3500
 
 
 def test_sa18_ceiling_matches_installed_dcs_weapon_definition() -> None:
@@ -91,6 +91,21 @@ def test_sa18_ceiling_is_relative_to_launcher_height_with_safety_margin(
     -- 5,500 m MSL is only 3,366.4 m above this elevated launcher.
     assert(not A.leg({x=-10000,z=0},{x=10000,z=0},5500,{t}))
     assert(A.leg({x=-10000,z=0},{x=10000,z=0},6096,{t}))
+    """)
+
+
+@pytest.mark.parametrize("type_name,ceiling", VERIFIED_CEILINGS.items())
+def test_every_verified_ceiling_checks_elevated_terrain_and_entire_crossing(
+    lua: Any, type_name: str, ceiling: int
+) -> None:
+    lua.globals().verifiedCeiling = ceiling
+    lua.execute("""
+    t.ceiling=verifiedCeiling;t.point.y=2133.6
+    local boundary=t.point.y+t.ceiling+300
+    assert(not A.clear({x=0,y=boundary,z=0},{t}))
+    assert(A.clear({x=0,y=boundary+1,z=0},{t}))
+    assert(not A.leg({x=-15000,z=0},{x=15000,z=0},boundary,{t}))
+    assert(A.leg({x=-15000,z=0},{x=15000,z=0},boundary+1,{t}))
     """)
 
 
