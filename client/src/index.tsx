@@ -7,6 +7,11 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { Provider } from "react-redux";
 
+// Qt logs console messages as text, so preserve the stack of uncaught errors.
+window.addEventListener("error", (event) => {
+  if (event.error?.stack) console.error(event.error.stack);
+});
+
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );

@@ -101,6 +101,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Map]** Initialize the map view before vector layers mount and preserve error stacks in the embedded console.
 * **[UI]** Exclude sold aircraft from squadron counts, totals and sorting immediately.
 * **[Squadrons]** Allow empty relocations from damaged runways after selling all aircraft, including when reloading a campaign.
 * **[Payload]** Match Shrike seekers independently of date restrictions, preserve manual weapon settings and correct AGM-45/78 head tables (adapted from RetLab #1366).
