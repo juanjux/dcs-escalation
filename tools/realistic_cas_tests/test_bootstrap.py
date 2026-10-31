@@ -100,6 +100,28 @@ class BootstrapTests(unittest.TestCase):
         assert(not red.hidden and not RealisticCAS.mission and #pending==0)
         """)
 
+    def test_death_loss_kill_and_birth_notify_navigation_with_the_correct_unit(self):
+        self.check("""
+        world.event.S_EVENT_DEAD=8;world.event.S_EVENT_UNIT_LOST=30
+        world.event.S_EVENT_KILL=28
+        local m=assert(RealisticCAS.startMission(cfg))
+        local updates={}
+        local victim={getName=function()return 'victim'end}
+        local attacker={getName=function()return 'attacker'end}
+        m.detectors.afacNavigation={lifeEvent=function(_,u,dead)
+          updates[#updates+1]={name=u:getName(),dead=dead}
+        end}
+        for _,id in ipairs({8,30,28,world.event.S_EVENT_BIRTH})do
+          for h in pairs(handlers)do h:onEvent({id=id,initiator=attacker,target=victim})end
+        end
+        assert(#updates==4)
+        assert(updates[1].name=='attacker' and updates[1].dead)
+        assert(updates[2].name=='attacker' and updates[2].dead)
+        assert(updates[3].name=='victim' and updates[3].dead)
+        assert(updates[4].name=='attacker' and not updates[4].dead)
+        m.detectors.afacNavigation=nil;assert(m:stop())
+        """)
+
     def test_failed_restoration_keeps_recovery_handle(self):
         self.check("""
         m=assert(RealisticCAS.startMission(cfg));red.fail=true
