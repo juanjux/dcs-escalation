@@ -208,7 +208,15 @@ def validate_transit(game: Game, transit: ArmorTransit) -> MovementDestination:
         remaining[0] = GroundSegment(
             transit.journey.position, remaining[0].end, remaining[0].on_road
         )
-    if not all(router.allowed(s) for s in remaining):
+    if not all(
+        router.allowed(s)
+        and (
+            s.on_road
+            or router.offroad_permission is None
+            or router.offroad_permission(s)
+        )
+        for s in remaining
+    ):
         raise ValueError("The route is no longer available")
     return destination
 

@@ -6,13 +6,14 @@ import heapq
 import itertools
 import math
 from dataclasses import dataclass
-from typing import Iterable, TYPE_CHECKING
+from typing import Callable, Iterable, TYPE_CHECKING
 
 from shapely import STRtree
 from shapely.geometry import LineString, Point
 
 from game.groundmovement.journey import GroundRoute, GroundSegment
 from game.groundmovement.orders import GroundPosition
+from game.groundmovement.offroad import offroad_route
 
 if TYPE_CHECKING:
     from game import Game
@@ -93,7 +94,7 @@ class CampaignGroundRouter:
     Roads connect at shared points or via a validated access link at their base.
     Authored convoy corridors use the same road permissions as supply convoys;
     terrain masks still validate off-road access and unverified road segments.
-    When road access is unavailable, allow only a validated direct off-road route.
+    When roads cannot connect, search terrain-validated off-road detours.
     """
 
     def __init__(
@@ -103,10 +104,12 @@ class CampaignGroundRouter:
         base_access: Iterable[GroundSegment] = (),
         *,
         convoy_corridors: bool = False,
+        offroad_permission: Callable[[GroundSegment], bool] | None = None,
     ) -> None:
         if landmap is None:
             raise GroundRouteError("Ground movement needs land and exclusion-zone data")
         self.landmap = landmap
+        self.offroad_permission = offroad_permission
         self.roads = [segment for road in roads for segment in road.segments]
         if any(not segment.on_road for segment in self.roads):
             raise GroundRouteError(
@@ -145,6 +148,7 @@ class CampaignGroundRouter:
         return bool(
             self.landmap.inclusion_zones.covers(line)
             and not self.landmap.exclusion_zones.intersects(line)
+            and not self.landmap.sea_zones.intersects(line)
         )
 
     def _validate_position(self, position: GroundPosition) -> None:
@@ -158,6 +162,8 @@ class CampaignGroundRouter:
 
     @classmethod
     def for_game(cls, game: Game, owner: Player) -> CampaignGroundRouter:
+        from game.groundmovement.territory import segment_is_friendly
+
         roads = []
         access = []
         for base in game.theater.controlpoints:
@@ -182,7 +188,15 @@ class CampaignGroundRouter:
                     position = GroundPosition(cp.position.x, cp.position.y)
                     if position != endpoint:
                         access.append(GroundSegment(position, endpoint, False))
-        return cls(game.theater.landmap, roads, access, convoy_corridors=True)
+        return cls(
+            game.theater.landmap,
+            roads,
+            access,
+            convoy_corridors=True,
+            offroad_permission=lambda segment: segment_is_friendly(
+                game, owner, segment
+            ),
+        )
 
     @staticmethod
     def _connect(
@@ -280,6 +294,37 @@ class CampaignGroundRouter:
         self._validate_position(destination)
         if origin == destination:
             raise GroundRouteError("The ground group is already at that position")
+        try:
+            route = self._road_route(origin, destination, road_budget, offroad_budget)
+            if self.offroad_permission is not None and any(
+                not segment.on_road and not self.offroad_permission(segment)
+                for segment in route.segments
+            ):
+                raise GroundRouteError(
+                    "Off-road access must stay in friendly territory"
+                )
+            return route
+        except GroundRouteError:
+            detour = offroad_route(
+                self.landmap,
+                origin,
+                destination,
+                lambda segment: self.allowed(segment)
+                and (
+                    self.offroad_permission is None or self.offroad_permission(segment)
+                ),
+            )
+            if detour is not None:
+                return detour
+            raise
+
+    def _road_route(
+        self,
+        origin: GroundPosition,
+        destination: GroundPosition,
+        road_budget: float,
+        offroad_budget: float,
+    ) -> GroundRoute:
         direct = GroundSegment(origin, destination, False)
         if not self.roads:
             if not self.allowed(direct):
