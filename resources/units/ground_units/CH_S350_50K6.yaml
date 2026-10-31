@@ -1,4 +1,6 @@
 class: CommandPost
+ground_mobility:
+  mode: self_propelled
 price: 18
 variants:
   "[CH] S-350 50K6 CP": null

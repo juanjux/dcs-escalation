@@ -16,6 +16,7 @@ from game.dcs.afaccapabilities import capabilities_for, smoke_rounds
 from game.dcs.skills import SKILL_LADDER
 from game.ato.afac import station_minutes
 from game.missiongenerator.afacthreats import envelope
+from game.theater.theatergroundobject import IadsGroundObject
 
 if TYPE_CHECKING:
     from dcs import Mission
@@ -421,7 +422,16 @@ def collect_registry(
                         if foreign_owner:
                             continue
                         if category == "ground":
-                            threat = envelope(unit.type)
+                            mapping = unit_map.theater_objects.get(unit.name)
+                            threat_objective = (
+                                mapping.theater_unit.ground_object
+                                if mapping is not None
+                                else None
+                            )
+                            packed = isinstance(
+                                threat_objective, IadsGroundObject
+                            ) and getattr(threat_objective, "in_transit", False)
+                            threat = None if packed else envelope(unit.type)
                             if threat is not None:
                                 threat = dict(threat)
                                 if not concealed:

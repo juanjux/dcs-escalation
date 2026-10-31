@@ -1,4 +1,6 @@
 class: SearchRadar
+ground_mobility:
+  mode: towed
 price: 18
 variants:
   SAM Hawk SR (AN/MPQ-50): null

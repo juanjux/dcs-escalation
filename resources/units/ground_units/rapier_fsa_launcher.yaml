@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: towed
 price: 6
 variants:
   SAM Rapier LN: null

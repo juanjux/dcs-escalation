@@ -15,6 +15,7 @@ from game.groundmovement.planning import preview_armor_movement
 from game.groundmovement.report import preview_token
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater.player import Player
+from game.theater.theatergroundobject import IadsGroundObject
 
 if TYPE_CHECKING:
     from game import Game
@@ -90,6 +91,8 @@ class GroundMovementCommands(QObject):
             raise MovementCommandError("The movement changed; request a new preview")
         events = GameUpdateEvents()
         result = dispatch_armor(game, source_id, owner, selected, destination, events)
+        if isinstance(game.db.tgos.get(source_id), IadsGroundObject):
+            game.compute_threat_zones(events)
         self.publish(events)
         return result
 
@@ -99,6 +102,9 @@ class GroundMovementCommands(QObject):
             raise ValueError("No such dispatched movement")
         events = GameUpdateEvents()
         stop_armor(game, order_id, owner, events)
+        site_id = game.ground_movements.transits[order_id].detachment_id
+        if isinstance(game.db.tgos.get(site_id), IadsGroundObject):
+            game.compute_threat_zones(events)
         self.publish(events)
 
     def dispatch_base(

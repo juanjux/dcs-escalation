@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Ground Movement]** Relocate whole mobile SAM/radar sites with towing checks, packed radars and weapons during transit, and player/API controls.
 * **[Flight Plans]** Optional shared package routes, enabled by default for BARCAP, TARCAP and Refueling, with map edits and OPFOR API support.
 * **[Weather]** Show estimated base and top heights for each active cloud layer from the matching installed preset.
 * **[Economy]** Configurable equipment resale value, enabled at 85% of the new price by default, shared by both coalitions.

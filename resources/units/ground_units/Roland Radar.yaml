@@ -1,4 +1,6 @@
 class: SearchTrackRadar
+ground_mobility:
+  mode: self_propelled
 price: 16
 variants:
   SAM Roland EWR: null

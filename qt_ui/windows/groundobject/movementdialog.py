@@ -34,6 +34,7 @@ from game.groundmovement.planning import (
 )
 from game.groundmovement.report import preview_token
 from game.theater.player import Player
+from game.theater.theatergroundobject import IadsGroundObject
 from qt_ui.widgets.searchablecombo import SearchableComboBox
 from qt_ui.widgets.map.grounddestination import GroundDestinationPicker
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
@@ -60,12 +61,19 @@ class ArmorMovementDialog(QDialog):
         self.source_id = source_id
         self.owner = owner
         self.preview: ArmorMovementPreview | None = None
-        self.setWindowTitle("Move Reserve Armor Group")
+        self.is_sam = isinstance(self.game.db.tgos.get(source_id), IadsGroundObject)
+        self.setWindowTitle(
+            "Relocate SAM/radar site" if self.is_sam else "Move Reserve Armor Group"
+        )
         self.setMinimumWidth(620)
         self.setStyleSheet(f"QDialog {{ background: {PANEL}; }}")
         layout = QVBoxLayout(self)
         layout.addWidget(
-            QLabel("Select units. Required tractors are added automatically.")
+            QLabel(
+                "The entire surviving site relocates together. Required tractors must be part of the battery."
+                if self.is_sam
+                else "Select units. Required tractors are added automatically."
+            )
         )
         self.units: dict[int, QCheckBox] = {}
         options = armor_movement_options(self.game, source_id, owner)
@@ -79,6 +87,10 @@ class ArmorMovementDialog(QDialog):
             )
             checkbox = QCheckBox(f"{unit.name} [#{unit.id}]{suffix}")
             checkbox.setEnabled(unit.selectable)
+            if self.is_sam:
+                checkbox.setChecked(True)
+                checkbox.setEnabled(False)
+                checkbox.setToolTip("Every surviving unit relocates with the battery")
             if not unit.selectable:
                 checkbox.setToolTip("Already reserved or mobility is not supported")
             checkbox.toggled.connect(self.invalidate)
@@ -90,17 +102,18 @@ class ArmorMovementDialog(QDialog):
         scroll.setMinimumHeight(170)
         scroll.setMaximumHeight(280)
         layout.addWidget(scroll)
-        select_row = QHBoxLayout()
-        for title, checked in (
-            ("Select all available", True),
-            ("Clear selection", False),
-        ):
-            button = QPushButton(title)
-            button.clicked.connect(
-                lambda _=False, value=checked: self.select_all(value)
-            )
-            select_row.addWidget(button)
-        layout.addLayout(select_row)
+        if not self.is_sam:
+            select_row = QHBoxLayout()
+            for title, checked in (
+                ("Select all available", True),
+                ("Clear selection", False),
+            ):
+                button = QPushButton(title)
+                button.clicked.connect(
+                    lambda _=False, value=checked: self.select_all(value)
+                )
+                select_row.addWidget(button)
+            layout.addLayout(select_row)
         for warning in options.warnings:
             text = QLabel(warning)
             text.setWordWrap(True)
@@ -112,6 +125,10 @@ class ArmorMovementDialog(QDialog):
             ("Base — join its ground inventory", DestinationKind.BASE),
             ("Frontline — reinforce its supporting base", DestinationKind.FRONTLINE),
         ):
+            if self.is_sam and kind is not DestinationKind.POSITION:
+                continue
+            if self.is_sam:
+                title = "Position — relocate the existing SAM/radar site"
             self.kind.addItem(title, kind)
         layout.addWidget(self.kind)
         self.target = SearchableComboBox(
@@ -131,7 +148,11 @@ class ArmorMovementDialog(QDialog):
         self.pick_on_map.clicked.connect(self.choose_on_map)
         coordinates.addWidget(self.pick_on_map)
         layout.addLayout(coordinates)
-        self.details = QLabel("Choose units and a destination, then preview the route.")
+        self.details = QLabel(
+            "Choose a destination, then preview the relocation route."
+            if self.is_sam
+            else "Choose units and a destination, then preview the route."
+        )
         self.details.setWordWrap(True)
         self.details.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.details)
@@ -142,6 +163,9 @@ class ArmorMovementDialog(QDialog):
         )
         buttons = QHBoxLayout()
         self.preview_button = QPushButton("Preview route")
+        if self.is_sam:
+            self.preview_button.setEnabled(options.enabled)
+            self.pick_on_map.setEnabled(options.enabled)
         self.preview_button.clicked.connect(self.calculate)
         self.dispatch_button = QPushButton("Dispatch")
         self.dispatch_button.setEnabled(False)

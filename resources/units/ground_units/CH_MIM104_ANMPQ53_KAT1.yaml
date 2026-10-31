@@ -1,4 +1,6 @@
 class: SearchTrackRadar
+ground_mobility:
+  mode: self_propelled
 price: 22
 variants:
   "[CH] MIM-104 AN/MPQ-53 STR (KAT1)": null

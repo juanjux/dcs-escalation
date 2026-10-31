@@ -463,13 +463,13 @@ def transfer_ground(
 def ground_movement_options(
     source_id: str, source_kind: str = "armor", side: str = "red"
 ) -> dict:
-    """Read your armor group's unit IDs/mobility, or a base's available stock (source_kind=base)."""
+    """Read own unit IDs/mobility (source_kind=armor or sam), or base stock (source_kind=base)."""
     return service.ground_movement_options(side, source_id, source_kind)
 
 
 @_tool()
 def preview_ground_movement(request: schemas.GroundMovementRequest) -> dict:
-    """Read-only route/ETA preview. Select armor unit_ids or base units; destinations are position, base or frontline. Returns the preview_token needed to dispatch."""
+    """Read-only route/ETA preview. Select armor/SAM unit_ids or base units. SAMs require every survivor and a friendly GPS position. Returns the preview_token needed to dispatch."""
     return service.preview_ground_movement(request.side, request)
 
 

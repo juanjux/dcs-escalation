@@ -6,13 +6,14 @@ from typing import TYPE_CHECKING
 
 from dcs import Point
 from dcs.point import PointAction
-from dcs.task import OptAlarmState
+from dcs.task import OptAlarmState, OptROE
 
 from game.groundmovement.dispatch import active_transit, validate_transit
 from game.groundmovement.orders import GroundPosition
 from game.groundmovement.settings import distance_per_turn, enabled
 from game.unitmap import TheaterUnitMapping
 from game.utils import kph
+from game.theater.theatergroundobject import IadsGroundObject
 
 if TYPE_CHECKING:
     from game.missiongenerator.tgogenerator import GroundObjectGenerator
@@ -60,15 +61,29 @@ def generate_armor_movement(generator: GroundObjectGenerator) -> None:
             distance_per_turn(game.settings, on_road=False),
         )
     departure = group.points[0]
+    is_sam = isinstance(tgo, IadsGroundObject)
+    if is_sam:
+        departure.tasks[:] = [
+            task
+            for task in departure.tasks
+            if not isinstance(task, (OptAlarmState, OptROE))
+        ]
+        departure.tasks.extend(
+            [
+                OptAlarmState(1),  # Green: packed radar, even while paused.
+                OptROE(OptROE.Values.WeaponHold),
+            ]
+        )
     if len(points) == 1:
         departure.speed = 0
         departure.action = PointAction.OffRoad
         return
     # Use the convoy's default alert posture, not a parked site's alarm override.
     # Keep unrelated initial commands such as EPLRS and ROE.
-    departure.tasks[:] = [
-        task for task in departure.tasks if not isinstance(task, OptAlarmState)
-    ]
+    if not is_sam:
+        departure.tasks[:] = [
+            task for task in departure.tasks if not isinstance(task, OptAlarmState)
+        ]
     first = journey.route.segments[journey.segment_index]
     departure.action = PointAction.OnRoad if first.on_road else PointAction.OffRoad
     departure.speed = kph(40 if first.on_road else 20).meters_per_second

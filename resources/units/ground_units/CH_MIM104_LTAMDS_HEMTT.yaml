@@ -1,4 +1,6 @@
 class: SearchTrackRadar
+ground_mobility:
+  mode: self_propelled
 price: 40
 variants:
   "[CH] MIM-104 LTAMDS STR (HEMTT)": null

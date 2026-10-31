@@ -337,6 +337,35 @@ def test_dialog_selection_preview_invalidation_dispatch_and_cancel(
     cancelled.deleteLater()
 
 
+def test_sam_dialog_selects_whole_battery_and_restricts_destination(
+    world: Any, controls: Any
+) -> None:
+    from tests.test_sam_movement import make_site, selected
+
+    site = make_site(world)
+    dialog = ArmorMovementDialog(controls.model, site.id, Player.BLUE)
+    assert (
+        dialog.kind.count() == 1
+        and dialog.kind.currentData() is DestinationKind.POSITION
+    )
+    assert dialog.selected_ids() == selected(world)
+    assert all(
+        checkbox.isChecked() and not checkbox.isEnabled()
+        for checkbox in dialog.units.values()
+    )
+    position = Point(90, 10, world.game.theater.terrain).latlng()
+    dialog.coordinates.setText(format_latlng(position, CoordinateFormat.DDM))
+    dialog.calculate()
+    assert dialog.preview is not None and dialog.dispatch_button.isEnabled()
+    threats: list[GameUpdateEvents] = []
+    world.game.compute_threat_zones = threats.append
+    dialog.dispatch()
+    assert site.in_transit and len(threats) == 1
+    assert dialog.result() == dialog.DialogCode.Accepted
+    controls.app.processEvents()
+    dialog.deleteLater()
+
+
 def test_dialog_external_change_and_invalid_coordinates(
     world: Any, controls: Any
 ) -> None:

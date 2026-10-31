@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: towed
 price: 15
 variants:
   SAM Patriot LN: null

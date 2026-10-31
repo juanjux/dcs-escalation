@@ -1,4 +1,6 @@
 class: CommandPost
+ground_mobility:
+  mode: towed
 price: 18
 description: "NASAMS (National/Norwegian Advanced Surface to Air Missile System) is a distributed and networked medium to long range air-defence system.
               NASAMS was the first surface-based application for the AIM-120 AMRAAM (Advanced Medium Range Air-to-Air Missile)."

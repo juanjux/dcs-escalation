@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: self_propelled
 price: 15
 description: "Terminal High Altitude Area Defense (THAAD), formerly Theater High Altitude Area 
   Defense, is an American anti-ballistic missile defense system designed to intercept and 

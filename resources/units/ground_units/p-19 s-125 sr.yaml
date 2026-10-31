@@ -1,4 +1,6 @@
 class: SearchRadar
+ground_mobility:
+  mode: self_propelled
 price: 14
 variants:
   SAM P19 "Flat Face" SR (SA-2/3): null

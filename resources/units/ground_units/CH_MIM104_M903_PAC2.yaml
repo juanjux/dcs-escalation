@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: towed
 price: 15
 description: "The MIM-104 Patriot is a mobile interceptor missile surface-to-air missile (SAM)
   system, the primary such system used by the United States Army and several allied states. 

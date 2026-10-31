@@ -489,13 +489,14 @@ def test_destination_must_be_able_to_host_ground_units(
         )
 
 
-def test_sams_and_disabled_movement_are_not_accepted(world: Any) -> None:
+def test_empty_sams_and_disabled_movement_are_not_accepted(world: Any) -> None:
     sam = SamGroundObject(
         "SAM", PresetLocation("SAM", world.source.position), world.a, None
     )
     world.game.db.tgos.add(sam.id, sam)
-    with pytest.raises(ValueError, match="armor group"):
-        armor_movement_options(world.game, sam.id, Player.BLUE)
+    options = armor_movement_options(world.game, sam.id, Player.BLUE)
+    assert not options.enabled
+    assert any("no surviving units" in warning for warning in options.warnings)
     set_enabled(world.game.settings, False)
     assert not armor_movement_options(world.game, world.source.id, Player.BLUE).enabled
     with pytest.raises(ValueError, match="Motor Pool"):

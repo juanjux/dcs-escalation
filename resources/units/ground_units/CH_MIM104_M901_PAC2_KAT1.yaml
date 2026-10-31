@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: self_propelled
 price: 15
 description: "The MIM-104 Patriot is a mobile surface-to-air missile (SAM) system used by the
   United States Army and several allied states. This M901 launcher fires PAC-2 GEM/T
