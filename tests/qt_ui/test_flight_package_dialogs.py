@@ -296,6 +296,28 @@ def test_package_timing_and_name_controls(package_dialog: Any) -> None:
     assert "locked" in dialog.timing_hint.text()
 
 
+def test_shared_route_checkbox_has_matching_card_inset(
+    package_dialog: Any, qt_app: Any
+) -> None:
+    from PySide6.QtCore import QPoint
+
+    dialog = package_dialog
+    dialog.show()
+    qt_app.processEvents()
+    checkbox = dialog.shared_route_checkbox
+    assert (
+        checkbox.mapTo(dialog, QPoint(0, 0)).x()
+        == dialog.freq_widget.mapTo(dialog, QPoint(0, 0)).x() + 14
+    )
+    margins = checkbox.parentWidget().layout().itemAt(2).layout().contentsMargins()
+    assert (margins.left(), margins.top(), margins.right(), margins.bottom()) == (
+        14,
+        6,
+        14,
+        4,
+    )
+
+
 def test_shared_route_checkbox_defaults_and_incompatibility(
     package_dialog: Any,
 ) -> None:
