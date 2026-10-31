@@ -335,6 +335,51 @@ class AfacNavigationTests(unittest.TestCase):
                     + ";tick();assert(#assigned==2 and jump(assigned[2])==2)"
                 )
 
+    def test_death_event_invalidates_sample_even_before_native_life_updates(self):
+        self.rt.execute("""
+        config.airDefenseThreats[1].known=true
+        function gun:getName()return 'gun'end
+        beginNavigation();tick();assert(#assigned==1)
+        nav:lifeEvent(gun,true)
+        assert(nav:clear('blue',{x=0,y=2000,z=0}))
+        nav:fireEvent(gun);tick()
+        assert(#assigned==2 and not RealisticCAS.afacNavigation.blue.active)
+        nav:observe({name='gun',groupName='red',typeName='ZSU_57_2',side=1,point=gun.point})
+        assert(nav:clear('blue',{x=0,y=2000,z=0}))
+        nav:lifeEvent(gun,false);tick()
+        assert(#assigned==3 and RealisticCAS.afacNavigation.blue.active)
+        """)
+
+    def test_destroying_one_launcher_does_not_remove_surviving_group_members(self):
+        self.rt.execute("""
+        config.airDefenseThreats[1].known=true
+        function gun:getName()return 'gun'end
+        unit('other-gun',red,'ZSU_57_2',0,0)
+        config.airDefenseThreats[2]={name='other-gun',groupName='red',coalition=1,
+          typeName='ZSU_57_2',known=true,radius=7000,ceiling=4000}
+        beginNavigation();tick();nav:lifeEvent(gun,true);tick()
+        assert(not nav:clear('blue',{x=0,y=2000,z=0}))
+        assert(RealisticCAS.afacNavigation.blue.active)
+        """)
+
+    def test_dead_launcher_outside_refresh_budget_cannot_cause_irreversible_rtb(self):
+        self.rt.execute("""
+        local threat=config.airDefenseThreats[1]
+        threat.known=true;threat.initialPoint={x=0,z=0}
+        threat.radius=150000;threat.ceiling=30000
+        config.airDefenseThreats={}
+        for i=1,128 do
+          config.airDefenseThreats[i]={name='distant-'..i,groupName='unavailable-'..i,
+            coalition=1,typeName='ZSU_57_2',known=true,radius=100,
+            initialPoint={x=500000,z=0}}
+        end
+        config.airDefenseThreats[129]=threat
+        gun.life=0 -- No death event; the initial known point is still cached.
+        beginNavigation();tick()
+        assert(#assigned==0 and not RealisticCAS.afacReturn.blue)
+        tick();assert(#assigned==0 and not RealisticCAS.afacAbort.blue)
+        """)
+
     def test_stop_condition_preserves_station_deadline_and_bingo(self):
         for change in ("now=601", "observer.fuel=0.1"):
             with self.subTest(change=change):
