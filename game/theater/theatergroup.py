@@ -176,6 +176,12 @@ class TheaterUnit:
 
     @property
     def detection_range(self) -> Distance:
+        from game.theater.theatergroundobject import IadsGroundObject
+
+        if isinstance(self.ground_object, IadsGroundObject) and getattr(
+            self.ground_object, "in_transit", False
+        ):
+            return meters(0)
         if self.transported_by_id is not None:
             return meters(0)
         unit_range = getattr(self.type, "detection_range", None)
@@ -183,6 +189,12 @@ class TheaterUnit:
 
     @property
     def threat_range(self) -> Distance:
+        from game.theater.theatergroundobject import IadsGroundObject
+
+        if isinstance(self.ground_object, IadsGroundObject) and getattr(
+            self.ground_object, "in_transit", False
+        ):
+            return meters(0)
         if self.transported_by_id is not None:
             return meters(0)
         unit_range = getattr(self.type, "threat_range", None)

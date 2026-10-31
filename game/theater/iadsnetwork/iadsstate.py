@@ -115,7 +115,11 @@ def standing(
 ) -> bool:
     """Whether anything of the group is left, counting the ground objects in
     ``destroyed`` as gone."""
-    return group.alive_units > 0 and group.ground_object not in destroyed
+    return (
+        group.alive_units > 0
+        and group.ground_object not in destroyed
+        and not getattr(group.ground_object, "in_transit", False)
+    )
 
 
 def mains_are_up(
@@ -246,6 +250,12 @@ class IadsStateMap:
     ) -> IadsStatus:
         role = node.group.iads_role
 
+        if getattr(node.group.ground_object, "in_transit", False):
+            return IadsStatus(
+                IadsState.DARK,
+                "Relocating: radars and weapons are packed until arrival or a stop.",
+                True,
+            )
         if node.is_empty_site:
             return IadsStatus(
                 IadsState.DESTROYED,

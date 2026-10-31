@@ -34,7 +34,7 @@ from game.groundmovement.report import (
 )
 from game.groundmovement.settings import distance_per_turn, enabled, requested
 from game.theater.player import Player
-from game.theater.theatergroundobject import VehicleGroupGroundObject
+from game.theater.theatergroundobject import VehicleGroupGroundObject, IadsGroundObject
 
 if TYPE_CHECKING:
     from game import Game
@@ -43,12 +43,20 @@ if TYPE_CHECKING:
     from qt_ui.groundmovement import GroundMovementCommands
 
 
-def _armor(game: Game, source_id: UUID) -> VehicleGroupGroundObject:
+def _armor(
+    game: Game, source_id: UUID, source_kind: str = "armor"
+) -> VehicleGroupGroundObject | IadsGroundObject:
     try:
-        return armor_source(game, source_id, Player.RED)
+        source = armor_source(game, source_id, Player.RED)
+        expected = (
+            IadsGroundObject if source_kind == "sam" else VehicleGroupGroundObject
+        )
+        if not isinstance(source, expected):
+            raise ValueError("Source kind does not match the ground group")
+        return source
     except (ValueError, PermissionError) as exc:
         raise ValueError(
-            "Unknown own reserve armor group; SAM movement is not supported"
+            "Unknown own ground group or mismatched source_kind (armor/sam)"
         ) from exc
 
 
@@ -114,17 +122,21 @@ def context(game: Game, owner: Player) -> views.GroundMovementContextView | None
     store = getattr(game, "ground_movements", None)
     if store is None or (not requested(game.settings) and not store.transits):
         return None
-    groups = []
+    groups: list[views.ReserveArmorGroupView] = []
+    sam_sites: list[views.ReserveArmorGroupView] = []
     for cp in game.theater.controlpoints:
         if not cp.is_friendly(owner):
             continue
         for group in cp.ground_objects:
-            if not isinstance(group, VehicleGroupGroundObject) or group.is_dead:
+            if (
+                not isinstance(group, (VehicleGroupGroundObject, IadsGroundObject))
+                or group.is_dead
+            ):
                 continue
             options = armor_movement_options(game, group.id, owner)
             point = group.position.latlng()
             moving = active_transit(game, group.id) is not None
-            groups.append(
+            (sam_sites if isinstance(group, IadsGroundObject) else groups).append(
                 views.ReserveArmorGroupView(
                     id=str(group.id),
                     name=group.name,
@@ -132,7 +144,9 @@ def context(game: Game, owner: Player) -> views.GroundMovementContextView | None
                     pos=[round(point.lat, 5), round(point.lng, 5)],
                     composition=dict(Counter(u.name for u in options.units)),
                     selectable_units=(
-                        0 if moving else sum(u.selectable for u in options.units)
+                        0
+                        if moving or not options.enabled
+                        else sum(u.selectable for u in options.units)
                     ),
                     in_transit=moving,
                 )
@@ -142,13 +156,14 @@ def context(game: Game, owner: Player) -> views.GroundMovementContextView | None
         road_distance_per_turn_m=distance_per_turn(game.settings, on_road=True),
         offroad_distance_per_turn_m=distance_per_turn(game.settings, on_road=False),
         reserve_groups=sorted(groups, key=lambda row: row.id),
+        sam_sites=sorted(sam_sites, key=lambda row: row.id),
         orders=orders(game, owner),
     )
 
 
 def options(game: Game, source_id: UUID, source_kind: str) -> dict[str, Any]:
-    if source_kind == "armor":
-        _armor(game, source_id)
+    if source_kind in ("armor", "sam"):
+        _armor(game, source_id, source_kind)
         result = asdict(armor_movement_options(game, source_id, Player.RED))
         result["source_id"] = str(source_id)
         result["in_transit"] = active_transit(game, source_id) is not None
@@ -175,7 +190,7 @@ def options(game: Game, source_id: UUID, source_kind: str) -> dict[str, Any]:
             ],
         }
     else:
-        raise ValueError("Source kind must be armor or base")
+        raise ValueError("Source kind must be armor, sam or base")
     result["source_kind"] = source_kind
     result["bases"] = [
         {"id": str(cp.id), "name": cp.name}
@@ -193,6 +208,9 @@ def options(game: Game, source_id: UUID, source_kind: str) -> dict[str, Any]:
         for enemy in cp.front_lines
         if not enemy.is_friendly(Player.RED)
     ]
+    if source_kind == "sam":
+        result["bases"] = []
+        result["fronts"] = []
     return result
 
 
@@ -229,7 +247,7 @@ def preview(
     if request.source_kind == "base":
         _base(game, request.source_id)
     else:
-        _armor(game, request.source_id)
+        _armor(game, request.source_id, request.source_kind)
         if request.units is not None or not request.unit_ids:
             raise ValueError("Armor movement requires unit_ids, not units")
     destination = movement_destination(
@@ -337,7 +355,7 @@ def stop(
     ):
         raise ValueError("Unknown own ground movement")
     tgo_id = store.transits[order_id].detachment_id
-    _armor(game, tgo_id)
+    armor_source(game, tgo_id, Player.RED)
     commands.stop(game, order_id, Player.RED)
     result = next(
         item

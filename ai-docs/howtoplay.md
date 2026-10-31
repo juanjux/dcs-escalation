@@ -172,8 +172,11 @@ instantly; at an intermediate base it returns them to that base's stock.
 
 The API's `turn_context.ground_convoys` reports this side's road transports with
 position, cargo, progress, distances in metres and any pause reason. Enemy convoy
-targets expose the same progress in `ground_movement`. SAM movement commands are
-not available yet. Convoys created while the plugin is disabled keep
+targets expose the same progress in `ground_movement`. Mobile SAM/radar sites can
+relocate whole to friendly GPS positions using `source_kind:"sam"`; see the API
+howtoplay for the request fields. Every surviving unit needs reviewed mobility,
+and each towed piece needs a tractor belonging to that battery. Radars and weapons
+are packed and offline until arrival or an explicit stop. Convoys created while the plugin is disabled keep
 their legacy behaviour; journeys already managed by it remain paused.
 
 Friendly armor-group dialogs show a Ground transport card when the plugin is on.

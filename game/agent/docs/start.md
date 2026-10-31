@@ -59,7 +59,7 @@ tool/resource of the same name.
   ships like SM-6 frigates — **read every turn and respect them**), `naval` (YOUR own
   movable ship groups and carriers — reposition them with `POST /naval/move`), and
   `repairs` (YOUR damaged SAMs/buildings/runways you can pay to fix with `POST /repair`),
-  and optional `ground_movement` (YOUR reserve groups and their saved journeys).
+  and optional `ground_movement` (YOUR reserve groups, SAM/radar sites and saved journeys).
 - `GET /prev_turns?n=1` — after-action of prior turns (losses, who-killed-what, captures)
 - `GET /packages?side=red` — current packages/flights (each with `id` + pilots + waypoints)
 - `GET /waypoints/{flight_id}` — a flight's waypoints
@@ -132,7 +132,8 @@ tool/resource of the same name.
   revalidates ownership, territory, inventory and route. Requires Ground Movement + Motor Pool.
 - `GET /ground/movement` — own saved reserve orders, positions, losses, progress and pause reasons.
 - `POST /ground/movement/stop` `{side, order_id}` — stop at the saved campaign position;
-  no refund or teleport. SAM movement is not supported. See howtoplay for request fields.
+  no refund or teleport. Use `source_kind=sam` to relocate a whole mobile SAM/radar
+  site to a friendly GPS position. See howtoplay for transport rules and request fields.
 - `POST /naval/move` `{side, ship_id, lat, lng}` — reposition one of your own naval groups
   — a ship group or a carrier/LHA (an `id` from `turn_context.naval`) — up to ~80 nm over
   water; applies at turn end. Omit `lat`+`lng` to cancel a pending move.

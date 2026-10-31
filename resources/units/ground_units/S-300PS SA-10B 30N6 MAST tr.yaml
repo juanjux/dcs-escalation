@@ -1,4 +1,6 @@
 class: TrackRadar
+ground_mobility:
+  mode: towed
 price: 26
 variants:
   SAM SA-10B S-300PS 30N6 TR (mast): null

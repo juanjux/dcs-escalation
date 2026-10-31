@@ -27,7 +27,7 @@ from game.groundmovement.routing import CampaignGroundRouter
 from game.groundmovement.settings import distance_per_turn, enabled
 from game.theater.player import Player
 from game.theater.presetlocation import PresetLocation
-from game.theater.theatergroundobject import VehicleGroupGroundObject
+from game.theater.theatergroundobject import VehicleGroupGroundObject, IadsGroundObject
 from game.theater.theatergroup import TheaterGroup
 
 if TYPE_CHECKING:
@@ -79,6 +79,31 @@ def dispatch_armor(
     units = [u for u in source.units if u.id in identities]
     if len(units) != len(identities):
         raise ValueError("The source inventory changed; request a new preview")
+    if isinstance(source, IadsGroundObject):
+        order = game.ground_movements.plan(
+            game.settings,
+            source_id=source_id,
+            source_kind=MovementSource.SAM,
+            owner=owner,
+            origin=GroundPosition(source.position.x, source.position.y),
+            destination=destination,
+            units=_unit_types(source),
+            selected=selected,
+            turn=game.turn,
+        )
+        transit = ArmorTransit(
+            order.id,
+            source.id,
+            GroundJourney(preview.route, last_advanced_turn=game.turn),
+        )
+        source.in_transit = True
+        for unit in units:
+            unit.transported_by_id = dict(preview.manifest.towing).get(unit.id)
+        game.ground_movements.transits[order.id] = transit
+        source.invalidate_threat_poly()
+        _update_sam_network(game, source, events)
+        events.update_tgo(source)
+        return transit
     group_id = game.next_group_id()
     detachment = VehicleGroupGroundObject(
         f"{source.name} detachment {group_id}",
@@ -121,7 +146,16 @@ def dispatch_armor(
     return transit
 
 
-def _relocate(tgo: VehicleGroupGroundObject, point: GroundPosition) -> None:
+def _update_sam_network(game: Game, tgo: object, events: GameUpdateEvents) -> None:
+    if isinstance(tgo, IadsGroundObject):
+        network = getattr(game.theater, "iads_network", None)
+        if network is not None:
+            network.update_tgo(tgo, events)
+
+
+def _relocate(
+    tgo: VehicleGroupGroundObject | IadsGroundObject, point: GroundPosition
+) -> None:
     dx, dz = point.x - tgo.position.x, point.z - tgo.position.y
     tgo.position = Point(point.x, point.z, tgo.position._terrain)
     for group in tgo.groups:
@@ -151,7 +185,12 @@ def _unload(game: Game, transit: ArmorTransit) -> None:
     for unit in tgo.units:
         unit.transported_by_id = None
         positions = getattr(transit, "arrival_positions", None)
-        if transit.journey.completed and positions and unit.id in positions:
+        if (
+            transit.journey.completed
+            and positions
+            and unit.id in positions
+            and not isinstance(tgo, IadsGroundObject)
+        ):
             unit.position.x = positions[unit.id].x
             unit.position.y = positions[unit.id].z
     tgo.invalidate_threat_poly()
@@ -174,6 +213,7 @@ def stop_armor(
     transit.finished = True
     game.ground_movements.cancel(order_id)
     _unload(game, transit)
+    _update_sam_network(game, game.db.tgos.get(transit.detachment_id), events)
     events.update_tgo(game.db.tgos.get(transit.detachment_id))
 
 
@@ -237,6 +277,7 @@ def rehome_before_capture(
             base.connected_objectives.remove(tgo)
             closest.connected_objectives.append(tgo)
             tgo.control_point = closest
+            _update_sam_network(game, tgo, events)
             events.update_tgo(tgo)
 
 
@@ -249,10 +290,11 @@ def advance_armor(game: Game, events: GameUpdateEvents) -> None:
         if transit.finished:
             continue
         tgo = game.db.tgos.get(transit.detachment_id)
-        assert isinstance(tgo, VehicleGroupGroundObject)
+        assert isinstance(tgo, (VehicleGroupGroundObject, IadsGroundObject))
         _cargo_losses(game, transit, events)
         if not any(u.alive for u in tgo.units):
             _finish(game, transit)
+            _update_sam_network(game, tgo, events)
             continue
         if not enabled(game.settings):
             transit.pause_reason = "Ground Movement is disabled"
@@ -269,6 +311,7 @@ def advance_armor(game: Game, events: GameUpdateEvents) -> None:
             distance_per_turn(game.settings, on_road=False),
         )
         _relocate(tgo, transit.journey.position)
+        _update_sam_network(game, tgo, events)
         events.update_tgo(tgo)
         if not transit.journey.completed:
             continue
@@ -291,4 +334,5 @@ def advance_armor(game: Game, events: GameUpdateEvents) -> None:
                 group.units.clear()
             events.update_control_point(base).update_motorpools_at(base)
         _finish(game, transit)
+        _update_sam_network(game, tgo, events)
         events.update_tgo(tgo)

@@ -581,6 +581,7 @@ class GroundMovementContextView(BaseModel):
     road_distance_per_turn_m: float
     offroad_distance_per_turn_m: float
     reserve_groups: list[ReserveArmorGroupView]
+    sam_sites: list[ReserveArmorGroupView] = Field(default_factory=list)
     orders: list[ArmorMovementView]
 
 

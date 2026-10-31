@@ -1,4 +1,6 @@
 class: TELAR
+ground_mobility:
+  mode: self_propelled
 price: 30
 reversed_heading: true # Needs to be placed backwards!
 variants:

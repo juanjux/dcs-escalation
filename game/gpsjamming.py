@@ -276,7 +276,7 @@ def _site_for_tgo(
     default_miss: Distance,
 ) -> Optional[GpsJammerSite]:
     """Build the site record for a TGO that carries live jammer vehicles."""
-    if switched_off(game, tgo):
+    if switched_off(game, tgo) or getattr(tgo, "in_transit", False):
         return None
     units: list[str] = []
     # A site with several jammer types takes the LONGEST declared reach and the

@@ -131,14 +131,14 @@ Disabling either pauses saved movement orders without deleting them.
 
 **Your commands:** use the RED-only `/retribution-ai/ground/movement` API family
 (or its matching MCP tools) to move your reserve armor groups and deploy base stock
-to friendly GPS positions. SAM-site movement is not supported. The player-facing
+to friendly GPS positions, or relocate a mobile SAM/radar site. The player-facing
 `/control-points/{id}/ground-movement` and `/tgos/{id}/ground-movement` API families
 remain BLUE-only; never use them for RED. Base-to-base stock transfers still use
 `transfer_ground` / `POST /retribution-ai/ground/transfer`; track those separately
 in `turn_context.ground_convoys`.
 
 1. Read `turn_context.ground_movement`: `enabled`, per-turn distance budgets,
-   `reserve_groups` (own IDs, composition, position and `in_transit`) and `orders`
+   `reserve_groups` and `sam_sites` (own IDs, composition, position and `in_transit`), and `orders`
    (status, progress, survivors and pause reason). If absent or disabled, do not
    plan new reserve movements. Existing orders remain readable and stoppable.
 2. Call `ground_movement_options` /
@@ -171,6 +171,21 @@ Only a GPS destination is supported for this operation; tractors come from avail
 base stock and are shown in `automatically_added`. Dispatch debits this stock once.
 For MCP preview and dispatch, put these fields inside the `request` argument.
 
+To relocate a SAM/radar site from `sam_sites`, use `source_kind:"sam"` in
+options/preview/dispatch, its existing `source_id`, and **every surviving unit ID**
+returned by options. Only `destination_kind:"position"` with friendly `lat`/`lng`
+is supported. A battery moves whole: all units must have reviewed mobility and
+each towed piece needs its own surviving tractor in that battery. Mounted weapons
+already paired with their vehicle do not need another tractor. Fixed/unknown units,
+insufficient tractors, or pending repairs block relocation; options explains why.
+No trucks are created or borrowed automatically from base stock.
+
+The same site and unit IDs survive the move. Radars, jammers and weapons are packed
+and offline while relocating, including a paused journey. The convoy remains
+attackable; losing a tractor also loses its loaded piece. Arrival or `stop_ground_movement`
+redeploys survivors in their original formation at the saved position and restores
+normal IADS evaluation. A site cannot be sold or rebuilt while relocating.
+
 Use reserves for defence in depth and reinforcement of threatened fronts; do not
 empty every base indiscriminately. Account for travel time, towing capacity and
 exposure on the road. No command grants units, changes settings or crosses enemy territory.
@@ -191,8 +206,7 @@ instantly; at an intermediate base it returns them to that base's stock.
 
 The API's `turn_context.ground_convoys` reports this side's road transports with
 position, cargo, progress, distances in metres and any pause reason. Enemy convoy
-targets expose the same progress in `ground_movement`. SAM movement commands are
-not available yet. Convoys created while the plugin is disabled keep
+targets expose the same progress in `ground_movement`. Convoys created while the plugin is disabled keep
 their legacy behaviour; journeys already managed by it remain paused.
 
 Reserve armor movements require enough tractors for their towed pieces; otherwise

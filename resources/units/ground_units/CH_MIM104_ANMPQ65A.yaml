@@ -1,4 +1,6 @@
 class: SearchTrackRadar
+ground_mobility:
+  mode: towed
 price: 22
 variants:
   "[CH] MIM-104 AN/MPQ-65A STR (stationary)": null
