@@ -124,7 +124,11 @@ class QPackageDialog(QDialog):
             "QCheckBox:disabled { color: #77838E; }"
         )
         self.shared_route_checkbox.toggled.connect(self.set_shared_route)
-        identity_layout.addWidget(self.shared_route_checkbox)
+        shared_route_row = QHBoxLayout()
+        shared_route_row.setContentsMargins(14, 6, 14, 4)
+        shared_route_row.addWidget(self.shared_route_checkbox)
+        shared_route_row.addStretch()
+        identity_layout.addLayout(shared_route_row)
         settings_row.addWidget(identity, 1)
 
         timing = card()
