@@ -9,6 +9,7 @@ from shapely.geometry import LineString, Point
 from shapely.ops import substring
 
 from game.groundmovement.orders import GroundPosition
+from game.groundmovement.journey import GroundSegment
 from game.theater.frontline import FrontLine
 from game.theater.player import Player
 
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
     from game import Game
 
 
-def position_owner(game: Game, position: GroundPosition) -> Player | None:
+def _control_distances(game: Game, position: GroundPosition) -> dict[Player, float]:
     """Use the nearest land base or road sector; ties are not controlled territory.
 
     Roads between opposing bases are split at the current front, not halfway
@@ -57,6 +58,11 @@ def position_owner(game: Game, position: GroundPosition) -> Player | None:
             ):
                 sector = substring(road, start, end)
                 distances[player] = min(distances[player], point.distance(sector))
+    return distances
+
+
+def position_owner(game: Game, position: GroundPosition) -> Player | None:
+    distances = _control_distances(game, position)
     nearest = min(distances.values())
     owners = [
         player
@@ -64,6 +70,37 @@ def position_owner(game: Game, position: GroundPosition) -> Player | None:
         if math.isfinite(distance) and abs(distance - nearest) <= 1e-6
     ]
     return owners[0] if len(owners) == 1 else None
+
+
+def segment_is_friendly(game: Game, owner: Player, segment: GroundSegment) -> bool:
+    """Conservatively certify the entire detour, not just its destination.
+
+    Distances to control sources are 1-Lipschitz. A midpoint ownership margin
+    larger than the leg length therefore certifies both halves. Subdivide near
+    borders; ambiguous sub-millimetre strips remain unavailable.
+    """
+    pending = [segment]
+    while pending:
+        leg = pending.pop()
+        middle = GroundPosition(
+            (leg.start.x + leg.end.x) / 2, (leg.start.z + leg.end.z) / 2
+        )
+        distances = _control_distances(game, middle)
+        friendly = distances[owner]
+        hostile = min(d for player, d in distances.items() if player is not owner)
+        if not math.isfinite(friendly) or hostile - friendly <= 1e-6:
+            return False
+        if hostile - friendly > leg.length:
+            continue
+        if leg.length <= 0.001:
+            return False
+        pending.extend(
+            (
+                GroundSegment(leg.start, middle, False),
+                GroundSegment(middle, leg.end, False),
+            )
+        )
+    return True
 
 
 def require_friendly_position(

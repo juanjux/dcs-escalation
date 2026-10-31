@@ -243,7 +243,9 @@ permissions as supply convoys: coarse terrain exclusions
 do not cut an established convoy road. Off-road access must stay on mapped land
 and clear exclusion zones. Missing terrain data or an unverified water/bridge
 crossing outside the authored roads blocks the preview. With no friendly road
-corridors, only a validated direct off-road route is available.
+corridors, or when they cannot connect, the planner searches off-road detours
+around excluded terrain and water. Detours must stay in friendly territory and
+use the configured off-road distance budget (half the road budget by default).
 
 GPS destinations must be in friendly territory, determined by the nearest land
 base or authored road sector. Roads between opposing bases are divided at the
