@@ -338,6 +338,20 @@ def buy_ground(side: str, cp_id: str, unit_name: str, quantity: int = 1) -> dict
 
 
 @_tool()
+def set_package_shared_route(
+    index: int, single_route_for_all_flights: bool, side: str = "red"
+) -> dict:
+    """Toggle a package's shared route. Incompatible mission waypoints are refused.
+
+    Edits to any flight then update the route positions and altitudes of every flight.
+    Airfield procedures remain individual. The package view reports availability.
+    """
+    return _dump(
+        service.set_package_shared_route(side, index, single_route_for_all_flights)
+    )
+
+
+@_tool()
 def ground_object_options(tgo_id: str, side: str = "red") -> dict:
     """What one of YOUR ground objects (a SAM/EWR/armor/ship/missile/coastal site — a tgo
     id from turn_context.targets or your own sites) can be REBUILT into: the force-groups,

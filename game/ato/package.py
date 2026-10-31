@@ -47,6 +47,7 @@ class Package(RadioFrequencyContainer):
         self._db = db
         self.frequency = frequency
         self.custom_name = custom_name
+        self.single_route_for_all_flights: bool | None = None
 
         # True if the package ToT should be reset to ASAP whenever the player makes a
         # change. This is really a UI property rather than a game property, but we want
@@ -67,6 +68,8 @@ class Package(RadioFrequencyContainer):
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)
         self.__dict__.setdefault("auto_coordinated", False)
+        # Existing manually edited routes must not be silently replaced on load.
+        self.__dict__.setdefault("single_route_for_all_flights", False)
 
     @property
     def has_players(self) -> bool:
@@ -363,6 +366,7 @@ class Package(RadioFrequencyContainer):
     def clone_package(package: Package) -> Package:
         clone = Package(package.target, package._db, package.auto_asap)
         clone.auto_coordinated = package.auto_coordinated
+        clone.single_route_for_all_flights = package.single_route_for_all_flights
         clone.time_over_target = deepcopy(package.time_over_target)
         for f in package.flights:
             cf = Flight.clone_flight(f)

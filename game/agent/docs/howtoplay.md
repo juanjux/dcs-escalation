@@ -2056,6 +2056,19 @@ Write bodies:
   charges the net, and respects the repair-delay (rebuilt units arrive over
   the campaign's repair turns). Use it to swap a weak SAM for a stronger one, add TELs, or
   re-close a strike corridor.
+- `POST /packages/{index}/shared-route` `{side, single_route_for_all_flights: true|false}`
+  changes route sharing for an existing package. The optional
+  `single_route_for_all_flights` field in a create/evaluate package spec overrides
+  the default: enabled for new BARCAP, TARCAP and Refueling packages, off otherwise.
+  Enabling uses the first flight's route. Subsequent waypoint position/altitude edits
+  on **any** flight update every flight's corresponding route points. NAV insertions
+  and deletions are also shared. Departure, landing, alternate and runway alignment
+  remain individual, as do flight timings and TOT offsets. Sharing does not provide
+  collision separation; retain suitable timing separation where needed.
+  `get_packages` reports `single_route_for_all_flights` and, when unavailable,
+  `shared_route_unavailable_reason`. Escort, SEAD Escort, incompatible mission
+  waypoint sequences, special/custom layouts and active flights cannot enable it.
+  Packages saved before this feature retain their independent routes until enabled.
 - `POST /stances` `{side, friendly_cp_id, enemy_cp_id, stance}`
 - `POST /squadron/relocate` `{side, squadron_id, dest_cp_id}` (move a squadron to
   another friendly base; arrives over time). The answer says how many ferry flights it

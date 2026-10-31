@@ -334,6 +334,13 @@ def _apply_tot(package, spec, now: datetime) -> None:
     the mission) when given, else ASAP. Mirrors the player's set_tot/set_asap — flight-plan
     TOTs derive from ``package.time_over_target``, so setting it is enough. An unreachable
     TOT is raised to the earliest one the package can actually make."""
+    from game.ato.sharedroute import set_enabled, synchronize
+
+    share = getattr(spec, "single_route_for_all_flights", None)
+    if share is not None:
+        set_enabled(package, share)
+    else:
+        synchronize(package)
     tot_minutes = getattr(spec, "tot_minutes", None)
     if tot_minutes is not None:
         package.auto_asap = False
@@ -1038,6 +1045,38 @@ def _resolve_cp(game: Game, cp_id: str):
     if cp is None:
         raise ValueError(f"no control point with id {cp_id!r}")
     return cp
+
+
+def set_package_shared_route(
+    game: Game, side: str, index: int, single_route_for_all_flights: bool
+) -> schemas.OpResult:
+    from game.ato.sharedroute import set_enabled
+    from game.server import GameContext
+
+    try:
+        ato = views.coalition_for_side(game, side).ato
+        if index < 0 or index >= len(ato.packages):
+            raise ValueError(f"no package at index {index}")
+        package = ato.packages[index]
+        set_enabled(package, single_route_for_all_flights)
+        try:
+            model = (
+                GameContext.get_model()
+                .ato_model_for(views.player_for_side(side))
+                .find_matching_package_model(package)
+            )
+            if model is not None:
+                model.update_tot()
+        except Exception:
+            if package.auto_asap:
+                package.set_tot_asap(game.conditions.start_time)
+        _push_map_events(_new_map_events().update_flights_in_package(package))
+        return schemas.OpResult(
+            ok=True,
+            detail=f"package {index}: single route {'enabled' if single_route_for_all_flights else 'disabled'}",
+        )
+    except ValueError as exc:
+        return schemas.OpResult(ok=False, error=str(exc))
 
 
 def set_package_tot(

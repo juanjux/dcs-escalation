@@ -48,6 +48,7 @@ class PackageSpec(BaseModel):
     flights: list[FlightSpec]
     rationale: str | None = None  # one line "why this exists" — shown to the player
     asap: bool = True
+    single_route_for_all_flights: bool | None = None
     ignore_range: bool = (
         False  # plan even if the target is past the auto-planner's range limit — a
         # capable but far airframe the human could send manually (accept the fuel risk)
@@ -146,6 +147,11 @@ class EvaluatePackageRequest(BaseModel):
 class PackageTotRequest(BaseModel):
     side: str = "red"
     tot_minutes: int | None = None  # minutes into the mission; null resets to ASAP
+
+
+class PackageSharedRouteRequest(BaseModel):
+    side: str = "red"
+    single_route_for_all_flights: bool
 
 
 class ValidatePayloadRequest(BaseModel):

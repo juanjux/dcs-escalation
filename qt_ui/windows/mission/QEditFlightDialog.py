@@ -193,6 +193,10 @@ class QEditFlightDialog(QDialog):
         """
         self._recreate_package_if_standoff_changed()
         self._offer_to_move_the_refuelling_waypoint()
+        from game.ato.sharedroute import synchronize
+
+        for changed in synchronize(self.flight.package, self.flight):
+            self.events.update_flight(changed)
         self.events = self.events.update_flight(self.flight)
         EventStream.put_nowait(self.events)
         self.events = GameUpdateEvents()

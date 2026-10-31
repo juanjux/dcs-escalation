@@ -118,6 +118,13 @@ class QPackageDialog(QDialog):
             control.setText(text)
             control.setAutoDefault(False)
         identity_layout.addWidget(self.freq_widget)
+        self.shared_route_checkbox = QCheckBox("Single route for all flights")
+        self.shared_route_checkbox.setStyleSheet(
+            "QCheckBox { color: #D3DFE8; font-size: 12px; background: transparent; }"
+            "QCheckBox:disabled { color: #77838E; }"
+        )
+        self.shared_route_checkbox.toggled.connect(self.set_shared_route)
+        identity_layout.addWidget(self.shared_route_checkbox)
         settings_row.addWidget(identity, 1)
 
         timing = card()
@@ -297,6 +304,21 @@ class QPackageDialog(QDialog):
     def set_coordinated(self, checked: bool) -> None:
         self.package_model.set_coordinated(checked)
 
+    def set_shared_route(self, checked: bool) -> None:
+        from game.ato.sharedroute import set_enabled
+
+        package = self.package_model.package
+        try:
+            set_enabled(package, checked)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Cannot share route", str(exc))
+        else:
+            self.package_model.update_tot()
+            EventStream.put_nowait(
+                GameUpdateEvents().update_flights_in_package(package)
+            )
+        self.update_package_context()
+
     def update_tot(self) -> None:
         with QSignalBlocker(self.tot_spinner):
             self.tot_spinner.setTime(self.tot_qtime())
@@ -411,7 +433,17 @@ class QPackageDialog(QDialog):
         self.update_package_context()
 
     def update_package_context(self) -> None:
+        from game.ato.sharedroute import enabled, unavailable_reason
+
         package = self.package_model.package
+        reason = unavailable_reason(package)
+        with QSignalBlocker(self.shared_route_checkbox):
+            self.shared_route_checkbox.setChecked(enabled(package))
+            self.shared_route_checkbox.setEnabled(reason is None)
+        self.shared_route_checkbox.setToolTip(
+            reason
+            or "Share route positions and altitudes. Moving a waypoint in any flight updates all flights. Departure, landing, alternate and runway alignment stay individual."
+        )
         flights = list(package.flights)
         self.package_type_text.setText(self.package_model.description)
         self.flight_stack.setCurrentIndex(0 if flights else 1)

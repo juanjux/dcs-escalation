@@ -294,6 +294,15 @@ def evaluate_package(side, spec):
 
 
 @opfor_only
+def set_package_shared_route(side, index, single_route_for_all_flights):
+    from game.agent import planner
+
+    return planner.set_package_shared_route(
+        _require_game(), side, index, single_route_for_all_flights
+    )
+
+
+@opfor_only
 def edit_waypoint(side, flight_id, waypoint_idx, lat=None, lng=None, alt_m=None):
     """Move/adjust a flight waypoint (position and/or altitude). Never deletes."""
     from game.agent import planner
