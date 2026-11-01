@@ -416,6 +416,10 @@ class QFlightPayloadTab(QFrame):
         loadout_card.setContentsMargins(0, 0, 0, 0)
         loadout_card.setSpacing(0)
         loadout_card.addWidget(preset_holder)
+        self.library_button = QPushButton("Payloads editor…")
+        self.library_button.setProperty("style", "btn-primary")
+        self.library_button.clicked.connect(self.open_payloads_editor)
+        loadout_card.addWidget(self.library_button)
         loadout_card.addWidget(self.payload_editor, 1)
         loadout_card.addWidget(docsText)
         loadout_holder = QWidget()
@@ -467,6 +471,36 @@ class QFlightPayloadTab(QFrame):
 
     def resize_for_flight(self) -> None:
         self.member_selector.setMaximum(self.flight.count - 1)
+
+    def open_payloads_editor(self) -> None:
+        from qt_ui.blocksignals import block_signals
+        from qt_ui.windows.payloads import PayloadsDialog
+
+        dialog = PayloadsDialog(self, self.flight.unit_type)
+        dialog.exec()
+        if not dialog.modified:
+            return
+        # Refresh the library choices without silently changing the flight's snapshot.
+        current = self.member_selector.selected_member.loadout
+        with block_signals(self.loadout_selector):
+            self.loadout_selector.clear()
+            for loadout in sorted(
+                Loadout.iter_for(self.flight), key=lambda p: p.name.casefold()
+            ):
+                self.loadout_selector.addItem(loadout.name, loadout)
+            index = self.loadout_selector.findText(current.name)
+            saved = self.loadout_selector.itemData(index) if index >= 0 else None
+            if (
+                saved is None
+                or saved.pylons != current.pylons
+                or saved.pylon_settings != current.pylon_settings
+                or saved.ammo_type != current.ammo_type
+            ):
+                self.loadout_selector.addItem(
+                    f"Current flight: {current.name}", current
+                )
+                index = self.loadout_selector.count() - 1
+            self.loadout_selector.setCurrentIndex(index)
 
     def reload_from_flight(self) -> None:
         self.loadout_selector.setCurrentText(

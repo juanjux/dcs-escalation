@@ -423,6 +423,8 @@ class QLoadoutEditor(QWidget):
                 + "\nreturn unitPayloads",
             )
             ac_type.add_to_payload_cache(payload_file)
+        # The library editor can invalidate this aircraft's shared payload cache.
+        ac_type.load_payloads()
         ac_type.payloads[payload_name] = entry
         return payload_file
 
