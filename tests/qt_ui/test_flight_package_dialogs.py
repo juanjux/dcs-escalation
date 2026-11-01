@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 from unittest.mock import Mock
 
 import pytest
@@ -39,7 +39,13 @@ class Named(SimpleNamespace):
         return str(self.name)
 
 
-def make_creator(monkeypatch: Any, available: bool = True) -> Any:
+def make_creator(
+    monkeypatch: Any,
+    available: bool = True,
+    *,
+    configure: Callable[[Any, Any], None] | None = None,
+    is_ownfor: bool = True,
+) -> Any:
     from game.ato.flighttype import FlightType
     from game.ato.loadouts import Loadout
     from game.ato.starttype import StartType
@@ -108,7 +114,9 @@ def make_creator(monkeypatch: Any, available: bool = True) -> Any:
         "qt_ui.windows.mission.flight.QFlightCreator.get_default_loadout_override",
         lambda *_: None,
     )
-    return QFlightCreator(game, package, True)
+    if configure is not None:
+        configure(game, squadron)
+    return QFlightCreator(game, package, is_ownfor)
 
 
 @pytest.fixture
@@ -192,9 +200,77 @@ def test_creator_required_start_and_empty_air_wing(
     assert "Required" in creator.start_hint.text()
     empty = make_creator(monkeypatch, available=False)
     assert not empty.create_button.isEnabled()
-    assert "no compatible aircraft" in empty.selection_summary.text()
+    assert empty.task_selector.count() == 0
+    assert not empty.task_selector.isEnabled()
+    assert "No missions" in empty.selection_summary.text()
     empty.reject()
     empty.deleteLater()
+
+
+def test_creator_hides_unavailable_tasks_and_selects_the_first_available(
+    qt_app: Any, monkeypatch: Any
+) -> None:
+    from game.ato.flighttype import FlightType
+
+    def configure(game: Any, squadron: Any) -> None:
+        squadron.capable_of = lambda task: task == FlightType.ANTISHIP
+        game.blue.air_wing.best_available_aircrafts_for = lambda task: (
+            [squadron.aircraft] if task == FlightType.ANTISHIP else []
+        )
+
+    dialog = make_creator(monkeypatch, configure=configure)
+    try:
+        assert dialog.task_selector.count() == 1
+        assert dialog.task_selector.currentData() == FlightType.ANTISHIP
+        assert dialog.squadron_selector.currentData() is not None
+        assert dialog.create_button.isEnabled()
+    finally:
+        dialog.reject()
+        dialog.deleteLater()
+
+
+@pytest.mark.parametrize("unavailable", ["tasked", "runway", "incapable"])
+def test_creator_hides_tasks_without_a_selectable_squadron(
+    qt_app: Any, monkeypatch: Any, unavailable: str
+) -> None:
+    def configure(game: Any, squadron: Any) -> None:
+        if unavailable == "tasked":
+            squadron.untasked_aircraft = 0
+        elif unavailable == "runway":
+            squadron.location.runway_is_operational = lambda: False
+        else:
+            squadron.capable_of = lambda _: False
+
+    dialog = make_creator(monkeypatch, configure=configure)
+    try:
+        assert dialog.task_selector.count() == 0
+        assert not dialog.create_button.isEnabled()
+        assert dialog.roster_editor.roster is None
+    finally:
+        dialog.reject()
+        dialog.deleteLater()
+
+
+@pytest.mark.parametrize("is_ownfor", [True, False])
+def test_creator_task_availability_uses_only_its_coalition(
+    qt_app: Any, monkeypatch: Any, is_ownfor: bool
+) -> None:
+    def configure(game: Any, squadron: Any) -> None:
+        empty = SimpleNamespace(
+            best_available_aircrafts_for=lambda _: [], squadrons_for=lambda _: []
+        )
+        if is_ownfor:
+            game.blue.air_wing = empty
+        else:
+            game.red.air_wing = empty
+
+    dialog = make_creator(monkeypatch, configure=configure, is_ownfor=is_ownfor)
+    try:
+        assert dialog.task_selector.count() == 0
+        assert not dialog.create_button.isEnabled()
+    finally:
+        dialog.reject()
+        dialog.deleteLater()
 
 
 def make_package_dialog() -> Any:
