@@ -326,6 +326,12 @@ previous map view and campaign controls are restored when selection ends.
   and mission type, so new flights start with it. 
   ([#49](https://github.com/juanjux/dcs-escalation/pull/49),
   [#51](https://github.com/juanjux/dcs-escalation/pull/51))
+
+- **Payload library editor** — open Edit → Payloads, or use Payloads editor in a
+  flight's Payload tab to start with its aircraft selected. Browse separate Escalation
+  and Custom presets, edit stores and weapon settings, create, duplicate or delete
+  presets. Changes apply across campaigns without changing already assigned flight
+  payloads; original Escalation presets can be restored for each aircraft.
   
 - **A fuel estimate for the plan**, beside the route total and the per-leg distances:
   taxi, the legs at their own climb/cruise/combat rates, the landing reserve and a

@@ -355,6 +355,9 @@ class QLiberationWindow(QMainWindow):
         file_menu.addSeparator()
         file_menu.addAction("E&xit", self.close)
 
+        edit_menu = self.menu.addMenu("&Edit")
+        edit_menu.addAction("Payloads", self.showPayloadsEditor)
+
         settings_menu = self.menu.addMenu("&Settings")
         self.showLiberationPrefDialogAction.setText("&General")
         settings_menu.addAction(self.showLiberationPrefDialogAction)
@@ -406,6 +409,11 @@ class QLiberationWindow(QMainWindow):
         wizard = NewGameWizard(self)
         wizard.show()
         wizard.accepted.connect(lambda: self.onGameGenerated(wizard.generatedGame))
+
+    def showPayloadsEditor(self) -> None:
+        from qt_ui.windows.payloads import PayloadsDialog
+
+        PayloadsDialog(self).exec()
 
     def openFile(self):
         if self.game is not None and self.game.savepath:

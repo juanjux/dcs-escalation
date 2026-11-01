@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[UI]** Add an aircraft payload library editor for Escalation and Custom presets, accessible from Edit → Payloads and flight payloads.
 * **[Mission Generation]** Automatically equip player A-10C II aircraft with HMCS + NVG at night, respecting disabled helmets and era restrictions.
 * **[Flight Plans]** Optional shared package routes, enabled by default for BARCAP, TARCAP and Refueling, with map edits and OPFOR API support.
 * **[Weather]** Show estimated base and top heights for each active cloud layer from the matching installed preset.

@@ -55,6 +55,14 @@ def install_resilient_payload_loading() -> None:
             return cls.payloads
         cls.payloads = {}
 
+        from game.payloadlibrary import builtin_changes, edited_builtin
+
+        try:
+            changes = builtin_changes(cls.id)
+        except Exception:
+            logger.warning("Could not read payload library edits", exc_info=True)
+            changes = {}
+
         for payload_dir in PayloadDirectories.payload_dirs():
             if not payload_dir.exists():
                 continue
@@ -67,7 +75,7 @@ def install_resilient_payload_loading() -> None:
                     continue
                 try:
                     payload_main = lua.loads(
-                        payload_path.read_text(),
+                        payload_path.read_text(encoding="utf-8-sig"),
                         # The pydcs stub types _UnitPayloadGlobals' keys as str | None;
                         # loads wants dict[str, Any]. Cast (a widening, never redundant).
                         _globals=cast("Dict[str, Any]", FlyingType._UnitPayloadGlobals),
@@ -78,6 +86,10 @@ def install_resilient_payload_loading() -> None:
                     # Directories are iterated in decreasing order of
                     # preference; keep the first occurrence of each name.
                     for load in pays["payloads"].values():
+                        if PayloadDirectories.fallback == payload_dir:
+                            load = edited_builtin(load, changes)
+                            if load is None:
+                                continue
                         name = load["name"]
                         if name not in cls.payloads:
                             cls.payloads[name] = load
