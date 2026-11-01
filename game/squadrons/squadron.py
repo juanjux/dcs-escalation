@@ -1284,6 +1284,10 @@ class Squadron:
         self.plan_ferry_flights(now)
 
     def cancel_ferry_flights(self) -> None:
+        from game.server import EventStream
+        from game.sim import GameUpdateEvents
+
+        events = GameUpdateEvents()
         # Both lists are copied: removing a package from the one being walked makes
         # Python skip the next, so an emptied package used to leave the one behind it
         # untouched -- with its ferry flights, and the pilots they hold, still claimed.
@@ -1291,8 +1295,11 @@ class Squadron:
             for flight in list(package.flights):
                 if flight.squadron == self and flight.flight_type is FlightType.FERRY:
                     package.remove_flight(flight)
+                    events.delete_flight(flight)
             if not package.flights:
                 self.coalition.ato.remove_package(package)
+        if not events.empty:
+            EventStream.put_nowait(events)
 
     def plan_ferry_flights(self, now: datetime) -> None:
         if self.destination is None:
@@ -1310,6 +1317,16 @@ class Squadron:
             remaining -= size
         package.set_tot_asap(now)
         self.coalition.ato.add_package(package)
+
+        # Relocation bypasses the flight editor, which normally registers flights
+        # with the map. Publish only after the route and timing are ready.
+        from game.server import EventStream
+        from game.sim import GameUpdateEvents
+
+        events = GameUpdateEvents()
+        for flight in package.flights:
+            events.new_flight(flight)
+        EventStream.put_nowait(events)
 
     def plan_ferry_flight(self, package: Package, size: int) -> None:
         start_type = self.location.required_aircraft_start_type
