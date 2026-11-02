@@ -82,7 +82,9 @@ def _offer(flight: Any, asked: list[str]) -> Any:
         "add fresh" if fresh else "add"
     )
     offer._ask_about_the_tanker = lambda: asked.append("tanker")  # type: ignore[method-assign]
-    offer._ask_about_removing = lambda: asked.append("remove")  # type: ignore[method-assign]
+    offer._ask_about_removing = lambda unsupported=False: asked.append(  # type: ignore[method-assign]
+        "remove unsupported" if unsupported else "remove"
+    )
     return offer
 
 
@@ -179,6 +181,20 @@ def test_the_question_reads_once(qt_app: Any) -> None:
     assert len(sentences) == len(set(sentences)), text
     assert "does not have the fuel" in text
     assert "no longer" not in text
+
+
+@pytest.mark.parametrize("fresh", [False, True])
+def test_non_receiver_with_stale_stop_is_offered_removal_not_another_tanker(
+    qt_app: Any, fresh: bool
+) -> None:
+    from game.sim import GameUpdateEvents
+
+    flight = _flight(refuel=object())
+    flight.unit_type = SimpleNamespace(dcs_id="MQ-9 Reaper")
+    asked: list[str] = []
+    offer = _offer(flight, asked)
+    offer.ask(GameUpdateEvents(), fresh=fresh)
+    assert asked == ["remove unsupported"]
 
 
 # --- a second flight in a package already answered for ----------------------
