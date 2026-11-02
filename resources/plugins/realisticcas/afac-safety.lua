@@ -306,6 +306,42 @@ do
     end
     return {mode='blocked',reason='no safe recovery or escape path'}
   end
+  -- Waiting for the work area is not recovery: stay at a reachable safe orbit,
+  -- without entering the blocked area or assuming a climb is already complete.
+  function A.wait(input)
+    local hold=A.recoveryHold(input)
+    if hold.mode~='hold' then
+      if #input.threats>64 then return hold end
+      local threats=travelThreats(input)
+      local candidates=travelCandidates(input,threats)
+      for i=0,7 do
+        local angle=i*math.pi/4
+        candidates[#candidates+1]={x=input.source.x+math.cos(angle)*input.footprint*2,
+          z=input.source.z+math.sin(angle)*input.footprint*2}
+      end
+      local best,cost
+      for _,p in ipairs(candidates)do
+        local d=distance(input.source,p)
+        if (not cost or d<cost) and A.clear({x=p.x,y=input.source.y,z=p.z},threats,1000) and
+          A.leg(input.source,p,input.source.y,threats,true) and
+          terrainSafe(input,input.source,p,input.source.y) and orbitTerrainSafe(input,p,input.source.y) then
+          best,cost=p,d
+        end
+      end
+      if not best then return hold end
+      hold={point=best,path={best},altitude=input.source.y,
+        escape=not A.clear(input.source,threats,1000)}
+    end
+    hold.mode='wait';hold.waiting=true;hold.approach=true
+    return hold
+  end
+  function A.waitSafe(input,plan,nextPoint)
+    local points={}
+    for _,p in ipairs(plan.path)do
+      points[#points+1]={x=p.x,y=p.z,alt=plan.altitude,alt_type='BARO'}
+    end
+    return A.recoverySafe(input,points,math.min(nextPoint or 1,#points),#points,true)
+  end
   function A.recoverySafe(input,points,first,last,holding)
     local threats=travelThreats(input)
     local previous=input.source

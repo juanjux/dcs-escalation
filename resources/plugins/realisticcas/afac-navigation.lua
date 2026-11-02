@@ -270,7 +270,8 @@ do
       end
       for _,p in ipairs(points)do p.ETA_locked=false end
       local tasks=points[1].task.params.tasks
-      if (plan and (plan.mode=='hold' or (r.recovery and r.recovery.hold)))or mode=='restore-return'then
+      if (plan and (plan.mode=='hold' or (r.recovery and r.recovery.hold)))or
+        (r.plan and r.plan.waiting)or mode=='restore-return'then
         tasks[#tasks+1]={auto=false,enabled=true,id='WrappedAction',params={action={id='Option',
           params={name=6,value=not plan or plan.mode~='hold'}}}}
       end
@@ -299,6 +300,8 @@ do
         end
         if wasHolding and not r.recovery.hold then notice(name,r,'recovery route clear; returning to base.')end
       end
+      local state=RealisticCAS.afacNavigation[name]
+      if state then state.waiting=nil end
       env.info('REALISTIC_CAS_AFAC_NAV|ROUTE|'..name..'|mode='..mode..'|waypoint='..nextIndex)
       r.applied=false;return true
     end
@@ -358,7 +361,7 @@ end)()]],name,revision,name,name,name,seconds)
       deactivate(name)
       r.revision=r.revision+1
       RealisticCAS.afacNavigation[name]={active=true,revision=r.revision,nextPoint=1,
-        altitude=plan.altitude}
+        altitude=plan.altitude,waiting=plan.waiting==true}
       local points=copy(r.meta.navigation.route)
       for index=1,r.meta.navigation.exitWaypoint-1 do
         points[index]=waypoint(plan.point,plan.altitude,r.meta.navigation.speed)
@@ -383,13 +386,34 @@ end)()]],name,revision,name,name,name,seconds)
         pattern='Circle',point={x=plan.point.x,y=plan.point.z},
         altitude=plan.altitude,speed=r.meta.navigation.speed}},
         stopCondition={condition=condition(name,r.revision,r.meta.stationSeconds)}}}
+      if plan.waiting or(r.plan and r.plan.waiting)then
+        points[1].task.params.tasks[#points[1].task.params.tasks+1]={number=#points[1].task.params.tasks+1,
+          auto=false,enabled=true,id='WrappedAction',params={action={id='Option',
+            params={name=6,value=not plan.waiting}}}}
+      end
       -- A Mission pushed over an active native Orbit did not take over in DCS.
       -- Replace it explicitly; the complete original recovery suffix stays intact.
+      if plan.waiting then controller:setCommand({id='SetUnlimitedFuel',params={value=false}})end
       controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
       r.applied=true;r.plan=plan
       env.info(string.format('REALISTIC_CAS_AFAC_NAV|PLAN|%s|revision=%d|altitude=%.0f|points=%d',
         name,r.revision,plan.altitude,#plan.path))
-      notice(name,r,string.format('avoiding known air defence; orbit %.0f m MSL.',plan.altitude))
+      if not plan.waiting then
+        notice(name,r,string.format('avoiding known air defence; orbit %.0f m MSL.',plan.altitude))
+      end
+      return true
+    end
+    local function waitForArea(name,r,controller,p,reason)
+      local input=recoveryInput(r,p,r.meta.navigation.exitWaypoint)
+      local state=RealisticCAS.afacNavigation[name]
+      if r.applied and r.plan and r.plan.waiting and state and state.active and not state.finished and
+        A.waitSafe(input,r.plan,state.nextPoint)then return true end
+      local plan=A.wait(input)
+      if plan.mode~='wait' then
+        return abort(name,r,controller,reason..'; no reachable safe waiting orbit')
+      end
+      push(name,r,controller,p,plan)
+      notice(name,r,'assigned area blocked by known air defence; holding safely and rechecking until clear or BINGO fuel.')
       return true
     end
     local function update(name,r)
@@ -450,7 +474,12 @@ end)()]],name,revision,name,name,name,seconds)
       end
       local p=source:getPoint()
       local knownThreats=relevant(r.side,p,m)
-      if not knownThreats then abort(name,r,controller,'too many known threats for bounded planning');return end
+      if not knownThreats then
+        if r.nextWait and timer.getTime()<r.nextWait then return end
+        r.nextWait=timer.getTime()+5
+        waitForArea(name,r,controller,p,'too many known threats for bounded planning');return
+      end
+      r.nextWait=nil
       if discardDestroyed(knownThreats)then r.nextPlan=nil;return end
       if r.nextPlan and timer.getTime()<r.nextPlan and r.threatCount==#knownThreats and
         math.abs(p.y-r.lastAltitude)<100 then return end
@@ -492,7 +521,7 @@ end)()]],name,revision,name,name,name,seconds)
           return
         end
       end
-      if r.applied and state and state.active and not state.finished and
+      if r.applied and not r.plan.waiting and state and state.active and not state.finished and
         p.y<r.plan.altitude-100 and A.requirement(input) and A.safePlan(input,r.plan,state.nextPoint) then
         if not start and not r.plan.approach and RealisticCAS.AFACSearch.inside(p,m.zone) then
           RealisticCAS.afacStations=RealisticCAS.afacStations or {};RealisticCAS.afacStations[name]=timer.getTime()
@@ -502,7 +531,7 @@ end)()]],name,revision,name,name,name,seconds)
       local plan=A.plan(input)
       if plan.mode=='abort' then
         local why=knownThreats[1] and knownThreats[1].typeName or 'air defence'
-        abort(name,r,controller,plan.reason..' ('..why..')')
+        waitForArea(name,r,controller,p,plan.reason..' ('..why..')')
       elseif plan.mode=='original' then
         if r.applied then
           if release(name,r,controller) then notice(name,r,'resuming assigned search route.') end
@@ -511,14 +540,16 @@ end)()]],name,revision,name,name,name,seconds)
         if not start and not plan.approach and RealisticCAS.AFACSearch.inside(p,m.zone) then
           RealisticCAS.afacStations=RealisticCAS.afacStations or {};RealisticCAS.afacStations[name]=timer.getTime()
         end
-        local changed=not r.applied or A.distance(r.plan.point,plan.point)>250 or
+        local changed=not r.applied or r.plan.waiting~=plan.waiting or A.distance(r.plan.point,plan.point)>250 or
           math.abs(r.plan.altitude-plan.altitude)>100
         if not changed then
           local remaining=state and state.nextPoint or 1
           if not A.safePlan(input,r.plan,remaining) then changed=true end
         end
         if changed then
+          local wasWaiting=r.applied and r.plan.waiting
           push(name,r,controller,p,plan)
+          if wasWaiting then notice(name,r,'assigned area accessible; resuming the mission.')end
         end
       end
     end
@@ -527,6 +558,8 @@ end)()]],name,revision,name,name,name,seconds)
       if not r or RealisticCAS.afacAbort[name] or RealisticCAS.afacReturn[name] then
         return false,'mission complete'
       end
+      local state=RealisticCAS.afacNavigation[name]
+      if state and state.waiting then return false,'assigned area blocked; waiting safely' end
       local list=relevant(r.side,p,r.meta)
       if not list then return false,'too many known threats' end
       local safe,t=A.clear(p,list,1000)
