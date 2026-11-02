@@ -37,6 +37,45 @@ assert(plan.mode=='return' and #plan.path>0 and #plan.path<=2)
 validate(plan)
 """)
 
+    def test_wait_holds_outside_the_work_area_instead_of_heading_home(self):
+        self.lua.execute("""
+local plan=A.wait(input)
+assert(plan.mode=='wait'and plan.waiting and plan.point.x==input.source.x)
+assert(plan.altitude==input.source.y and A.waitSafe(input,plan,1))
+""")
+
+    def test_wait_can_escape_a_new_envelope_and_preserve_clearance(self):
+        self.lua.execute("""
+input.source.x=-7500
+local plan=A.wait(input)
+assert(plan.mode=='wait'and plan.escape and plan.point.x< -9000)
+assert(A.waitSafe(input,plan,1))
+input.threats[2]={point={x=plan.point.x,y=0,z=plan.point.z},radius=3000,ceiling=4000}
+assert(not A.waitSafe(input,plan,1))
+""")
+
+    def test_wait_uses_full_orbit_terrain_clearance_not_just_its_centre(self):
+        self.lua.execute("""
+input.threats={}
+input.height=function(p)return p.x> -19500 and p.x< -18500 and 1950 or 0 end
+local plan=A.wait(input)
+assert(plan.mode=='wait'and A.distance(plan.point,input.source)>0)
+assert(A.waitSafe(input,plan,1))
+input.height=function()return 1999 end
+assert(A.wait(input).mode=='blocked')
+""")
+
+    def test_wait_dense_network_checks_every_threat_without_planning_unbounded_paths(
+        self,
+    ):
+        self.lua.execute("""
+input.threats={}
+for i=1,65 do input.threats[i]={point={x=100000+i,y=0,z=0},radius=7000}end
+assert(A.wait(input).mode=='wait')
+input.threats[65].point=input.source
+assert(A.wait(input).mode=='blocked')
+""")
+
     def test_unknown_ceiling_requires_standoff_even_at_high_altitude(self):
         self.lua.execute("""
 input.threats[1].ceiling=nil;input.source.y=10000

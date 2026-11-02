@@ -84,6 +84,8 @@ do
         if meta.afac then
           if (RealisticCAS.afacAbort or {})[meta.afac.groupName] or
             (RealisticCAS.afacReturn or {})[meta.afac.groupName] then return nil end
+          local navigation=(RealisticCAS.afacNavigation or {})[meta.afac.groupName]
+          if navigation and navigation.waiting then return nil end
           local start=(RealisticCAS.afacStations or {})[meta.afac.groupName]
           if not RealisticCAS.AFACSearch.active(meta.afac,p,timer.getTime(),start,u:getFuel()) then return nil end
           if not meta.nightWarned and meta.equipment.ir~=true and meta.equipment.targetingPod~=true then

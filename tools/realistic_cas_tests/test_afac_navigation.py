@@ -312,7 +312,7 @@ class AfacNavigationTests(unittest.TestCase):
                     + ";known();beginNavigation();tick();assert(orbit(assigned[1]).params.altitude==2000)"
                 )
 
-    def test_blocked_zone_aborts_and_switches_to_original_exit(self):
+    def test_blocked_zone_holds_after_emergency_escape_instead_of_aborting(self):
         self.rt.execute("""
         config.observers[1].afac.zone.radius=6000
         observer.point.x=1000
@@ -322,7 +322,8 @@ class AfacNavigationTests(unittest.TestCase):
         assert(not nav:clear('blue',observer.point))
         observer.point.x=-10000
         for i=1,6 do tick()end
-        assert(RealisticCAS.afacAbort.blue and RealisticCAS.afacReturn.blue)
+        assert(not RealisticCAS.afacAbort.blue and not RealisticCAS.afacReturn.blue)
+        assert(RealisticCAS.afacNavigation.blue.waiting)
         """)
 
     def test_destroyed_or_expired_threat_resumes_original_task(self):
