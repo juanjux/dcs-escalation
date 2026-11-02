@@ -58,10 +58,31 @@ class LuaGenerator:
         self._seed_scenery_objectives()
         self._seed_persistent_damage()
         self._inject_barcap_refuelling()
+        self._inject_sam_transit_defense()
         inject_campaign(self, realistic_cas)
         for t in existing_start_triggers:
             self.mission.triggerrules.triggers.remove(t)
             self.mission.triggerrules.triggers.append(t)
+
+    def _inject_sam_transit_defense(self) -> None:
+        from dcs.lua import dumps
+        from .samtransitdefense import configure
+
+        groups = configure(self.mission, self.unit_map)
+        if not groups:
+            return
+        trigger = TriggerStart(comment="Mobile SAM transit defense")
+        trigger.add_action(
+            DoScript(String("ESCALATION_SAM_TRANSIT_CONFIG=" + dumps(groups)))
+        )
+        trigger.add_action(
+            DoScriptFile(
+                self.mission.map_resource.add_resource_file(
+                    Path("resources/plugins/base/sam_transit_defense.lua")
+                )
+            )
+        )
+        self.mission.triggerrules.triggers.append(trigger)
 
     def _inject_barcap_refuelling(self) -> None:
         from dcs.lua import dumps

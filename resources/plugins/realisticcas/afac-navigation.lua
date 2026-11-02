@@ -63,6 +63,10 @@ do
       return g and fog.service:isRevealed(g:getID(),3-r.meta.coalition)==true
     end
     local function powered(r)
+      if r.meta.transitDefense then
+        local state=ESCALATION_SAM_TRANSIT
+        return state and state.active[r.meta.groupName]==true
+      end
       -- Real firing evidence takes precedence over a conflicting power report.
       if r.firingUntil and timer.getTime()<r.firingUntil then return true end
       local query=dcsRetribution and dcsRetribution.iadsHasWorkingPower
@@ -81,7 +85,7 @@ do
         local shared=known(r)==true
         r.seenKnowledge=shared
         r.checkedAt=timer.getTime()
-        if shared and not r.destroyed then
+        if shared and not r.destroyed and (not r.meta.transitDefense or powered(r)) then
           local u=live(r.meta.name)
           local g=u and u:getGroup()
           if g and g:getName()==r.meta.groupName and u:getTypeName()==r.meta.typeName and u:getCoalition()==r.meta.coalition then

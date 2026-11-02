@@ -155,7 +155,10 @@ def armor_movement_options(
             sam_warnings.append("Some battery units are already reserved for movement")
         warnings.extend(sam_warnings)
         warnings.append(
-            "SAM/radar sites relocate as a whole. Radars and weapons are packed and unavailable until arrival or an explicit stop."
+            "SAM/radar sites relocate as a whole and leave the IADS network. "
+            "Validated self-propelled batteries can stop to defend after a hit; "
+            "packing and reloading may delay their return to the route. "
+            "Other sites keep radars and weapons packed until arrival or an explicit stop."
         )
     sam_ready = not is_sam or (
         not unsupported

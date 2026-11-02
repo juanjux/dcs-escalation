@@ -154,8 +154,12 @@ The OPFOR REST/MCP API supports the same reserve movements and base-stock deploy
 under BLUE's territory, transport and distance rules. Mobile SAM/radar sites can also
 relocate whole to friendly GPS positions. Each towed piece needs a surviving tractor
 in the battery; fixed/unknown units and pending repairs block relocation. Radars,
-jammers and weapons stay packed and offline during transit, while the convoy remains
-attackable. Arrival or an explicit stop redeploys survivors in their original formation
+jammers and weapons start packed and offline during transit, while the convoy remains
+attackable. Validated Osa, HEMTT C-RAM, Tor-M2K and complete Buk-M3 configurations can
+stop to defend after a hit, then pack and resume their remaining route. Native reloading
+can delay recovery by several minutes. Unknown/mixed batteries, loaded weapons,
+Sky Sabre and S-350 remain packed. Moving sites stay outside the IADS network.
+Arrival or an explicit stop redeploys survivors in their original formation
 without changing the site or unit identities. The same controls are available through
 the OPFOR API with `source_kind:"sam"`.
 

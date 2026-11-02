@@ -15,6 +15,7 @@ from dcs.flyingunit import FlyingUnit
 from game.dcs.afaccapabilities import capabilities_for, smoke_rounds
 from game.dcs.skills import SKILL_LADDER
 from game.ato.afac import station_minutes
+from game.groundmovement.samdefense import transit_defense
 from game.missiongenerator.afacthreats import envelope
 from game.theater.theatergroundobject import IadsGroundObject
 
@@ -431,10 +432,25 @@ def collect_registry(
                             packed = isinstance(
                                 threat_objective, IadsGroundObject
                             ) and getattr(threat_objective, "in_transit", False)
-                            threat = None if packed else envelope(unit.type)
+                            reactive = (
+                                packed
+                                and threat_objective is not None
+                                and len(group.points) > 1
+                                and transit_defense(u.type for u in group.units)
+                                is not None
+                                and not any(
+                                    u.alive and u.transported_by_id is not None
+                                    for u in threat_objective.units
+                                )
+                            )
+                            threat = (
+                                None if packed and not reactive else envelope(unit.type)
+                            )
                             if threat is not None:
                                 threat = dict(threat)
-                                if not concealed:
+                                if reactive:
+                                    threat["transitDefense"] = True
+                                if not concealed and not reactive:
                                     threat["initialPoint"] = {
                                         "x": unit.position.x,
                                         "z": unit.position.y,
