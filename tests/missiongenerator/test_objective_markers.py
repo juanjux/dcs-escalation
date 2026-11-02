@@ -14,19 +14,38 @@ from dcs.terrain import Caucasus
 from game.missiongenerator.triggergenerator import TriggerGenerator
 from game.theater import Player
 from game.theater.presetlocation import PresetLocation
-from game.theater.theatergroundobject import BuildingGroundObject, NAME_BY_CATEGORY
+from game.theater.theatergroundobject import (
+    BuildingGroundObject,
+    NAME_BY_CATEGORY,
+    TheaterGroundObject,
+    VehicleGroupGroundObject,
+)
 
 
 def generate_markers(
-    categories: list[str], owner: Player = Player.RED, enabled: bool = True
+    categories: list[str],
+    owner: Player = Player.RED,
+    enabled: bool = True,
+    unit_states: tuple[bool, ...] = (True,),
 ) -> Mission:
     terrain = Caucasus()
     cp: Any = SimpleNamespace(captured=owner, ground_objects=[])
     for index, category in enumerate(categories):
         location = PresetLocation("Building", Point(index * 100, 0, terrain))
-        objective = BuildingGroundObject(f"BONGO {index}", category, location, cp, None)
+        objective: TheaterGroundObject
+        if category == "armor":
+            objective = VehicleGroupGroundObject(f"BONGO {index}", location, cp, None)
+        else:
+            objective = BuildingGroundObject(
+                f"BONGO {index}", category, location, cp, None
+            )
         group: Any = SimpleNamespace(
-            units=[SimpleNamespace(alive=True, position=location)]
+            units=[
+                SimpleNamespace(
+                    alive=alive, position=Point(location.x + n * 10, 0, terrain)
+                )
+                for n, alive in enumerate(unit_states)
+            ]
         )
         objective.groups.append(group)
         cp.ground_objects.append(objective)
@@ -99,12 +118,45 @@ def test_disabled_objective_markers_remain_disabled() -> None:
     assert not list(mission.triggers.zones())
 
 
-def test_objective_types_are_written_to_the_miz(tmp_path: Path) -> None:
-    mission = generate_markers(["ammo", "derrick", "oil"])
+@pytest.mark.parametrize("destroyed", [False, True])
+def test_objective_types_are_written_to_the_miz(
+    tmp_path: Path, destroyed: bool
+) -> None:
+    mission = generate_markers(["ammo", "derrick", "oil"], unit_states=(not destroyed,))
     output = tmp_path / "objective-markers.miz"
     mission.save(str(output))
 
     with ZipFile(output) as archive:
         text = archive.read("mission").decode("utf-8")
     for index, kind in enumerate(["AMMO DEPOT", "OIL DERRICK", "OIL PLATFORM"]):
-        assert f"BONGO {index} - {kind} [ENEMY]" in text
+        suffix = " [DESTROYED]" if destroyed else ""
+        assert f"BONGO {index} - {kind} [ENEMY]{suffix}" in text
+
+
+@pytest.mark.parametrize("category", ["ammo", "armor", "oil"])
+@pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
+def test_fully_destroyed_sites_retain_labels(category: str, owner: Player) -> None:
+    mission = generate_markers([category], owner, unit_states=(False, False))
+    actions = marker_actions(mission)
+    assert actions
+    assert all("[DESTROYED]" in str(action.text.id) for action in actions)
+    allegiance = "ALLY" if owner.is_blue else "ENEMY"
+    assert all(f"[{allegiance}]" in str(action.text.id) for action in actions)
+
+
+@pytest.mark.parametrize("category", ["ammo", "armor"])
+def test_partial_losses_do_not_label_the_whole_site_destroyed(category: str) -> None:
+    mission = generate_markers([category], unit_states=(False, True))
+    actions = marker_actions(mission)
+    assert actions
+    assert all("DESTROYED" not in str(action.text.id) for action in actions)
+
+
+def test_empty_armor_sites_are_not_reported_as_destroyed() -> None:
+    mission = generate_markers(["armor"], unit_states=())
+    assert "DESTROYED" not in str(marker_actions(mission)[0].text.id)
+
+
+def test_destroyed_building_markers_keep_their_actual_positions() -> None:
+    mission = generate_markers(["ammo"], unit_states=(False, False))
+    assert [zone.position.x for zone in mission.triggers.zones()] == [0, 10]

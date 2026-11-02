@@ -150,7 +150,16 @@ class TriggerGenerator:
                     )
                     allegiance = "ALLY" if cp.captured.is_blue else "ENEMY"
                     name = f"{ground_object.obj_name} - {kind.upper()} [{allegiance}]"
-                    for location in ground_object.mark_locations:
+                    units = list(ground_object.units)
+                    destroyed = bool(units) and all(not unit.alive for unit in units)
+                    locations = list(ground_object.mark_locations)
+                    if destroyed:
+                        name += " [DESTROYED]"
+                        # Building mark locations normally include only survivors.
+                        # Retain their original positions when the whole site is gone.
+                        if not locations:
+                            locations = [unit.position for unit in units]
+                    for location in locations:
                         zone = self.mission.triggers.add_triggerzone(
                             location, radius=10, hidden=True, name="MARK"
                         )
