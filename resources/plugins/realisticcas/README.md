@@ -122,6 +122,14 @@ AI flights climb above verified threat ceilings when aircraft and cloud limits
 permit, otherwise keep lateral separation. Newly revealed threats can trigger an
 urgent escape outside the patrol zone; recovery legs are also checked. A blocked
 recovery causes a warning and a safe hold where possible, with fuel still burning.
+If defences block the assigned work area, AFACs wait in a reachable safe orbit
+outside those envelopes and recheck access every few seconds. They resume the
+mission when known threats are destroyed, lose power or otherwise cease blocking
+the route, and return at 20% BINGO fuel. Waiting burns fuel even when the campaign
+normally gives AI aircraft unlimited fuel. It does not start the station clock or
+permit reconnaissance or marking. Existing station deadlines still apply to
+flights that have already begun their patrol. If no safe waiting orbit is
+reachable, the emergency return logic remains in effect.
 Player flights are not automatically steered. These approximate threat envelopes
 do not guarantee safety from hidden defences, interceptors or terrain.
 

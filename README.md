@@ -278,7 +278,9 @@ previous map view and campaign controls are restored when selection ends.
   their existing lifetime, including support infantry and MANPADS.
   Eligible transport helicopters carry a thermal-equipped JTAC. Flights coordinate
   by enemy group, earn discovery and marking experience, and avoid known ground air
-  defences during patrol and recovery. Station time, marking duration, reports and
+  defences during patrol and recovery. If the work area is blocked, they wait in a
+  reachable safe orbit and recheck access until it clears or BINGO fuel requires RTB.
+  Station time, marking duration, reports and
   the shared laser code are configurable. Threat avoidance and sensors use gameplay
   approximations; campaign-scale tuning remains ongoing.
   [Plugin details](resources/plugins/realisticcas/README.md).
