@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Callable
 
 import pytest
 
@@ -32,7 +32,14 @@ def qt_app() -> Any:
     return app
 
 
-def _dialog(qt_app: Any, cross_squadron: bool = False) -> Any:
+def _dialog(
+    qt_app: Any,
+    cross_squadron: bool = False,
+    *,
+    aircraft: int = 12,
+    extra_pilots: int = 0,
+    configure: Callable[[Any], None] | None = None,
+) -> Any:
     from dcs.unit import Skill
     from PySide6.QtCore import Qt
 
@@ -54,7 +61,7 @@ def _dialog(qt_app: Any, cross_squadron: bool = False) -> Any:
         it.nickname = None
         it.country = None
         it.aircraft = "F/A-18C"
-        it.owned_aircraft = 12
+        it.owned_aircraft = aircraft
         it.current_roster = []
         it.available_pilots = []
         it.coalition = SimpleNamespace(
@@ -71,6 +78,13 @@ def _dialog(qt_app: Any, cross_squadron: bool = False) -> Any:
     requests: Any = [(home, chosen), (away, friend), (home, stranger)]
     for squadron_of, pilot in requests:
         squadron_of.current_roster.append(pilot)
+        pilot.wants_leave = True
+    for squadron_of in ([home, away] if cross_squadron else [home]):
+        squadron_of.current_roster.extend(
+            Pilot(f"Reserve {index}") for index in range(extra_pilots)
+        )
+    if configure is not None:
+        configure(requests)
 
     game: Any = SimpleNamespace(settings=settings, turn=6)
     dialog = LeaveRequestsDialog(game, requests)
@@ -116,3 +130,119 @@ def test_a_friend_in_another_squadron_buys_nothing_and_says_so(qt_app: Any) -> N
     dialog = _dialog(qt_app, cross_squadron=True)
     dialog.select(0)
     assert "nothing extra" in dialog.rows[1].cells[0].toolTip()
+
+
+@pytest.mark.parametrize(
+    ("aircraft", "expected"),
+    [
+        (0, [True, True, True]),
+        (2, [True, True, True]),
+        (4, [True, False, False]),
+        (5, [False, False, False]),
+        (6, [False, False, False]),
+    ],
+)
+def test_defaults_grant_only_with_enough_remaining_pilots(
+    qt_app: Any, aircraft: int, expected: list[bool]
+) -> None:
+    dialog = _dialog(qt_app, aircraft=aircraft, extra_pilots=2)
+    try:
+        assert [row.grant.isChecked() for row in dialog.rows] == expected
+        assert all(
+            row.pilot.wants_leave and not row.pilot.on_leave for row in dialog.rows
+        )
+        assert len(dialog.rows[0].squadron.current_roster) == 5
+    finally:
+        dialog.close()
+
+
+def test_grant_updates_every_row_in_its_squadron_and_can_be_undone(qt_app: Any) -> None:
+    dialog = _dialog(qt_app, aircraft=4, extra_pilots=2)
+    try:
+        assert all(row.cells[4].text() == "4 free · 4 aircraft" for row in dialog.rows)
+        dialog.rows[0].grant.setChecked(False)
+        assert all(row.cells[4].text() == "5 free · 4 aircraft" for row in dialog.rows)
+        dialog.rows[1].grant.setChecked(True)
+        assert all(row.cells[4].text() == "4 free · 4 aircraft" for row in dialog.rows)
+        # Manual decisions may still accept a shortage, but every row must warn.
+        dialog.rows[2].grant.setChecked(True)
+        assert all("<b>3 free</b>" in row.cells[4].text() for row in dialog.rows)
+        assert all("fewer pilots" in row.cells[4].toolTip() for row in dialog.rows)
+        dialog.select(0)
+        assert all("fewer pilots" in row.cells[4].toolTip() for row in dialog.rows)
+        dialog.rows[2].grant.setChecked(False)
+        assert all(row.cells[4].text() == "4 free · 4 aircraft" for row in dialog.rows)
+        assert all("fewer pilots" not in row.cells[4].toolTip() for row in dialog.rows)
+    finally:
+        dialog.close()
+
+
+def test_cover_and_defaults_are_independent_between_squadrons(qt_app: Any) -> None:
+    dialog = _dialog(qt_app, cross_squadron=True, aircraft=4, extra_pilots=3)
+    try:
+        assert [row.grant.isChecked() for row in dialog.rows] == [True, False, False]
+        dialog.rows[0].grant.setChecked(False)
+        assert dialog.rows[0].cells[4].text() == "5 free · 4 aircraft"
+        assert dialog.rows[2].cells[4].text() == "5 free · 4 aircraft"
+        assert dialog.rows[1].cells[4].text() == "4 free · 4 aircraft"
+    finally:
+        dialog.close()
+
+
+def test_grant_all_and_clear_all_refresh_cover_and_header(qt_app: Any) -> None:
+    from PySide6.QtCore import Qt
+
+    dialog = _dialog(qt_app, aircraft=4, extra_pilots=2)
+    try:
+        assert dialog.grant_all.checkState() == Qt.CheckState.PartiallyChecked
+        dialog.grant_all.setCheckState(Qt.CheckState.Checked)
+        assert all(row.grant.isChecked() for row in dialog.rows)
+        assert all("2 free" in row.cells[4].text() for row in dialog.rows)
+        dialog.grant_all.setCheckState(Qt.CheckState.Unchecked)
+        assert not any(row.grant.isChecked() for row in dialog.rows)
+        assert all(row.cells[4].text() == "5 free · 4 aircraft" for row in dialog.rows)
+    finally:
+        dialog.close()
+
+
+def test_default_grants_prioritize_lowest_morale(qt_app: Any) -> None:
+    def configure(requests: Any) -> None:
+        for (_, pilot), morale in zip(requests, [60, 30, 10]):
+            pilot.morale = morale
+
+    dialog = _dialog(qt_app, aircraft=4, extra_pilots=2, configure=configure)
+    try:
+        assert [row.grant.isChecked() for row in dialog.rows] == [False, False, True]
+    finally:
+        dialog.close()
+
+
+def test_unavailable_pilots_do_not_count_as_cover(qt_app: Any) -> None:
+    from game.squadrons.pilot import PilotStatus
+
+    def configure(requests: Any) -> None:
+        squadron = requests[0][0]
+        for pilot, status in zip(
+            squadron.current_roster[3:],
+            [PilotStatus.Wounded, PilotStatus.OnLeave, PilotStatus.Dead],
+        ):
+            pilot.status = status
+
+    dialog = _dialog(qt_app, aircraft=2, extra_pilots=3, configure=configure)
+    try:
+        assert [row.grant.isChecked() for row in dialog.rows] == [True, False, False]
+        assert all(row.cells[4].text() == "2 free · 2 aircraft" for row in dialog.rows)
+    finally:
+        dialog.close()
+
+
+def test_answers_are_applied_only_on_confirmation(qt_app: Any) -> None:
+    dialog = _dialog(qt_app, aircraft=4, extra_pilots=2)
+    try:
+        assert all(not row.pilot.on_leave for row in dialog.rows)
+        dialog.answer()
+        assert [row.pilot.on_leave for row in dialog.rows] == [True, False, False]
+        assert not any(row.pilot.wants_leave for row in dialog.rows)
+        assert dialog.rows[0].squadron.owned_aircraft == 4
+    finally:
+        dialog.close()
