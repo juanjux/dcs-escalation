@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import os
 from types import SimpleNamespace
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
+_dialogs: list[Any] = []
 
 
 @pytest.fixture(scope="module")
@@ -30,6 +32,24 @@ def qt_app() -> Any:
         except Exception as exc:  # pragma: no cover - no display of any kind
             pytest.skip(f"no Qt platform available: {exc}")
     return app
+
+
+@pytest.fixture(autouse=True)
+def cleanup_dialogs(qt_app: Any) -> Iterator[None]:
+    from PySide6.QtCore import QCoreApplication, QEvent
+    from shiboken6 import isValid
+
+    yield
+    # Retain wrappers until Qt has destroyed the widgets. Closing a dialog only
+    # hides it; deferred destruction must finish before the next modal is shown.
+    for dialog in reversed(_dialogs):
+        dialog.close()
+        dialog.body.removeEventFilter(dialog)
+        dialog.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    qt_app.processEvents()
+    assert all(not isValid(dialog) for dialog in _dialogs)
+    _dialogs.clear()
 
 
 def _dialog(
@@ -88,6 +108,7 @@ def _dialog(
 
     game: Any = SimpleNamespace(settings=settings, turn=6)
     dialog = LeaveRequestsDialog(game, requests)
+    _dialogs.append(dialog)
     dialog.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen)
     dialog.resize(1000, 400)
     dialog.show()
@@ -203,6 +224,23 @@ def test_grant_all_and_clear_all_refresh_cover_and_header(qt_app: Any) -> None:
         assert all(row.cells[4].text() == "5 free · 4 aircraft" for row in dialog.rows)
     finally:
         dialog.close()
+
+
+def test_partial_grant_all_renders_a_visible_dash(qt_app: Any) -> None:
+    from PySide6.QtWidgets import QStyle, QStyleOptionButton
+
+    dialog = _dialog(qt_app, aircraft=4, extra_pilots=2)
+    button = dialog.grant_all
+    option = QStyleOptionButton()
+    button.initStyleOption(option)
+    indicator = button.style().subElementRect(
+        QStyle.SubElement.SE_CheckBoxIndicator, option, button
+    )
+    image = button.grab().toImage()
+    assert image.pixelColor(indicator.center()).name() == "#ffffff"
+    assert (
+        image.pixelColor(indicator.left() + 1, indicator.top() + 1).name() == "#83a56a"
+    )
 
 
 def test_default_grants_prioritize_lowest_morale(qt_app: Any) -> None:

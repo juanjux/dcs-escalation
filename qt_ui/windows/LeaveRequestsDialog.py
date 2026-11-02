@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional
 
 from PySide6.QtCore import QEvent, QObject, QSignalBlocker, Qt
-from PySide6.QtGui import QIcon, QMouseEvent
+from PySide6.QtGui import QColor, QIcon, QMouseEvent, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -21,6 +21,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSpinBox,
+    QStyle,
+    QStyleOptionButton,
     QVBoxLayout,
     QWidget,
 )
@@ -37,6 +39,31 @@ if TYPE_CHECKING:
 
 #: The columns a row spans, so its backdrop covers the lot.
 COLUMNS = 7
+
+
+class _GrantAllCheckBox(QCheckBox):
+    def paintEvent(self, event: QPaintEvent) -> None:
+        super().paintEvent(event)
+        if self.checkState() != Qt.CheckState.PartiallyChecked:
+            return
+        # Paint the dash directly rather than loading a stylesheet SVG image.
+        option = QStyleOptionButton()
+        self.initStyleOption(option)
+        indicator = self.style().subElementRect(
+            QStyle.SubElement.SE_CheckBoxIndicator, option, self
+        )
+        painter = QPainter(self)
+        try:
+            painter.fillRect(indicator, QColor("#83a56a"))
+            painter.setPen(QPen(Qt.GlobalColor.white, 2))
+            painter.drawLine(
+                indicator.left() + 3,
+                indicator.center().y(),
+                indicator.right() - 3,
+                indicator.center().y(),
+            )
+        finally:
+            painter.end()
 
 
 def pending_leave_requests(game: "Game") -> list[tuple["Squadron", Pilot]]:
@@ -88,11 +115,10 @@ class LeaveRequestsDialog(QDialog):
         self.requests = requests
         self.rows: list[_Row] = []
         self.selected: Optional[int] = None
-        self.grant_all = QCheckBox("Grant all")
+        self.grant_all = _GrantAllCheckBox("Grant all")
         self.grant_all.setTristate(True)
         self.grant_all.setStyleSheet(
-            "QCheckBox::indicator:indeterminate { "
-            "image: url(resources/stylesheets/check-partial.svg); }"
+            "QCheckBox::indicator:indeterminate { image: none; }"
         )
         self.grant_all.setToolTip(
             "Check or clear Grant for every request. Decisions apply only when "
