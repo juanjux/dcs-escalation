@@ -178,6 +178,7 @@ class _Site:
             unit_type=SimpleNamespace(gps_jamming=GpsJammingProperties(15.0, 250.0)),
         )
         self.name = name
+        self.in_transit = False
         self.position = SimpleNamespace(x=1.0, y=2.0)
         self.groups = [SimpleNamespace(units=[unit])]
         self.control_point = SimpleNamespace(captured=False)
@@ -235,6 +236,19 @@ def test_skynet_switched_off_keeps_jamming() -> None:
     tgo = _Site("CUTTLEFISH")
     game = _game({tgo: _status(IadsState.DARK)}, plugin=False)
     assert not switched_off(game, tgo)
+
+
+def test_relocating_jammer_is_offline_even_without_skynet() -> None:
+    from game.gpsjamming import gps_jammer_sites, jamming_reach_for
+
+    site = _Site("JAMMER")
+    site.in_transit = True
+    game = _game({}, plugin=False)
+    game.theater.controlpoints = [
+        SimpleNamespace(captured=False, ground_objects=[site])
+    ]
+    assert gps_jammer_sites(game) == []
+    assert jamming_reach_for(game, site) is None
 
 
 def test_a_dark_site_reaches_neither_the_mission_nor_the_map() -> None:

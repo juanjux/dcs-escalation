@@ -1,4 +1,6 @@
 class: Power
+ground_mobility:
+  mode: self_propelled
 price: 15
 variants:
   "[CH] MIM-104 EPP (HX)": null

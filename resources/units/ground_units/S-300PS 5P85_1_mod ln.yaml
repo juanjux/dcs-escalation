@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: towed
 price: 14
 variants:
   SAM SA-10A S-300PT LN 5P85-1: null

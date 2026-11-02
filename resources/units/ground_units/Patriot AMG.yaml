@@ -1,4 +1,6 @@
 price: 35
+ground_mobility:
+  mode: self_propelled
 class: SpecializedRadar
 variants:
   SAM Patriot CR (AMG AN/MRC-137): null

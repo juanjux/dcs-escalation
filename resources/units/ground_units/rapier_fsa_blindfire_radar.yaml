@@ -1,4 +1,6 @@
 class: TrackRadar
+ground_mobility:
+  mode: towed
 price: 8
 variants:
   SAM Rapier Blindfire TR: null

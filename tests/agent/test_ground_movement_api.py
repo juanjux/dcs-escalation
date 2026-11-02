@@ -366,6 +366,96 @@ def test_blue_and_sam_ids_are_not_readable_or_movable(stock: Any, api: Any) -> N
     assert pickle.dumps(stock.game) == before
 
 
+def test_sam_api_requires_whole_own_battery_and_preserves_site_on_stop(
+    stock: Any, api: Any
+) -> None:
+    from tests.test_sam_movement import make_site, selected
+
+    site = make_site(stock)
+    context = groundmovement.context(stock.game, Player.RED)
+    assert context is not None and [s.id for s in context.sam_sites] == [str(site.id)]
+    at = Point(90, 10, stock.game.theater.terrain).latlng()
+    body = {
+        "source_kind": "sam",
+        "source_id": str(site.id),
+        "unit_ids": selected(stock),
+        "destination_kind": "position",
+        "lat": at.lat,
+        "lng": at.lng,
+    }
+    before = pickle.dumps(stock.game)
+    options = api.request(
+        "GET", "/options", params={"source_kind": "sam", "source_id": str(site.id)}
+    )
+    assert options.status_code == 200 and options.json()["enabled"]
+    assert options.json()["bases"] == options.json()["fronts"] == []
+    assert (
+        api.request("POST", "/preview", json={**body, "unit_ids": [100]}).status_code
+        == 400
+    )
+    assert (
+        api.request(
+            "POST",
+            "/preview",
+            json={
+                **body,
+                "destination_kind": "base",
+                "base_id": str(stock.a.id),
+                "lat": None,
+                "lng": None,
+            },
+        ).status_code
+        == 400
+    )
+    confirmed_body = confirmed(api, body)
+    assert pickle.dumps(stock.game) == before and not api.events
+    threats: list[GameUpdateEvents] = []
+    stock.game.compute_threat_zones = threats.append
+    result = api.request("POST", "/dispatch", json=confirmed_body)
+    assert result.status_code == 200, result.text
+    order = result.json()
+    assert order["source_id"] == order["detachment_id"] == str(site.id)
+    assert order["surviving_units"] == 2 and site.in_transit and len(threats) == 1
+    assert api.request("POST", "/dispatch", json=confirmed_body).status_code == 400
+    stopped = api.request("POST", "/stop", json={"order_id": order["order_id"]})
+    assert stopped.status_code == 200 and stopped.json()["status"] == "stopped"
+    assert not site.in_transit and len(threats) == 2
+    site.control_point = stock.enemy
+    assert (
+        api.request(
+            "GET", "/options", params={"source_kind": "sam", "source_id": str(site.id)}
+        ).status_code
+        == 400
+    )
+    assert api.request("POST", "/preview", json=body).status_code == 400
+
+
+def test_sam_api_rejects_enemy_gps_and_fixed_or_undertransported_battery(
+    stock: Any, api: Any
+) -> None:
+    from tests.test_sam_movement import make_site, selected, PATRIOT
+
+    site = make_site(stock, PATRIOT[:-1])
+    at = Point(90, 10, stock.game.theater.terrain).latlng()
+    body = {
+        "source_kind": "sam",
+        "source_id": str(site.id),
+        "unit_ids": selected(stock),
+        "destination_kind": "position",
+        "lat": at.lat,
+        "lng": at.lng,
+    }
+    assert api.request("POST", "/preview", json=body).status_code == 400
+    enemy = Point(195, 10, stock.game.theater.terrain).latlng()
+    assert (
+        api.request(
+            "POST", "/preview", json={**body, "lat": enemy.lat, "lng": enemy.lng}
+        ).status_code
+        == 403
+    )
+    assert not site.in_transit and not stock.game.ground_movements.orders
+
+
 def test_auth_and_side_guards_precede_campaign_access(
     stock: Any, api: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:

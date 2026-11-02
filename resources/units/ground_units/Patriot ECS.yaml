@@ -1,4 +1,6 @@
 class: TrackRadar
+ground_mobility:
+  mode: self_propelled
 price: 30
 variants:
   SAM Patriot ECS: null

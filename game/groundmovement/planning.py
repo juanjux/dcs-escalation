@@ -1,4 +1,4 @@
-"""Shared, non-mutating validation of armor-group movement requests."""
+"""Shared, non-mutating validation of armor and SAM movement requests."""
 
 from __future__ import annotations
 
@@ -21,7 +21,9 @@ from game.groundmovement.routing import CampaignGroundRouter
 from game.groundmovement.settings import distance_per_turn, enabled
 from game.groundmovement.territory import require_friendly_position
 from game.theater.player import Player
-from game.theater.theatergroundobject import VehicleGroupGroundObject
+from game.theater.theatergroundobject import VehicleGroupGroundObject, IadsGroundObject
+
+MovementGroup = VehicleGroupGroundObject | IadsGroundObject
 
 if TYPE_CHECKING:
     from game import Game
@@ -63,9 +65,7 @@ class ArmorMovementPreview:
     warnings: tuple[str, ...]
 
 
-def armor_source(
-    game: Game, source_id: UUID, owner: Player
-) -> VehicleGroupGroundObject:
+def armor_source(game: Game, source_id: UUID, owner: Player) -> MovementGroup:
     if owner not in (Player.BLUE, Player.RED):
         raise ValueError("Ground movement needs a BLUE or RED owner")
     try:
@@ -74,14 +74,12 @@ def armor_source(
         raise ValueError("Ground movement source does not exist") from exc
     if not source.is_friendly(owner):
         raise PermissionError("The ground movement source belongs to another side")
-    if not isinstance(source, VehicleGroupGroundObject):
-        raise ValueError(
-            "This operation requires an armor group, not a SAM or motor pool"
-        )
+    if not isinstance(source, (VehicleGroupGroundObject, IadsGroundObject)):
+        raise ValueError("This operation requires an armor group or SAM/radar site")
     return source
 
 
-def _unit_types(source: VehicleGroupGroundObject) -> dict[int, GroundUnitType]:
+def _unit_types(source: MovementGroup) -> dict[int, GroundUnitType]:
     result = {}
     for unit in source.units:
         if not unit.alive or not unit.is_vehicle:
@@ -92,6 +90,24 @@ def _unit_types(source: VehicleGroupGroundObject) -> dict[int, GroundUnitType]:
                 raise ValueError("The armor group contains duplicate unit identities")
             result[unit.id] = unit_type
     return result
+
+
+def _sam_warnings(source: IadsGroundObject) -> list[str]:
+    warnings = []
+    if any(
+        u.alive and (not u.is_vehicle or not isinstance(u.unit_type, GroundUnitType))
+        for u in source.units
+    ):
+        warnings.append(
+            "This site contains fixed structures or unsupported units and cannot relocate"
+        )
+    if any(u.repair_turns_remaining is not None for u in source.units):
+        warnings.append(
+            "Finish or cancel pending repairs before relocating the whole site"
+        )
+    if not any(u.alive for u in source.units):
+        warnings.append("There are no surviving units to relocate")
+    return warnings
 
 
 def _reserved(game: Game) -> set[int]:
@@ -106,6 +122,7 @@ def armor_movement_options(
     reserved = _reserved(game)
     unit_types = _unit_types(source)
     available = {i: unit for i, unit in unit_types.items() if i not in reserved}
+    is_sam = isinstance(source, IadsGroundObject)
     tractors = sum(unit.ground_mobility.can_tow for unit in available.values())
     pieces = sum(
         unit.ground_mobility.mode is MobilityMode.TOWED for unit in available.values()
@@ -116,7 +133,11 @@ def armor_movement_options(
     if pieces > tractors:
         warnings.append(
             f"{pieces} towed pieces need {pieces} tractors; only {tractors} are available. "
-            "Select a smaller detachment."
+            + (
+                "The entire battery needs transport."
+                if is_sam
+                else "Select a smaller detachment."
+            )
         )
     unsupported = sorted(
         {
@@ -127,9 +148,24 @@ def armor_movement_options(
     )
     if unsupported:
         warnings.append("Mobility is not available for: " + ", ".join(unsupported))
+    sam_warnings = []
+    if isinstance(source, IadsGroundObject):
+        sam_warnings = _sam_warnings(source)
+        if len(available) != len(unit_types):
+            sam_warnings.append("Some battery units are already reserved for movement")
+        warnings.extend(sam_warnings)
+        warnings.append(
+            "SAM/radar sites relocate as a whole. Radars and weapons are packed and unavailable until arrival or an explicit stop."
+        )
+    sam_ready = not is_sam or (
+        not unsupported
+        and pieces <= tractors
+        and not sam_warnings
+        and len(available) == len(unit_types)
+    )
     return ArmorMovementOptions(
         source.id,
-        enabled(game.settings),
+        enabled(game.settings) and sam_ready,
         tuple(
             ArmorMovementUnit(
                 i,
@@ -213,6 +249,14 @@ def preview_armor_movement(
     source = armor_source(game, source_id, owner)
     if not enabled(game.settings):
         raise ValueError("Ground Movement and Motor Pool must both be enabled")
+    if isinstance(source, IadsGroundObject):
+        if destination.kind is not DestinationKind.POSITION:
+            raise ValueError(
+                "SAM sites relocate to friendly positions; they cannot join bases or fronts"
+            )
+        warnings = _sam_warnings(source)
+        if warnings:
+            raise ValueError("; ".join(warnings))
     canonical = movement_destination(
         game,
         owner,
@@ -231,6 +275,12 @@ def preview_armor_movement(
     all_units = _unit_types(source)
     units = {i: unit for i, unit in all_units.items() if i not in reserved}
     manifest = plan_transport(units, selected)
+    if isinstance(source, IadsGroundObject) and set(manifest.unit_ids) != set(
+        all_units
+    ):
+        raise ValueError(
+            "SAM relocation requires every surviving unit; partial moves are not supported"
+        )
     road_budget = distance_per_turn(game.settings, on_road=True)
     offroad_budget = distance_per_turn(game.settings, on_road=False)
     route = CampaignGroundRouter.for_game(game, owner).plan(

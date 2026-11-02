@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: self_propelled
 description: The Sky Sabre iLauncher is a mobile launcher for CAMM missiles, providing medium-range area air defence against aircraft and precision-guided threats.
 introduced: 2021
 manufacturer: MBDA UK

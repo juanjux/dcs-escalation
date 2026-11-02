@@ -203,6 +203,8 @@ class IadsNetwork:
         """Get all skynet nodes from the IADS Network"""
         skynet_nodes: list[SkynetNode] = []
         for node in self.nodes:
+            if getattr(node.group.ground_object, "in_transit", False):
+                continue
             if game.iads_considerate_culling(node.group.ground_object):
                 # Skip culled ground objects
                 continue
@@ -223,6 +225,8 @@ class IadsNetwork:
             skynet_node = SkynetNode.from_group(node.group)
             self_powered = brings_its_own_power(node.group)
             for connection in node.connections.values():
+                if getattr(connection.ground_object, "in_transit", False):
+                    continue
                 # A site with its own generator has no power dependency at all. An
                 # empty list is exactly what Skynet reads as "powered", so leaving the
                 # connection out IS the feature -- no Lua change needed.

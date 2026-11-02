@@ -282,7 +282,7 @@ class GroundMovementRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     side: str = "red"
     source_id: UUID
-    source_kind: Literal["armor", "base"] = "armor"
+    source_kind: Literal["armor", "base", "sam"] = "armor"
     unit_ids: list[StrictInt] | None = Field(
         default=None, min_length=1, max_length=1000
     )

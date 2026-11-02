@@ -1,4 +1,6 @@
 class: TrackRadar
+ground_mobility:
+  mode: towed
 price: 14
 variants:
   SAM Hawk TR (AN/MPQ-46): null

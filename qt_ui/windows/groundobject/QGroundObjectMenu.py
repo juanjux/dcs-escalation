@@ -52,6 +52,7 @@ from game.theater.theatergroundobject import (
     BuildingGroundObject,
     MissileSiteGroundObject,
     VehicleGroupGroundObject,
+    IadsGroundObject,
 )
 from game.theater.locationcheat import destroy_all, revive_all
 from game.theater.theatergroup import TheaterUnit
@@ -287,7 +288,7 @@ class QGroundObjectMenu(QDialog):
 
     def _ground_transport(self) -> Optional[QWidget]:
         if not self._friendly or not isinstance(
-            self.ground_object, VehicleGroupGroundObject
+            self.ground_object, (VehicleGroupGroundObject, IadsGroundObject)
         ):
             return None
         reports = movement_reports(self.game, self.ground_object.id, self._viewer)
@@ -350,7 +351,11 @@ class QGroundObjectMenu(QDialog):
             stop.clicked.connect(partial(self._stop_movement, report.order_id))
             column.addWidget(stop)
         if not in_transit:
-            move = QPushButton("Move units…")
+            move = QPushButton(
+                "Relocate site…"
+                if isinstance(self.ground_object, IadsGroundObject)
+                else "Move units…"
+            )
             move.setObjectName("dispatch-ground-movement")
             move.setEnabled(
                 options.enabled and any(unit.selectable for unit in options.units)
@@ -373,8 +378,12 @@ class QGroundObjectMenu(QDialog):
             QMessageBox.question(
                 self,
                 "Stop movement?",
-                "The surviving units will form an armor group at their current campaign position. "
-                "They will not return to the source or be refunded. Stop this movement?",
+                (
+                    "The surviving SAM/radar units will redeploy at their current campaign position. "
+                    if isinstance(self.ground_object, IadsGroundObject)
+                    else "The surviving units will form an armor group at their current campaign position. "
+                )
+                + "They will not return to the source or be refunded. Stop this movement?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
             )

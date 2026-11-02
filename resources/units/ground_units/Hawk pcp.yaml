@@ -1,4 +1,6 @@
 class: CommandPost
+ground_mobility:
+  mode: towed
 price: 14
 variants:
   SAM Hawk Platoon Command Post (PCP): null

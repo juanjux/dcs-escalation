@@ -1,4 +1,6 @@
 class: Power
+ground_mobility:
+  mode: self_propelled
 price: 15
 variants:
   SAM Patriot EPP-III: null

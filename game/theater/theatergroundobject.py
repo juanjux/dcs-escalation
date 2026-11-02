@@ -879,7 +879,7 @@ class SamGroundObject(IadsGroundObject):
 
     @property
     def purchasable(self) -> bool:
-        return True
+        return not getattr(self, "in_transit", False)
 
 
 class VehicleGroupGroundObject(TheaterGroundObject):
@@ -1046,7 +1046,7 @@ class EwrGroundObject(IadsGroundObject):
 
     @property
     def purchasable(self) -> bool:
-        return True
+        return not getattr(self, "in_transit", False)
 
 
 class ShipGroundObject(NavalGroundObject):

@@ -1,4 +1,6 @@
 class: OpticalTracker
+ground_mobility:
+  mode: towed
 price: 6
 variants:
   SAM Rapier Tracker: null

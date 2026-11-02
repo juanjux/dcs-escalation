@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Ground Movement]** Relocate whole mobile SAM/radar sites with towing checks, packed radars and weapons during transit, and player/API controls.
 * **[F10 Map]** Include installation types in objective marker labels alongside codenames and allegiance.
 * **[UI]** Add an aircraft payload library editor for Escalation and Custom presets, accessible from Edit → Payloads and flight payloads.
 * **[Mission Generation]** Automatically equip player A-10C II aircraft with HMCS + NVG at night, respecting disabled helmets and era restrictions.

@@ -151,7 +151,13 @@ Groups reached or passed by their front automatically reinforce its supporting
 base, including groups in transit. Normal deployment limits apply, with surplus
 kept in the Motor Pool. Ground Movement requires Motor Pool.
 The OPFOR REST/MCP API supports the same reserve movements and base-stock deployments
-under BLUE's territory, transport and distance rules. SAM-site movement is not supported yet.
+under BLUE's territory, transport and distance rules. Mobile SAM/radar sites can also
+relocate whole to friendly GPS positions. Each towed piece needs a surviving tractor
+in the battery; fixed/unknown units and pending repairs block relocation. Radars,
+jammers and weapons stay packed and offline during transit, while the convoy remains
+attackable. Arrival or an explicit stop redeploys survivors in their original formation
+without changing the site or unit identities. The same controls are available through
+the OPFOR API with `source_kind:"sam"`.
 
 Select units, then use **Choose on map…** in the movement dialog or Transfer Units'
 GPS mode. The main map temporarily switches to destination selection without

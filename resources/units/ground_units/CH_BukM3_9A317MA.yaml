@@ -1,4 +1,6 @@
 class: TELAR
+ground_mobility:
+  mode: self_propelled
 price: 40
 variants:
   "[CH] Buk M3 9A317MA TELAR": null

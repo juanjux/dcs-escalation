@@ -1,4 +1,6 @@
 class: CommandPost
+ground_mobility:
+  mode: self_propelled
 price: 18
 variants:
   SAM Patriot C2 ICC: null
