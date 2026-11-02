@@ -77,6 +77,22 @@ class AfacIadsPowerTests(unittest.TestCase):
         assert(nav:clear('blue',{x=0,y=2000,z=0}))
         """)
 
+    def test_reactive_transit_threat_only_exists_during_defense(self):
+        self.rt.execute("""
+        fixedThreat()
+        config.airDefenseThreats[1].transitDefense=true
+        config.airDefenseThreats[1].initialPoint=nil
+        ESCALATION_SAM_TRANSIT={active={red=false}}
+        beginNavigation();tick()
+        assert(enemyReads==0 and nav:clear('blue',{x=0,y=2000,z=0}))
+        ESCALATION_SAM_TRANSIT.active.red=true
+        for i=1,15 do tick()end
+        -- Live defensive deployment overrides the site's offline network status.
+        assert(not nav:clear('blue',{x=0,y=2000,z=0}))
+        ESCALATION_SAM_TRANSIT.active.red=false
+        assert(nav:clear('blue',{x=0,y=2000,z=0}))
+        """)
+
     def test_initial_known_threat_and_observation_use_power_before_first_tick(self):
         self.rt.execute("""
         fixedThreat();beginNavigation()
