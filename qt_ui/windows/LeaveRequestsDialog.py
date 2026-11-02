@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional
 
 from PySide6.QtCore import QEvent, QObject, QSignalBlocker, Qt
-from PySide6.QtGui import QIcon, QMouseEvent
+from PySide6.QtGui import QColor, QIcon, QMouseEvent, QPainter, QPaintEvent, QPen
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -21,6 +21,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSpinBox,
+    QStyle,
+    QStyleOptionButton,
     QVBoxLayout,
     QWidget,
 )
@@ -37,6 +39,31 @@ if TYPE_CHECKING:
 
 #: The columns a row spans, so its backdrop covers the lot.
 COLUMNS = 7
+
+
+class _GrantAllCheckBox(QCheckBox):
+    def paintEvent(self, event: QPaintEvent) -> None:
+        super().paintEvent(event)
+        if self.checkState() != Qt.CheckState.PartiallyChecked:
+            return
+        # Paint the dash directly rather than loading a stylesheet SVG image.
+        option = QStyleOptionButton()
+        self.initStyleOption(option)
+        indicator = self.style().subElementRect(
+            QStyle.SubElement.SE_CheckBoxIndicator, option, self
+        )
+        painter = QPainter(self)
+        try:
+            painter.fillRect(indicator, QColor("#83a56a"))
+            painter.setPen(QPen(Qt.GlobalColor.white, 2))
+            painter.drawLine(
+                indicator.left() + 3,
+                indicator.center().y(),
+                indicator.right() - 3,
+                indicator.center().y(),
+            )
+        finally:
+            painter.end()
 
 
 def pending_leave_requests(game: "Game") -> list[tuple["Squadron", Pilot]]:
@@ -59,7 +86,9 @@ class _Row:
     grant: QCheckBox
     turns: QSpinBox
     backdrop: QFrame
+    cover: QLabel
     cells: list[QWidget] = field(default_factory=list)
+    cover_explanation: str = ""
 
     def fill(self, colour: Optional[str]) -> None:
         name = self.backdrop.objectName()
@@ -72,7 +101,11 @@ class _Row:
         """The same words on every cell: a tooltip on the backdrop alone would never
         be seen, because the labels sit on top of it."""
         for cell in self.cells:
-            cell.setToolTip(text)
+            cell.setToolTip(
+                "\n\n".join(filter(None, (text, self.cover_explanation)))
+                if cell is self.cover
+                else text
+            )
 
 
 class LeaveRequestsDialog(QDialog):
@@ -82,15 +115,15 @@ class LeaveRequestsDialog(QDialog):
         self.requests = requests
         self.rows: list[_Row] = []
         self.selected: Optional[int] = None
-        self.grant_all = QCheckBox("Grant all")
+        self.grant_all = _GrantAllCheckBox("Grant all")
         self.grant_all.setTristate(True)
         self.grant_all.setStyleSheet(
-            "QCheckBox::indicator:indeterminate { "
-            "image: url(resources/stylesheets/check-partial.svg); }"
+            "QCheckBox::indicator:indeterminate { image: none; }"
         )
         self.grant_all.setToolTip(
             "Check or clear Grant for every request. Decisions apply only when "
-            "Answer them is pressed."
+            "Answer them is pressed. Defaults keep at least one pilot per aircraft; "
+            "manual grants may leave aircraft without pilots."
         )
 
         self.setModal(True)
@@ -110,7 +143,9 @@ class LeaveRequestsDialog(QDialog):
             QLabel(
                 "<b>These pilots have asked for leave.</b><br>"
                 "Grant it and they are off the roster for the turns you set, coming "
-                "back steadier. Refuse and they take it badly." + hint
+                "back steadier. Refuse and they take it badly.<br>"
+                "Requests are preselected while enough pilots remain for every "
+                "aircraft, with the lowest-morale pilots first." + hint
             )
         )
 
@@ -163,17 +198,7 @@ class LeaveRequestsDialog(QDialog):
                 morale.setToolTip("He is close to being no use to you at all.")
             cells.append(morale)
 
-            # Saying yes to two men costs a squadron of sixteen pilots and four
-            # aircraft nothing, and one of ten and twelve a mission it cannot fly.
-            spare = squadron.spare_pilots(excluding=pilot)
-            aircraft = squadron.owned_aircraft
-            cover = QLabel(f"{spare} free · {aircraft} aircraft")
-            if spare < aircraft:
-                cover.setText(f"<b>{spare} free</b> · {aircraft} aircraft")
-                cover.setToolTip(
-                    "Granting this leaves fewer pilots than airframes: something will "
-                    "sit on the ground."
-                )
+            cover = QLabel()
             cells.append(cover)
 
             for column, cell in enumerate(cells):
@@ -191,13 +216,18 @@ class LeaveRequestsDialog(QDialog):
             grid.addWidget(turns, row, 5)
 
             grant = QCheckBox()
-            grant.setChecked(bool(state.severity))
             make_transparent(grant)
             grid.addWidget(grant, row, 6, Qt.AlignmentFlag.AlignCenter)
 
-            self.rows.append(_Row(squadron, pilot, grant, turns, backdrop, cells))
+            self.rows.append(
+                _Row(squadron, pilot, grant, turns, backdrop, cover, cells)
+            )
             grant.toggled.connect(self._sync_grant_all)
 
+        for row in sorted(self.rows, key=lambda row: row.pilot.morale):
+            if self._remaining_pilots(row.squadron) > row.squadron.owned_aircraft:
+                with QSignalBlocker(row.grant):
+                    row.grant.setChecked(True)
         self.grant_all.stateChanged.connect(self._set_all_grants)
         self.grant_all.setEnabled(bool(self.rows))
         self._sync_grant_all()
@@ -227,6 +257,42 @@ class LeaveRequestsDialog(QDialog):
             )
         with QSignalBlocker(self.grant_all):
             self.grant_all.setCheckState(state)
+        self._refresh_cover()
+
+    def _remaining_pilots(self, squadron: Squadron) -> int:
+        # Pending requests still count as present unless their Grant is checked.
+        granted = {
+            id(row.pilot)
+            for row in self.rows
+            if row.squadron is squadron and row.grant.isChecked()
+        }
+        return sum(
+            1
+            for pilot in squadron.current_roster
+            if pilot.alive
+            and not pilot.wounded
+            and not pilot.on_leave
+            and id(pilot) not in granted
+        )
+
+    def _refresh_cover(self) -> None:
+        for row in self.rows:
+            spare = self._remaining_pilots(row.squadron)
+            aircraft = row.squadron.owned_aircraft
+            row.cover.setText(f"{spare} free · {aircraft} aircraft")
+            row.cover_explanation = (
+                "Pilots remaining after all checked requests in this squadron. "
+                "The aircraft total is unchanged."
+            )
+            if spare < aircraft:
+                row.cover.setText(f"<b>{spare} free</b> · {aircraft} aircraft")
+                row.cover_explanation += (
+                    " These grants leave fewer pilots than airframes: some aircraft "
+                    "will sit on the ground."
+                )
+            row.cover.setToolTip(row.cover_explanation)
+        if self.selected is not None:
+            self.select(self.selected)
 
     # --- picking a man out --------------------------------------------------
 

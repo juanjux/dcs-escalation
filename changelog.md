@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Live Pilots]** Preselect post-debrief leave grants without understaffing squadrons and update projected pilot coverage as grants change.
 * **[Realistic CAS]** AFACs wait in a safe orbit when defences block their work area, recheck access and return at BINGO fuel.
 * **[F10 Map]** Label fully destroyed objectives as DESTROYED and retain markers at destroyed building positions.
 * **[Ground Movement]** Relocate whole mobile SAM/radar sites with towing checks, packed radars and weapons during transit, and player/API controls.
