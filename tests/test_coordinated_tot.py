@@ -212,6 +212,9 @@ def test_takeoff_retimes_before_initializing_flight_states(monkeypatch: Any) -> 
 
     order = []
     monkeypatch.setattr(
+        missionsimulation, "synchronize", lambda package: order.append("route")
+    )
+    monkeypatch.setattr(
         missionsimulation,
         "retime_coordinated_packages",
         lambda game: order.append("tot"),
@@ -219,10 +222,13 @@ def test_takeoff_retimes_before_initializing_flight_states(monkeypatch: Any) -> 
     simulation = missionsimulation.MissionSimulation.__new__(
         missionsimulation.MissionSimulation
     )
-    simulation.game = Mock(conditions=SimpleNamespace(start_time=NOW))
+    simulation.game = Mock(
+        conditions=SimpleNamespace(start_time=NOW),
+        coalitions=[SimpleNamespace(ato=SimpleNamespace(packages=[Mock()]))],
+    )
     simulation.aircraft_simulation = Mock()
     simulation.aircraft_simulation.begin_simulation.side_effect = lambda: order.append(
         "states"
     )
     simulation.begin_simulation()
-    assert order == ["tot", "states"]
+    assert order == ["route", "tot", "states"]

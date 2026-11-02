@@ -77,21 +77,22 @@ def test_task_defaults(task: FlightType) -> None:
     assert sharedroute.enabled(package) is (task in sharedroute.DEFAULT_TASKS)
 
 
-def test_secondary_edits_share_coordinates_and_altitudes_not_procedures_or_timing() -> (
-    None
-):
+def test_secondary_edits_share_coordinates_not_altitudes_procedures_or_timing() -> None:
     package = _package()
     first, second = package.flights
     original_departure = first.flight_plan.layout.departure.position
     original_alignment = first.flight_plan.layout.nav_from[-1]
     first.flight_plan.tot_offset = -10
+    for point in second.flight_plan.waypoints:
+        point.alt = feet(25000)
     second.flight_plan.layout.patrol_start.position = Point(42, 50, _TERRAIN)
     second.flight_plan.layout.patrol_start.alt = feet(25000)
     second.flight_plan.layout.nav_to[0].position = Point(43, 51, _TERRAIN)
     assert sharedroute.synchronize(package, second) == [first]
     assert first.flight_plan.layout.patrol_start.position.x == 42
-    assert first.flight_plan.layout.patrol_start.alt == feet(25000)
+    assert first.flight_plan.layout.patrol_start.alt == feet(20000)
     assert first.flight_plan.layout.nav_to[0].position.x == 43
+    assert first.flight_plan.layout.nav_to[0].alt == feet(20000)
     assert first.flight_plan.layout.departure.position is original_departure
     assert first.flight_plan.layout.nav_from[-1] is original_alignment
     assert first.flight_plan.tot_offset == -10
@@ -171,9 +172,10 @@ def test_api_toggle_and_waypoint_edits_share_routes(
     index = (
         second.flight_plan.waypoints.index(second.flight_plan.layout.patrol_start) + 1
     )
-    result = planner.edit_waypoint(game, side, str(second.id), index, alt_m=6000)
+    result = planner.edit_waypoint(game, side, str(second.id), index, alt_m=8000)
     assert result.ok, result.error
-    assert first.flight_plan.layout.patrol_start.alt.meters == 6000
+    assert second.flight_plan.layout.patrol_start.alt.meters == 8000
+    assert first.flight_plan.layout.patrol_start.alt == feet(20000)
     assert first in sent[-1].updated_flights
     assert planner.set_package_shared_route(game, side, -1, True).ok is False
 
@@ -196,6 +198,7 @@ def test_map_altitude_edits_publish_every_affected_flight(
 
     package = _package()
     first, second = package.flights
+    sharedroute.synchronize(package)
     point = second.flight_plan.layout.patrol_start
     index = second.flight_plan.waypoints.index(point) + 1
     game: Any = NS(db=NS(flights=NS(get=lambda uid: second)))
@@ -205,7 +208,8 @@ def test_map_altitude_edits_publish_every_affected_flight(
     )
     monkeypatch.setattr(EventStream, "put_nowait", sent.append)
     routes.edit_waypoint(second.id, index, routes.WaypointEdit(altitude_ft=26000), game)
-    assert first.flight_plan.layout.patrol_start.alt == feet(26000)
+    assert second.flight_plan.layout.patrol_start.alt == feet(26000)
+    assert first.flight_plan.layout.patrol_start.alt == feet(20000)
     assert sent[-1].updated_flights == {first, second}
 
 
@@ -260,3 +264,215 @@ def test_regeneration_uses_built_primary_route_without_recursively_building() ->
     second._flight_plan_builder = builder
     builder.regenerate()
     assert builder.get_or_build().layout.patrol_start.position.x == original
+
+
+def _route(flight: Any) -> list[FlightWaypoint]:
+    return [w for w in flight.flight_plan.waypoints if sharedroute._flying(w)]
+
+
+@pytest.mark.parametrize("is_helo, spacing", [(False, 1000), (True, 200)])
+def test_equal_profiles_are_separated_without_drifting(
+    is_helo: bool, spacing: int
+) -> None:
+    package = _package()
+    package.flights.extend(deepcopy(package.flights[:2]))
+    for flight in package.flights:
+        flight.is_helo = is_helo
+        for point in _route(flight):
+            point.alt = feet(200 if is_helo else 20000)
+            point.alt_type = "RADIO" if is_helo else "BARO"
+    sharedroute.synchronize(package)
+    heights = [[w.alt.feet for w in _route(f)] for f in package.flights]
+    for index, profile in enumerate(heights):
+        assert profile == pytest.approx(
+            [(200 if is_helo else 20000) + index * spacing] * len(profile)
+        )
+    for source in package.flights:
+        sharedroute.synchronize(package, source)
+        assert [[w.alt.feet for w in _route(f)] for f in package.flights] == heights
+
+
+@pytest.mark.parametrize("second_alt", [16000, 24000])
+def test_already_separated_profiles_keep_all_their_heights(second_alt: int) -> None:
+    package = _package()
+    first, second = package.flights
+    for point in _route(second):
+        point.alt = feet(second_alt)
+    sharedroute.synchronize(package)
+    assert all(w.alt == feet(20000) for w in _route(first))
+    assert all(w.alt == feet(second_alt) for w in _route(second))
+
+
+def test_crossing_profiles_get_a_uniform_offset() -> None:
+    package = _package()
+    first, second = package.flights
+    second.flight_plan.layout.patrol_start.alt = feet(19000)
+    second.flight_plan.layout.patrol_end.alt = feet(21000)
+    original = [w.alt.feet for w in _route(second)]
+    sharedroute.synchronize(package)
+    assert [w.alt.feet for w in _route(second)] == pytest.approx(
+        [h + 2000 for h in original]
+    )
+    assert all(
+        b.alt.feet - a.alt.feet >= 999.999
+        for a, b in zip(_route(first), _route(second))
+    )
+
+
+def test_separation_uses_a_lower_level_at_the_doctrine_ceiling() -> None:
+    package = _package()
+    second = package.flights[1]
+    second.coalition = NS(
+        doctrine=NS(min_combat_altitude=feet(10000), max_combat_altitude=feet(20000))
+    )
+    sharedroute.synchronize(package)
+    assert all(w.alt.feet == pytest.approx(19000) for w in _route(second))
+
+
+def test_separation_keeps_heights_when_no_level_fits_the_doctrine(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    package = _package()
+    second = package.flights[1]
+    second.coalition = NS(
+        doctrine=NS(min_combat_altitude=feet(20000), max_combat_altitude=feet(20000))
+    )
+    sharedroute.synchronize(package)
+    assert all(w.alt == feet(20000) for w in _route(second))
+    assert "Cannot vertically separate" in caplog.text
+
+
+def test_separation_never_lowers_an_agl_leg_to_fit_below_the_ceiling() -> None:
+    package = _package()
+    second = package.flights[1]
+    second.coalition = NS(
+        doctrine=NS(min_combat_altitude=feet(10000), max_combat_altitude=feet(20000))
+    )
+    second.flight_plan.layout.nav_to[0].alt_type = "RADIO"
+    second.flight_plan.layout.nav_to[0].alt = feet(200)
+    sharedroute.synchronize(package)
+    assert second.flight_plan.layout.patrol_start.alt == feet(20000)
+    assert second.flight_plan.layout.nav_to[0].alt == feet(200)
+
+
+def test_mixed_aircraft_and_helicopter_flights_use_the_larger_gap() -> None:
+    package = _package()
+    first, second = package.flights
+    first.is_helo = True
+    second.is_helo = False
+    sharedroute.synchronize(package)
+    assert all(
+        b.alt.feet - a.alt.feet == pytest.approx(1000)
+        for a, b in zip(_route(first), _route(second))
+    )
+
+
+def test_nav_insertions_use_the_receiving_flights_own_profile() -> None:
+    package = _package()
+    first, second = package.flights
+    for point in _route(second):
+        point.alt = feet(25000)
+    first.flight_plan.layout.nav_to.append(_wpt(Wpt.NAV, 99))
+    second.flight_plan.layout.nav_from.clear()
+    sharedroute.synchronize(package)
+    assert [w.position.x for w in second.flight_plan.layout.nav_to] == [0, 99]
+    assert all(w.alt == feet(25000) for w in _route(second))
+
+
+def test_separation_does_not_change_procedures_or_ground_elevations() -> None:
+    package = _package()
+    first, second = package.flights
+    protected = []
+    for flight in package.flights:
+        layout = flight.flight_plan.layout
+        point = _wpt(Wpt.TARGET_POINT)
+        point.alt = feet(69)
+        point.only_for_player = True
+        layout.custom_waypoints.append(point)
+        for point in (
+            layout.departure,
+            layout.arrival,
+            layout.divert,
+            layout.bullseye,
+            layout.nav_from[-1],
+            point,
+        ):
+            protected.append((point, point.alt, point.alt_type))
+    sharedroute.synchronize(package)
+    for point, altitude, reference in protected:
+        assert (point.alt, point.alt_type) == (altitude, reference)
+    assert second.flight_plan.layout.custom_waypoints[0].alt == feet(69)
+    assert second.flight_plan.layout.patrol_start.alt.feet == pytest.approx(21000)
+
+
+def test_height_references_are_preserved_and_not_compared_as_equal() -> None:
+    package = _package()
+    first, second = package.flights
+    for point in _route(second):
+        point.alt_type = "RADIO"
+    sharedroute.synchronize(package)
+    assert all(w.alt_type == "BARO" and w.alt == feet(20000) for w in _route(first))
+    assert all(w.alt_type == "RADIO" and w.alt == feet(20000) for w in _route(second))
+
+
+@pytest.mark.parametrize("share", [False, True])
+def test_saved_profiles_are_separated_before_simulation_and_retiming(
+    share: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from datetime import datetime
+    from game.sim import missionsimulation
+
+    package = _package()
+    package.single_route_for_all_flights = share
+    game: Any = NS(
+        coalitions=[NS(ato=NS(packages=[package]))],
+        conditions=NS(start_time=datetime(2026, 11, 3)),
+    )
+    seen = []
+
+    def record(*args: Any) -> None:
+        seen.append(package.flights[1].flight_plan.layout.patrol_start.alt.feet)
+
+    monkeypatch.setattr(missionsimulation, "retime_coordinated_packages", record)
+    simulation: Any = object.__new__(missionsimulation.MissionSimulation)
+    simulation.game = game
+    simulation.aircraft_simulation = NS(begin_simulation=record)
+    simulation.begin_simulation()
+    assert seen == pytest.approx([21000 if share else 20000] * 2)
+
+
+def test_exported_dcs_waypoints_keep_separated_altitudes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import datetime
+    from dcs.point import MovingPoint
+    from game.ato.traveltime import GroundSpeed
+    from game.missiongenerator.aircraft.waypoints.pydcswaypointbuilder import (
+        PydcsWaypointBuilder,
+    )
+    from game.utils import knots
+
+    package = _package()
+    sharedroute.synchronize(package)
+    monkeypatch.setattr(GroundSpeed, "for_flight", lambda *args: knots(300))
+    monkeypatch.setattr(PydcsWaypointBuilder, "add_tasks", lambda *args: None)
+    exported = []
+    for flight in package.flights:
+        flight.is_helo = False
+        flight.flight_plan.tot_for_waypoint = lambda w: None
+
+        def add_waypoint(
+            position: Point, altitude: float, **kwargs: Any
+        ) -> MovingPoint:
+            point = MovingPoint(position)
+            point.alt = altitude  # type: ignore[assignment]  # pydcs infers int from its default.
+            return point
+
+        group: Any = NS(add_waypoint=add_waypoint)
+        builder = PydcsWaypointBuilder(
+            flight.flight_plan.layout.nav_to[0], group, flight, None, datetime(2026, 11, 3), None  # type: ignore[arg-type]
+        )
+        exported.append(builder.build())
+    assert exported[0].position == exported[1].position
+    assert exported[1].alt - exported[0].alt == pytest.approx(feet(1000).meters)
+    assert exported[0].alt_type == exported[1].alt_type == "BARO"

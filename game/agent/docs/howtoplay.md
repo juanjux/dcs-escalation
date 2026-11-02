@@ -2076,11 +2076,18 @@ Write bodies:
   changes route sharing for an existing package. The optional
   `single_route_for_all_flights` field in a create/evaluate package spec overrides
   the default: enabled for new BARCAP, TARCAP and Refueling packages, off otherwise.
-  Enabling uses the first flight's route. Subsequent waypoint position/altitude edits
-  on **any** flight update every flight's corresponding route points. NAV insertions
-  and deletions are also shared. Departure, landing, alternate and runway alignment
-  remain individual, as do flight timings and TOT offsets. Sharing does not provide
-  collision separation; retain suitable timing separation where needed.
+  Enabling uses the first flight's horizontal route. Subsequent waypoint position
+  edits on **any** flight update every flight's corresponding route points. NAV
+  insertions and deletions are also shared. Altitudes and BARO/RADIO references stay
+  individual. Overlapping profiles are shifted vertically to keep at least 1,000 ft
+  between flights (200 ft between helicopters) along shared legs with matching height
+  references, where the doctrine's altitude limits allow it. The edited flight keeps
+  its heights; other flights move only if needed for separation. New NAV points use
+  the receiving flight's own height profile.
+  Departure, landing, alternate, runway alignment and ground-target elevations remain
+  unchanged, as do flight timings and TOT offsets. This is planned separation, not
+  active collision avoidance: mixed BARO/RADIO heights and AI attack manoeuvres still
+  need appropriate planning and timing separation.
   `get_packages` reports `single_route_for_all_flights` and, when unavailable,
   `shared_route_unavailable_reason`. Escort, SEAD Escort, incompatible mission
   waypoint sequences, special/custom layouts and active flights cannot enable it.

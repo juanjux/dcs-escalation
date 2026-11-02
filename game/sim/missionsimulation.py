@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 
 from game.debriefing import Debriefing
+from game.ato.sharedroute import synchronize
 from game.commander.coordinatedtot import retime_coordinated_packages
 from game.missionarchive import archive_mission
 from game.missiongenerator import MissionGenerator
@@ -32,6 +33,10 @@ class MissionSimulation:
         self.miz_generated_at: float = 0.0
 
     def begin_simulation(self) -> None:
+        # Saved shared routes may still have the old identical altitude profiles.
+        for coalition in self.game.coalitions:
+            for package in coalition.ato.packages:
+                synchronize(package)
         retime_coordinated_packages(self.game)
         self.time = self.game.conditions.start_time
         self.aircraft_simulation.begin_simulation()

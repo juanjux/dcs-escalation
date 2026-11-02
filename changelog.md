@@ -111,6 +111,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Flight Plans]** Keep individual altitude profiles on shared routes and add vertical separation between overlapping flights.
 * **[Ground Movement]** Find terrain-safe off-road detours when campaign roads cannot connect, retaining off-road travel budgets and friendly-territory checks.
 * **[Map]** Initialize the map view before vector layers mount and preserve error stacks in the embedded console.
 * **[UI]** Exclude sold aircraft from squadron counts, totals and sorting immediately.
