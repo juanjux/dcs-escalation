@@ -11,6 +11,16 @@ env.info("DCSRetribution|Skynet-IADS plugin - configuration")
 
 if dcsRetribution and SkynetIADS then
 
+    -- Query power, not radar activity: a silent battery can still engage.
+    local elementsByGroup = {}
+    dcsRetribution.iadsHasWorkingPower = function(groupName)
+        local element = elementsByGroup[groupName]
+        if element then
+            return element:hasWorkingPowerSource()
+        end
+        return nil -- Unmanaged sites must remain potential threats.
+    end
+
     -- specific options
     local createRedIADS = false
     local createBlueIADS = false
@@ -76,6 +86,7 @@ if dcsRetribution and SkynetIADS then
             -- skip processing of units which can not be handled by skynet
             return
         end
+        elementsByGroup[element.dcsGroupName] = iads_unit
         if element.engagement_zone then
             iads_unit:setEngagementZone(element.engagement_zone)
         end
@@ -117,6 +128,7 @@ if dcsRetribution and SkynetIADS then
                 env.info(string.format("DCSRetribution|Skynet-IADS plugin - adding IADS Point Defence %s", pd))
                 local point_defence = iads:addSAMSite(pd)
                 if point_defence ~= nil then
+                    elementsByGroup[pd] = point_defence
                     -- only add as point defence if skynet can handle the PD unit
                     iads_unit:addPointDefence(point_defence)
                 end

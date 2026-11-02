@@ -119,7 +119,7 @@ def test_no_campaign_roads_allow_only_a_validated_direct_offroad_route() -> None
     planner = CampaignGroundRouter(landmap(), [])
     result = planner.plan(P(0, 0), P(100, 0), 100, 50)
     assert result.segments == (GroundSegment(P(0, 0), P(100, 0), False),)
-    blocked = CampaignGroundRouter(landmap(box(40, -10, 60, 10)), [])
+    blocked = CampaignGroundRouter(landmap(box(40, -10000, 60, 10000)), [])
     with pytest.raises(GroundRouteError, match="off-road"):
         blocked.plan(P(0, 0), P(100, 0), 100, 50)
 
@@ -166,12 +166,12 @@ def test_all_road_edges_blocked_still_allow_a_clear_offroad_move() -> None:
 
 @pytest.mark.parametrize("water", [False, True])
 def test_direct_fallback_does_not_cross_water_or_exclusions(water: bool) -> None:
-    mask = landmap(box(-10000, 40, 10000, 60), box(40, 90, 60, 110))
+    mask = landmap(box(-10000, 40, 10000, 60).union(box(40, 60, 60, 10000)))
     if water:
         mask = Landmap(
-            mask.inclusion_zones.difference(box(40, 90, 60, 110)),
+            mask.inclusion_zones.difference(box(40, 60, 60, 10000)),
             MultiPolygon([box(-10000, 40, 10000, 60)]),
-            MultiPolygon([box(40, 90, 60, 110)]),
+            MultiPolygon([box(40, 60, 60, 10000)]),
         )
     planner = CampaignGroundRouter(mask, [road((0, 0), (100, 0))])
     with pytest.raises(GroundRouteError, match="No validated off-road access"):

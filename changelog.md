@@ -2,6 +2,9 @@
 
 ## Features/Improvements
 * **[Ground Movement]** Relocate whole mobile SAM/radar sites with towing checks, packed radars and weapons during transit, and player/API controls.
+* **[F10 Map]** Include installation types in objective marker labels alongside codenames and allegiance.
+* **[UI]** Add an aircraft payload library editor for Escalation and Custom presets, accessible from Edit → Payloads and flight payloads.
+* **[Mission Generation]** Automatically equip player A-10C II aircraft with HMCS + NVG at night, respecting disabled helmets and era restrictions.
 * **[Flight Plans]** Optional shared package routes, enabled by default for BARCAP, TARCAP and Refueling, with map edits and OPFOR API support.
 * **[Weather]** Show estimated base and top heights for each active cloud layer from the matching installed preset.
 * **[Economy]** Configurable equipment resale value, enabled at 85% of the new price by default, shared by both coalitions.
@@ -105,6 +108,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Ground Movement]** Find terrain-safe off-road detours when campaign roads cannot connect, retaining off-road travel budgets and friendly-territory checks.
 * **[Map]** Initialize the map view before vector layers mount and preserve error stacks in the embedded console.
 * **[UI]** Exclude sold aircraft from squadron counts, totals and sorting immediately.
 * **[Squadrons]** Allow empty relocations from damaged runways after selling all aircraft, including when reloading a campaign.

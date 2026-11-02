@@ -8,6 +8,7 @@ from typing import Any, Optional, TYPE_CHECKING
 from dcs import Mission, Point
 from dcs.action import DoScript
 from dcs.flyingunit import FlyingUnit
+from dcs.planes import A_10C_2
 from dcs.task import OptReactOnThreat
 from dcs.translation import String
 from dcs.triggers import TriggerStart
@@ -36,8 +37,10 @@ from game.radio.tacan import (
     OutOfTacanChannelsError,
 )
 from game.runways import RunwayData
+from game.settings import NightMissions
 from game.missiongenerator.missiondata import EscortInfo
 from game.squadrons import Pilot
+from game.timeofday import TimeOfDay
 from .aircraftbehavior import AircraftBehavior
 from .aircraftpainter import AircraftPainter
 from .bingoestimator import BingoEstimator
@@ -379,6 +382,7 @@ class FlightGroupConfigurator:
         member: FlightMember
         for unit, member in zip(self.group.units, self.flight.iter_members()):
             props = dict(member.properties)
+            self.setup_night_helmet(props, member)
             if (code := member.weapon_laser_code) is not None:
                 for laser_code_config in self.flight.unit_type.laser_code_configs:
                     props.update(laser_code_config.property_dict_for_code(code.code))
@@ -388,6 +392,24 @@ class FlightGroupConfigurator:
                 self.degrade_props_for_date(props)
             for prop_id, value in props.items():
                 unit.set_property(prop_id, value)
+
+    def setup_night_helmet(
+        self, props: dict[str, bool | float | int | str], member: FlightMember
+    ) -> None:
+        """Add NVG to the player's A-10C II HMCS for night missions."""
+        if not member.is_player or self.flight.unit_type.dcs_id != A_10C_2.id:
+            return
+        policy = self.game.settings.night_day_missions
+        if policy is NightMissions.OnlyDay or (
+            policy is not NightMissions.OnlyNight
+            and self.game.conditions.time_of_day is not TimeOfDay.Night
+        ):
+            return
+        helmet = A_10C_2.Properties.HelmetMountedDevice
+        # Keep an explicitly disabled helmet and any other selected equipment.
+        # Date restrictions are applied afterwards, as for all other properties.
+        if props.get(helmet.id, helmet.Values.HMCS) == helmet.Values.HMCS:
+            props[helmet.id] = helmet.Values.HMCS___NVG
 
     def degrade_props_for_date(
         self, props: dict[str, bool | float | int | str]

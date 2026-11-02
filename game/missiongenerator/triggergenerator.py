@@ -31,6 +31,7 @@ from game.dcs.skills import ground_skill
 
 from game.theater import Airfield
 from game.theater.controlpoint import Fob, TRIGGER_RADIUS_CAPTURE
+from game.theater.theatergroundobject import NAME_BY_CATEGORY
 
 if TYPE_CHECKING:
     from game.game import Game
@@ -141,14 +142,18 @@ class TriggerGenerator:
                         continue
 
                     seen.add(ground_object.obj_name)
+                    category = ground_object.category
+                    kind = (
+                        "Oil derrick"
+                        if category == "derrick"
+                        else NAME_BY_CATEGORY.get(category, category)
+                    )
+                    allegiance = "ALLY" if cp.captured.is_blue else "ENEMY"
+                    name = f"{ground_object.obj_name} - {kind.upper()} [{allegiance}]"
                     for location in ground_object.mark_locations:
                         zone = self.mission.triggers.add_triggerzone(
                             location, radius=10, hidden=True, name="MARK"
                         )
-                        if cp.captured.is_blue:
-                            name = ground_object.obj_name + " [ALLY]"
-                        else:
-                            name = ground_object.obj_name + " [ENEMY]"
                         mark_trigger.add_action(MarkToAll(v, zone.id, String(name)))
                         v += 1
             self.mission.triggerrules.triggers.append(mark_trigger)

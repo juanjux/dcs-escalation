@@ -19,11 +19,13 @@ from dcs.unittype import FlyingType
 
 from game import Game
 from game.ato.flight import Flight
+from game.ato.flighttype import FlightType
 from game.ato.flightroster import FlightRoster
 from game.ato.flightmember import apply_default_player_laser_code
 from game.ato.loadouts import Loadout, get_default_loadout_override
 from game.ato.package import Package
 from game.ato.starttype import StartType
+from game.dcs.aircrafttype import AircraftType
 from game.squadrons.squadron import Squadron
 from game.theater import ControlPoint, OffMapSpawn
 from qt_ui.uiconstants import EVENT_ICONS
@@ -105,18 +107,22 @@ class QFlightCreator(QDialog):
         columns.addLayout(departure_column, 2)
         body.addLayout(columns)
 
+        self.air_wing = self.game.blue.air_wing if is_ownfor else self.game.red.air_wing
         self.task_selector = QFlightTypeComboBox(
             self.game.theater, package.target, self.game.settings, is_ownfor
         )
+        for index in reversed(range(self.task_selector.count())):
+            if not self.available_aircraft_for(self.task_selector.itemData(index)):
+                self.task_selector.removeItem(index)
+        self.task_selector.setEnabled(self.task_selector.count() > 0)
         self.task_selector.setCurrentIndex(0)
         self.task_selector.currentIndexChanged.connect(self.on_task_changed)
         mission_layout.addWidget(
             key_value("Task", styled_input(self.task_selector), key_width=72)
         )
 
-        self.air_wing = self.game.blue.air_wing if is_ownfor else self.game.red.air_wing
         self.aircraft_selector = QAircraftTypeSelector(
-            self.air_wing.best_available_aircrafts_for(self.task_selector.currentData())
+            self.available_aircraft_for(self.task_selector.currentData())
         )
         self.aircraft_selector.setCurrentIndex(0)
         self.aircraft_selector.currentIndexChanged.connect(self.on_aircraft_changed)
@@ -417,11 +423,24 @@ class QFlightCreator(QDialog):
                 self.restore_start_type = None
         self._update_start_hint()
 
+    def available_aircraft_for(self, task: FlightType | None) -> list[AircraftType]:
+        """Use the same availability rules as the squadron selector."""
+        if task is None:
+            return []
+        return [
+            aircraft
+            for aircraft in self.air_wing.best_available_aircrafts_for(task)
+            if any(
+                squadron.capable_of(task)
+                and squadron.untasked_aircraft > 0
+                and squadron.location.runway_is_operational()
+                for squadron in self.air_wing.squadrons_for(aircraft)
+            )
+        ]
+
     def on_task_changed(self, index: int) -> None:
         task = self.task_selector.itemData(index)
-        self.aircraft_selector.update_items(
-            self.air_wing.best_available_aircrafts_for(task)
-        )
+        self.aircraft_selector.update_items(self.available_aircraft_for(task))
         self.squadron_selector.update_items(task, self.aircraft_selector.currentData())
         self.update_selection_summary()
 
@@ -528,7 +547,8 @@ class QFlightCreator(QDialog):
 
         if task is None:
             self.selection_summary.setText(
-                "Select a mission task to see compatible aircraft and squadrons."
+                "No missions are available for this target with the current air wing. "
+                "A compatible squadron needs spare aircraft and an operational runway."
             )
             return
         if aircraft is None:

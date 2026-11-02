@@ -73,6 +73,19 @@ do
       return true
     end
     function handler:onEvent(event)
+      local dead=event and ((world.event.S_EVENT_DEAD and event.id==world.event.S_EVENT_DEAD)or
+        (world.event.S_EVENT_UNIT_LOST and event.id==world.event.S_EVENT_UNIT_LOST))
+      local killed=event and world.event.S_EVENT_KILL and event.id==world.event.S_EVENT_KILL
+      local born=event and world.event.S_EVENT_BIRTH and event.id==world.event.S_EVENT_BIRTH
+      if dead or killed or born then
+        local nav=api.detectors and api.detectors.afacNavigation
+        if nav then
+          local unit=event.initiator
+          if killed then unit=event.target end
+          local ok,err=pcall(function()nav:lifeEvent(unit,not born)end)
+          if not ok then log('ERROR','AFAC life notification: '..tostring(err))end
+        end
+      end
       if event and event.id==world.event.S_EVENT_SHOT and api.detectors and api.detectors.afacMarking then
         local ok,name=pcall(function() return event.initiator:getName() end)
         if ok then api.detectors.afacMarking:shot(name) end

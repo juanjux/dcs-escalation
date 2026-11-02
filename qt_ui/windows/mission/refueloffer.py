@@ -30,7 +30,7 @@ from game.ato.flightplans.refueledit import (
     remove_refuel_waypoint,
 )
 from game.ato.flightplans.planningerror import PlanningError
-from game.ato.flightplans.refuelneed import has_refuel_waypoint
+from game.ato.flightplans.refuelneed import has_refuel_waypoint, supports_air_refuelling
 from game.sim import GameUpdateEvents
 from game.squadrons import Squadron
 from qt_ui.models import PackageModel
@@ -53,7 +53,8 @@ def adding_message(who: str, situation: str, fresh: bool) -> str:
     return (
         f"{who} {shortfall}. A refuelling waypoint can be added on the way home. "
         f"{situation}"
-        "\n\nThe rest of the route is left exactly as you set it."
+        "\n\nReturn navigation points will be recalculated. Mission waypoints, "
+        "custom waypoints and runway alignment are kept."
     )
 
 
@@ -74,8 +75,8 @@ class RefuelOffer:
     def ask(self, events: GameUpdateEvents, fresh: bool = False) -> GameUpdateEvents:
         """Whatever this flight needs asking about. Returns events plus any tanker.
 
-        Nothing is rebuilt: saying yes to a tanker does not touch the route. For an
-        edited flight rebuilding would throw away the very edits that made it short.
+        Adding or removing a stop rebuilds only return navigation. Adding a tanker
+        to an existing stop leaves the route unchanged.
 
         ``fresh`` is a flight that has only just been planned. The planner puts the
         refuelling waypoint in itself while it builds the layout, so by the time
@@ -86,7 +87,11 @@ class RefuelOffer:
         made for the player.
         """
         self.events = events
-        if fresh and has_refuel_waypoint(self.flight):
+        if (
+            fresh
+            and supports_air_refuelling(self.flight)
+            and has_refuel_waypoint(self.flight)
+        ):
             # The planner adding it IS the judgement that the flight is short, so the
             # estimate is not asked again -- without the detour the route is shorter
             # and might read as fine, which would drop a waypoint the flight needs.
@@ -100,19 +105,27 @@ class RefuelOffer:
             self._ask_about_adding()
         elif verdict is RefuelVerdict.NEEDS_A_TANKER:
             self._ask_about_the_tanker()
+        elif verdict is RefuelVerdict.REMOVE_UNSUPPORTED:
+            self._ask_about_removing(unsupported=True)
         else:
             self._ask_about_removing()
         return self.events
 
-    def _ask_about_removing(self) -> None:
+    def _ask_about_removing(self, unsupported: bool = False) -> None:
+        reason = (
+            "This aircraft cannot refuel in the air, but its saved route contains "
+            "a refuelling waypoint. Remove this unusable stop?"
+            if unsupported
+            else "This flight now carries comfortably more fuel than its route asks "
+            "for, so it no longer needs the detour to the tanker. Remove the "
+            "refuelling waypoint?"
+        )
         result = QMessageBox.question(
             self.parent,
             "Remove the refuelling waypoint?",
             (
-                "This flight now carries comfortably more fuel than its route asks "
-                "for, so it no longer needs the detour to the tanker. Remove the "
-                "refuelling waypoint?"
-                "\n\nThe rest of the route is left exactly as you set it."
+                reason + "\n\nReturn navigation points will be recalculated. Mission "
+                "waypoints, custom waypoints and runway alignment are kept."
             ),
             QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.Yes,

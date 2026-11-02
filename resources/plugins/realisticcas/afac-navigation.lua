@@ -62,6 +62,16 @@ do
       local g=Group.getByName(r.meta.groupName)
       return g and fog.service:isRevealed(g:getID(),3-r.meta.coalition)==true
     end
+    local function powered(r)
+      -- Real firing evidence takes precedence over a conflicting power report.
+      if r.firingUntil and timer.getTime()<r.firingUntil then return true end
+      local query=dcsRetribution and dcsRetribution.iadsHasWorkingPower
+      if type(query)~='function' then return true end
+      local ok,result=pcall(query,r.meta.groupName)
+      -- Only a definitive power failure disables a known threat. Missing IADS
+      -- data and query failures remain conservative, as do silent radars.
+      return not ok or result~=false
+    end
     local function sample()
       local used,visited=0,{}
       local function read(r)
@@ -70,7 +80,8 @@ do
         -- This gate precedes every native enemy position/life getter.
         local shared=known(r)==true
         r.seenKnowledge=shared
-        if shared then
+        r.checkedAt=timer.getTime()
+        if shared and not r.destroyed then
           local u=live(r.meta.name)
           local g=u and u:getGroup()
           if g and g:getName()==r.meta.groupName and u:getTypeName()==r.meta.typeName and u:getCoalition()==r.meta.coalition then
@@ -100,13 +111,32 @@ do
       if m.zone.points[2] then reach=reach+A.distance(a,m.zone.points[2]) end
       for _,r in ipairs(threats) do
         local t=r.sample
-        if t and t.side~=side and known(r) and A.distance(t.point,a)<=reach+t.radius+10000 then
+        if t and t.side~=side and known(r) and A.distance(t.point,a)<=reach+t.radius+10000 and powered(r) then
           out[#out+1]=t
           if #out>64 then return nil end -- Never silently drop a threatening ring.
         end
       end
       table.sort(out,function(a,b)return A.distance(a.point,source)-a.radius<A.distance(b.point,source)-b.radius end)
       return out
+    end
+    local function discardDestroyed(list)
+      -- At most 64 relevant threats per flight; share checks across flights in
+      -- this tick. Never reroute or order RTB from an old live-unit sample.
+      local changed=false
+      local now=timer.getTime()
+      for _,t in ipairs(list)do
+        local entry=byUnit[t.name]
+        if entry.checkedAt~=now then
+          entry.checkedAt=now
+          local u=known(entry) and live(t.name)
+          local g=u and u:getGroup()
+          if not g or g:getName()~=entry.meta.groupName or
+            u:getTypeName()~=entry.meta.typeName or u:getCoalition()~=entry.meta.coalition then
+            entry.sample=nil;changed=true
+          end
+        end
+      end
+      return changed
     end
     local function notice(name,r,text)
       if r.lastNotice==text then return end
@@ -130,7 +160,7 @@ do
       local reach=A.distance(p,q)/2
       for _,entry in ipairs(threats)do
         local t=entry.sample
-        if t and t.side~=r.side and known(entry)then
+        if t and t.side~=r.side and known(entry) and powered(entry)then
           -- A bounding circle also includes side-step candidates, not just the
           -- original station zone. Never omit a known ring to fit the budget.
           if A.distance(t.point,middle)<=reach+t.radius+50000 then
@@ -151,7 +181,7 @@ do
       for _,entry in ipairs(threats)do
         local t=entry.sample
         if t and t.side~=r.side and known(entry) and
-          A.distance(t.point,middle)<=region+t.radius+footprint+1000 then
+          A.distance(t.point,middle)<=region+t.radius+footprint+1000 and powered(entry) then
           list[#list+1]=t
         end
       end
@@ -417,6 +447,7 @@ end)()]],name,revision,name,name,name,seconds)
       local p=source:getPoint()
       local knownThreats=relevant(r.side,p,m)
       if not knownThreats then abort(name,r,controller,'too many known threats for bounded planning');return end
+      if discardDestroyed(knownThreats)then r.nextPlan=nil;return end
       if r.nextPlan and timer.getTime()<r.nextPlan and r.threatCount==#knownThreats and
         math.abs(p.y-r.lastAltitude)<100 then return end
       r.nextPlan=timer.getTime()+5;r.threatCount=#knownThreats;r.lastAltitude=p.y
@@ -499,7 +530,7 @@ end)()]],name,revision,name,name,name,seconds)
     end
     function api:observe(target)
       local r=byUnit[target.name]
-      if r and target.groupName==r.meta.groupName and target.side==r.meta.coalition and
+      if r and not r.destroyed and target.groupName==r.meta.groupName and target.side==r.meta.coalition and
         target.typeName==r.meta.typeName and S.vector(target.point) then
         r.sample={name=target.name,typeName=target.typeName,side=target.side,
           point={x=target.point.x,y=target.point.y-1,z=target.point.z},
@@ -510,10 +541,11 @@ end)()]],name,revision,name,name,name,seconds)
     function api:fire(groupName,unitName,point)
       local threat=byUnit[unitName]
       local now=timer.getTime()
-      if not self.active or not threat or not known(threat)or
+      if not self.active or not threat or threat.destroyed or not known(threat)or
         threat.meta.groupName~=groupName or not S.vector(point)or
         (threat.nextFire and now<threat.nextFire)then return end
       threat.nextFire=now+1
+      threat.firingUntil=now+60
       if known(threat)then
         -- This is a real firing event after successful revelation, not an
         -- omniscient position query. Do not wait behind the static-site sweep.
@@ -539,13 +571,22 @@ end)()]],name,revision,name,name,name,seconds)
       if not self.active then return end
       local ok,name=pcall(function()return u:getName()end)
       local r=ok and byUnit[name]
-      if not r or not known(r)then return end
+      if not r or r.destroyed or not known(r)then return end
       -- Fixed known SAMs are not owned by the concealment adapter, but their
       -- real firing events still deserve an urgent navigation check.
       if u:isExist() and u:getTypeName()==r.meta.typeName and u:getCoalition()==r.meta.coalition then
         local g=u:getGroup()
         if g and g:getName()==r.meta.groupName then self:fire(g:getName(),name,u:getPoint())end
       end
+    end
+    function api:lifeEvent(u,destroyed)
+      if not self.active then return end
+      local ok,name=pcall(function()return u:getName()end)
+      local r=ok and byUnit[name]
+      if not r then return end
+      -- Death events can arrive after the native unit stops accepting getters.
+      -- Retire only that unit's sample, not surviving launchers or point defences.
+      r.destroyed=destroyed;r.sample=nil;r.firingUntil=nil;r.seenKnowledge=false
     end
     function api:tick()
       local now=timer.getTime()

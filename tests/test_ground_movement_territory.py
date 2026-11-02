@@ -15,7 +15,12 @@ from game.groundmovement.orders import (
     MovementDestination,
 )
 from game.groundmovement.planning import movement_destination, preview_armor_movement
-from game.groundmovement.territory import position_owner, require_friendly_position
+from game.groundmovement.journey import GroundSegment
+from game.groundmovement.territory import (
+    position_owner,
+    require_friendly_position,
+    segment_is_friendly,
+)
 from game.theater.frontline import FrontLine
 from game.theater.player import Player
 from tests.test_armor_movement_planning import world  # noqa: F401
@@ -134,3 +139,33 @@ def test_gps_control_tracks_capture_without_cached_permissions(world: Any) -> No
     assert position_owner(world.game, P(110, 0)) is Player.RED
     with pytest.raises(PermissionError):
         require_friendly_position(world.game, Player.BLUE, P(110, 0))
+
+
+def test_offroad_leg_cannot_cross_enemy_land_between_friendly_endpoints(
+    world: Any,
+) -> None:
+    for base in world.game.theater.controlpoints:
+        base.convoy_routes.clear()
+    world.a.position = Point(0, 0, world.game.theater.terrain)
+    world.b.position = Point(100, 0, world.game.theater.terrain)
+    world.enemy.position = Point(50, 0, world.game.theater.terrain)
+    assert position_owner(world.game, P(0, 0)) is Player.BLUE
+    assert position_owner(world.game, P(100, 0)) is Player.BLUE
+    assert not segment_is_friendly(
+        world.game, Player.BLUE, GroundSegment(P(0, 0), P(100, 0), False)
+    )
+    assert segment_is_friendly(
+        world.game, Player.BLUE, GroundSegment(P(0, 0), P(0, 100), False)
+    )
+
+
+def test_offroad_leg_checks_the_whole_line_not_only_its_midpoint(world: Any) -> None:
+    for base in world.game.theater.controlpoints:
+        base.convoy_routes.clear()
+    world.a.position = Point(0, 0, world.game.theater.terrain)
+    world.b.position = Point(60, 0, world.game.theater.terrain)
+    world.enemy.position = Point(20, 0, world.game.theater.terrain)
+    assert position_owner(world.game, P(50, 0)) is Player.BLUE
+    assert not segment_is_friendly(
+        world.game, Player.BLUE, GroundSegment(P(0, 0), P(100, 0), False)
+    )

@@ -171,6 +171,10 @@ def test_reload_multiturn_progress_and_stop_keep_current_position(world: Any) ->
         world.game.theater.landmap,
         inclusion_zones=MultiPolygon([box(-1000, -1000, 600000, 1000)]),
     )
+    # Keep the deliberately extended off-road journey in friendly territory.
+    world.enemy.position = type(world.enemy.position)(
+        -1000000, 0, world.game.theater.terrain
+    )
     world.game.turn += 1
     advance_armor(world.game, GameUpdateEvents())
     first = transit.journey.position
@@ -185,6 +189,24 @@ def test_reload_multiturn_progress_and_stop_keep_current_position(world: Any) ->
     moving = detachment(world, transit)
     assert moving.position.x == first.x and not moving.in_transit
     assert loaded.orders[transit.order_id].cancelled
+
+
+def test_offroad_journey_pauses_when_enemy_territory_cuts_its_route(world: Any) -> None:
+    from game.groundmovement.journey import GroundJourney, GroundRoute, GroundSegment
+
+    transit = dispatch(world, (7,))
+    transit.journey = GroundJourney(
+        GroundRoute(
+            (GroundSegment(GroundPosition(10, 10), GroundPosition(100, 0), False),)
+        ),
+        last_advanced_turn=world.game.turn,
+    )
+    world.enemy.position = type(world.enemy.position)(50, 0, world.game.theater.terrain)
+    world.game.turn += 1
+    advance_armor(world.game, GameUpdateEvents())
+    assert transit.pause_reason == "The route is no longer available"
+    assert transit.journey.travelled_distance == 0
+    assert not transit.finished
 
 
 def test_origin_capture_rehomes_departed_detachment_without_losing_units(

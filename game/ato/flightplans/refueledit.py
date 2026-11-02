@@ -20,13 +20,19 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Optional
 
 from game.ato.fuelestimate import estimate_fuel
-from .refuelneed import can_carry_a_refuel_waypoint, has_refuel_waypoint
+from .refuelneed import (
+    can_carry_a_refuel_waypoint,
+    has_refuel_waypoint,
+    supports_air_refuelling,
+)
+from .standard import StandardLayout
 from .waypointbuilder import WaypointBuilder
 
 if TYPE_CHECKING:
     from game.squadrons import Squadron
 
     from ..flight import Flight
+    from ..flightwaypoint import FlightWaypoint
 
 
 #: How much fuel to spare before offering to take the waypoint back off. A flight that
@@ -48,10 +54,18 @@ class RefuelVerdict(Enum):
     SHOULD_REMOVE = auto()
     #: Leave it alone.
     NOTHING_TO_DO = auto()
+    #: A saved route has a tanker stop the aircraft cannot use.
+    REMOVE_UNSUPPORTED = auto()
 
 
 def refuel_verdict(flight: Flight) -> RefuelVerdict:
     """Whether the flight as the player left it wants its waypoint added or removed."""
+    if not supports_air_refuelling(flight):
+        return (
+            RefuelVerdict.REMOVE_UNSUPPORTED
+            if has_refuel_waypoint(flight)
+            else RefuelVerdict.NOTHING_TO_DO
+        )
     if not _could_meet_a_tanker(flight):
         return RefuelVerdict.NOTHING_TO_DO
 
@@ -87,7 +101,7 @@ def _could_meet_a_tanker(flight: Flight) -> bool:
     """Whether there is any point asking the question at all."""
     from game.ato.flighttype import FlightType
 
-    if flight.is_helo:
+    if not supports_air_refuelling(flight):
         return False
     if not can_carry_a_refuel_waypoint(flight):
         return False
@@ -97,13 +111,9 @@ def _could_meet_a_tanker(flight: Flight) -> bool:
 
 
 def add_refuel_waypoint(flight: Flight) -> bool:
-    """Put the waypoint in without rebuilding the plan.
-
-    Rebuilding is what the player is trying to avoid: it would throw away the very
-    edits that made the flight short. The layout has a slot for this waypoint and
-    yields it in the right place -- after the target, or after the last lap -- so
-    filling the slot is the whole change.
-    """
+    """Add the stop and reroute its return leg, preserving the mission waypoints."""
+    if not supports_air_refuelling(flight):
+        return False
     point = flight.package.refuel_point
     if point is None:
         return False
@@ -114,7 +124,11 @@ def add_refuel_waypoint(flight: Flight) -> bool:
         return False
     if not hasattr(layout, "refuel"):
         return False
-    layout.refuel = WaypointBuilder(flight).refuel(point)
+    waypoint = WaypointBuilder(flight).refuel(point)
+    navigation = _return_navigation(flight, waypoint)
+    layout.refuel = waypoint
+    if navigation is not None:
+        layout.nav_from = navigation
     return True
 
 
@@ -128,10 +142,36 @@ def remove_refuel_waypoint(flight: Flight) -> bool:
     existing = getattr(layout, "refuel", None)
     if existing is None:
         return False
-    # Through delete_waypoint rather than by assignment: that is the path the route
-    # table uses, and a waypoint the layout still holds a reference to is what breaks
-    # mission generation.
-    return bool(layout.delete_waypoint(existing))
+    origin = getattr(layout, "patrol_end", None) or getattr(layout, "split", None)
+    navigation = _return_navigation(flight, origin) if origin is not None else None
+    # Delete through the layout to clear its reference without recursively calling
+    # FlightPlan.delete_waypoint, which also uses this helper.
+    if not layout.delete_waypoint(existing):
+        return False
+    if navigation is not None:
+        layout.nav_from = navigation
+    return True
+
+
+def _return_navigation(
+    flight: Flight, origin: FlightWaypoint
+) -> list[FlightWaypoint] | None:
+    """Rebuild only return NAV points, retaining the runway alignment waypoint."""
+    layout = flight.flight_plan.layout
+    if not isinstance(layout, StandardLayout):
+        return None
+    align = next((w for w in reversed(layout.nav_from) if w.name == "ALIGN"), None)
+    destination = align or layout.arrival
+    template = next((w for w in layout.nav_from if w is not align), origin)
+    navigation = WaypointBuilder(flight).nav_path(
+        origin.position,
+        destination.position,
+        template.alt,
+        template.alt_type == "RADIO",
+    )
+    if align is not None:
+        navigation.append(align)
+    return navigation
 
 
 def planned_tanker_name(flight: Flight) -> Optional[str]:
@@ -222,7 +262,7 @@ def can_offer_a_tanker(flight: Flight) -> list["Squadron"]:
     dialog asks both questions at once -- waypoint only, or waypoint and tanker -- so
     it has to know the answer to this one before it has added anything.
     """
-    if package_has_tanker(flight):
+    if not supports_air_refuelling(flight) or package_has_tanker(flight):
         return []
     if not refuel_point_is_safe(flight):
         return []

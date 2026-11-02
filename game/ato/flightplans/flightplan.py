@@ -121,6 +121,8 @@ class FlightPlan(ABC, Generic[LayoutT]):
         """
         from .formation import FormationLayout
 
+        if waypoint is getattr(self.layout, "refuel", None):
+            return True
         if (
             isinstance(self.layout, FormationLayout)
             and len(self.flight.package.flights) < 2
@@ -132,6 +134,11 @@ class FlightPlan(ABC, Generic[LayoutT]):
     def delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
         """Take a waypoint out of the route. Says whether it could be done here."""
         from .formation import FormationLayout
+
+        if waypoint is getattr(self.layout, "refuel", None):
+            from .refueledit import remove_refuel_waypoint
+
+            return remove_refuel_waypoint(self.flight)
 
         if (
             isinstance(self.layout, FormationLayout)
