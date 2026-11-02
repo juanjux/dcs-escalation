@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import logging
 from typing import Any, TYPE_CHECKING
+
+from game.utils import feet, meters
 
 from .flightplans.standard import StandardLayout
 from .flighttype import FlightType
@@ -23,6 +26,90 @@ INDIVIDUAL = {
     Wpt.ASCEND_POINT,
     Wpt.DESCENT_POINT,
 }
+GROUND_POINTS = {
+    Wpt.TARGET_POINT,
+    Wpt.TARGET_SHIP,
+    Wpt.PICKUP_ZONE,
+    Wpt.DROPOFF_ZONE,
+    Wpt.CARGO_STOP,
+}
+
+
+def _flying(waypoint: FlightWaypoint) -> bool:
+    return (
+        not _individual(waypoint)
+        and not waypoint.only_for_player
+        and waypoint.waypoint_type not in GROUND_POINTS
+        and waypoint.alt.meters > 0
+    )
+
+
+def _navigation(source: FlightWaypoint, own: list[FlightWaypoint]) -> FlightWaypoint:
+    waypoint = deepcopy(source)
+    if _flying(waypoint) and own:
+        matching = [w for w in own if w.waypoint_type == waypoint.waypoint_type]
+        nearest = min(
+            matching or own,
+            key=lambda w: w.position.distance_to_point(waypoint.position),
+        )
+        waypoint.alt = nearest.alt
+        waypoint.alt_type = nearest.alt_type
+    waypoint.tot = waypoint.departure_time = None
+    waypoint.min_fuel = None
+    return waypoint
+
+
+def _separate(flight: Flight, previous: list[Flight]) -> None:
+    """Shift a whole flight profile only when it overlaps an allocated profile.
+
+    A fixed vertical order at all shared points also prevents the profiles from
+    crossing between them. Different altitude references cannot be compared here.
+    """
+    route = [w for w in _plan(flight).waypoints if not _individual(w)]
+    forbidden = []
+    for other in previous:
+        separation = feet(
+            200
+            if getattr(flight, "is_helo", False) and getattr(other, "is_helo", False)
+            else 1000
+        ).meters
+        other_route = [w for w in _plan(other).waypoints if not _individual(w)]
+        differences = [
+            b.alt.meters - a.alt.meters
+            for a, b in zip(route, other_route)
+            if _flying(a) and _flying(b) and a.alt_type == b.alt_type
+        ]
+        if differences:
+            forbidden.append(
+                (min(differences) - separation, max(differences) + separation)
+            )
+    offset = 0.0
+    for low, high in sorted(forbidden):
+        if low + 1e-6 < offset < high - 1e-6:
+            offset = high
+    if offset:
+        flying = [w for w in route if _flying(w)]
+        doctrine = getattr(getattr(flight, "coalition", None), "doctrine", None)
+        baro = [w.alt.meters for w in flying if w.alt_type == "BARO"]
+        if doctrine is not None and baro:
+            ceiling = max(max(baro), doctrine.max_combat_altitude.meters)
+            if max(baro) + offset > ceiling + 1e-6:
+                # Try below instead of exceeding the planning ceiling. Do not
+                # lower AGL legs, where the existing height is terrain clearance.
+                offset = 0.0
+                for low, high in sorted(forbidden, reverse=True):
+                    if low + 1e-6 < offset < high - 1e-6:
+                        offset = low
+                floor = min(min(baro), doctrine.min_combat_altitude.meters)
+                if len(baro) != len(flying) or min(baro) + offset < floor - 1e-6:
+                    logging.warning(
+                        "Cannot vertically separate shared route for %s within altitude limits",
+                        flight,
+                    )
+                    return
+        for waypoint in route:
+            if _flying(waypoint):
+                waypoint.alt += meters(offset)
 
 
 def requested(package: Package) -> bool:
@@ -96,7 +183,9 @@ def synchronize(package: Package, source: Flight | None = None) -> list[Flight]:
     """Use the edited flight as the route authority; regeneration uses the first flight.
 
     Only already-built plans are inspected, so this cannot recursively build another
-    flight. Each flight keeps its own waypoint objects, targets, fuel and TOT data.
+    flight. Each flight keeps its own altitude profile, waypoint objects, targets,
+    fuel and TOT data. The source keeps its heights; other profiles are separated
+    only when needed.
     """
     if not enabled(package):
         return []
@@ -110,23 +199,27 @@ def synchronize(package: Package, source: Flight | None = None) -> list[Flight]:
         if flight is source:
             continue
         other = _plan(flight)
+        own_route = [w for w in other.waypoints if _flying(w)]
         for name in ("nav_to", "nav_from", "custom_waypoints"):
-            own = [w for w in getattr(other.layout, name) if _individual(w)]
+            old = getattr(other.layout, name)
+            own = [w for w in old if _individual(w)]
+            altitudes = [w for w in old if _flying(w)] or own_route
             shared = [
-                deepcopy(w) for w in getattr(plan.layout, name) if not _individual(w)
+                _navigation(w, altitudes)
+                for w in getattr(plan.layout, name)
+                if not _individual(w)
             ]
-            for waypoint in shared:
-                waypoint.tot = waypoint.departure_time = None
-                waypoint.min_fuel = None
             setattr(other.layout, name, shared + own)
         for original, counterpart in zip(core, _core(other)):
             counterpart.position = original.position.new_in_same_map(
                 original.position.x, original.position.y
             )
-            counterpart.alt = original.alt
-            counterpart.alt_type = original.alt_type
             counterpart.custom_name = original.custom_name
         changed.append(flight)
+    allocated = [source]
+    for flight in changed:
+        _separate(flight, allocated)
+        allocated.append(flight)
     return changed
 
 
