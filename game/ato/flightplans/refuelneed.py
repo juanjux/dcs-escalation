@@ -35,6 +35,16 @@ if TYPE_CHECKING:
 ROUTE_SLACK = 1.10
 
 
+def supports_air_refuelling(flight: Flight) -> bool:
+    """Reject known non-receivers; preserve legacy behavior for unknown types."""
+    from game.ato.prerefuel import profiles
+
+    if flight.is_helo:
+        return False
+    aircraft_id = getattr(getattr(flight, "unit_type", None), "dcs_id", "")
+    return profiles().get(aircraft_id, {}).get("air_refuel_type") != "none"
+
+
 def can_carry_a_refuel_waypoint(flight: Flight) -> bool:
     """Whether this flight's plan has anywhere to put one.
 
@@ -167,7 +177,7 @@ def needs_refuelling(
     """
     if not getattr(settings, "plan_refuelling_when_needed", True):
         return False
-    if flight.is_helo:
+    if not supports_air_refuelling(flight):
         return False
     from game.ato.flighttype import FlightType
 
@@ -204,4 +214,7 @@ def package_needs_tanker(package: Package, settings: Any) -> bool:
     """
     if not getattr(settings, "plan_refuelling_when_needed", True):
         return False
-    return any(has_refuel_waypoint(flight) for flight in package.flights)
+    return any(
+        supports_air_refuelling(flight) and has_refuel_waypoint(flight)
+        for flight in package.flights
+    )
