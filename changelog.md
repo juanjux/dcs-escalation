@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[F10 Map]** Label fully destroyed objectives as DESTROYED and retain markers at destroyed building positions.
 * **[Ground Movement]** Relocate whole mobile SAM/radar sites with towing checks, packed radars and weapons during transit, and player/API controls.
 * **[F10 Map]** Include installation types in objective marker labels alongside codenames and allegiance.
 * **[UI]** Add an aircraft payload library editor for Escalation and Custom presets, accessible from Edit → Payloads and flight payloads.
