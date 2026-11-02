@@ -156,7 +156,8 @@ relocate whole to friendly GPS positions. Each towed piece needs a surviving tra
 in the battery; fixed/unknown units and pending repairs block relocation. Radars,
 jammers and weapons start packed and offline during transit, while the convoy remains
 attackable. Validated Osa, HEMTT C-RAM, Tor-M2K and complete Buk-M3 configurations can
-stop to defend after a hit, then pack and resume their remaining route. Native reloading
+stop to engage their own detected enemies within a range/height envelope, or defend
+after a hit, then pack and resume their remaining route. Native reloading
 can delay recovery by several minutes. Unknown/mixed batteries, loaded weapons,
 Sky Sabre and S-350 remain packed. Moving sites stay outside the IADS network.
 Arrival or an explicit stop redeploys survivors in their original formation

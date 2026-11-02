@@ -73,15 +73,23 @@ local function detectedAirThreat(r)
   local leader=g and g:getUnit(1)
   if not c or not live(leader)then return false end
   local p=leader:getPoint()
+  local side=leader:getCoalition()
+  local enemy=side==1 and 2 or(side==2 and 1 or nil)
+  if not enemy then return false end
   -- Only this group's native sensor contacts, never coalition/world enumeration.
   for _,entry in ipairs(c:getDetectedTargets()or{})do
     local u=entry.object
     if u and u:isExist()and Object.getCategory(u)==Object.Category.UNIT and live(u)
-      and u:getCoalition()~=leader:getCoalition()and c:isTargetDetected(u)then
+      and u:getCoalition()==enemy and c:isTargetDetected(u)then
       local desc=u:getDesc()
       if desc.category==Unit.Category.AIRPLANE or desc.category==Unit.Category.HELICOPTER then
         local q=u:getPoint()
-        if (p.x-q.x)^2+(p.z-q.z)^2<=r.meta.range*r.meta.range then return true end
+        -- Native positions are MSL: use relative height, including elevated sites.
+        local height=math.abs(q.y-p.y)
+        local distance2=(p.x-q.x)^2+(p.z-q.z)^2+height*height
+        local minimum=r.meta.minRange or 0
+        if distance2<=r.meta.range*r.meta.range and distance2>=minimum*minimum
+          and(not r.meta.ceiling or height<=r.meta.ceiling)then return true end
       end
     end
   end
@@ -96,6 +104,7 @@ local function tickGroup(r,now)
   if not r.initialized and r.phase=='MARCH'then
     r.initialized=true;resume(r,now)
   end
+  if (r.phase=='MARCH'or r.phase=='PACKING')and detectedAirThreat(r)then defend(r,now)end
   if r.phase=='DEFENDING'then
     if detectedAirThreat(r)then r.lastActivity=now end
     if now-r.lastActivity>=90 and now-r.phaseAt>=60 then

@@ -50,6 +50,8 @@ def configure(mission: Mission, unit_map: UnitMap | None) -> list[dict[str, Any]
                         name=group.name,
                         units=[u.name for u in group.units],
                         range=profile.range_m,
+                        ceiling=profile.ceiling_m,
+                        minRange=profile.min_range_m,
                         route=list(group.dict()["route"]["points"].values()),
                     )
                 )

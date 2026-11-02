@@ -156,7 +156,8 @@ def armor_movement_options(
         warnings.extend(sam_warnings)
         warnings.append(
             "SAM/radar sites relocate as a whole and leave the IADS network. "
-            "Validated self-propelled batteries can stop to defend after a hit; "
+            "Validated self-propelled batteries can stop to engage detected enemies "
+            "within their defensive envelope, or defend after a hit; "
             "packing and reloading may delay their return to the route. "
             "Other sites keep radars and weapons packed until arrival or an explicit stop."
         )

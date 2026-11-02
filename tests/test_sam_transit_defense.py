@@ -59,6 +59,8 @@ def test_exported_registry_and_trigger_preserve_route(
     rows = loads(preamble)["ESCALATION_SAM_TRANSIT_CONFIG"]
     row = rows[1]
     assert row["range"] == profile.range_m
+    assert row.get("ceiling") == profile.ceiling_m
+    assert row["minRange"] == profile.min_range_m
     assert len(row["units"]) == len(profile.types)
     assert len(row["route"]) >= 2
     for index, point in row["route"].items():
@@ -130,14 +132,14 @@ def runtime() -> Any:
     function step(t)NOW=t;TICK(nil,NOW)end
     function hit()HANDLER:onEvent({id=2,target=own})end
     function fire()HANDLER:onEvent({id=1,initiator=own})end
-    function aircraft(side,x)
+    function aircraft(side,x,y)
       local u={}
       function u:isExist()return true end
       function u:getLife()return 100 end
       function u:getCategory()return 1 end
       function u:getCoalition()return side end
       function u:getDesc()return {category=0}end
-      function u:getPoint()return {x=x,y=100,z=100}end
+      function u:getPoint()return {x=x,y=y or 100,z=100}end
       return {object=u}
     end
     """)
@@ -157,7 +159,18 @@ def runtime() -> Any:
     ]
     lua.execute(
         "ESCALATION_SAM_TRANSIT_CONFIG="
-        + dumps([dict(name="battery", units=["own"], range=10000, route=points)])
+        + dumps(
+            [
+                dict(
+                    name="battery",
+                    units=["own"],
+                    range=10000,
+                    ceiling=5000,
+                    minRange=500,
+                    route=points,
+                )
+            ]
+        )
     )
     lua.execute(
         Path("resources/plugins/base/sam_transit_defense.lua").read_text("utf-8")
@@ -193,6 +206,41 @@ def test_contacts_and_shots_extend_defense_but_friendly_or_far_contacts_do_not(
     CONTACTS={aircraft(2,1000),aircraft(1,999999)}
     step(180);fire();step(260);assert(ESCALATION_SAM_TRANSIT.active.battery)
     step(270);assert(not ESCALATION_SAM_TRANSIT.active.battery)
+    """)
+
+
+def test_detection_in_range_starts_defense_without_a_hit(runtime: Any) -> None:
+    runtime.execute("""
+    CONTACTS={aircraft(1,2000)};step(5)
+    assert(ESCALATION_SAM_TRANSIT.active.battery and OPTIONS[9]==2 and OPTIONS[0]==0)
+    assert(COMMANDS[#COMMANDS].params.value==true and #TASKS==1)
+    CONTACTS={};step(95);assert(not ESCALATION_SAM_TRANSIT.active.battery)
+    CONTACTS={aircraft(1,2000)};step(100)
+    assert(ESCALATION_SAM_TRANSIT.active.battery and #TASKS==1)
+    """)
+
+
+def test_detection_envelope_uses_slant_range_and_launcher_relative_height(
+    runtime: Any,
+) -> None:
+    runtime.execute("""
+    CONTACTS={aircraft(0,2000),aircraft(2,2000),aircraft(1,200),aircraft(1,11000),aircraft(1,2000,5001)}
+    step(5);assert(not ESCALATION_SAM_TRANSIT.active.battery)
+    -- Horizontal range alone would admit this target, but slant range does not.
+    CONTACTS={aircraft(1,10000,4000)};step(10)
+    assert(not ESCALATION_SAM_TRANSIT.active.battery)
+    -- A high-altitude plateau must not be mistaken for target height above the site.
+    own.p.y=6000;CONTACTS={aircraft(1,2000,6500)};step(15)
+    assert(ESCALATION_SAM_TRANSIT.active.battery)
+    """)
+
+
+def test_arrival_does_not_restart_transit_defense_from_detections(runtime: Any) -> None:
+    runtime.execute("""
+    ESCALATION_SAM_TRANSIT.reached('battery',4);step(5)
+    CONTACTS={aircraft(1,2000)};step(10)
+    assert(ESCALATION_SAM_TRANSIT.groups.battery.phase=='ARRIVED' and #TASKS==0)
+    assert(not ESCALATION_SAM_TRANSIT.active.battery)
     """)
 
 
