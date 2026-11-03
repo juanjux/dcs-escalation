@@ -1,8 +1,8 @@
-"""Refund accounting for pending building repairs."""
+"""Refund accounting for pending site repairs."""
 
 from __future__ import annotations
 
-from game.theater.theatergroundobject import BuildingGroundObject
+from game.theater.theatergroundobject import BuildingGroundObject, TheaterGroundObject
 from game.theater.theatergroup import TheaterUnit
 
 
@@ -46,6 +46,41 @@ def cancel_building_repairs(
     # Preserve legacy allocations when only part of an old batch is cancelled.
     for unit in pending:
         unit.repair_cost_paid = refunds[unit.id]
+    refund = sum(refunds[unit.id] for unit in units)
+    for unit in units:
+        unit.repair_turns_remaining = None
+        unit.repair_cost_paid = None
+    return refund
+
+
+def pending_unit_repairs(site: TheaterGroundObject) -> list[TheaterUnit]:
+    """Priced ground units with pending repairs or construction, excluding ships."""
+    return [
+        unit
+        for unit in site.units
+        if not unit.alive
+        and unit.repair_turns_remaining is not None
+        and unit.repairable
+    ]
+
+
+def unit_repair_refunds(site: TheaterGroundObject) -> dict[int, float]:
+    refunds: dict[int, float] = {}
+    for unit in pending_unit_repairs(site):
+        receipt = getattr(unit, "repair_cost_paid", None)
+        # Unlike legacy building batches, ground units were always billed per unit.
+        price = unit.unit_type.price if unit.unit_type is not None else 0
+        refunds[unit.id] = receipt if receipt is not None else price
+    return refunds
+
+
+def cancel_unit_repairs(site: TheaterGroundObject, units: list[TheaterUnit]) -> float:
+    pending = pending_unit_repairs(site)
+    if not units or any(not any(unit is item for item in pending) for unit in units):
+        raise ValueError("select ground units with pending repairs")
+    if len({unit.id for unit in units}) != len(units):
+        raise ValueError("duplicate unit IDs")
+    refunds = unit_repair_refunds(site)
     refund = sum(refunds[unit.id] for unit in units)
     for unit in units:
         unit.repair_turns_remaining = None

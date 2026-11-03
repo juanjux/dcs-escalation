@@ -191,6 +191,47 @@ def test_cancel_all_building_work_refunds_the_paid_batch(location: Any) -> None:
     assert all(not unit.alive for unit in state.units)
 
 
+def test_cancel_unit_work_refunds_once_and_refreshes(location: Any) -> None:
+    state = location
+    state.window._repair_unit(state.units[0], 2)
+    _drain(state.app)
+    state.events.clear()
+    state.updates.clear()
+    state.builds.clear()
+    state.units[0].unit_type.price = 20
+    state.window._cancel_unit_repair(state.units[0])
+    _drain(state.app)
+    assert state.game.blue.budget == 100
+    assert not state.units[0].alive
+    assert state.units[0].repair_turns_remaining is None
+    assert len(state.events) == 1
+    assert state.updates == [state.game]
+    assert state.builds == [state.window]
+    state.window._cancel_unit_repair(state.units[0])
+    assert state.game.blue.budget == 100
+    assert len(state.events) == 1
+
+
+def test_cancel_all_legacy_unit_repairs_refunds_per_unit(location: Any) -> None:
+    state = location
+    state.game.blue.budget = 92
+    for unit in state.units:
+        unit.repair_turns_remaining = 1
+    state.window._cancel_all_unit_repairs()
+    _drain(state.app)
+    assert state.game.blue.budget == 100
+    assert all(unit.repair_turns_remaining is None for unit in state.units)
+
+
+def test_unit_cancel_ignores_a_stale_callback_after_capture(location: Any) -> None:
+    state = location
+    state.window._repair_unit(state.units[0], 2)
+    state.cp.captured = Player.RED
+    state.window._cancel_unit_repair(state.units[0])
+    assert state.game.blue.budget == 98
+    assert state.units[0].repair_turns_remaining == 2
+
+
 def test_stale_building_callbacks_cannot_modify_a_captured_site(location: Any) -> None:
     state = location
     state.window._repair_building(state.units[0], 2)

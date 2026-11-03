@@ -53,7 +53,7 @@ class TheaterUnit:
     transported_by_id: int | None = None
     # Base stock may distinguish variants sharing the same native DCS model.
     ground_unit_variant: str | None = None
-    # Actual payment for cancellable building work; None on legacy saves.
+    # Actual payment for cancellable repair work; None on legacy saves.
     repair_cost_paid: float | None = None
 
     @property
@@ -131,19 +131,25 @@ class TheaterUnit:
         return f"{str(self.id).zfill(4)} | {self.name}"
 
     @property
+    def status_suffix(self) -> str:
+        if self.alive:
+            return ""
+        if self.repair_turns_remaining is not None:
+            return " [REPAIRING]"
+        return " [DEAD]"
+
+    @property
     def display_name(self) -> str:
-        dead_label = " [DEAD]" if not self.alive else ""
         # Statics have no unit_type, and their name carries the objective it belongs to
         # ("Command Zaragoza-1"), which beats repeating the DCS type. Older saves named
         # them after the type anyway, so they render exactly as before.
         unit_label = self.unit_type or self.name or self.type.name
-        return f"{str(self.id).zfill(4)} | {unit_label}{dead_label}"
+        return f"{str(self.id).zfill(4)} | {unit_label}{self.status_suffix}"
 
     @property
     def short_name(self) -> str:
-        dead_label = " [DEAD]" if not self.alive else ""
         label = self.type.id if self.unit_type is not None else self.name
-        return f"<b>{label[0:18]}</b> {dead_label}"
+        return f"<b>{label[0:18]}</b> {self.status_suffix}"
 
     @property
     def is_static(self) -> bool:
@@ -222,13 +228,11 @@ class SceneryUnit(TheaterUnit):
 
     @property
     def display_name(self) -> str:
-        dead_label = " [DEAD]" if not self.alive else ""
-        return f"{str(self.id).zfill(4)} | {self.name}{dead_label}"
+        return f"{str(self.id).zfill(4)} | {self.name}{self.status_suffix}"
 
     @property
     def short_name(self) -> str:
-        dead_label = " [DEAD]" if not self.alive else ""
-        return f"<b>{self.name[0:18]}</b> {dead_label}"
+        return f"<b>{self.name[0:18]}</b> {self.status_suffix}"
 
     @property
     def icon(self) -> str:

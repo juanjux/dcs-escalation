@@ -1526,8 +1526,7 @@ def repair(
                 revived += 1
             else:
                 unit.repair_turns_remaining = repair_turns
-                if is_building:
-                    unit.repair_cost_paid = cost
+                unit.repair_cost_paid = cost
                 scheduled += 1
         if not revived and not scheduled:
             raise ValueError(

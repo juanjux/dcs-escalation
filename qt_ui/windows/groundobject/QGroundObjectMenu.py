@@ -40,6 +40,9 @@ from game.buildingrepair import (
     cancel_building_repairs,
     pending_buildings,
     repair_refunds,
+    cancel_unit_repairs,
+    pending_unit_repairs,
+    unit_repair_refunds,
 )
 from game.cruise_raids import tgo_magazines
 from game.data.building_data import FORTIFICATION_BUILDINGS
@@ -256,6 +259,7 @@ class QGroundObjectMenu(QDialog):
             self.ground_object,
             self.game.settings,
             self._repair_unit if self._can_repair else None,
+            self._cancel_unit_repair if self._can_repair else None,
         )
         caption = heading("Units")
         if units.folds:
@@ -269,6 +273,13 @@ class QGroundObjectMenu(QDialog):
             shortcut.clicked.connect(self._repair_all)
             # After the stretch the caption ends with, so it sits on the right.
             _right_of(caption, shortcut)
+
+        pending = pending_unit_repairs(self.ground_object) if self._can_repair else []
+        if pending:
+            refund = sum(unit_repair_refunds(self.ground_object).values())
+            cancel = Clickable(f"Cancel all repairs · +${refund:g}M", 11, ACCENT)
+            cancel.clicked.connect(self._cancel_all_unit_repairs)
+            _right_of(caption, cancel)
 
         holder = QWidget()
         make_transparent(holder)
@@ -808,7 +819,16 @@ class QGroundObjectMenu(QDialog):
         self._update_game()
 
     def _repair_unit(self, unit: TheaterUnit, price: int, refresh: bool = True) -> None:
-        if self.game.blue.budget > price:
+        if (
+            self.game_model.game is self.campaign
+            and self._can_repair
+            and any(unit is item for item in self.ground_object.units)
+            and unit.repairable
+            and not unit.alive
+            and unit.repair_turns_remaining is None
+            and self.game.settings.ground_object_repair_turns >= 0
+            and self.game.blue.budget >= price > 0
+        ):
             self.game.blue.budget -= price
             turns = self.game.settings.ground_object_repair_turns
             if turns == 0:
@@ -816,9 +836,26 @@ class QGroundObjectMenu(QDialog):
                 logging.info(f"Repaired unit: {unit.unit_name}")
             else:
                 unit.repair_turns_remaining = turns
+                unit.repair_cost_paid = price
                 logging.info(f"Scheduled unit repair: {unit.unit_name}")
         if refresh:
             self._update_game()
+
+    def _cancel_unit_repair(self, unit: TheaterUnit) -> None:
+        self._cancel_unit_repairs([unit])
+
+    def _cancel_all_unit_repairs(self) -> None:
+        self._cancel_unit_repairs(pending_unit_repairs(self.ground_object))
+
+    def _cancel_unit_repairs(self, units: list[TheaterUnit]) -> None:
+        if self.game_model.game is not self.campaign or not self._can_repair:
+            return
+        try:
+            refund = cancel_unit_repairs(self.ground_object, units)
+        except ValueError:
+            return
+        self.game.blue.budget += refund
+        self._update_game()
 
     def _repair_building(
         self, unit: TheaterUnit, price: float, refresh: bool = True
