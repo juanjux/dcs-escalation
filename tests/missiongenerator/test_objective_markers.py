@@ -17,6 +17,8 @@ from game.theater.presetlocation import PresetLocation
 from game.theater.theatergroundobject import (
     BuildingGroundObject,
     NAME_BY_CATEGORY,
+    MotorpoolGroundObject,
+    SamGroundObject,
     TheaterGroundObject,
     VehicleGroupGroundObject,
 )
@@ -27,6 +29,7 @@ def generate_markers(
     owner: Player = Player.RED,
     enabled: bool = True,
     unit_states: tuple[bool, ...] = (True,),
+    cleared: bool = False,
 ) -> Mission:
     terrain = Caucasus()
     cp: Any = SimpleNamespace(captured=owner, ground_objects=[])
@@ -35,6 +38,10 @@ def generate_markers(
         objective: TheaterGroundObject
         if category == "armor":
             objective = VehicleGroupGroundObject(f"BONGO {index}", location, cp, None)
+        elif category == "aa":
+            objective = SamGroundObject(f"BONGO {index}", location, cp, None)
+        elif category == "motorpool":
+            objective = MotorpoolGroundObject(f"BONGO {index}", location, cp, None)
         else:
             objective = BuildingGroundObject(
                 f"BONGO {index}", category, location, cp, None
@@ -48,6 +55,8 @@ def generate_markers(
             ]
         )
         objective.groups.append(group)
+        if cleared:
+            objective.clear()
         cp.ground_objects.append(objective)
     game: Any = SimpleNamespace(
         settings=SimpleNamespace(generate_marks=enabled),
@@ -133,7 +142,7 @@ def test_objective_types_are_written_to_the_miz(
         assert f"BONGO {index} - {kind} [ENEMY]{suffix}" in text
 
 
-@pytest.mark.parametrize("category", ["ammo", "armor", "oil"])
+@pytest.mark.parametrize("category", ["ammo", "armor", "aa", "oil"])
 @pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
 def test_fully_destroyed_sites_retain_labels(category: str, owner: Player) -> None:
     mission = generate_markers([category], owner, unit_states=(False, False))
@@ -144,17 +153,52 @@ def test_fully_destroyed_sites_retain_labels(category: str, owner: Player) -> No
     assert all(f"[{allegiance}]" in str(action.text.id) for action in actions)
 
 
-@pytest.mark.parametrize("category", ["ammo", "armor"])
-def test_partial_losses_do_not_label_the_whole_site_destroyed(category: str) -> None:
-    mission = generate_markers([category], unit_states=(False, True))
+@pytest.mark.parametrize("category", ["ammo", "armor", "aa"])
+@pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
+def test_partial_losses_do_not_label_the_whole_site_destroyed(
+    category: str, owner: Player
+) -> None:
+    mission = generate_markers([category], owner, unit_states=(False, True))
     actions = marker_actions(mission)
     assert actions
     assert all("DESTROYED" not in str(action.text.id) for action in actions)
 
 
-def test_empty_armor_sites_are_not_reported_as_destroyed() -> None:
-    mission = generate_markers(["armor"], unit_states=())
-    assert "DESTROYED" not in str(marker_actions(mission)[0].text.id)
+@pytest.mark.parametrize("category", ["armor", "aa"])
+@pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
+@pytest.mark.parametrize("cleared", [False, True])
+def test_empty_military_sites_are_reported_as_destroyed(
+    category: str, owner: Player, cleared: bool
+) -> None:
+    mission = generate_markers([category], owner, unit_states=(), cleared=cleared)
+    action = marker_actions(mission)[0]
+    allegiance = "ALLY" if owner.is_blue else "ENEMY"
+    assert str(action.text.id).endswith(f"[{allegiance}] [DESTROYED]")
+    assert len(list(mission.triggers.zones())) == 1
+
+
+@pytest.mark.parametrize("category", ["ammo", "motorpool"])
+def test_empty_non_military_sites_are_not_reported_as_destroyed(category: str) -> None:
+    mission = generate_markers([category], unit_states=())
+    if category == "motorpool":
+        assert marker_actions(mission)
+    assert all(
+        "DESTROYED" not in str(action.text.id) for action in marker_actions(mission)
+    )
+
+
+@pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
+def test_empty_military_site_labels_are_written_to_the_miz(
+    tmp_path: Path, owner: Player
+) -> None:
+    mission = generate_markers(["armor", "aa"], owner, cleared=True)
+    output = tmp_path / "empty-sites.miz"
+    mission.save(str(output))
+    with ZipFile(output) as archive:
+        text = archive.read("mission").decode("utf-8")
+    allegiance = "ALLY" if owner.is_blue else "ENEMY"
+    assert f"BONGO 0 - RESERVE ARMOR GROUP [{allegiance}] [DESTROYED]" in text
+    assert f"BONGO 1 - AA DEFENSE SITE [{allegiance}] [DESTROYED]" in text
 
 
 def test_destroyed_building_markers_keep_their_actual_positions() -> None:
