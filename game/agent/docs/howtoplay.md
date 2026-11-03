@@ -2125,10 +2125,25 @@ Write bodies:
   repair.
 - `POST /ground/transfer` `{side, origin_cp_id, dest_cp_id, unit_name, quantity, by_air}`
   (move existing ground units between your bases; route pre-validated)
-- `POST /repair` `{side, id}` — pay to repair one of your damaged assets (an `id` from
+- `POST /repair` `{side, id, quantity?, unit_ids?}` — pay to repair one of your damaged assets (an `id` from
   `turn_context.repairs`): a dead SAM/EWR/armor unit group, a building, or a cratered
   runway. It revives instantly or over a few turns (campaign setting) and debits your
   budget. Rebuild a key SAM to re-close a corridor, or a runway to get a base flying again.
+  Buildings cost `repair_cost()` per unit, matching the UI and automatic repairs.
+  Use `quantity:1` to repair just one generator, or `unit_ids:[123]` to choose exact
+  buildings. These selectors are building-only and mutually exclusive. Explicit
+  selections require the full budget and reject invalid, live or already repairing
+  units without changing anything. Omit both to repair all affordable units.
+- `POST /repair/cancel` `{side, id, unit_ids?}` — cancel pending building repairs
+  and refund their recorded payments immediately. Omit `unit_ids` to cancel all
+  pending buildings at the site. Completed or instant repairs cannot be cancelled.
+  `repairs[].buildings` exposes unit IDs, prices, countdowns and refunds; sites with
+  only pending work remain listed with `pending_refund` and `cost:0`.
+  New manual and automatic building repairs record the exact amount paid, so later
+  price changes do not affect refunds. Legacy saves lack payment receipts and the
+  old API charged one site price for multiple buildings, unlike the UI. For those
+  unrecorded repairs only, one current site price is shared among pending buildings
+  to avoid over-refunding old API batches. Cancelling one preserves the others' shares.
 - `POST /naval/move` `{side, ship_id, lat, lng}` — reposition one of your own naval groups
   — a ship group or a carrier/LHA (an `id` from `turn_context.naval`) — up to ~80 nm over
   water; the move applies at turn end. Omit `lat`+`lng` to cancel a pending move. Use it

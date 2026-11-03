@@ -137,9 +137,14 @@ tool/resource of the same name.
 - `POST /naval/move` `{side, ship_id, lat, lng}` — reposition one of your own naval groups
   — a ship group or a carrier/LHA (an `id` from `turn_context.naval`) — up to ~80 nm over
   water; applies at turn end. Omit `lat`+`lng` to cancel a pending move.
-- `POST /repair` `{side, id}` — pay to repair a damaged asset (an `id` from
+- `POST /repair` `{side, id, quantity?, unit_ids?}` — pay to repair a damaged asset (an `id` from
   `turn_context.repairs`): a SAM/EWR/armor unit group, a building, or a runway. Instant or
   over a few turns; debits your budget. (Leftover budget also auto-repairs at turn end.)
+  Buildings are charged per unit, as in the UI. Set `quantity:1` for one building,
+  or select `unit_ids` from `repairs[].buildings`; omit both for all affordable units.
+- `POST /repair/cancel` `{side, id, unit_ids?}` — cancel pending building repairs
+  and refund the payment. Omit `unit_ids` to cancel all pending work at that site.
+  Pending-only sites remain in `repairs`, with per-building IDs and refund amounts.
 
 **High Command** (when the campaign has it on)
 - `GET /high_command` — the requests your High Command gives you: optional objectives,

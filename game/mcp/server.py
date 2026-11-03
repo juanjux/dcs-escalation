@@ -400,12 +400,29 @@ def move_ship(
 
 
 @_tool()
-def repair(side: str, id: str) -> dict:
+def repair(
+    side: str,
+    id: str,
+    quantity: int | None = None,
+    unit_ids: list[int] | None = None,
+) -> dict:
     """Pay to repair one of YOUR damaged assets (an id from turn_context.repairs) — a dead
     SAM/EWR/armor unit group, a building, or a cratered runway. Instant or over a few turns
     per campaign settings; debits your budget. (Leftover budget also auto-repairs at turn end.)
+    Select buildings with quantity or unit_ids, not both; omit to repair all affordable.
     """
-    return _dump(service.repair(side, id))
+    return _dump(service.repair(side, id, quantity, unit_ids))
+
+
+@_tool()
+def cancel_building_repair(
+    side: str, id: str, unit_ids: list[int] | None = None
+) -> dict:
+    """Cancel own pending building repairs and refund their recorded payments.
+
+    Omit unit_ids to cancel every pending building repair at the site.
+    """
+    return _dump(service.cancel_building_repair(side, id, unit_ids))
 
 
 @_tool()

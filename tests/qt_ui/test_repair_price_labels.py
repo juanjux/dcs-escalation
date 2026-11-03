@@ -69,3 +69,28 @@ def test_price_is_shown_once(
     assert len(prices) == 1
     assert bool(row.findChildren(QPushButton)) == button_expected
     row.close()
+
+
+def test_pending_building_has_a_cancel_button_with_its_receipt(
+    app: Any, monkeypatch: Any
+) -> None:
+    building: Any = SimpleNamespace(
+        id=1,
+        alive=False,
+        repair_turns_remaining=3,
+        repair_cost_paid=12.5,
+    )
+    site: Any = SimpleNamespace(statics=[building], repair_cost=lambda: 99)
+    monkeypatch.setattr(buildingcard, "buildings_of", lambda _: [])
+    cancelled: list[Any] = []
+    card = buildingcard.BuildingCard(site, object(), None, cancelled.append)
+    cancel_button = card._repair_button(building)
+    assert cancel_button is not None
+    assert any(
+        "+$12.5M" in label.text() for label in cancel_button.findChildren(QLabel)
+    )
+    assert isinstance(cancel_button, QPushButton)
+    cancel_button.click()
+    assert cancelled == [building]
+    card.cancel_repair = None
+    assert card._repair_button(building) is None

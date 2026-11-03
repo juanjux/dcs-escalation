@@ -244,6 +244,7 @@ def capabilities() -> dict:
             "missiles/{source_id}/target (delete: cancel an own missile assignment)",
             "naval/move (reposition one of your ship groups or carriers, <=80nm over water)",
             "repair (pay to repair a damaged SAM/EWR unit, building, or runway)",
+            "repair/cancel (cancel_building_repair: cancel pending building work and refund payments)",
             "ai/status",
             "high_command/ticket_choices (the next pick a ticket asks for, or what it"
             " gives once every pick is made)",
@@ -479,10 +480,17 @@ def move_ship(side, ship_id, lat=None, lng=None):
 
 
 @opfor_only
-def repair(side, asset_id):
+def repair(side, asset_id, quantity=None, unit_ids=None):
     from game.agent import planner
 
-    return planner.repair(_require_game(), side, asset_id)
+    return planner.repair(_require_game(), side, asset_id, quantity, unit_ids)
+
+
+@opfor_only
+def cancel_building_repair(side, asset_id, unit_ids=None):
+    from game.agent import planner
+
+    return planner.cancel_building_repair(_require_game(), side, asset_id, unit_ids)
 
 
 @opfor_only

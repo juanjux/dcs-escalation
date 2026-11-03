@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Repairs]** Cancel pending building repairs with refunds in the UI and OPFOR REST/MCP; select individual buildings through the API.
 * **[Live Pilots]** Preselect post-debrief leave grants without understaffing squadrons and update projected pilot coverage as grants change.
 * **[Realistic CAS]** AFACs wait in a safe orbit when defences block their work area, recheck access and return at BINGO fuel.
 * **[F10 Map]** Label fully destroyed objectives as DESTROYED and retain markers at destroyed building positions.
@@ -111,6 +112,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[OPFOR AI]** Charge building repairs per unit, matching manual and automatic repairs.
 * **[Flight Plans]** Keep individual altitude profiles on shared routes and add vertical separation between overlapping flights.
 * **[Ground Movement]** Find terrain-safe off-road detours when campaign roads cannot connect, retaining off-road travel budgets and friendly-territory checks.
 * **[Map]** Initialize the map view before vector layers mount and preserve error stacks in the embedded console.

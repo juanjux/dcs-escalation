@@ -16,6 +16,7 @@ from PySide6.QtGui import QPainter, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from game.config import REWARDS
+from game.buildingrepair import repair_refunds
 from game.theater import TheaterGroundObject
 from game.theater.theatergroundobject import BuildingGroundObject
 from game.theater.theatergroup import TheaterUnit
@@ -114,11 +115,13 @@ class BuildingCard(QWidget):
         ground_object: BuildingGroundObject,
         settings: object,
         repair: Optional[RepairCall],
+        cancel_repair: Optional[Callable[[TheaterUnit], None]] = None,
     ) -> None:
         super().__init__()
         self.ground_object = ground_object
         self.settings = settings
         self.repair = repair
+        self.cancel_repair = cancel_repair
 
         self.stack = Stack()
         layout = QHBoxLayout()
@@ -214,9 +217,18 @@ class BuildingCard(QWidget):
         return struck
 
     def _repair_button(self, building: TheaterUnit) -> Optional[QWidget]:
-        if self.repair is None or building.alive:
+        if building.alive:
             return None
         if building.repair_turns_remaining is not None:
+            if self.cancel_repair is not None:
+                refund = repair_refunds(self.ground_object)[building.id]
+                return two_tone_button(
+                    "Cancel repair",
+                    f"+${refund:g}M",
+                    handler=partial(self.cancel_repair, building),
+                )
+            return None
+        if self.repair is None:
             return None
         price = self.ground_object.repair_cost()
         if price <= 0:
