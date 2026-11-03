@@ -36,10 +36,53 @@ def test_reviewed_profiles_and_mixed_batteries(profile: Any) -> None:
 
 @pytest.mark.parametrize(
     "unit_type",
-    ["M1097 Avenger", "HQ17A", "CH_S350_50N6", "CH_SkySabre", "ZSU_57_2"],
+    [
+        "M1097 Avenger",
+        "M6 Linebacker",
+        "Strela-10M3",
+        "Strela-1 9P31",
+        "CH_LAVAD",
+        "CH_BoxerSkyranger",
+        "CH_Wiesel2Ozelot",
+        "CH_RBS-98",
+        "HQ17A",
+        "CH_S350_50N6",
+        "CH_SkySabre",
+        "SA-11 Buk LN 9A310M1",
+        "S-300PS 5P85C ln",
+    ],
 )
 def test_unvalidated_systems_are_not_enabled(unit_type: str) -> None:
     assert transit_defense([unit_type]) is None
+
+
+@pytest.mark.parametrize(
+    "unit_type,range_m,ceiling_m,min_range_m",
+    [
+        ("ZSU_57_2", 7000, 4000, 0),
+        ("ZSU-23-4 Shilka", 2500, None, 0),
+        ("CHAP_PantsirS1", 12000, 10000, 0),
+        ("CHAP_TorM2", 12000, 12000, 1500),
+        ("Tor 9A331", 12000, 6000, 1500),
+        ("Vulcan", 2000, None, 0),
+        ("Roland ADS", 8000, 6000, 500),
+        ("Ural-375 ZU-23", 2500, None, 0),
+        ("CH_Centurion_C_RAM", 2000, None, 0),
+        ("CH_PantsirS2", 12000, 18000, 0),
+        ("CH_StormerHVM", 7000, 7000, 300),
+        ("CH_FlaRakRad", 8000, 6000, 500),
+        ("CH_LvKv9040", 4000, 2500, 0),
+        ("PGL_625", 8000, 5000, 0),
+    ],
+)
+def test_additional_reviewed_profiles_preserve_weapon_bounds(
+    unit_type: str, range_m: int, ceiling_m: int | None, min_range_m: int
+) -> None:
+    profile = transit_defense([unit_type])
+    assert profile is not None
+    assert profile.range_m == range_m
+    assert profile.ceiling_m == ceiling_m
+    assert profile.min_range_m == min_range_m
 
 
 @pytest.mark.parametrize("profile", PROFILES)
