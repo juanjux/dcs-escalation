@@ -151,7 +151,12 @@ class TriggerGenerator:
                     allegiance = "ALLY" if cp.captured.is_blue else "ENEMY"
                     name = f"{ground_object.obj_name} - {kind.upper()} [{allegiance}]"
                     units = list(ground_object.units)
-                    destroyed = bool(units) and all(not unit.alive for unit in units)
+                    # Captures can clear a military site's unit list entirely.
+                    # Empty armor/SAM sites still have no surviving force, unlike
+                    # an empty motorpool which can simply have no reserve stock.
+                    destroyed = (bool(units) or category in {"armor", "aa"}) and all(
+                        not unit.alive for unit in units
+                    )
                     locations = list(ground_object.mark_locations)
                     if destroyed:
                         name += " [DESTROYED]"
