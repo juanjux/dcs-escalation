@@ -1,5 +1,10 @@
 import { Tgo as TgoModel } from "../../api/liberationApi";
-import { setShowDestroyedNonRepairable } from "../../api/mapSlice";
+import {
+  setShowDestroyedNonRepairable,
+  setShowDestroyedRepairable,
+} from "../../api/mapSlice";
+import { updateTgo } from "../../api/tgosSlice";
+import { act } from "@testing-library/react";
 import { setupStore } from "../../app/store";
 import { renderWithProviders } from "../../testutils";
 import TgosLayer from "./TgosLayer";
@@ -14,6 +19,112 @@ jest.mock("react-leaflet", () => ({
 jest.mock("../tgos/Tgo", () => (props: { tgo: TgoModel }) => {
   mockTgo(props.tgo);
   return null;
+});
+
+describe("TgosLayer destroyed repairable filter", () => {
+  beforeEach(() => mockTgo.mockClear());
+
+  it.each([true, false])(
+    "hides only the selected coalition's repairable losses (%s)",
+    (blue) => {
+      const sites = [true, false].map((side) =>
+        fakeTgo({
+          id: side ? "blue" : "red",
+          blue: side,
+          dead: true,
+          purchasable: true,
+          category: "aa",
+        }),
+      );
+      const store = storeWith(sites, false, false);
+      store.dispatch(setShowDestroyedRepairable({ blue, value: false }));
+      renderWithProviders(<TgosLayer categories={["aa"]} />, { store });
+      expect(mockTgo).toHaveBeenCalledTimes(1);
+      expect(mockTgo).toHaveBeenCalledWith(
+        expect.objectContaining({ blue: !blue }),
+      );
+    },
+  );
+
+  it.each(["aa", "ewr", "armor", "missile", "factory"])(
+    "filters dead repairable %s sites",
+    (category) => {
+      const site = fakeTgo({
+        id: "site",
+        blue: true,
+        dead: true,
+        purchasable: true,
+        category,
+      });
+      const store = storeWith([site], true, true);
+      store.dispatch(setShowDestroyedRepairable({ blue: true, value: false }));
+      renderWithProviders(<TgosLayer categories={[category]} />, { store });
+      expect(mockTgo).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not hide permanent losses or partially damaged sites", () => {
+    const sites = [
+      fakeTgo({
+        id: "ship",
+        blue: true,
+        dead: true,
+        purchasable: false,
+        category: "ship",
+      }),
+      fakeTgo({
+        id: "damaged",
+        blue: true,
+        dead: false,
+        purchasable: true,
+        category: "aa",
+      }),
+    ];
+    const store = storeWith(sites, true, true);
+    store.dispatch(setShowDestroyedRepairable({ blue: true, value: false }));
+    renderWithProviders(<TgosLayer categories={["ship", "aa"]} />, { store });
+    expect(mockTgo).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows a repaired site again without enabling the destroyed filter", () => {
+    const site = fakeTgo({
+      id: "site",
+      blue: true,
+      dead: true,
+      purchasable: true,
+      category: "armor",
+    });
+    const store = storeWith([site], true, true);
+    store.dispatch(setShowDestroyedRepairable({ blue: true, value: false }));
+    renderWithProviders(<TgosLayer categories={["armor"]} />, { store });
+    expect(mockTgo).not.toHaveBeenCalled();
+    act(() => {
+      store.dispatch(updateTgo([{ ...site, dead: false }]));
+    });
+    expect(mockTgo).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "site", dead: false }),
+    );
+  });
+
+  it("can restore a hidden site by enabling its repairable filter", () => {
+    const site = fakeTgo({
+      id: "site",
+      blue: false,
+      dead: true,
+      purchasable: true,
+      category: "aa",
+    });
+    const store = storeWith([site], true, true);
+    store.dispatch(setShowDestroyedRepairable({ blue: false, value: false }));
+    renderWithProviders(<TgosLayer categories={["aa"]} />, { store });
+    expect(mockTgo).not.toHaveBeenCalled();
+    act(() => {
+      store.dispatch(setShowDestroyedRepairable({ blue: false, value: true }));
+    });
+    expect(mockTgo).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "site" }),
+    );
+  });
 });
 
 function fakeTgo(o: {
@@ -87,7 +198,7 @@ describe("TgosLayer destroyed (non-repairable) filter", () => {
     expect(mockTgo).toHaveBeenCalledTimes(1);
   });
 
-  it("never hides repairable (purchasable) objects, even when dead", () => {
+  it("does not apply the non-repairable filter to repairable sites", () => {
     const sam = fakeTgo({
       id: "sam",
       blue: false,

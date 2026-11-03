@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Map]** Add separate Blue/Red visibility filters for destroyed repairable sites, alongside the non-repairable filters.
 * **[Repairs]** Cancel pending building repairs with refunds in the UI and OPFOR REST/MCP; select individual buildings through the API.
 * **[Live Pilots]** Preselect post-debrief leave grants without understaffing squadrons and update projected pilot coverage as grants change.
 * **[Realistic CAS]** AFACs wait in a safe orbit when defences block their work area, recheck access and return at BINGO fuel.

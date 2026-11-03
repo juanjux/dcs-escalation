@@ -1,4 +1,7 @@
-import { selectShowDestroyedNonRepairable } from "../../api/mapSlice";
+import {
+  selectShowDestroyedNonRepairable,
+  selectShowDestroyedRepairable,
+} from "../../api/mapSlice";
 import { selectTgos } from "../../api/tgosSlice";
 import { useAppSelector } from "../../app/hooks";
 import Tgo from "../tgos/Tgo";
@@ -13,14 +16,15 @@ interface TgosLayerProps {
 export default function TgosLayer(props: TgosLayerProps) {
   const allTgos = Object.values(useAppSelector(selectTgos).tgos);
   const showDestroyed = useAppSelector(selectShowDestroyedNonRepairable);
+  const showDestroyedRepairable = useAppSelector(selectShowDestroyedRepairable);
   const categoryFilter = props.categories ?? [];
   const taskFilter = props.task ?? "";
   const tgos = allTgos.filter((tgo) => {
-    // Hide fully-destroyed, non-rebuildable objects (buildings, ships, ...) when
-    // that coalition's "destroyed (non-repairable)" layer is turned off.
-    // Repairable objects (purchasable: SAM/EWR/armor) are never hidden by this.
-    if (tgo.dead && !tgo.purchasable) {
-      const shown = tgo.blue ? showDestroyed.blue : showDestroyed.red;
+    // The API's purchasable field reports repairability, including rebuildable
+    // buildings. Only completely destroyed sites use these visibility filters.
+    if (tgo.dead) {
+      const visibility = tgo.purchasable ? showDestroyedRepairable : showDestroyed;
+      const shown = tgo.blue ? visibility.blue : visibility.red;
       if (!shown) {
         return false;
       }
