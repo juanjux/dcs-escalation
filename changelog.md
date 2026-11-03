@@ -36,7 +36,7 @@
 * **[Ground Movement]** Persistent convoy and armor transport with Motor Pool support, route previews, dispatch/stop controls, progress and loss tracking, and API commands.
 * **[Ground Movement]** Deploy custom Reserve Armor Groups from base stock to friendly GPS positions, with active defence and persistent movement.
 * **[Realistic CAS]** AI-only AFAC area and frontline missions with skill-based reconnaissance, coordinated laser/IR/smoke marking, threat avoidance, pilot experience and protected UAV operators.
-* **[Realistic CAS]** Progressive ground-target discovery, AI search patrols and optional F10 contact reports, with terrain, weather, daylight and movement effects.
+* **[Realistic CAS]** Progressive ground-target discovery, full-front CAS search patrols and optional F10 contact reports, with terrain, weather, daylight and movement effects.
 * **[Live Pilots]** Per-squadron pilot capacities, reserve slots for new campaign squadrons, bulk roster actions and seniority/cohesion-based crew selection.
 * **[UI]** Redesigned Air Wings and Air Wing Configuration with aircraft/base grouping, searchable selectors, squadron cards and task controls.
 * **[Mission Generation]** Date- and latitude-based mission times with local sunrise and sunset in the WEATHER tooltip.
