@@ -15,6 +15,7 @@ import backend from "../../api/backend";
 import {
   setHighlightEmitters,
   setShowDestroyedNonRepairable,
+  setShowDestroyedRepairable,
 } from "../../api/mapSlice";
 import { useAppDispatch } from "../../app/hooks";
 import AircraftLayer from "../aircraftlayer";
@@ -82,6 +83,8 @@ type LayerId =
   | "redThreatRadar"
   | "blueDestroyed"
   | "redDestroyed"
+  | "blueDestroyedRepairable"
+  | "redDestroyedRepairable"
   | "blueNavmesh"
   | "redNavmesh"
   | "inclusionZones"
@@ -130,11 +133,13 @@ const OVERLAYS: Record<LayerId, { label: string; node: ReactNode }> = {
     node: <AirDefenseRangeLayer blue={true} detection />,
   },
   alliedIads: { label: "Allied IADS network", node: <Iadsnetworklayer blue={true} /> },
-  // emitterHighlight, blueDestroyed and redDestroyed are side-effect toggles,
+  // Emitter highlighting and destroyed-object filters are side-effect toggles,
   // not visual layers: they are driven by useEffect below, so they render no node.
   emitterHighlight: { label: "Highlight radar emitter on hover", node: null },
   blueDestroyed: { label: "Blue: destroyed (non-repairable)", node: null },
   redDestroyed: { label: "Red: destroyed (non-repairable)", node: null },
+  blueDestroyedRepairable: { label: "Blue: destroyed (repairable)", node: null },
+  redDestroyedRepairable: { label: "Red: destroyed (repairable)", node: null },
   flightBlue: { label: "All blue flight plans", node: <FlightPlansLayer blue={true} /> },
   flightRed: { label: "All red flight plans", node: <FlightPlansLayer blue={false} /> },
   blueThreatFull: {
@@ -257,11 +262,13 @@ const GROUPS: GroupDef[] = [
       { id: "blueThreatAirDef" },
       { id: "blueThreatRadar" },
       { id: "blueDestroyed" },
+      { id: "blueDestroyedRepairable" },
       { id: "redThreatFull" },
       { id: "redThreatAircraft" },
       { id: "redThreatAirDef" },
       { id: "redThreatRadar" },
       { id: "redDestroyed" },
+      { id: "redDestroyedRepairable" },
     ],
   },
   {
@@ -297,6 +304,8 @@ const DEFAULT_ON: LayerId[] = [
   "emitterHighlight",
   "blueDestroyed",
   "redDestroyed",
+  "blueDestroyedRepairable",
+  "redDestroyedRepairable",
   "flightBlue",
 ];
 
@@ -439,7 +448,7 @@ export default function MapLayersControl({
     dispatch(setHighlightEmitters(visible.emitterHighlight));
   }, [dispatch, visible.emitterHighlight]);
 
-  // Destroyed (non-repairable) ground objects are a per-coalition client flag;
+  // Destroyed ground-object filters are per-coalition client flags;
   // keep the slice in sync with each checkbox. Driven by state (not layer
   // add/remove) so the toggles turn the objects cleanly on AND off.
   useEffect(() => {
@@ -452,6 +461,22 @@ export default function MapLayersControl({
       setShowDestroyedNonRepairable({ blue: false, value: visible.redDestroyed })
     );
   }, [dispatch, visible.redDestroyed]);
+  useEffect(() => {
+    dispatch(
+      setShowDestroyedRepairable({
+        blue: true,
+        value: visible.blueDestroyedRepairable,
+      })
+    );
+  }, [dispatch, visible.blueDestroyedRepairable]);
+  useEffect(() => {
+    dispatch(
+      setShowDestroyedRepairable({
+        blue: false,
+        value: visible.redDestroyedRepairable,
+      })
+    );
+  }, [dispatch, visible.redDestroyedRepairable]);
 
   const toggle = (id: LayerId) => setVisible((v) => ({ ...v, [id]: !v[id] }));
   const applyPreset = (name: string) =>
@@ -461,6 +486,8 @@ export default function MapLayersControl({
       // leave them where the user set them.
       blueDestroyed: v.blueDestroyed,
       redDestroyed: v.redDestroyed,
+      blueDestroyedRepairable: v.blueDestroyedRepairable,
+      redDestroyedRepairable: v.redDestroyedRepairable,
     }));
   const toggleGroup = (key: string) =>
     setOpenGroups((g) => ({ ...g, [key]: !g[key] }));

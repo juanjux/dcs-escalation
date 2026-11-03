@@ -178,6 +178,10 @@ previous map view and campaign controls are restored when selection ends.
 
   <img src="https://raw.githubusercontent.com/juanjux/dcs-escalation/juanjux/screenshots/airwing-redesign.png" width="760">
 
+- **Destroyed-site filters are separate for each coalition and repairability.**
+  Map layers can hide destroyed repairable sites independently from permanent losses.
+  Partially damaged sites remain visible, and campaign saves retain the filter choices.
+
 - **Coordinates anywhere on the map, in the format of choice.** A picker reads any
   point, the objective dialog gives the coordinates of every unit and building, and both
   copy to the clipboard. DMS, decimal minutes, decimal degrees and MGRS, set on the new

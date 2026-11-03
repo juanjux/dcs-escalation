@@ -25,9 +25,9 @@ interface MapState {
   highlightEmitters: boolean;
   // Whether fully-destroyed, non-repairable ground objects (buildings, ships,
   // ...) are shown on the map, per coalition. Toggled from the map's layer
-  // control; defaults to shown. Repairable objects (SAM/EWR/armor) are never
-  // hidden by this.
+  // control; defaults to shown. Repairable objects have a separate filter.
   showDestroyedNonRepairable: { blue: boolean; red: boolean };
+  showDestroyedRepairable: { blue: boolean; red: boolean };
 }
 
 const initialState: MapState = {
@@ -37,6 +37,7 @@ const initialState: MapState = {
   hoveredEmitterSource: null,
   highlightEmitters: true,
   showDestroyedNonRepairable: { blue: true, red: true },
+  showDestroyedRepairable: { blue: true, red: true },
 };
 
 const mapSlice = createSlice({
@@ -85,6 +86,16 @@ const mapSlice = createSlice({
         state.showDestroyedNonRepairable.red = action.payload.value;
       }
     },
+    setShowDestroyedRepairable(
+      state,
+      action: PayloadAction<{ blue: boolean; value: boolean }>,
+    ) {
+      if (action.payload.blue) {
+        state.showDestroyedRepairable.blue = action.payload.value;
+      } else {
+        state.showDestroyedRepairable.red = action.payload.value;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(gameLoaded, (state, action) => {
@@ -107,6 +118,7 @@ export const {
   setMapCenter,
   setMapView,
   setShowDestroyedNonRepairable,
+  setShowDestroyedRepairable,
 } = mapSlice.actions;
 
 export const selectMapCenter = (state: RootState) => state.map.center;
@@ -119,5 +131,7 @@ export const selectHighlightEmitters = (state: RootState) =>
   state.map.highlightEmitters;
 export const selectShowDestroyedNonRepairable = (state: RootState) =>
   state.map.showDestroyedNonRepairable;
+export const selectShowDestroyedRepairable = (state: RootState) =>
+  state.map.showDestroyedRepairable;
 
 export default mapSlice.reducer;
