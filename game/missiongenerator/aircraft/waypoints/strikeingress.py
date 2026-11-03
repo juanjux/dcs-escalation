@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Any, Union
 
 from dcs import Point
-from dcs.planes import B_17G, B_52H, Tu_22M3, B_1B, F_15ESE
+from dcs.planes import B_17G, B_52H, Tu_22M3, B_1B, F_15ESE, C_130J_30
 from dcs.point import MovingPoint
 from dcs.task import Bombing, Expend, OptFormation, WeaponType, CarpetBombing
 
@@ -16,6 +16,14 @@ class StrikeIngressBuilder(PydcsWaypointBuilder):
     _special_wpts_injected: bool = False
 
     def add_tasks(self, waypoint: MovingPoint) -> None:
+        if self.group.units[0].unit_type is C_130J_30 and any(
+            unit.pylons.get(3, {}).get("CLSID") == "{GBU-43}"
+            for unit in self.group.units
+        ):
+            self.add_moab_task(waypoint)
+            self.register_special_ingress_points()
+            return
+
         bomber = self.group.units[0].unit_type in [B_17G, Tu_22M3]
         bomber_guided = self.group.units[0].unit_type in [B_1B, B_52H]
         if bomber_guided or not bomber:
@@ -28,6 +36,27 @@ class StrikeIngressBuilder(PydcsWaypointBuilder):
         self.add_bombing_tasks(waypoint)
         waypoint.tasks.append(OptFormation.finger_four_open())
         self.register_special_ingress_points()
+
+    def add_moab_task(self, waypoint: MovingPoint) -> None:
+        """Use one normal bombing pass without the generic jet-speed override."""
+        targets = self.waypoint.targets
+        if isinstance(self.package.target, MotorpoolGroundObject):
+            targets = self.package.target.strike_targets
+        if not targets:
+            return
+
+        center: Point = copy.copy(targets[0].position)
+        for target in targets[1:]:
+            center += target.position
+        center /= len(targets)
+        waypoint.tasks.append(
+            Bombing(
+                center,
+                weapon_type=WeaponType.Auto,
+                expend=Expend.All,
+                altitude=waypoint.alt,
+            )
+        )
 
     def add_bombing_tasks(self, waypoint: MovingPoint) -> None:
         targets = self.waypoint.targets
