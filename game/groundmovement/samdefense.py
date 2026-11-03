@@ -47,6 +47,18 @@ PROFILES = (
     TransitDefense(frozenset({"CH_FlaRakRad"}), 8000, 6000, 500),
     TransitDefense(frozenset({"CH_LvKv9040"}), 4000, 2500),
     TransitDefense(frozenset({"PGL_625"}), 8000, 5000),
+    # Identifiable missile fire and physical recovery were also verified here.
+    # Native SA9M31/SA9M333 D_min is 800 m. Mixed gun/missile systems retain
+    # their close-range gun defense; native AI selects a usable weapon.
+    TransitDefense(frozenset({"M1097 Avenger"}), 4500, 3500),
+    TransitDefense(frozenset({"M6 Linebacker"}), 4500, 3500),
+    TransitDefense(frozenset({"Strela-10M3"}), 5000, 3500, 800),
+    TransitDefense(frozenset({"Strela-1 9P31"}), 4200, 3500, 800),
+    TransitDefense(frozenset({"CH_LAVAD"}), 8000, 4800),
+    TransitDefense(frozenset({"CH_BoxerSkyranger"}), 8000, 4800),
+    TransitDefense(frozenset({"CH_Wiesel2Ozelot"}), 8000, 4800),
+    # RBS-98's secondary gun recovered, but its radar-dependent missiles did not
+    # fire in the independent-launcher probe. It is not a reviewed SAM profile.
 )
 
 

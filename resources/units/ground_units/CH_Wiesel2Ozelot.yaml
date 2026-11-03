@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: SHORAD
 description: "The Ozelot is a Wiesel 2 carrying four Stinger missiles and a passive sight, the German Army's air-portable point defence."
 introduced: 2001
