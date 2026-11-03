@@ -327,3 +327,11 @@ class MoveShipRequest(BaseModel):
 class RepairRequest(BaseModel):
     side: str = "red"
     id: str  # a repair-target id from turn_context.repairs (ground object/building/runway)
+    quantity: StrictInt | None = Field(default=None, gt=0)
+    unit_ids: list[StrictInt] | None = Field(default=None, min_length=1)
+
+
+class CancelBuildingRepairRequest(BaseModel):
+    side: str = "red"
+    id: str
+    unit_ids: list[StrictInt] | None = Field(default=None, min_length=1)

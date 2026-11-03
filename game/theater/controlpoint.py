@@ -1199,6 +1199,7 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
                     continue
                 if unit.alive:
                     unit.repair_turns_remaining = None
+                    unit.repair_cost_paid = None
                     continue
                 if turns_remaining <= 1:
                     unit.repair_turns_remaining = None

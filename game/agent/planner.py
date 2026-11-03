@@ -1414,7 +1414,13 @@ def move_ship(
         return schemas.OpResult(ok=False, error=str(exc))
 
 
-def repair(game: Game, side: str, asset_id: str) -> schemas.OpResult:
+def repair(
+    game: Game,
+    side: str,
+    asset_id: str,
+    quantity: int | None = None,
+    unit_ids: list[int] | None = None,
+) -> schemas.OpResult:
     """Pay to repair one of ``side``'s own damaged assets — dead SAM/EWR/armor units, a
     building, or a cratered runway (the player's manual-repair feature, opened to the AI).
     Mirrors the map UI: validates ownership and budget, repairs instantly or schedules it
@@ -1425,6 +1431,10 @@ def repair(game: Game, side: str, asset_id: str) -> schemas.OpResult:
     coalition = views.coalition_for_side(game, side)
     player = views.player_for_side(side)
     try:
+        if quantity is not None and (type(quantity) is not int or quantity <= 0):
+            raise ValueError("quantity must be a positive integer")
+        if quantity is not None and unit_ids is not None:
+            raise ValueError("choose quantity or unit_ids, not both")
         try:
             uid = UUID(str(asset_id))
         except (ValueError, AttributeError, TypeError):
@@ -1437,6 +1447,8 @@ def repair(game: Game, side: str, asset_id: str) -> schemas.OpResult:
         except Exception:
             cp = None
         if cp is not None:
+            if quantity is not None or unit_ids is not None:
+                raise ValueError("unit selection is only supported for buildings")
             if cp.captured != player:
                 raise ValueError(f"{cp.name} is not yours")
             if not getattr(cp, "runway_can_be_repaired", False):
@@ -1472,6 +1484,8 @@ def repair(game: Game, side: str, asset_id: str) -> schemas.OpResult:
         if tgo.control_point.captured != player:
             raise ValueError(f"{tgo.name} is not yours")
         is_building = isinstance(tgo, BuildingGroundObject)
+        if not is_building and (quantity is not None or unit_ids is not None):
+            raise ValueError("unit selection is only supported for buildings")
         repair_turns = (
             game.settings.building_repair_turns
             if is_building
@@ -1480,12 +1494,23 @@ def repair(game: Game, side: str, asset_id: str) -> schemas.OpResult:
         if repair_turns < 0:
             raise ValueError("repairs are disabled in this campaign")
         _, candidates = views._tgo_repairables(tgo)
+        if unit_ids is not None:
+            selected = _select_repair_units([unit for unit, _ in candidates], unit_ids)
+            candidates = [(unit, cost) for unit, cost in candidates if unit in selected]
+        if quantity is not None:
+            if quantity > len(candidates):
+                raise ValueError("quantity exceeds the buildings awaiting repair")
+            candidates = candidates[:quantity]
         if not candidates:
             raise ValueError(
                 f"nothing to repair at {tgo.name} "
                 f"(no dead repairable units, or already under repair)"
             )
         events = _new_map_events()
+        if (quantity is not None or unit_ids is not None) and coalition.budget < sum(
+            cost for _, cost in candidates
+        ):
+            raise ValueError("can't afford the selected building repairs")
         revived = scheduled = spent = 0
         for unit, cost in candidates:
             if coalition.budget < cost:
@@ -1501,6 +1526,8 @@ def repair(game: Game, side: str, asset_id: str) -> schemas.OpResult:
                 revived += 1
             else:
                 unit.repair_turns_remaining = repair_turns
+                if is_building:
+                    unit.repair_cost_paid = cost
                 scheduled += 1
         if not revived and not scheduled:
             raise ValueError(
@@ -1520,6 +1547,48 @@ def repair(game: Game, side: str, asset_id: str) -> schemas.OpResult:
                 f"{repair_turns} turns (-{spent}M; budget {round(coalition.budget)}M)"
             )
         return schemas.OpResult(ok=True, detail=detail)
+    except Exception as exc:
+        return schemas.OpResult(ok=False, error=str(exc))
+
+
+def _select_repair_units(units, unit_ids):
+    if not unit_ids or any(type(uid) is not int for uid in unit_ids):
+        raise ValueError("unit_ids must contain building IDs")
+    if len(set(unit_ids)) != len(unit_ids):
+        raise ValueError("duplicate building IDs")
+    available = {unit.id: unit for unit in units}
+    if any(uid not in available for uid in unit_ids):
+        raise ValueError("unknown building ID or building not eligible for this action")
+    return [available[uid] for uid in unit_ids]
+
+
+def cancel_building_repair(
+    game: Game, side: str, asset_id: str, unit_ids: list[int] | None = None
+) -> schemas.OpResult:
+    from game.buildingrepair import cancel_building_repairs, pending_buildings
+    from game.theater.theatergroundobject import BuildingGroundObject
+
+    try:
+        coalition = views.coalition_for_side(game, side)
+        tgo = game.db.tgos.get(UUID(asset_id))
+        if not isinstance(
+            tgo, BuildingGroundObject
+        ) or tgo.control_point.captured != views.player_for_side(side):
+            raise ValueError("no owned building site with this id")
+        pending = pending_buildings(tgo)
+        selected = (
+            pending if unit_ids is None else _select_repair_units(pending, unit_ids)
+        )
+        refund = cancel_building_repairs(tgo, selected)
+        coalition.budget += refund
+        events = _new_map_events()
+        events.update_tgo(tgo)
+        _push_map_events(events)
+        return schemas.OpResult(
+            ok=True,
+            detail=f"cancelled {len(selected)} building repair(s) at {tgo.name} "
+            f"(+{refund:g}M; budget {coalition.budget:g}M)",
+        )
     except Exception as exc:
         return schemas.OpResult(ok=False, error=str(exc))
 

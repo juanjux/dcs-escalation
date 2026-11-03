@@ -424,6 +424,7 @@ class ProcurementAi:
                         destroyed_units.remove(entry)
             else:
                 unit.repair_turns_remaining = repair_turns
+                unit.repair_cost_paid = price
             repair_budget -= price
             repaired_objects.add(unit.ground_object)
 

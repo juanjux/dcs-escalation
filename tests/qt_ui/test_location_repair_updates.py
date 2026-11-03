@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QApplication
 
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.groundobject import QGroundObjectMenu as menu
+from game.theater.player import Player
 
 
 def _drain(app: Any) -> None:
@@ -50,6 +51,7 @@ def location(monkeypatch: pytest.MonkeyPatch) -> Iterator[Any]:
     )
     units = [
         SimpleNamespace(
+            id=index,
             unit_name=f"unit-{index}",
             alive=False,
             repairable=True,
@@ -58,7 +60,7 @@ def location(monkeypatch: pytest.MonkeyPatch) -> Iterator[Any]:
         )
         for index in range(4)
     ]
-    cp: Any = SimpleNamespace(name="Base")
+    cp: Any = SimpleNamespace(name="Base", captured=Player.BLUE)
     site = Mock(
         spec=menu.BuildingGroundObject,
         id=uuid4(),
@@ -155,6 +157,49 @@ def test_movement_and_game_notifications_share_one_refresh(location: Any) -> Non
 
     assert state.window.cp is new_cp
     assert state.builds == [state.window]
+
+
+def test_cancel_building_work_refunds_once_and_refreshes(location: Any) -> None:
+    state = location
+    state.window._repair_building(state.units[0], 2)
+    _drain(state.app)
+    state.events.clear()
+    state.updates.clear()
+    state.builds.clear()
+    # Changing the current repair price must not change the receipt.
+    state.site.repair_cost.return_value = 20
+    state.window._cancel_building_repair(state.units[0])
+    _drain(state.app)
+    assert state.game.blue.budget == 100
+    assert not state.units[0].alive
+    assert state.units[0].repair_turns_remaining is None
+    assert len(state.events) == 1
+    assert state.updates == [state.game]
+    assert state.builds == [state.window]
+    state.window._cancel_building_repair(state.units[0])
+    assert state.game.blue.budget == 100
+    assert len(state.events) == 1
+
+
+def test_cancel_all_building_work_refunds_the_paid_batch(location: Any) -> None:
+    state = location
+    state.window._repair_all_buildings()
+    state.window._cancel_all_building_repairs()
+    _drain(state.app)
+    assert state.game.blue.budget == 100
+    assert all(unit.repair_turns_remaining is None for unit in state.units)
+    assert all(not unit.alive for unit in state.units)
+
+
+def test_stale_building_callbacks_cannot_modify_a_captured_site(location: Any) -> None:
+    state = location
+    state.window._repair_building(state.units[0], 2)
+    state.cp.captured = Player.RED
+    state.window._cancel_building_repair(state.units[0])
+    state.window._repair_building(state.units[1], 2)
+    assert state.game.blue.budget == 98
+    assert state.units[0].repair_turns_remaining == 2
+    assert state.units[1].repair_turns_remaining is None
 
 
 def test_hidden_window_refreshes_only_when_shown_again(location: Any) -> None:

@@ -510,7 +510,19 @@ def move_ship(body: schemas.MoveShipRequest) -> schemas.OpResult:
     response_model_exclude_none=True,
 )
 def repair(body: schemas.RepairRequest) -> schemas.OpResult:
-    return service.repair(body.side, body.id)
+    return service.repair(body.side, body.id, body.quantity, body.unit_ids)
+
+
+@router.post(
+    "/repair/cancel",
+    operation_id="ai_cancel_building_repair",
+    response_model=schemas.OpResult,
+    response_model_exclude_none=True,
+)
+def cancel_building_repair(
+    body: schemas.CancelBuildingRepairRequest,
+) -> schemas.OpResult:
+    return service.cancel_building_repair(body.side, body.id, body.unit_ids)
 
 
 # --- session / Take-Off gate ---
