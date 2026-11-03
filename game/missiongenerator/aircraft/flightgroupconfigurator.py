@@ -8,7 +8,7 @@ from typing import Any, Optional, TYPE_CHECKING
 from dcs import Mission, Point
 from dcs.action import DoScript
 from dcs.flyingunit import FlyingUnit
-from dcs.planes import A_10C_2
+from dcs.planes import A_10C_2, C_130J_30
 from dcs.task import OptReactOnThreat
 from dcs.translation import String
 from dcs.triggers import TriggerStart
@@ -505,6 +505,14 @@ class FlightGroupConfigurator:
                 member.weapon_laser_code,
             )
             pylon.equip(unit, weapon, settings)
+
+        if (
+            unit.unit_type is C_130J_30
+            and self.flight.flight_type is FlightType.STRIKE
+            and unit.pylons.get(3, {}).get("CLSID") == "{GBU-43}"
+        ):
+            unit.set_property("allow_moab", True)
+            unit.set_property("ramp_down", False)
 
     @staticmethod
     def _merge_laser_code(
