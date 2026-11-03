@@ -53,6 +53,8 @@ class TheaterUnit:
     transported_by_id: int | None = None
     # Base stock may distinguish variants sharing the same native DCS model.
     ground_unit_variant: str | None = None
+    # Actual payment for cancellable building work; None on legacy saves.
+    repair_cost_paid: float | None = None
 
     @property
     def health_fraction(self) -> float:
@@ -117,6 +119,7 @@ class TheaterUnit:
     def revive(self, events: GameUpdateEvents) -> None:
         self.alive = True
         self.health = 1.0
+        self.repair_cost_paid = None
         self.ground_object.threat_poly()
         events.update_tgo(self.ground_object)
         if self.ground_object.is_iads:

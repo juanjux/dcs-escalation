@@ -451,6 +451,14 @@ class NavalView(BaseModel):
     )
 
 
+class BuildingRepairUnitView(BaseModel):
+    id: int
+    name: str
+    cost: float
+    turns_remaining: int | None = None
+    refund: float | None = None
+
+
 class RepairView(BaseModel):
     """One of YOUR damaged assets you can pay to repair — dead SAM/EWR units, a building,
     or a cratered runway. The fix is instant or takes a few turns, per campaign settings.
@@ -460,7 +468,9 @@ class RepairView(BaseModel):
     name: str
     kind: str  # aa / ewr / oil / factory / ammo / runway / ... (what's damaged; economy
     # buildings use their category, so 'oil'/'factory' flag an income asset worth restoring)
-    cost: int  # budget to repair it (sum of its dead units, or the flat runway/building cost)
+    cost: float  # total cost of the units awaiting repair, or the runway cost
+    buildings: list[BuildingRepairUnitView] | None = None
+    pending_refund: float | None = None
     dead_units: int | None = (
         None  # dead units it would bring back (omitted for a runway)
     )
@@ -1476,13 +1486,9 @@ def build_my_naval(game: Game, side: str) -> list[NavalView]:
     return out
 
 
-def _tgo_repairables(tgo) -> tuple[int, list]:
+def _tgo_repairables(tgo) -> tuple[float, list]:
     """(total_cost, [(unit, cost), …]) for a ground object's dead, not-already-repairing
-    units, mirroring the player's manual-repair UI. A BUILDING (oil/factory/ammo/…) is
-    repaired as a WHOLE for one ``repair_cost()`` — its income statics have no unit_type
-    (so their unit-level ``repairable`` is False), yet the building itself is repairable
-    whenever it has a repair cost; this was the gap that hid oil/econ from ``repairs``.
-    Other ground objects are priced per dead unit. Empty list = nothing to repair here.
+    units, mirroring the player's per-unit manual-repair UI.
     """
     from game.theater.theatergroundobject import BuildingGroundObject
 
@@ -1498,14 +1504,12 @@ def _tgo_repairables(tgo) -> tuple[int, list]:
         if not dead:
             return 0, []
         try:
-            cost = int(tgo.repair_cost())
+            cost = tgo.repair_cost()
         except Exception:
             cost = 0
         if cost <= 0:
             return 0, []
-        # Billed once for the whole building: the first dead static carries the cost,
-        # the rest carry 0 so they all revive without being charged again.
-        return cost, [(dead[0], cost)] + [(u, 0) for u in dead[1:]]
+        return cost * len(dead), [(unit, cost) for unit in dead]
 
     out: list = []
     total = 0
@@ -1549,7 +1553,28 @@ def build_repairs(game: Game, side: str) -> list[RepairView]:
             pass
         for tgo in cp.ground_objects:
             cost, units = _tgo_repairables(tgo)
-            if cost <= 0 or not units:
+            buildings = None
+            pending_refund = None
+            if isinstance(tgo, BuildingGroundObject):
+                from game.buildingrepair import pending_buildings, repair_refunds
+
+                refunds = repair_refunds(tgo)
+                pending = pending_buildings(tgo)
+                buildings = [
+                    BuildingRepairUnitView(id=u.id, name=u.name, cost=price)
+                    for u, price in units
+                ] + [
+                    BuildingRepairUnitView(
+                        id=u.id,
+                        name=u.name,
+                        cost=tgo.repair_cost(),
+                        turns_remaining=u.repair_turns_remaining,
+                        refund=refunds[u.id],
+                    )
+                    for u in pending
+                ]
+                pending_refund = sum(refunds.values()) if pending else None
+            if not units and pending_refund is None:
                 continue
             # Category is the kind for everything: SAM sites -> aa/ewr, economy buildings
             # -> oil/factory/ammo (so a dead income asset is identifiable, not just "building").
@@ -1565,6 +1590,8 @@ def build_repairs(game: Game, side: str) -> list[RepairView]:
                     name=tgo.name,
                     kind=kind,
                     cost=cost,
+                    buildings=buildings,
+                    pending_refund=pending_refund,
                     dead_units=len(units),
                     income_per_turn=income,
                 )

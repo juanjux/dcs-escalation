@@ -36,6 +36,11 @@ from dcs import Point
 from game import Game
 from game.ato import FlightType
 from game.config import REWARDS
+from game.buildingrepair import (
+    cancel_building_repairs,
+    pending_buildings,
+    repair_refunds,
+)
 from game.cruise_raids import tgo_magazines
 from game.data.building_data import FORTIFICATION_BUILDINGS
 from game.groundmovement.planning import armor_movement_options
@@ -557,6 +562,7 @@ class QGroundObjectMenu(QDialog):
             self.ground_object,
             self.game.settings,
             self._repair_building if self._can_repair else None,
+            self._cancel_building_repair if self._can_repair else None,
         )
         caption = heading("Buildings")
         wrecks = repairable_buildings(self.ground_object) if self._can_repair else []
@@ -565,6 +571,13 @@ class QGroundObjectMenu(QDialog):
             shortcut = Clickable(f"Repair all · ${price:g}M", 11, ACCENT)
             shortcut.clicked.connect(self._repair_all_buildings)
             _right_of(caption, shortcut)
+
+        pending = pending_buildings(self.ground_object) if self._can_repair else []
+        if pending:
+            refund = sum(repair_refunds(self.ground_object).values())
+            cancel = Clickable(f"Cancel all repairs · +${refund:g}M", 11, ACCENT)
+            cancel.clicked.connect(self._cancel_all_building_repairs)
+            _right_of(caption, cancel)
 
         holder = QWidget()
         make_transparent(holder)
@@ -781,7 +794,7 @@ class QGroundObjectMenu(QDialog):
         assert isinstance(self.ground_object, BuildingGroundObject)
         price = self.ground_object.repair_cost()
         for building in repairable_buildings(self.ground_object):
-            if self.game.blue.budget <= price:
+            if self.game.blue.budget < price:
                 break
             self._repair_building(building, price, refresh=False)
         self._update_game()
@@ -810,7 +823,16 @@ class QGroundObjectMenu(QDialog):
     def _repair_building(
         self, unit: TheaterUnit, price: float, refresh: bool = True
     ) -> None:
-        if self.game.blue.budget > price:
+        if (
+            self.game_model.game is self.campaign
+            and self._can_repair
+            and isinstance(self.ground_object, BuildingGroundObject)
+            and any(unit is building for building in self.ground_object.statics)
+            and not unit.alive
+            and unit.repair_turns_remaining is None
+            and self.game.settings.building_repair_turns >= 0
+            and self.game.blue.budget >= price > 0
+        ):
             self.game.blue.budget -= price
             turns = self.game.settings.building_repair_turns
             if turns == 0:
@@ -818,12 +840,35 @@ class QGroundObjectMenu(QDialog):
                 logging.info(f"Repaired building: {unit.unit_name}")
             else:
                 unit.repair_turns_remaining = turns
+                unit.repair_cost_paid = price
                 logging.info(f"Scheduled building repair: {unit.unit_name}")
         if refresh:
             self._update_game()
 
+    def _cancel_building_repair(self, unit: TheaterUnit) -> None:
+        self._cancel_building_repairs([unit])
+
+    def _cancel_all_building_repairs(self) -> None:
+        assert isinstance(self.ground_object, BuildingGroundObject)
+        self._cancel_building_repairs(pending_buildings(self.ground_object))
+
+    def _cancel_building_repairs(self, units: list[TheaterUnit]) -> None:
+        if (
+            self.game_model.game is not self.campaign
+            or not self._can_repair
+            or not isinstance(self.ground_object, BuildingGroundObject)
+        ):
+            return
+        try:
+            refund = cancel_building_repairs(self.ground_object, units)
+        except ValueError:
+            return  # A queued click may refer to work that has already completed.
+        self.game.blue.budget += refund
+        self._update_game()
+
     def _revive(self, unit: TheaterUnit) -> None:
         unit.alive = True
+        unit.repair_cost_paid = None
         destroyed = self.game.get_destroyed_units()
         for dead in list(destroyed):
             point = Point(float(dead["x"]), float(dead["z"]), self.game.theater.terrain)
