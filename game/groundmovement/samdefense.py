@@ -27,6 +27,8 @@ PROFILES = (
         35000,
         2500,
     ),
+    TransitDefense(frozenset({"2S6 Tunguska"}), 8000, 3500),
+    TransitDefense(frozenset({"Gepard"}), 4000),
 )
 
 
