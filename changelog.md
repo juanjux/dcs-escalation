@@ -112,7 +112,6 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
-* **[OPFOR AI]** Charge building repairs per unit, matching manual and automatic repairs.
 * **[Flight Plans]** Keep individual altitude profiles on shared routes and add vertical separation between overlapping flights.
 * **[Ground Movement]** Find terrain-safe off-road detours when campaign roads cannot connect, retaining off-road travel budgets and friendly-territory checks.
 * **[Map]** Initialize the map view before vector layers mount and preserve error stacks in the embedded console.
@@ -138,7 +137,6 @@
 * **[Ground Movement]** Restrict GPS destinations to friendly ground sectors and pause orders when destination control changes.
 * **[UI]** Keep site repairs responsive by batching updates and avoiding rebuilds of closed location windows.
 * **[Ground Movement]** Define mobility for stock and mod vehicles, towed guns and tractors so normal armor groups can be dispatched.
-
 * **[Campaign]** Preserve aircraft inventory and workshop capacity when loading saves with overfull bases.
 * **[Performance]** Accelerate ground-unit placement with prepared and indexed land/sea geometry queries.
 * **[UI]** Fix stale selections and window-lifetime errors when accepting results, reopening dialogs or closing package editors.
