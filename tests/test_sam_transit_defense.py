@@ -34,6 +34,14 @@ def test_reviewed_profiles_and_mixed_batteries(profile: Any) -> None:
     assert transit_defense([]) is None
 
 
+@pytest.mark.parametrize(
+    "unit_type",
+    ["M1097 Avenger", "HQ17A", "CH_S350_50N6", "CH_SkySabre", "ZSU_57_2"],
+)
+def test_unvalidated_systems_are_not_enabled(unit_type: str) -> None:
+    assert transit_defense([unit_type]) is None
+
+
 @pytest.mark.parametrize("profile", PROFILES)
 def test_exported_registry_and_trigger_preserve_route(
     world: Any, tmp_path: Path, profile: Any
@@ -122,7 +130,10 @@ def runtime() -> Any:
     function ctrl:setCommand(c)COMMANDS[#COMMANDS+1]=c end
     function ctrl:setTask(t)TASKS[#TASKS+1]=t end
     function ctrl:resetTask()error('must not reset native reloading')end
-    function ctrl:getDetectedTargets()return CONTACTS end
+    function ctrl:getDetectedTargets()
+      if NATIVE_ALARM_GATING and OPTIONS[9]==1 then return{}end
+      return CONTACTS
+    end
     function ctrl:isTargetDetected()return true end
     g={}
     function g:getUnits()return own.alive and {own}or{}end
@@ -194,6 +205,32 @@ def test_hit_quiet_pack_and_resume_without_skipping_or_restarting_route(
     assert(route[2].x==300 and route[3].x==400 and route[3].action=='On Road' and route[3].speed==11)
     assert(COMMANDS[#COMMANDS].params.value==false)
     step(1000);step(3000);assert(#TASKS==2,'must leave native reloading alone')
+    """)
+
+
+def test_native_detection_is_available_on_initial_march_and_after_recovery(
+    runtime: Any,
+) -> None:
+    runtime.execute("""
+    -- Model the native GREEN blindness observed in the sensor posture probe.
+    NATIVE_ALARM_GATING=true
+    step(5)
+    assert(OPTIONS[9]==0 and OPTIONS[0]==4 and #TASKS==1)
+    assert(not ESCALATION_SAM_TRANSIT.active.battery)
+    CONTACTS={aircraft(2,2000),aircraft(1,999999)};step(10)
+    assert(not ESCALATION_SAM_TRANSIT.active.battery and OPTIONS[0]==4)
+    CONTACTS={aircraft(1,2000)};step(15)
+    assert(ESCALATION_SAM_TRANSIT.active.battery and OPTIONS[9]==2 and OPTIONS[0]==0)
+    fire();CONTACTS={};step(105)
+    assert(OPTIONS[9]==1 and OPTIONS[0]==4)
+    step(225)
+    assert(OPTIONS[9]==0 and OPTIONS[0]==4 and #TASKS==2)
+    assert(ESCALATION_SAM_TRANSIT.groups.battery.phase=='MARCH')
+    CONTACTS={aircraft(1,2000)};step(230)
+    assert(ESCALATION_SAM_TRANSIT.active.battery and #TASKS==2)
+    fire();CONTACTS={};step(320);step(440)
+    assert(OPTIONS[9]==0 and OPTIONS[0]==4 and #TASKS==3)
+    assert(not ESCALATION_SAM_TRANSIT.active.battery)
     """)
 
 

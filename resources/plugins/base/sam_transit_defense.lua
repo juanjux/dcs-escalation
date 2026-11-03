@@ -46,7 +46,9 @@ local function resume(r,now)
     table.insert(remaining,1,first)
     controller(r):setTask({id='Mission',params={route={points=remaining}}})
   end
-  options(r,1,4);halt(r,false)
+  -- GREEN suppresses native sensor contacts. AUTO keeps detection while HOLD
+  -- prevents firing until this controller validates and deploys against a threat.
+  options(r,0,4);halt(r,false)
   phase(r,r.next>#r.meta.route and 'ARRIVED'or 'MARCH',now)
   -- Native packing/reloading can take many minutes. Never reset tasks on a timer.
 end
