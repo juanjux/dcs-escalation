@@ -1,4 +1,4 @@
-"""External community links belong to Help, not the toolbar."""
+"""Menu and toolbar actions remain available without duplicate menu entries."""
 
 import os
 from types import SimpleNamespace
@@ -67,6 +67,20 @@ def test_community_links_are_only_in_help() -> None:
     assert [action.text() for action in edit_menu.actions()] == ["Payloads"]
     edit_menu.actions()[0].trigger()
     assert opened == ["payloads"]
+    settings_menu = next(
+        action.menu()
+        for action in window.menu_bar.actions()
+        if action.text() == "&Settings"
+    )
+    assert settings_menu.actions() == [window.showLiberationPrefDialogAction]
+    assert settings_menu.actions()[0].text() == "&General"
+    assert settings_menu.actions()[0].isEnabled()
+    window.showLiberationPrefDialogAction.triggered.connect(
+        lambda: opened.append("settings")
+    )
+    settings_menu.actions()[0].trigger()
+    assert opened[-1] == "settings"
+    assert window.openSettingsAction in toolbar_actions
     for action in (window.openGithubAction, window.openDiscordAction):
         assert action not in toolbar_actions
         assert action in help_menu.actions()

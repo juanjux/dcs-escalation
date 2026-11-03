@@ -361,8 +361,6 @@ class QLiberationWindow(QMainWindow):
         settings_menu = self.menu.addMenu("&Settings")
         self.showLiberationPrefDialogAction.setText("&General")
         settings_menu.addAction(self.showLiberationPrefDialogAction)
-        self.openSettingsAction.setText("&Campaign settings")
-        settings_menu.addAction(self.openSettingsAction)
 
         help_menu = self.menu.addMenu("&Help")
         help_menu.addAction(self.openDiscordAction)
