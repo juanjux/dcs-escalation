@@ -17,10 +17,12 @@ from dcs.vehicles import Unarmed
 
 from game.ato import FlightType
 from game.missiongenerator.aircraft.searchpattern import add_search_pattern
-from game.utils import nautical_miles
+from game.utils import meters, nautical_miles
 
 
-def build_mission() -> Mission:
+def build_mission(frontline_length_m: float = 0) -> Mission:
+    if frontline_length_m < 0:
+        raise ValueError("Frontline length must be nonnegative")
     mission = Mission()
     now = datetime(2026, 6, 1, 12)
     mission.start_time = now
@@ -34,18 +36,23 @@ def build_mission() -> Mission:
         (FlightType.CAS, True),
         (FlightType.ARMED_RECON, True),
     )
+    spacing = max(8000, frontline_length_m + 8000)
     for index, (role, control) in enumerate(cases):
         center = (
             mission.terrain.airports["Kobuleti"]
-            .position.point_from_heading(0, 1500 + index * 8000)
+            .position.point_from_heading(0, 1500 + index * spacing)
             .point_from_heading(90, 1000)
         )
+        span = frontline_length_m if role == FlightType.CAS else 0
+        start = center.point_from_heading(270, span / 2)
+        finish = center.point_from_heading(90, span / 2)
+        radius = max(2000, span / 2 + 2000) if span else 2000
         name = f"SEARCH_{'CONTROL' if control else 'PROBE'}_{role.name}"
         group = mission.flight_group_inflight(
             blue,
             name,
             AH_1W,
-            center.point_from_heading(270, 700),
+            start.point_from_heading(270, 700),
             1000,
             speed=180,
             maintask=CAS,
@@ -55,17 +62,27 @@ def build_mission() -> Mission:
         # AircraftBehavior.configure_behavior does this in campaign generation.
         # Leaving pydcs' generic CAS order here bypasses the assigned target zone.
         group.points[0].tasks.clear()
-        logical = object()
-        anchor = group.add_waypoint(center, 300, speed=180, name="SEARCH AREA")
+        logical = NS(position=start)
+        anchor = group.add_waypoint(
+            start, 300, speed=180, name="FLOT START" if span else "SEARCH AREA"
+        )
         anchor.alt_type = "RADIO"
-        anchor.add_task(EngageTargetsInZone(center, 2000, [Targets.All.GroundUnits]))
+        anchor.add_task(EngageTargetsInZone(center, radius, [Targets.All.GroundUnits]))
+        if span:
+            end = group.add_waypoint(finish, 300, speed=180, name="FLOT END")
+            end.alt_type = "RADIO"
         group.land_at(airport)
         plan = NS(
-            layout=NS(patrol_start=logical),
+            layout=NS(
+                patrol_start=logical,
+                patrol_end=NS(position=finish),
+            ),
             tot_waypoint=logical,
             tot=now,
             patrol_end_time=now + timedelta(minutes=12),
-            ui_zone=lambda center=center: NS(points=[center], radius=nautical_miles(1)),
+            ui_zone=lambda center=center, span=span, radius=radius: NS(
+                points=[center], radius=meters(radius) if span else nautical_miles(1)
+            ),
         )
         flight = NS(
             client_count=0,
@@ -158,11 +175,17 @@ end,nil,timer.getTime()+15)
         "V2: watch four AI Cobras on F10. Targets are invisible for three minutes, "
         "then revealed. PROBE flights use the revised search loop; CONTROL flights "
         "fly the same geometry as a long ordinary route, without waypoint switches. "
-        "Areas are 8 km apart to avoid overlapping engagement zones. Observe for "
+        f"Areas are {spacing / 1000:g} km apart to avoid overlapping engagement zones. Observe for "
         "15 minutes: which flights stop, fire, destroy their target and resume? "
         "PROBE flights should exit after 12 minutes or below 20% fuel. CONTROL routes "
         "last longer by design. Speed, AGL, native contact counts, shots, hits, deaths "
         "and route switches are logged. This tests native AI, not plugin detection."
+        + (
+            f" CAS fronts are {frontline_length_m / 1000:g} km long; search legs "
+            "follow the complete FLOT. Armed Recon uses the original area circuit."
+            if frontline_length_m
+            else ""
+        )
     )
     return mission
 
@@ -170,7 +193,10 @@ end,nil,timer.getTime()+15)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
+    parser.add_argument(
+        "--frontline-km", type=float, default=0, help="Length of the CAS test fronts"
+    )
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    build_mission().save(args.output)
+    build_mission(frontline_length_m=args.frontline_km * 1000).save(args.output)
     print(args.output)

@@ -401,6 +401,18 @@ Failed rolls retry on later valid scans without adding a new observation delay.
 Known contacts refresh without rolls. Firing reveals immediately. The former
 search-time UI option is removed, and older saved values do not affect generation.
 
+### AI search routes
+
+AI-only CAS flights search along the full assigned FLOT, using two parallel legs
+between FLOT START and FLOT END. The lateral spacing still depends on the assigned
+zone and is capped at 3 km across. Armed Recon retains its central area circuit;
+a collapsed FLOT also falls back to that circuit. The ingress engagement zone,
+altitude, station deadline and 20% fuel exit are unchanged. These navigation routes
+do not guarantee target detection or terrain clearance by native DCS AI.
+
+The standalone search probe accepts `--frontline-km` to test long CAS fronts
+alongside the original Armed Recon circuit. It includes a blue Game Master slot.
+
 ### Legacy delayed-acquisition diagnostics
 
 Standalone `startDetection` controls still accept a positive `acquisitionSeconds`

@@ -49,6 +49,25 @@ def add_search_pattern(
     # Small target zones need a standoff circuit rather than impossible tight turns.
     # Engagement remains restricted to the original ingress task's zone.
     half_width = min(1500.0, max(250.0, zone.radius.meters * 0.35))
+    search_points = [
+        center.new_in_same_map(center.x + dx * half_width, center.y + dy * half_width)
+        for dx, dy in ((-1, -1), (-1, 1), (1, 1), (1, -1))
+    ]
+    if flight.flight_type == FlightType.CAS:
+        start = plan.layout.patrol_start.position
+        finish = plan.layout.patrol_end.position
+        dx, dy = finish.x - start.x, finish.y - start.y
+        length = math.hypot(dx, dy)
+        if length > 1.0:
+            # Sweep the full FLOT on parallel legs instead of circling its center.
+            # Keep a lateral offset for turns; a collapsed FLOT retains the square.
+            offset_x, offset_y = -dy / length * half_width, dx / length * half_width
+            search_points = [
+                point.new_in_same_map(
+                    point.x + side * offset_x, point.y + side * offset_y
+                )
+                for point, side in ((start, -1), (finish, -1), (finish, 1), (start, 1))
+            ]
     speed = max(
         float(anchor.speed), knots(60 if flight.is_helo else 180).meters_per_second
     )
@@ -56,10 +75,7 @@ def add_search_pattern(
     if insertion >= len(group.points):
         return False  # No exit leg exists; never create an invalid waypoint jump.
     added = []
-    for index, (dx, dy) in enumerate(((-1, -1), (-1, 1), (1, 1), (1, -1)), 1):
-        point = center.new_in_same_map(
-            center.x + dx * half_width, center.y + dy * half_width
-        )
+    for index, point in enumerate(search_points, 1):
         native = group.add_waypoint(
             point, anchor.alt, speed=speed * 3.6, name=f"SEARCH {index}"
         )

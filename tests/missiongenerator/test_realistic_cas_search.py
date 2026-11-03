@@ -1,6 +1,7 @@
 """Search geometry and its native waypoint command do not require a known target."""
 
 from datetime import datetime, timedelta
+import math
 from types import SimpleNamespace as NS
 from typing import Any
 from pathlib import Path
@@ -17,24 +18,37 @@ from game.missiongenerator.aircraft.searchpattern import add_search_pattern
 from game.utils import nautical_miles
 
 
-def scenario(task: FlightType = FlightType.CAS) -> tuple[Any, Any, list[Any], datetime]:
+def scenario(
+    task: FlightType = FlightType.CAS,
+    *,
+    heading: float = 37,
+    length: float = 20000,
+    radius: float = 5,
+) -> tuple[Any, Any, list[Any], datetime]:
     mission = Mission()
     center = Point(0, 0, mission.terrain)
     group = mission.flight_group_inflight(
         mission.country("USA"), "Searching Cobra", AH_1W, center, 300, speed=180
     )
     group.points[0].tasks.clear()
-    logical = object()
-    anchor = group.add_waypoint(center, 300, speed=180, name="OBJECTIVE")
+    logical = NS(
+        position=(
+            center.point_from_heading(heading + 180, length / 2)
+            if task == FlightType.CAS
+            else center
+        )
+    )
+    finish = NS(position=center.point_from_heading(heading, length / 2))
+    anchor = group.add_waypoint(logical.position, 300, speed=180, name="OBJECTIVE")
     anchor.add_task(EngageTargetsInZone(center, 2000, [Targets.All.GroundUnits]))
     group.add_waypoint(Point(9000, 0, mission.terrain), 300, speed=180, name="RTB")
     now = datetime(2026, 6, 1, 12)
     plan = NS(
-        layout=NS(patrol_start=logical),
+        layout=NS(patrol_start=logical, patrol_end=finish),
         tot_waypoint=logical,
         tot=now,
         patrol_end_time=now + timedelta(minutes=15),
-        ui_zone=lambda: NS(points=[center], radius=nautical_miles(5)),
+        ui_zone=lambda: NS(points=[center], radius=nautical_miles(radius)),
     )
     flight = NS(
         client_count=0,
@@ -49,9 +63,58 @@ def scenario(task: FlightType = FlightType.CAS) -> tuple[Any, Any, list[Any], da
     return flight, group, [(logical, anchor)], now
 
 
+@pytest.mark.parametrize("heading", [0, 37, 90, 180, 270])
+@pytest.mark.parametrize("length", [500, 18720, 40000])
+@pytest.mark.parametrize("radius", [0.1, 10])
+def test_cas_search_spans_and_follows_the_full_frontline(
+    heading: float, length: float, radius: float
+) -> None:
+    flight, group, generated, now = scenario(
+        heading=heading, length=length, radius=radius
+    )
+    start = flight.flight_plan.layout.patrol_start.position
+    finish = flight.flight_plan.layout.patrol_end.position
+    ux, uy = (finish.x - start.x) / length, (finish.y - start.y) / length
+    width = min(1500.0, max(250.0, nautical_miles(radius).meters * 0.35))
+    anchor = generated[0][1]
+    anchor.alt_type = "RADIO"
+    engagement = anchor.tasks[0].dict()
+    assert add_search_pattern(flight, group, now, generated)
+    corners = group.points[2:6]
+    for corner, along, across in zip(
+        corners, (0, length, length, 0), (-width, -width, width, width)
+    ):
+        dx, dy = corner.position.x - start.x, corner.position.y - start.y
+        assert dx * ux + dy * uy == pytest.approx(along, abs=1e-6)
+        assert -dx * uy + dy * ux == pytest.approx(across, abs=1e-6)
+        assert corner.alt == anchor.alt
+        assert corner.alt_type == anchor.alt_type
+        assert math.isfinite(corner.position.x) and math.isfinite(corner.position.y)
+    # Navigation changes must not expand or replace the native attack zone.
+    assert anchor.tasks[0].params["task"] == engagement
+
+
 @pytest.mark.parametrize("task", [FlightType.CAS, FlightType.ARMED_RECON])
-def test_search_moves_then_preserves_rtb_route(task: FlightType) -> None:
+@pytest.mark.parametrize("radius", [0.1, 1, 10])
+def test_area_search_and_collapsed_fronts_keep_the_original_square(
+    task: FlightType, radius: float
+) -> None:
+    flight, group, generated, now = scenario(task, length=0, radius=radius)
+    assert add_search_pattern(flight, group, now, generated)
+    width = min(1500.0, max(250.0, nautical_miles(radius).meters * 0.35))
+    assert [(p.position.x, p.position.y) for p in group.points[2:6]] == [
+        (-width, -width),
+        (-width, width),
+        (width, width),
+        (width, -width),
+    ]
+
+
+@pytest.mark.parametrize("task", [FlightType.CAS, FlightType.ARMED_RECON])
+@pytest.mark.parametrize("is_helo", [False, True])
+def test_search_moves_then_preserves_rtb_route(task: FlightType, is_helo: bool) -> None:
     flight, group, generated, now = scenario(task)
+    flight.is_helo = is_helo
     original = list(group.points)
     assert add_search_pattern(flight, group, now, generated)
     assert len(group.points) == len(original) + 4
@@ -171,12 +234,15 @@ def test_native_engagement_has_limits_even_when_no_corner_is_reached(
         assert lua.eval(condition)
 
 
-def test_generated_probe_serializes_and_compiles_search_tasks(tmp_path: Path) -> None:
+@pytest.mark.parametrize("frontline_length", [0, 18720])
+def test_generated_probe_serializes_and_compiles_search_tasks(
+    tmp_path: Path, frontline_length: float
+) -> None:
     from dcs.lua import loads
     from tools.realistic_cas_tests.build_search_probe import build_mission
 
     lua = pytest.importorskip("lupa.lua51").LuaRuntime()
-    mission = build_mission()
+    mission = build_mission(frontline_length_m=frontline_length)
     path = tmp_path / "search.miz"
     mission.save(path)
     with ZipFile(path) as archive:
@@ -203,6 +269,18 @@ def test_generated_probe_serializes_and_compiles_search_tasks(tmp_path: Path) ->
         ]
         control = "CONTROL" in group["name"]
         assert len(legs) == (64 if control else 4)
+        if frontline_length and group["name"].endswith("_CAS"):
+            start = next(p for p in points if p.get("name") == "FLOT START")
+            end = next(p for p in points if p.get("name") == "FLOT END")
+            assert math.hypot(end["x"] - start["x"], end["y"] - start["y"]) == (
+                pytest.approx(frontline_length)
+            )
+            assert math.hypot(
+                legs[1]["x"] - legs[0]["x"], legs[1]["y"] - legs[0]["y"]
+            ) == pytest.approx(frontline_length)
+            for a, b, boundary in ((legs[0], legs[3], start), (legs[1], legs[2], end)):
+                assert (a["x"] + b["x"]) / 2 == pytest.approx(boundary["x"])
+                assert (a["y"] + b["y"]) / 2 == pytest.approx(boundary["y"])
         for point in legs:
             tasks = list(point["task"]["params"]["tasks"].values())
             if control:
