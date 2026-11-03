@@ -94,3 +94,30 @@ def test_pending_building_has_a_cancel_button_with_its_receipt(
     assert cancelled == [building]
     card.cancel_repair = None
     assert card._repair_button(building) is None
+
+
+@pytest.mark.parametrize("receipt,expected", [(None, 8), (12.5, 12.5)])
+def test_unit_card_can_cancel_old_and_new_jammer_repairs(
+    app: Any, receipt: float | None, expected: float
+) -> None:
+    unit: Any = SimpleNamespace(
+        id=1610,
+        alive=False,
+        repairable=True,
+        repair_turns_remaining=2,
+        repair_cost_paid=receipt,
+        unit_type=SimpleNamespace(price=8),
+    )
+    site: Any = SimpleNamespace(units=[unit], groups=[])
+    cancelled: list[Any] = []
+    card = unitcard.UnitCard(site, object(), None, cancelled.append)
+    cancel_button = card._repair_button(unit)
+    assert isinstance(cancel_button, QPushButton)
+    assert any(
+        f"+${expected:g}M" in label.text()
+        for label in cancel_button.findChildren(QLabel)
+    )
+    cancel_button.click()
+    assert cancelled == [unit]
+    card.cancel_repair = None
+    assert card._repair_button(unit) is None

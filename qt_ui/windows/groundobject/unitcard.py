@@ -15,6 +15,7 @@ from typing import Any, Callable, Optional, Sequence
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from game.data.units import UNIT_DESCRIPTIONS, UNIT_NOTES
+from game.buildingrepair import unit_repair_refunds
 from game.theater import TheaterGroundObject
 from game.theater.theatergroup import TheaterUnit
 from qt_ui.widgets.coordinatelabel import CoordinateLabel
@@ -128,11 +129,13 @@ class UnitCard(QWidget):
         ground_object: TheaterGroundObject,
         settings: object,
         repair: Optional[RepairCall],
+        cancel_repair: Optional[Callable[[TheaterUnit], None]] = None,
     ) -> None:
         super().__init__()
         self.ground_object = ground_object
         self.settings = settings
         self.repair = repair
+        self.cancel_repair = cancel_repair
 
         self.stack = Stack()
         #: One per fold, so the dialog can open or shut all of them at once.
@@ -273,9 +276,18 @@ class UnitCard(QWidget):
         return row
 
     def _repair_button(self, unit: TheaterUnit) -> Optional[QWidget]:
-        if self.repair is None or unit.alive or not unit.repairable:
+        if unit.alive or not unit.repairable:
             return None
         if unit.repair_turns_remaining is not None:
+            if self.cancel_repair is not None:
+                refund = unit_repair_refunds(self.ground_object)[unit.id]
+                return two_tone_button(
+                    "Cancel repair",
+                    f"+${refund:g}M",
+                    handler=partial(self.cancel_repair, unit),
+                )
+            return None
+        if self.repair is None:
             return None
         price = price_of(unit)
         return two_tone_button(
