@@ -45,6 +45,7 @@ from tests.test_armor_movement_planning import world  # noqa: F401
 
 KUB = ('SAM SA-6 Kub "Straight Flush" STR', 'SAM SA-6 Kub "Gainful" TEL')
 PATRIOT = ("SAM Patriot STR", "SAM Patriot LN", "Truck Ural-375", "Truck Ural-375")
+RBS98 = ("[CH] RBS 98 SAM LN (BvS 10)", "[CH] UndE 23 (RBS 70/90/98) STR")
 
 
 def not_culled(_tgo: Any) -> bool:
@@ -346,7 +347,7 @@ def generate_site(world: Any) -> tuple[Mission, UnitMap]:
     return mission, mapping
 
 
-@pytest.mark.parametrize("names", [KUB, PATRIOT])
+@pytest.mark.parametrize("names", [KUB, PATRIOT, RBS98])
 def test_exported_miz_keeps_surviving_vehicles_offline_and_redeploys_after_arrival(
     world: Any, tmp_path: Path, names: tuple[str, ...]
 ) -> None:
@@ -440,6 +441,8 @@ def test_save_reload_stop_and_second_move_preserve_the_site(world: Any) -> None:
         ("CH_THAAD_ANTPY2", MobilityMode.SELF_PROPELLED),
         ("SA-11 Buk LN 9A310M1", MobilityMode.SELF_PROPELLED),
         ("CH_BukM3_9S36M", MobilityMode.SELF_PROPELLED),
+        ("CH_RBS-98", MobilityMode.SELF_PROPELLED),
+        ("CH_UndE23", MobilityMode.SELF_PROPELLED),
         ("S-300PS 40B6M MAST tr", MobilityMode.TOWED),
         ("S-200_Launcher", MobilityMode.FIXED),
     ],

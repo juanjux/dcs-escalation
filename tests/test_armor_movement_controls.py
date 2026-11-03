@@ -337,12 +337,13 @@ def test_dialog_selection_preview_invalidation_dispatch_and_cancel(
     cancelled.deleteLater()
 
 
+@pytest.mark.parametrize("rbs98", [False, True])
 def test_sam_dialog_selects_whole_battery_and_restricts_destination(
-    world: Any, controls: Any
+    world: Any, controls: Any, rbs98: bool
 ) -> None:
-    from tests.test_sam_movement import make_site, selected
+    from tests.test_sam_movement import KUB, RBS98, make_site, selected
 
-    site = make_site(world)
+    site = make_site(world, RBS98 if rbs98 else KUB)
     dialog = ArmorMovementDialog(controls.model, site.id, Player.BLUE)
     assert (
         dialog.kind.count() == 1
@@ -357,6 +358,13 @@ def test_sam_dialog_selects_whole_battery_and_restricts_destination(
     dialog.coordinates.setText(format_latlng(position, CoordinateFormat.DDM))
     dialog.calculate()
     assert dialog.preview is not None and dialog.dispatch_button.isEnabled()
+    if rbs98:
+        warning = "RBS-98: no self-defense during relocation."
+        assert any(warning in label.text() for label in dialog.findChildren(QLabel))
+        assert warning in dialog.details.text()
+        response = controls.request("GET", f"/tgos/{site.id}/ground-movement/options")
+        assert response.status_code == 200 and response.json()["enabled"]
+        assert any(warning in row for row in response.json()["warnings"])
     threats: list[GameUpdateEvents] = []
     world.game.compute_threat_zones = threats.append
     dialog.dispatch()

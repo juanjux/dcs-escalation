@@ -14,6 +14,7 @@ class TransitDefense:
 
 # Unknown and mixed batteries stay packed. Sky Sabre, S-350 and HQ-17A did not
 # recover reliably after firing. Mobility alone does not qualify a site.
+# RBS-98 also fails to repack after missile fire with its required UndE23 radar.
 PROFILES = (
     # Weapon H_max/D_min: native SA9M33 and CH 9M332/9M317M files.
     # The probe-validated outer ranges remain conservative; native AI decides
@@ -57,11 +58,20 @@ PROFILES = (
     TransitDefense(frozenset({"CH_LAVAD"}), 8000, 4800),
     TransitDefense(frozenset({"CH_BoxerSkyranger"}), 8000, 4800),
     TransitDefense(frozenset({"CH_Wiesel2Ozelot"}), 8000, 4800),
-    # RBS-98's secondary gun recovered, but its radar-dependent missiles did not
-    # fire in the independent-launcher probe. It is not a reviewed SAM profile.
 )
 
 
 def transit_defense(types: Iterable[str]) -> TransitDefense | None:
     present = frozenset(types)
     return next((profile for profile in PROFILES if present == profile.types), None)
+
+
+def transit_defense_warning(types: Iterable[str]) -> str | None:
+    """Explain a known restriction without disabling the site's relocation."""
+    if "CH_RBS-98" in types:
+        return (
+            "RBS-98: no self-defense during relocation. Weapons stay packed because "
+            "the launcher does not reliably repack after firing missiles. "
+            "This restriction does not apply after arrival or an explicit stop."
+        )
+    return None

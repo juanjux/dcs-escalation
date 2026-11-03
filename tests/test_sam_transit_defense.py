@@ -7,15 +7,22 @@ from zipfile import ZipFile
 
 from dcs.lua import dumps, loads
 from dcs.action import DoScript
+from dcs.task import OptAlarmState, OptROE
 from dcs.vehicles import vehicle_map
 import pytest
 
 from game.dcs.groundunittype import GroundUnitType
-from game.groundmovement.samdefense import PROFILES, transit_defense
+from game.groundmovement.samdefense import (
+    PROFILES,
+    transit_defense,
+    transit_defense_warning,
+)
+from game.groundmovement.planning import armor_movement_options, preview_armor_movement
 from game.groundmovement.settings import set_enabled
 from game.missiongenerator.luagenerator import LuaGenerator
 from game.missiongenerator.samtransitdefense import configure
 from game.missiongenerator.realisticcasluadata import collect_registry
+from game.theater.player import Player
 from tests.test_sam_movement import generate_site, make_site, move
 from tests.test_armor_movement_planning import world  # noqa: F401
 
@@ -49,8 +56,63 @@ def test_unvalidated_systems_are_not_enabled(unit_type: str) -> None:
     assert transit_defense([unit_type]) is None
 
 
-def test_unvalidated_rbs98_radar_combination_is_not_enabled() -> None:
-    assert transit_defense(["CH_RBS-98", "CH_UndE23"]) is None
+@pytest.mark.parametrize(
+    "types",
+    [
+        frozenset({"CH_RBS-98"}),
+        frozenset({"CH_RBS-98", "CH_UndE23"}),
+        frozenset({"CH_RBS-98", "CH_UndE23", "Osa 9A33 ln"}),
+    ],
+)
+def test_rbs98_has_an_explicit_no_transit_defense_restriction(
+    types: frozenset[str],
+) -> None:
+    assert transit_defense(types) is None
+    assert "no self-defense during relocation" in (transit_defense_warning(types) or "")
+
+
+@pytest.mark.parametrize("profile", PROFILES)
+def test_validated_profiles_do_not_get_the_rbs98_warning(profile: Any) -> None:
+    assert transit_defense_warning(iter(profile.types)) is None
+
+
+@pytest.mark.parametrize(
+    "types", [frozenset({"CH_RBS-98"}), frozenset({"CH_RBS-98", "CH_UndE23"})]
+)
+def test_rbs98_relocates_packed_with_a_nonblocking_warning(
+    world: Any, types: frozenset[str]
+) -> None:
+    site = make_site(world, variants(types))
+    options = armor_movement_options(world.game, site.id, Player.BLUE)
+    assert options.enabled and all(unit.selectable for unit in options.units)
+    warning = transit_defense_warning(types)
+    assert warning is not None and warning in options.warnings
+    preview = preview_armor_movement(
+        world.game,
+        site.id,
+        Player.BLUE,
+        [unit.id for unit in site.units],
+        world.destination,
+    )
+    assert warning in preview.warnings
+    move(world)
+    mission, mapping = generate_site(world)
+    assert configure(mission, mapping) == []
+    group = mission.country("USA").vehicle_group[0]
+    assert {unit.type for unit in group.units} == types
+    assert len(group.points) >= 2
+    assert any(
+        isinstance(task, OptAlarmState) and task.value == 1  # GREEN
+        for task in group.points[0].tasks
+    )
+    assert any(
+        isinstance(task, OptROE) and task.value == OptROE.Values.WeaponHold
+        for task in group.points[0].tasks
+    )
+    registry = collect_registry(
+        mission, cast(Any, NS(flights=[], jtacs=[])), enabled=True, unit_map=mapping
+    )
+    assert registry is not None and registry["airDefenseThreats"] == []
 
 
 @pytest.mark.parametrize(

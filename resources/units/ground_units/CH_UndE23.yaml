@@ -1,3 +1,5 @@
+ground_mobility:
+  mode: self_propelled
 class: SearchRadar
 price: 22
 variants:
