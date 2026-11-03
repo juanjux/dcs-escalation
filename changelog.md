@@ -112,86 +112,43 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
-* **[Repairs]** Allow cancelling pending ground-unit repairs in the UI and label repairing units correctly in map tooltips.
 * **[Flight Plans]** Keep individual altitude profiles on shared routes and add vertical separation between overlapping flights.
 * **[Ground Movement]** Find terrain-safe off-road detours when campaign roads cannot connect, retaining off-road travel budgets and friendly-territory checks.
 * **[Map]** Initialize the map view before vector layers mount and preserve error stacks in the embedded console.
 * **[UI]** Exclude sold aircraft from squadron counts, totals and sorting immediately.
 * **[Squadrons]** Allow empty relocations from damaged runways after selling all aircraft, including when reloading a campaign.
 * **[Payload]** Match Shrike seekers independently of date restrictions, preserve manual weapon settings and correct AGM-45/78 head tables (adapted from RetLab #1366).
-* **[OPFOR AI]** Keep the commander briefing focused on API actions and planning rules, with clearer sales and turn-zero rebuild guidance.
-* **[Mission Log]** Use campaign ownership for scenery objectives and avoid bad-news prefixes for unknown ground targets.
-* **[Mission Log]** Report own ground, SAM and ship losses under the losses setting.
-* **[Mission Log]** Suppress duplicate crash reports when DCS reports a crash immediately before an aircraft kill.
-* **[Campaign]** Avoid misleading recapture-protection notices for unthreatened rear bases.
-* **[Realistic CAS]** Remove destroyed-group contacts without forgotten notices.
-* **[High Command]** Do not reward empty groups as destroyed targets.
-* **[Ground Movement]** Allow valid off-road moves without accessible campaign roads.
-* **[Ground Movement]** Hide evacuated group placeholders instead of marking them destroyed, and show their actual detachments in location windows.
-* **[UI]** Classify radar and SAM labels and map filters by their current units after replacements, including existing saves.
-* **[UI]** Label missile sites correctly in the location header instead of Reserve Armor Group.
-* **[Missiles]** Keep target selection usable after borrowing the main map, without leaving a modal dialog blocking the interface.
-* **[UI]** Improve default button contrast, including missile targeting, ground movement and disabled actions.
 * **[UI]** Show the campaign outcome after accepting mission results and use the correct text for defeats.
-* **[Persistent Damage]** Filter distant neighbour-search candidates conservatively while retaining safeguards for close, large or unreadable objects.
-* **[Ground Movement]** Keep a locked departure time for convoys and armor groups so DCS can save their routes.
-* **[Ground Movement]** Restrict GPS destinations to friendly ground sectors and pause orders when destination control changes.
-* **[UI]** Keep site repairs responsive by batching updates and avoiding rebuilds of closed location windows.
-* **[Ground Movement]** Define mobility for stock and mod vehicles, towed guns and tractors so normal armor groups can be dispatched.
-* **[Campaign]** Preserve aircraft inventory and workshop capacity when loading saves with overfull bases.
 * **[Performance]** Accelerate ground-unit placement with prepared and indexed land/sea geometry queries.
-* **[UI]** Fix stale selections and window-lifetime errors when accepting results, reopening dialogs or closing package editors.
-* **[A-10C]** Correct CDU elevations, 3D VNAV and waypoint numbering while preserving native mission routes.
-* **[Plugins]** Align Splash Damage defaults and option scaling, and restore previously ineffective settings.
+* **[UI]** Guard stale flight selections when mission results replace the ATO.
 * **[Mission Generator]** Keep the coalition bullseye off flight routes, removing the extra F10 route leg.
-* **[IADS]** Correct power/comms dependencies, autonomous behaviour and broken-link persistence when sites change, are captured or are destroyed.
-* **[UI]** Restore start-type badges in the sidebar and package dialog flight lists.
-* **[Campaign]** Fix blocked-base relocation, missing ferry flights and aircraft recovery after carrier losses.
+* **[IADS]** Keep unpowered SAM sites dark when lost communications trigger autonomous operation.
 * **[FIX]** Buying or selling at a site the enemy had targeted replanned both sides, emptying the player's ATO, and left the old threat ring behind for the combat simulation. Only the enemy is replanned now.
 * **[FIX]** The leg from the join to the ingress is flown at the package's speed, like the rest of the formation route. It was priced per flight, so an escort on a faster airframe arrived first. (adapted from the RetLab fork)
-* **[FIX]** Live weather could brief a wind DCS will not fly. A real jet stream beats the sim's 97-knot ceiling, and only the generated wind was held to it. (found in the RetLab fork)
-* **[FIX]** TIC stopped recognising the BMP-3 when DCS renamed it to "IFV BMP-3 [CH]", so it fired six rounds a burst with a 100 mm gun instead of one. (adapted from the RetLab fork)
 * **[FIX]** The theatre AEW&C station could land on a boat, so a squadron flew two racetracks beside the carrier while an airfield with an E-3A parked on it was skipped. It is a land base now, and never a station already planned. (found in the RetLab fork)
 * **[FIX]** A supply route or shipping lane whose two ends are the same base is skipped and named in the log. Five shipped campaigns carried one. (adapted from the RetLab fork)
 * **[FIX]** US Super Hornets called with Australia's callsigns. The mod ships four pools and the extension carried one, holding the RAAF names. (adapted from the RetLab fork)
-* **[FIX]** A SEAD flight got one steerpoint per unit at the objective, fuel bowsers included, and the kneeboard page listed them. It gets the site's emitters now; DEAD still gets every unit. (adapted from the RetLab fork)
-* **[FIX]** The selected pilot in the roster is boxed and takes a wider bar. With friendship on, every other row carries a wash of its own and a three-pixel bar was lost among them.
 * **[FIX]** The High Digit SAMs 40B6M track radar was declared under an id no build of the mod registers, so DCS dropped it from any site that used it.
-* **[FIX]** A combo box's dropdown was a lighter blue than the one the searchable combo opens, so two lists in the same dialog did not match.
 * **[Flight Plans]** Remove redundant strike line-up waypoints and place joins along the planned route.
 * **[FIX]** Two knots of wind was enough to select a bare runway at a field whose ILS runway was free; in calm air the ILS runway is preferred.
-* **[FIX]** A Maverick-armed package began its attack run 45 nm out: the Mavericks had no launch range, so the planner used the doctrine ceiling.
-* **[FIX]** A pilot marked as the player was asking the player for leave.
-* **[FIX]** OPFOR-AI: a package refused for being out of range told the caller to pass a field it had already passed.
-* **[FIX]** Dragging a ship group or a carrier on the map let go on its own: the marker was being put back, or rebuilt, mid-drag.
-* **[FIX]** The word under a squadron's task chip in the Air Wing says what it measures: its cohesion.
-* **[FIX]** The Harpoon's stand-off range was 67 nm, the real missile's; DCS flies it 97.
+* **[FIX]** Carrier map markers no longer reset or rebuild during dragging.
 * **[FIX]** Unticking a unit in the New Game wizard survives adding another one.
 * **[FIX]** A pilot on leave could not be called back while his squadron was at full strength, which it usually is: he holds his own place the whole time he is away, so coming back takes nobody else's.
 * **[FIX]** An escort put on a TARCAP emptied the map: the escort and the patrol each took their timing from the other, and nothing survived the recursion.
 * **[FIX]** A target nearer than the doctrine's minimum ingress distance could not be planned at all -- *No solutions found for waypoint* -- because the window the IP is looked for in closed to nothing.
 * **[FIX]** Two convoys on the road could both be called `Convoy 001`: the counter behind the name is not in the save. A campaign that already holds such a pair is repaired on load.
-* **[FIX]** A black console window flashed over the game whenever the live weather was fetched.
-* **[FIX]** An objective added to a campaign already under way -- a migrated motorpool, for one -- could not be opened from the map.
 * **[FIX]** A flight given a TOT offset **ahead** of its package arrived *behind* it instead, so an Escort or SEAD Escort never got there first. The package now leaves room for the flights that have to arrive ahead of it.
 * **[FIX]** A patrol in a package (TARCAP, BARCAP, tanker) could be given a takeoff before the mission started. The earliest package TOT is measured against every flight's own takeoff now, rather than estimated.
 * **[FIX]** Planning an escort into a package that holds nothing but escorts crashed -- it escorted itself. It flies the package's ordinary geometry now, and a plan that asks for itself raises a planning error.
-* **[FIX]** The METAR refresh button drew a text glyph that fell back to the wrong font; it uses the reload icon now, on a slightly larger button.
-* **[FIX]** *Apply to all* moved nothing on a helicopter's flight plan and little on a low-level one.
-* **[FIX]** Mission Log read every missile in the air as a helicopter: a Patriot firing at an AGM-84 came out as the AGM-84 defending itself, and downing one counted as an air-to-air kill.
 * **[FIX]** Nine factions had no early-warning radar, so their EWR markers fielded a SAM's acquisition radar instead.
 * **[FIX]** A site pinned by a campaign generated without its point defence.
 * **[FIX]** A CAP guarding its own base could be given a patrol route so short that DCS deleted the flight the moment it spawned, without it flying a metre. Patrol routes are now lengthened away from the enemy until they are long enough to be flown.
 * **[FIX]** Every orbit in a package ended at the same time, whichever flight's time was generated first, so an AWACS or a tanker packaged with a shorter-lived BARCAP left station early — up to two hours in one case.
 * **[FIX]** A payload with an empty pylon was thrown away whole and the aircraft was planned carrying nothing at all: the Tornado IDS strike fit leaves four stations free, so a Tornado sent on a strike flew with no bombs.
 * **[FIX]** Some building objectives could never be recorded as destroyed: an objective was only credited once every map object in its trigger zone was dead, and many of those zones hold scenery that cannot be destroyed at all. An objective standing on scenery with no damage model is credited on a direct hit now.
-* **[FIX]** Faction edits from the Air Wing dialog now take effect in the running campaign.
-* **[FIX]** The faction editor's tick boxes never removed anything; entries have a remove button now, which refuses a unit the campaign still has deployed, and its lists are sorted by the name on screen.
 * **[Plugins]** The BigEye EWR plugin's *has datalink / RWR / IRST* options never reached the radar-picture engine, so the picture was built from visual and radar alone whatever was ticked.
-* **[FIX]** Air-defence sites drew a threat ring with nothing at the centre: unticking *Air defences* took the icons away while the threat rings kept drawing. The LORAD/MERAD/SHORAD/AAA rows are filters of that master now, which also stops a site painting two stacked icons.
 * **[Campaigns]** Three authored factories never generated: the loader read factory markers from only one of the two authoring blocks, so The Tblisi Gap, Retake the Falklands and Operation Allied Sword each lost one. Every object class now loads from either block. NEW game required.
 * **[Aircraft]** Two squadron liveries pointed at personal Saved-Games-only skins and rendered wrong for anyone without them, on a server above all: the UH-1H and the C-130J-30 use in-game liveries now. The C-130J one was the only definition of that transport, so it was wrong in every campaign.
-* **[Kneeboard]** Fix clipped tables and headers, and improve compact-deck space use when threats are unidentified.
 * **[FIX]** The AH-1W carries TOW again in Blufor Late Cold War (80s): DCS models only the 1985 BGM-71D, so a 1983 campaign left the Cobra with rocket pods against armour. The faction overrides the weapon's year to 1970.
 * **[FIX]** The AIM-7P is date-gated on the Hornet's LAU-115 rails. Only three of its four clsids were declared, so picking the Sparrow P from those stations gave an unrecognised store with no introduction year -- a 1987 missile that flew in any campaign, however early. The F, M and MH rail clsids were already listed.
 * **[FIX]** The A-6E's TALDs and its AN/ALQ-167 pod are recognised weapons now: the TALDs were in no weapon file, so they never counted as decoys for SEAD planning and dodged their 1987 date, and the pod never counted as a jammer.
