@@ -5,8 +5,8 @@ leg arrives on whatever heading the previous leg left. This module adds a waypoi
 the approach course of the active runway, a configurable distance out, so the flight
 is lined up before it gets there.
 
-The active runway is the campaign's own wind-based choice, the same one used by the
-kneeboard and the ATC.
+The preferred runway is the campaign's own wind-based choice, also used by the
+kneeboard. DCS ATC selects its runway independently and may assign another one.
 
 Carriers get the same thing on their base recovery course, which is the reciprocal of
 the wind, positioned where the ship will be when the flight lands. The ship holds that
