@@ -1,10 +1,15 @@
-"""Explicit ground mobility; missing data never implies self propulsion."""
+"""Ground movement eligibility; infantry does not need vehicle mobility data."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+from game.data.units import UnitClass
+
+if TYPE_CHECKING:
+    from game.dcs.groundunittype import GroundUnitType
 
 
 class MobilityMode(Enum):
@@ -34,3 +39,10 @@ class GroundMobility:
         return cls(
             MobilityMode(data.get("mode", "unknown")), data.get("can_tow", False)
         )
+
+
+def movement_mobility(unit: GroundUnitType) -> GroundMobility:
+    """Exempt infantry and MANPADS from vehicle checks, never making them tractors."""
+    if unit.unit_class in (UnitClass.INFANTRY, UnitClass.MANPAD):
+        return GroundMobility(MobilityMode.SELF_PROPELLED)
+    return unit.ground_mobility

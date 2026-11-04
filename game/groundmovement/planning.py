@@ -9,7 +9,7 @@ from uuid import UUID
 
 from game.dcs.groundunittype import GroundUnitType
 from game.groundmovement.journey import GroundJourney, GroundRoute
-from game.groundmovement.mobility import MobilityMode
+from game.groundmovement.mobility import MobilityMode, movement_mobility
 from game.groundmovement.orders import (
     DestinationKind,
     GroundPosition,
@@ -124,9 +124,10 @@ def armor_movement_options(
     unit_types = _unit_types(source)
     available = {i: unit for i, unit in unit_types.items() if i not in reserved}
     is_sam = isinstance(source, IadsGroundObject)
-    tractors = sum(unit.ground_mobility.can_tow for unit in available.values())
+    tractors = sum(movement_mobility(unit).can_tow for unit in available.values())
     pieces = sum(
-        unit.ground_mobility.mode is MobilityMode.TOWED for unit in available.values()
+        movement_mobility(unit).mode is MobilityMode.TOWED
+        for unit in available.values()
     )
     warnings = []
     if not enabled(game.settings):
@@ -144,7 +145,8 @@ def armor_movement_options(
         {
             unit.display_name
             for unit in available.values()
-            if unit.ground_mobility.mode in (MobilityMode.UNKNOWN, MobilityMode.FIXED)
+            if movement_mobility(unit).mode
+            in (MobilityMode.UNKNOWN, MobilityMode.FIXED)
         }
     )
     if unsupported:
@@ -181,11 +183,11 @@ def armor_movement_options(
                 i,
                 unit.display_name,
                 unit.variant_id,
-                unit.ground_mobility.mode.value,
-                unit.ground_mobility.can_tow,
+                movement_mobility(unit).mode.value,
+                movement_mobility(unit).can_tow,
                 i in reserved,
                 i not in reserved
-                and unit.ground_mobility.mode
+                and movement_mobility(unit).mode
                 in (MobilityMode.SELF_PROPELLED, MobilityMode.TOWED),
             )
             for i, unit in sorted(unit_types.items())

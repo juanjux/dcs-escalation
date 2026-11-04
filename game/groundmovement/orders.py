@@ -8,7 +8,7 @@ from enum import Enum
 from typing import Iterable, Mapping, TYPE_CHECKING
 from uuid import UUID, uuid4
 
-from game.groundmovement.mobility import MobilityMode
+from game.groundmovement.mobility import MobilityMode, movement_mobility
 from game.groundmovement.settings import enabled
 from game.theater.player import Player
 
@@ -101,7 +101,7 @@ def plan_transport(
         raise ValueError("A selected unit is unavailable or already reserved")
     pieces = []
     for unit_id in selected_ids:
-        mobility = units[unit_id].ground_mobility
+        mobility = movement_mobility(units[unit_id])
         if mobility.mode in (MobilityMode.UNKNOWN, MobilityMode.FIXED):
             raise ValueError(
                 f"Mobility is not available for {units[unit_id].display_name}"
@@ -110,7 +110,7 @@ def plan_transport(
             pieces.append(unit_id)
     selected_set = set(selected_ids)
     tractors = sorted(
-        (i for i in units if units[i].ground_mobility.can_tow),
+        (i for i in units if movement_mobility(units[i]).can_tow),
         key=lambda i: (i not in selected_set, i),
     )
     if len(pieces) > len(tractors):
