@@ -35,7 +35,7 @@ version: "10.9"
 settings:
   plugins:
     skynetiads: true
-    gpsjamming: false
+    gpsjamming: true
   usamilitaryassetspack: true
   russianmilitaryassetspack: true
   uh_60l: true
@@ -207,3 +207,7 @@ squadrons:
          - Ka-50 Hokum III
       size: 4
       pilots: 8
+
+ground_forces:
+  "Ground-65": GPS Jamming Site (Red, Unescorted)
+  "Blue GPS Jammer Camp Bastion": GPS Jamming Site (Blue, Unescorted)

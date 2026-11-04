@@ -29,7 +29,7 @@ version: "10.9"
 settings:
   plugins:
     skynetiads: true
-    gpsjamming: false
+    gpsjamming: true
   fa_18efg: true
   f22_raptor: true
   uh_60l: true
@@ -259,3 +259,7 @@ squadrons:
         - SU-33 Flanker-D
       size: 12
       pilots: 16
+
+ground_forces:
+  "Ground-10": GPS Jamming Site (Red, Unescorted)
+  "Blue GPS Jammer Vaziani": GPS Jamming Site (Blue, Unescorted)

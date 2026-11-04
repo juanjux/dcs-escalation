@@ -111,11 +111,11 @@ def test_land_sites_have_friendly_command_paths(filename: str, inverted: bool) -
     assert "iads_config" not in campaign.data
     theater = campaign.load_theater(True)
     pins = campaign.data.get("ground_forces", {})
-    for name in row["new_jammers"]:
+    for name in {**row["new_jammers"], **row.get("restored_jammers", {})}:
         assert pins[name].endswith(", Unescorted)")
         assert campaign.recommended_start_date is not None
-        assert campaign.recommended_start_date.year >= 2010
-    if campaign.recommended_start_date and campaign.recommended_start_date.year < 2010:
+        assert campaign.recommended_start_date.year >= 2000
+    if campaign.recommended_start_date and campaign.recommended_start_date.year < 2000:
         assert not any("GPS Jamming" in str(value) for value in pins.values())
     objects: list[Any] = []
     selected: set[Any] = set()
@@ -189,6 +189,10 @@ def test_land_sites_have_friendly_command_paths(filename: str, inverted: bool) -
 
 @pytest.mark.parametrize("color", ["Blue", "Red"])
 def test_unescorted_jammer_presets_cannot_fill_point_defence(color: str) -> None:
+    unit = yaml.safe_load(
+        Path(f"resources/units/ground_units/GPS_Spoofer_{color}.yaml").read_text()
+    )
+    assert unit["introduced"] == 2000
     preset = yaml.safe_load(
         Path(f"resources/groups/GPS-Jamming-Site-{color}-Unescorted.yaml").read_text()
     )

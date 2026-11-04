@@ -22,7 +22,7 @@ version: "10.9"
 settings:
   plugins:
     skynetiads: true
-    gpsjamming: false
+    gpsjamming: true
   russianmilitaryassetspack: true
   chinesemilitaryassetspack: true
   usamilitaryassetspack: true
@@ -309,3 +309,7 @@ squadrons:
         - KJ-2000
       size: 2
       pilots: 6
+
+ground_forces:
+  "Ground-33": GPS Jamming Site (Red, Unescorted)
+  "Blue GPS Jammer Kiruna": GPS Jamming Site (Blue, Unescorted)

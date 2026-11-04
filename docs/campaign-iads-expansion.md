@@ -29,20 +29,21 @@ it does not make the entire network immune to losing a command centre or relay.
 
 ## GPS chronology
 
-The modeled generic GPS jammer is introduced in **2010** in both unit definitions.
+Generic GPS jammers are available from **2000** in both unit definitions.
 New jammers require a dated campaign at or after that year and a recommended
 faction that already has access to the corresponding emitter. Undated scenarios
-and improvised insurgent sectors receive no new jammer. This is a conservative
-model-availability rule, not a claim that GPS jamming was invented in 2010 or that
-every fictional faction fielded an identical truck in that year.
+and improvised insurgent sectors receive no new jammer. This is a campaign
+availability threshold, not a claim that every faction fielded an identical
+jammer in 2000.
 
 GPS jamming was already operationally documented in Iraq in 2003: the
 [US Air Force report of 25 March 2003](https://www.af.mil/News/Article-Display/Article/139712/coalition-pilots-strike-satellite-guidance-jammers/)
-describes six jammers attacked on 22 and 24 March. That does not establish
-availability in 1988, or justify backdating the specific modeled 2010 equipment.
-The 13 pre-2010 jammer overrides in this batch are therefore removed: those
-existing EWR markers generate their normal period-appropriate radar again.
-Modern jammer overrides already present in the campaigns are retained.
+describes six jammers attacked on 22 and 24 March. The 2000 threshold permits
+eleven original jammer overrides in 2000-2009 campaigns to be restored, using
+emitter-only presets. Eleven additional dedicated emitters fill eligible sides
+in that decade. Only the two pre-2000 overrides remain removed: those existing
+EWR markers generate their normal period-appropriate radar again. Later jammer
+overrides already present in the campaigns are retained.
 
 ## Placement exceptions
 
@@ -65,17 +66,17 @@ positions and ownership each turn; this table is not a topology definition.
 | Campaign | Scope | Command | Relay | Power | GPS |
 | --- | --- | ---: | ---: | ---: | ---: |
 | Persian Gulf - Battle of Abu Dhabi | campaign | 4 | 59 | 8 | 0 |
-| Caucasus - Black Sea | campaign | 2 | 68 | 4 | 0 |
-| Caucasus - Full | campaign | 2 | 69 | 4 | 0 |
+| Caucasus - Black Sea | campaign | 2 | 68 | 4 | 1 |
+| Caucasus - Full | campaign | 2 | 69 | 4 | 1 |
 | Caucasus - Muti-Part Georgia | campaign | 2 | 26 | 4 | 0 |
-| Caucasus - Multi-Part Russia | campaign | 2 | 69 | 4 | 0 |
+| Caucasus - Multi-Part Russia | campaign | 2 | 69 | 4 | 1 |
 | Germany - Crossing the Rubicon | campaign | 2 | 68 | 4 | 0 |
 | Kola Peninsula - Able Archer 83 | campaign | 3 | 97 | 6 | 0 |
 | Sinai - Exercise Bright Star | campaign | 2 | 46 | 3 | 1 |
 | Sinai - Exercise Quasar (v1) | campaign | 2 | 48 | 2 | 1 |
 | Nevada - Exercise Vegas Nerve | campaign | 2 | 43 | 2 | 1 |
 | South Atlantic - Grabthar's Hammer | regional | 4 | 44 | 6 | 0 |
-| Afghanistan - Graveyard of Empires | campaign | 2 | 49 | 4 | 0 |
+| Afghanistan - Graveyard of Empires | campaign | 2 | 49 | 4 | 1 |
 | Marianas - Second Island Chain (2027) | regional | 10 | 0 | 18 | 1 |
 | Marianas - Guam - Mount Barrigada | regional | 2 | 0 | 4 | 0 |
 | Marianas - Guam - Landing at Agat | regional | 2 | 0 | 4 | 0 |
@@ -92,18 +93,18 @@ positions and ownership each turn; this table is not a topology definition.
 | Sinai - Operation Gazelle (Yom Kippur War) | campaign | 2 | 60 | 4 | 0 |
 | Persian Gulf - Noisy Cricket | regional | 7 | 62 | 14 | 1 |
 | Syria - Operation Peace Spring | campaign | 3 | 70 | 6 | 2 |
-| Caucasus - Vectron's Claw | campaign | 3 | 46 | 6 | 0 |
+| Caucasus - Vectron's Claw | campaign | 3 | 46 | 6 | 1 |
 | Marianas - Operation Velvet Thunder | regional | 5 | 2 | 8 | 0 |
-| Marianas - Pacific Repartee | regional | 9 | 0 | 16 | 0 |
-| Sinai - Red Sea Rising | campaign | 3 | 74 | 6 | 0 |
+| Marianas - Pacific Repartee | regional | 9 | 0 | 16 | 1 |
+| Sinai - Red Sea Rising | campaign | 3 | 74 | 6 | 1 |
 | South Atlantic - Retake the Falklands | regional | 3 | 50 | 6 | 0 |
 | Caucasus - Slava Ukraini | campaign | 2 | 39 | 4 | 1 |
 | Syria - Full Map | campaign | 3 | 63 | 5 | 1 |
-| Syria - Task Force Thunder | campaign | 2 | 72 | 4 | 0 |
+| Syria - Task Force Thunder | campaign | 2 | 72 | 4 | 1 |
 | Caucasus - The Tblisi Gap | campaign | 2 | 16 | 4 | 0 |
-| Kola Peninsula - The Anvil of War | campaign | 3 | 102 | 6 | 0 |
+| Kola Peninsula - The Anvil of War | campaign | 3 | 102 | 6 | 1 |
 | Persian Gulf - Valley of Rotary | selective | 1 | 0 | 2 | 1 |
-| Syria - Tripoint Hostility | campaign | 2 | 36 | 4 | 0 |
+| Syria - Tripoint Hostility | campaign | 2 | 36 | 4 | 2 |
 | Syria - WRL - Aleppo Insurgency (v1.1) | selective | 12 | 22 | 6 | 1 |
 | Caucasus - WRL - Battle for Georgia (v1.2) | campaign | 2 | 24 | 4 | 1 |
 | Persian Gulf - WRL - Wargames (v1.1) | regional | 5 | 41 | 10 | 1 |
@@ -120,7 +121,7 @@ are checked separately; their unit types and other properties remain protected.
 Full generation with each campaign's recommended factions, mods and air wing is
 also checked at seeds 17 and 29, including generated ground-node command paths
 and parity with the production Lua mission-export connectivity graph. Each seed
-has 2,113 of 2,113 selected land nodes connected; all 2,557 compared Lua elements
+has 2,102 of 2,102 selected land nodes connected; all 2,568 compared Lua elements
 agree with the campaign graph. The deliberately excluded RED irregular sides
-are not included in the 2,113 total. This is generation/runtime-graph verification,
+are not included in the 2,102 total. This is generation/runtime-graph verification,
 not a claim of manual DCS playtesting.

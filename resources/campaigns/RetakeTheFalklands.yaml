@@ -12,7 +12,7 @@ recommended_start_date: 2002-12-21
 settings:
   plugins:
     skynetiads: true
-    gpsjamming: false
+    gpsjamming: true
   squadron_start_full: true
 version: "10.7"
 squadrons:
@@ -209,3 +209,6 @@ squadrons:
         - Mi-24P Hind-F
       size: 4
       pilots: 8
+
+ground_forces:
+  "Ground-15": GPS Jamming Site (Red, Unescorted)

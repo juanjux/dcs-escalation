@@ -180,4 +180,7 @@ squadrons:
 settings:
   plugins:
     skynetiads: true
-    gpsjamming: false
+    gpsjamming: true
+
+ground_forces:
+  "FOB Gecitkale-26": GPS Jamming Site (Red, Unescorted)

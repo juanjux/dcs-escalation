@@ -165,4 +165,8 @@ squadrons:
 settings:
   plugins:
     skynetiads: true
-    gpsjamming: false
+    gpsjamming: true
+
+ground_forces:
+  "Ground-143": GPS Jamming Site (Red, Unescorted)
+  "Blue GPS Jammer H4": GPS Jamming Site (Blue, Unescorted)

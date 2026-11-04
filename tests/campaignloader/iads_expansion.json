@@ -1,9 +1,14 @@
 {
   "Caucasus_Multi_Full.yaml": {
     "island_anchors": [],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer Batumi": "GPS Jamming Site (Blue, Unescorted)"
+    },
     "other_entries_sha256": "8e6618a4cd4349dc70f5df1d6d45496c2f3bcb089b869fa769c79b8e199aa469",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-25": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "c3c7564b82dcb285222f4085fd79666e9d495207a7b0ea3df9acb9e5812bf46b",
     "sides": [
       "BLUE",
@@ -23,9 +28,14 @@
   },
   "Caucasus_Multi_Russia.yaml": {
     "island_anchors": [],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer Tbilisi-Lochini": "GPS Jamming Site (Blue, Unescorted)"
+    },
     "other_entries_sha256": "849d80b910b60411294594eb60060ec9946b1702b794d80b85efa032704db881",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-29": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "e954669cab085169d64f09daf4983a473aae0ef0c0dea398617fdc707bb2b958",
     "sides": [
       "BLUE",
@@ -62,6 +72,9 @@
     "new_jammers": {},
     "other_entries_sha256": "de6bbe8adf3a178c727d81e2dea2afcdbaa4359d0144f655305910bd8fd96966",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-15": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "16be46f525ebe4d71f3e1089efce6a4b339452f7f955d64772d615db173040ee",
     "sides": [
       "BLUE",
@@ -70,9 +83,14 @@
   },
   "Task Force Thunder.yaml": {
     "island_anchors": [],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer H4": "GPS Jamming Site (Blue, Unescorted)"
+    },
     "other_entries_sha256": "e53c7bafeaeb23b725fa0ce5465d38d71cee9edcee3a9a08b0b5c1b050db3cbf",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-143": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "d84595974a321f934e6ef83e4e04bcc385f92a831945216825d58156d2078c39",
     "sides": [
       "BLUE",
@@ -164,9 +182,14 @@
   },
   "black_sea.yaml": {
     "island_anchors": [],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer Kutaisi": "GPS Jamming Site (Blue, Unescorted)"
+    },
     "other_entries_sha256": "0fd7e3f537174ae34909424a3192bb4368e5d4a993df3907277519461e5855fe",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-170": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "5986aa047d39a6f2c04513be9b3026bc195f150723aafa6226e101ef60bd577a",
     "sides": [
       "BLUE",
@@ -247,9 +270,14 @@
   },
   "graveyard_of_empires.yaml": {
     "island_anchors": [],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer Camp Bastion": "GPS Jamming Site (Blue, Unescorted)"
+    },
     "other_entries_sha256": "2adceaa02b814c2a59b8c6b66bc2fc1508e215022d9d93ed6a9f93c216feb5c8",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-65": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "4e2ab08b7c3d83a4cd7f32eee287c6d2f8beca3f089d47da0b27e5cc452d5830",
     "sides": [
       "BLUE",
@@ -365,6 +393,9 @@
     "new_jammers": {},
     "other_entries_sha256": "565592a9a0ed12baf286b9ba3a9976c0d322c8070a3f8be9b315c604a405b5e6",
     "relocated_radars": {},
+    "restored_jammers": {
+      "FOB Gecitkale-26": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "a1be6b0aa5ec6a30c3f2e25e7e91d8a88a9499c249651bc404dda32cd93c2e8c",
     "sides": [
       "BLUE",
@@ -450,9 +481,14 @@
   },
   "operation_vectrons_claw.yaml": {
     "island_anchors": [],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer Vaziani": "GPS Jamming Site (Blue, Unescorted)"
+    },
     "other_entries_sha256": "2fa399e2f457a57d38e76822bb57239684541fe725a91ab8139f727a86a7cd47",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-10": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "e392d83891f1f2df7870276026377517be78f0996e3385fec2f3c50ddfc4634b",
     "sides": [
       "BLUE",
@@ -497,9 +533,14 @@
         97869.029731084
       ]
     ],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer FOB Uracus": "GPS Jamming Site (Blue, Unescorted)"
+    },
     "other_entries_sha256": "1e9c8ed3a4f14d6fe8e40f7bf22851c4d204eeedbdd15f26acbbfd6b99fbd727",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-27": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "d806ec389530be48e9596c958cdca0005a0b0cc247d4d3fb6a3d8470ec312e69",
     "sides": [
       "BLUE",
@@ -508,9 +549,14 @@
   },
   "red_sea_rising.yaml": {
     "island_anchors": [],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer Tel Nof": "GPS Jamming Site (Blue, Unescorted)"
+    },
     "other_entries_sha256": "9a8695756412f156567dcad492c8a2f827130c10d8a0e47532a71e9d5fd317e1",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-73": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "2273d9d1e92e6d117181cd9ed665e304c2d61950c6b5ca01b6bcd0e75a6782f6",
     "sides": [
       "BLUE",
@@ -545,9 +591,14 @@
   },
   "the_anvil_of_war.yaml": {
     "island_anchors": [],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer Kiruna": "GPS Jamming Site (Blue, Unescorted)"
+    },
     "other_entries_sha256": "2fb5f1ffb7c2688518602371a73c39bb94e4661607a8f40a8b61f77cbb121c97",
     "relocated_radars": {},
+    "restored_jammers": {
+      "Ground-33": "GPS Jamming Site (Red, Unescorted)"
+    },
     "retained_mission_sha256": "ec76e61c1c89aaf446b705327695f0007af9ffca735593e366ae576c386e21c9",
     "sides": [
       "BLUE",
@@ -556,7 +607,10 @@
   },
   "tripoint_hostility.yaml": {
     "island_anchors": [],
-    "new_jammers": {},
+    "new_jammers": {
+      "Blue GPS Jammer FOB Tha'lah": "GPS Jamming Site (Blue, Unescorted)",
+      "Red GPS Jammer H3": "GPS Jamming Site (Red, Unescorted)"
+    },
     "other_entries_sha256": "4817cc00636ab364f0307249b7de443f1292a9868cbed6b100a05b1c7034614a",
     "relocated_radars": {},
     "retained_mission_sha256": "e2f9e0e4a29d5cc8f7d77100c81cf3b27a1c83d0d4eecb5e8697ec6f05eebfd8",

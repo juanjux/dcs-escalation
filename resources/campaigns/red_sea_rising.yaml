@@ -29,7 +29,7 @@ version: "10.9"
 settings:
   plugins:
     skynetiads: true
-    gpsjamming: false
+    gpsjamming: true
   usamilitaryassetspack: true
   chinesemilitaryassetspack: true
   fa_18efg: true
@@ -289,3 +289,7 @@ squadrons:
         - J-15 Flanker X-2
       size: 12
       pilots: 16
+
+ground_forces:
+  "Ground-73": GPS Jamming Site (Red, Unescorted)
+  "Blue GPS Jammer Tel Nof": GPS Jamming Site (Blue, Unescorted)

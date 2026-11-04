@@ -13,7 +13,7 @@ version: "9.1"
 settings:
   plugins:
     skynetiads: true
-    gpsjamming: false
+    gpsjamming: true
 squadrons:
   # Anapa-Vityazevo
   12:
@@ -326,3 +326,7 @@ squadrons:
       secondary: air-to-ground
     - primary: CAS
       secondary: air-to-ground
+
+ground_forces:
+  "Ground-25": GPS Jamming Site (Red, Unescorted)
+  "Blue GPS Jammer Batumi": GPS Jamming Site (Blue, Unescorted)
