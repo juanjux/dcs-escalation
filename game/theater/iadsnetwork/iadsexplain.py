@@ -13,6 +13,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional, Sequence
 
 from game.theater.iadsnetwork.iadsrole import IadsRole
+from game.theater.iadsnetwork.connectivity import IadsConnectivity
 from game.theater.iadsnetwork.iadsstate import (
     IadsState,
     IadsStatus,
@@ -169,6 +170,21 @@ def describe(
         return IadsPicture(None, off=NoNetwork.STANDALONE)
 
     status = network.state_map.status_for(tgo)
+    connectivity = network.state_map.connectivity
+    if node.group.iads_role.is_comms_or_power:
+        picture = _infrastructure(tgo, _feeds(tgo, network), friendly, connectivity)
+        needs: list[IadsLink] = []
+        if node.group.iads_role is IadsRole.CONNECTION_NODE:
+            needs.extend(_power_links(node, friendly))
+            needs.append(
+                _command_link(node, _same_side(node, network), friendly, connectivity)
+            )
+            comms = _comms_link(node, friendly, connectivity)
+            if comms is not None:
+                needs.append(comms)
+        return IadsPicture(
+            None, gives=picture.gives, gets=tuple(needs), headline=picture.headline
+        )
     if node.is_empty_site:
         links = tuple(
             IadsLink(
@@ -191,22 +207,22 @@ def describe(
     if getattr(tgo, "carries_gps_jammer", False):
         gives.append(_jamming_link(status, friendly))
     elif role is IadsRole.EWR:
-        gives.append(_cues_link(node, siblings, friendly))
-        gives.append(_command_link(node, siblings, friendly))
+        gives.append(_cues_link(node, siblings, friendly, connectivity))
+        gives.append(_command_link(node, siblings, friendly, connectivity))
     elif role is IadsRole.COMMAND_CENTER:
-        gives.append(_directs_link(node, siblings, friendly))
+        gives.append(_directs_link(node, siblings, friendly, connectivity))
     else:
         if role is IadsRole.SAM_AS_EWR:
-            gives.append(_cues_link(node, siblings, friendly))
-        gets.append(_early_warning_link(node, siblings, friendly))
+            gives.append(_cues_link(node, siblings, friendly, connectivity))
+        gets.append(_early_warning_link(node, siblings, friendly, connectivity))
         if awacs:
             gets.append(_awacs_link(awacs))
-        gets.append(_command_link(node, siblings, friendly))
+        gets.append(_command_link(node, siblings, friendly, connectivity))
 
     if not getattr(tgo, "carries_gps_jammer", False):
         # Nothing is handed to a jammer, so the comms that would hand it are not its
         # business.
-        comms = _comms_link(node, friendly)
+        comms = _comms_link(node, friendly, connectivity)
         if comms is not None:
             gets.append(comms)
     gets.extend(_power_links(node, friendly))
@@ -245,7 +261,10 @@ def _jamming_link(status: Optional[IadsStatus], friendly: bool) -> IadsLink:
 
 
 def _early_warning_link(
-    node: IadsNetworkNode, siblings: list[IadsNetworkNode], friendly: bool
+    node: IadsNetworkNode,
+    siblings: list[IadsNetworkNode],
+    friendly: bool,
+    connectivity: IadsConnectivity | None = None,
 ) -> IadsLink:
     covering = [
         other
@@ -254,7 +273,15 @@ def _early_warning_link(
         and other.group.iads_role in (IadsRole.EWR, IadsRole.SAM_AS_EWR)
         and covers(other, node)
     ]
-    live = [other for other in covering if _is_live(other)]
+    live = [
+        other
+        for other in covering
+        if (
+            connectivity.can_exchange(node, other)
+            if connectivity is not None
+            else _is_live(other)
+        )
+    ]
 
     if live:
         ranges = " / ".join(
@@ -289,14 +316,25 @@ def _early_warning_link(
         places=_places_of([other.group.ground_object for other in covering]),
         caption="EARLY WARNING",
         title=" · ".join(sorted(_name(other) for other in covering)),
-        note=_why_down(nearest),
-        chip=_down_chip(nearest),
+        note=(
+            "No operational communications path connects this radar to the site."
+            if connectivity is not None and connectivity.available(nearest)
+            else _why_down(nearest)
+        ),
+        chip=(
+            "LINK CUT"
+            if connectivity is not None and connectivity.available(nearest)
+            else _down_chip(nearest)
+        ),
         tone=LinkTone.BAD if nearest.group.alive_units == 0 else LinkTone.WARN,
     )
 
 
 def _cues_link(
-    node: IadsNetworkNode, siblings: list[IadsNetworkNode], friendly: bool
+    node: IadsNetworkNode,
+    siblings: list[IadsNetworkNode],
+    friendly: bool,
+    connectivity: IadsConnectivity | None = None,
 ) -> IadsLink:
     """For a radar the row flips: whom it cues, not who cues it."""
     covered_nodes = [
@@ -305,10 +343,13 @@ def _cues_link(
         if other is not node
         and other.group.iads_role in (IadsRole.SAM, IadsRole.SAM_AS_EWR)
         and covers(node, other)
+        and (connectivity is None or connectivity.can_exchange(node, other))
     ]
     covered_objectives = [other.group.ground_object for other in covered_nodes]
     covered = sorted(_name(other) for other in covered_nodes)
-    if not comms_up(node):
+    if not (
+        connectivity.connected(node) if connectivity is not None else comms_up(node)
+    ):
         return IadsLink(
             caption="CUES",
             title="Nobody" if not covered else " · ".join(covered),
@@ -340,7 +381,10 @@ def _cues_link(
 
 
 def _directs_link(
-    node: IadsNetworkNode, siblings: list[IadsNetworkNode], friendly: bool
+    node: IadsNetworkNode,
+    siblings: list[IadsNetworkNode],
+    friendly: bool,
+    connectivity: IadsConnectivity | None = None,
 ) -> IadsLink:
     """What a command centre is for: the sites it directs."""
     directed_nodes = [
@@ -348,6 +392,7 @@ def _directs_link(
         for other in siblings
         if other is not node
         and other.group.iads_role in (IadsRole.SAM, IadsRole.SAM_AS_EWR, IadsRole.EWR)
+        and (connectivity is None or node in connectivity.centres_for(other))
     ]
     directed_objectives = [other.group.ground_object for other in directed_nodes]
     directed = sorted(_name(other) for other in directed_nodes)
@@ -374,7 +419,9 @@ def _directs_link(
     )
 
 
-def _comms_link(node: IadsNetworkNode, friendly: bool) -> Optional[IadsLink]:
+def _comms_link(
+    node: IadsNetworkNode, friendly: bool, connectivity: IadsConnectivity | None = None
+) -> Optional[IadsLink]:
     """The comms this site hangs off, when the campaign gave it any."""
     nodes = [
         group
@@ -384,15 +431,26 @@ def _comms_link(node: IadsNetworkNode, friendly: bool) -> Optional[IadsLink]:
     if not nodes:
         return None
     names = _some_of(sorted(group.ground_object.name for group in nodes))
-    if any(group.alive_units > 0 for group in nodes):
+    if any(
+        (
+            connectivity.link_operational(node, group)
+            if connectivity is not None
+            else group.alive_units > 0
+        )
+        for group in nodes
+    ):
         return IadsLink(
             places=_places_of([group.ground_object for group in nodes]),
             caption="COMMS",
             title=names,
             note=(
-                "the network reaches it"
-                if friendly
-                else "kill them all and it is cut off from the network"
+                "Operational radio paths through these towers."
+                if connectivity is not None
+                else (
+                    "the network reaches it"
+                    if friendly
+                    else "kill them all and it is cut off from the network"
+                )
             ),
             chip="UP",
             tone=LinkTone.GOOD,
@@ -401,7 +459,11 @@ def _comms_link(node: IadsNetworkNode, friendly: bool) -> Optional[IadsLink]:
         places=_places_of([group.ground_object for group in nodes]),
         caption="COMMS",
         title=names,
-        note="destroyed: nothing reaches this site from the network",
+        note=(
+            "No operational relay path to command through these towers."
+            if connectivity is not None
+            else "destroyed: nothing reaches this site from the network"
+        ),
         chip="CUT",
         tone=LinkTone.BAD,
     )
@@ -418,9 +480,30 @@ def _awacs_link(awacs: Sequence[str]) -> IadsLink:
 
 
 def _command_link(
-    node: IadsNetworkNode, siblings: list[IadsNetworkNode], friendly: bool
+    node: IadsNetworkNode,
+    siblings: list[IadsNetworkNode],
+    friendly: bool,
+    connectivity: IadsConnectivity | None = None,
 ) -> IadsLink:
     caption = "COMMAND"
+    if connectivity is not None:
+        centres = connectivity.centres_for(node)
+        return IadsLink(
+            caption=caption,
+            title=(
+                " · ".join(sorted(_name(other) for other in centres))
+                if centres
+                else "No reachable command centre"
+            ),
+            note=(
+                "Connected by an operational radio path."
+                if centres
+                else "No powered relay chain reaches a friendly command centre."
+            ),
+            chip="DIRECTING" if centres else "CUT OFF",
+            tone=LinkTone.GOOD if centres else LinkTone.WARN,
+            places=_places_of([other.group.ground_object for other in centres]),
+        )
     centres = [
         other
         for other in siblings
@@ -584,13 +667,42 @@ def _what_falls_over(tgo: TheaterGroundObject, count: int) -> str:
 
 
 def _infrastructure(
-    tgo: TheaterGroundObject, fed: list[IadsNetworkNode], friendly: bool
+    tgo: TheaterGroundObject,
+    fed: list[IadsNetworkNode],
+    friendly: bool,
+    connectivity: IadsConnectivity | None = None,
 ) -> IadsPicture:
     alive = any(unit.alive for group in tgo.groups for unit in group.units)
     names = sorted(_name(node) for node in fed)
-    if alive:
+    node = connectivity.by_object.get(tgo) if connectivity is not None else None
+    if (
+        alive
+        and node is not None
+        and connectivity is not None
+        and not connectivity.powered(node)
+    ):
+        headline = "No power: this relay cannot carry communications."
+        note = "restore its power supply to use this radio path"
+        chip_text = "NO POWER"
+        tone = LinkTone.BAD
+    elif (
+        alive
+        and node is not None
+        and connectivity is not None
+        and node.group.iads_role is IadsRole.CONNECTION_NODE
+        and not connectivity.connected(node)
+    ):
+        headline = "Cut off: no operational relay path reaches command."
+        note = "nearby sites cannot reach command through this relay"
+        chip_text = "CUT OFF"
+        tone = LinkTone.WARN
+    elif alive:
         headline = f"Holding up {len(fed)} site{'s' if len(fed) > 1 else ''}."
-        note = _what_falls_over(tgo, len(fed))
+        note = (
+            "These links fail if destroyed; alternate supplies or radio paths may remain."
+            if connectivity is not None
+            else _what_falls_over(tgo, len(fed))
+        )
         chip_text = f"{len(fed)} SITE{'S' if len(fed) > 1 else ''}"
         tone = LinkTone.GOOD
     else:

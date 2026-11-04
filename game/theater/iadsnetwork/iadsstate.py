@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Collection, Iterator, Optional
 
 from game.data.units import UnitClass
 from game.theater.iadsnetwork.iadsrole import IadsRole
+from game.theater.iadsnetwork.connectivity import IadsConnectivity
 
 if TYPE_CHECKING:
     from game.theater.iadsnetwork.iadsnetwork import IadsNetwork, IadsNetworkNode
@@ -171,6 +172,11 @@ class IadsStateMap:
     ) -> None:
         self._by_tgo: dict[TheaterGroundObject, IadsStatus] = {}
         self._destroyed = frozenset(destroyed)
+        self.connectivity = (
+            IadsConnectivity(network, destroyed)
+            if getattr(network, "advanced_iads", False)
+            else None
+        )
         self._build(network)
 
     def status_for(self, tgo: TheaterGroundObject) -> Optional[IadsStatus]:
@@ -185,7 +191,10 @@ class IadsStateMap:
     def _build(self, network: IadsNetwork) -> None:
         by_side: dict[bool, list[IadsNetworkNode]] = {}
         for node in network.nodes:
-            side = node.group.ground_object.control_point.captured.is_blue
+            owner = node.group.ground_object.control_point.captured
+            if getattr(owner, "is_neutral", False):
+                continue
+            side = owner.is_blue
             by_side.setdefault(side, []).append(node)
         for nodes in by_side.values():
             self._build_side(nodes)
@@ -198,7 +207,14 @@ class IadsStateMap:
             id(node): mains[id(node)] or generators[id(node)] is not None
             for node in nodes
         }
-        connected = {id(node): comms_up(node, destroyed) for node in nodes}
+        connected = {
+            id(node): (
+                self.connectivity.connected(node)
+                if self.connectivity is not None
+                else comms_up(node, destroyed)
+            )
+            for node in nodes
+        }
 
         command_centres = [
             node for node in nodes if node.group.iads_role is IadsRole.COMMAND_CENTER
@@ -233,7 +249,12 @@ class IadsStateMap:
                 powered[id(node)],
                 connected[id(node)],
                 has_command,
-                parents,
+                [
+                    parent
+                    for parent in parents
+                    if self.connectivity is None
+                    or self.connectivity.can_exchange(parent, node)
+                ],
                 # Only worth mentioning when the grid has actually failed: a battery
                 # whose substation is standing is not running on its generator.
                 generators[id(node)] if not mains[id(node)] else None,

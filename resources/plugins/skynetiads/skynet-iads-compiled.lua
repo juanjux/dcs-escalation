@@ -2276,6 +2276,9 @@ function SkynetIADS:unregisterElementEvents(element)
 end
 
 function SkynetIADS:onEvent(event)
+	if self.topology and (event.id == world.event.S_EVENT_DEAD or event.id == world.event.S_EVENT_BIRTH) then
+		self.topology:onEvent(event)
+	end
 	if event.id == world.event.S_EVENT_BIRTH then
 		local unit = event.initiator
 		if unit and unit.getGroup then
@@ -2557,6 +2560,7 @@ end
 
 
 function SkynetIADS.evaluateContacts(self)
+	if self.topology then self.topology:beginCycle() end
 
 	local ewRadars = self:getUsableEarlyWarningRadars()
 	local samSites = self:getUsableSAMSites()
@@ -2574,6 +2578,7 @@ function SkynetIADS.evaluateContacts(self)
 			local contacts = samSite:getDetectedTargets()
 			for j = 1, #contacts do
 				local contact = contacts[j]
+				if self.topology then self.topology:noteContact(contact, samSite) end
 				self:mergeContact(contact)
 			end
 		end
@@ -2602,6 +2607,7 @@ function SkynetIADS.evaluateContacts(self)
 			end
 			for j = 1, #ewContacts do
 				local contact = ewContacts[j]
+				if self.topology then self.topology:noteContact(contact, ewRadar) end
 				self:mergeContact(contact)
 			end
 		end
@@ -2622,7 +2628,9 @@ function SkynetIADS.evaluateContacts(self)
 
 	for samName, samToTrigger in pairs(samSitesToTrigger) do
 		for j = 1, #airborneContacts do
-			samToTrigger:informOfContact(airborneContacts[j])
+			if not self.topology or self.topology:canReceive(samToTrigger, airborneContacts[j]) then
+				samToTrigger:informOfContact(airborneContacts[j])
+			end
 		end
 	end
 	
@@ -3259,6 +3267,7 @@ function SkynetIADSAbstractElement:getConnectionNodes()
 end
 
 function SkynetIADSAbstractElement:hasActiveConnectionNode()
+	if self.iads.topology then return self.iads.topology:connected(self) end
 	local connectionNode = self:genericCheckOneObjectIsAlive(self.connectionNodes)
 	if connectionNode == false and self.iads:getDebugSettings().samNoConnection then
 		self.iads:printOutput(self:getDescription().." no connection to Command Center")
@@ -3267,6 +3276,10 @@ function SkynetIADSAbstractElement:hasActiveConnectionNode()
 end
 
 function SkynetIADSAbstractElement:hasWorkingPowerSource()
+	if self.iads.topology then
+		local power = self.iads.topology:hasPower(self)
+		if power ~= nil then return power end
+	end
 	local power = self:genericCheckOneObjectIsAlive(self.powerSources)
 	if power == false and self.iads:getDebugSettings().hasNoPower then
 		self.iads:printOutput(self:getDescription().." has no power")
@@ -3487,7 +3500,8 @@ function SkynetIADSAbstractRadarElement:getUsableChildRadars()
 	local usableRadars = {}
 	for i = 1, #self.childRadars do
 		local childRadar = self.childRadars[i]
-		if childRadar:hasWorkingPowerSource() and childRadar:hasActiveConnectionNode() then
+		if childRadar:hasWorkingPowerSource() and childRadar:hasActiveConnectionNode()
+			and (not self.iads.topology or self.iads.topology:canExchange(self, childRadar)) then
 			table.insert(usableRadars, childRadar)
 		end
 	end	
@@ -3517,7 +3531,8 @@ function SkynetIADSAbstractRadarElement:setToCorrectAutonomousState()
 		local parent = parents[i]
 		--of one parent exists that still is connected to the IADS, the SAM site does not have to go autonomous
 		--instead of isDestroyed() write method, hasWorkingSearchRadars()
-		if self:hasActiveConnectionNode() and self.iads:isCommandCenterUsable() and parent:hasWorkingPowerSource() and parent:hasActiveConnectionNode() and parent:getActAsEW() == true and parent:isDestroyed() == false then
+		if self:hasActiveConnectionNode() and self.iads:isCommandCenterUsable() and parent:hasWorkingPowerSource() and parent:hasActiveConnectionNode() and parent:getActAsEW() == true and parent:isDestroyed() == false
+			and (not self.iads.topology or self.iads.topology:canExchange(self, parent)) then
 			self:resetAutonomousState()
 			return
 		end
@@ -5334,7 +5349,9 @@ end
 function SkynetIADSHARMDetection:updateRadarsOfSites(sites, contact)
 	for i = 1, #sites do
 		local site = sites[i]
-		site:informOfHARM(contact)
+		if not self.iads.topology or self.iads.topology:canReceive(site, contact) then
+			site:informOfHARM(contact)
+		end
 	end
 end
 

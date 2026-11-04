@@ -47,19 +47,18 @@ def test_a_ship_is_not_wired_to_the_shore_by_range(monkeypatch: Any) -> None:
 
 
 def test_a_ship_wired_by_range_is_taken_off_the_grid() -> None:
-    """Saves carry the links a ship was given where it started, however far it has
-    sailed since. A ship the campaign wired itself keeps what the campaign wrote."""
+    """Old authored links cannot attach moving ships to shore infrastructure."""
     ship = _ship("ISOPOD", 0.0)
     wired = _ship("Naval-9", 0.0)
     power = _Site("WRASSE", "power", 1000.0, IadsRole.POWER_SOURCE)
     network = _network(ship, wired, power)
-    network.iads_config = {"Naval-9": ["WRASSE"]}
+    network.__dict__["iads_config"] = {"Naval-9": ["WRASSE"]}
     loose, kept = _node(network, ship), _node(network, wired)
     for node in (loose, kept):
         node.add_connection_for_group(power.groups[0])
         node.add_connection_for_group(node.group)
 
-    assert network.unwire_ships() == ["ISOPOD"]
+    assert network.unwire_ships() == ["ISOPOD", "Naval-9"]
     assert _wired(loose) == [] and len(loose.connections) == 1
-    assert _wired(kept) == ["WRASSE"]
+    assert _wired(kept) == []
     assert network.unwire_ships() == []

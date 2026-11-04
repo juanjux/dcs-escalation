@@ -1034,11 +1034,16 @@ with no `state` are the ones your packages have not touched.
   `CommandCenter` runs the network. The last three are **buildings** — cheap to kill,
   no missiles, and each one usually feeds several sites at once.
 - **A site needs BOTH power and comms to stay in the network.** Cut either one and it
-  drops out. One strike on a power station can drop every node listing it in
-  `depends_on` — check that list before spending a DEAD package on each launcher.
-  **Only what is in `depends_on` counts.** A site wired to nothing is treated as fully
-  powered and connected forever, so bombing a power station that site does not list
-  changes nothing at all.
+  drops out. In advanced IADS, links are rebuilt from current friendly sites and
+  coverage at the start of each turn and after loading a save. `depends_on` lists
+  direct neighbors, not the entire route. Powered towers and command centres relay
+  radio traffic over multiple hops. A site needs a continuous path to a living,
+  powered command centre; no command path means autonomous operation, even if its
+  nearest tower is intact. Separate command sectors do not share radar cues or HARM
+  warnings. Losing or repairing infrastructure updates these paths during a mission.
+  Power stations supply nearby sites, but do not relay radio traffic. An empty power
+  list still means independent power; an empty radio list is not global command.
+  Destroying one neighbor may leave an alternative route or power supply working.
 - **Power and comms do NOT do the same thing, and the difference decides your plan.**
   - **Comms cut** (`ConnectionNode`): the site goes AUTONOMOUS and reverts to plain DCS
     AI — radar **ON**, shooting at whatever it sees by itself. You took away the network,
@@ -1052,8 +1057,8 @@ with no `state` are the ones your packages have not touched.
     station at all: bombing the substation next door does nothing to them. `/iads` says
     so — such a site has no `PowerSource` in its `depends_on`, and cutting power is
     simply not an option against it. Kill the launchers and the radars instead, or cut
-    its comms to set it loose. Every other site does go dark when the building feeding
-    it dies.
+    its comms to set it loose. A site relying on external power goes dark only after
+    all of its available supplies are lost.
 - **So what do you actually gain?** Three things: it can no longer be CUED by a distant
   EWR, so it only sees what its own radar sees; it no longer engages in concert with the
   other sites; and because it goes live instead of lying dark waiting for a cue, it is
@@ -1067,7 +1072,8 @@ with no `state` are the ones your packages have not touched.
   Before you call a belt blinded, ask what else is feeding it; then kill the AWACS, push
   it back, or drive the fleet off. It works for you the same way -- your own AWACS or a
   task group covers the gap where a bombed EWR used to be, which is the cheapest way to
-  keep a belt seeing after you have lost its radars.
+  keep a belt seeing after you have lost its radars. Airborne and naval radios do not
+  restore a ground site's missing path to command.
 - **Do not re-strike a dead node.** `alive:false` means it is already down and everything
   depending on it is already degraded. Spend the sortie elsewhere.
 - **Your own network works the same way**, so keep your power stations and comms towers

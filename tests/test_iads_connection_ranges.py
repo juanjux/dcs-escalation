@@ -1,8 +1,4 @@
-"""How far comms and power reach is a setting, not a constant in the source.
-
-Only consulted when Escalation works a network out by distance: a campaign that
-wires its own IADS says what is connected to what, and no range is applied to it.
-"""
+"""Configurable coverage used to rebuild IADS topology every turn."""
 
 from __future__ import annotations
 
@@ -38,6 +34,7 @@ def test_the_options_are_read_when_they_are_set() -> None:
         **{"skynetiads.commsRangeNm": 25, "skynetiads.powerRangeNm": 60}
     )
     assert IadsRole.CONNECTION_NODE.connection_range(settings) == nautical_miles(25)
+    assert IadsRole.COMMAND_CENTER.connection_range(settings) == nautical_miles(25)
     assert IadsRole.POWER_SOURCE.connection_range(settings) == nautical_miles(60)
 
 
@@ -54,5 +51,5 @@ def test_an_unreadable_value_falls_back_rather_than_raising() -> None:
 
 
 def test_nothing_else_has_a_reach() -> None:
-    for role in (IadsRole.SAM, IadsRole.EWR, IadsRole.COMMAND_CENTER):
+    for role in (IadsRole.SAM, IadsRole.EWR):
         assert role.connection_range().meters == 0

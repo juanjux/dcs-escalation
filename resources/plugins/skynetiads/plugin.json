@@ -114,8 +114,8 @@
             "defaultValue": 100
         },
         {
-            "nameInUI": "Comms tower range (nm)",
-            "descriptionInUI": "How far a communications tower reaches when Retribution works the network out by distance. A campaign that wires its own IADS says what is connected to what and is not bound by this.",
+            "nameInUI": "Comms tower / command centre range (nm)",
+            "descriptionInUI": "Radio coverage for automatic links each turn. Powered towers and command centres relay traffic along a chain; sites without a path to command fight autonomously.",
             "mnemonic": "commsRangeNm",
             "defaultValue": 15,
             "minimumValue": 1,
@@ -123,7 +123,7 @@
         },
         {
             "nameInUI": "Power station range (nm)",
-            "descriptionInUI": "How far a power station reaches when Retribution works the network out by distance. A campaign that wires its own IADS says what is connected to what and is not bound by this.",
+            "descriptionInUI": "Power coverage used to rebuild both coalitions' IADS topology from current sites at the start of every turn.",
             "mnemonic": "powerRangeNm",
             "defaultValue": 35,
             "minimumValue": 1,
@@ -142,6 +142,10 @@
         {
             "file": "skynet-iads-compiled.lua",
             "mnemonic": "skynetiads-script"
+        },
+        {
+            "file": "skynet-topology.lua",
+            "mnemonic": "skynetiads-topology"
         }
     ],
     "configurationWorkOrders": [

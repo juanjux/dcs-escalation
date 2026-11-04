@@ -55,7 +55,6 @@ class _Site:
 def _network(*sites: _Site) -> IadsNetwork:
     network = IadsNetwork.__new__(IadsNetwork)
     network.advanced_iads = True
-    network.iads_config = {}
     network.nodes = []
     network.ground_objects = {site.original_name: cast(Any, site) for site in sites}
     network._state_map = None
@@ -109,20 +108,20 @@ def test_calling_it_again_wires_nothing_twice(monkeypatch: Any) -> None:
     assert len(node.connections) == before
 
 
-def test_a_site_the_campaign_named_is_left_to_its_config(monkeypatch: Any) -> None:
-    """What the author wrote is the author's. A named site with a deliberately empty
-    dependency list is not a site to go wiring by range."""
+def test_legacy_named_sites_are_also_wired_by_range(monkeypatch: Any) -> None:
+    """Saved authored links no longer override current distances."""
     site = _Site("Ground-15", "ewr", 0.0)
     power = _Site("RAGDOLL", "power", 1000.0, IadsRole.POWER_SOURCE)
     network = _network(site, power)
-    network.iads_config = {"Ground-15": []}
+    network.__dict__["iads_config"] = {"Ground-15": []}
     node = _node(network, site)
     monkeypatch.setattr(
         IadsNetwork, "_belongs_in_the_network", staticmethod(lambda go: go is site)
     )
+    monkeypatch.setattr(IadsNetwork, "_is_friendly", lambda self, node, tgo: True)
 
-    assert network.enrol_sites_that_arrived_late() == []
-    assert _wired(node) == []
+    assert network.enrol_sites_that_arrived_late() == ["Ground-15"]
+    assert _wired(node) == ["RAGDOLL"]
 
 
 def test_a_site_that_only_points_at_itself_counts_as_unwired() -> None:
@@ -155,7 +154,7 @@ def test_a_site_the_campaign_did_not_name_keeps_its_grid_when_it_changes(
     comms = _Site("IMPALA", "comms", 2000.0, IadsRole.CONNECTION_NODE)
     named = _Site("Ground-7", "aa", 900000.0, IadsRole.SAM)
     network = _network(site, power, comms, named)
-    network.iads_config = {"Ground-7": ["MOA"]}
+    network.__dict__["iads_config"] = {"Ground-7": ["MOA"]}
     monkeypatch.setattr(
         IadsNetwork,
         "_belongs_in_the_network",
@@ -165,7 +164,9 @@ def test_a_site_the_campaign_did_not_name_keeps_its_grid_when_it_changes(
     _node(network, site)
     network.enrol_sites_that_arrived_late()
     events: Any = SimpleNamespace(
-        delete_iads_connection=lambda cid: None, update_iads_node=lambda node: None
+        delete_iads_connection=lambda cid: None,
+        update_iads_node=lambda node: None,
+        updated_iads=set(),
     )
 
     network._update_tgo(cast(Any, site), events)
@@ -174,5 +175,5 @@ def test_a_site_the_campaign_did_not_name_keeps_its_grid_when_it_changes(
     [turkey] = [n for n in network.nodes if n.group.ground_object is site]
     [ground_7] = [n for n in network.nodes if n.group.ground_object is named]
     assert _wired(turkey) == ["IMPALA", "MOA"]
-    # A site the campaign named still gets what the campaign wrote, however far.
-    assert _wired(ground_7) == ["MOA"]
+    # Legacy authored links outside the configured reach are discarded.
+    assert _wired(ground_7) == []

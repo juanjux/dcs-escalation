@@ -85,6 +85,7 @@ class SkynetNode:
     iads_role: IadsRole
     properties: dict[str, str] = field(default_factory=dict)
     connections: dict[str, list[str]] = field(default_factory=lambda: defaultdict(list))
+    independent_comms: bool = False
 
     @staticmethod
     def dcs_name_for_group(group: IadsGroundGroup) -> str:
@@ -115,6 +116,7 @@ class SkynetNode:
             group.ground_object.coalition.player,
             group.iads_role,
         )
+        node.independent_comms = isinstance(group.ground_object, NavalGroundObject)
         unit_type = group.units[0].unit_type
         if unit_type is not None and isinstance(unit_type, GroundUnitType):
             node.properties = unit_type.skynet_properties.to_dict()
@@ -144,44 +146,34 @@ class IadsNetworkNode:
 
     def add_connection_for_group(self, group: IadsGroundGroup) -> None:
         """Add connection for the given GroundGroup with unique ID"""
+        if any(existing is group for existing in self.connections.values()):
+            return
         self.connections[uuid.uuid4()] = group
 
 
 class IadsNetwork:
-    """IADS Network consisting of multiple Network nodes and connections. The Network represents all possible connections of ground objects regardless if a tgo is under control of red or blue. The network can run in either advanced or basic mode. The advanced network can be created by a given configuration in the campaign yaml or computed by Range. The basic mode is a fallback mode which does not use Comms, Power or Command Centers. The network will be used to visualize all connections at the map and for creating the needed Lua data for the skynet plugin"""
+    """Coalition-separated IADS topology derived from current sites and distances."""
 
     def __init__(
-        self, advanced: bool, iads_data: list[str | dict[str, list[str]]]
+        self, advanced: bool, iads_data: list[str | dict[str, list[str]]] | None = None
     ) -> None:
         self.advanced_iads = advanced
         self.ground_objects: dict[str, TheaterGroundObject] = {}
         self.nodes: list[IadsNetworkNode] = []
-        self.iads_config: dict[str, list[str]] = defaultdict(list)
-
-        # Load Iads config from the campaign data
-        for element in iads_data:
-            if isinstance(element, str):
-                self.iads_config[element] = []
-            elif isinstance(element, dict):
-                for iads_node, iads_connections in element.items():
-                    self.iads_config[iads_node] = iads_connections
-            else:
-                raise RuntimeError("Invalid iads_config in campaign")
+        # The optional second argument is accepted for older callers, never used
+        # to restore authored links. Saved topology is rebuilt by the migrator.
 
         self._state_map: Optional[IadsStateMap] = None
-        # A network built by this code keeps its destroyed sites, and enrols the sites
-        # the campaign never named, so the one-time repairs in the migrator have
-        # nothing to do to it.
-        self.keeps_destroyed_nodes = True
-        self.enrols_unnamed_sites = True
 
     def __getstate__(self) -> dict[str, Any]:
         # Derived from the nodes, so it is rebuilt rather than carried in the save.
         state = self.__dict__.copy()
+        state.pop("iads_config", None)
         state["_state_map"] = None
         return state
 
     def __setstate__(self, state: dict[str, Any]) -> None:
+        state.pop("iads_config", None)
         state.setdefault("_state_map", None)
         self.__dict__.update(state)
 
@@ -203,6 +195,11 @@ class IadsNetwork:
         """Get all skynet nodes from the IADS Network"""
         skynet_nodes: list[SkynetNode] = []
         for node in self.nodes:
+            if not any(
+                node.group.ground_object.is_friendly(side)
+                for side in (Player.BLUE, Player.RED)
+            ):
+                continue
             if getattr(node.group.ground_object, "in_transit", False):
                 continue
             if game.iads_considerate_culling(node.group.ground_object):
@@ -259,49 +256,6 @@ class IadsNetwork:
             skynet_nodes.append(skynet_node)
         return skynet_nodes
 
-    def _update_iads_comms_and_power(
-        self, tgo: TheaterGroundObject, events: GameUpdateEvents
-    ) -> None:
-        assert self.advanced_iads, "_update_iads_comms_and_power requires advanced IADS"
-        is_comm_or_power = IadsRole.for_category(tgo.category).is_comms_or_power
-        assert is_comm_or_power, "Invalid TGO was given for _update_iads_building"
-
-        """ 
-        Delete/Update connections to the comm tower/power station
-        If this function is called, it should imply only 2 possibilities (unless I missed one):
-            1) A capture event occurred, thus the building now belongs to the capturing team
-                => All connections to this building are to the enemy, thus delete them
-                 (mind that no new connections could have been formed since all TGOs were depopulated)
-            2) The building was destroyed during a mission
-                => In this case we don't need to delete the connections
-                    instead we just update the nodes that connect to this building
-                    because those connections are still coming from friendly TGOs
-        Given the above, we should be able to use the following implications:
-            If the building is friendly compared to the node that we're checking
-                => Building was destroyed during mission
-                => Update nodes that connect to this building
-            Otherwise if the building is not friendly compared to the node we're checking
-                => Capture event occurred
-                => Delete all connections to this building
-
-        TODO: clean up the code below by wrapping comm towers and power stations
-                preferably in a class like IadsNetworkNode, keeping a reference to connected nodes
-        """
-        for node in self.nodes:
-            to_delete = []
-            for cID in node.connections:
-                group = node.connections[cID]
-                if group.ground_object is tgo:
-                    if self._is_friendly(node, tgo):
-                        events.update_iads_node(node)
-                    else:
-                        to_delete.append(cID)
-                        events.delete_iads_connection(cID)
-            for cID in to_delete:
-                del node.connections[cID]
-        if not self.iads_config:
-            self._update_network(tgo, events)
-
     def update_tgo(self, tgo: TheaterGroundObject, events: GameUpdateEvents) -> None:
         """Update the IADS Network for the given TGO, and anything it drags with it."""
         # One site's power station going down changes what half the network is doing,
@@ -310,17 +264,28 @@ class IadsNetwork:
         # half, bombing a substation leaves its SAMs drawing confident threat rings
         # until the campaign is reloaded, because nothing touched THOSE objects.
         before = {obj: status for obj, status in self.state_map}
+        connectivity = self.state_map.connectivity
+        before_links = (
+            {
+                cid: connectivity.link_operational(node, group)
+                for node in self.nodes
+                for cid, group in node.connections.items()
+            }
+            if connectivity is not None
+            else None
+        )
         self.invalidate_state_map()
         try:
             self._update_tgo(tgo, events)
         finally:
-            self._push_state_changes(tgo, before, events)
+            self._push_state_changes(tgo, before, events, before_links)
 
     def _push_state_changes(
         self,
         tgo: TheaterGroundObject,
         before: dict[TheaterGroundObject, IadsStatus],
         events: GameUpdateEvents,
+        before_links: dict[UUID, bool] | None = None,
     ) -> None:
         after = {obj: status for obj, status in self.state_map}
         changed = {
@@ -334,23 +299,50 @@ class IadsNetwork:
         # something that changed is redrawn: a command centre going down cuts the links
         # of the sites that report to it, which are their nodes, not its own.
         changed.add(tgo)
+        connectivity = self.state_map.connectivity
         for node in self.nodes:
-            if node.group.ground_object in changed or any(
-                group.ground_object in changed for group in node.connections.values()
+            # Relays have no radar status, but a remote outage can change their
+            # outgoing links without changing either endpoint's physical health.
+            link_changed = (
+                before_links is not None
+                and connectivity is not None
+                and any(
+                    before_links.get(cid) != connectivity.link_operational(node, group)
+                    for cid, group in node.connections.items()
+                )
+            )
+            if link_changed:
+                events.update_tgo(node.group.ground_object)
+            if (
+                node.group.ground_object in changed
+                or any(
+                    group.ground_object in changed
+                    for group in node.connections.values()
+                )
+                or link_changed
             ):
                 events.update_iads_node(node)
 
     def _update_tgo(self, tgo: TheaterGroundObject, events: GameUpdateEvents) -> None:
-        if self.advanced_iads and IadsRole.for_category(tgo.category).is_comms_or_power:
-            return self._update_iads_comms_and_power(tgo, events)
+        self.ground_objects[tgo.original_name] = tgo
         # Remove existing nodes for the given tgo. Iterate a copy: removing from the
         # list being walked skips the element after each hit, so a TGO with more than
         # one node kept a stale one.
         for cn in list(self.nodes):
             if cn.group.ground_object == tgo:
                 self.nodes.remove(cn)
+                events.updated_iads.discard(cn)
                 for cID in cn.connections:
                     events.delete_iads_connection(cID)
+
+        # Incoming links must not retain groups replaced by a repair or purchase.
+        # A capture also removes links to the previous owner's infrastructure.
+        for other in self.nodes:
+            for cid, group in list(other.connections.items()):
+                if group.ground_object is tgo:
+                    del other.connections[cid]
+                    events.delete_iads_connection(cid)
+                    events.update_iads_node(other)
 
         node = self.node_for_tgo(tgo)
         if node is None:
@@ -358,15 +350,8 @@ class IadsNetwork:
             return
         events.update_iads_node(node)
         if self.advanced_iads:
-            if tgo.original_name in self.iads_config:
-                self._add_connections_from_config(node)
-            elif not self.iads_config or self._belongs_in_the_network(tgo):
-                # A site the campaign never named was wired by range when it joined,
-                # so it is wired by range again. Read from the config, which has
-                # nothing to say about it, a unit dying or being repaired left the
-                # site with no power station and no comms tower, and Skynet reads
-                # that as a site that can lose neither.
-                self._make_advanced_connections_by_range(node)
+            self._make_advanced_connections_by_range(node)
+            self._update_network(tgo, events)
 
     def node_for_group(self, group: IadsGroundGroup) -> IadsNetworkNode:
         """Get existing node from the iads network or create a new node"""
@@ -434,80 +419,38 @@ class IadsNetwork:
             logging.debug(f"TGO {tgo.name} not participating to IADS")
         return node
 
-    def initialize_network(self, ground_objects: Iterator[TheaterGroundObject]) -> None:
-        """Initialize the IADS network in advanced or basic mode depending on the campaign"""
+    def initialize_network(
+        self,
+        ground_objects: Iterator[TheaterGroundObject],
+        events: GameUpdateEvents | None = None,
+    ) -> None:
+        """Rebuild from current objects, discarding old groups, positions and links."""
+        if events is not None:
+            for node in self.nodes:
+                for connection_id in node.connections:
+                    events.delete_iads_connection(connection_id)
+            events.updated_iads.clear()
+        self.nodes = []
+        self.ground_objects = {}
         for tgo in ground_objects:
             self.ground_objects[tgo.original_name] = tgo
         if self.advanced_iads:
-            # Advanced mode
-            if self.iads_config:
-                # Load from Configuration File
-                self.initialize_network_from_config()
-            else:
-                # Load from Range
-                self.initialize_network_from_range()
+            self.initialize_network_from_range()
 
         # basic mode if no advanced iads support or network init created no connections
         if not self.nodes:
             self.initialize_basic_iads()
         self.invalidate_state_map()
+        if events is not None:
+            for node in self.nodes:
+                events.update_iads_node(node)
+                events.update_tgo(node.group.ground_object)
 
     def initialize_basic_iads(self) -> None:
         """Initialize the IADS Network in basic mode (SAM & EWR only)"""
         for go in self.ground_objects.values():
             if isinstance(go, IadsGroundObject):
                 self.node_for_tgo(go)
-
-    def initialize_network_from_config(self) -> None:
-        """Initialize the IADS Network from a configuration"""
-        for primary_node in self.iads_config.keys():
-            warning_msg = (
-                f"IADS: No ground object found for {primary_node}."
-                f" This can be normal behaviour."
-            )
-            if primary_node in self.ground_objects:
-                node = self.node_for_tgo(self.ground_objects[primary_node])
-            else:
-                node = None
-                warning_msg = (
-                    f"IADS: No ground object found for connection {primary_node}"
-                )
-
-            if node is None:
-                # Log a warning as this can be normal. Possible case is for example
-                # when the campaign request a Long Range SAM but the faction has none
-                # available. Therefore the TGO will not get populated at all
-                logging.warning(warning_msg)
-                continue
-            self._add_connections_from_config(node)
-        self._enrol_sites_the_config_does_not_name()
-
-    def _enrol_sites_the_config_does_not_name(self) -> None:
-        """Bring in the sites the campaign never listed, wired by range.
-
-        Only the keys of iads_config become nodes, so a site the author did not name
-        is left out of the network entirely however much it belongs in one: it is not
-        cued, it is not directed, and bombing the power station next to it changes
-        nothing.
-
-        The author cannot name them all. A campaign pins some objectives by name and
-        leaves the rest as slots -- Ground-3, Naval-5 -- and what lands in a slot is
-        the faction's choice, made long after the campaign was written. A GPS jamming
-        site added to every faction, a SAM a faction fields that the campaign did not
-        foresee: neither can appear in a config written before either existed.
-
-        What the config does say is still honoured exactly. These are added after it,
-        and only if the config did not already name them.
-        """
-        for go in self.ground_objects.values():
-            if go.original_name in self.iads_config:
-                continue
-            if not self._belongs_in_the_network(go):
-                continue
-            node = self.node_for_tgo(go)
-            if node is None:
-                continue
-            self._make_advanced_connections_by_range(node)
 
     def enrol_sites_that_arrived_late(self) -> list[str]:
         """Wire any site that belongs in the network and has no grid link.
@@ -522,8 +465,6 @@ class IadsNetwork:
         """
         enrolled = []
         for go in self.ground_objects.values():
-            if go.original_name in self.iads_config:
-                continue
             if not self._belongs_in_the_network(go):
                 continue
             node = self.node_for_tgo(go)
@@ -554,25 +495,8 @@ class IadsNetwork:
             return True
         return (
             isinstance(go, IadsBuildingGroundObject)
-            and IadsRole.for_category(go.category) is IadsRole.COMMAND_CENTER
+            and IadsRole.for_category(go.category) in STATIC_BACKED_ROLES
         )
-
-    def _add_connections_from_config(self, node: IadsNetworkNode) -> None:
-        """Add all connections for the given primary node based on the iads_config"""
-        primary_node = node.group.ground_object.original_name
-        # iads_config is a defaultdict and is pickled with the Game, so subscripting it
-        # here quietly inserted an empty entry for every objective that is not in the
-        # campaign's config -- and update_tgo reaches this for any site that self-enrols
-        # after a unit dies. The saved config drifted away from the campaign yaml.
-        connections = self.iads_config.get(primary_node, [])
-        for secondary_node in connections:
-            try:
-                node.add_connection_for_tgo(self.ground_objects[secondary_node])
-            except KeyError:
-                logging.error(
-                    f"IADS: No ground object found for connection {secondary_node}"
-                )
-                continue
 
     def initialize_network_from_range(self) -> None:
         """Initialize the IADS Network by range"""
@@ -586,24 +510,28 @@ class IadsNetwork:
                 self._make_advanced_connections_by_range(node)
 
     def _is_friendly(self, node: IadsNetworkNode, tgo: TheaterGroundObject) -> bool:
-        node_friendly = node.group.ground_object.is_friendly(Player.BLUE)
-        tgo_friendly = tgo.is_friendly(Player.BLUE)
-        return node_friendly == tgo_friendly
+        return any(
+            node.group.ground_object.is_friendly(side) and tgo.is_friendly(side)
+            for side in (Player.BLUE, Player.RED)
+        )
 
     def _update_network(
         self, tgo: TheaterGroundObject, events: GameUpdateEvents
     ) -> None:
-        if tgo.is_dead:
-            return
         iads_role = IadsRole.for_category(tgo.category)
-        if not iads_role.is_comms_or_power:
+        if iads_role not in STATIC_BACKED_ROLES:
             return
         reach = iads_role.connection_range(_settings_of(tgo)).meters
         for node in self.nodes:
-            if self._is_ship(node):
+            if (
+                self._is_ship(node)
+                or node.group.ground_object is tgo
+                or getattr(node.group.ground_object, "in_transit", False)
+                or getattr(tgo, "in_transit", False)
+            ):
                 continue
             dist = node.group.ground_object.position.distance_to_point(tgo.position)
-            in_range = dist < reach
+            in_range = dist <= reach
             if in_range and self._is_friendly(node, tgo):
                 node.add_connection_for_tgo(tgo)
                 events.update_iads_node(node)
@@ -657,12 +585,11 @@ class IadsNetwork:
         return sorted(restored)
 
     def unwire_ships(self) -> list[str]:
-        """Take the ships the campaign did not wire off the grid they were given by
-        range. What a campaign's config wires is left as it wrote it."""
+        """Remove shore dependencies retained in old saves from all ships."""
         unwired = []
         for node in self.nodes:
             tgo = node.group.ground_object
-            if not self._is_ship(node) or tgo.original_name in self.iads_config:
+            if not self._is_ship(node):
                 continue
             grid = [
                 cid
@@ -678,13 +605,20 @@ class IadsNetwork:
         return unwired
 
     def _make_advanced_connections_by_range(self, node: IadsNetworkNode) -> None:
-        if self._is_ship(node):
+        if self._is_ship(node) or getattr(
+            node.group.ground_object, "in_transit", False
+        ):
             return
         tgo = node.group.ground_object
-        # Find nearby Power or Connection
+        # Destroyed dependencies remain represented; dropping the last one would
+        # make Skynet treat the site as independently powered or connected.
         for nearby_go in self.ground_objects.values():
             iads_role = IadsRole.for_category(nearby_go.category)
-            if not iads_role.is_comms_or_power or nearby_go == tgo:
+            if (
+                iads_role not in STATIC_BACKED_ROLES
+                or nearby_go is tgo
+                or getattr(nearby_go, "in_transit", False)
+            ):
                 continue
             dist = nearby_go.position.distance_to_point(tgo.position)
             in_range = (

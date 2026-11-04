@@ -7,9 +7,7 @@ from typing import Any
 from game.data.groups import GroupTask
 from game.utils import Distance, meters, nautical_miles
 
-#: What the two reach when Escalation works a network out by distance rather than
-#: reading it from the campaign. Plugin options, so a theatre whose infrastructure is
-#: further apart than this can say so.
+#: Infrastructure coverage used to rebuild each coalition's topology every turn.
 DEFAULT_COMMS_RANGE_NM = 15.0
 DEFAULT_POWER_RANGE_NM = 35.0
 
@@ -74,13 +72,8 @@ class IadsRole(Enum):
         return cls.NO_BEHAVIOR
 
     def connection_range(self, settings: Any = None) -> Distance:
-        """How far this piece of infrastructure feeds, by distance.
-
-        Only consulted when the network is computed rather than read from the
-        campaign: a designer who wires an IADS by hand says what is connected to
-        what, and no range is applied to it.
-        """
-        if self == IadsRole.CONNECTION_NODE:
+        """Coverage radius; command centres use the communications range."""
+        if self in (IadsRole.CONNECTION_NODE, IadsRole.COMMAND_CENTER):
             return nautical_miles(
                 _range_option(settings, "commsRangeNm", DEFAULT_COMMS_RANGE_NM)
             )

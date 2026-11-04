@@ -926,6 +926,12 @@ class Game:
         # Update statistics
         self.game_stats.update(self)
 
+        # Rebuild before either coalition plans flights or computes threat zones.
+        with logged_duration("Rebuild IADS topology"):
+            self.theater.iads_network.initialize_network(
+                self.theater.ground_objects, events
+            )
+
         # Plan flights & combat for next turn
         with logged_duration("Threat zone computation"):
             self.compute_threat_zones(events)

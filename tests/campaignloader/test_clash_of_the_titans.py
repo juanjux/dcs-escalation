@@ -52,10 +52,20 @@ def authored() -> Any:
         if hasattr(point, "original_name")
     }
     config = {
-        name: links
-        for entry in campaign.data["iads_config"]
-        for name, links in entry.items()
+        name: [
+            other_name
+            for other_name, (other_cp, other_kind, other) in placements.items()
+            if other_name != name
+            and other_cp.starting_coalition is cp.starting_coalition
+            and other_kind
+            in {"iads_connection_node", "iads_power_source", "iads_command_center"}
+            and point.distance_to_point(other)
+            <= (35 if other_kind == "iads_power_source" else 15) * 1852
+        ]
+        for name, (cp, kind, point) in placements.items()
+        if kind in IADS_KINDS and not cp.starting_coalition.is_neutral
     }
+    assert "iads_config" not in campaign.data
     return campaign, theater, placements, config
 
 
@@ -155,8 +165,8 @@ def test_all_active_air_defences_and_commands_have_redundant_local_links(
                 assert source_kind == "iads_command_center"
         assert counts["iads_connection_node"] >= 2, name
         assert counts["iads_power_source"] >= 2, name
-        if kind != "iads_command_center":
-            assert counts["iads_command_center"] == 2, name
+        # Command links, like tower links, now have a radio coverage limit.
+        assert counts["iads_command_center"] <= 2, name
 
 
 def test_infrastructure_is_on_land_and_owned_by_its_named_side(authored: Any) -> None:
@@ -545,7 +555,7 @@ def test_authored_force_caps_limit_stealth_and_retain_red_modern_fighters(
     assert generated.blue.budget == generated.red.budget == 2000
 
 
-def test_generated_network_is_operational_and_exports_to_skynet(
+def test_generated_network_reports_radio_gaps_and_exports_to_skynet(
     generated: Game,
 ) -> None:
     network = generated.theater.iads_network
@@ -555,8 +565,20 @@ def test_generated_network_is_operational_and_exports_to_skynet(
         if not site.control_point.captured.is_neutral
     ]
     assert len(owned) == 45
-    assert all(status.state is IadsState.NETWORKED for _, status in owned)
-    assert len(network.skynet_nodes(generated)) == 45
+    # The existing layout has local redundancy, but not a continuous radio path
+    # between all sectors. Campaign layout changes are separate from topology.
+    states = {site.original_name: status.state for site, status in owned}
+    assert states["Blue IADS Command Bagram"] is IadsState.NETWORKED
+    assert states["Ground-13"] is IadsState.AUTONOMOUS
+    assert states["Blue EWR Sharana"] is IadsState.AUTONOMOUS
+    assert all(
+        state in (IadsState.NETWORKED, IadsState.AUTONOMOUS)
+        for state in states.values()
+    )
+    nodes = network.skynet_nodes(generated)
+    assert len([node for node in nodes if not node.iads_role.is_comms_or_power]) == 45
+    assert any(node.iads_role is IadsRole.CONNECTION_NODE for node in nodes)
+    assert any(node.iads_role is IadsRole.POWER_SOURCE for node in nodes)
     for cp in generated.theater.controlpoints:
         assert (
             sum(isinstance(tgo, MotorpoolGroundObject) for tgo in cp.ground_objects)
@@ -582,20 +604,21 @@ def test_generated_jammers_are_real_jammers_and_radars_still_detect(
         assert radar.max_detection_range().meters > 0
 
 
-def test_losing_one_infrastructure_object_does_not_break_the_network(
+def test_local_tower_and_power_redundancy_survives_single_losses(
     generated: Game,
 ) -> None:
     network = generated.theater.iads_network
     infrastructure = [
         tgo
         for tgo in generated.theater.ground_objects
-        if tgo.category in ("comms", "power", "commandcenter")
+        if tgo.category in ("comms", "power")
     ]
-    assert len(infrastructure) == 50
+    assert len(infrastructure) == 46
+    initial = {site: status.state for site, status in network.state_map}
     for lost in infrastructure:
         picture = IadsStateMap(network, [lost])
         assert all(
-            status.state is IadsState.NETWORKED
+            status.state is initial[site]
             for site, status in picture
             if site is not lost and not site.control_point.captured.is_neutral
         ), lost.original_name

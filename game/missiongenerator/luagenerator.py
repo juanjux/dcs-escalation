@@ -463,6 +463,9 @@ class LuaGenerator:
 
         # Generate IADS Lua Item
         iads_object = lua_data.add_item("IADS")
+        iads_object.add_key_value(
+            "automaticTopology", self.game.theater.iads_network.advanced_iads
+        )
         # These should always be created even if they are empty.
         iads_object.get_or_create_item("BLUE")
         iads_object.get_or_create_item("RED")
@@ -475,6 +478,8 @@ class LuaGenerator:
             iads_type = coalition.get_or_create_item(node.iads_role.value)
             iads_element = iads_type.add_item()
             iads_element.add_key_value("dcsGroupName", node.dcs_name)
+            if node.independent_comms:
+                iads_element.add_key_value("independentComms", True)
             if node.iads_role in [IadsRole.SAM, IadsRole.SAM_AS_EWR]:
                 # add additional SkynetProperties to SAM Sites
                 for property, value in node.properties.items():
@@ -564,15 +569,17 @@ class LuaGenerator:
 
 class LuaValue:
     key: Optional[str]
-    value: str | list[str]
+    value: str | list[str] | bool
 
-    def __init__(self, key: Optional[str], value: str | list[str]):
+    def __init__(self, key: Optional[str], value: str | list[str] | bool):
         self.key = key
         self.value = value
 
     def serialize(self) -> str:
         serialized_value = self.key + " = " if self.key else ""
-        if isinstance(self.value, str):
+        if isinstance(self.value, bool):
+            serialized_value += "true" if self.value else "false"
+        elif isinstance(self.value, str):
             serialized_value += f'"{escape_string_for_lua(self.value)}"'
         else:
             escaped_values = [f'"{escape_string_for_lua(v)}"' for v in self.value]
@@ -597,7 +604,7 @@ class LuaItem(ABC):
     def add_data_array(self, key: str, values: list[str]) -> None:
         self._add_value(LuaValue(key, values))
 
-    def add_key_value(self, key: str, value: str) -> None:
+    def add_key_value(self, key: str, value: str | bool) -> None:
         self._add_value(LuaValue(key, value))
 
     def _add_value(self, value: LuaValue) -> None:
