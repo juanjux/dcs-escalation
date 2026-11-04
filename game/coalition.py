@@ -230,7 +230,7 @@ class Coalition:
 
         # When the LLM commands OPFOR, leave red's air plan empty for it to author
         # via the API. The scripted commander still runs as a fallback at Take Off if
-        # the AI never fills it (see game.agent.service.run_opfor_fallback_if_needed).
+        # the AI issues no orders (see game.agent.service.run_opfor_fallback_if_needed).
         # Procurement still runs so red reinforces automatically either way.
         ai_controls_red = self.player.is_red and self.game.settings.opfor_ai_enabled
         if not is_turn_0 and not ai_controls_red:

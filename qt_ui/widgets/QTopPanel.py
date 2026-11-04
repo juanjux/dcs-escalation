@@ -492,8 +492,8 @@ class QTopPanel(QFrame):
             QMessageBox.warning(self, "Incompatible mission plugins", str(ex))
             return
 
-        # OPFOR-AI fallback: if red was left for the LLM but it never played, run the
-        # scripted commander so red's turn is never empty.
+        # Fill an unplanned OPFOR air turn, but preserve ground orders and any
+        # deliberately empty air plan recorded by the external commander.
         try:
             from game.agent import service
 

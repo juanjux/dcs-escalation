@@ -63,6 +63,29 @@ def _require_game() -> Game:
     return GameContext.require()
 
 
+def _order_succeeded(result: Any) -> bool:
+    if isinstance(result, list):
+        return any(_order_succeeded(item) for item in result)
+    if isinstance(result, dict):
+        return bool(result.get("ok", not result.get("error")))
+    return bool(getattr(result, "ok", False))
+
+
+def opfor_order(fn: Callable[..., Any]) -> Callable[..., Any]:
+    """Record successful orders separately from the presence of planned flights."""
+
+    @opfor_only
+    @functools.wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        game = _require_game()
+        result = fn(*args, **kwargs)
+        if _order_succeeded(result):
+            game.opfor_ai_orders_turn = game.turn
+        return result
+
+    return wrapper
+
+
 @opfor_only
 def turn_context(side: str = "red") -> views.TurnContextView:
     """Operational picture for ``side`` (red/blue) from the live game."""
@@ -269,7 +292,7 @@ def ticket_choices(side: str, ticket: int, picked: list[str]) -> dict:
     return highcommand.ticket_choices(_require_game(), side, ticket, picked)
 
 
-@opfor_only
+@opfor_order
 def spend_ticket(side: str, ticket: int, picked: list[str]):
     """Spend a ticket on the picks made."""
     from game.agent import highcommand
@@ -277,7 +300,7 @@ def spend_ticket(side: str, ticket: int, picked: list[str]):
     return highcommand.spend_ticket(_require_game(), side, ticket, picked)
 
 
-@opfor_only
+@opfor_order
 def create_packages(side, specs):
     """Plan packages from the LLM's specs (reusing the engine). Lazy-imports the
     write path so the read service stays light."""
@@ -294,7 +317,7 @@ def evaluate_package(side, spec):
     return planner.evaluate_package(_require_game(), side, spec)
 
 
-@opfor_only
+@opfor_order
 def set_package_shared_route(side, index, single_route_for_all_flights):
     from game.agent import planner
 
@@ -303,7 +326,7 @@ def set_package_shared_route(side, index, single_route_for_all_flights):
     )
 
 
-@opfor_only
+@opfor_order
 def edit_waypoint(side, flight_id, waypoint_idx, lat=None, lng=None, alt_m=None):
     """Move/adjust a flight waypoint (position and/or altitude). Never deletes."""
     from game.agent import planner
@@ -337,7 +360,7 @@ def flight_crew(side: str, flight_id: str) -> dict:
     return planner.flight_crew(_require_game(), side, flight_id)
 
 
-@opfor_only
+@opfor_order
 def answer_leave_request(
     side: str, squadron_id: str, pilot_name: str, grant: bool, turns: int = 0
 ):
@@ -349,7 +372,7 @@ def answer_leave_request(
     )
 
 
-@opfor_only
+@opfor_order
 def set_pilot_leave(
     side: str,
     squadron_id: str,
@@ -365,7 +388,7 @@ def set_pilot_leave(
     )
 
 
-@opfor_only
+@opfor_order
 def set_flight_crew(side: str, flight_id: str, seat: int, pilot_name):
     """Put a named pilot in a seat, or empty it."""
     from game.agent import planner
@@ -373,7 +396,7 @@ def set_flight_crew(side: str, flight_id: str, seat: int, pilot_name):
     return planner.set_flight_crew(_require_game(), side, flight_id, seat, pilot_name)
 
 
-@opfor_only
+@opfor_order
 def set_flight_loadout(side, flight_id, loadout):
     """Re-arm an existing flight (named loadout or {pylon: clsid})."""
     from game.agent import planner
@@ -420,14 +443,14 @@ def get_waypoints(side: str = "red", flight_id: str = "") -> dict:
     return {"flight_id": str(flight_id), "waypoints": waypoints}
 
 
-@opfor_only
+@opfor_order
 def delete_package(side, index):
     from game.agent import planner
 
     return planner.delete_package(_require_game(), side, index)
 
 
-@opfor_only
+@opfor_order
 def set_package_tot(side, index, tot_minutes):
     """Set/clear a committed package's Time-On-Target (minutes into the mission; None = ASAP)."""
     from game.agent import planner
@@ -435,35 +458,35 @@ def set_package_tot(side, index, tot_minutes):
     return planner.set_package_tot(_require_game(), side, index, tot_minutes)
 
 
-@opfor_only
+@opfor_order
 def clear_packages(side):
     from game.agent import planner
 
     return planner.clear_packages(_require_game(), side)
 
 
-@opfor_only
+@opfor_order
 def buy_aircraft(side, squadron_id, quantity=1):
     from game.agent import planner
 
     return planner.buy_aircraft(_require_game(), side, squadron_id, quantity)
 
 
-@opfor_only
+@opfor_order
 def sell_aircraft(side, squadron_id, quantity=1):
     from game.agent import planner
 
     return planner.sell_aircraft(_require_game(), side, squadron_id, quantity)
 
 
-@opfor_only
+@opfor_order
 def buy_ground(side, cp_id, unit_name, quantity=1):
     from game.agent import planner
 
     return planner.buy_ground(_require_game(), side, cp_id, unit_name, quantity)
 
 
-@opfor_only
+@opfor_order
 def set_stance(side, friendly_cp_id, enemy_cp_id, stance):
     from game.agent import planner
 
@@ -472,28 +495,28 @@ def set_stance(side, friendly_cp_id, enemy_cp_id, stance):
     )
 
 
-@opfor_only
+@opfor_order
 def move_ship(side, ship_id, lat=None, lng=None):
     from game.agent import planner
 
     return planner.move_ship(_require_game(), side, ship_id, lat, lng)
 
 
-@opfor_only
+@opfor_order
 def repair(side, asset_id, quantity=None, unit_ids=None):
     from game.agent import planner
 
     return planner.repair(_require_game(), side, asset_id, quantity, unit_ids)
 
 
-@opfor_only
+@opfor_order
 def cancel_building_repair(side, asset_id, unit_ids=None):
     from game.agent import planner
 
     return planner.cancel_building_repair(_require_game(), side, asset_id, unit_ids)
 
 
-@opfor_only
+@opfor_order
 def relocate_squadron(side, squadron_id, dest_cp_id, confirm_damaged_sale=False):
     from game.agent import planner
 
@@ -516,7 +539,7 @@ def workshops(side: str = "red") -> list[dict]:
     ]
 
 
-@opfor_only
+@opfor_order
 def hire_aircraft_mechanic(side: str, cp_id: str):
     from game.agent import planner, schemas
     from game.aircraftmaintenance import hire_mechanic
@@ -532,7 +555,7 @@ def hire_aircraft_mechanic(side: str, cp_id: str):
         return schemas.OpResult(ok=False, error=str(exc))
 
 
-@opfor_only
+@opfor_order
 def sell_damaged_aircraft(side: str, squadron_id: str, repair_id: str):
     from game.agent import planner, schemas
     from game.aircraftmaintenance import sell_damaged
@@ -570,7 +593,7 @@ def relocation_workshop_quote(side: str, squadron_id: str) -> dict:
     }
 
 
-@opfor_only
+@opfor_order
 def transfer_ground(
     side, origin_cp_id, dest_cp_id, unit_name, quantity=1, by_air=False
 ):
@@ -651,7 +674,7 @@ def preview_missile_target(side: str, request: schemas.MissileTargetRequest) -> 
     )
 
 
-@opfor_only
+@opfor_order
 def assign_missile_target(side: str, request: schemas.MissileTargetRequest) -> dict:
     from game.theater.player import Player
     from qt_ui.missiletargets import apply
@@ -668,7 +691,7 @@ def assign_missile_target(side: str, request: schemas.MissileTargetRequest) -> d
     )
 
 
-@opfor_only
+@opfor_order
 def clear_missile_target(side: str, source_id: str) -> dict:
     from uuid import UUID
     from game.theater.player import Player
@@ -698,7 +721,7 @@ def preview_ground_movement(side: str, request: schemas.GroundMovementRequest) -
     return _movement_call(lambda game, _: groundmovement.preview_view(game, request))
 
 
-@opfor_only
+@opfor_order
 def dispatch_ground_movement(
     side: str, request: schemas.GroundMovementDispatchRequest
 ) -> dict:
@@ -720,7 +743,7 @@ def ground_movements(side: str = "red") -> list[dict]:
     )
 
 
-@opfor_only
+@opfor_order
 def stop_ground_movement(side: str, order_id: str) -> dict:
     from uuid import UUID
     from game.agent import groundmovement
@@ -730,7 +753,7 @@ def stop_ground_movement(side: str, order_id: str) -> dict:
     )
 
 
-@opfor_only
+@opfor_order
 def set_flight_tot_offset(side, flight_id, minutes):
     """Shift one flight's TOT relative to its package's (negative = ahead)."""
     from game.agent import planner
@@ -738,7 +761,7 @@ def set_flight_tot_offset(side, flight_id, minutes):
     return planner.set_flight_tot_offset(_require_game(), side, flight_id, minutes)
 
 
-@opfor_only
+@opfor_order
 def rebuild_ground_object(side, tgo_id, force_group, layout, groups=None):
     from game.agent import planner
 
@@ -832,8 +855,9 @@ def prev_turns(n: int = 3) -> list:
 
 
 def run_opfor_fallback_if_needed() -> dict:
-    """If OPFOR-AI is on but red's ATO is empty (the LLM never played), run the
-    scripted commander so the turn is never empty. Called at Take Off."""
+    """Plan missing air missions only if OPFOR has issued no orders this turn."""
+    from game.theater.player import Player
+
     game = _require_game()
     if not getattr(game.settings, "opfor_ai_enabled", False):
         return {"ran": False, "reason": "opfor_ai disabled"}
@@ -844,7 +868,21 @@ def run_opfor_fallback_if_needed() -> dict:
             "reason": "AI already planned",
             "packages": len(red.ato.packages),
         }
-    red.plan_missions(game.conditions.start_time)
+    if getattr(game, "opfor_ai_orders_turn", None) == game.turn:
+        return {"ran": False, "reason": "AI already issued orders this turn"}
+
+    # Older saves have no order marker. Even then, an air-plan fallback must not
+    # replace existing ground orders with the scripted commander's chosen stance.
+    stances = [
+        (cp, dict(cp.stances)) for cp in game.theater.control_points_for(Player.RED)
+    ]
+    try:
+        red.plan_missions(game.conditions.start_time)
+    finally:
+        for cp, previous in stances:
+            cp.stances.clear()
+            cp.stances.update(previous)
+    game.opfor_ai_orders_turn = game.turn
     return {"ran": True, "packages": len(red.ato.packages)}
 
 
