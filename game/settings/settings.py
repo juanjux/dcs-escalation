@@ -153,20 +153,6 @@ class Settings:
             " dialog and the map's coordinate picker."
         ),
     )
-    no_surface_wind: bool = boolean_option(
-        "No wind at the surface",
-        page=GENERAL_PAGE,
-        section=GENERAL_PAGE_SECTION,
-        default=True,
-        detail=(
-            "In DCS, some cruise missiles like the SLAM-ER, launched from long range with wind near the "
-            "ground land tens of metres off their target, and miss buildings "
-            "they would hit in calm air. With this on, the mission has no wind at "
-            "ground level, generated or live; the winds at 6000 and 24000 feet stay. "
-            "The command bar, kneeboards, runway in use and carrier course use the same "
-            "calm surface."
-        ),
-    )
     version: Optional[str] = None
 
     # Difficulty settings
