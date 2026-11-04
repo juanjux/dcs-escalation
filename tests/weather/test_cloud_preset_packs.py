@@ -85,7 +85,7 @@ def test_generating_conditions_applies_the_pack(monkeypatch: Any) -> None:
 
     def snapshot(*_: Any) -> Any:
         seen.append(_preset35())
-        return SimpleNamespace(calm_surface=lambda calm: False)
+        return SimpleNamespace()
 
     monkeypatch.setattr(Conditions, "generate_weather", staticmethod(snapshot))
 

@@ -66,7 +66,6 @@
 * **[UI]** Live OPFOR AI commander status and activity, with connection controls and turn cancellation.
 * **[UI]** Redesigned base and purchasing dialogs with grouped catalogues, squadron inventories, repair costs and deployable-force comparisons.
 * **[UI]** Map layers for the wind at the surface, 2000 m and 8000 m, under Navmesh & terrain, off by default.
-* **[Mission Generator]** No wind at the surface, keeping the winds at 2000 and 8000 m: long-range cruise missiles in DCS miss downwind of their target in a surface wind. On by default, under General.
 * **[UI]** The debriefing totals what each side's losses cost: aircraft and ground units to replace, and the income lost while the buildings are repaired.
 * **[Cheats]** Location Destroy/Revive cheat: a site's window destroys or revives everything there.
 * **[UI]** Interactive flight-plan map editing with role-coloured waypoints, target attack runs, leg distances and context actions.
