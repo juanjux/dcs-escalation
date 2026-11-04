@@ -211,6 +211,14 @@ previous map view and campaign controls are restored when selection ends.
 
 ## IADS Reworked
 
+- **Automatic topology.** Each coalition's advanced IADS is rebuilt from current
+  objectives at the start of every turn and when loading a save. Sites connect to
+  all friendly command centres, communications towers and power stations within
+  coverage, including infrastructure-to-infrastructure links. Radio and power
+  coverage are configurable in the Skynet plugin; campaign-authored links are no
+  longer used. Destroyed dependencies remain visible as broken links, and ships
+  do not depend on shore infrastructure.
+
 - **Custom Skynetfork**, [juanjux/Skynet-IADS](https://github.com/juanjux/Skynet-IADS): upstream 3.3.0 with its
   HARM fixes, plus `ActMobile` and the four High Digit SAMs systems (S-400, S-300V4,
   SAMP/T, Pantsir-SM), and many, many fixes and performance improvements including (optional) culling of the network based on the
@@ -396,7 +404,7 @@ previous map view and campaign controls are restored when selection ends.
 - **High Digit SAMs Ultimate Compilation, as a second selectable build.** The two builds
   cannot both be installed, so the New Game wizard offers them as mutually exclusive
   choices and a faction only sees the presets its chosen build ships. Campaign authors
-  have to wire the new sites in themselves.
+  no longer need to define links for new sites: topology is built automatically.
   (branch [`juanjux/hds_2_1_0_and_ultimate`](https://github.com/juanjux/dcs-escalation/tree/juanjux/hds_2_1_0_and_ultimate),
   upstream [#956](https://github.com/dcs-retribution/dcs-retribution/pull/956))
 

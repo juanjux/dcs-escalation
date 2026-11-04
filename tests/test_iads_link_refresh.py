@@ -5,9 +5,13 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, cast
 
+from dcs import Point
+from dcs.terrain import Caucasus
+
 from game.theater.iadsnetwork.iadsnetwork import IadsNetwork, IadsNetworkNode
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.theatergroup import IadsGroundGroup
+from game.theater.player import Player
 
 
 class _Group(IadsGroundGroup):
@@ -39,8 +43,14 @@ class _Site:
         self.original_name = name
         self.category = category
         self.carries_gps_jammer = False
+        self.position = Point(0, 0, Caucasus())
         self.control_point = SimpleNamespace(captured=SimpleNamespace(is_blue=blue))
         self.groups = [_Group(self, role)]
+
+    def is_friendly(self, player: Player) -> bool:
+        return player is (
+            Player.BLUE if self.control_point.captured.is_blue else Player.RED
+        )
 
     def kill(self) -> None:
         for unit in self.groups[0].units:
@@ -50,6 +60,7 @@ class _Site:
 class _Events:
     def __init__(self) -> None:
         self.nodes: list[IadsNetworkNode] = []
+        self.updated_iads: set[IadsNetworkNode] = set()
 
     def update_iads_node(self, node: IadsNetworkNode) -> None:
         self.nodes.append(node)
@@ -64,7 +75,6 @@ class _Events:
 def _network(*sites: _Site) -> IadsNetwork:
     network = IadsNetwork.__new__(IadsNetwork)
     network.advanced_iads = True
-    network.iads_config = {site.original_name: [] for site in sites}
     network.nodes = []
     network.ground_objects = {site.original_name: cast(Any, site) for site in sites}
     network._state_map = None

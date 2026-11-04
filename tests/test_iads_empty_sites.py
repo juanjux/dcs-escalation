@@ -40,7 +40,10 @@ def site(name: str, category: str = "aa", x: float = 0) -> Any:
 
 
 def deploy(obj: Any, role: IadsRole = IadsRole.SAM) -> None:
-    group = IadsGroundGroup(1, obj.name, obj.position, [_unit()], obj)
+    unit = _unit()
+    unit.unit_name = obj.name
+    unit.is_static = role.is_comms_or_power
+    group = IadsGroundGroup(1, obj.name, obj.position, [unit], obj)
     group.iads_role = role
     obj.groups = [group]
 
@@ -80,13 +83,17 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
     fake_game: Any = SimpleNamespace(
         iads_considerate_culling=lambda obj: False, skynet_culled=lambda obj: False
     )
-    assert not network.skynet_nodes(fake_game)
+    tower.control_point.coalition = SimpleNamespace(player=Player.BLUE)
+    assert all(
+        node.iads_role is IadsRole.CONNECTION_NODE
+        for node in network.skynet_nodes(fake_game)
+    )
 
     deploy(sam)
     network.update_tgo(sam, GameUpdateEvents())
     node = network.node_for_tgo(sam)
     assert node is not None and not node.is_empty_site
-    assert len(network.nodes) == 1
+    assert len(network.nodes) == 2
     assert IadsConnectionJs.connections_for_node(node, network)[0].active
 
 

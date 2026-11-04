@@ -52,17 +52,12 @@ class Migrator:
         self._collapse_the_tanker_options()
         self._update_weather()
         self._update_tgos()
-        self._restore_pruned_iads_nodes()
-        self._enrol_iads_sites_the_campaign_never_named()
         self._relabel_formation_waypoints()
         try_set_attr(self.game.settings, "motorpool_enabled", True)
         try_set_attr(self.game.settings, "motorpool_spawn_cap", 10)
         self._ensure_motorpool_tgos()
         self._register_new_tgos()
-        self.game.theater.iads_network.restore_empty_sites()
-        self._wire_iads_sites_that_arrived_late()
-        self._unwire_iads_ships()
-        self._renew_stale_iads_nodes()
+        self._rebuild_iads_topology()
         self._reload_terrain()
         self._update_theater()
         self._update_campaign_name()
@@ -474,72 +469,11 @@ class Migrator:
             if isinstance(go, ShipGroundObject):
                 try_set_attr(go, "target_position", None)
 
-    def _restore_pruned_iads_nodes(self) -> None:
-        """Put back the IADS nodes a destroyed site used to be dropped from.
-
-        A site with nothing alive was removed from the network and its links went off
-        the map with it, which hid exactly the breaks worth seeing.
-
-        """
-        network = self.game.theater.iads_network
-        if getattr(network, "keeps_destroyed_nodes", False):
-            return
-        network.keeps_destroyed_nodes = True
-        before = len(network.nodes)
-        network.nodes = []
-        network.ground_objects = {}
-        network.initialize_network(iter(self.game.theater.ground_objects))
-        logging.info(
-            "IADS network rebuilt to restore pruned nodes: "
-            f"{before} -> {len(network.nodes)} nodes"
+    def _rebuild_iads_topology(self) -> None:
+        """Discard saved links after current objectives and groups are restored."""
+        self.game.theater.iads_network.initialize_network(
+            iter(self.game.theater.ground_objects)
         )
-
-    def _enrol_iads_sites_the_campaign_never_named(self) -> None:
-        """Rebuild the network so sites outside it join.
-
-        Only the keys of a campaign's iads_config ever became nodes, so anything the
-        author did not name -- an anonymous Ground-N or Naval-N slot, a GPS jamming
-        site added to the factions later -- was outside the network with no way in.
-        Existing games carry that network pickled, so it is rebuilt once.
-
-        """
-        network = self.game.theater.iads_network
-        if getattr(network, "enrols_unnamed_sites", False):
-            return
-        network.enrols_unnamed_sites = True
-        before = len(network.nodes)
-        network.nodes = []
-        network.ground_objects = {}
-        network.initialize_network(iter(self.game.theater.ground_objects))
-        logging.info(
-            "IADS network rebuilt to enrol unnamed sites: "
-            f"{before} -> {len(network.nodes)} nodes"
-        )
-
-    def _wire_iads_sites_that_arrived_late(self) -> None:
-        """Runs after the new objectives are registered, which is the point.
-
-        The rebuild above happens before they exist and only happens once, so a site
-        that arrived with a later version was left outside the network for good.
-        """
-        network = self.game.theater.iads_network
-        enrolled = network.enrol_sites_that_arrived_late()
-        if enrolled:
-            logging.info("IADS: wired %s", ", ".join(sorted(enrolled)))
-
-    def _renew_stale_iads_nodes(self) -> None:
-        """A site rebuilt through the OPFOR AI API kept its IADS node on the group it
-        replaced."""
-        renewed = self.game.theater.iads_network.renew_stale_nodes()
-        if renewed:
-            logging.info("IADS: renewed the nodes of %s", ", ".join(renewed))
-
-    def _unwire_iads_ships(self) -> None:
-        """Ships were wired to the power stations and comms towers in range of where
-        they started, and kept those links wherever they sailed."""
-        unwired = self.game.theater.iads_network.unwire_ships()
-        if unwired:
-            logging.info("IADS: ships off the grid: %s", ", ".join(sorted(unwired)))
 
     def _relabel_formation_waypoints(self) -> None:
         """Rename join and split on flights that are their whole package.

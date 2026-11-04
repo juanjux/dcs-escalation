@@ -1,13 +1,4 @@
-"""What belongs in the IADS network, whoever built it.
-
-A campaign with an iads_config got its network from that config, and only the keys of
-it became nodes. Anything the author never named -- an anonymous Ground-N or Naval-N
-slot, a GPS jamming site added to the factions long after the campaign was written --
-was left outside however much it belonged in one: not cued, not directed, and bombing
-the power station beside it changed nothing.
-
-Both paths now ask the same question, which is the one below.
-"""
+"""Current air-defence sites, ships and infrastructure participate automatically."""
 
 from __future__ import annotations
 
@@ -49,10 +40,10 @@ def test_a_command_centre_belongs() -> None:
     )
 
 
-def test_other_infrastructure_does_not() -> None:
-    """Comms and power are connections of a node, never nodes themselves."""
+def test_infrastructure_also_belongs() -> None:
+    """Infrastructure needs its own nodes to connect to other infrastructure."""
     for category in ("comms", "power"):
-        assert not IadsNetwork._belongs_in_the_network(
+        assert IadsNetwork._belongs_in_the_network(
             _of(IadsBuildingGroundObject, category)
         )
 

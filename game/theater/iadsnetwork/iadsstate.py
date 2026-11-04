@@ -185,7 +185,10 @@ class IadsStateMap:
     def _build(self, network: IadsNetwork) -> None:
         by_side: dict[bool, list[IadsNetworkNode]] = {}
         for node in network.nodes:
-            side = node.group.ground_object.control_point.captured.is_blue
+            owner = node.group.ground_object.control_point.captured
+            if getattr(owner, "is_neutral", False):
+                continue
+            side = owner.is_blue
             by_side.setdefault(side, []).append(node)
         for nodes in by_side.values():
             self._build_side(nodes)

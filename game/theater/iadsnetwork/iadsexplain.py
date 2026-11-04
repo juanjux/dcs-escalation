@@ -169,6 +169,15 @@ def describe(
         return IadsPicture(None, off=NoNetwork.STANDALONE)
 
     status = network.state_map.status_for(tgo)
+    if node.group.iads_role.is_comms_or_power:
+        picture = _infrastructure(tgo, _feeds(tgo, network), friendly)
+        needs = list(_power_links(node, friendly))
+        comms = _comms_link(node, friendly)
+        if comms is not None:
+            needs.append(comms)
+        return IadsPicture(
+            None, gives=picture.gives, gets=tuple(needs), headline=picture.headline
+        )
     if node.is_empty_site:
         links = tuple(
             IadsLink(

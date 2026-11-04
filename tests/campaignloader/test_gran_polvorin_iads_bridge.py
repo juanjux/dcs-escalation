@@ -44,16 +44,14 @@ def test_backbone_is_loaded_as_an_ushuaia_comms_site_on_land() -> None:
     base, point = placements[0]
     assert base.name == "Ushuaia"
     assert theater.is_on_land(point, ignore_exclusion=True)
-    for site in SECTORS:
-        assert BACKBONE in theater.iads_network.iads_config[site]
-    # The campaign retains local towers and power; the backbone is redundant.
-    assert "Red Comms Ushuaia Airport" in theater.iads_network.iads_config["Ground-1"]
-    assert "Red Comms Ushuaia" in theater.iads_network.iads_config["Ground-7"]
+    assert "iads_config" not in campaign.data
 
 
 @pytest.mark.parametrize("side", [Player.RED, Player.BLUE])
-def test_both_sectors_export_the_same_live_comms_dependency_and_dashed_loss(
+@pytest.mark.parametrize("range_nm", [15, 200])
+def test_backbone_links_follow_coverage_and_remain_dashed_when_destroyed(
     side: Player,
+    range_nm: int,
 ) -> None:
     campaign = Campaign.from_file(Path("resources/campaigns/gran_polvorin.yaml"))
     template = Mission()
@@ -63,7 +61,9 @@ def test_both_sectors_export_the_same_live_comms_dependency_and_dashed_loss(
         for country in template.coalition["red"].countries.values()
         for group in country.static_group + country.vehicle_group
     }
-    coalition = SimpleNamespace(player=side, game=SimpleNamespace(settings=Settings()))
+    settings = Settings()
+    settings.set_plugin_option("skynetiads.commsRangeNm", range_nm)
+    coalition = SimpleNamespace(player=side, game=SimpleNamespace(settings=settings))
     base: Any = SimpleNamespace(
         captured=side, coalition=coalition, is_friendly=lambda player: player == side
     )
@@ -89,23 +89,34 @@ def test_both_sectors_export_the_same_live_comms_dependency_and_dashed_loss(
         group.iads_role = role
         objective.groups.append(group)
         objectives.append(objective)
-    # Retain the actual campaign dependency on the shared mast in the engine.
-    network = IadsNetwork(True, [{site: [BACKBONE]} for site in SECTORS])
+    network = IadsNetwork(True)
     network.initialize_network(iter(objectives))
     game: Any = SimpleNamespace(
         iads_considerate_culling=lambda _: False, skynet_culled=lambda _: False
     )
     nodes = network.skynet_nodes(game)
-    assert len(nodes) == len(SECTORS)
-    assert all(
-        node.connections["ConnectionNode"]
-        == [objectives[-1].groups[0].units[0].unit_name]
-        for node in nodes
-    )
+    expected = {
+        objective.groups[0].group_name
+        for objective in objectives[:-1]
+        if objective.position.distance_to_point(objectives[-1].position)
+        <= IadsRole.CONNECTION_NODE.connection_range(settings).meters
+    }
+    sam_nodes = [node for node in nodes if node.iads_role is IadsRole.SAM]
+    if range_nm == 200:
+        assert expected
+    assert len(sam_nodes) == len(SECTORS)
+    for node in sam_nodes:
+        assert node.connections["ConnectionNode"] == (
+            [objectives[-1].groups[0].units[0].unit_name]
+            if node.dcs_name in expected
+            else []
+        )
     links = IadsNetworkJs.from_network(network).connections
-    assert len(links) == len(SECTORS)
+    assert len(links) == len(expected)
     assert all(link.active and link.blue == side.is_blue for link in links)
-    assert {link.connected for link in links} == {objectives[-1].id}
+    assert {link.connected for link in links} == (
+        {objectives[-1].id} if expected else set()
+    )
     objectives[-1].groups[0].units[0].alive = False
     links = IadsNetworkJs.from_network(network).connections
-    assert len(links) == len(SECTORS) and all(not link.active for link in links)
+    assert len(links) == len(expected) and all(not link.active for link in links)

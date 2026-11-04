@@ -52,10 +52,20 @@ def authored() -> Any:
         if hasattr(point, "original_name")
     }
     config = {
-        name: links
-        for entry in campaign.data["iads_config"]
-        for name, links in entry.items()
+        name: [
+            other_name
+            for other_name, (other_cp, other_kind, other) in placements.items()
+            if other_name != name
+            and other_cp.starting_coalition is cp.starting_coalition
+            and other_kind
+            in {"iads_connection_node", "iads_power_source", "iads_command_center"}
+            and point.distance_to_point(other)
+            <= (35 if other_kind == "iads_power_source" else 15) * 1852
+        ]
+        for name, (cp, kind, point) in placements.items()
+        if kind in IADS_KINDS and not cp.starting_coalition.is_neutral
     }
+    assert "iads_config" not in campaign.data
     return campaign, theater, placements, config
 
 
@@ -155,8 +165,8 @@ def test_all_active_air_defences_and_commands_have_redundant_local_links(
                 assert source_kind == "iads_command_center"
         assert counts["iads_connection_node"] >= 2, name
         assert counts["iads_power_source"] >= 2, name
-        if kind != "iads_command_center":
-            assert counts["iads_command_center"] == 2, name
+        # Command links, like tower links, now have a radio coverage limit.
+        assert counts["iads_command_center"] <= 2, name
 
 
 def test_infrastructure_is_on_land_and_owned_by_its_named_side(authored: Any) -> None:
@@ -556,7 +566,10 @@ def test_generated_network_is_operational_and_exports_to_skynet(
     ]
     assert len(owned) == 45
     assert all(status.state is IadsState.NETWORKED for _, status in owned)
-    assert len(network.skynet_nodes(generated)) == 45
+    nodes = network.skynet_nodes(generated)
+    assert len([node for node in nodes if not node.iads_role.is_comms_or_power]) == 45
+    assert any(node.iads_role is IadsRole.CONNECTION_NODE for node in nodes)
+    assert any(node.iads_role is IadsRole.POWER_SOURCE for node in nodes)
     for cp in generated.theater.controlpoints:
         assert (
             sum(isinstance(tgo, MotorpoolGroundObject) for tgo in cp.ground_objects)
