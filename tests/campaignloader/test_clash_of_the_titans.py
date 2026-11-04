@@ -555,7 +555,7 @@ def test_authored_force_caps_limit_stealth_and_retain_red_modern_fighters(
     assert generated.blue.budget == generated.red.budget == 2000
 
 
-def test_generated_network_reports_radio_gaps_and_exports_to_skynet(
+def test_generated_network_connects_all_sectors_and_exports_to_skynet(
     generated: Game,
 ) -> None:
     network = generated.theater.iads_network
@@ -565,16 +565,17 @@ def test_generated_network_reports_radio_gaps_and_exports_to_skynet(
         if not site.control_point.captured.is_neutral
     ]
     assert len(owned) == 45
-    # The existing layout has local redundancy, but not a continuous radio path
-    # between all sectors. Campaign layout changes are separate from topology.
     states = {site.original_name: status.state for site, status in owned}
-    assert states["Blue IADS Command Bagram"] is IadsState.NETWORKED
-    assert states["Ground-13"] is IadsState.AUTONOMOUS
-    assert states["Blue EWR Sharana"] is IadsState.AUTONOMOUS
-    assert all(
-        state in (IadsState.NETWORKED, IadsState.AUTONOMOUS)
-        for state in states.values()
-    )
+    assert all(state is IadsState.NETWORKED for state in states.values())
+    connectivity = network.state_map.connectivity
+    assert connectivity is not None
+    for node in network.nodes:
+        if (
+            node.group.iads_role.is_comms_or_power
+            or node.group.ground_object.control_point.captured.is_neutral
+        ):
+            continue
+        assert len(connectivity.centres_for(node)) == 2
     nodes = network.skynet_nodes(generated)
     assert len([node for node in nodes if not node.iads_role.is_comms_or_power]) == 45
     assert any(node.iads_role is IadsRole.CONNECTION_NODE for node in nodes)
@@ -613,7 +614,7 @@ def test_local_tower_and_power_redundancy_survives_single_losses(
         for tgo in generated.theater.ground_objects
         if tgo.category in ("comms", "power")
     ]
-    assert len(infrastructure) == 46
+    assert len(infrastructure) == 119
     initial = {site: status.state for site, status in network.state_map}
     for lost in infrastructure:
         picture = IadsStateMap(network, [lost])
