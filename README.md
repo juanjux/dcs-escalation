@@ -237,6 +237,8 @@ previous map view and campaign controls are restored when selection ends.
   ([#18](https://github.com/juanjux/dcs-escalation/pull/18))
 - **COMM2 presets** mirrored from COMM1 on twin-radio aircraft (plus an
   F/A-18-family COMM1/COMM2 fix) and clearer auto-assigned **TACAN** codes.
+  Automatic presets use one channel per frequency on each radio, even when
+  several support flights or airfields share that frequency.
   ([#12](https://github.com/juanjux/dcs-escalation/pull/12),
   [#20](https://github.com/juanjux/dcs-escalation/pull/20))
 - The **Support Info** page spans several pages when a package has many flights, instead
