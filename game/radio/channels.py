@@ -99,7 +99,9 @@ class CommonRadioChannelAllocator(RadioChannelAllocator):
         frequencies.extend(tanker.freq for tanker in mission_data.tankers)
         if flight.divert is not None and flight.divert.atc is not None:
             frequencies.append(flight.divert.atc)
-        return frequencies
+        # Several support flights or airfields may share one frequency. Reserve
+        # one preset per frequency, retaining the first occurrence's priority.
+        return list(dict.fromkeys(frequencies))
 
     @staticmethod
     def _assign_sequential(
@@ -110,6 +112,10 @@ class CommonRadioChannelAllocator(RadioChannelAllocator):
     ) -> None:
         channels = iter(range(first_channel, flight.num_radio_channels(radio_id) + 1))
         for frequency in frequencies:
+            # Channel 1 may already hold this frequency for intra-flight use.
+            # A preset on the other radio must not suppress this radio's mirror.
+            if any(c.radio_id == radio_id for c in flight.channels_for(frequency)):
+                continue
             try:
                 flight.assign_channel(radio_id, next(channels), frequency)
             except StopIteration:
