@@ -293,12 +293,17 @@ def preview_armor_movement(
         )
     road_budget = distance_per_turn(game.settings, on_road=True)
     offroad_budget = distance_per_turn(game.settings, on_road=False)
-    route = CampaignGroundRouter.for_game(game, owner).plan(
-        GroundPosition(source.position.x, source.position.y),
-        destination.position,
-        road_budget,
-        offroad_budget,
+    origin = GroundPosition(source.position.x, source.position.y)
+    local_delivery = (
+        destination.kind in (DestinationKind.BASE, DestinationKind.FRONTLINE)
+        and origin == destination.position
     )
+    if local_delivery:
+        route = GroundRoute((), stationary_at=origin)
+    else:
+        route = CampaignGroundRouter.for_game(game, owner).plan(
+            origin, destination.position, road_budget, offroad_budget
+        )
     road = sum(segment.length for segment in route.segments if segment.on_road)
     offroad = sum(segment.length for segment in route.segments if not segment.on_road)
     turns = road / road_budget + offroad / offroad_budget
@@ -307,7 +312,11 @@ def preview_armor_movement(
         "not the complete DCS road network. Off-road access must stay on mapped "
         "land and clear exclusion zones."
     ]
-    if road == 0:
+    if local_delivery:
+        warnings = [
+            "The selected units are already at the base and will join its stock immediately."
+        ]
+    elif road == 0:
         warnings.append("This route contains only validated off-road travel")
     if isinstance(source, IadsGroundObject):
         restriction = transit_defense_warning(
@@ -324,7 +333,7 @@ def preview_armor_movement(
         road,
         offroad,
         turns,
-        max(1, math.ceil(turns - 1e-9)),
+        0 if local_delivery else max(1, math.ceil(turns - 1e-9)),
         GroundJourney(route).preview(road_budget, offroad_budget)[-1],
         tuple(warnings),
     )

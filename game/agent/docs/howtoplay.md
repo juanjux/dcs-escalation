@@ -153,6 +153,8 @@ in `turn_context.ground_convoys`.
    and enemy `opposing_base_id` from a current front. GPS routes and destinations
    must stay on your side. A front delivery reinforces its supporting base's stock;
    normal deployment caps and Motor Pool surplus rules still apply.
+   If the reserve is already at the receiving base's exact position, confirming
+   the delivery adds the selected units to its stock immediately (zero turns).
 4. Check the returned distance, `arrival_in_turns`, `first_turn_stop`, warnings
    and automatically included tractors. Confirm through `dispatch_ground_movement` /
    `POST /retribution-ai/ground/movement/dispatch` with **the same request plus its

@@ -152,7 +152,11 @@ def movement_reports(
                 journey.position,
                 journey.route.length,
                 journey.remaining_distance,
-                journey.travelled_distance / journey.route.length,
+                (
+                    journey.travelled_distance / journey.route.length
+                    if journey.route.length
+                    else 1.0
+                ),
                 remaining_turns,
                 count,
                 len(order.manifest.unit_ids),
