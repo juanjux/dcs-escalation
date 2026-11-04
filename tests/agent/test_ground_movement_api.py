@@ -205,6 +205,35 @@ def test_road_losses_and_delivery_persist(stock: Any, api: Any) -> None:
     assert groundmovement.orders(copied)[0].model_dump(exclude_none=True) == delivered
 
 
+@pytest.mark.parametrize("kind", ["base", "frontline"])
+def test_local_reinforcement_is_confirmed_and_immediately_available(
+    stock: Any, api: Any, kind: str
+) -> None:
+    stock.source.position = stock.a.position
+    body = {
+        "source_id": str(stock.source.id),
+        "unit_ids": [7],
+        "destination_kind": kind,
+        "base_id": str(stock.a.id),
+        **({"opposing_base_id": str(stock.enemy.id)} if kind == "frontline" else {}),
+    }
+    before = pickle.dumps(stock.game)
+    preview = api.request("POST", "/preview", json=body)
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["arrival_in_turns"] == 0
+    assert preview.json()["total_distance_m"] == 0
+    assert pickle.dumps(stock.game) == before
+    dispatch_body = {**body, "preview_token": preview.json()["preview_token"]}
+    response = api.request("POST", "/dispatch", json=dispatch_body)
+    assert response.status_code == 200, response.text
+    result = response.json()
+    assert result["status"] == "arrived" and result["progress_percent"] == 100
+    assert result["surviving_units"] == 1
+    assert stock.a.base.armor[stock.units[7]] == 5
+    assert api.request("POST", "/dispatch", json=dispatch_body).status_code == 400
+    assert stock.a.base.armor[stock.units[7]] == 5
+
+
 def test_base_stock_deployment_and_automatic_tractors(stock: Any, api: Any) -> None:
     options = api.request(
         "GET", "/options", params={"source_id": str(stock.a.id), "source_kind": "base"}

@@ -143,7 +143,35 @@ def dispatch_armor(
     game.ground_movements.transits[order.id] = transit
     source.invalidate_threat_poly()
     events.update_tgo(source).update_tgo(detachment)
+    if transit.journey.completed:
+        _deliver_to_base(game, transit, destination, events)
+        _finish(game, transit)
+        events.update_tgo(detachment)
     return transit
+
+
+def _deliver_to_base(
+    game: Game,
+    transit: ArmorTransit,
+    destination: MovementDestination,
+    events: GameUpdateEvents,
+) -> None:
+    base = next(
+        cp for cp in game.theater.controlpoints if cp.id == destination.target_id
+    )
+    tgo = game.db.tgos.get(transit.detachment_id)
+    survivors: Counter[GroundUnitType] = Counter()
+    for unit in tgo.units:
+        if unit.alive:
+            unit_type = unit.unit_type
+            assert isinstance(unit_type, GroundUnitType)
+            survivors[unit_type] += 1
+    base.base.commission_units(dict(survivors))
+    transit.final_unit_count = sum(survivors.values())
+    # Remove delivered units, so they cannot be spawned or repaired twice.
+    for group in tgo.groups:
+        group.units.clear()
+    events.update_control_point(base).update_motorpools_at(base)
 
 
 def _update_sam_network(game: Game, tgo: object, events: GameUpdateEvents) -> None:
@@ -324,23 +352,7 @@ def advance_armor(game: Game, events: GameUpdateEvents) -> None:
         if not transit.journey.completed:
             continue
         if destination.kind is not DestinationKind.POSITION:
-            base = next(
-                cp
-                for cp in game.theater.controlpoints
-                if cp.id == destination.target_id
-            )
-            survivors: Counter[GroundUnitType] = Counter()
-            for unit in tgo.units:
-                if unit.alive:
-                    unit_type = unit.unit_type
-                    assert isinstance(unit_type, GroundUnitType)
-                    survivors[unit_type] += 1
-            base.base.commission_units(dict(survivors))
-            transit.final_unit_count = sum(survivors.values())
-            # Remove delivered units, so they cannot be spawned or repaired twice.
-            for group in tgo.groups:
-                group.units.clear()
-            events.update_control_point(base).update_motorpools_at(base)
+            _deliver_to_base(game, transit, destination, events)
         _finish(game, transit)
         _update_sam_network(game, tgo, events)
         events.update_tgo(tgo)

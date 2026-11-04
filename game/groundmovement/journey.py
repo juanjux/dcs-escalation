@@ -23,8 +23,13 @@ class GroundSegment:
 @dataclass(frozen=True)
 class GroundRoute:
     segments: tuple[GroundSegment, ...]
+    stationary_at: GroundPosition | None = None
 
     def __post_init__(self) -> None:
+        if self.stationary_at is not None:
+            if self.segments:
+                raise ValueError("A stationary ground route cannot contain segments")
+            return
         if not self.segments:
             raise ValueError("A ground route needs at least one nonzero segment")
         for index, segment in enumerate(self.segments):
@@ -50,6 +55,8 @@ class GroundRoute:
         return sum(segment.length for segment in self.segments)
 
     def position_at(self, distance: float) -> GroundPosition:
+        if self.stationary_at is not None:
+            return self.stationary_at
         distance = max(0, min(self.length, distance))
         for segment in self.segments:
             if distance <= segment.length:
@@ -76,7 +83,7 @@ class GroundJourney:
     @property
     def position(self) -> GroundPosition:
         if self.completed:
-            return self.route.segments[-1].end
+            return self.route.position_at(self.route.length)
         segment = self.route.segments[self.segment_index]
         fraction = self.segment_progress / segment.length
         return GroundPosition(
