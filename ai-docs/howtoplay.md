@@ -591,6 +591,13 @@ while you're working and goes idle once you stop, and Take Off is blocked while 
    plan (the "View red's plan" button lights up) and, while you're learning, flag any
    mistake in chat for you to fix.
 
+A successful order records your participation for the current turn, including ground,
+economy and pilot orders. The record survives save/reload and expires next turn.
+An empty air plan is then intentional: the scripted launch fallback will not replace
+it. For a deliberate no-action turn, use `DELETE /packages` (`clear_packages`), even
+if there are no packages. Reads, previews, validation and scratchpad notes alone do
+not count as orders. If the fallback does run, it preserves existing ground stances.
+
 Plan boldly and coherently. A good OPFOR turn looks like a real operation: a clear
 objective, the air defenses dealt with, the strike escorted and supported, the
 ground effort backed up, and money spent to set up the next move.

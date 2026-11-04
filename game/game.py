@@ -161,6 +161,8 @@ class Game:
         ]
         # Free-form scratchpad for the OPFOR-AI commander (persisted per campaign).
         self.stored_context: dict[str, str] = {}
+        # A turn can have deliberate ground/economy orders and no air missions.
+        self.opfor_ai_orders_turn: int | None = None
         # Per-turn loss summaries for the OPFOR-AI prev_turns after-action.
         self.debrief_history: list[dict[str, int]] = []
         # The last debriefing, as data. The window used to be the only place the report
@@ -243,6 +245,8 @@ class Game:
                 front_line.laser_code = self.laser_code_registry.alloc_laser_code()
         if not hasattr(self, "stored_context"):
             self.stored_context = {}
+        if not hasattr(self, "opfor_ai_orders_turn"):
+            self.opfor_ai_orders_turn = None
         if not hasattr(self, "debrief_history"):
             self.debrief_history = []
         if not hasattr(self, "last_debriefing_report"):
