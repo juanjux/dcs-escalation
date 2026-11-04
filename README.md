@@ -147,6 +147,9 @@ From a base's Transfer Units dialog, deploy a custom mix of available vehicles t
 friendly GPS coordinates. Survivors form an active Reserve Armor Group that can
 defend its position or be moved again. Choose a GPS destination on an interactive
 map with route highlighting, distance, estimated arrival and validity feedback.
+Intel's Transfers tab includes these active deployments with the group name,
+surviving/original unit count, GPS destination and progress. Stopping a movement
+leaves its units deployed at their current position, without returning base stock.
 Groups reached or passed by their front automatically reinforce its supporting
 base, including groups in transit. Normal deployment limits apply, with surplus
 kept in the Motor Pool. Ground Movement requires Motor Pool.

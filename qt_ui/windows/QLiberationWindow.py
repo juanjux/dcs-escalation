@@ -795,7 +795,7 @@ class QLiberationWindow(QMainWindow):
         self._palette.open_over(self)
 
     def open_control_point_info_dialog(self, cp: ControlPoint) -> None:
-        self._cp_dialog = QBaseMenu2(None, cp, self.game_model)
+        self._cp_dialog = QBaseMenu2(self, cp, self.game_model)
         self._cp_dialog.show()
 
     def on_select_flight(self, flight: Flight) -> None:

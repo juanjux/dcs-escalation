@@ -61,18 +61,20 @@ class ArmorMovementReport:
 
 
 def movement_reports(
-    game: Game, tgo_id: UUID, owner: Player
+    game: Game, tgo_id: UUID | None, owner: Player, *, active_only: bool = False
 ) -> tuple[ArmorMovementReport, ...]:
-    """Include departures from this source and journeys of this detachment."""
+    """Report a source/detachment, or all movements when its ID is None."""
     store = getattr(game, "ground_movements", None)
     if store is None:
         return ()
     reports = []
     for transit in store.transits.values():
         order = store.orders[transit.order_id]
-        if order.owner is not owner or tgo_id not in (
-            order.source_id,
-            transit.detachment_id,
+        if active_only and (transit.finished or order.cancelled):
+            continue
+        if order.owner is not owner or (
+            tgo_id is not None
+            and tgo_id not in (order.source_id, transit.detachment_id)
         ):
             continue
         tgo = game.db.tgos.get(transit.detachment_id)

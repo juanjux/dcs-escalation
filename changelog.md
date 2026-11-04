@@ -61,7 +61,7 @@
 * **[UI]** Intel statistics and history with independent faction and metric comparisons.
 * **[UI]** Shared campaign and per-pilot aircraft notes in Player Aircrafts.
 * **[Escalation]** DCS Escalation branding and simplified navigation, preserving existing campaign data and save paths.
-* **[UI]** Searchable faction transfers in Intel and bulk ground-unit transfer controls.
+* **[UI]** Searchable faction transfers and GPS deployments in Intel, with group counts, destinations and progress, plus bulk ground-unit transfer controls.
 * **[UI]** Reorganized searchable settings with consolidated plugin controls, repair options and automatically saved application preferences.
 * **[UI]** Live OPFOR AI commander status and activity, with connection controls and turn cancellation.
 * **[UI]** Redesigned base and purchasing dialogs with grouped catalogues, squadron inventories, repair costs and deployable-force comparisons.
