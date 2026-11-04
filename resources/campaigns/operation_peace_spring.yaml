@@ -16,9 +16,13 @@ description:
   squadrons included), they only have two jets available (F-4 and F-16).</p>
 miz: operation_peace_spring.miz
 performance: 2
+advanced_iads: true
 recommended_start_date: 2019-12-23
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   fa_18efg: true
   f22_raptor: true
   uh_60l: true
@@ -217,3 +221,6 @@ squadrons:
         - MiG-21bis Fishbed-N
       size: 16
       pilots: 20
+ground_forces:
+  "Blue GPS Jammer Ramat David": GPS Jamming Site (Blue, Unescorted)
+  "Red GPS Jammer Damascus": GPS Jamming Site (Red, Unescorted)

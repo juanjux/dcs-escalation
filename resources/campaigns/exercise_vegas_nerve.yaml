@@ -16,9 +16,13 @@ description:
   of this exercise. Good luck, Commander.</p>
 miz: exercise_vegas_nerve.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 2011-02-24
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   chinesemilitaryassetspack: true
   fa_18efg: true
   f22_raptor: true
@@ -28,7 +32,7 @@ settings:
 # SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
 ground_forces:
   Ground-9: GPS Jamming Site (Red)
-
+  Blue GPS Jammer Tonopah Test Range: GPS Jamming Site (Blue, Unescorted)
 squadrons:
   Bombers from Minot AFB:
     - primary: Strike

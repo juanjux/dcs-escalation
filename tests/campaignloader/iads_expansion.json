@@ -1,0 +1,568 @@
+{
+  "Caucasus_Multi_Full.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "8e6618a4cd4349dc70f5df1d6d45496c2f3bcb089b869fa769c79b8e199aa469",
+    "relocated_radars": {},
+    "retained_mission_sha256": "c3c7564b82dcb285222f4085fd79666e9d495207a7b0ea3df9acb9e5812bf46b",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "Caucasus_Multi_Georgia.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "1813529fc6412215c6b3fb5d01fb1ea6aa672551427a7194dd06d7cca5991ba2",
+    "relocated_radars": {},
+    "retained_mission_sha256": "fcfda9c6fbe4b49437197973b74b8cac0be423fac7ad203d8f5ad1feb714390c",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "Caucasus_Multi_Russia.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "849d80b910b60411294594eb60060ec9946b1702b794d80b85efa032704db881",
+    "relocated_radars": {},
+    "retained_mission_sha256": "e954669cab085169d64f09daf4983a473aae0ef0c0dea398617fdc707bb2b958",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "Northern Guardian.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Fassberg": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "2c3e4152b9002dab4c77c110e0b9ad1357c9795b8a507919c6340dd273a85652",
+    "relocated_radars": {},
+    "retained_mission_sha256": "02255e9f45884e651ca49218b31f02f0433a09294db053e282cd0795e6bb3f97",
+    "sides": [
+      "BLUE"
+    ]
+  },
+  "Operation-Desert-Sabre.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Tel Nof": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "1529cc279d927605ca2890f0fb3af63438c6811339b27de5b980f879e2db8965",
+    "relocated_radars": {},
+    "retained_mission_sha256": "e3019fa28b8c8e2e13ad25b32228a50a4c66fac989d6983d1ff1decaab1fbef0",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "RetakeTheFalklands.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "de6bbe8adf3a178c727d81e2dea2afcdbaa4359d0144f655305910bd8fd96966",
+    "relocated_radars": {},
+    "retained_mission_sha256": "16be46f525ebe4d71f3e1089efce6a4b339452f7f955d64772d615db173040ee",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "Task Force Thunder.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "e53c7bafeaeb23b725fa0ce5465d38d71cee9edcee3a9a08b0b5c1b050db3cbf",
+    "relocated_radars": {},
+    "retained_mission_sha256": "d84595974a321f934e6ef83e4e04bcc385f92a831945216825d58156d2078c39",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "TblisiGap.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "b957e69c6123f61fb4aec68be3edf082bfe47ad9f2524b3c6d23dfb7ea3f7e27",
+    "relocated_radars": {},
+    "retained_mission_sha256": "91f70c6a81a89c5dff6fbcc966e1b0d12fa0d831d120bbd03b58ff070b0f20c5",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "TheValleyOfRotary.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Shiraz Intl": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "edafd555175576cdb7fc739d98451815dc54a2178ac2b976ecf702b9901286f5",
+    "relocated_radars": {},
+    "retained_mission_sha256": "dc84cd448c3dea0ca372b394adf7c9436b1efe72bb33211975e54b264768bc86",
+    "sides": [
+      "BLUE"
+    ]
+  },
+  "WRL_AleppoInsurgency.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Taftanaz": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "7b40aab374be441ff9433fd4628109eacf13064485463fa36d824a624e46baba",
+    "relocated_radars": {},
+    "retained_mission_sha256": "0953420f52dc1d732928ff9d7682d9ee8368fcd846b432fd62c1dda54431c4a9",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "WRL_Battle4Georgia.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Kutaisi": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "40b267144f3235d952520acc72de486b9f54a7c81612aa667d33c427037769fa",
+    "relocated_radars": {},
+    "retained_mission_sha256": "8765e6d6cf4b1a2c3c70e2a3fdf73f907ce8b153f1dcc73c1ab2bc64a04c49c0",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "WRL_PG_Wargames.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer FOB Ras Al Khaimah": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "ad53e622129209abb3936ed1fe450e3f4dbbb7664808ec52da117afba2fd50aa",
+    "relocated_radars": {
+      "Ground-34": [
+        -232287.81306707143,
+        -249031.53757518582
+      ]
+    },
+    "retained_mission_sha256": "dddd9b878686304c91bc9739cfb1385e5e10103a9356839986d2f2f4759ecf6a",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "battle_of_abu_dhabi.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "0c94b13a952cb3d1da40fe6ee914e3c41f339f1a8fecfcf40af8a41d993d2e88",
+    "relocated_radars": {
+      "Ground-34": [
+        -232287.81306707143,
+        -249031.53757518582
+      ]
+    },
+    "retained_mission_sha256": "e50440677980d74fa52e82ff1d2bb67f9837f1e5f7b3cecb2917f60871d2cf01",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "black_sea.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "0fd7e3f537174ae34909424a3192bb4368e5d4a993df3907277519461e5855fe",
+    "relocated_radars": {},
+    "retained_mission_sha256": "5986aa047d39a6f2c04513be9b3026bc195f150723aafa6226e101ef60bd577a",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "crossing_the_rubicon.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "e89c7831884e317e7d01e0e3b348bcef107ec64d026e1fe389b46f99e16ce36f",
+    "relocated_radars": {},
+    "retained_mission_sha256": "181ad00ec7b1694f9cd076f7e6f62ee48a90e778728d1f53de39a74aeaff148e",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "exercise_able_archer.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "1e3285f8c4044b6f92b3499bf8a663a8234252d590cc1ab1f6ce4a08f6b0174c",
+    "relocated_radars": {},
+    "retained_mission_sha256": "ce05be378cac088c373bbe3b6b21f0596342cac04d2dd38d6734c37b506e5723",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "exercise_bright_star.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Ramon Airbase": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "086beefc7459c44fcda03c13d4ce28f850bebdea743b048dc81b5a8c472f7e89",
+    "relocated_radars": {},
+    "retained_mission_sha256": "0cb97761214b4d06c694790b74954431577a253a86ac151e2925345fc98ea28f",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "exercise_quasar.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Hatzerim": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "f6991e482961053a7f8a3e6494141422e885913c7e7775e101b401d3cf25ae1e",
+    "relocated_radars": {},
+    "retained_mission_sha256": "ff556cc995ff490891d696d16861aacded49eeb06f415065248b973a7e75e6c3",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "exercise_vegas_nerve.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Tonopah Test Range": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "dd2480a9085ea4085674e7f3eb51ee98f0342827fa0714c2e697f1e13b30be88",
+    "relocated_radars": {},
+    "retained_mission_sha256": "b255d9492516a8f346d02489284e8fde9d28d13329c3723bb97042db618a44e9",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "grabthars_hammer.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "88ed22aa3714beeafed9bc75275216c52448de252bf26620cdadee0c903f0582",
+    "relocated_radars": {},
+    "retained_mission_sha256": "09c5ea3c4d1b578b48f52cbc8767f3df0f5eeb47642e8ec3d67377cad96f0cf0",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "graveyard_of_empires.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "2adceaa02b814c2a59b8c6b66bc2fc1508e215022d9d93ed6a9f93c216feb5c8",
+    "relocated_radars": {},
+    "retained_mission_sha256": "4e2ab08b7c3d83a4cd7f32eee287c6d2f8beca3f089d47da0b27e5cc452d5830",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "marianas_2027.yaml": {
+    "island_anchors": [
+      [
+        686645.91005172,
+        71332.462834076
+      ],
+      [
+        584748.31189591,
+        97665.286963826
+      ],
+      [
+        512234.53288685,
+        107824.11595294
+      ],
+      [
+        422865.34084574,
+        115221.93142827
+      ],
+      [
+        317003.30433276,
+        97869.029731084
+      ],
+      [
+        781181.19028558,
+        19372.315372154
+      ]
+    ],
+    "new_jammers": {
+      "Blue GPS Jammer Antonio B. Won Pat Intl": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "d4db4471a9a84fb18452950571fb54e5bddc5dc8509f85ac4fa9a8a262c9f280",
+    "relocated_radars": {},
+    "retained_mission_sha256": "8fbb220c2fb324c887ededd817345d3e2ce6d80484fe7bf02b3497b0927f3429",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "marianas_guam_barrigada.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "14cdcd19f08a3223d7f783430d8e89de4ce4a910243560189bb39deac6e112ab",
+    "relocated_radars": {},
+    "retained_mission_sha256": "c63471d03a3369ba04f9312b38d84b65f4573f398392b6e446addaecbb8628e5",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "marianas_guam_landing_at_agat.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "e2ed6ff3674527dfe8834d3833cffc9c2bf664aea664b8db59995ff8dd652315",
+    "relocated_radars": {},
+    "retained_mission_sha256": "8d6eeca2a5998d01dc1e362e4c0065c9627770c35bf7e708d651ef753368b56d",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "mozdok_to_maykop.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "adcebbdf23de0b24e2cf0b4d65afeb6528a5b4bb05673ec991a84e190170d2c7",
+    "relocated_radars": {},
+    "retained_mission_sha256": "436482b75731b829d770bbc69605be45db0ca228ed3eae2685b3b404a2bb2408",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "northern_russia.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "1713da703c09168070ae9c0f2c4cad393ef98368bde42e98940112cb38d5c7af",
+    "relocated_radars": {},
+    "retained_mission_sha256": "d2fceb32aab0c8b702c9000c20b589c4d2c57cbbd9057255bd52c65a49751dd5",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_aegean_aegis.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "d44b324f7ac7cbaaa9b19f501d4ba68990fb4fcdaf7340f8a4ff92f96abaa54d",
+    "relocated_radars": {},
+    "retained_mission_sha256": "fca608e6c5492fc9d198e758e080f5f52892032f636b56f9ca2cdfcaeb939ef9",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_allied_sword.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "149bbff21561262356fa67567235d38017a015c37adff1ad64762e814f49e68e",
+    "relocated_radars": {},
+    "retained_mission_sha256": "319f0a380719ae8deb9dbda37788d9be4bbfcaeea676b344dee90e1bdfd5ab9a",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_blackball.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "565592a9a0ed12baf286b9ba3a9976c0d322c8070a3f8be9b315c604a405b5e6",
+    "relocated_radars": {},
+    "retained_mission_sha256": "a1be6b0aa5ec6a30c3f2e25e7e91d8a88a9499c249651bc404dda32cd93c2e8c",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_desert_aladeen.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Al-Salam Airbase": "GPS Jamming Site (Blue, Unescorted)",
+      "Red GPS Jammer Kirkuk International Airport": "GPS Jamming Site (Red, Unescorted)"
+    },
+    "other_entries_sha256": "887075f5f748a3b47ab020210adfaa06716b92df9eeab433329b3a358854d1fa",
+    "relocated_radars": {},
+    "retained_mission_sha256": "b990595b60c708d23390ca4f94b64e9c4ea697bcdf5f78a2c2b58fb7cc357bad",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_desert_trident.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "993226583048fbef5308883428742b3f0efa30ae378ad495de1d97a693eab8d5",
+    "relocated_radars": {},
+    "retained_mission_sha256": "e42549ce7c29e18df2e70a1f68b232355c9ae2989e6330b7706a03a473104788",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_frostbite.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Rovaniemi": "GPS Jamming Site (Blue, Unescorted)",
+      "Red GPS Jammer Severomorsk-1": "GPS Jamming Site (Red, Unescorted)"
+    },
+    "other_entries_sha256": "3ebc6bb62e0f60b8fb21478e7554b0fbda8b0032a5acf990c6bafb4b6287919c",
+    "relocated_radars": {},
+    "retained_mission_sha256": "19bbba4afa184ee00e91eb38af6e71e74f650e6e894aac6fb3ce20b4dedfb8a8",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_gazelle.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "9046e58c7daf1661498435d6b2713c13d4df4d5fbc34e13123dd89ba6959fb9c",
+    "relocated_radars": {},
+    "retained_mission_sha256": "be3c408fdf5e37ab5495f1d261f80bd6e826188b237db8d8c1dadc31dcae4fce",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_noisy_cricket.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Al Minhad AFB": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "6bbbe561046be0edf34c5a0818f98d7b55336414b98574147b07f5babe62f616",
+    "relocated_radars": {},
+    "retained_mission_sha256": "3d7210a0d6870902443eda6d4db7509d73588371dc51edae3c40ca23f30049ce",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_peace_spring.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Ramat David": "GPS Jamming Site (Blue, Unescorted)",
+      "Red GPS Jammer Damascus": "GPS Jamming Site (Red, Unescorted)"
+    },
+    "other_entries_sha256": "afe241369df4131f7cf2f96b0c7610ebc3c650d62c883f5f587ea97ba7a07d50",
+    "relocated_radars": {},
+    "retained_mission_sha256": "0b2c0a610b750038188c05aeaa49e502d3fd4a1b63c7ecdd1d021f7674c0a61d",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_vectrons_claw.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "2fa399e2f457a57d38e76822bb57239684541fe725a91ab8139f727a86a7cd47",
+    "relocated_radars": {},
+    "retained_mission_sha256": "e392d83891f1f2df7870276026377517be78f0996e3385fec2f3c50ddfc4634b",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "operation_velvet_thunder.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "a5de8bdfc5382a79811070260360a0d9fc2ae5b9827a20dd4b1618aadfe979f5",
+    "relocated_radars": {},
+    "retained_mission_sha256": "91aed8c3a1020888b80b48cc5275d9d101afef3e59f41672c37d2502a0ae7911",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "pacific_repartee.yaml": {
+    "island_anchors": [
+      [
+        781181.19028558,
+        19372.315372154
+      ],
+      [
+        686645.91005172,
+        71332.462834076
+      ],
+      [
+        584748.31189591,
+        97665.286963826
+      ],
+      [
+        512234.53288685,
+        107824.11595294
+      ],
+      [
+        422865.34084574,
+        115221.93142827
+      ],
+      [
+        317003.30433276,
+        97869.029731084
+      ]
+    ],
+    "new_jammers": {},
+    "other_entries_sha256": "1e9c8ed3a4f14d6fe8e40f7bf22851c4d204eeedbdd15f26acbbfd6b99fbd727",
+    "relocated_radars": {},
+    "retained_mission_sha256": "d806ec389530be48e9596c958cdca0005a0b0cc247d4d3fb6a3d8470ec312e69",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "red_sea_rising.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "9a8695756412f156567dcad492c8a2f827130c10d8a0e47532a71e9d5fd317e1",
+    "relocated_radars": {},
+    "retained_mission_sha256": "2273d9d1e92e6d117181cd9ed665e304c2d61950c6b5ca01b6bcd0e75a6782f6",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "slava_ukraini.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Novorossiysk": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "dc666cee960731be6e8b2271b7b62ffd64fe6c722035c2f840ffa8a74acc5a7f",
+    "relocated_radars": {},
+    "retained_mission_sha256": "c69d739719900b1a2cd7305c9aadae20b50d593e03a43abf97966a0b70101b14",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "syria_full_map.yaml": {
+    "island_anchors": [],
+    "new_jammers": {
+      "Blue GPS Jammer Incirlik": "GPS Jamming Site (Blue, Unescorted)"
+    },
+    "other_entries_sha256": "0974e9b85d6fee1d96fce76fd4d54b1d5f0a329743ea5e118331c47382a1d80a",
+    "relocated_radars": {},
+    "retained_mission_sha256": "59917b2f0e0cd91ccedb8da298a9c79dad9a5da50ea4daba8cce43faa996482e",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "the_anvil_of_war.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "2fb5f1ffb7c2688518602371a73c39bb94e4661607a8f40a8b61f77cbb121c97",
+    "relocated_radars": {},
+    "retained_mission_sha256": "ec76e61c1c89aaf446b705327695f0007af9ffca735593e366ae576c386e21c9",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  },
+  "tripoint_hostility.yaml": {
+    "island_anchors": [],
+    "new_jammers": {},
+    "other_entries_sha256": "4817cc00636ab364f0307249b7de443f1292a9868cbed6b100a05b1c7034614a",
+    "relocated_radars": {},
+    "retained_mission_sha256": "e2f9e0e4a29d5cc8f7d77100c81cf3b27a1c83d0d4eecb5e8697ec6f05eebfd8",
+    "sides": [
+      "BLUE",
+      "RED"
+    ]
+  }
+}

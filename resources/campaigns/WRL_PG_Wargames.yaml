@@ -13,8 +13,11 @@ recommended_player_money: 5000
 recommended_enemy_money: 2000
 recommended_player_income_multiplier: 5.0
 recommended_enemy_income_multiplier: 1.0
-advanced_iads: false
+advanced_iads: true
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   max_frontline_width: 30
 squadrons:
 #Bandar Abbas Intl
@@ -252,19 +255,19 @@ squadrons:
 # SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
 ground_forces:
   Ground-32: GPS Jamming Site (Red)
-
-  MINHAD1: SA-2/S-75 
-  MINHAD2: SA-10/S-300PS 
+  MINHAD1: SA-2/S-75
+  MINHAD2: SA-10/S-300PS
   ALMAK1: SA-11
   ALMAK2: SA-6
-  ALDAHFRA1: SA-6 
-  ALDAHFRA2: SA-11 
-  ALDAHFRA3: SA-6 
-  ALDAHFRA4: SA-2/S-75 
+  ALDAHFRA1: SA-6
+  ALDAHFRA2: SA-11
+  ALDAHFRA3: SA-6
+  ALDAHFRA4: SA-2/S-75
   ALDAHFRA5: SA-6
-  ALDAHFRA6: SA-2/S-75  
-  LIWA1: SA-6 
-  LIWA2: SA-11 
+  ALDAHFRA6: SA-2/S-75
+  LIWA1: SA-6
+  LIWA2: SA-11
   LIWA3: SA-6
   LIWA4: SA-10/S-300PS
   ISLAND1: SA-6
+  Blue GPS Jammer FOB Ras Al Khaimah: GPS Jamming Site (Blue, Unescorted)

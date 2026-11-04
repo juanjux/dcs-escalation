@@ -8,6 +8,7 @@ recommended_player_faction: USA 2020
 recommended_enemy_faction: China 2027
 miz: marianas_2027.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 2027-04-12
 recommended_player_money: 1600
 recommended_enemy_money: 1400
@@ -31,12 +32,13 @@ settings:
   # block parses as valid YAML and is then silently discarded -- which is exactly
   # what happened to four of these five from 2026-06 until 2026-08-08.
   plugins:
-    gpsjamming: true            # §86 runtime -- the setting does nothing without it
-    mobilemissiles: true        # §49 shoot-and-scoot theatre-missile sites
-    cruisemissiles: true        # §63 ship-launched raids + the call-for-fire menu
-    aisleep: true               # §59 rear ground-AI sleep
-    rednet: true                # §70 audible red UHF net
-  # Every squadron fields its full authored strength on turn 1. This is a come-as-you-
+    gpsjamming: true
+    mobilemissiles: true
+    cruisemissiles: true
+    aisleep: true
+    rednet: true
+    skynetiads: true
+# Every squadron fields its full authored strength on turn 1. This is a come-as-you-
   # are fight -- the war opened with a missile salvo on Guam, nobody spins up a training
   # pipeline first -- and with no land front the player cannot trade time for mass.
   # NOTE the key is `squadron_start_full` (singular), not the wizard's field name
@@ -147,23 +149,8 @@ settings:
 ground_forces:
   Ground-20: GPS Jamming Site (Red)
   FOB Bandar-e-Jask-1: GPS Jamming Site (Red)
-  # Tinian: the long-range anchor, and the northern edge of what the player can be
-  # allowed to face on turn 1. Tinian is 175 km from Andersen and the HQ-22 reaches
-  # 170 km, so the envelope stops just short of Guam -- it dominates the Rota approach
-  # without putting the airfield itself under a SAM. (The S-300PMU-2 reaches 200 km:
-  # there is NO site in the Guam-Saipan corridor where it does not cover Andersen, so
-  # it is left to the northern bases' own defences rather than authored here.)
   Ground-1: HQ-22
-  # Rota is 75 km from Andersen -- close enough that ANY long-range system here covers
-  # Guam. It gets point defence only; its marker is authored SHORT to match.
   Rota SAM Site: HQ-7
-  # NAVAL PLACEMENT. Six screens survive the cull (see the build tool); the rest of
-  # Repartee's 21 ship markers are deleted outright, because every marker becomes a
-  # whole naval group and hull count is what produced the 374-launch opening salvo. The HHQ-9 reaches 250 km and Guam-to-Saipan is only 205 km, so one
-  # heavy group covers a third of the theatre. EVERY scattered surface marker is an
-  # inshore escort; the area-defence destroyers stay concentrated with the three carrier
-  # groups, which draw them from the roster. Eight extra 250 km rings did not make the
-  # campaign harder, it made the map unreadable (measured: 13 of 30 rings were 250 km).
   Naval-16: Chinese Navy 2027 Escort
   Naval-24: Chinese Navy 2027 Escort
   Naval-9: Chinese Navy 2027 Escort
@@ -172,8 +159,6 @@ ground_forces:
   Naval-10: Chinese Navy 2027 Escort
   Naval-8: Chinese Navy 2027 Escort
   Naval-19: Chinese Navy 2027 Escort
-
-  # Point defence on the occupied islands: HQ-7, the PLA's own short-range system.
   Ground-3: HQ-7
   Ground-7: HQ-7
   Ground-10: HQ-7
@@ -182,10 +167,7 @@ ground_forces:
   Ground-19: HQ-7
   Ground-21: HQ-7
   Ground-22: HQ-7
-  # NOT pinned, deliberately: the remaining medium markers (Ground-4/5/11/12/14/16).
-  # China 2027's only MERAD preset is the SA-11 (its HQ-16 analogue), so the roll can
-  # only produce that one system anyway and a pin would be pure decoration.
-
+  Blue GPS Jammer Antonio B. Won Pat Intl: GPS Jamming Site (Blue, Unescorted)
 squadrons:
   # ==================== BLUE -- Guam ====================
   # Andersen AFB is the only field on the map with the ramp for a heavy wing

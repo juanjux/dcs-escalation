@@ -18,9 +18,13 @@ description:
     Israeli dominance in the crucial Sinai region.</p>
 miz: operation_gazelle.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 1973-10-15
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: false
   a4_skyhawk: true
   squadron_start_full: true
 squadrons:

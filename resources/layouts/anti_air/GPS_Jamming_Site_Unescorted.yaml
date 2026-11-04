@@ -1,0 +1,15 @@
+# Campaign authors can add electronic warfare without adding another SAM/AAA site.
+# Reuse the emitter placement, but deliberately omit the optional security group.
+name: GPS Jamming Site (Unescorted)
+layout_file: resources/layouts/anti_air/GPS_Jamming_Site.miz
+generic: false
+tasks:
+  - EarlyWarningRadar
+groups:
+  - GPS Jamming Site:
+    - name: GPS Jammer
+      unit_count:
+        - 1
+      unit_types:
+        - GPS_Spoofer_Red
+        - GPS_Spoofer_Blue

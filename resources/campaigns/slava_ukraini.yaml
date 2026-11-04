@@ -13,9 +13,13 @@ description:
   military airfields where Russia's fighter and bomber squadrons are based.</p>
 miz: slava_ukraini.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 2026-02-24
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   ukrainemilitaryassetspack: true
   russianmilitaryassetspack: true
   squadron_start_full: true
@@ -24,7 +28,7 @@ settings:
 # SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
 ground_forces:
   Ground-56: GPS Jamming Site (Red)
-
+  Blue GPS Jammer Novorossiysk: GPS Jamming Site (Blue, Unescorted)
 squadrons:
   #Anapa-Vityazevo
   12:

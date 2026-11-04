@@ -11,9 +11,13 @@ description:
   <p>Within days, Russian armored divisions and airborne troops seize control of a significant portion of Lapland, a strategic region rich in natural resources and bordering key NATO member, Norway. The world is stunned by the brazen aggression, and the once neutral Finland finds itself thrust into the center of a new global conflict.</p>
 miz: operation_frostbite.miz
 performance: 3
+advanced_iads: true
 recommended_start_date: 2016-06-06
 version: "10.7"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   restrict_weapons_by_date: false
 squadrons:
   #Lakselv
@@ -257,3 +261,7 @@ squadrons:
         - Su-27 Flanker-B
 
 
+
+ground_forces:
+  "Blue GPS Jammer Rovaniemi": GPS Jamming Site (Blue, Unescorted)
+  "Red GPS Jammer Severomorsk-1": GPS Jamming Site (Red, Unescorted)

@@ -15,6 +15,7 @@ description:
   <li>- Add coastal defenses along mediterranean sea</li>'
 miz: exercise_quasar.miz
 performance: 2
+advanced_iads: true
 recommended_start_date: 2025-09-01
 version: "10.7"
 # GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
@@ -22,7 +23,7 @@ version: "10.7"
 # SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
 ground_forces:
   Ground-18: GPS Jamming Site (Red)
-
+  Blue GPS Jammer Hatzerim: GPS Jamming Site (Blue, Unescorted)
 squadrons:
   Naval-1:
     - primary: SEAD
@@ -195,3 +196,8 @@ squadrons:
         - Mi-8
       size: 12
       pilots: 16
+
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true

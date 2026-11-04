@@ -8,13 +8,14 @@ recommended_enemy_faction: Syria 2012'ish
 recommended_start_date: 2012-06-05
 miz: syria_full_map.miz
 performance: 3
+advanced_iads: true
 version: "10.5"
 # GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
 # most of its own air defences. No radar on it, so it is a STRIKE target, not
 # SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
 ground_forces:
   Ground-9: GPS Jamming Site (Red)
-
+  Blue GPS Jammer Incirlik: GPS Jamming Site (Blue, Unescorted)
 squadrons:
   # Incirlik
   16:
@@ -301,3 +302,8 @@ squadrons:
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
+
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true

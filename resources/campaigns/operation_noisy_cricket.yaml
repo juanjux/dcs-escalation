@@ -25,12 +25,16 @@ description:
   development.</p>
 miz: operation_noisy_cricket.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 2019-07-13
 recommended_player_money: 0
 recommended_enemy_money: 0
 recommended_player_income_multiplier: 0.2
 recommended_enemy_income_multiplier: 0.2
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   fa_18efg: true
   f22_raptor: true
   uh_60l: true
@@ -41,7 +45,7 @@ version: "10.9"
 # SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
 ground_forces:
   Ground-23: GPS Jamming Site (Red)
-
+  Blue GPS Jammer Al Minhad AFB: GPS Jamming Site (Blue, Unescorted)
 squadrons:
   Blue CV-1:
     - primary: SEAD

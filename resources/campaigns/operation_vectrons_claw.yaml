@@ -23,19 +23,17 @@ description:
   combat engagement.</p>
 miz: operation_vectrons_claw.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 2005-08-08
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: false
   fa_18efg: true
   f22_raptor: true
   uh_60l: true
   squadron_start_full: true
-# GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
-# most of its own air defences. No radar on it, so it is a STRIKE target, not
-# SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
-ground_forces:
-  Ground-10: GPS Jamming Site (Red)
-
 squadrons:
   Blue CV-1:
     - primary: BARCAP
