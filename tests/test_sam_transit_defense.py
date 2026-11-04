@@ -7,15 +7,22 @@ from zipfile import ZipFile
 
 from dcs.lua import dumps, loads
 from dcs.action import DoScript
+from dcs.task import OptAlarmState, OptROE
 from dcs.vehicles import vehicle_map
 import pytest
 
 from game.dcs.groundunittype import GroundUnitType
-from game.groundmovement.samdefense import PROFILES, transit_defense
+from game.groundmovement.samdefense import (
+    PROFILES,
+    transit_defense,
+    transit_defense_warning,
+)
+from game.groundmovement.planning import armor_movement_options, preview_armor_movement
 from game.groundmovement.settings import set_enabled
 from game.missiongenerator.luagenerator import LuaGenerator
 from game.missiongenerator.samtransitdefense import configure
 from game.missiongenerator.realisticcasluadata import collect_registry
+from game.theater.player import Player
 from tests.test_sam_movement import generate_site, make_site, move
 from tests.test_armor_movement_planning import world  # noqa: F401
 
@@ -36,10 +43,112 @@ def test_reviewed_profiles_and_mixed_batteries(profile: Any) -> None:
 
 @pytest.mark.parametrize(
     "unit_type",
-    ["M1097 Avenger", "HQ17A", "CH_S350_50N6", "CH_SkySabre", "ZSU_57_2"],
+    [
+        "CH_RBS-98",
+        "HQ17A",
+        "CH_S350_50N6",
+        "CH_SkySabre",
+        "SA-11 Buk LN 9A310M1",
+        "S-300PS 5P85C ln",
+    ],
 )
 def test_unvalidated_systems_are_not_enabled(unit_type: str) -> None:
     assert transit_defense([unit_type]) is None
+
+
+@pytest.mark.parametrize(
+    "types",
+    [
+        frozenset({"CH_RBS-98"}),
+        frozenset({"CH_RBS-98", "CH_UndE23"}),
+        frozenset({"CH_RBS-98", "CH_UndE23", "Osa 9A33 ln"}),
+    ],
+)
+def test_rbs98_has_an_explicit_no_transit_defense_restriction(
+    types: frozenset[str],
+) -> None:
+    assert transit_defense(types) is None
+    assert "no self-defense during relocation" in (transit_defense_warning(types) or "")
+
+
+@pytest.mark.parametrize("profile", PROFILES)
+def test_validated_profiles_do_not_get_the_rbs98_warning(profile: Any) -> None:
+    assert transit_defense_warning(iter(profile.types)) is None
+
+
+@pytest.mark.parametrize(
+    "types", [frozenset({"CH_RBS-98"}), frozenset({"CH_RBS-98", "CH_UndE23"})]
+)
+def test_rbs98_relocates_packed_with_a_nonblocking_warning(
+    world: Any, types: frozenset[str]
+) -> None:
+    site = make_site(world, variants(types))
+    options = armor_movement_options(world.game, site.id, Player.BLUE)
+    assert options.enabled and all(unit.selectable for unit in options.units)
+    warning = transit_defense_warning(types)
+    assert warning is not None and warning in options.warnings
+    preview = preview_armor_movement(
+        world.game,
+        site.id,
+        Player.BLUE,
+        [unit.id for unit in site.units],
+        world.destination,
+    )
+    assert warning in preview.warnings
+    move(world)
+    mission, mapping = generate_site(world)
+    assert configure(mission, mapping) == []
+    group = mission.country("USA").vehicle_group[0]
+    assert {unit.type for unit in group.units} == types
+    assert len(group.points) >= 2
+    assert any(
+        isinstance(task, OptAlarmState) and task.value == 1  # GREEN
+        for task in group.points[0].tasks
+    )
+    assert any(
+        isinstance(task, OptROE) and task.value == OptROE.Values.WeaponHold
+        for task in group.points[0].tasks
+    )
+    registry = collect_registry(
+        mission, cast(Any, NS(flights=[], jtacs=[])), enabled=True, unit_map=mapping
+    )
+    assert registry is not None and registry["airDefenseThreats"] == []
+
+
+@pytest.mark.parametrize(
+    "unit_type,range_m,ceiling_m,min_range_m",
+    [
+        ("ZSU_57_2", 7000, 4000, 0),
+        ("ZSU-23-4 Shilka", 2500, None, 0),
+        ("CHAP_PantsirS1", 12000, 10000, 0),
+        ("CHAP_TorM2", 12000, 12000, 1500),
+        ("Tor 9A331", 12000, 6000, 1500),
+        ("Vulcan", 2000, None, 0),
+        ("Roland ADS", 8000, 6000, 500),
+        ("Ural-375 ZU-23", 2500, None, 0),
+        ("CH_Centurion_C_RAM", 2000, None, 0),
+        ("CH_PantsirS2", 12000, 18000, 0),
+        ("CH_StormerHVM", 7000, 7000, 300),
+        ("CH_FlaRakRad", 8000, 6000, 500),
+        ("CH_LvKv9040", 4000, 2500, 0),
+        ("PGL_625", 8000, 5000, 0),
+        ("M1097 Avenger", 4500, 3500, 0),
+        ("M6 Linebacker", 4500, 3500, 0),
+        ("Strela-10M3", 5000, 3500, 800),
+        ("Strela-1 9P31", 4200, 3500, 800),
+        ("CH_LAVAD", 8000, 4800, 0),
+        ("CH_BoxerSkyranger", 8000, 4800, 0),
+        ("CH_Wiesel2Ozelot", 8000, 4800, 0),
+    ],
+)
+def test_additional_reviewed_profiles_preserve_weapon_bounds(
+    unit_type: str, range_m: int, ceiling_m: int | None, min_range_m: int
+) -> None:
+    profile = transit_defense([unit_type])
+    assert profile is not None
+    assert profile.range_m == range_m
+    assert profile.ceiling_m == ceiling_m
+    assert profile.min_range_m == min_range_m
 
 
 @pytest.mark.parametrize("profile", PROFILES)

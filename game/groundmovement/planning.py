@@ -18,6 +18,7 @@ from game.groundmovement.orders import (
     plan_transport,
 )
 from game.groundmovement.routing import CampaignGroundRouter
+from game.groundmovement.samdefense import transit_defense_warning
 from game.groundmovement.settings import distance_per_turn, enabled
 from game.groundmovement.territory import require_friendly_position
 from game.theater.player import Player
@@ -161,6 +162,11 @@ def armor_movement_options(
             "packing and reloading may delay their return to the route. "
             "Other sites keep radars and weapons packed until arrival or an explicit stop."
         )
+        restriction = transit_defense_warning(
+            unit.dcs_unit_type.id for unit in unit_types.values()
+        )
+        if restriction:
+            warnings.append(restriction)
     sam_ready = not is_sam or (
         not unsupported
         and pieces <= tractors
@@ -303,6 +309,12 @@ def preview_armor_movement(
     ]
     if road == 0:
         warnings.append("This route contains only validated off-road travel")
+    if isinstance(source, IadsGroundObject):
+        restriction = transit_defense_warning(
+            unit.dcs_unit_type.id for unit in all_units.values()
+        )
+        if restriction:
+            warnings.append(restriction)
     return ArmorMovementPreview(
         source.id,
         manifest,
