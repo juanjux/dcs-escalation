@@ -1051,7 +1051,11 @@ class ControlPoint(MissionTarget, SidcDescribable, ABC):
         destination = self.aircraft_retreat_destination(squadron)
         if destination is None:
             squadron.refund_orders()
-            self.capture_aircraft(game, squadron.aircraft, squadron.owned_aircraft)
+            count = squadron.owned_aircraft
+            squadron.owned_aircraft = 0
+            squadron.untasked_aircraft = 0
+            if count:
+                self.capture_aircraft(game, squadron.aircraft, count)
             return
 
         parking_type = ParkingType().from_squadron(squadron)

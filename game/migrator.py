@@ -43,6 +43,7 @@ class Migrator:
         self._update_factions()
         self._update_flights()
         self._update_squadrons()
+        self._remove_captured_aircraft()
         self._cancel_relocations_off_damaged_runways()
         self._update_transfers()
         self._release_untasked_flights()
@@ -295,6 +296,47 @@ class Migrator:
                             "returned"
                         )
                     squadron.available_pilots = pool
+
+    def _remove_captured_aircraft(self) -> None:
+        """Remove legacy inventory left behind after a recorded base capture."""
+        from game.aircraftmaintenance import remove_damaged, repairs
+
+        for coalition in self.game.coalitions:
+            for squadron in coalition.air_wing.iter_squadrons():
+                base = squadron.location
+                if (
+                    getattr(base, "last_capture_turn", None) is None
+                    or base.captured.is_neutral
+                    or base.is_friendly(coalition.player)
+                    or squadron.owned_aircraft <= 0
+                ):
+                    continue
+                # Do not discard inventory backing a saved active mission.
+                if any(
+                    flight.squadron is squadron
+                    for package in coalition.ato.packages
+                    for flight in package.flights
+                ):
+                    logging.warning(
+                        "Retaining aircraft at captured base %s: %s has saved flights",
+                        base.name,
+                        squadron,
+                    )
+                    continue
+                count = squadron.owned_aircraft
+                if squadron.pending_deliveries:
+                    squadron.refund_orders()
+                if repairs(squadron):
+                    remove_damaged(self.game, squadron, refund=False)
+                squadron.owned_aircraft = 0
+                squadron.untasked_aircraft = 0
+                # The capture already paid the new owner. Do not pay it again.
+                logging.info(
+                    "Removed %s captured aircraft retained by %s at %s",
+                    count,
+                    squadron,
+                    base.name,
+                )
 
     def _cancel_relocations_off_damaged_runways(self) -> None:
         """A squadron with aircraft could be ordered off a damaged runway. Its ferry
