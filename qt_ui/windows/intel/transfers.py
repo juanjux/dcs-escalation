@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import (
+    QConcatenateTablesProxyModel,
     QModelIndex,
     QPersistentModelIndex,
     QSortFilterProxyModel,
@@ -17,6 +18,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QListView,
     QPushButton,
+    QMessageBox,
     QStyledItemDelegate,
     QStyleOptionViewItem,
     QStyle,
@@ -28,13 +30,17 @@ from game.theater import Player
 from qt_ui.models import TransferModel
 from qt_ui.widgets.cards import CARD_BG, CARD_BORDER
 from qt_ui.widgets.controls import style_button
+from .groundmovements import GroundMovementEntry, GroundMovementsModel
 
 
 class TransferRow(QStyledItemDelegate):
     def sizeHint(
         self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex
     ) -> QSize:
-        return QSize(400, 62)
+        movement = isinstance(
+            index.data(TransferModel.TransferRole), GroundMovementEntry
+        )
+        return QSize(400, 86 if movement else 62)
 
     def paint(
         self,
@@ -47,6 +53,9 @@ class TransferRow(QStyledItemDelegate):
         painter.fillRect(option.rect, QColor("#2B506D" if selected else CARD_BG))
         rect = option.rect.adjusted(14, 8, -14, -8)
         transfer = index.data(TransferModel.TransferRole)
+        if transfer is None:
+            painter.restore()
+            return
         font = QFont(option.font)
         font.setPixelSize(13)
         font.setBold(True)
@@ -56,7 +65,7 @@ class TransferRow(QStyledItemDelegate):
             str(index.data()), Qt.TextElideMode.ElideRight, rect.width()
         )
         painter.drawText(
-            rect.adjusted(0, 0, 0, -22),
+            rect.adjusted(0, 0, 0, 20 - rect.height()),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             title,
         )
@@ -64,12 +73,15 @@ class TransferRow(QStyledItemDelegate):
         font.setBold(False)
         painter.setFont(font)
         painter.setPen(QColor("#B7C6D2"))
-        description = painter.fontMetrics().elidedText(
-            transfer.description, Qt.TextElideMode.ElideRight, rect.width()
+        description = "\n".join(
+            painter.fontMetrics().elidedText(
+                line, Qt.TextElideMode.ElideRight, rect.width()
+            )
+            for line in transfer.description.splitlines()
         )
         painter.drawText(
             rect.adjusted(0, 24, 0, 0),
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop,
             description,
         )
         painter.setPen(QColor(CARD_BORDER))
@@ -86,15 +98,25 @@ class TransferFilter(QSortFilterProxyModel):
         model = self.sourceModel()
         index = model.index(row, 0, parent)
         transfer = index.data(TransferModel.TransferRole)
-        return transfer.player == self.player and super().filterAcceptsRow(row, parent)
+        if transfer is None:
+            return False
+        text = str(index.data()) + " " + transfer.description
+        return (
+            transfer.player == self.player
+            and self.filterRegularExpression().match(text).hasMatch()
+        )
 
 
 class TransfersPane(QWidget):
     def __init__(self, model: TransferModel) -> None:
         super().__init__()
         self.model = model
+        self.movements = GroundMovementsModel(model, self)
+        self.combined = QConcatenateTablesProxyModel(self)
+        self.combined.addSourceModel(model)
+        self.combined.addSourceModel(self.movements)
         self.proxy = TransferFilter(self)
-        self.proxy.setSourceModel(model)
+        self.proxy.setSourceModel(self.combined)
         self.proxy.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 14, 14, 14)
@@ -146,9 +168,31 @@ class TransfersPane(QWidget):
         index = self.view.currentIndex()
         transfer = index.data(TransferModel.TransferRole) if index.isValid() else None
         self.cancel.setEnabled(transfer is not None and transfer.player.is_blue)
+        movement = isinstance(transfer, GroundMovementEntry)
+        self.cancel.setText(
+            "Stop selected movement" if movement else "Cancel selected transfer"
+        )
+        self.cancel.setToolTip(
+            "Stop at the current position; units remain deployed and are not returned to base."
+            if movement
+            else ""
+        )
 
     def cancel_selected(self) -> None:
         index = self.view.currentIndex()
-        if index.isValid() and index.data(TransferModel.TransferRole).player.is_blue:
-            self.model.cancel_transfer_at_index(self.proxy.mapToSource(index))
+        transfer = index.data(TransferModel.TransferRole) if index.isValid() else None
+        if transfer is not None and transfer.player.is_blue:
+            if isinstance(transfer, GroundMovementEntry):
+                try:
+                    model = self.model.game_model
+                    model.ground_movement_commands.stop(
+                        model.get(), transfer.order_id, transfer.player
+                    )
+                except (ValueError, PermissionError) as exc:
+                    QMessageBox.warning(self, "Cannot stop movement", str(exc))
+                self.movements.refresh()
+            else:
+                self.model.cancel_transfer_at_index(
+                    self.combined.mapToSource(self.proxy.mapToSource(index))
+                )
         self.refresh()

@@ -60,7 +60,7 @@ class QBaseMenu2(QDialog):
 
         self.setWindowIcon(EVENT_ICONS["capture"])
 
-        self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowStaysOnTopHint)
         self.setModal(True)
 
         self.setWindowTitle(self.cp.name)
