@@ -8,13 +8,8 @@ recommended_enemy_faction: Georgia 2008
 recommended_start_date: 1995-06-13
 miz: Caucasus_Multi_Georgia.miz
 performance: 2
+advanced_iads: true
 version: "9.1"
-# GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
-# most of its own air defences. No radar on it, so it is a STRIKE target, not
-# SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
-ground_forces:
-  Ground-25: GPS Jamming Site (Red)
-
 squadrons:
   # Kutaisi
   22:
@@ -189,3 +184,8 @@ squadrons:
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
+
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: false

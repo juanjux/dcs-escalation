@@ -9,6 +9,7 @@ description:
   pushing south.</p>
 miz: battle_of_abu_dhabi.miz
 performance: 2
+advanced_iads: true
 version: "10.7"
 squadrons:
   # Blue CPs:
@@ -220,3 +221,6 @@ squadrons:
         - Mirage 2000C
         - MiG-31 Foxhound
         - MiG-25PD Foxbat-E
+settings:
+  plugins:
+    skynetiads: true

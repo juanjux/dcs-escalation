@@ -179,6 +179,7 @@ description:
 version: "10.7"
 miz: operation_allied_sword.miz
 performance: 2
+advanced_iads: true
 recommended_start_date: 2004-07-17
 recommended_player_money: 1200
 recommended_enemy_money: 1500
@@ -441,3 +442,8 @@ squadrons:
         - Mi-8MTV2 Hip
       size: 2
       pilots: 6
+
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: false

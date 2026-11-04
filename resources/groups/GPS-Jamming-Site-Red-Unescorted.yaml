@@ -1,0 +1,8 @@
+name: GPS Jamming Site (Red, Unescorted)
+never_random: true
+tasks:
+  - EarlyWarningRadar
+units:
+  - GPS Jammer (Red)
+layouts:
+  - GPS Jamming Site (Unescorted)

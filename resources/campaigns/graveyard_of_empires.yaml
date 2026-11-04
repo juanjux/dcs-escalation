@@ -29,19 +29,17 @@ description:
   unyielding land.</p>
 miz: graveyard_of_empires.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 2002-01-27
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   usamilitaryassetspack: true
   russianmilitaryassetspack: true
   uh_60l: true
   squadron_start_full: true
-# GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
-# most of its own air defences. No radar on it, so it is a STRIKE target, not
-# SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
-ground_forces:
-  Ground-65: GPS Jamming Site (Red)
-
 squadrons:
   #Kandahar
   7:
@@ -209,3 +207,7 @@ squadrons:
          - Ka-50 Hokum III
       size: 4
       pilots: 8
+
+ground_forces:
+  "Ground-65": GPS Jamming Site (Red, Unescorted)
+  "Blue GPS Jammer Camp Bastion": GPS Jamming Site (Blue, Unescorted)

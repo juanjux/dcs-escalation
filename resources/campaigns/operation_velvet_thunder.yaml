@@ -17,9 +17,13 @@ description:
   Airbase threat range is set to 20 for this campaign to optimise autoplanner.</p>
 miz: operation_velvet_thunder.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 1970-11-29
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: false
   airbase_threat_range: 20
   a4_skyhawk: true
   f111c: true

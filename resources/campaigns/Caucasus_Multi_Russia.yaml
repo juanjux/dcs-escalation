@@ -8,13 +8,12 @@ recommended_enemy_faction: Russia 2010
 recommended_start_date: 2008-08-01
 miz: Caucasus_Multi_Russia.miz
 performance: 2
+advanced_iads: true
 version: "9.1"
-# GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
-# most of its own air defences. No radar on it, so it is a STRIKE target, not
-# SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
-ground_forces:
-  Ground-29: GPS Jamming Site (Red)
-
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
 squadrons:
   # Anapa-Vityazevo
   12:
@@ -273,3 +272,7 @@ squadrons:
       secondary: air-to-ground
     - primary: CAS
       secondary: air-to-ground
+
+ground_forces:
+  "Ground-29": GPS Jamming Site (Red, Unescorted)
+  "Blue GPS Jammer Tbilisi-Lochini": GPS Jamming Site (Blue, Unescorted)

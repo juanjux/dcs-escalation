@@ -13,7 +13,7 @@ recommended_player_money: 5000
 recommended_enemy_money: 2000
 recommended_player_income_multiplier: 5.0
 recommended_enemy_income_multiplier: 1.0
-advanced_iads: false
+advanced_iads: true
 squadrons:
   CVN-74 John Stennis:
     - primary: BARCAP
@@ -191,4 +191,8 @@ ground_forces:
   Jirah2: SA-3/S-125
   Jirah3: SA-6
   Aleppo: SA-3/S-125
- 
+  Blue GPS Jammer Taftanaz: GPS Jamming Site (Blue, Unescorted)
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true

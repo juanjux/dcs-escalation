@@ -10,6 +10,7 @@ recommended_player_money: 800
 recommended_enemy_money: 1000
 miz: TheValleyOfRotary.miz
 performance: 2
+advanced_iads: true
 version: "10.4"
 squadrons:
   # Shiraz International, BLUFOR start
@@ -65,3 +66,11 @@ squadrons:
   # Bagh, inverted start frontline south
   Bagh:
     - primary: Transport
+
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
+
+ground_forces:
+  "Blue GPS Jammer Shiraz Intl": GPS Jamming Site (Blue, Unescorted)

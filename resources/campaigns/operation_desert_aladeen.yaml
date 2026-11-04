@@ -22,9 +22,13 @@ description:
   <p>
 miz: operation_desert_aladeen.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 2012-05-16
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   usamilitaryassetspack: true
   f22_raptor: true
   squadron_start_full: true
@@ -212,3 +216,6 @@ squadrons:
         - MiG-21bis Fishbed-N
       size: 8
       pilots: 12
+ground_forces:
+  "Blue GPS Jammer Al-Salam Airbase": GPS Jamming Site (Blue, Unescorted)
+  "Red GPS Jammer Kirkuk International Airport": GPS Jamming Site (Red, Unescorted)

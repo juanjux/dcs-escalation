@@ -8,6 +8,7 @@ recommended_enemy_faction: Russia 1975
 recommended_start_date: 1995-06-13
 miz: northern_russia.miz
 performance: 2
+advanced_iads: true
 version: "10.5"
 squadrons:
   # Kutaisi
@@ -195,3 +196,8 @@ squadrons:
       secondary: air-to-ground
       aircraft:
         - AV-8B Harrier II Night Attack
+
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: false

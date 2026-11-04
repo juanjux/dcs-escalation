@@ -5,7 +5,8 @@ description: Ground-based radio/navigation jammer. DCS lists it as a Radio jamme
   below makes this unit deny satellite guidance over an area around itself, so a
   JDAM/JSOW/JASSM aimed at anything inside that area lands off the aimpoint.
   Killing it restores accuracy immediately.
-introduced: 2010
+# Campaign availability for a generic jammer, not a specific model's debut.
+introduced: 2000
 origin: Multinational
 price: 8
 role: Ground Radio / Navigation Jammer

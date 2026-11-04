@@ -28,9 +28,13 @@ description:
     security objectives.</p>
 miz: exercise_bright_star.miz
 performance: 2
+advanced_iads: true
 recommended_start_date: 2025-09-01
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   fa_18efg: true
   f22_raptor: true
   squadron_start_full: true  
@@ -39,7 +43,7 @@ settings:
 # SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
 ground_forces:
   Ground-57: GPS Jamming Site (Red)
-
+  Blue GPS Jammer Ramon Airbase: GPS Jamming Site (Blue, Unescorted)
 squadrons:
   Blue CV-1:
     - primary: SEAD

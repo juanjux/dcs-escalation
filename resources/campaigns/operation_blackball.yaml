@@ -8,17 +8,12 @@ recommended_player_faction: US Navy 2005
 recommended_enemy_faction: Russia 2010
 miz: operation_blackball.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 2006-05-17
 recommended_player_money: 1000
 recommended_enemy_money: 1200
 recommended_player_income_multiplier: 1.1
 recommended_enemy_income_multiplier: 0.7
-# GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
-# most of its own air defences. No radar on it, so it is a STRIKE target, not
-# SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
-ground_forces:
-  FOB Gecitkale-26: GPS Jamming Site (Red)
-
 squadrons:
   # BLUFOR CVN
   Naval-1:
@@ -182,3 +177,10 @@ squadrons:
         - Mi-24P Hind-F
       size: 4
       pilots: 8
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
+
+ground_forces:
+  "FOB Gecitkale-26": GPS Jamming Site (Red, Unescorted)

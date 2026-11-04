@@ -20,6 +20,7 @@ description:
  Intentions Isolate key urban centers, disrupt NATO reinforcement efforts, and establish de facto control over territory to demand international recognition. Expect extensive use of asymmetric tactics, including IEDs, ambushes, and civilian shields.</p>
 miz: Northern Guardian.miz
 performance: 2
+advanced_iads: true
 recommended_start_date: 2027-07-17
 recommended_player_money: 500
 recommended_enemy_money: 500
@@ -27,6 +28,9 @@ recommended_player_income_multiplier: 0.7
 recommended_enemy_income_multiplier: 1
 version: "10.7"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   squadron_start_full: true
   russianmilitaryassetspack: true
   usamilitaryassetspack: true
@@ -222,4 +226,5 @@ squadrons:
   
       
 
- 
+ground_forces:
+  "Blue GPS Jammer Fassberg": GPS Jamming Site (Blue, Unescorted)

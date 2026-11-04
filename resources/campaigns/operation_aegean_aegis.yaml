@@ -38,6 +38,7 @@ description:
   </p>
 miz: operation_aegean_aegis.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 2013-04-20
 recommended_player_money: 1000
 recommended_enemy_money: 0
@@ -45,6 +46,8 @@ recommended_player_income_multiplier: 1.0
 recommended_enemy_income_multiplier: 0.0
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
   uh_60l: true
   squadron_start_full: true
 squadrons:

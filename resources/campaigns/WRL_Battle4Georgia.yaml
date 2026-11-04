@@ -13,8 +13,11 @@ recommended_player_money: 5000
 recommended_enemy_money: 2000
 recommended_player_income_multiplier: 5.0
 recommended_enemy_income_multiplier: 1.0
-advanced_iads: false
+advanced_iads: true
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
   max_frontline_width: 30
 squadrons:
   Blue CV-1:
@@ -245,7 +248,6 @@ squadrons:
 # SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
 ground_forces:
   18|21-6: GPS Jamming Site (Red)
-
   USA1: Hawk
   USA2: Hawk
   USA3: Hawk
@@ -255,10 +257,10 @@ ground_forces:
   USA7: NASAMS AIM-120C
   USA8: NASAMS AIM-120C
   USA9: NASAMS AIM-120C
-  HSAM1: SA-15 SHORAD 
-  HSAM2: SA-15 SHORAD 
-  HSAM3: SA-15 SHORAD 
-  HSAM4: SA-15 SHORAD 
+  HSAM1: SA-15 SHORAD
+  HSAM2: SA-15 SHORAD
+  HSAM3: SA-15 SHORAD
+  HSAM4: SA-15 SHORAD
   FOBA1: SA-3/S-125
   FOBB1: SA-3/S-125
   FOBC1: SA-3/S-125
@@ -270,3 +272,4 @@ ground_forces:
   Sochi2: SA-11
   Sochi3: SA-11
   Sochi4: SA-11
+  Blue GPS Jammer Kutaisi: GPS Jamming Site (Blue, Unescorted)

@@ -15,17 +15,15 @@ description:
   lightly defended as the SoW are trying to avoid unwanted attention.</p>
 miz: grabthars_hammer.miz
 performance: 2
+advanced_iads: true
 recommended_start_date: 1999-12-25
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: false
   uh_60l: true
   squadron_start_full: true
-# GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
-# most of its own air defences. No radar on it, so it is a STRIKE target, not
-# SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
-ground_forces:
-  Ground-65: GPS Jamming Site (Red)
-
 squadrons:
   #Mount Pleasant
   2:

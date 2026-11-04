@@ -8,6 +8,7 @@ recommended_enemy_faction: Germany 1990
 recommended_start_date: 1980-09-21 6:40:00
 miz: TblisiGap.miz
 performance: 2
+advanced_iads: true
 version: "10.4"
 squadrons:
   #Vaziani, blufor jet base
@@ -92,3 +93,8 @@ squadrons:
   23:
     - primary: Transport
     - primary: AEW&C
+
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: false

@@ -28,9 +28,13 @@ description:
   F-111C mod active.</p>
 miz: exercise_able_archer.miz
 performance: 1
+advanced_iads: true
 recommended_start_date: 1983-11-09
 version: "10.9"
 settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: false
   uh_60l: true
   f111c: true
   squadron_start_full: true

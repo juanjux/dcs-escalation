@@ -9,13 +9,8 @@ recommended_enemy_faction: Russia 2010
 recommended_start_date: 2004-01-07
 miz: black_sea.miz
 performance: 3
+advanced_iads: true
 version: "10.7"
-# GPS jamming: one site on the enemy EWR marker whose 15 nm radius covers the
-# most of its own air defences. No radar on it, so it is a STRIKE target, not
-# SEAD, and a satellite-guided weapon aimed inside the bubble lands wide.
-ground_forces:
-  Ground-170: GPS Jamming Site (Red)
-
 squadrons:
   # Anapa-Vityazevo
   12:
@@ -185,3 +180,12 @@ squadrons:
       secondary: air-to-ground
       size: 8
       pilots: 12
+
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
+
+ground_forces:
+  "Ground-170": GPS Jamming Site (Red, Unescorted)
+  "Blue GPS Jammer Kutaisi": GPS Jamming Site (Blue, Unescorted)

@@ -7,7 +7,12 @@ recommended_player_faction: USA 2005
 recommended_enemy_faction: Iraq 1991
 miz: tripoint_hostility.miz
 performance: 2
+advanced_iads: true
 version: "10.7"
+settings:
+  plugins:
+    skynetiads: true
+    gpsjamming: true
 recommended_start_date: 2006-08-03
 recommended_player_money: 900
 recommended_enemy_money: 1200
@@ -230,3 +235,7 @@ squadrons:
       secondary: air-to-ground
       aircraft:
         - Su-22M4 Fitter-K
+
+ground_forces:
+  "Blue GPS Jammer FOB Tha'lah": GPS Jamming Site (Blue, Unescorted)
+  "Red GPS Jammer H3": GPS Jamming Site (Red, Unescorted)
