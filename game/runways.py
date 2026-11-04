@@ -171,7 +171,12 @@ class RunwayAssigner:
         self.conditions = conditions
 
     def angle_off_headwind(self, runway: RunwayData) -> Heading:
-        wind = Heading.from_degrees(self.conditions.weather.wind.at_0m.direction)
+        surface_wind = self.conditions.weather.wind.at_0m
+        if surface_wind.speed <= 0:
+            # A calm vector can retain any direction, especially when surface
+            # wind is disabled. Treat every runway as tied instead of using it.
+            return Heading.from_degrees(0)
+        wind = Heading.from_degrees(surface_wind.direction)
         ideal_heading = wind.opposite
         return runway.runway_heading.angle_between(ideal_heading)
 
@@ -183,7 +188,8 @@ class RunwayAssigner:
         The wind decides. Below CALM_WIND there is no meaningful headwind to choose
         between runways, so an ILS-equipped runway is preferred instead: two knots of
         wind was otherwise enough to select a bare runway at a field whose instrument
-        runway was unused.
+        runway was unused. At zero speed, ignore the stored wind direction and use
+        data order to break ties, still preferring an ILS-equipped runway.
         """
         runways = list(RunwayData.for_pydcs_airport(theater, airport))
 
