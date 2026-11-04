@@ -185,8 +185,10 @@ needed, and identifies types whose mobility has not been defined. Vehicle-mounte
 weapons, including types already paired with their truck, need no extra tractor
 and do not count as spare tractors. Reviewed tanks, armored vehicles, mobile air
 defences, artillery and cargo trucks have explicit mobility data, including mod
-variants. Stationary and unreviewed types remain unavailable. Dead units and existing
-planning reservations are excluded from available transport capacity.
+variants. Infantry and MANPADS are exempt from vehicle mobility checks and do not
+require or provide tractors. Other stationary and unreviewed types remain
+unavailable. Dead units and existing planning reservations are excluded from
+available transport capacity.
 Transported or towed pieces cannot fire while loaded and are lost with their assigned tractor.
 
 Choose **Move units** in a friendly armor group's Ground transport card. Select

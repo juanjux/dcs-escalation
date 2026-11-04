@@ -14,6 +14,7 @@ from shapely.geometry import Point as MapPoint
 from game.dcs.groundunittype import GroundUnitType
 from game.groundmovement.dispatch import ArmorTransit
 from game.groundmovement.journey import GroundJourney, GroundRoute
+from game.groundmovement.mobility import movement_mobility
 from game.groundmovement.orders import (
     DestinationKind,
     GroundMovementOrder,
@@ -160,7 +161,7 @@ def preview_base_movement(
     selected_ids = tuple(virtual)
     # Only tractors can be added automatically; do not materialize the whole stock.
     for unit in sorted(stock, key=lambda u: u.variant_id):
-        if unit.ground_mobility.can_tow:
+        if movement_mobility(unit).can_tow:
             for _ in range(
                 min(stock[unit] - requested.get(unit, 0), len(selected_ids))
             ):
