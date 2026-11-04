@@ -143,6 +143,12 @@ if dcsRetribution and SkynetIADS then
             coalitionPrefix = "RED"
         end
 
+        if dcsRetribution.IADS and dcsRetribution.IADS.automaticTopology then
+            iads.topology = EscalationIadsTopology:create(
+                iads, dcsRetribution.IADS[coalitionPrefix], coalition
+            )
+        end
+
         if debug then
             env.info("adding debug information")
             local iadsDebug = iads:getDebugSettings()

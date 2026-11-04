@@ -113,7 +113,9 @@ def test_backbone_links_follow_coverage_and_remain_dashed_when_destroyed(
         )
     links = IadsNetworkJs.from_network(network).connections
     assert len(links) == len(expected)
-    assert all(link.active and link.blue == side.is_blue for link in links)
+    # This subset contains a tower but no command centre: proximity alone does
+    # not make its links operational in the automatic relay topology.
+    assert all(not link.active and link.blue == side.is_blue for link in links)
     assert {link.connected for link in links} == (
         {objectives[-1].id} if expected else set()
     )

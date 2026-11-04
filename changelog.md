@@ -1,7 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
-* **[IADS]** Rebuild both coalitions' topology from current sites and configurable coverage each turn, replacing static campaign links.
+* **[IADS]** Rebuild topology each turn from current sites and coverage, with powered radio relay chains, isolated sectors and live infrastructure losses.
 * **[Map]** Add separate Blue/Red visibility filters for destroyed repairable sites, alongside the non-repairable filters.
 * **[Repairs]** Cancel pending building repairs with refunds in the UI and OPFOR REST/MCP; select individual buildings through the API.
 * **[Live Pilots]** Preselect post-debrief leave grants without understaffing squadrons and update projected pilot coverage as grants change.

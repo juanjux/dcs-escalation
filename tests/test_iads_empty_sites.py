@@ -24,7 +24,7 @@ from tests.test_iads_state import _unit
 def site(name: str, category: str = "aa", x: float = 0) -> Any:
     cp: Any = SimpleNamespace(captured=Player.RED, coalition=None)
     cp.is_friendly = lambda player: player == cp.captured
-    if category == "comms":
+    if category in ("comms", "commandcenter"):
         return IadsBuildingGroundObject(
             name,
             category,
@@ -51,10 +51,13 @@ def deploy(obj: Any, role: IadsRole = IadsRole.SAM) -> None:
 @pytest.mark.parametrize("configured", [True, False])
 def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> None:
     sam, tower = site("BATTERY"), site("TOWER", "comms", 1000)
+    # The battery reaches command through the tower, but not directly.
+    command = site("COMMAND", "commandcenter", 28_000)
     deploy(sam)
     deploy(tower, IadsRole.CONNECTION_NODE)
+    deploy(command, IadsRole.COMMAND_CENTER)
     network = IadsNetwork(True, [{"BATTERY": ["TOWER"]}] if configured else [])
-    network.initialize_network(iter([sam, tower]))
+    network.initialize_network(iter([sam, tower, command]))
     old_node = network.node_for_tgo(sam)
     assert old_node is not None
     assert IadsConnectionJs.connections_for_node(old_node, network)[0].active
@@ -62,6 +65,7 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
     # Capture clears mobile units but retains the site's infrastructure.
     sam.clear()
     sam.control_point.captured = tower.control_point.captured = Player.BLUE
+    command.control_point.captured = Player.BLUE
     events = GameUpdateEvents()
     network.update_tgo(sam, events)
     node = network.node_for_tgo(sam)
@@ -84,8 +88,9 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
         iads_considerate_culling=lambda obj: False, skynet_culled=lambda obj: False
     )
     tower.control_point.coalition = SimpleNamespace(player=Player.BLUE)
+    command.control_point.coalition = SimpleNamespace(player=Player.BLUE)
     assert all(
-        node.iads_role is IadsRole.CONNECTION_NODE
+        node.iads_role in (IadsRole.CONNECTION_NODE, IadsRole.COMMAND_CENTER)
         for node in network.skynet_nodes(fake_game)
     )
 
@@ -93,7 +98,7 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
     network.update_tgo(sam, GameUpdateEvents())
     node = network.node_for_tgo(sam)
     assert node is not None and not node.is_empty_site
-    assert len(network.nodes) == 2
+    assert len(network.nodes) == 3
     assert IadsConnectionJs.connections_for_node(node, network)[0].active
 
 

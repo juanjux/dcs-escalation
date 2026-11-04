@@ -73,7 +73,7 @@ def _node(group: Any, *connections: Any) -> Any:
 def _network(*nodes: Any) -> Any:
     return SimpleNamespace(
         nodes=list(nodes),
-        state_map=SimpleNamespace(status_for=lambda tgo: None),
+        state_map=SimpleNamespace(status_for=lambda tgo: None, connectivity=None),
     )
 
 
@@ -284,7 +284,8 @@ def test_a_jammer_with_the_power_out_says_it_is_jamming_nothing() -> None:
     jammer.ground_object.carries_gps_jammer = True
     network = _network(_node(jammer))
     network.state_map = SimpleNamespace(
-        status_for=lambda _tgo: IadsStatus(IadsState.DARK, "", False)
+        status_for=lambda _tgo: IadsStatus(IadsState.DARK, "", False),
+        connectivity=None,
     )
 
     jamming = _link(describe(jammer.ground_object, network), "JAMMING")

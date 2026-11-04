@@ -39,6 +39,11 @@ class IadsConnectionJs(BaseModel):
     ) -> list[IadsConnectionJs]:
         iads_connections = []
         tgo = network_node.group.ground_object
+        connectivity = (
+            network.state_map.connectivity
+            if getattr(network, "advanced_iads", False)
+            else None
+        )
         for id, connection in network_node.connections.items():
             if connection.ground_object.is_friendly(Player.BLUE) != tgo.is_friendly(
                 Player.BLUE
@@ -60,7 +65,9 @@ class IadsConnectionJs(BaseModel):
                     node=tgo.id,
                     connected=connection.ground_object.id,
                     active=(
-                        network_node.group.alive_units > 0
+                        connectivity.link_operational(network_node, connection)
+                        if connectivity is not None
+                        else network_node.group.alive_units > 0
                         and connection.alive_units > 0
                         and (
                             connection.iads_role is not IadsRole.COMMAND_CENTER

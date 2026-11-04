@@ -115,7 +115,7 @@
         },
         {
             "nameInUI": "Comms tower / command centre range (nm)",
-            "descriptionInUI": "Radio coverage used to rebuild both coalitions' IADS topology from current sites at the start of every turn.",
+            "descriptionInUI": "Radio coverage for automatic links each turn. Powered towers and command centres relay traffic along a chain; sites without a path to command fight autonomously.",
             "mnemonic": "commsRangeNm",
             "defaultValue": 15,
             "minimumValue": 1,
@@ -142,6 +142,10 @@
         {
             "file": "skynet-iads-compiled.lua",
             "mnemonic": "skynetiads-script"
+        },
+        {
+            "file": "skynet-topology.lua",
+            "mnemonic": "skynetiads-topology"
         }
     ],
     "configurationWorkOrders": [

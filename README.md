@@ -216,8 +216,11 @@ previous map view and campaign controls are restored when selection ends.
   all friendly command centres, communications towers and power stations within
   coverage, including infrastructure-to-infrastructure links. Radio and power
   coverage are configurable in the Skynet plugin; campaign-authored links are no
-  longer used. Destroyed dependencies remain visible as broken links, and ships
-  do not depend on shore infrastructure.
+  longer used. Powered towers and command centres relay communications along
+  multi-hop paths. Isolated sectors cannot exchange radar cues or HARM warnings,
+  and losses or repairs update the paths during the mission. Power stations do not
+  relay radio traffic. Destroyed dependencies remain visible as broken links, and
+  ships do not depend on shore infrastructure.
 
 - **Custom Skynetfork**, [juanjux/Skynet-IADS](https://github.com/juanjux/Skynet-IADS): upstream 3.3.0 with its
   HARM fixes, plus `ActMobile` and the four High Digit SAMs systems (S-400, S-300V4,

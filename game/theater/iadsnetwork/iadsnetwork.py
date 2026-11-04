@@ -85,6 +85,7 @@ class SkynetNode:
     iads_role: IadsRole
     properties: dict[str, str] = field(default_factory=dict)
     connections: dict[str, list[str]] = field(default_factory=lambda: defaultdict(list))
+    independent_comms: bool = False
 
     @staticmethod
     def dcs_name_for_group(group: IadsGroundGroup) -> str:
@@ -115,6 +116,7 @@ class SkynetNode:
             group.ground_object.coalition.player,
             group.iads_role,
         )
+        node.independent_comms = isinstance(group.ground_object, NavalGroundObject)
         unit_type = group.units[0].unit_type
         if unit_type is not None and isinstance(unit_type, GroundUnitType):
             node.properties = unit_type.skynet_properties.to_dict()
@@ -262,17 +264,28 @@ class IadsNetwork:
         # half, bombing a substation leaves its SAMs drawing confident threat rings
         # until the campaign is reloaded, because nothing touched THOSE objects.
         before = {obj: status for obj, status in self.state_map}
+        connectivity = self.state_map.connectivity
+        before_links = (
+            {
+                cid: connectivity.link_operational(node, group)
+                for node in self.nodes
+                for cid, group in node.connections.items()
+            }
+            if connectivity is not None
+            else None
+        )
         self.invalidate_state_map()
         try:
             self._update_tgo(tgo, events)
         finally:
-            self._push_state_changes(tgo, before, events)
+            self._push_state_changes(tgo, before, events, before_links)
 
     def _push_state_changes(
         self,
         tgo: TheaterGroundObject,
         before: dict[TheaterGroundObject, IadsStatus],
         events: GameUpdateEvents,
+        before_links: dict[UUID, bool] | None = None,
     ) -> None:
         after = {obj: status for obj, status in self.state_map}
         changed = {
@@ -286,9 +299,27 @@ class IadsNetwork:
         # something that changed is redrawn: a command centre going down cuts the links
         # of the sites that report to it, which are their nodes, not its own.
         changed.add(tgo)
+        connectivity = self.state_map.connectivity
         for node in self.nodes:
-            if node.group.ground_object in changed or any(
-                group.ground_object in changed for group in node.connections.values()
+            # Relays have no radar status, but a remote outage can change their
+            # outgoing links without changing either endpoint's physical health.
+            link_changed = (
+                before_links is not None
+                and connectivity is not None
+                and any(
+                    before_links.get(cid) != connectivity.link_operational(node, group)
+                    for cid, group in node.connections.items()
+                )
+            )
+            if link_changed:
+                events.update_tgo(node.group.ground_object)
+            if (
+                node.group.ground_object in changed
+                or any(
+                    group.ground_object in changed
+                    for group in node.connections.values()
+                )
+                or link_changed
             ):
                 events.update_iads_node(node)
 
