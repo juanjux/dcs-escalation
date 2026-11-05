@@ -19,8 +19,28 @@ do
     local priorities={[1]={},[2]={}}
     local warnings={}
     local lastThreats={}
+    local commandSource={}
+    local debugLast,debugBudget={},{}
     local instance
     local io={time=timer.getTime}
+    function io.debug(side,group,topic,detail,screen)
+      if not opt.debug or not ((side==1 and opt.red) or (side==2 and opt.blue)) then return end
+      local now=timer.getTime()
+      local key=side..'|'..group..'|'..topic
+      local previous=debugLast[key]
+      -- Periodic numeric snapshots stay in the log. Visible changes are bounded
+      -- separately, so large campaigns do not flood the coalition's message area.
+      if previous and now-previous.time<60 and (previous.detail==detail or topic=='active') then return end
+      debugLast[key]={time=now,detail=detail}
+      env.info(string.format('IMAC|DEBUG|t=%.1f|side=%d|group=%s|%s|%s',now,side,group,topic,detail))
+      local budget=debugBudget[side]
+      if not budget or now-budget.time>=60 then budget={time=now,count=0};debugBudget[side]=budget end
+      if topic~='active' and budget.count<4 and screen~=false then
+        budget.count=budget.count+1
+        trigger.action.outTextForCoalition(side,
+          'IMAC DEBUG ['..(side==2 and 'BLUE' or 'RED')..'] '..group..': '..topic..' - '..detail,15)
+      end
+    end
     local function warning(key,detail)
       if warnings[key] and timer.getTime()-warnings[key]<60 then return end
       warnings[key]=timer.getTime();env.warning('IMAC|ERROR|'..key..'|'..tostring(detail))
@@ -78,14 +98,19 @@ do
       end)
     end
     function io.authority(side)
-      if not ((side==1 and opt.red) or (side==2 and opt.blue)) then return false end
-      return protected('authority '..side,function()
+      commandSource[side]='none: no operating AWACS or powered command centre'
+      if not ((side==1 and opt.red) or (side==2 and opt.blue)) then
+        commandSource[side]='disabled in settings';return false
+      end
+      local granted=protected('authority '..side,function()
         for _,meta in ipairs(config.flights) do
           if meta.side==side and meta.awacs then
             local g=Group.getByName(meta.group)
             if g and g:isExist() and g:getCoalition()==side then
               for _,u in ipairs(g:getUnits()) do
-                if alive(u) and u:inAir() and u:getFuel()>0.05 and u:getRadar()==true then return true end
+                if alive(u) and u:inAir() and u:getFuel()>0.05 and u:getRadar()==true then
+                  commandSource[side]='AWACS '..meta.group;return true
+                end
               end
             end
           end
@@ -101,12 +126,17 @@ do
               end
               local query=dcsRetribution and dcsRetribution.iadsHasWorkingPower
               if query and query(meta.key)==false then powered=false end
-              if powered then return true end
+              if powered then
+                commandSource[side]='command centre '..meta.key..(#meta.power==0 and ' (standalone)' or ' (powered)')
+                return true
+              end
             end
           end
         end
         return false
       end)==true
+      io.debug(side,'commander','authority',commandSource[side])
+      return granted
     end
     local detection={Controller.Detection.VISUAL,Controller.Detection.OPTIC,
       Controller.Detection.RADAR,Controller.Detection.IRST}
@@ -291,6 +321,7 @@ do
     function API.pauseFlight(name,value) instance:pauseFlight(name,value) end
     local menus={}
     local status={}
+    function API.status(side) return status[side] or 'IMAC: waiting for first cycle' end
     if missionCommands then
       for number=1,2 do
         local side=number -- Lua 5.1 callbacks must retain each iteration's side.
@@ -332,10 +363,13 @@ do
           local orders,contactCount=0,0
           for _,s in pairs(instance.states) do if s.meta.side==side and s.order then orders=orders+1 end end
           for _,t in pairs(cache[side]) do if time-t.seen<=TTL then contactCount=contactCount+1 end end
-          status[side]=string.format('IMAC: %s | command authority: %s | tracks: %d | temporary orders: %d',
-            instance.paused[side] and 'paused' or 'running',io.authority(side) and 'available' or 'unavailable',
-            contactCount,orders)
-          if opt.debug and time%(60)<opt.interval then env.info('IMAC|STATUS|side='..side..'|'..status[side]) end
+          local enabled=(side==1 and opt.red) or (side==2 and opt.blue)
+          local hasAuthority=io.authority(side)
+          status[side]=string.format('IMAC: %s | command authority: %s | tracks: %d | temporary orders: %d | source: %s',
+            not enabled and 'disabled' or instance.paused[side] and 'paused' or 'running',
+            hasAuthority and 'available' or 'unavailable',contactCount,orders,commandSource[side])
+          io.debug(side,'commander','authority',commandSource[side])
+          io.debug(side,'commander','status',status[side],false)
         end
       end)
       if not ok then

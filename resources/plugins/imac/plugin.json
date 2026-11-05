@@ -3,10 +3,10 @@
     "descriptionInUI": "AI-only coordination for both sides while an airborne, operating AWACS or a powered command centre survives. Uses detected air contacts, redirects available BARCAP/TARCAP patrols, protects vulnerable flights, and holds attacks behind known SAM threats while DEAD is working. Temporary orders retain the original mission. Excludes Player/Client groups, escorts and AFAC navigation. F10 pause controls allow manual tasking. No emergency scrambles or ground orders. Off by default pending in-simulator validation.",
     "defaultValue": false,
     "specificOptions": [
-        {"nameInUI": "Enable BLUE commander", "mnemonic": "blue", "defaultValue": true},
-        {"nameInUI": "Enable RED commander", "mnemonic": "red", "defaultValue": true},
+        {"nameInUI": "Enable BLUE commander", "descriptionInUI": "Allow IMAC to command BLUE AI flights. Independent of the RED setting; Player/Client groups are never commanded.", "mnemonic": "blue", "defaultValue": true},
+        {"nameInUI": "Enable RED commander", "descriptionInUI": "Allow IMAC to command RED AI flights. Independent of the BLUE setting; Player/Client groups are never commanded.", "mnemonic": "red", "defaultValue": true},
         {"nameInUI": "Report orders to own coalition", "mnemonic": "reports", "defaultValue": true},
-        {"nameInUI": "Detailed decision logging", "mnemonic": "debug", "defaultValue": false},
+        {"nameInUI": "Debug messages and decision logging", "descriptionInUI": "Show command-source changes, decisions and rejection reasons to the owning coalition (at most four debug messages per minute). Also write detailed IMAC|DEBUG diagnostics to dcs.log, including active orders, fuel and remaining lease time. Independent of normal order reports; disabled sides show no debug messages.", "mnemonic": "debug", "defaultValue": false},
         {"nameInUI": "Decision interval (seconds)", "mnemonic": "interval", "defaultValue": 10, "minimumValue": 5, "maximumValue": 60},
         {"nameInUI": "Maximum intercept distance (NM)", "mnemonic": "interceptRangeNm", "defaultValue": 120, "minimumValue": 20, "maximumValue": 200},
         {"nameInUI": "Maximum distance from patrol (NM)", "mnemonic": "patrolLeashNm", "defaultValue": 80, "minimumValue": 10, "maximumValue": 150},

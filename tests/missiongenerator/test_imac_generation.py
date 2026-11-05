@@ -2,6 +2,7 @@
 
 import copy
 import json
+import pickle
 from pathlib import Path
 from types import SimpleNamespace as NS
 from typing import Any
@@ -18,7 +19,7 @@ from dcs.vehicles import AirDefence
 from game.ato import FlightType
 from game.missiongenerator import imac
 from game.missiongenerator.luagenerator import LuaGenerator
-from game.plugins.luaplugin import LuaPluginDefinition
+from game.plugins.luaplugin import LuaPlugin, LuaPluginDefinition
 from game.settings import Settings
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.player import Player
@@ -62,6 +63,32 @@ def test_manifest_is_opt_in_and_all_exported_defaults_match() -> None:
         o.identifier.removeprefix("imac."): o.value for o in definition.options
     } == imac.DEFAULTS
     assert "imac" in json.loads(Path("resources/plugins/plugins.json").read_text())
+
+
+def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> None:
+    definition = LuaPluginDefinition.from_json(
+        "imac", Path("resources/plugins/imac/plugin.json")
+    )
+    plugin = LuaPlugin(definition)
+    settings = Settings()
+    plugin.set_settings(settings)
+    plugin.set_value(True)
+    for option in plugin.options:
+        option.set_settings(settings)
+        if option.identifier in ("imac.blue", "imac.red", "imac.debug"):
+            option.set_value(option.identifier != "imac.blue")
+    restored = pickle.loads(pickle.dumps(settings))
+    plugin.set_settings(restored)
+    for option in plugin.options:
+        option.set_settings(restored)
+    options = imac.options([plugin])
+    assert options is not None
+    assert options["blue"] is False
+    assert options["red"] is True
+    assert options["debug"] is True
+    assert restored.plugins["imac.blue"] is False
+    assert restored.plugins["imac.red"] is True
+    assert restored.plugins["imac.debug"] is True
 
 
 @pytest.mark.parametrize(

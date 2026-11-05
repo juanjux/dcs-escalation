@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from .test_imac import ROOT, config
+from .test_imac import ROOT, config, metadata
 
 
 def runtime() -> Any:
@@ -258,6 +258,109 @@ def test_powered_command_centre_fuses_other_radars_without_an_awacs() -> None:
     lua.execute("power.life=0;tick(15)")
     assert lua.eval("EscalationIMAC.instance.states.CAP.order==nil") is True
     assert lua.eval("#groups.CAP.rtbs") == 0
+
+
+def test_isolated_command_centre_needs_no_iads_membership_or_radio_link() -> None:
+    lua = runtime()
+    lua.execute("""
+        awacs.life=0;cap.detections={bandit};cc=addStatic('ISOLATED CC object',2)
+        cfg.commandCenters={{name='ISOLATED CC object',key='ISOLATED CC',side=2,power={}}}
+        dcsRetribution={iadsHasWorkingPower=function()return nil end,
+          iadsHasWorkingConnection=function()error('radio topology must not gate IMAC')end}
+    """)
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 1
+    assert "ISOLATED CC (standalone)" in lua.eval("EscalationIMAC.status(2)")
+    lua.execute("cc.life=0;tick(15)")
+    assert lua.eval("EscalationIMAC.instance.states.CAP.order==nil") is True
+    assert "authority: unavailable" in lua.eval("EscalationIMAC.status(2)")
+
+
+def test_isolated_command_centre_does_not_supply_undetected_contacts() -> None:
+    lua = runtime()
+    lua.execute("""
+        awacs.life=0;cc=addStatic('ISOLATED CC object',2)
+        cfg.commandCenters={{name='ISOLATED CC object',key='ISOLATED CC',side=2,power={}}}
+    """)
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 0
+    assert lua.eval("bandit.positionReads") == 0
+    assert "authority: available" in lua.eval("EscalationIMAC.status(2)")
+
+
+@pytest.mark.parametrize(
+    "blue,red", [(True, True), (True, False), (False, True), (False, False)]
+)
+def test_side_switches_are_independent(blue: bool, red: bool) -> None:
+    lua = runtime()
+    for index, flight in enumerate(
+        [metadata("RED_CAP", "cap", 1), metadata("RED_AWACS", "support", 1)], 3
+    ):
+        flight["awacs"] = flight["group"] == "RED_AWACS"
+        lua.globals().cfg.flights[index] = lua.table_from(flight, recursive=True)
+    lua.globals().cfg.options.blue = blue
+    lua.globals().cfg.options.red = red
+    lua.execute("""
+        redCap=add('RED_CAP',1,0,true,{Fighters=true})
+        redEye=add('RED_AWACS',1,-100000,true,{AWACS=true})
+        blueBomber=add('BLUE_BOMBER',2,120000,true,{Bombers=true});blueBomber.poison=true
+        awacs.detections={bandit};redEye.detections={blueBomber}
+        cfg.sensors[#cfg.sensors+1]={name='RED_AWACS-unit',group='RED_AWACS',side=1,air=true}
+    """)
+    start(lua)
+    lua.execute("EscalationIMAC.reached('RED_CAP',2);tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == int(blue)
+    assert lua.eval("#groups.RED_CAP.pushes") == int(red)
+
+
+def test_debug_is_silent_by_default() -> None:
+    lua = runtime()
+    lua.execute("awacs.detections={bandit};cfg.options.reports=false")
+    start(lua)
+    lua.execute("tick(5);tick(65)")
+    assert lua.eval("#messages") == 0
+    assert lua.eval("table.concat(logs,';'):find('IMAC|DEBUG|',1,true)==nil") is True
+
+
+def test_debug_reports_source_orders_and_rejection_reasons_without_normal_reports() -> (
+    None
+):
+    lua = runtime()
+    lua.execute(
+        "cfg.options.debug=true;cfg.options.reports=false;cfg.options.red=false;"
+        "awacs.detections={bandit}"
+    )
+    start(lua)
+    lua.execute("tick(5);tick(15)")
+    log = lua.eval("table.concat(logs,';')")
+    assert "IMAC|DEBUG|" in log
+    assert "AWACS AWACS" in log
+    assert "intercept; target group=" in log
+    assert "fuel=" in log and "remaining=" in log
+    assert lua.eval("#messages") > 0
+    assert lua.eval("#messages") <= 4
+    assert lua.eval("messages[1].side") == 2
+    lua.execute(
+        "awacs.detections={};tick(50);bandit.observedX=200000;awacs.detections={bandit};tick(90)"
+    )
+    assert "contact beyond patrol leash" in lua.eval("table.concat(logs,';')")
+    assert lua.eval("bandit.positionReads") == 0
+
+
+def test_debug_suppresses_disabled_sides_and_limits_screen_messages() -> None:
+    lua = runtime()
+    lua.execute("""
+        cfg.options.debug=true;cfg.options.red=false;cfg.options.reports=false
+        awacs.detections={bandit}
+    """)
+    start(lua)
+    lua.execute("tick(5);tick(15);tick(25);tick(35);tick(45);tick(55)")
+    assert lua.eval("#messages") <= 4
+    assert lua.eval("table.concat(logs,';'):find('side=1|',1,true)==nil") is True
+    lua.execute("tick(65)")
+    assert lua.eval("#messages") <= 8
 
 
 @pytest.mark.parametrize(
