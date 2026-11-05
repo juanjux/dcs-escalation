@@ -211,6 +211,67 @@ def test_vulnerable_aircraft_evades_closing_fighter_then_resumes() -> None:
     assert lua.eval("#recovered") == 0
 
 
+@pytest.mark.parametrize("distance", [80000, 100000])
+def test_evasion_does_not_resume_just_because_escape_stops_the_closure(
+    distance: int,
+) -> None:
+    lua = runtime()
+    lua.execute("observations[2]={track('fighter',-70000,0,-250,'fighter')};tick(5)")
+    lua.execute(f"""
+        own.AWACS.point.x=-150000;own.AWACS.velocity.x=-300
+        observations[2]={{track('fighter',{-150000 + distance},0,-250,'fighter')}}
+        tick(15);tick(45)
+    """)
+    assert lua.eval("commander.states.AWACS.order.kind") == "evade"
+    assert lua.eval("#recovered") == 0
+
+
+def test_evasion_does_not_resume_towards_a_fighter_near_the_return_leg() -> None:
+    lua = runtime()
+    lua.execute("""
+        observations[2]={track('fighter',-70000,0,-250,'fighter')};tick(5)
+        own.AWACS.point.x=-220000;own.AWACS.velocity.x=-300
+        observations[2]={track('fighter',-85000,0,-250,'fighter')}
+        tick(15);tick(45)
+    """)
+    assert lua.eval("commander.states.AWACS.order.kind") == "evade"
+
+
+def test_evasion_resumes_after_a_confirmed_withdrawal_leaves_the_return_leg_clear() -> (
+    None
+):
+    lua = runtime()
+    lua.execute("""
+        observations[2]={track('fighter',-70000,0,-250,'fighter')};tick(5)
+        own.AWACS.point.x=-150000;own.AWACS.velocity.x=-300
+        observations[2]={track('fighter',30000,0,250,'fighter')}
+        tick(15);tick(45)
+    """)
+    assert lua.eval("commander.states.AWACS.order==nil") is True
+    assert lua.eval("#recovered") == 0
+
+
+def test_evasion_does_not_resume_into_danger_when_its_native_lease_expires() -> None:
+    lua = runtime()
+    lua.execute("observations[2]={track('fighter',-70000,0,-250,'fighter')};tick(5)")
+    token = lua.eval("commander.states.AWACS.order.revision")
+    lua.execute("now=610")
+    assert lua.eval(f"commander:shouldStop('AWACS',{token})") is False
+    lua.execute("tick(615)")
+    assert lua.eval("commander.states.AWACS.order.kind") == "evade"
+    lua.execute("own.AWACS.fuel=.1")
+    assert lua.eval(f"commander:shouldStop('AWACS',{token})") is True
+
+
+def test_evasion_decision_tick_renews_its_lease_while_danger_remains() -> None:
+    lua = runtime()
+    lua.execute(
+        "observations[2]={track('fighter',-70000,0,-250,'fighter')};tick(5);tick(610)"
+    )
+    assert lua.eval("commander.states.AWACS.order.kind") == "evade"
+    assert lua.eval("commander.states.AWACS.order.deadline > 610") is True
+
+
 def test_evasion_does_not_choose_sam_side_or_cut_across_enemy() -> None:
     lua = runtime()
     lua.execute("""

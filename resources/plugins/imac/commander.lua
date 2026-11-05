@@ -78,6 +78,10 @@ do
           -- stays above the attack route. Native callback ordering is undefined.
           s.abortReason=s.abortReason or 'DEAD wait expired'
           s.order.deadline=now+opt.interval*2
+        elseif s.order.kind=='evade' then
+          -- Safety, not lease age, decides when to resume. The next tick still
+          -- checks clearance; BINGO and command loss remain higher priority.
+          s.order.deadline=now+600
         else release(s,'temporary order expired');return true end
       end
       return false
@@ -92,6 +96,31 @@ do
         end
       end
       return out
+    end
+    local function evasionClear(s,p)
+      local target=s.pendingHold and s.pendingHold.data.point
+      if not target then
+        local wp=s.meta.route[math.min(#s.meta.route,s.index+1)]
+        target={x=wp.x,z=wp.y}
+      end
+      local seconds=180
+      local length=G.distance(p.point,target)
+      local f=length>0 and math.min(1,p.speed*seconds/length) or 0
+      local finish={x=p.point.x+(target.x-p.point.x)*f,z=p.point.z+(target.z-p.point.z)*f}
+      -- Returning must not recreate the threat that the escape just removed.
+      -- Use spatial hysteresis and check the first three minutes of the return
+      -- leg, including observed hostile motion, rather than current closure alone.
+      local margin=(opt.defendRangeNm+10)*NM
+      for _,t in ipairs(tracks[s.meta.side]) do
+        if t.kind=='fighter' or t.kind=='unknown' then
+          local relativeFrom={x=p.point.x-t.point.x,z=p.point.z-t.point.z}
+          local relativeTo={x=finish.x-t.point.x-t.velocity.x*seconds,
+            z=finish.z-t.point.z-t.velocity.z*seconds}
+          if G.segment(p.point,finish,t.point)<margin or
+            G.segment(relativeFrom,relativeTo,{x=0,z=0})<margin then return false end
+        end
+      end
+      return true
     end
     local function destination(s)
       local route=s.meta.route
@@ -169,8 +198,9 @@ do
       if order then
         if now>=order.deadline then
           if order.kind=='hold' then retreat(s,p,'DEAD wait expired')
+          elseif order.kind=='evade' then order.deadline=now+600
           else release(s,'temporary order expired');resumeHold(s,p) end
-          return
+          if order.kind~='evade' then return end
         end
         if order.kind=='intercept' then
           local target
@@ -197,7 +227,7 @@ do
             release(s,'enemy withdrawing; return to patrol')
           end
         elseif order.kind=='evade' then
-          if #dangers(s,p)==0 then
+          if evasionClear(s,p) then
             order.clearSince=order.clearSince or now
             if now-order.clearSince>=30 then release(s,'air threat cleared');resumeHold(s,p) end
           else order.clearSince=nil end

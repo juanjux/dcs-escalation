@@ -15,12 +15,14 @@ SAM avoidance uses campaign-known sites, known naval air defences and currently 
 | Flight | Temporary response | Return condition |
 | --- | --- | --- |
 | BARCAP / TARCAP on station | Nearest available patrol intercepts an approaching bomber/attack aircraft or a threat to a vulnerable friendly flight, including outside the native 50-NM radius | Contact expiry, withdrawal, fuel/ammunition/damage limits, unsafe pursuit, original station end or loss of command |
-| AWACS, tankers, transports, ferry, attack and DEAD flights | Move to a safe orbit away from closing fighters or nearby unclassified contacts | At least 30 seconds clear, with sufficient fuel and time remaining |
+| AWACS, tankers, transports, ferry, attack and DEAD flights | Move to a safe orbit away from closing fighters or nearby unclassified contacts | At least 30 seconds clear of the danger radius plus 10 NM, including the first three minutes of the return leg, with sufficient fuel and time remaining |
 | Attack flight before ingress | Hold in a safe area if a known SAM blocks the immediate route and a viable DEAD flight is working nearby or in the same package | Original blocked corridor becomes clear; otherwise cancel after the wait limit or loss of DEAD |
 
 One patrol is assigned per detected hostile group. Assignment considers distance, fuel for the detour and return, air-to-air ammunition, damage, the original station deadline, predicted target movement and terrain/SAM corridors. Maximum intercept range defaults to 120 NM, distance from the patrol anchor to 80 NM, and withdrawal pursuit to 180 seconds. Every intercept also has a 15-minute hard deadline. These are constraints, not a promise to engage every contact inside the outer range.
 
 Evasion samples several directions, rejects corridors that cross known SAM rings, checks room for the turn and favours increasing separation from all nearby threats. The commander does not move ground units, attack ground targets itself, or order emergency scrambles.
+
+Evasion does not end merely because escaping has stopped the closure. IMAC checks the planned return leg and observed hostile motion before resuming. Its temporary evasion lease can renew while danger persists; native BINGO, station deadlines and loss of command still release it.
 
 An attack holding for DEAD can also evade approaching fighters, then resume only the remainder of its original waiting allowance. An airborne human DEAD flight can provide support without receiving IMAC orders.
 
