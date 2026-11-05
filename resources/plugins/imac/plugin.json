@@ -1,0 +1,20 @@
+{
+    "nameInUI": "In-Mission Air Commander (experimental)",
+    "descriptionInUI": "AI-only coordination for both sides while an airborne, operating AWACS or a powered command centre survives. Uses detected air contacts, redirects available BARCAP/TARCAP patrols, protects vulnerable flights, and holds attacks behind known SAM threats while DEAD is working. Temporary orders retain the original mission. Excludes Player/Client groups, escorts and AFAC navigation. F10 pause controls allow manual tasking. No emergency scrambles or ground orders. Off by default pending in-simulator validation.",
+    "defaultValue": false,
+    "specificOptions": [
+        {"nameInUI": "Enable BLUE commander", "mnemonic": "blue", "defaultValue": true},
+        {"nameInUI": "Enable RED commander", "mnemonic": "red", "defaultValue": true},
+        {"nameInUI": "Report orders to own coalition", "mnemonic": "reports", "defaultValue": true},
+        {"nameInUI": "Detailed decision logging", "mnemonic": "debug", "defaultValue": false},
+        {"nameInUI": "Decision interval (seconds)", "mnemonic": "interval", "defaultValue": 10, "minimumValue": 5, "maximumValue": 60},
+        {"nameInUI": "Maximum intercept distance (NM)", "mnemonic": "interceptRangeNm", "defaultValue": 120, "minimumValue": 20, "maximumValue": 200},
+        {"nameInUI": "Maximum distance from patrol (NM)", "mnemonic": "patrolLeashNm", "defaultValue": 80, "minimumValue": 10, "maximumValue": 150},
+        {"nameInUI": "Maximum pursuit time (seconds)", "mnemonic": "pursuitSeconds", "defaultValue": 180, "minimumValue": 30, "maximumValue": 600},
+        {"nameInUI": "Vulnerable flight danger radius (NM)", "mnemonic": "defendRangeNm", "defaultValue": 45, "minimumValue": 10, "maximumValue": 100},
+        {"nameInUI": "Maximum wait for DEAD (seconds)", "mnemonic": "holdSeconds", "defaultValue": 600, "minimumValue": 60, "maximumValue": 1800}
+    ],
+    "scriptsWorkOrders": [],
+    "configurationWorkOrders": [],
+    "otherResourceFiles": []
+}
