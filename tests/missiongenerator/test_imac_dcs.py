@@ -59,16 +59,20 @@ def runtime() -> Any:
             self.positionReads=self.positionReads+1
             assert(not self.poison,'unobserved hostile position was read')
             if self.positionError then error('position error')end
+            if self.invalidPoint then return {x=0/0,y=self.alt,z=0}end
             return {x=self.x,y=self.alt,z=0}
           end
           function u:getVelocity()assert(not self.poison,'hostile velocity was read');return self.velocity end
           function u:getController()return c end
           function c:getDetectedTargets(...)
             for _,kind in ipairs({...})do assert(kind~=16 and kind~=32,'bearing-only or task datalink intelligence')end
-            local out={};for _,t in ipairs(u.detections)do out[#out+1]={object=t}end;return out
+            local out={};for key,t in pairs(u.detections)do
+              out[key]={object=t,visible=t.visible==true,type=t.knownType~=false,distance=t.distanceKnown~=false}
+            end;return out
           end
           function c:isTargetDetected(t,...)
-            return t.detected~=false,true,t.seen or now,t.knownType~=false,t.distanceKnown~=false,
+            if t.visible then return t.detected~=false,true,t.knownType~=false,t.distanceKnown~=false end
+            return t.detected~=false,false,t.knownType~=false,t.distanceKnown~=false,t.seen or now,
               {x=t.observedX or t.x,y=t.alt,z=0},t.observedVelocity or {x=-250,y=0,z=0}
           end
           function c:pushTask(t)g.pushes[#g.pushes+1]=t end
@@ -114,6 +118,86 @@ def test_native_detection_uses_last_observed_position_not_live_enemy_position() 
     assert lua.eval("groups.CAP.pushes[1].params.task.id") == "AttackGroup"
     assert lua.eval("bandit.positionReads") == 0
     assert lua.eval("#groups.CAP.rtbs") == 0
+
+
+def test_current_native_detection_returns_four_flags_without_memory_vectors() -> None:
+    lua = runtime()
+    lua.execute("""
+        bandit.visible=true;bandit.poison=false;bandit.velocity={x=-250,y=0,z=0}
+        awacs.detections={bandit}
+    """)
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 1
+    assert lua.eval("bandit.positionReads") > 0
+    lua.execute("awacs.detections={};bandit.poison=true;tick(20);tick(40)")
+    assert lua.eval("EscalationIMAC.instance.states.CAP.order==nil") is True
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "bandit.distanceKnown=false",
+        "bandit.detected=false",
+        "bandit.category=2",
+        "bandit.objectCategory=2",
+        "bandit.side=2",
+        "bandit.side=0",
+    ],
+)
+def test_current_detection_requires_hostile_aircraft_and_native_range(
+    change: str,
+) -> None:
+    lua = runtime()
+    lua.execute("awacs.detections={bandit};bandit.visible=true;" + change)
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 0
+    assert lua.eval("bandit.positionReads") == 0
+
+
+def test_current_detection_with_invalid_position_is_not_shared() -> None:
+    lua = runtime()
+    lua.execute("""
+        awacs.detections={bandit};bandit.visible=true;bandit.poison=false
+        bandit.invalidPoint=true
+    """)
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 0
+
+
+def test_native_detection_table_need_not_be_a_dense_array() -> None:
+    lua = runtime()
+    lua.execute("awacs.detections={[3]=bandit}")
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 1
+    assert lua.eval("bandit.positionReads") == 0
+
+
+def test_current_unknown_type_does_not_leak_bomber_classification() -> None:
+    lua = runtime()
+    lua.execute("""
+        awacs.detections={bandit};bandit.visible=true;bandit.poison=false
+        bandit.knownType=false;bandit.velocity={x=-250,y=0,z=0}
+    """)
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 0
+
+
+def test_current_awacs_contact_is_shared_for_protection_and_evasion() -> None:
+    lua = runtime()
+    lua.execute("""
+        awacs.detections={bandit};bandit.visible=true;bandit.poison=false
+        bandit.attributes={Fighters=true};bandit.x=-50000
+        bandit.velocity={x=-250,y=0,z=0}
+    """)
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("groups.CAP.pushes[1].params.task.id") == "AttackGroup"
+    assert lua.eval("groups.AWACS.pushes[1].params.task.id") == "Orbit"
 
 
 @pytest.mark.parametrize(

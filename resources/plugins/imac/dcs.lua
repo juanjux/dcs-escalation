@@ -122,30 +122,39 @@ do
       if not controller then return end
       local entries=controller:getDetectedTargets(unpack(detection)) or {}
       local count=0
-      for _,entry in ipairs(entries) do
+      for _,entry in pairs(entries) do
         count=count+1;if count>512 then break end
-        local target=entry.object
+        local target=type(entry)=='table' and entry.object
         if target and target:isExist() and target:getCategory()==Object.Category.UNIT and target:getCoalition()==3-side then
-          local detected,visible,lastSeen,knownType,knownDistance,point,velocity=
+          local detected,visible,knownType,knownDistance,lastSeen,point,velocity=
             controller:isTargetDetected(target,unpack(detection))
-          if detected and knownDistance and G.finite(lastSeen) and now-lastSeen<=TTL and lastSeen<=now+1 and
-            G.vector(point) and G.vector(velocity) then
+          if detected==true and knownDistance==true then
             local desc=target:getDesc()
             if desc.category==Unit.Category.AIRPLANE or desc.category==Unit.Category.HELICOPTER then
-              local kind='unknown'
-              if knownType then
-                local a=desc.attributes or {}
-                if a.Fighters or a.Interceptors or a['Multirole fighters'] then kind='fighter'
-                elseif a.Bombers or a['Strategic bombers'] then kind='bomber'
-                elseif a.Battleplanes or a['Attack helicopters'] then kind='attack'
-                elseif a.Transports or a['Transport helicopters'] then kind='transport' end
+              -- Native DCS returns four flags for a current detection. Memory
+              -- time/position/velocity follow only when the contact is not visible.
+              -- Read live coordinates only after positional detection and range
+              -- are confirmed; a remembered or bearing-only contact cannot do this.
+              if visible==true then
+                point,velocity=target:getPoint(),target:getVelocity();lastSeen=now
               end
-              local g=target:getGroup()
-              local key=tostring(target:getID())
-              local old=cache[side][key]
-              if g and (not old or lastSeen>=old.seen) then
-                cache[side][key]={key=key,groupId=g:getID(),point=G.copy(point),velocity=G.copy(velocity),
-                  kind=kind,seen=lastSeen,visible=visible==true}
+              if G.finite(lastSeen) and now-lastSeen<=TTL and lastSeen<=now+1 and
+                G.vector(point) and G.vector(velocity) then
+                local kind='unknown'
+                if knownType==true then
+                  local a=desc.attributes or {}
+                  if a.Fighters or a.Interceptors or a['Multirole fighters'] then kind='fighter'
+                  elseif a.Bombers or a['Strategic bombers'] then kind='bomber'
+                  elseif a.Battleplanes or a['Attack helicopters'] then kind='attack'
+                  elseif a.Transports or a['Transport helicopters'] then kind='transport' end
+                end
+                local g=target:getGroup()
+                local key=tostring(target:getID())
+                local old=cache[side][key]
+                if g and (not old or lastSeen>=old.seen) then
+                  cache[side][key]={key=key,groupId=g:getID(),point=G.copy(point),velocity=G.copy(velocity),
+                    kind=kind,seen=lastSeen,visible=visible==true}
+                end
               end
             end
           end
