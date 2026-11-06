@@ -1,4 +1,6 @@
 class: CommandPost
+ground_mobility:
+  mode: self_propelled
 price: 14
 variants:
   "SAM IRIS-T SLM C2 [CH]": null

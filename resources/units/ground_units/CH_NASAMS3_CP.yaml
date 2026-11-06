@@ -1,4 +1,6 @@
 class: CommandPost
+ground_mobility:
+  mode: self_propelled
 price: 14
 variants:
   "[CH] NASAMS 3 CP": null

@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: self_propelled
 description: Long range air defense launcher.
   
   Contains 4 x RB 103A TVM guided missiles.

@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: self_propelled
 price: 8
 variants:
   "SAM IRIS-T SLM LN [CH]": null

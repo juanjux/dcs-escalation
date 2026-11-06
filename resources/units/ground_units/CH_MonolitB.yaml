@@ -1,4 +1,6 @@
 class: SearchTrackRadar
+ground_mobility:
+  mode: self_propelled
 price: 0
 variants:
   "[CH] Monolit-B LBASM STR": null
