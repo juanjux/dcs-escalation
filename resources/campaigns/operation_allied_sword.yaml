@@ -28,6 +28,7 @@ recommended_player_faction:
     - SH-60B Seahawk
     - UH-1H Iroquois
     - UH-60L
+    - RQ-1A Predator
   awacs:
     - E-2C Hawkeye
   tankers:
@@ -263,7 +264,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - UH-1H Iroquois
+        - "RQ-1A Predator"
       size: 2
       pilots: 6
     - primary: CAS

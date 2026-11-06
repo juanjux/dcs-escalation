@@ -27,7 +27,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - Mi-17 Hip
+        - "WingLoong-I"
       size: 2
       pilots: 6
   Naval-1:

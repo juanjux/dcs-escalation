@@ -61,7 +61,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - Mi-8MTV2 Hip
+        - "WingLoong-I"
       size: 2
       pilots: 6
     - primary: BARCAP
@@ -85,7 +85,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - RQ-1A Predator
+        - "MQ-9 Reaper"
       size: 2
       pilots: 6
     - primary: BARCAP

@@ -18,14 +18,6 @@ settings:
 advanced_iads: true # Campaign has connection_nodes / power_sources / command_centers
 
 squadrons:
-  "Marj as Sultan North":
-    - primary: AFAC — Area
-      secondary:
-        - AFAC — Frontline
-      aircraft:
-        - WingLoong-I
-      size: 2
-      pilots: 6
   CVN-74 John Stennis:
     - primary: BARCAP
       secondary: any
@@ -195,6 +187,13 @@ squadrons:
       pilots: 12
   # Damascus
   7:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:

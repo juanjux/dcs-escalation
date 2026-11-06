@@ -43,9 +43,17 @@ def test_every_faction_retains_afac_aircraft_without_mods(path: Path) -> None:
 @pytest.mark.parametrize(
     "filename,required",
     [
+        ("usa_1990.json", ("RQ-1A Predator",)),
+        ("usa_2005.json", ("MQ-9 Reaper", "RQ-1A Predator")),
         ("usa_2020.json", ("MQ-9 Reaper", "RQ-1A Predator")),
+        ("bluefor_modern.json", ("MQ-9 Reaper", "RQ-1A Predator")),
+        ("blufor_current.json", ("MQ-9 Reaper", "RQ-1A Predator")),
+        ("georgia_2008.json", ("RQ-1A Predator",)),
+        ("ukraine_2020.json", ("[CH] TB-2 UCAV", "RQ-1A Predator")),
+        ("US_UK_Falklands.json", ("RQ-1A Predator",)),
+        ("egypt_2000.json", ("WingLoong-I",)),
         ("usn_1985.json", ("OH-58D(R) Kiowa Warrior",)),
-        ("usn_2005.json", ("OH-58D(R) Kiowa Warrior",)),
+        ("usn_2005.json", ("OH-58D(R) Kiowa Warrior", "RQ-1A Predator")),
         ("usn_2009.json", ("OH-58D(R) Kiowa Warrior",)),
         ("Morocco 2000 onwards.json", ("RQ-1A Predator",)),
         ("Morocco 2030.json", ("MQ-9 Reaper", "RQ-1A Predator")),
@@ -54,6 +62,7 @@ def test_every_faction_retains_afac_aircraft_without_mods(path: Path) -> None:
         ("israel_2012.json", ("MQ-9 Reaper", "RQ-1A Predator")),
         ("israel_2017.json", ("MQ-9 Reaper", "RQ-1A Predator")),
         ("turkey_2005.json", ("[CH] TB-2 UCAV",)),
+        ("russia_1990.json", ("WingLoong-I",)),
         ("russia_2010.json", ("WingLoong-I",)),
         ("russia_2020.json", ("WingLoong-I",)),
         ("CH_russia_2020.json", ("WingLoong-I",)),
@@ -155,3 +164,8 @@ def test_standard_reaper_has_not_become_carrier_capable() -> None:
     aircraft = AircraftType.named("MQ-9 Reaper")
     assert not aircraft.carrier_capable
     assert not aircraft.lha_capable
+
+
+@pytest.mark.parametrize("variant", ["RQ-1A Predator", "MQ-9 Reaper", "WingLoong-I"])
+def test_long_endurance_uavs_do_not_use_the_generic_fighter_range(variant: str) -> None:
+    assert AircraftType.named(variant).max_mission_range.nautical_miles >= 500

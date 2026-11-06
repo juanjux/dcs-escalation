@@ -120,6 +120,18 @@ or passenger JTAC. They report observed positions but need other assets for
 laser designation. Early factions use their existing national aircraft instead
 of a Yak-52 fallback; existing fictional faction stand-ins remain unchanged.
 
+Bundled campaigns prefer reconnaissance UAVs where the era and operating bases
+allow them, with Predator coverage before the Reaper. The stock Wing Loong also
+represents comparable Russian UAVs and supplies sensor parity in fictional modern
+scenarios, including explicit pre-2010 balance allowances. Predator substitutes
+cover missing Georgian reconnaissance UAVs and the Ukrainian TB-2 when its mod is
+disabled. These are gameplay substitutes, not historical operator claims. Naval
+UAV support uses airfields or existing off-map bases, never carrier decks;
+helicopter-focused scenarios retain rotary-wing AFACs.
+Stock Predator, Reaper and Wing Loong aircraft use a conservative 500 NM theatre
+planning radius rather than the generic 150 NM fighter fallback. This is a
+planning allowance for long-endurance support, not a model of datalink range.
+
 AFACs search without attacking and prefer marking observed contacts. They report
 coordinates, designate with laser and night IR where equipped, and use finite
 payload smoke in green, red, orange or blue. Each aircraft keeps its assigned

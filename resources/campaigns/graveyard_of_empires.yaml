@@ -93,6 +93,13 @@ squadrons:
       pilots: 8
   #Camp Bastion
   10:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-130J
@@ -125,13 +132,6 @@ squadrons:
       pilots: 12
   #Camp Bastion Heliport
   13:
-    - primary: AFAC — Area
-      secondary:
-        - AFAC — Frontline
-      aircraft:
-        - OH-58D(R) Kiowa Warrior
-      size: 2
-      pilots: 6
     - primary: Armed Recon
       secondary: any
       aircraft:
@@ -211,7 +211,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - Mi-8MTV2 Hip
+        - "WingLoong-I"
       size: 2
       pilots: 6
     - primary: CAS

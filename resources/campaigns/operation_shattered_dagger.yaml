@@ -65,6 +65,13 @@ squadrons:
       pilots: 8
   #Camp Bastion
   10:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: air-to-ground
       aircraft:
@@ -78,13 +85,6 @@ squadrons:
       pilots: 5
   #Camp Bastion Heliport
   13:
-    - primary: AFAC — Area
-      secondary:
-        - AFAC — Frontline
-      aircraft:
-        - RQ-1A Predator
-      size: 2
-      pilots: 6
     - primary: CAS
       secondary: any
       aircraft:

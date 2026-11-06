@@ -99,7 +99,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - RQ-1A Predator
+        - "MQ-9 Reaper"
       size: 2
       pilots: 6
     - primary: BAI

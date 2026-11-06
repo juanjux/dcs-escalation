@@ -386,7 +386,8 @@ squadrons:
          secondary:
            - AFAC — Frontline
          aircraft:
-           - UH-1H Iroquois
+           - "OV-10A Bronco"
+           - "UH-1H Iroquois"
          size: 2
          pilots: 6
        - primary: CAS

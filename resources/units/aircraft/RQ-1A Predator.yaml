@@ -1,4 +1,7 @@
 price: 6
+introduced: 1995
+# Conservative theatre-planning radius, not the generic 150 NM fighter fallback.
+max_range: 500
 variants:
   RQ-1A Predator: null
 tasks:

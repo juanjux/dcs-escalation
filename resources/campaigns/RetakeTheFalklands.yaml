@@ -18,6 +18,13 @@ version: "10.7"
 squadrons:
 # Off-map spawn
   From US:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
@@ -46,13 +53,6 @@ squadrons:
 #BLUFOR CVN
   # Pukin' Dogs Tomcat
   Naval-1:
-    - primary: AFAC — Area
-      secondary:
-        - AFAC — Frontline
-      aircraft:
-        - SA 342M Gazelle
-      size: 2
-      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:
@@ -186,7 +186,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - Mi-8MTV2 Hip
+        - "WingLoong-I"
       size: 2
       pilots: 6
     - primary: BARCAP

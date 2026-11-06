@@ -28,7 +28,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - UH-60A
+        - "A-10C Thunderbolt II (Suite 7)"
       size: 2
       pilots: 6
   CVN-74 John Stennis:

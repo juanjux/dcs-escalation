@@ -32,6 +32,14 @@ ground_forces:
 squadrons:
   #Anapa-Vityazevo
   12:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "[CH] TB-2 UCAV"
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: any
       aircraft:
@@ -61,13 +69,6 @@ squadrons:
       pilots: 8
   #Novorossiysk
   14:
-    - primary: AFAC — Area
-      secondary:
-        - AFAC — Frontline
-      aircraft:
-        - Mi-8MTV2 Hip
-      size: 2
-      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:

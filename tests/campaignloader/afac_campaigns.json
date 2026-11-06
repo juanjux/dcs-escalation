@@ -5,10 +5,12 @@
       "BLUE": {
         "faction": "USA 1970 Vietnam War",
         "base": 18,
-        "aircraft": "UH-1H Iroquois",
+        "aircraft": "OV-10A Bronco",
         "preferred": [
+          "OV-10A Bronco",
           "UH-1H Iroquois"
-        ]
+        ],
+        "rationale": "Bronco operations are already part of this fictional 1968 campaign's premise; use the authored mod with a stock Huey fallback."
       },
       "RED": {
         "faction": "Vietnam 1970",
@@ -34,10 +36,11 @@
       "RED": {
         "faction": "Private Military Company - Russian (Hard)",
         "base": 3,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -76,10 +79,11 @@
       "RED": {
         "faction": "Russia 2010",
         "base": "Sochi-Adler",
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -118,10 +122,11 @@
       "RED": {
         "faction": "Russia 2010",
         "base": 23,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -131,18 +136,20 @@
       "BLUE": {
         "faction": "Bluefor Modern",
         "base": 22,
-        "aircraft": "A-10A Thunderbolt II",
+        "aircraft": "MQ-9 Reaper",
         "preferred": [
-          "A-10A Thunderbolt II"
-        ]
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Corrected the inherited 1995 date to 2008, matching the faction and the other Multi-Part scenarios."
       },
       "RED": {
         "faction": "Georgia 2008",
         "base": 24,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "RQ-1A Predator",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "RQ-1A Predator"
+        ],
+        "rationale": "Stock substitute for Georgia's 2008 Hermes reconnaissance UAVs; DCS has no Hermes model."
       }
     }
   },
@@ -160,10 +167,11 @@
       "RED": {
         "faction": "Russia 2010",
         "base": 16,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -244,10 +252,11 @@
       "RED": {
         "faction": "Egypt 2000",
         "base": 5,
-        "aircraft": "SA 342M Gazelle",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "SA 342M Gazelle"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "The campaign is the 2025 exercise; the 21st-century Egyptian catalogue includes a UAV."
       }
     }
   },
@@ -278,10 +287,11 @@
       "BLUE": {
         "faction": "USA 2005",
         "base": 18,
-        "aircraft": "RQ-1A Predator",
+        "aircraft": "MQ-9 Reaper",
         "preferred": [
-          "RQ-1A Predator"
-        ]
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
       },
       "RED": {
         "faction": "Redfor (China) 2020",
@@ -349,10 +359,11 @@
       "RED": {
         "faction": "Russia 2010",
         "base": 14,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -361,19 +372,21 @@
     "sides": {
       "BLUE": {
         "faction": "US Navy 2005",
-        "base": "Naval-2",
-        "aircraft": "OH-58D(R) Kiowa Warrior",
+        "base": "Mount Pleasant",
+        "aircraft": "RQ-1A Predator",
         "preferred": [
-          "OH-58D(R) Kiowa Warrior"
-        ]
+          "RQ-1A Predator"
+        ],
+        "rationale": "Land-based joint UAV support is available at the starting airfield; no UAV is placed on a carrier."
       },
       "RED": {
         "faction": "China 2010",
         "base": 5,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
       }
     }
   },
@@ -382,19 +395,21 @@
     "sides": {
       "BLUE": {
         "faction": "Blufor Current",
-        "base": 13,
-        "aircraft": "OH-58D(R) Kiowa Warrior",
+        "base": 10,
+        "aircraft": "RQ-1A Predator",
         "preferred": [
-          "OH-58D(R) Kiowa Warrior"
-        ]
+          "RQ-1A Predator"
+        ],
+        "rationale": "Predator is the period-appropriate pre-Reaper UAV; use the airfield, not the adjacent heliport."
       },
       "RED": {
         "faction": "Redfor (Russia) 2020",
         "base": 2,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -404,10 +419,11 @@
       "BLUE": {
         "faction": "USA 2005",
         "base": 30,
-        "aircraft": "RQ-1A Predator",
+        "aircraft": "MQ-9 Reaper",
         "preferred": [
-          "RQ-1A Predator"
-        ]
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
       },
       "RED": {
         "faction": "Russia 2020",
@@ -429,7 +445,8 @@
         "preferred": [
           "UH-60L",
           "UH-1H Iroquois"
-        ]
+        ],
+        "rationale": "Spain in 2000: do not introduce its Reaper before 2020; retain the faction's available embarked observer."
       },
       "RED": {
         "faction": "Morocco 2000 onwards",
@@ -489,18 +506,20 @@
       "BLUE": {
         "faction": "USA 2005",
         "base": 4,
-        "aircraft": "RQ-1A Predator",
+        "aircraft": "MQ-9 Reaper",
         "preferred": [
-          "RQ-1A Predator"
-        ]
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Undated modern scenario: use the Reaper now available to the US 2000s catalogue."
       },
       "RED": {
         "faction": "Russia 1990",
         "base": 6,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -518,10 +537,11 @@
       "RED": {
         "faction": "Russia 1990",
         "base": 6,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -539,10 +559,11 @@
       "RED": {
         "faction": "USA 1990",
         "base": 26,
-        "aircraft": "A-10A Thunderbolt II",
+        "aircraft": "RQ-1A Predator",
         "preferred": [
-          "A-10A Thunderbolt II"
-        ]
+          "RQ-1A Predator"
+        ],
+        "rationale": "Undated modern scenario against Russia 2010; use the late-1990s UAV option rather than an A-10."
       }
     }
   },
@@ -573,10 +594,11 @@
       "BLUE": {
         "faction": "Bluefor Modern",
         "base": 25,
-        "aircraft": "A-10A Thunderbolt II",
+        "aircraft": "RQ-1A Predator",
         "preferred": [
-          "A-10A Thunderbolt II"
-        ]
+          "RQ-1A Predator"
+        ],
+        "rationale": "Use the earlier Predator instead of downgrading to an A-10 or helicopter before Reaper service."
       },
       "RED": {
         "faction": "Russia 1975",
@@ -584,7 +606,8 @@
         "aircraft": "Mi-8MTV2 Hip",
         "preferred": [
           "Mi-8MTV2 Hip"
-        ]
+        ],
+        "rationale": "The recommended faction is Russia 1975, not a modern Russian force; retain a period helicopter."
       }
     }
   },
@@ -610,7 +633,7 @@
     }
   },
   "operation_aegean_aegis.yaml": {
-    "rotary": false,
+    "rotary": true,
     "sides": {
       "BLUE": {
         "faction": "USA 2005",
@@ -636,10 +659,11 @@
       "BLUE": {
         "faction": "Israel-USN 2005",
         "base": 13,
-        "aircraft": "UH-1H Iroquois",
+        "aircraft": "RQ-1A Predator",
         "preferred": [
-          "UH-1H Iroquois"
-        ]
+          "RQ-1A Predator"
+        ],
+        "rationale": "The Israeli/US joint force can use a land-based reconnaissance UAV instead of a Huey."
       },
       "RED": {
         "faction": "Syria-Lebanon 2005 (Allied Sword)",
@@ -647,7 +671,8 @@
         "aircraft": "SA 342L Gazelle",
         "preferred": [
           "SA 342L Gazelle"
-        ]
+        ],
+        "rationale": "The authored Syrian/Lebanese joint faction keeps its sensor-equipped Gazelle."
       }
     }
   },
@@ -665,10 +690,11 @@
       "RED": {
         "faction": "Russia 2010",
         "base": 47,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -710,7 +736,8 @@
         "aircraft": "SA 342L Gazelle",
         "preferred": [
           "SA 342L Gazelle"
-        ]
+        ],
+        "rationale": "Iraq 2000 has no suitable UAV; retain the faction's sensor-equipped Gazelle."
       }
     }
   },
@@ -740,7 +767,7 @@
     "sides": {
       "BLUE": {
         "faction": "Bluefor Modern",
-          "base": 2,
+        "base": 2,
         "aircraft": "MQ-9 Reaper",
         "preferred": [
           "MQ-9 Reaper"
@@ -783,10 +810,11 @@
       "BLUE": {
         "faction": "USA 2005",
         "base": 12,
-        "aircraft": "RQ-1A Predator",
+        "aircraft": "MQ-9 Reaper",
         "preferred": [
-          "RQ-1A Predator"
-        ]
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
       },
       "RED": {
         "faction": "Iran 2015",
@@ -815,7 +843,8 @@
         "aircraft": "SA 342M Gazelle",
         "preferred": [
           "SA 342M Gazelle"
-        ]
+        ],
+        "rationale": "The recommended force is Iraq 1991; retain its Gazelle rather than importing a modern drone."
       }
     }
   },
@@ -824,11 +853,12 @@
     "sides": {
       "BLUE": {
         "faction": "USA 2005",
-        "base": 13,
+        "base": 10,
         "aircraft": "RQ-1A Predator",
         "preferred": [
           "RQ-1A Predator"
-        ]
+        ],
+        "rationale": "Period Predator, based at the airfield rather than the adjacent helicopter installation."
       },
       "RED": {
         "faction": "Toyota Al Gaib 2001",
@@ -836,7 +866,8 @@
         "aircraft": "Mi-8MTV2 Hip",
         "preferred": [
           "Mi-8MTV2 Hip"
-        ]
+        ],
+        "rationale": "The 2001 insurgent faction keeps its available helicopter; no imported state-level UAV."
       }
     }
   },
@@ -875,10 +906,11 @@
       "RED": {
         "faction": "Russia 2010",
         "base": 20,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -917,11 +949,12 @@
       },
       "RED": {
         "faction": "China 2010",
-        "base": "Naval-28",
-        "aircraft": "Mi-8MTV2 Hip",
+        "base": 3,
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Land-based modern UAV stand-in at Tinian, closer to the northern islands with two free parking positions."
       }
     }
   },
@@ -931,18 +964,20 @@
       "BLUE": {
         "faction": "Blufor Current",
         "base": 3,
-        "aircraft": "A-10C Thunderbolt II (Suite 3)",
+        "aircraft": "RQ-1A Predator",
         "preferred": [
-          "A-10C Thunderbolt II (Suite 3)"
-        ]
+          "RQ-1A Predator"
+        ],
+        "rationale": "Use the earlier Predator instead of downgrading to an A-10 or helicopter before Reaper service."
       },
       "RED": {
         "faction": "Redfor (China) 2020",
         "base": 33,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
       }
     }
   },
@@ -951,19 +986,21 @@
     "sides": {
       "BLUE": {
         "faction": "UK/US Falklands Task Force",
-        "base": "Naval-1",
-        "aircraft": "SA 342M Gazelle",
+        "base": "From US",
+        "aircraft": "RQ-1A Predator",
         "preferred": [
-          "SA 342M Gazelle"
-        ]
+          "RQ-1A Predator"
+        ],
+        "rationale": "Use the existing USAF off-map support base; retain the carrier-only force's deck compatibility."
       },
       "RED": {
         "faction": "China/Argentina Falklands Occupation Force",
         "base": 1,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
       }
     }
   },
@@ -1002,10 +1039,11 @@
       "RED": {
         "faction": "Iran 2015",
         "base": "Bandar-e-Jask",
-        "aircraft": "Mi-17 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-17 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
       }
     }
   },
@@ -1023,10 +1061,11 @@
       "RED": {
         "faction": "Iran 2015",
         "base": "Bandar-e-Jask",
-        "aircraft": "Mi-17 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-17 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
       }
     }
   },
@@ -1035,11 +1074,13 @@
     "sides": {
       "BLUE": {
         "faction": "Ukraine 2020",
-        "base": 14,
-        "aircraft": "Mi-8MTV2 Hip",
+        "base": 12,
+        "aircraft": "[CH] TB-2 UCAV",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "[CH] TB-2 UCAV",
+          "RQ-1A Predator"
+        ],
+        "rationale": "Prefer Ukraine's TB-2 when its Turkish asset pack is enabled; stock Predator is a sensor-equivalent UAV fallback."
       },
       "RED": {
         "faction": "Redfor (Russia) 2020",
@@ -1089,7 +1130,8 @@
         "aircraft": "SA 342L Gazelle",
         "preferred": [
           "SA 342L Gazelle"
-        ]
+        ],
+        "rationale": "The Iraq/Syria 2000s coalition has a sensor-equipped Gazelle and no UAV."
       }
     }
   },
@@ -1099,18 +1141,20 @@
       "BLUE": {
         "faction": "USA 2005",
         "base": 53,
-        "aircraft": "RQ-1A Predator",
+        "aircraft": "MQ-9 Reaper",
         "preferred": [
-          "RQ-1A Predator"
-        ]
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
       },
       "RED": {
         "faction": "Syria 2011",
-        "base": "Homs Outskirts",
-        "aircraft": "SA 342M Gazelle",
+        "base": 39,
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "SA 342M Gazelle"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Modern reconnaissance UAV stand-in, moved from a FOB to an airfield."
       }
     }
   },
@@ -1141,18 +1185,20 @@
       "BLUE": {
         "faction": "Blufor Current",
         "base": 15,
-        "aircraft": "A-10C Thunderbolt II (Suite 3)",
+        "aircraft": "RQ-1A Predator",
         "preferred": [
-          "A-10C Thunderbolt II (Suite 3)"
-        ]
+          "RQ-1A Predator"
+        ],
+        "rationale": "Use the earlier Predator instead of downgrading to an A-10 or helicopter before Reaper service."
       },
       "RED": {
         "faction": "Redfor Current",
         "base": 22,
-        "aircraft": "Mi-8MTV2 Hip",
+        "aircraft": "WingLoong-I",
         "preferred": [
-          "Mi-8MTV2 Hip"
-        ]
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
       }
     }
   },
@@ -1162,10 +1208,11 @@
       "BLUE": {
         "faction": "USA 2005",
         "base": 16,
-        "aircraft": "RQ-1A Predator",
+        "aircraft": "MQ-9 Reaper",
         "preferred": [
-          "RQ-1A Predator"
-        ]
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
       },
       "RED": {
         "faction": "Syria 2012'ish",
@@ -1233,10 +1280,11 @@
       "RED": {
         "faction": "WRL - Task Force Insurgent",
         "base": "Jirah",
-        "aircraft": "UH-60A",
+        "aircraft": "A-10C Thunderbolt II (Suite 7)",
         "preferred": [
-          "UH-60A"
-        ]
+          "A-10C Thunderbolt II (Suite 7)"
+        ],
+        "rationale": "Use the targeting-pod aircraft already offered by this fictional faction rather than its visual-only transport helicopter."
       }
     }
   },
@@ -1253,11 +1301,12 @@
       },
       "RED": {
         "faction": "WRL - Task Force Red",
-        "base": "Marj as Sultan North",
+        "base": 7,
         "aircraft": "WingLoong-I",
         "preferred": [
           "WingLoong-I"
-        ]
+        ],
+        "rationale": "Use Damascus airfield rather than the helicopter-only parking at Marj as Sultan North."
       }
     }
   },

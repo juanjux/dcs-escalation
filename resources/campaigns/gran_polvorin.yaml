@@ -37,13 +37,6 @@ ground_forces:
 squadrons:
   #BLUFOR CVN
   Naval-2:
-    - primary: AFAC — Area
-      secondary:
-        - AFAC — Frontline
-      aircraft:
-        - OH-58D(R) Kiowa Warrior
-      size: 2
-      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:
@@ -119,7 +112,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - Mi-8MTV2 Hip
+        - "WingLoong-I"
       size: 2
       pilots: 6
     - primary: BARCAP
@@ -166,3 +159,11 @@ squadrons:
         - H-6J Badger
       size: 2
       pilots: 6
+  Mount Pleasant:
+  - primary: AFAC — Area
+    secondary:
+    - AFAC — Frontline
+    aircraft:
+    - RQ-1A Predator
+    size: 2
+    pilots: 6

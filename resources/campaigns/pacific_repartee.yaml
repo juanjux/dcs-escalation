@@ -97,13 +97,6 @@ squadrons:
         - J-15 Flanker X-2
   # OPFOR CVN 3
   Naval-28:
-    - primary: AFAC — Area
-      secondary:
-        - AFAC — Frontline
-      aircraft:
-        - Mi-8MTV2 Hip
-      size: 2
-      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:
@@ -139,6 +132,13 @@ squadrons:
       pilots: 13
   # Tinian Intl
   3:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "WingLoong-I"
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - IL-78M

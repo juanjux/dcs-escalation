@@ -59,7 +59,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - A-10A Thunderbolt II
+        - "RQ-1A Predator"
       size: 2
       pilots: 6
     - primary: BARCAP

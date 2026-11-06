@@ -176,7 +176,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - A-10C Thunderbolt II (Suite 3)
+        - "RQ-1A Predator"
       size: 2
       pilots: 6
     - primary: DEAD
@@ -239,7 +239,7 @@ squadrons:
       secondary:
         - AFAC — Frontline
       aircraft:
-        - Mi-8MTV2 Hip
+        - "WingLoong-I"
       size: 2
       pilots: 6
     - primary: SEAD Sweep
