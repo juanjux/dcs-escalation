@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from typing import TYPE_CHECKING, List
 
@@ -243,8 +244,19 @@ class TriggerGenerator:
             trigger.add_condition(FlagIsFalse(flag=flag))
             trigger.add_action(SetFlag(flag=flag))
 
+        initial_side = 2 if cp.captured.is_blue else 1 if cp.captured.is_red else 0
+        capture_event = json.dumps(
+            f"{cp.id}||{capturing_coalition_int}||{cp.full_name}", ensure_ascii=False
+        )
+        base_id = json.dumps(str(cp.id), ensure_ascii=False)
+        base_name = json.dumps(cp.full_name, ensure_ascii=False)
         script_string = String(
-            f'base_capture_events[#base_capture_events + 1] = "{cp.id}||{capturing_coalition_int}||{cp.full_name}"\ndirty_state = true'
+            f"base_capture_events[#base_capture_events + 1] = {capture_event}\n"
+            "dirty_state = true\n"
+            'if type(MISSION_LOG_BASE_CAPTURED) == "function" then\n'
+            f"  MISSION_LOG_BASE_CAPTURED({base_id}, {base_name}, "
+            f"{capturing_coalition_int}, {initial_side})\n"
+            "end"
         )
         trigger.add_action(DoScript(script_string))
         return trigger

@@ -1,6 +1,6 @@
 {
     "nameInUI": "Mission Log (running commentary of what happens to your side)",
-    "descriptionInUI": "Prints a message whenever something happens: kills, losses, ejections, targets destroyed, ships hit, takeoffs and landings. Each category can be switched off on its own.",
+    "descriptionInUI": "Prints a message whenever something happens: kills, losses, ejections, targets destroyed, ships hit, base captures, takeoffs and landings. Each category can be switched off on its own.",
     "defaultValue": false,
     "specificOptions": [
         {
@@ -26,6 +26,11 @@
         {
             "nameInUI": "Crashes with nobody shooting",
             "mnemonic": "crashes",
+            "defaultValue": true
+        },
+        {
+            "nameInUI": "Bases captured or lost",
+            "mnemonic": "basecaptures",
             "defaultValue": true
         },
         {
