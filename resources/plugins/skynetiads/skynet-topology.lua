@@ -5,12 +5,15 @@ EscalationIadsTopology.__index = EscalationIadsTopology
 
 function EscalationIadsTopology:create(iads, data, coalition)
     local topology = setmetatable({
-        iads=iads, coalition=coalition, rows={}, ordered={}, roots={}, sources={},
+        iads=iads, coalition=coalition, rows={}, ordered={}, roots={}, sources={}, localPower={},
     }, self)
     for _, role in ipairs({'Sam', 'SamAsEwr', 'Ewr', 'CommandCenter', 'ConnectionNode', 'PowerSource'}) do
         for _, row in ipairs(data[role] or {}) do
             topology.rows[row.dcsGroupName] = {role=role, data=row}
             table.insert(topology.ordered, row.dcsGroupName)
+            for _, generator in ipairs(row.localPowerSources or {}) do
+                topology.localPower[generator] = true
+            end
         end
     end
     -- Point defences use their site's radio links, not an airborne-radio fallback.
@@ -57,15 +60,28 @@ function EscalationIadsTopology:alive(name)
     return ok and live
 end
 
+function EscalationIadsTopology:generatorAlive(name)
+    local object = Unit.getByName(name)
+    if not object then return false end
+    local ok, live = pcall(function()
+        return object:isExist() and object:getLife() > 0
+            and object:getCoalition() == self.coalition
+    end)
+    return ok and live
+end
+
 function EscalationIadsTopology:refresh()
     local alive, powered, signature = {}, {}, {}
     for _, name in ipairs(self.ordered) do alive[name] = self:alive(name) end
     for _, name in ipairs(self.ordered) do
         local row = self.rows[name]
         local power = row.data.PowerSource or {}
-        powered[name] = row.role == 'PowerSource' or #power == 0
+        powered[name] = row.role == 'PowerSource' or (not row.data.requiresPower and #power == 0)
         for _, source in ipairs(power) do
             if alive[source] then powered[name] = true; break end
+        end
+        for _, generator in ipairs(row.data.localPowerSources or {}) do
+            if self:generatorAlive(generator) then powered[name] = true; break end
         end
         signature[#signature+1] = (alive[name] and powered[name]) and '1' or '0'
     end
@@ -171,7 +187,8 @@ function EscalationIadsTopology:onEvent(event)
     if object then
         local ok, relevant = pcall(function()
             local name = object:getName()
-            if self.rows[name] or self.rows[string.gsub(name, ' object$', '')] then return true end
+            if self.rows[name] or self.rows[string.gsub(name, ' object$', '')]
+                or self.localPower[name] then return true end
             if object.getGroup then
                 local group = object:getGroup()
                 return group and self.rows[group:getName()] ~= nil

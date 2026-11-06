@@ -188,6 +188,56 @@ def test_remote_power_loss_and_missing_dependencies_fail_closed(
     """)
 
 
+@pytest.mark.parametrize("side", [1, 2])
+def test_explicit_power_requirement_with_zero_links_stays_dark(
+    vm: Any, side: int
+) -> None:
+    data = relay_data()
+    data["Sam"][0]["requiresPower"] = True
+    data["CommandCenter"][0]["requiresPower"] = True
+    start(vm, data, side)
+    vm.execute("""
+        cover(elements.EWR,elements.SAM)
+        iads:evaluateContacts()
+        assert(not elements.SAM:hasWorkingPowerSource())
+        assert(not elements.SAM:isActive())
+        assert(not elements.CC:hasWorkingPowerSource())
+    """)
+
+
+@pytest.mark.parametrize("side", [1, 2])
+def test_local_generator_is_checked_live_and_grid_remains_a_backup(
+    vm: Any, side: int
+) -> None:
+    data = relay_data()
+    data["Sam"][0].update(
+        requiresPower=True, localPowerSources=["GENERATOR"], PowerSource=["GRID"]
+    )
+    data["PowerSource"] = [{"dcsGroupName": "GRID"}]
+    start(vm, data, side)
+    vm.execute("""
+        objects.GENERATOR={live=true,side=iads.topology.coalition}
+        function objects.GENERATOR:isExist() return self.live end
+        function objects.GENERATOR:getLife() return self.live and 100 or 0 end
+        function objects.GENERATOR:getCoalition() return self.side end
+        objects.GRID.live=false
+        iads.topology:beginCycle()
+        assert(elements.SAM:hasWorkingPowerSource())
+        objects.GENERATOR.live=false
+        iads.topology:onEvent({initiator={getName=function() return 'GENERATOR' end}})
+        assert(not elements.SAM:hasWorkingPowerSource())
+        assert(not elements.SAM:isActive())
+        objects.GRID.live=true
+        iads.topology:beginCycle()
+        assert(elements.SAM:hasWorkingPowerSource())
+        objects.GRID=nil
+        objects.GENERATOR.side=3-iads.topology.coalition
+        objects.GENERATOR.live=true
+        iads.topology:beginCycle()
+        assert(not elements.SAM:hasWorkingPowerSource())
+    """)
+
+
 def test_power_station_cannot_relay_radio_and_absent_command_is_not_global_command(
     vm: Any,
 ) -> None:
@@ -359,6 +409,10 @@ def exported(network: IadsNetwork) -> dict[str, list[dict[str, Any]]]:
         row: dict[str, Any] = {"dcsGroupName": entry.dcs_name, **entry.connections}
         if entry.independent_comms:
             row["independentComms"] = True
+        if entry.requires_power:
+            row["requiresPower"] = True
+        if entry.local_power_sources:
+            row["localPowerSources"] = entry.local_power_sources
         result.setdefault(entry.iads_role.value, []).append(row)
     return result
 
@@ -367,7 +421,7 @@ def exported(network: IadsNetwork) -> dict[str, list[dict[str, Any]]]:
 def test_exported_python_graph_and_runtime_agree_through_remote_losses(
     vm: Any, side: Player
 ) -> None:
-    network, (_, relay_a, _, sam, _) = chain(side)
+    network, (_, relay_a, _, sam, _, _) = chain(side)
     data = exported(network)
     start(vm, data, 2 if side is Player.BLUE else 1)
     name_by_object = {
@@ -396,6 +450,9 @@ def test_exported_python_graph_and_runtime_agree_through_remote_losses(
                 assert element.hasActiveConnectionNode(
                     element
                 ) == connectivity.connected(node(network, obj))
+                assert element.hasWorkingPowerSource(element) == connectivity.powered(
+                    node(network, obj)
+                )
 
 
 def test_plugin_loads_topology_before_configuration() -> None:
@@ -455,9 +512,11 @@ def test_generated_miz_packages_the_graph_and_runtime_in_load_order(
     assert data.automaticTopology is advanced
     assert len(data.RED.Sam) == 1
     if advanced:
+        assert data.RED.Sam[1].requiresPower is True
         assert len(data.RED.ConnectionNode) == 2
         assert len(data.RED.CommandCenter) == 1
         assert len(data.RED.Sam[1].ConnectionNode) == 1
     else:
+        assert data.RED.Sam[1].requiresPower is None
         assert data.RED.ConnectionNode is None
         assert data.RED.CommandCenter is None

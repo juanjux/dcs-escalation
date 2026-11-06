@@ -572,13 +572,26 @@ def _power_links(node: IadsNetworkNode, friendly: bool) -> list[IadsLink]:
     links: list[IadsLink] = []
 
     if not sources:
+        independent = mains_are_up(node)
         links.append(
             IadsLink(
                 caption="POWER",
                 title="No grid link in this layout",
-                note="nothing off-site can switch it off",
-                chip="POWERED",
-                tone=LinkTone.INFO,
+                note=(
+                    "independent power supply"
+                    if independent
+                    else (
+                        "uses its on-site generator"
+                        if generator is not None
+                        else "no grid supply or on-site generator; stays switched off"
+                    )
+                ),
+                chip="POWERED" if independent else "NO GRID",
+                tone=(
+                    LinkTone.INFO
+                    if independent
+                    else LinkTone.WARN if generator is not None else LinkTone.BAD
+                ),
             )
         )
     elif mains_are_up(node):
@@ -613,15 +626,19 @@ def _power_links(node: IadsNetworkNode, friendly: bool) -> list[IadsLink]:
         )
 
     if generator is not None:
-        running = bool(sources) and not mains_are_up(node)
+        running = not mains_are_up(node)
         links.append(
             IadsLink(
                 caption="OWN POWER",
                 title=generator,
                 note=(
-                    "one truck: bombing it switches the site off"
-                    if not friendly
-                    else "keeps the site up while the grid is down"
+                    "keeps the site up while the grid is down"
+                    if friendly
+                    else (
+                        "bombing it removes the backup supply"
+                        if mains_are_up(node)
+                        else "one truck: bombing it switches the site off"
+                    )
                 ),
                 chip="RUNNING ON IT" if running else "GENERATOR",
                 tone=LinkTone.WARN if running else LinkTone.INFO,

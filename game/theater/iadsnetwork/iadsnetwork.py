@@ -64,9 +64,8 @@ def brings_its_own_power(group: IadsGroundGroup) -> bool:
     ids in Python: a mod that ships a generator is classed Power like the rest, and
     starts working the day it is registered.
 
-    Alive units only, and asked when the mission is written rather than when the
-    network is built: kill the generator and the site is back on the grid the next
-    time a mission is generated.
+    Alive units only. Mission data also identifies these generators so losing
+    one inside DCS switches the site to its grid supply, if available.
     """
     return any(
         unit.alive
@@ -86,6 +85,8 @@ class SkynetNode:
     properties: dict[str, str] = field(default_factory=dict)
     connections: dict[str, list[str]] = field(default_factory=lambda: defaultdict(list))
     independent_comms: bool = False
+    requires_power: bool = False
+    local_power_sources: list[str] = field(default_factory=list)
 
     @staticmethod
     def dcs_name_for_group(group: IadsGroundGroup) -> str:
@@ -126,8 +127,9 @@ class SkynetNode:
 class IadsNetworkNode:
     """IadsNetworkNode which particicpates to the IADS Network and has connections to Power Sources, Comms or Point Defenses. A network node can be a SAM System, EWR or Command Center"""
 
-    def __init__(self, group: IadsGroundGroup) -> None:
+    def __init__(self, group: IadsGroundGroup, requires_power: bool = False) -> None:
         self.group = group
+        self.requires_power = requires_power
         self.connections: dict[UUID, IadsGroundGroup] = {}
 
     def __str__(self) -> str:
@@ -220,14 +222,16 @@ class IadsNetwork:
             #  (originating from SkynetNode.dcs_name_for_group)
             # but if it does, we want to know because it's supposed to be impossible afaict
             skynet_node = SkynetNode.from_group(node.group)
-            self_powered = brings_its_own_power(node.group)
+            skynet_node.requires_power = self.advanced_iads and not self._is_ship(node)
+            if skynet_node.requires_power:
+                skynet_node.local_power_sources = [
+                    unit.unit_name
+                    for unit in node.group.units
+                    if unit.unit_type is not None
+                    and unit.unit_type.unit_class is UnitClass.POWER
+                ]
             for connection in node.connections.values():
                 if getattr(connection.ground_object, "in_transit", False):
-                    continue
-                # A site with its own generator has no power dependency at all. An
-                # empty list is exactly what Skynet reads as "powered", so leaving the
-                # connection out IS the feature -- no Lua change needed.
-                if self_powered and connection.iads_role is IadsRole.POWER_SOURCE:
                     continue
                 # A destroyed building has to keep reaching Skynet. Dropping it here left
                 # the element with an empty list, and genericCheckOneObjectIsAlive reads
@@ -359,7 +363,11 @@ class IadsNetwork:
             if cn.group == group:
                 return cn
 
-        node = IadsNetworkNode(group)
+        node = IadsNetworkNode(
+            group,
+            requires_power=self.advanced_iads
+            and not isinstance(group.ground_object, NavalGroundObject),
+        )
         self.nodes.append(node)
         return node
 

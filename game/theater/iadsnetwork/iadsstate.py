@@ -126,14 +126,19 @@ def standing(
 def mains_are_up(
     node: IadsNetworkNode, destroyed: Collection[TheaterGroundObject] = ()
 ) -> bool:
-    """Whether the grid still reaches this site. Nothing to do with its own generator:
-    an empty list of power sources is what Skynet reads as powered."""
+    """Whether external power reaches this site, or it needs no grid supply.
+
+    Advanced land sites require an actual source. Basic IADS and ships retain
+    their independent supply. On-site generators are checked separately.
+    """
     sources = [
         group
         for group in node.connections.values()
         if group.iads_role is IadsRole.POWER_SOURCE
     ]
-    return not sources or any(standing(group, destroyed) for group in sources)
+    return (not sources and not getattr(node, "requires_power", False)) or any(
+        standing(group, destroyed) for group in sources
+    )
 
 
 def comms_up(
@@ -308,13 +313,13 @@ class IadsStateMap:
             )
             return IadsStatus(
                 IadsState.DARK,
-                "No power: its substation is down and it carries no generator, "
+                "No power: no working grid supply or on-site generator, "
                 f"{consequence}.",
                 blind,
             )
 
         mains_note = (
-            f" Its substation is down; it runs on its own {own_generator}, "
+            f" No working grid supply; it runs on its own {own_generator}, "
             "which can be bombed like anything else."
             if own_generator is not None
             else ""

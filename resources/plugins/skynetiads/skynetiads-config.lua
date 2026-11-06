@@ -123,6 +123,10 @@ if dcsRetribution and SkynetIADS then
                 end
             end
         end
+        for _, name in ipairs(element.localPowerSources or {}) do
+            local generator = Unit.getByName(name)
+            if generator then iads_unit:addPowerSource(generator) end
+        end
         if element.PD then
             for i, pd in pairs(element.PD) do
                 env.info(string.format("DCSRetribution|Skynet-IADS plugin - adding IADS Point Defence %s", pd))

@@ -211,8 +211,8 @@ def test_a_network_without_command_centres_needs_none() -> None:
     assert command.tone is LinkTone.INFO
 
 
-def test_a_site_with_no_power_link_is_powered_anyway() -> None:
-    """An empty list of power sources is what Skynet reads as powered."""
+def test_basic_iads_keeps_its_independent_power_supply() -> None:
+    """Basic IADS retains Skynet's native empty-dependency behavior."""
     sam = _group("KAKAPO", IadsRole.SAM)
 
     power = _link(describe(sam.ground_object, _network(_node(sam))), "POWER")
