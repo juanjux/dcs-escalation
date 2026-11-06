@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[IMAC]** Optional in-mission scripted air coordination with detected-contact interception, support evasion, DEAD waiting and F10 pause controls for both coalitions.
 * **[IADS]** Rebuild topology each turn from current sites and coverage, with powered radio relay chains, isolated sectors and live infrastructure losses.
 * **[Map]** Add separate Blue/Red visibility filters for destroyed repairable sites, alongside the non-repairable filters.
 * **[Repairs]** Cancel pending building repairs with refunds in the UI and OPFOR REST/MCP; select individual buildings through the API.

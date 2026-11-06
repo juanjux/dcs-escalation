@@ -25,6 +25,7 @@ from .gpsjammingluadata import populate_gps_jamming_lua
 from .navalmagazineluadata import populate_naval_magazines_lua
 from .missiondata import MissionData
 from .realisticcascampaign import prepare_campaign, inject_campaign
+from . import imac
 
 if TYPE_CHECKING:
     from game import Game
@@ -48,6 +49,7 @@ class LuaGenerator:
     def generate(self) -> None:
         # Same plugin-manager settings as injection; preflight before adding Lua.
         realistic_cas = prepare_campaign(self, LuaPluginManager.plugins())
+        imac_options = imac.options(LuaPluginManager.plugins())
         existing_start_triggers = [
             x for x in self.mission.triggerrules.triggers if isinstance(x, TriggerStart)
         ]
@@ -60,6 +62,7 @@ class LuaGenerator:
         self._inject_barcap_refuelling()
         self._inject_sam_transit_defense()
         inject_campaign(self, realistic_cas)
+        imac.inject(self, imac.configure(self, imac_options))
         for t in existing_start_triggers:
             self.mission.triggerrules.triggers.remove(t)
             self.mission.triggerrules.triggers.append(t)

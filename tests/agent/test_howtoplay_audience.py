@@ -81,3 +81,17 @@ def test_briefing_states_api_boundary_and_preserves_planning_constraints() -> No
         "stock",
     ):
         assert rule in text
+
+
+def test_briefing_explains_imac_without_implying_agent_control() -> None:
+    text = " ".join(service._render_doc("howtoplay.md", {}).split())
+    for description in (
+        "In-Mission Air Commander (IMAC)",
+        "scripted air coordination",
+        "without an LLM",
+        "off by default",
+        "independently for BLUE and RED",
+        "cannot configure or command IMAC through the OPFOR API/MCP",
+        "does not replace turn planning or control Player/Client flights",
+    ):
+        assert description in text

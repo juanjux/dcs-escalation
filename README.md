@@ -37,6 +37,10 @@ or any other LLM that has a local interface, and start playing with it controlli
 changes the engagement and fun factor of every campaign. While the current version still keeps the inherited dumb OPFOR planner, 
 it will probably be removed in the future.
 
+## In-Mission Air Commander (IMAC)
+
+Optional in-mission scripted air coordination for each coalition, without an LLM. While an operating airborne AWACS or a powered command centre survives, IMAC redirects available BARCAP/TARCAP patrols against detected air threats beyond their normal engagement radius, temporarily repositions vulnerable flights, and holds attacks behind known SAM defences while DEAD remains available. Orders have fuel, time, terrain and pursuit limits; the original mission remains suspended underneath. Player/Client groups are never tasked, and F10 controls can pause automatic command before manual orders. Off by default; see [IMAC behaviour and limits](docs/imac.md).
+
 ## Saved map drawings
 
 Taken from Retlab: Use the map's Draw tool to add vertices, then save a named line or area to a
