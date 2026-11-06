@@ -1,6 +1,6 @@
 {
-    "nameInUI": "In-Mission Air Commander (experimental)",
-    "descriptionInUI": "AI-only coordination for both sides while an airborne, operating AWACS or a powered command centre survives. Uses detected air contacts, redirects available BARCAP/TARCAP patrols, protects vulnerable flights, and holds attacks behind known SAM threats while DEAD is working. Temporary orders retain the original mission. Excludes Player/Client groups, escorts and AFAC navigation. F10 pause controls allow manual tasking. No emergency scrambles or ground orders. Off by default pending in-simulator validation.",
+    "nameInUI": "In-Mission Air Commander",
+    "descriptionInUI": "Optional in-mission scripted air coordination for both sides, without an LLM, while an airborne, operating AWACS or a powered command centre survives. Uses detected air contacts, redirects available BARCAP/TARCAP patrols, protects vulnerable flights, and holds attacks behind known SAM threats while DEAD is working. Temporary orders retain the original mission. Excludes Player/Client groups, escorts and AFAC navigation. F10 pause controls allow manual tasking. No emergency scrambles or ground orders. Off by default.",
     "defaultValue": false,
     "specificOptions": [
         {"nameInUI": "Enable BLUE commander", "descriptionInUI": "Allow IMAC to command BLUE AI flights. Independent of the RED setting; Player/Client groups are never commanded.", "mnemonic": "blue", "defaultValue": true},
