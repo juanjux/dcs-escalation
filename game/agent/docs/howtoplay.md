@@ -224,6 +224,9 @@ require or provide tractors. Other stationary and unreviewed types remain
 unavailable. Dead units and existing planning reservations are excluded from
 available transport capacity.
 Transported or towed pieces cannot fire while loaded and are lost with their assigned tractor.
+The `towed` mobility category also covers palletized or portable equipment loaded
+on a vehicle, such as a Skyshield FCU or stationary RBS 70 launcher. Each piece
+still requires its own included tractor; a truck-mounted variant needs none.
 
 Deploying base stock to friendly coordinates creates a Reserve Armor Group.
 The selection can include frontline stock, not just the undeployed surplus;

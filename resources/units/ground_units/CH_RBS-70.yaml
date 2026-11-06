@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: towed
 description: Man-portable air defense system used for very short distances.
   Primarily used against slow and low flying attack aircraft or helicopters.
   

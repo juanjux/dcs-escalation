@@ -1,4 +1,6 @@
 class: SearchRadar
+ground_mobility:
+  mode: self_propelled
 price: 40
 variants:
   SAM SA-20B S-300PMU2 SR 64N6E2: null

@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: self_propelled
 price: 28
 variants:
   SAM SA-20 S-300PMU1 LN 5P85CE: null
