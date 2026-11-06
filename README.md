@@ -320,7 +320,7 @@ previous map view and campaign controls are restored when selection ends.
   
 - **Mission Log** (plugin, off by default) — a running commentary of what happens to your
   side while you fly: who shot down whom and with what, which targets went down, who
-  ejected, who crashed. 
+  ejected, who crashed, and which bases were captured or lost.
   ([#120](https://github.com/juanjux/dcs-escalation/pull/120))
   
 - **Turn times from the sun** — the four turn slots are derived from the theater's

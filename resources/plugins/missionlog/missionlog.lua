@@ -17,6 +17,7 @@ MISSION_LOG_DEFAULTS = {
     damage = false,
     losses = true,
     crashes = true,
+    basecaptures = true,
     flightstatus = false,
     intercepts = true,
     monitoring = true,
@@ -142,6 +143,30 @@ local function announce(side, category, text, hidden)
     end
     state.shown = state.shown + 1
     trigger.action.outTextForCoalition(side, text, DURATION, false)
+end
+
+local base_owners = {}
+
+-- Campaign capture triggers also cover FOBs and recaptures on attacker withdrawal.
+-- Native airbase events do not necessarily represent campaign ownership changes.
+function MISSION_LOG_BASE_CAPTURED(id, name, side, initial_side)
+    if side ~= 1 and side ~= 2 then
+        return
+    end
+    local previous = base_owners[id]
+    if previous == nil then
+        previous = initial_side
+    end
+    base_owners[id] = side
+    if previous == side then
+        return
+    end
+    record({kind = "base_capture", side = side, previous_side = previous,
+            base_id = id, place = name})
+    announce(side, "basecaptures", cheer(true, string.format("We CAPTURED %s", name)))
+    if previous == 1 or previous == 2 then
+        announce(previous, "basecaptures", cheer(false, string.format("We LOST %s", name)))
+    end
 end
 
 -- Retribution names a flight's units "<target> <task>|<country>|<n>|<aircraft>|
