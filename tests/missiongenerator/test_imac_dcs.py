@@ -40,9 +40,10 @@ def runtime() -> Any:
           local g={name=name,side=side,id=#handlers+100,units={},pushes={},rtbs={}}
           local u={name=name..'-unit',side=side,x=x,alt=6000,air=air,life=100,fuel=.95,
             velocity={x=0,y=0,z=0},radar=true,attributes=attributes or {},category=0,
-            detections={},objectCategory=1,positionReads=0}
+            detections={},objectCategory=1,positionReads=0,active=true}
           local c={}
           function u:isExist()return self.life>0 end
+          function u:isActive()return self.active end
           function u:getLife()return self.life end
           function u:getLife0()return 100 end
           function u:getFuel()return self.fuel end
@@ -132,6 +133,81 @@ def test_current_native_detection_returns_four_flags_without_memory_vectors() ->
     assert lua.eval("bandit.positionReads") > 0
     lua.execute("awacs.detections={};bandit.poison=true;tick(20);tick(40)")
     assert lua.eval("EscalationIMAC.instance.states.CAP.order==nil") is True
+
+
+def test_existing_inactive_patrol_is_not_commanded_until_activation() -> None:
+    lua = runtime()
+    lua.execute("cap.active=false;awacs.detections={bandit}")
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("cap:isExist() and cap:inAir()") is True
+    assert lua.eval("#groups.CAP.pushes") == 0
+    lua.execute("cap.active=true;tick(15)")
+    assert lua.eval("#groups.CAP.pushes") == 1
+
+
+def test_existing_inactive_awacs_does_not_grant_authority() -> None:
+    lua = runtime()
+    lua.execute("awacs.active=false;cap.detections={bandit}")
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 0
+    assert lua.eval("bandit.positionReads") == 0
+
+
+def test_existing_inactive_sensor_does_not_supply_contacts() -> None:
+    lua = runtime()
+    lua.execute("""
+        cap.active=false;cap.detections={bandit};cfg.flights[1].mode='support'
+        bandit.attributes={Fighters=true};bandit.observedX=-50000
+    """)
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.AWACS.pushes") == 0
+    assert lua.eval("bandit.positionReads") == 0
+
+
+def test_existing_inactive_hostile_does_not_become_a_contact() -> None:
+    lua = runtime()
+    lua.execute("awacs.detections={bandit};bandit.active=false;bandit.visible=true")
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 0
+    assert lua.eval("bandit.positionReads") == 0
+
+
+@pytest.mark.parametrize("active,expected", [(True, 0), (False, 1)])
+def test_inactive_sam_does_not_leave_an_active_threat_ring(
+    active: bool, expected: int
+) -> None:
+    lua = runtime()
+    lua.execute("""
+        sam=add('SAM',1,60000,false);sam.alt=0;awacs.detections={bandit}
+        cfg.threats={{name='SAM-unit',group='SAM',side=1,known=true,radius=10000}}
+    """)
+    lua.globals().sam.active = active
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == expected
+
+
+def test_inactive_dead_does_not_make_a_strike_wait_for_nonexistent_support() -> None:
+    lua = runtime()
+    for index, flight in enumerate(
+        [metadata("STRIKE", "strike"), metadata("DEAD", "dead")], 3
+    ):
+        lua.globals().cfg.flights[index] = lua.table_from(flight, recursive=True)
+    lua.execute("""
+        strike=add('STRIKE',2,0,true);strike.velocity={x=220,y=0,z=0}
+        dead=add('DEAD',2,10000,true);dead.active=false
+        sam=add('SAM',1,20000,false);sam.alt=0
+        cfg.threats={{name='SAM-unit',group='SAM',side=1,known=true,radius=5000}}
+    """)
+    start(lua)
+    lua.execute("EscalationIMAC.reached('STRIKE',2);tick(5)")
+    assert lua.eval("EscalationIMAC.instance.states.STRIKE.finished") is True
+    assert lua.eval("#groups.STRIKE.rtbs") == 1
+    assert lua.eval("#groups.DEAD.pushes") == 0
 
 
 @pytest.mark.parametrize(

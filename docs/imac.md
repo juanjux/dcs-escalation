@@ -12,6 +12,8 @@ Air tracks come from unit-controller visual, optical, radar and IRST detections 
 
 SAM avoidance uses campaign-known sites, known naval air defences and currently shared Realistic CAS discoveries. Hidden ground units are not sampled before discovery. Ground threat heights are measured above the launcher's MSL elevation, using the same verified ceiling data as AFAC navigation. Unknown ceilings remain unsafe at every height. Destroyed launchers, missing compatible tracking radars and definite IADS power failures remove threats; radar silence alone does not. Verified mobile transit defences count only while the transit script reports them deployed.
 
+Inactive late-activation units are excluded from flight control, command authority, sensor reports, new air tracks and active SAM envelopes. DCS can report these units as existing and airborne before activation; existence alone is not treated as participation in the mission.
+
 ## Decisions
 
 | Flight | Temporary response | Return condition |

@@ -6,6 +6,11 @@ do
   local function alive(object)
     return object and object:isExist() and object:getLife()>0
   end
+  local function activeUnit(unit)
+    -- Late-activated DCS units can exist, have life and report inAir() while
+    -- still inactive. They cannot supply authority, observations or orders.
+    return alive(unit) and unit:isActive()==true
+  end
   local function copy(value)
     if type(value)~='table' then return value end
     local out={};for key,item in pairs(value) do out[key]=copy(item) end;return out
@@ -69,7 +74,7 @@ do
         local result={fuel=1,healthy=true,ammo=false,airborne=true,player=false}
         local count=0
         for _,u in ipairs(g:getUnits()) do
-          if alive(u) then
+          if activeUnit(u) then
             count=count+1
             result.player=result.player or (u:getPlayerName()~=nil)
             result.airborne=result.airborne and u:inAir()
@@ -108,7 +113,7 @@ do
             local g=Group.getByName(meta.group)
             if g and g:isExist() and g:getCoalition()==side then
               for _,u in ipairs(g:getUnits()) do
-                if alive(u) and u:inAir() and u:getFuel()>0.05 and u:getRadar()==true then
+                if activeUnit(u) and u:inAir() and u:getFuel()>0.05 and u:getRadar()==true then
                   commandSource[side]='AWACS '..meta.group;return true
                 end
               end
@@ -142,7 +147,7 @@ do
       Controller.Detection.RADAR,Controller.Detection.IRST}
     local function readSensor(sensor,side,now)
       local unit=Unit.getByName(sensor.name)
-      if not alive(unit) or unit:getCoalition()~=side or (sensor.air and not unit:inAir()) then return end
+      if not activeUnit(unit) or unit:getCoalition()~=side or (sensor.air and not unit:inAir()) then return end
       local group=unit:getGroup()
       local state=group and instance.states[group:getName()]
       -- AttackGroup itself grants detection. Do not use an assigned interceptor's
@@ -155,7 +160,8 @@ do
       for _,entry in pairs(entries) do
         count=count+1;if count>512 then break end
         local target=type(entry)=='table' and entry.object
-        if target and target:isExist() and target:getCategory()==Object.Category.UNIT and target:getCoalition()==3-side then
+        if target and target:isExist() and target:getCategory()==Object.Category.UNIT and
+          target:isActive()==true and target:getCoalition()==3-side then
           local detected,visible,knownType,knownDistance,lastSeen,point,velocity=
             controller:isTargetDetected(target,unpack(detection))
           if detected==true and knownDistance==true then
@@ -226,12 +232,12 @@ do
               if not transit or transit.active[meta.group]~=true then lastThreats[meta.name]=nil;return end
             end
             local u=Unit.getByName(meta.name)
-            if not alive(u) or u:getCoalition()~=meta.side then lastThreats[meta.name]=nil;return end
+            if not activeUnit(u) or u:getCoalition()~=meta.side then lastThreats[meta.name]=nil;return end
             local query=dcsRetribution and dcsRetribution.iadsHasWorkingPower
             if query and query(meta.group)==false then lastThreats[meta.name]=nil;return end
             if meta.needsRadar then
               local radar=false
-              for _,name in ipairs(meta.radars) do if alive(Unit.getByName(name)) then radar=true;break end end
+              for _,name in ipairs(meta.radars) do if activeUnit(Unit.getByName(name)) then radar=true;break end end
               if not radar then lastThreats[meta.name]=nil;return end
             end
             local p=u:getPoint()
