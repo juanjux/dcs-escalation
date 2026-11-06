@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mods]** Update Spino's F-15EX to v3.0 with three air-to-air variants, fifteen stations, revised payloads, fuel capacities and radio presets.
 * **[IMAC]** Optional in-mission scripted air coordination with detected-contact interception, support evasion, DEAD waiting and F10 pause controls for both coalitions.
 * **[IADS]** Rebuild topology each turn from current sites and coverage, with powered radio relay chains, isolated sectors and live infrastructure losses.
 * **[Map]** Add separate Blue/Red visibility filters for destroyed repairable sites, alongside the non-repairable filters.

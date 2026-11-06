@@ -287,7 +287,7 @@ class GeneratorOptions(QtWidgets.QWizardPage):
             ("F-106 Delta Dart (v2.9.4.101)", self.f106_deltadart),
             ("F-15C EG Golden Eagle (v1.5 by Spino)", self.f15cge),
             ("F-15D Baz (v1.0)", self.f15d_baz),
-            ("F-15EX Eagle II (v2.3 by Spino)", self.f15ex),
+            ("F-15EX / F-15EX (CFTs) / F-15IA (v3.0 by Spino)", self.f15ex),
             ("F-15I Ra'am (v1.0 by IDF Mods Project)", self.f_15_idf),
             ("F-16I Sufa & F-16D (v3.6 by IDF Mods Project)", self.f_16_idf),
             ("F-22A Raptor (v2.1.0)", self.f22_raptor),

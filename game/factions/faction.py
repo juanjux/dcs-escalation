@@ -520,6 +520,8 @@ class Faction:
             self.remove_aircraft("Su-35S_AG")
         if not mod_settings.f15ex:
             self.remove_aircraft("F15EX")
+            self.remove_aircraft("F15EX_CFT")
+            self.remove_aircraft("F15IA")
         if not mod_settings.f15cge:
             self.remove_aircraft("F15CGE")
         if not mod_settings.eurofighter:

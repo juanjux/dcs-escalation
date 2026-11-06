@@ -41,6 +41,7 @@ class Migrator:
         self._update_packagewaypoints()
         self._update_package_attributes()
         self._update_factions()
+        self._update_f15ex_v3()
         self._update_flights()
         self._update_squadrons()
         self._remove_captured_aircraft()
@@ -153,6 +154,66 @@ class Migrator:
             if not layout.join and f.package.waypoints:
                 builder = WaypointBuilder(f, [])
                 layout.join = builder.join(f.package.waypoints.join)
+
+    def _update_f15ex_v3(self) -> None:
+        """Drop unsupported tasks and replace incompatible pre-v3 aircraft loads."""
+        from game.ato.loadouts import Loadout
+        from game.data.weapons import Pylon
+        from game.dcs.aircrafttype import AircraftType
+
+        ids = {"F15EX", "F15EX_CFT", "F15IA"}
+        for coalition in self.game.coalitions:
+            if any(a.dcs_id == "F15EX" for a in coalition.faction.aircraft):
+                coalition.faction.aircraft.add(
+                    AircraftType.named("F-15EX Eagle II (CFTs)")
+                )
+            for squadron in coalition.air_wing.iter_squadrons():
+                if squadron.aircraft.dcs_id not in ids:
+                    continue
+                aircraft = squadron.aircraft
+                try_set_attr(squadron, "primary_task", FlightType.INTERCEPTION)
+                if not aircraft.capable_of(squadron.primary_task):
+                    squadron.primary_task = FlightType.INTERCEPTION
+                previous_tasks = squadron.auto_assignable_mission_types
+                squadron.set_auto_assignable_mission_types(previous_tasks)
+                if previous_tasks and not squadron.auto_assignable_mission_types:
+                    squadron.set_auto_assignable_mission_types({squadron.primary_task})
+
+            for package in list(coalition.ato.packages):
+                for flight in list(package.flights):
+                    aircraft = flight.unit_type
+                    if aircraft.dcs_id not in ids:
+                        continue
+                    if (
+                        flight.flight_type != FlightType.FERRY
+                        and not aircraft.capable_of(flight.flight_type)
+                    ):
+                        logging.info(
+                            "Cancelled unsupported F-15EX v3 %s flight %s",
+                            flight.flight_type,
+                            flight.id,
+                        )
+                        package.remove_flight(flight)
+                        if not package.flights:
+                            coalition.ato.remove_package(package)
+                        continue
+
+                    flight.fuel = min(
+                        getattr(flight, "fuel", aircraft.max_fuel), aircraft.max_fuel
+                    )
+                    for member in flight.roster.members:
+                        if all(
+                            number in aircraft.dcs_unit_type.pylons
+                            and Pylon.for_aircraft(aircraft, number).can_equip(weapon)
+                            for number, weapon in member.loadout.pylons.items()
+                            if weapon is not None
+                        ):
+                            continue
+                        member.loadout = Loadout.default_for(flight).clone()
+                        member.use_custom_loadout = False
+                        logging.info(
+                            "Updated incompatible F-15EX v3 loadout: %s", flight.id
+                        )
 
     def _update_flights(self) -> None:
         to_remove = []
