@@ -32,6 +32,14 @@ ground_forces:
 squadrons:
   #Anapa-Vityazevo
   12:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "[CH] TB-2 UCAV"
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: any
       aircraft:
@@ -81,6 +89,13 @@ squadrons:
       pilots: 16
   #Maykop-Khanskaya
   16:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: Air Assault
       secondary: any
       aircraft:

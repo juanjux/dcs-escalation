@@ -15,6 +15,22 @@ recommended_player_income_multiplier: 5.0
 recommended_enemy_income_multiplier: 1.0
 advanced_iads: true
 squadrons:
+  "Gaziantep":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
+  "Jirah":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "A-10C Thunderbolt II (Suite 7)"
+      size: 2
+      pilots: 6
   CVN-74 John Stennis:
     - primary: BARCAP
       secondary: any

@@ -12,7 +12,22 @@ advanced_iads: true
 version: "10.5"
 squadrons:
   # Kutaisi
+  "Khashuri FOB":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
   25:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker MPRS

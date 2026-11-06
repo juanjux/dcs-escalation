@@ -18,6 +18,13 @@ version: "10.7"
 squadrons:
 # Off-map spawn
   From US:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
@@ -175,6 +182,13 @@ squadrons:
       pilots: 6
   # RED - Port Stanley
   1:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "WingLoong-I"
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:

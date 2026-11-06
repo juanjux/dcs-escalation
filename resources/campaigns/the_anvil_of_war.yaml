@@ -172,6 +172,13 @@ squadrons:
       pilots: 8
   #Kallax
   15:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: DEAD
       secondary: any
       aircraft:
@@ -228,6 +235,13 @@ squadrons:
       pilots: 6
   #Kittila
   22:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "WingLoong-I"
+      size: 2
+      pilots: 6
     - primary: SEAD Sweep
       secondary: air-to-ground
       aircraft:

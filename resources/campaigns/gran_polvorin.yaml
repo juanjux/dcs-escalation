@@ -108,6 +108,13 @@ squadrons:
       pilots: 10
   # Rio Gallegos
   5:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "WingLoong-I"
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:
@@ -152,3 +159,11 @@ squadrons:
         - H-6J Badger
       size: 2
       pilots: 6
+  Mount Pleasant:
+  - primary: AFAC — Area
+    secondary:
+    - AFAC — Frontline
+    aircraft:
+    - RQ-1A Predator
+    size: 2
+    pilots: 6

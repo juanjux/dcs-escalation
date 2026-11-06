@@ -166,6 +166,13 @@ squadrons:
       pilots: 10
   # Incirlik
   16:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker
@@ -239,6 +246,13 @@ squadrons:
       pilots: 16
   # Aleppo - 29
   27:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - SA 342L Gazelle
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:

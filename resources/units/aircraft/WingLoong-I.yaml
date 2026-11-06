@@ -1,4 +1,7 @@
 price: 8
+introduced: 2010
+# A theatre-planning radius for the UAV-family stand-in, not a datalink limit.
+max_range: 500
 variants:
   WingLoong-I: null
 tasks:

@@ -80,6 +80,13 @@ squadrons:
       pilots: 8
   #Al Minhad AFB (61)
   12:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "MQ-9 Reaper"
+      size: 2
+      pilots: 6
     - primary: Transport
       secondary: any
       aircraft:
@@ -178,6 +185,13 @@ squadrons:
       pilots: 8
   #Abu Musa Island (8)
   1:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: SEAD Escort
       secondary: air-to-ground
       aircraft:

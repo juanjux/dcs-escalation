@@ -18,6 +18,13 @@ advanced_iads: true
 squadrons:
     #Incirlik
     16:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: AEW&C
       aircraft:
         - E-3A
@@ -194,6 +201,13 @@ squadrons:
       pilots: 16
     #Minakh
     26:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:

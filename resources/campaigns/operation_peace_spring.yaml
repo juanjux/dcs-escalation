@@ -92,6 +92,13 @@ squadrons:
       pilots: 20
    # Ramat David
   30:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
@@ -131,6 +138,13 @@ squadrons:
       pilots: 8
   # Damascus
   7:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - SA 342M Gazelle
+      size: 2
+      pilots: 6
     - primary: Strike
       secondary: air-to-ground
       aircraft:

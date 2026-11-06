@@ -12,6 +12,14 @@ advanced_iads: true
 version: "10.4"
 squadrons:
   #Vaziani, blufor jet base
+  "FARP Wild Horse":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - SA 342M Gazelle
+      size: 2
+      pilots: 6
   31:
     - primary: BARCAP
       secondary: air-to-air
@@ -41,6 +49,13 @@ squadrons:
     - primary: AEW&C
   #Tbilisi-Lochini, blue helicopter base
   29:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-24V Hind-E
+      size: 2
+      pilots: 6
     - primary: CAS
       aircraft:
         - Mi-24P Hind-F

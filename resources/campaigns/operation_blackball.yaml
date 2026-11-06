@@ -17,6 +17,13 @@ recommended_enemy_income_multiplier: 0.7
 squadrons:
   # BLUFOR CVN
   Naval-1:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D(R) Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
@@ -96,6 +103,13 @@ squadrons:
       pilots: 10
   # Larnaca
   47:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "WingLoong-I"
+      size: 2
+      pilots: 6
     - primary: TARCAP
       secondary: any
       aircraft:

@@ -22,6 +22,13 @@ settings:
 squadrons:
 #Bandar Abbas Intl
   2:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: AEW&C
       aircraft:
         - E-3A
@@ -211,6 +218,13 @@ squadrons:
       pilots: 6
   # Al Minhad AFB:
   12:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: air-to-ground
       aircraft:

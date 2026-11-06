@@ -104,6 +104,13 @@ squadrons:
       pilots: 12
   #Ramon Airbase
   9:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: DEAD
       secondary: any
       aircraft:
@@ -168,6 +175,13 @@ squadrons:
       pilots: 8
    #Melez
   5:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "WingLoong-I"
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: any
       aircraft:

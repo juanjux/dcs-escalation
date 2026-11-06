@@ -26,6 +26,13 @@ advanced_iads: true # Campaign has connection_nodes / power_sources / command_ce
 squadrons:
 # Nellis AFB
   4:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: AEW&C
       aircraft:
         - E-3A
@@ -141,6 +148,13 @@ squadrons:
       pilots: 8
 # Groom Lake
   2:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:

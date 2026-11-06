@@ -1,0 +1,1439 @@
+{
+  "1968_Yankee_Station.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 1970 Vietnam War",
+        "base": 18,
+        "aircraft": "OV-10A Bronco",
+        "preferred": [
+          "OV-10A Bronco",
+          "UH-1H Iroquois"
+        ],
+        "rationale": "Bronco operations are already part of this fictional 1968 campaign's premise; use the authored mod with a stock Huey fallback."
+      },
+      "RED": {
+        "faction": "Vietnam 1970",
+        "base": 23,
+        "aircraft": "MiG-15bis Fagot",
+        "preferred": [
+          "MiG-15bis Fagot"
+        ]
+      }
+    }
+  },
+  "battle_for_no_mans_land.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 1,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ]
+      },
+      "RED": {
+        "faction": "Private Military Company - Russian (Hard)",
+        "base": 3,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "battle_of_abu_dhabi.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Iran 2015",
+        "base": 24,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      },
+      "RED": {
+        "faction": "United Arab Emirates 2015",
+        "base": 12,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "black_sea.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": "Sukhumi-Babushara",
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 2010",
+        "base": "Sochi-Adler",
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "caen_to_evreux.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Allies 1944",
+        "base": 31,
+        "aircraft": "P-51D-25-NA Mustang",
+        "preferred": [
+          "P-51D-25-NA Mustang"
+        ]
+      },
+      "RED": {
+        "faction": "Germany 1944",
+        "base": 40,
+        "aircraft": "Fw 190 A-8 Anton",
+        "preferred": [
+          "Fw 190 A-8 Anton"
+        ]
+      }
+    }
+  },
+  "Caucasus_Multi_Full.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 22,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 2010",
+        "base": 23,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "Caucasus_Multi_Georgia.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 22,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Corrected the inherited 1995 date to 2008, matching the faction and the other Multi-Part scenarios."
+      },
+      "RED": {
+        "faction": "Georgia 2008",
+        "base": 24,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "Stock substitute for Georgia's 2008 Hermes reconnaissance UAVs; DCS has no Hermes model."
+      }
+    }
+  },
+  "Caucasus_Multi_Russia.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 21,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 2010",
+        "base": 16,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "clash_of_the_titans.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2020",
+        "base": 17,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Redfor (Russia) 2020",
+        "base": 7,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "crossing_the_rubicon.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Blufor Late Cold War (80s)",
+        "base": 163,
+        "aircraft": "A-10A Thunderbolt II",
+        "preferred": [
+          "A-10A Thunderbolt II"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 1980",
+        "base": 161,
+        "aircraft": "Mi-8MTV2 Hip",
+        "preferred": [
+          "Mi-8MTV2 Hip"
+        ]
+      }
+    }
+  },
+  "exercise_able_archer.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Blufor Late Cold War (80s)",
+        "base": 2,
+        "aircraft": "A-10A Thunderbolt II",
+        "preferred": [
+          "A-10A Thunderbolt II"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 1980",
+        "base": 4,
+        "aircraft": "Mi-8MTV2 Hip",
+        "preferred": [
+          "Mi-8MTV2 Hip"
+        ]
+      }
+    }
+  },
+  "exercise_bright_star.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 9,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Egypt 2000",
+        "base": 5,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "The campaign is the 2025 exercise; the 21st-century Egyptian catalogue includes a UAV."
+      }
+    }
+  },
+  "exercise_quasar.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 7,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Egypt 2010's",
+        "base": "El Arish",
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "exercise_vegas_nerve.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 18,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
+      },
+      "RED": {
+        "faction": "Redfor (China) 2020",
+        "base": 2,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "final_countdown_2.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "D-Day Allied Forces 1944 and 1990",
+        "base": 28,
+        "aircraft": "OH-58D(R) Kiowa Warrior",
+        "preferred": [
+          "OH-58D(R) Kiowa Warrior"
+        ]
+      },
+      "RED": {
+        "faction": "Germany 1944",
+        "base": 19,
+        "aircraft": "Fw 190 A-8 Anton",
+        "preferred": [
+          "Fw 190 A-8 Anton"
+        ]
+      }
+    }
+  },
+  "golan_heights_lite.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Israel 2000",
+        "base": 30,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ]
+      },
+      "RED": {
+        "faction": "Syria 2011",
+        "base": 7,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "grabthars_hammer.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 2,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 2010",
+        "base": 14,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "gran_polvorin.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "US Navy 2005",
+        "base": "Mount Pleasant",
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "Land-based joint UAV support is available at the starting airfield; no UAV is placed on a carrier."
+      },
+      "RED": {
+        "faction": "China 2010",
+        "base": 5,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
+      }
+    }
+  },
+  "graveyard_of_empires.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Blufor Current",
+        "base": 10,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "Predator is the period-appropriate pre-Reaper UAV; use the airfield, not the adjacent heliport."
+      },
+      "RED": {
+        "faction": "Redfor (Russia) 2020",
+        "base": 2,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "IntotheHornetsNest.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 30,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
+      },
+      "RED": {
+        "faction": "Russia 2020",
+        "base": 6,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "Invasion_of_Canary_Islands.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Spain 2000 onwards",
+        "base": "Spain FOB GC Norte",
+        "aircraft": "UH-60L",
+        "preferred": [
+          "UH-60L",
+          "UH-1H Iroquois"
+        ],
+        "rationale": "Spain in 2000: do not introduce its Reaper before 2020; retain the faction's available embarked observer."
+      },
+      "RED": {
+        "faction": "Morocco 2000 onwards",
+        "base": 14,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ]
+      }
+    }
+  },
+  "Invasion_of_Canary_Islands_2030.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Spain 2030",
+        "base": 21,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Morocco 2030",
+        "base": "Rene Mouawad",
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      }
+    }
+  },
+  "marianas_2027.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2020",
+        "base": "Antonio B. Won Pat Intl",
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "China 2027",
+        "base": "Rota Intl",
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "marianas_guam_barrigada.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 4,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Undated modern scenario: use the Reaper now available to the US 2000s catalogue."
+      },
+      "RED": {
+        "faction": "Russia 1990",
+        "base": 6,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "marianas_guam_landing_at_agat.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": "Blue CV",
+        "aircraft": "OH-58D(R) Kiowa Warrior",
+        "preferred": [
+          "OH-58D(R) Kiowa Warrior"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 1990",
+        "base": 6,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "mozdok_to_maykop.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Russia 2010",
+        "base": 28,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      },
+      "RED": {
+        "faction": "USA 1990",
+        "base": 26,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "Undated modern scenario against Russia 2010; use the late-1990s UAV option rather than an A-10."
+      }
+    }
+  },
+  "Northern Guardian.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Blufor Current",
+        "base": 11,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "[CH] Russia 2020",
+        "base": 25,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "northern_russia.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 25,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "Use the earlier Predator instead of downgrading to an A-10 or helicopter before Reaper service."
+      },
+      "RED": {
+        "faction": "Russia 1975",
+        "base": "Khashuri FOB",
+        "aircraft": "Mi-8MTV2 Hip",
+        "preferred": [
+          "Mi-8MTV2 Hip"
+        ],
+        "rationale": "The recommended faction is Russia 1975, not a modern Russian force; retain a period helicopter."
+      }
+    }
+  },
+  "Operation-Desert-Sabre.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Israel 2011 for ODS",
+        "base": 23,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Egypt 2010's",
+        "base": 8,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "operation_aegean_aegis.yaml": {
+    "rotary": true,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": "Blue-LHA",
+        "aircraft": "OH-58D(R) Kiowa Warrior",
+        "preferred": [
+          "OH-58D(R) Kiowa Warrior"
+        ]
+      },
+      "RED": {
+        "faction": "Turkey 2005",
+        "base": 44,
+        "aircraft": "OH-58D Kiowa Warrior",
+        "preferred": [
+          "OH-58D Kiowa Warrior"
+        ]
+      }
+    }
+  },
+  "operation_allied_sword.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Israel-USN 2005",
+        "base": 13,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "The Israeli/US joint force can use a land-based reconnaissance UAV instead of a Huey."
+      },
+      "RED": {
+        "faction": "Syria-Lebanon 2005 (Allied Sword)",
+        "base": 6,
+        "aircraft": "SA 342L Gazelle",
+        "preferred": [
+          "SA 342L Gazelle"
+        ],
+        "rationale": "The authored Syrian/Lebanese joint faction keeps its sensor-equipped Gazelle."
+      }
+    }
+  },
+  "operation_blackball.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "US Navy 2005",
+        "base": "Naval-1",
+        "aircraft": "OH-58D(R) Kiowa Warrior",
+        "preferred": [
+          "OH-58D(R) Kiowa Warrior"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 2010",
+        "base": 47,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "operation_desert_aladeen.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2020",
+        "base": 14,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Republic of Wadiya 2010",
+        "base": 10,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "operation_desert_trident.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA-Israel 2000",
+        "base": 221,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ]
+      },
+      "RED": {
+        "faction": "Iraq 2000",
+        "base": 68,
+        "aircraft": "SA 342L Gazelle",
+        "preferred": [
+          "SA 342L Gazelle"
+        ],
+        "rationale": "Iraq 2000 has no suitable UAV; retain the faction's sensor-equipped Gazelle."
+      }
+    }
+  },
+  "operation_dynamo.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Allies 1940",
+        "base": 5,
+        "aircraft": "Spitfire LF Mk IX",
+        "preferred": [
+          "Spitfire LF Mk IX"
+        ]
+      },
+      "RED": {
+        "faction": "Germany 1940",
+        "base": 3,
+        "aircraft": "Bf 109 K-4 Kurfürst",
+        "preferred": [
+          "Bf 109 K-4 Kurfürst"
+        ]
+      }
+    }
+  },
+  "operation_frostbite.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 2,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 2010",
+        "base": 10,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "operation_gazelle.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Israel 1973",
+        "base": 20,
+        "aircraft": "UH-1H Iroquois",
+        "preferred": [
+          "UH-1H Iroquois"
+        ]
+      },
+      "RED": {
+        "faction": "Egypt 1973",
+        "base": 29,
+        "aircraft": "MiG-15bis Fagot",
+        "preferred": [
+          "MiG-15bis Fagot"
+        ]
+      }
+    }
+  },
+  "operation_noisy_cricket.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 12,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
+      },
+      "RED": {
+        "faction": "Iran 2015",
+        "base": 1,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "operation_peace_spring.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 30,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Iraq 1991",
+        "base": 7,
+        "aircraft": "SA 342M Gazelle",
+        "preferred": [
+          "SA 342M Gazelle"
+        ],
+        "rationale": "The recommended force is Iraq 1991; retain its Gazelle rather than importing a modern drone."
+      }
+    }
+  },
+  "operation_shattered_dagger.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 10,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "Period Predator, based at the airfield rather than the adjacent helicopter installation."
+      },
+      "RED": {
+        "faction": "Toyota Al Gaib 2001",
+        "base": "FOB Delaram II",
+        "aircraft": "Mi-8MTV2 Hip",
+        "preferred": [
+          "Mi-8MTV2 Hip"
+        ],
+        "rationale": "The 2001 insurgent faction keeps its available helicopter; no imported state-level UAV."
+      }
+    }
+  },
+  "operation_syrian_shield.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 36,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Syria 2012'ish",
+        "base": 39,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "operation_vectrons_claw.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 29,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ]
+      },
+      "RED": {
+        "faction": "Russia 2010",
+        "base": 20,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "operation_velvet_thunder.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 1970",
+        "base": 4,
+        "aircraft": "OV-10A Bronco",
+        "preferred": [
+          "OV-10A Bronco",
+          "UH-1H Iroquois"
+        ]
+      },
+      "RED": {
+        "faction": "Vietnam 1965",
+        "base": 2,
+        "aircraft": "Mi-8MTV2 Hip",
+        "preferred": [
+          "Mi-8MTV2 Hip"
+        ]
+      }
+    }
+  },
+  "pacific_repartee.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "US Navy 2005",
+        "base": "Naval-1",
+        "aircraft": "OH-58D(R) Kiowa Warrior",
+        "preferred": [
+          "OH-58D(R) Kiowa Warrior"
+        ]
+      },
+      "RED": {
+        "faction": "China 2010",
+        "base": 3,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Land-based modern UAV stand-in at Tinian, closer to the northern islands with two free parking positions."
+      }
+    }
+  },
+  "red_sea_rising.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Blufor Current",
+        "base": 3,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "Use the earlier Predator instead of downgrading to an A-10 or helicopter before Reaper service."
+      },
+      "RED": {
+        "faction": "Redfor (China) 2020",
+        "base": 33,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
+      }
+    }
+  },
+  "RetakeTheFalklands.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "UK/US Falklands Task Force",
+        "base": "From US",
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "Use the existing USAF off-map support base; retain the carrier-only force's deck compatibility."
+      },
+      "RED": {
+        "faction": "China/Argentina Falklands Occupation Force",
+        "base": 1,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
+      }
+    }
+  },
+  "scenic_inland.yaml": {
+    "rotary": true,
+    "sides": {
+      "BLUE": {
+        "faction": "NATO OIF",
+        "base": "FOB Anguran",
+        "aircraft": "OH-58D Kiowa Warrior",
+        "preferred": [
+          "OH-58D Kiowa Warrior"
+        ]
+      },
+      "RED": {
+        "faction": "Iran 2015",
+        "base": "FOB Tang-e Dalan",
+        "aircraft": "Mi-17 Hip",
+        "preferred": [
+          "Mi-17 Hip"
+        ]
+      }
+    }
+  },
+  "scenic_merge.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 12,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ]
+      },
+      "RED": {
+        "faction": "Iran 2015",
+        "base": "Bandar-e-Jask",
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
+      }
+    }
+  },
+  "scenic_route.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "US Navy 2005",
+        "base": "Naval-1",
+        "aircraft": "OH-58D(R) Kiowa Warrior",
+        "preferred": [
+          "OH-58D(R) Kiowa Warrior"
+        ]
+      },
+      "RED": {
+        "faction": "Iran 2015",
+        "base": "Bandar-e-Jask",
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock reconnaissance UAV stand-in for this modern conventional force. Pre-2010 assignments are an explicit balance allowance."
+      }
+    }
+  },
+  "slava_ukraini.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Ukraine 2020",
+        "base": 12,
+        "aircraft": "[CH] TB-2 UCAV",
+        "preferred": [
+          "[CH] TB-2 UCAV",
+          "RQ-1A Predator"
+        ],
+        "rationale": "Prefer Ukraine's TB-2 when its Turkish asset pack is enabled; stock Predator is a sensor-equivalent UAV fallback."
+      },
+      "RED": {
+        "faction": "Redfor (Russia) 2020",
+        "base": 16,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "syria_full_map.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Bluefor Modern",
+        "base": 16,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Syria 2012'ish",
+        "base": 30,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "syria_TheLongRoadToH3.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "NATO OIF",
+        "base": 16,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ]
+      },
+      "RED": {
+        "faction": "Iraq-Syria 2000s",
+        "base": 27,
+        "aircraft": "SA 342L Gazelle",
+        "preferred": [
+          "SA 342L Gazelle"
+        ],
+        "rationale": "The Iraq/Syria 2000s coalition has a sensor-equipped Gazelle and no UAV."
+      }
+    }
+  },
+  "Task Force Thunder.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 53,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
+      },
+      "RED": {
+        "faction": "Syria 2011",
+        "base": 39,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Modern reconnaissance UAV stand-in, moved from a FOB to an airfield."
+      }
+    }
+  },
+  "TblisiGap.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Russia 1975 (Mi-24P)",
+        "base": 29,
+        "aircraft": "Mi-24V Hind-E",
+        "preferred": [
+          "Mi-24V Hind-E"
+        ]
+      },
+      "RED": {
+        "faction": "Germany 1990",
+        "base": "FARP Wild Horse",
+        "aircraft": "SA 342M Gazelle",
+        "preferred": [
+          "SA 342M Gazelle"
+        ]
+      }
+    }
+  },
+  "the_anvil_of_war.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "Blufor Current",
+        "base": 15,
+        "aircraft": "RQ-1A Predator",
+        "preferred": [
+          "RQ-1A Predator"
+        ],
+        "rationale": "Use the earlier Predator instead of downgrading to an A-10 or helicopter before Reaper service."
+      },
+      "RED": {
+        "faction": "Redfor Current",
+        "base": 22,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Stock stand-in for Russian reconnaissance UAVs, with sensor and endurance parity against Western drones. This is a deliberate balance allowance, not a claim that Russia operated the Chinese model in this period."
+      }
+    }
+  },
+  "TheFalconWentOverTheMountain.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 16,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ],
+        "rationale": "Post-2007 US scenario: prefer the Reaper over the earlier Predator."
+      },
+      "RED": {
+        "faction": "Syria 2012'ish",
+        "base": "Minakh",
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "TheValleyOfRotary.yaml": {
+    "rotary": true,
+    "sides": {
+      "BLUE": {
+        "faction": "Iran 2015",
+        "base": 19,
+        "aircraft": "Mi-17 Hip",
+        "preferred": [
+          "Mi-17 Hip"
+        ]
+      },
+      "RED": {
+        "faction": "Insurgents (Hard)",
+        "base": "Northern Plains",
+        "aircraft": "Mi-8MTV2 Hip",
+        "preferred": [
+          "Mi-8MTV2 Hip"
+        ]
+      }
+    }
+  },
+  "tripoint_hostility.yaml": {
+    "rotary": true,
+    "sides": {
+      "BLUE": {
+        "faction": "USA 2005",
+        "base": 19,
+        "aircraft": "OH-58D(R) Kiowa Warrior",
+        "preferred": [
+          "OH-58D(R) Kiowa Warrior"
+        ]
+      },
+      "RED": {
+        "faction": "Iraq 1991",
+        "base": 18,
+        "aircraft": "SA 342M Gazelle",
+        "preferred": [
+          "SA 342M Gazelle"
+        ]
+      }
+    }
+  },
+  "WRL_AleppoInsurgency.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "WRL - Task Force Blue",
+        "base": "Gaziantep",
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "WRL - Task Force Insurgent",
+        "base": "Jirah",
+        "aircraft": "A-10C Thunderbolt II (Suite 7)",
+        "preferred": [
+          "A-10C Thunderbolt II (Suite 7)"
+        ],
+        "rationale": "Use the targeting-pod aircraft already offered by this fictional faction rather than its visual-only transport helicopter."
+      }
+    }
+  },
+  "WRL_AssaultonDamascus.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "WRL - Task Force Blue",
+        "base": 30,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "WRL - Task Force Red",
+        "base": 7,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ],
+        "rationale": "Use Damascus airfield rather than the helicopter-only parking at Marj as Sultan North."
+      }
+    }
+  },
+  "WRL_Battle4area51.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "WRL - Task Force Blue",
+        "base": 4,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "WRL - Task Force Red",
+        "base": 2,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "WRL_Battle4Georgia.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "WRL - Task Force Blue",
+        "base": 24,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "WRL - Task Force Red",
+        "base": 21,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "WRL_Battle4SyriaNorth.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "WRL - Task Force Blue",
+        "base": 16,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "WRL - Task Force Red",
+        "base": 26,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "WRL_Kutaisi2Vaziani.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "WRL - Task Force Blue",
+        "base": 24,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "WRL - Task Force Red",
+        "base": "Soganlug",
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "WRL_Operation_Noisy_Cricket_Redux.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "WRL - Task Force Blue",
+        "base": 4,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "Iran 2015",
+        "base": 2,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  },
+  "WRL_PG_Wargames.yaml": {
+    "rotary": false,
+    "sides": {
+      "BLUE": {
+        "faction": "WRL - Task Force Blue",
+        "base": 2,
+        "aircraft": "MQ-9 Reaper",
+        "preferred": [
+          "MQ-9 Reaper"
+        ]
+      },
+      "RED": {
+        "faction": "WRL - Task Force Red",
+        "base": 12,
+        "aircraft": "WingLoong-I",
+        "preferred": [
+          "WingLoong-I"
+        ]
+      }
+    }
+  }
+}

@@ -93,6 +93,13 @@ squadrons:
       pilots: 16
   #Needs Oar Point (55)
   28:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D(R) Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:
@@ -138,6 +145,13 @@ squadrons:
       pilots: 16
   #Carpiquet (47)
   19:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Fw 190 A-8 Anton
+      size: 2
+      pilots: 6
     - primary: TARCAP
       secondary: air-to-air
       aircraft:

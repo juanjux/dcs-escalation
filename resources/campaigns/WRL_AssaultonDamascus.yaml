@@ -97,6 +97,13 @@ squadrons:
       pilots: 20
   # Ramat-David
   30:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: air-to-ground
       aircraft:
@@ -180,6 +187,13 @@ squadrons:
       pilots: 12
   # Damascus
   7:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:

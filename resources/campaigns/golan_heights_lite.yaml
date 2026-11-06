@@ -13,6 +13,13 @@ advanced_iads: true # Campaign has connection_nodes / power_sources / command_ce
 squadrons:
   # Ramat-David
   30:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
     - primary: AEW&C
       aircraft:
         - E-3A
@@ -108,6 +115,13 @@ squadrons:
       pilots: 16
   # Damascus
   7:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:

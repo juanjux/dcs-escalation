@@ -17,6 +17,13 @@ recommended_enemy_income_multiplier: 0.6
 squadrons:
   #BLUFOR CVN
   Naval-1:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D(R) Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:
@@ -125,6 +132,13 @@ squadrons:
       pilots: 13
   # Tinian Intl
   3:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "WingLoong-I"
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - IL-78M

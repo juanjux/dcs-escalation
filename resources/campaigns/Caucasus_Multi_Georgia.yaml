@@ -5,7 +5,7 @@ authors: Doc_of_Mur, modified by juanjux
 description: <p><p>This is part 2 of the Caucasus Multi-part campaign. After completing Multi-Part Georgia, play this campaign to invade Russia and finish the theater. As this is now Russia the recommended enemy faction has changed. To simulate still owning Georgia the player income has been supplemented through an increased number of blue strike targets at the starting bases. This is a more difficult scenario with a higher concentration of Redfor SAMs and Strike targets than usual.</p>
 recommended_player_faction: Bluefor Modern
 recommended_enemy_faction: Georgia 2008
-recommended_start_date: 1995-06-13
+recommended_start_date: 2008-08-01
 miz: Caucasus_Multi_Georgia.miz
 performance: 2
 advanced_iads: true
@@ -13,6 +13,13 @@ version: "9.1"
 squadrons:
   # Kutaisi
   22:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "MQ-9 Reaper"
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker MPRS
@@ -76,6 +83,13 @@ squadrons:
 
   # Kobuleti
   24:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: BARCAP
       aircraft:
         - L-39ZA Albatros

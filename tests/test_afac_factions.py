@@ -43,9 +43,17 @@ def test_every_faction_retains_afac_aircraft_without_mods(path: Path) -> None:
 @pytest.mark.parametrize(
     "filename,required",
     [
+        ("usa_1990.json", ("RQ-1A Predator",)),
+        ("usa_2005.json", ("MQ-9 Reaper", "RQ-1A Predator")),
         ("usa_2020.json", ("MQ-9 Reaper", "RQ-1A Predator")),
+        ("bluefor_modern.json", ("MQ-9 Reaper", "RQ-1A Predator")),
+        ("blufor_current.json", ("MQ-9 Reaper", "RQ-1A Predator")),
+        ("georgia_2008.json", ("RQ-1A Predator",)),
+        ("ukraine_2020.json", ("[CH] TB-2 UCAV", "RQ-1A Predator")),
+        ("US_UK_Falklands.json", ("RQ-1A Predator",)),
+        ("egypt_2000.json", ("WingLoong-I",)),
         ("usn_1985.json", ("OH-58D(R) Kiowa Warrior",)),
-        ("usn_2005.json", ("OH-58D(R) Kiowa Warrior",)),
+        ("usn_2005.json", ("OH-58D(R) Kiowa Warrior", "RQ-1A Predator")),
         ("usn_2009.json", ("OH-58D(R) Kiowa Warrior",)),
         ("Morocco 2000 onwards.json", ("RQ-1A Predator",)),
         ("Morocco 2030.json", ("MQ-9 Reaper", "RQ-1A Predator")),
@@ -54,6 +62,7 @@ def test_every_faction_retains_afac_aircraft_without_mods(path: Path) -> None:
         ("israel_2012.json", ("MQ-9 Reaper", "RQ-1A Predator")),
         ("israel_2017.json", ("MQ-9 Reaper", "RQ-1A Predator")),
         ("turkey_2005.json", ("[CH] TB-2 UCAV",)),
+        ("russia_1990.json", ("WingLoong-I",)),
         ("russia_2010.json", ("WingLoong-I",)),
         ("russia_2020.json", ("WingLoong-I",)),
         ("CH_russia_2020.json", ("WingLoong-I",)),
@@ -76,29 +85,40 @@ def test_reviewed_allocations(filename: str, required: tuple[str, ...]) -> None:
 
 
 @pytest.mark.parametrize(
-    "filename",
+    "filename,observer",
     [
-        "allies_1940.json",
-        "allies_1944.json",
-        "allies_1944_free.json",
-        "germany_1940.json",
-        "germany_1942.json",
-        "germany_1944.json",
-        "germany_1944_free.json",
-        "soviet_union_1943.json",
-        "japan_1944.json",
-        "uk_1944.json",
-        "usa_1944.json",
-        "usa_1945.json",
-        "israel_1948.json",
-        "syria_1948.json",
-        "dprk_1950_fictional.json",
+        ("allies_1940.json", "Spitfire LF Mk IX"),
+        ("allies_1944.json", "P-51D-25-NA Mustang"),
+        ("allies_1944_free.json", "P-51D-25-NA Mustang"),
+        ("germany_1940.json", "Bf 109 K-4 Kurfürst"),
+        ("germany_1942.json", "Bf 109 K-4 Kurfürst"),
+        ("germany_1944.json", "Fw 190 A-8 Anton"),
+        ("germany_1944_free.json", "Fw 190 A-8 Anton"),
+        ("soviet_union_1943.json", "I-16 Ishak"),
+        # The Japanese and North Korean templates already use these substitutes.
+        ("japan_1944.json", "Fw 190 A-8 Anton"),
+        ("uk_1944.json", "MosquitoFBMkVI"),
+        ("usa_1944.json", "P-51D-25-NA Mustang"),
+        ("usa_1945.json", "P-51D-25-NA Mustang"),
+        ("israel_1948.json", "Spitfire LF Mk IX"),
+        ("syria_1948.json", "Spitfire LF Mk IX"),
+        ("dprk_1950_fictional.json", "I-16 Ishak"),
+        ("unc_1950_fictional.json", "P-51D-25-NA Mustang"),
+        ("usa_1955.json", "P-51D-25-NA Mustang"),
+        ("russia_1955.json", "MiG-15bis Fagot"),
+        ("russia_1965.json", "MiG-15bis Fagot"),
+        ("soviet_union_1965.json", "MiG-15bis Fagot"),
     ],
 )
-def test_early_factions_use_the_visual_yak_fallback(filename: str) -> None:
+def test_early_factions_use_existing_national_observers(
+    filename: str, observer: str
+) -> None:
     aircraft = faction_from_file(filename).aircraft
-    assert any(a.variant_id == "Yak-52" for a in aircraft)
-    assert not any(a.helicopter for a in aircraft)
+    assert AircraftType.named(observer) in aircraft
+    profile = capabilities_for(AircraftType.named(observer).dcs_id)
+    assert profile is not None and profile.visual_only
+    assert not any(profile.equipment().values())
+    assert not any(a.variant_id == "Yak-52" for a in aircraft)
     assert not any(a.variant_id in DRONES for a in aircraft)
 
 
@@ -144,3 +164,8 @@ def test_standard_reaper_has_not_become_carrier_capable() -> None:
     aircraft = AircraftType.named("MQ-9 Reaper")
     assert not aircraft.carrier_capable
     assert not aircraft.lha_capable
+
+
+@pytest.mark.parametrize("variant", ["RQ-1A Predator", "MQ-9 Reaper", "WingLoong-I"])
+def test_long_endurance_uavs_do_not_use_the_generic_fighter_range(variant: str) -> None:
+    assert AircraftType.named(variant).max_mission_range.nautical_miles >= 500

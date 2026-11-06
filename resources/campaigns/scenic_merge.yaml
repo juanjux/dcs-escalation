@@ -29,6 +29,14 @@ ground_forces:
 
 squadrons:
   #BLUFOR CVN
+  "Bandar-e-Jask":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "WingLoong-I"
+      size: 2
+      pilots: 6
   Naval-3:
     # The Swordsmen F-14
     - primary: BARCAP
@@ -128,6 +136,13 @@ squadrons:
       #USAF F-15C 
   # Al-Minhab AFB
   12:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
     - primary: SEAD
       secondary: any
       aircraft:

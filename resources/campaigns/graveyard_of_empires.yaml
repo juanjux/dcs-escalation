@@ -93,6 +93,13 @@ squadrons:
       pilots: 8
   #Camp Bastion
   10:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-130J
@@ -200,6 +207,13 @@ squadrons:
       pilots: 12
   #Farah
   2:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "WingLoong-I"
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: any
       aircraft:

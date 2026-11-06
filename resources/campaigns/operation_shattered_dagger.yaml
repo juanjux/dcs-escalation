@@ -27,6 +27,14 @@ settings:
   squadron_start_full: true
 squadrons:
   #Kandahar
+  "FOB Delaram II":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
   7:
     - primary: Transport
       secondary: any
@@ -57,6 +65,13 @@ squadrons:
       pilots: 8
   #Camp Bastion
   10:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - "RQ-1A Predator"
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: air-to-ground
       aircraft:

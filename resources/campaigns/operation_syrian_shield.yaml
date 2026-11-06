@@ -68,6 +68,13 @@ squadrons:
       pilots: 8
   # Tiyas - 39  
   39:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: TARCAP
       secondary: air-to-air
       aircraft:
@@ -125,6 +132,13 @@ squadrons:
       pilots: 10
   # Shayrat - 36
   36:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
