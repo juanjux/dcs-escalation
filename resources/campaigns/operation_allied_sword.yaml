@@ -259,6 +259,13 @@ squadrons:
       pilots: 10
   #Haifa
   13:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - UH-1H Iroquois
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
@@ -313,6 +320,13 @@ squadrons:
         - SA 342L Gazelle
   # Beirut-Rafic Hariri
   6:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - SA 342L Gazelle
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:

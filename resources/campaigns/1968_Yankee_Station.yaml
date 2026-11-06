@@ -382,6 +382,13 @@ squadrons:
 
     #Nah Trang 
     18: #Sochi-Adler
+       - primary: AFAC — Area
+         secondary:
+           - AFAC — Frontline
+         aircraft:
+           - UH-1H Iroquois
+         size: 2
+         pilots: 6
        - primary: CAS
          secondary: air-to-ground
          aircraft:
@@ -543,6 +550,13 @@ squadrons:
 
     #Vinh
     23: #Kobuleti
+      - primary: AFAC — Area
+        secondary:
+          - AFAC — Frontline
+        aircraft:
+          - MiG-15bis Fagot
+        size: 2
+        pilots: 6
       - primary: CAS
         secondary: air-to-ground
         aircraft:

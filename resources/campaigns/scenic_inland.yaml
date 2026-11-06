@@ -95,6 +95,13 @@ squadrons:
       pilots: 8
   # BLUFOR Start FOB
   FOB Anguran:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
@@ -111,6 +118,13 @@ squadrons:
       pilots: 6
   # OPFOR L1F1
   FOB Tang-e Dalan:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-17 Hip
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:

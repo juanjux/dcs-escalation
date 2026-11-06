@@ -29,6 +29,13 @@ squadrons:
       pilots: 16
   # Conches
   40:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Fw 190 A-8 Anton
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:
@@ -65,6 +72,13 @@ squadrons:
       pilots: 14
   # Ford_AF
   31:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - P-51D-25-NA Mustang
+      size: 2
+      pilots: 6
     - primary: Escort
       secondary: air-to-air
       aircraft:

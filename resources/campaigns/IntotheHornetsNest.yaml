@@ -95,6 +95,13 @@ squadrons:
       pilots: 6
 # Ramat-David (max 65)
   30:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: air-to-ground
       aircraft:
@@ -305,6 +312,13 @@ squadrons:
       pilots: 6
 # Beirut (max 37)
   6:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: Transport
       aircraft:
         - IL-76MD

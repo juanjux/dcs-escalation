@@ -10,6 +10,13 @@ version: "10.4"
 squadrons:
   # Manston
   5:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Spitfire LF Mk IX
+      size: 2
+      pilots: 6
     - primary: Strike
       secondary: any
       aircraft:
@@ -40,6 +47,13 @@ squadrons:
         - Spitfire LF Mk IX
   # St Omer
   3:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Bf 109 K-4 Kurfürst
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:

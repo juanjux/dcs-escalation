@@ -107,14 +107,25 @@ def _catalogue() -> Mapping[str, AFACCapabilities]:
         ("Osprey", ("V22_Osprey",)),
     ):
         add(AFACCapabilities(family, can_embark_jtac=True), *types)
-    for family, types in (
+    for family, visual_types in (
+        # Crew visual observation only; these profiles do not turn the DCS
+        # fighter/bomber variants into camera-equipped reconnaissance aircraft.
+        ("Mustang", ("P-51D", "P-51D-30-NA")),
+        ("Thunderbolt", ("P-47D-30", "P-47D-30bl1", "P-47D-40")),
+        ("Spitfire", ("SpitfireLFMkIX", "SpitfireLFMkIXCW")),
+        ("Mosquito", ("MosquitoFBMkVI",)),
+        ("Bf 109", ("Bf-109K-4",)),
+        ("Fw 190", ("FW-190A8", "FW-190D9")),
+        ("I-16", ("I-16",)),
+        ("Corsair", ("F4U-1D",)),
+        ("Fagot", ("MiG-15bis", "MiG-15bis_FC")),
         ("Albatros", ("L-39ZA", "L-39C")),
         ("Yak", ("Yak-52",)),
         ("MB-339", ("MB-339A",)),
         ("Bird Dog", ("vwv_o-1",)),
         ("Saab 105", ("SK-60",)),
     ):
-        add(AFACCapabilities(family), *types)
+        add(AFACCapabilities(family), *visual_types)
     return MappingProxyType(result)
 
 

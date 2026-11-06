@@ -17,6 +17,13 @@ recommended_enemy_income_multiplier: 0.6
 squadrons:
   #BLUFOR CVN
   Naval-1:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D(R) Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:
@@ -90,6 +97,13 @@ squadrons:
         - J-15 Flanker X-2
   # OPFOR CVN 3
   Naval-28:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:

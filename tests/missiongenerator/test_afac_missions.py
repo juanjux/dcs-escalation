@@ -170,6 +170,13 @@ def test_flight_picker_warns_about_final_night_equipment(
         "A-10A Thunderbolt II",
         "A-10C Thunderbolt II (Suite 3)",
         "A-10C Thunderbolt II (Suite 7)",
+        "P-51D-25-NA Mustang",
+        "Spitfire LF Mk IX",
+        "MosquitoFBMkVI",
+        "Bf 109 K-4 Kurfürst",
+        "Fw 190 A-8 Anton",
+        "I-16 Ishak",
+        "MiG-15bis Fagot",
     ],
 )
 def test_afac_behavior_labels_the_role_without_native_engagement_or_fac_tasks(
@@ -338,6 +345,65 @@ def test_a10_afac_payloads_load_with_supported_pylons_and_finite_smoke(
         assert ("{A111396E-D3E8-4b9c-8AC9-2432489304D5}" in clsids) == (
             aircraft.dcs_id != "A-10A"
         )
+
+
+@pytest.mark.parametrize(
+    "variant",
+    [
+        "P-51D-25-NA Mustang",
+        "Spitfire LF Mk IX",
+        "MosquitoFBMkVI",
+        "Bf 109 K-4 Kurfürst",
+        "Fw 190 A-8 Anton",
+        "I-16 Ishak",
+        "MiG-15bis Fagot",
+    ],
+)
+def test_historical_registry_and_saved_mission_keep_visual_only_equipment(
+    variant: str, tmp_path: Path
+) -> None:
+    from dcs.lua import loads
+
+    s = scenario(variant=variant)
+    AircraftBehavior(FlightType.AFAC_AREA, MagicMock()).apply_to(s.flight, s.group)
+    unit = s.group.units[0]
+    data: Any = NS(
+        jtacs=[],
+        flights=[
+            NS(
+                flight_type=FlightType.AFAC_AREA,
+                units=[unit],
+                squadron=NS(pilot_skill=lambda _: CADET_SKILL),
+                work_zone=s.plan.ui_zone(),
+                group_name="AFAC",
+            )
+        ],
+    )
+    mapping: Any = NS(
+        theater_objects={}, flight=lambda _: NS(pilot=object(), flight=s.flight)
+    )
+    registry = collect_registry(s.mission, data, enabled=True, unit_map=mapping)
+    assert registry is not None
+    observer = registry["observers"][0]
+    assert not any(observer["equipment"].values())
+    assert observer["afac"]["smokeRounds"] == 0
+    assert observer["allowPlayer"] is False
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    lua.execute("registry=" + lua_literal(registry))
+    assert lua.eval("registry.observers[1].equipment.laser") is False
+    assert lua.eval("registry.observers[1].equipment.ir") is False
+    path = tmp_path / "historical-afac.miz"
+    s.mission.save(path)
+    with ZipFile(path) as archive:
+        mission = loads(archive.read("mission").decode())["mission"]
+    group = next(
+        group
+        for country in mission["coalition"]["blue"]["country"].values()
+        for group in country.get("plane", {}).get("group", {}).values()
+        if group["name"] == "AFAC"
+    )
+    assert group["units"][1]["type"] == s.flight.unit_type.dcs_id
+    assert group["task"] == AFAC.name
 
 
 @pytest.mark.parametrize("night", [False, True])

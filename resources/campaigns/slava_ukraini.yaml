@@ -61,6 +61,13 @@ squadrons:
       pilots: 8
   #Novorossiysk
   14:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
@@ -81,6 +88,13 @@ squadrons:
       pilots: 16
   #Maykop-Khanskaya
   16:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: Air Assault
       secondary: any
       aircraft:

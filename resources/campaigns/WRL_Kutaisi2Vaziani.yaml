@@ -19,6 +19,14 @@ advanced_iads: true # Campaign has connection_nodes / power_sources / command_ce
 
 squadrons:
 # Senaki-Kholki
+  "Soganlug":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
   23:
     - primary: SEAD
       secondary: air-to-ground
@@ -129,6 +137,13 @@ squadrons:
       pilots: 8
  # Kobuleti
   24:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: air-to-ground
       aircraft:

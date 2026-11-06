@@ -84,6 +84,14 @@ squadrons:
       pilots: 8
   #Antonio B. Won Pat Intl
   4:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OV-10A Bronco
+        - UH-1H Iroquois
+      size: 2
+      pilots: 6
     - primary: Air Assault
       secondary: any
       aircraft:
@@ -142,6 +150,13 @@ squadrons:
       pilots: 8
   #Saipan Intl
   2:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: air-to-ground
       aircraft:

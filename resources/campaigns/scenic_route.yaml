@@ -22,7 +22,22 @@ ground_forces:
 
 squadrons:
   #BLUFOR CVN
+  "Bandar-e-Jask":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-17 Hip
+      size: 2
+      pilots: 6
   Naval-1:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D(R) Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:

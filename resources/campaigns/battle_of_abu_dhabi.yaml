@@ -64,6 +64,13 @@ squadrons:
   # This airbase has better access to the theater as the front-line moves south
   # west. It contains combat squadrons only.
   24:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
@@ -188,6 +195,13 @@ squadrons:
   # The initial front line base. Contains CAS aircraft, as well as an air-to-air
   # squadron and an air-to-ground squadron.
   12:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:

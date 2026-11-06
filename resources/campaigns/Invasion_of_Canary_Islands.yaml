@@ -280,6 +280,14 @@ squadrons:
     
     #GC Norte
     Spain FOB GC Norte:
+        - primary: AFAC — Area
+          secondary:
+            - AFAC — Frontline
+          aircraft:
+            - UH-60L
+            - UH-1H Iroquois
+          size: 2
+          pilots: 6
         - primary: Transport
           aircraft:
             - CEFAMET 217 Escuadrilla
@@ -313,6 +321,13 @@ squadrons:
         
     #Hama
     14:
+        - primary: AFAC — Area
+          secondary:
+            - AFAC — Frontline
+          aircraft:
+            - RQ-1A Predator
+          size: 2
+          pilots: 6
         - primary: BARCAP
           Secondary: any
           aircraft:

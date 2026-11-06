@@ -69,6 +69,13 @@ squadrons:
       pilots: 8
   # Hatzor
   20:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - UH-1H Iroquois
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: any
       aircraft:
@@ -85,6 +92,13 @@ squadrons:
       pilots: 24
   # El Arish
   29:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MiG-15bis Fagot
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: any
       aircraft:

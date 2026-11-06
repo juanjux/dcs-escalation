@@ -99,6 +99,13 @@ squadrons:
       pilots: 16
   # King Hussein Air College, BLUFOR start
   19:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D(R) Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
@@ -189,6 +196,13 @@ squadrons:
         - Su-24M Fencer-D
   # Khalkhalah, 1st OPFOR airfield north
   18:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - SA 342M Gazelle
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:

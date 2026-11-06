@@ -13,6 +13,22 @@ advanced_iads: true
 version: "10.7"
 squadrons:
   # Anapa-Vityazevo
+  "Sukhumi-Babushara":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
+  "Sochi-Adler":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
   12:
     - primary: BARCAP
       aircraft:

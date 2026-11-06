@@ -65,6 +65,13 @@ squadrons:
       pilots: 12
   # Tonopah Test Range
   18:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: air-to-ground
       aircraft:
@@ -121,6 +128,13 @@ squadrons:
       pilots: 5
   # Groom Lake
   2:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: Escort
       secondary: air-to-air
       aircraft:

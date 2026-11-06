@@ -13,6 +13,13 @@ version: "9.1"
 squadrons:
   # Kutaisi
   22:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - A-10A Thunderbolt II
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker MPRS
@@ -76,6 +83,13 @@ squadrons:
 
   # Kobuleti
   24:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
     - primary: BARCAP
       aircraft:
         - L-39ZA Albatros

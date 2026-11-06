@@ -65,6 +65,13 @@ squadrons:
       secondary: air-to-ground
   # Maykop-Khanskaya
   16:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:
@@ -111,6 +118,13 @@ squadrons:
       secondary: air-to-ground
   # Gudauta
   21:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: CAS
       secondary: air-to-ground
       aircraft:

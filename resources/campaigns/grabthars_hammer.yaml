@@ -27,6 +27,13 @@ settings:
 squadrons:
   #Mount Pleasant
   2:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
     - primary: BAI
       secondary: any
       aircraft:
@@ -148,6 +155,13 @@ squadrons:
       pilots: 8
   #El Calafate
   14:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
     - primary: Transport
       aircraft:
         - Mi-8MTV2 Hip

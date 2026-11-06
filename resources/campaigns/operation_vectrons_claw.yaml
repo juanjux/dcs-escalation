@@ -80,6 +80,13 @@ squadrons:
       pilots: 24
   #Tbilisi-Lochini
   29:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
     - primary: OCA/Runway
       secondary: air-to-ground
       aircraft:
@@ -186,6 +193,13 @@ squadrons:
       pilots: 8
   #Sukhumi-Babushara
   20:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
     - primary: SEAD Sweep
       secondary: air-to-ground
       aircraft:

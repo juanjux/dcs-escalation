@@ -113,6 +113,13 @@ families, capabilities combine the best-equipped variants for gameplay; the
 A-10A shares the family's optical, thermal, laser and IR marking profile.
 Illumination rockets and countermeasure flares do not supply ground-marker smoke.
 
+Historical AFAC flights can use existing Mustang, Thunderbolt, Spitfire,
+Mosquito, Bf 109, Fw 190, I-16, Corsair and MiG-15 aircraft for crew visual
+observation. These profiles add no optical or thermal sensors, laser, IR pointer
+or passenger JTAC. They report observed positions but need other assets for
+laser designation. Early factions use their existing national aircraft instead
+of a Yak-52 fallback; existing fictional faction stand-ins remain unchanged.
+
 AFACs search without attacking and prefer marking observed contacts. They report
 coordinates, designate with laser and night IR where equipped, and use finite
 payload smoke in green, red, orange or blue. Each aircraft keeps its assigned

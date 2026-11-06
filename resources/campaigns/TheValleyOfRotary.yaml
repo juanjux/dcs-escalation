@@ -14,7 +14,22 @@ advanced_iads: true
 version: "10.4"
 squadrons:
   # Shiraz International, BLUFOR start
+  "Northern Plains":
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
   19:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-17 Hip
+      size: 2
+      pilots: 6
     - primary: CAS
       aircraft:
         - Mi-24P Hind-F

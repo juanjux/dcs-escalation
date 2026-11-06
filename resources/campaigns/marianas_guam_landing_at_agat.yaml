@@ -12,6 +12,13 @@ settings:
     skynetiads: true
 squadrons:
   Blue CV:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D(R) Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
     - primary: BARCAP
@@ -57,6 +64,13 @@ squadrons:
       secondary: air-to-ground
   # Andersen AFB
   6:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - Mi-8MTV2 Hip
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
     - primary: BARCAP

@@ -12,6 +12,14 @@ advanced_iads: true
 version: "9.1"
 squadrons:
  # Airspawn from Iraq
+    "Homs Outskirts":
+      - primary: AFAC — Area
+        secondary:
+          - AFAC — Frontline
+        aircraft:
+          - SA 342M Gazelle
+        size: 2
+        pilots: 6
     Al Asad Airbase:
     - primary: AEW&C
       aircraft:
@@ -31,6 +39,13 @@ squadrons:
       - KC-135 Stratotanker MPRS
  #H3 airbase
     53:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
     - primary: SEAD
       secondary: any
       aircraft: 

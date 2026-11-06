@@ -19,6 +19,13 @@ ground_forces:
 squadrons:
   # Incirlik
   16:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - MQ-9 Reaper
+      size: 2
+      pilots: 6
     - primary: Refueling
       aircraft:
         - KC-135 Stratotanker MPRS
@@ -250,6 +257,13 @@ squadrons:
         - Su-30 Flanker-C
   # Ramat David
   30:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:

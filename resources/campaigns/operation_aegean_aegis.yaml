@@ -53,6 +53,13 @@ settings:
 squadrons:
   #Tarawa Class LHA
   Blue-LHA:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D(R) Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: Armed Recon
       secondary: any
       aircraft:
@@ -73,6 +80,13 @@ squadrons:
       pilots: 8
   #Akrotiri
   44:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - OH-58D Kiowa Warrior
+      size: 2
+      pilots: 6
     - primary: Escort
       secondary: any
       aircraft:

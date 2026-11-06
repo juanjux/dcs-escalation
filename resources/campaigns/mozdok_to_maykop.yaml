@@ -11,6 +11,13 @@ version: "9.0"
 squadrons:
   # Mozdok
   28:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - WingLoong-I
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: air-to-air
       aircraft:
@@ -48,6 +55,13 @@ squadrons:
         - Ka-50 Hokum
   # Mineralvodye
   26:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - A-10A Thunderbolt II
+      size: 2
+      pilots: 6
     - primary: BARCAP
       secondary: any
       aircraft:

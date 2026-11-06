@@ -87,6 +87,36 @@ def test_unknown_types_do_not_gain_capabilities_from_names() -> None:
         capabilities_for("Unknown helicopter", embarked_jtac=True)
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        "P-51D",
+        "P-51D-30-NA",
+        "P-47D-30",
+        "P-47D-30bl1",
+        "P-47D-40",
+        "SpitfireLFMkIX",
+        "SpitfireLFMkIXCW",
+        "MosquitoFBMkVI",
+        "Bf-109K-4",
+        "FW-190A8",
+        "FW-190D9",
+        "I-16",
+        "F4U-1D",
+        "MiG-15bis",
+        "MiG-15bis_FC",
+    ],
+)
+def test_historical_observers_have_no_modern_sensors_or_designators(name: str) -> None:
+    profile = capabilities_for(name)
+    assert profile is not None and profile.visual_only
+    assert not any(profile.equipment().values())
+    assert not profile.can_embark_jtac
+    assert needs_night_warning(profile, night=True)
+    with pytest.raises(ValueError, match="cannot embark"):
+        capabilities_for(name, embarked_jtac=True)
+
+
 def test_profiles_are_immutable_and_equipment_exports_are_detached() -> None:
     profile = capabilities_for("OH58D")
     assert profile is not None

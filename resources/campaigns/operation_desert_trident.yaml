@@ -140,6 +140,13 @@ squadrons:
       pilots: 12
   # Ben Gurion
   221:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - RQ-1A Predator
+      size: 2
+      pilots: 6
     - primary: Transport
       secondary: any
       aircraft:
@@ -169,6 +176,13 @@ squadrons:
       pilots: 8
   # Muwaffaq Salti
   68:
+    - primary: AFAC — Area
+      secondary:
+        - AFAC — Frontline
+      aircraft:
+        - SA 342L Gazelle
+      size: 2
+      pilots: 6
     - primary: Anti-ship
       secondary: any
       aircraft:
