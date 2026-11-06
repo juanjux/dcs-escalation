@@ -1,4 +1,6 @@
 class: Power
+ground_mobility:
+  mode: self_propelled
 price: 15
 variants:
   SAM LvS-103 Elverk 103 Mobile EPP: null

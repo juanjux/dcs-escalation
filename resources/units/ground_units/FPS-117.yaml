@@ -1,4 +1,6 @@
 class: EarlyWarningRadar
+ground_mobility:
+  mode: fixed
 price: 30
 variants:
   EWR AN/FPS-117 Radar: null

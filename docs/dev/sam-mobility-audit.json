@@ -1,0 +1,2157 @@
+{
+  "scope": "All 107 originally unknown DCS types in the registered air-defence catalog and SAM/AAA preset auxiliaries; all factions. No save data.",
+  "date": "2026-11-06",
+  "sources": "Currenthill China 1.1.6, Germany 1.5.0, Russia 2.0.1, Sweden 1.5.0, USA 1.5.0; HighDigitSAMs 2.1.0; installed native DCS CoreMods.",
+  "policy": "Classify only evidenced modes. Stationary deployment does not prove fixed infrastructure or transportability. No type gains can_tow; no transit-defence whitelist is changed. Native mission movement/fire/recovery probes were not run.",
+  "counts": {
+    "reviewed": 107,
+    "self_propelled": 17,
+    "towed": 1,
+    "fixed": 2,
+    "unknown": 87
+  },
+  "units": [
+    {
+      "dcs_id": "1L13 EWR",
+      "variants": [
+        "EWR 1L13"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "55G6 EWR",
+      "variants": [
+        "EWR 55G6"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "CHAP_IRISTSLM_CP",
+      "variants": [
+        "SAM IRIS-T SLM C2 [CH]"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/Currenthill Assets Pack/Database/Vehicles/CHAP_IRISTSLM_CP.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 25.0,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 480,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_IFV);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.CHAP_IRISTSLM_CP);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CHAP_IRISTSLM_LN",
+      "variants": [
+        "SAM IRIS-T SLM LN [CH]"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/Currenthill Assets Pack/Database/Vehicles/CHAP_IRISTSLM_LN.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 25.0,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 480,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_IFV);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.CHAP_IRISTSLM_LN);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CHAP_IRISTSLM_STR",
+      "variants": [
+        "SAM IRIS-T SLM STR [CH]"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/Currenthill Assets Pack/Database/Vehicles/CHAP_IRISTSLM_STR.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 25.0,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 480,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_IFV);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.CHAP_IRISTSLM_STR);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_HQ22_LN",
+      "variants": [
+        "[CH] HQ-22 LN"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack China 1.1.6/Database/SAM/HQ22_LN.lua",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "max_road_velocity = 18.0,"
+            },
+            {
+              "line": 16,
+              "text": "engine_power = 517,"
+            },
+            {
+              "line": 36,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 37,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.HY4330);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_HQ22_SR",
+      "variants": [
+        "[CH] HQ-22 JSG-100 SR"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack China 1.1.6/Database/SAM/HQ22_JSG100_SR.lua",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "max_road_velocity = 18.0,"
+            },
+            {
+              "line": 16,
+              "text": "engine_power = 517,"
+            },
+            {
+              "line": 36,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 37,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.HY4330);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_HQ22_STR",
+      "variants": [
+        "[CH] HQ-22 H-200 STR"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack China 1.1.6/Database/SAM/HQ22_H200_STR.lua",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "max_road_velocity = 18.0,"
+            },
+            {
+              "line": 16,
+              "text": "engine_power = 517,"
+            },
+            {
+              "line": 36,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 37,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.HY4330);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_LvS-103_Elverk103",
+      "variants": [
+        "[CH] LvS-103 Elverk 103 EPP (HX)"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_Elverk103.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 27.7,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 440,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.HX81ELVERK103);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_LvS-103_Lavett103_HX_Rb103A",
+      "variants": [
+        "SAM LvS-103 Lavett 103 Rb103A Mobile LN",
+        "[CH] LvS-103 Lavett 103 Rb103A LN (HX)"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_Lavett103_HX_Rb103A.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 27.7,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 680,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.HX81LAVETT103A);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_LvS-103_Lavett103_HX_Rb103B",
+      "variants": [
+        "SAM LvS-103 Lavett 103 Rb103B Mobile LN",
+        "[CH] LvS-103 Lavett 103 Rb103B LN (HX)"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_Lavett103_HX_Rb103B.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 27.7,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 680,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.HX81LAVETT103B);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_LvS-103_Lavett103_Rb103A",
+      "variants": [
+        "SAM LvS-103 Lavett 103 Rb103A Stationary LN",
+        "[CH] LvS-103 Lavett 103 Rb103A LN"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_Lavett103_Rb103A.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_LvS-103_Lavett103_Rb103B",
+      "variants": [
+        "SAM LvS-103 Lavett 103 Rb103B Stationary LN",
+        "[CH] LvS-103 Lavett 103 Rb103B LN"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_Lavett103_Rb103B.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_LvS-103_PM103",
+      "variants": [
+        "SAM LvS-103 PM 103 Stationary STR",
+        "[CH] LvS-103 PM 103 STR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_PM103.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_LvS-103_PM103_HX",
+      "variants": [
+        "SAM LvS-103 PM 103 Mobile STR",
+        "[CH] LvS-103 PM 103 STR (HX)"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_PM103_HX.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 27.7,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 680,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.HX81PM103);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_LvS-103_StriE103",
+      "variants": [
+        "SAM LvS-103 StriE 103 Mobile ECS",
+        "[CH] LvS-103 StriE 103 ECS (HX)"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_StriE103.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 27.7,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 440,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.HX81STRIE103);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_MonolitB",
+      "variants": [
+        "[CH] Monolit-B LBASM STR"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Russia 2.0.1/Database/Vehicles/CH_Monolit-B.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 22.22,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 500,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MZKT_7930);"
+            },
+            {
+              "line": 37,
+              "text": "GT.chassis.life = 2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_NASAMS3_CP",
+      "variants": [
+        "[CH] NASAMS 3 CP"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack USA 1.5.0/Database/Vehicles/CH_NASAMS_3_CP.lua",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "max_road_velocity = 38.3,"
+            },
+            {
+              "line": 16,
+              "text": "engine_power = 184,"
+            },
+            {
+              "line": 36,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 37,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.NASAMS3_G_CLASS);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_NASAMS3_LN_AIM9X2",
+      "variants": [
+        "[CH] NASAMS 3 LCHR LN (AIM-9X-2)"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack USA 1.5.0/Database/Vehicles/CH_NASAMS_3_LCHR_AIM9X2.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 27.7,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 440,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAN_RMMV_HX42);"
+            },
+            {
+              "line": 36,
+              "text": "GT.chassis.life = 3"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_NASAMS3_LN_AMRAAM_ER",
+      "variants": [
+        "[CH] NASAMS 3 LCHR LN (AMRAAM-ER)"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack USA 1.5.0/Database/Vehicles/CH_NASAMS_3_LCHR_AMRAAM_ER.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "max_road_velocity = 27.7,"
+            },
+            {
+              "line": 10,
+              "text": "engine_power = 440,"
+            },
+            {
+              "line": 34,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAN_RMMV_HX42);"
+            },
+            {
+              "line": 36,
+              "text": "GT.chassis.life = 3"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_NASAMS3_SR",
+      "variants": [
+        "[CH] NASAMS 3 SR"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack USA 1.5.0/Database/Vehicles/CH_NASAMS_3_SR.lua",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "max_road_velocity = 38.3,"
+            },
+            {
+              "line": 16,
+              "text": "engine_power = 184,"
+            },
+            {
+              "line": 36,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 37,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.NASAMS3_G_CLASS);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_RBS-70",
+      "variants": [
+        "BV 410 RBS 70",
+        "RBS 70 EldE 70 Stationary SAM LN",
+        "[CH] RBS 70 VSHORAD LN"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_RBS-70.lua",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 7,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.chassis.life = 2;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_SX2190",
+      "variants": [
+        "[CH] SX2190 Truck"
+      ],
+      "mode": "self_propelled",
+      "reason": "Explicit wheeled chassis, engine power and nonzero road speed in the installed unit definition; not approved for transit self-defence.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack China 1.1.6/Database/Vehicles/SX2190.lua",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "max_road_velocity = 23.88,"
+            },
+            {
+              "line": 15,
+              "text": "engine_power = 280,"
+            },
+            {
+              "line": 35,
+              "text": "set_recursive_metatable(GT, GT_t.generic_wheel_vehicle);"
+            },
+            {
+              "line": 36,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.SX2190);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_Skyshield_FCU",
+      "variants": [
+        "[CH] Skyshield C-RAM STR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Germany 1.5.0/Database/Vehicles/CH_SkyshieldFCU.lua",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 7,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.chassis.mass = 8200"
+            },
+            {
+              "line": 9,
+              "text": "GT.chassis.life = 4"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "CH_Skyshield_Gun",
+      "variants": [
+        "[CH] Skyshield C-RAM Gun"
+      ],
+      "mode": "towed",
+      "reason": "Catalog explicitly describes a towed gun; the mod has a deployed STATIC chassis. Transport as loaded cargo with a separate tractor.",
+      "sources": [
+        {
+          "file": "Mods/tech/CH Military Asset Pack Germany 1.5.0/Database/Vehicles/CH_SkyshieldGun.lua",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 7,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.chassis.mass = 5100"
+            },
+            {
+              "line": 9,
+              "text": "GT.chassis.life = 4"
+            }
+          ]
+        },
+        {
+          "file": "resources/units/ground_units/CH_Skyshield_Gun.yaml",
+          "evidence": [
+            {
+              "line": 4,
+              "text": "description: A towed 35 mm revolver cannon ..."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "DAVID_SLING_LN",
+      "variants": [
+        "David's Sling LN"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "Dog Ear radar",
+      "variants": [
+        "MCC-SR Sborka \"Dog Ear\" SR"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "ELM2084_MMR_AD_RT",
+      "variants": [
+        "ELM-2084MMR AD Rotating Mode"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "ELM2084_MMR_AD_SC",
+      "variants": [
+        "ELM-2084MMR AD Sector Mode"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "ELM2084_MMR_WLR",
+      "variants": [
+        "ELM-2084MMR WLR Mode"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "ERO_SA2_SNR75",
+      "variants": [
+        "ERO SA-2 SNR-75 Fan Song"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "EWR 1L119 Nebo-SVU",
+      "variants": [
+        "EWR 1L119 Nebo-SVU"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "EWR 55G6U NEBO-U",
+      "variants": [
+        "EWR 55G6U Nebo-U"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "EWR Generic radar tower",
+      "variants": [
+        "EWR Generic radar tower"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "EWR P-37 BAR LOCK",
+      "variants": [
+        "EWR P-37 Bar Lock"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "FPS-117",
+      "variants": [
+        "EWR AN/FPS-117 Radar"
+      ],
+      "mode": "fixed",
+      "reason": "Native stationary AN/FPS-117 radar installation (STATIC chassis); no transport variant modelled.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/TechWeaponPack/Database/vehicles/SAM/EWR_FPS-117.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "FPS-117 Dome",
+      "variants": [
+        "EWR AN/FPS-117 Radar (domed)"
+      ],
+      "mode": "fixed",
+      "reason": "Native stationary AN/FPS-117 radar installation (STATIC chassis); no transport variant modelled.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/TechWeaponPack/Database/vehicles/SAM/EWR_FPS-117_Dome.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "Fire Can radar",
+      "variants": [
+        "AAA SON-9 Fire Can"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "Flakscheinwerfer_37",
+      "variants": [
+        "SL Flakscheinwerfer 37"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "FuMG-401",
+      "variants": [
+        "EWR FuMG-401 Freya LZ"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "FuSe-65",
+      "variants": [
+        "EWR FuSe-65 Würzburg-Riese"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "HQ_2_Guideline_LN",
+      "variants": [
+        "SAM HQ-2 LN SM-90"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/HQ-2 Launcher.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "IRON_DOME_LN",
+      "variants": [
+        "Iron Dome LN"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "Iron_Dome_David_Sling_CP",
+      "variants": [
+        "David's Sling CP",
+        "Iron Dome CP"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "KDO_Mod40",
+      "variants": [
+        "AAA SP Kdo.G.40"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "Maschinensatz_33",
+      "variants": [
+        "PU Maschinensatz_33"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "P14_SR",
+      "variants": [
+        "SAM SA-5 S-200 P-14 'Tall king' SR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/ColdWarAssetsPack/Database/Vehicles/SAM/radar/P14_SR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "RLS_19J6",
+      "variants": [
+        "SAM SA-5 S-200 ST-68U \"Tin Shield\" SR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/TechWeaponPack/Database/vehicles/SAM/Radar/19J6.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU1 30N6E tr",
+      "variants": [
+        "SAM SA-20 S-300PMU1 TR 30N6E(truck)"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/30N6E S-300PMU1 TR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU1 40B6M tr",
+      "variants": [
+        "SAM SA-20 S-300PMU1 TR 30N6E"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/40B6M S-300PMU1 TR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU1 40B6MD sr",
+      "variants": [
+        "SAM SA-20 S-300PMU1 SR 5N66E"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/40B6MD S-300PMU1 SR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU1 54K6 cp",
+      "variants": [
+        "SAM SA-20 S-300PMU1 CP 54K6"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/S-300PMU1 CP 54K6.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary)"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU1 5P85CE ln",
+      "variants": [
+        "SAM SA-20 S-300PMU1 LN 5P85CE"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/5P85CE S-300PMU1 LN.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU1 5P85DE ln",
+      "variants": [
+        "SAM SA-20 S-300PMU1 LN 5P85DE"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/5P85DE S-300PMU1 LN.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU1 64N6E sr",
+      "variants": [
+        "SAM SA-20 S-300PMU1 SR 64N6E"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/64H6E S-300PMU1 SR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU2 40B6M tr",
+      "variants": [
+        "SAM SA-20B S-300PMU2 TR 92H6E(mast)"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300PMU2 54K6E2 cp",
+      "variants": [
+        "SAM SA-20B S-300PMU2 CP 54K6E2"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/S-300PMU2 CP 54K6E2.lua",
+          "evidence": [
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary)"
+            },
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU2 5P85SE2 ln",
+      "variants": [
+        "SAM SA-20B S-300PMU2 LN 5P85SE2"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/5P85SE2 S-300PMU2 LN.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU2 64H6E2 sr",
+      "variants": [
+        "SAM SA-20B S-300PMU2 SR 64N6E2"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/64H6E2 S-300PMU2 SR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PMU2 92H6E tr",
+      "variants": [
+        "SAM SA-20B S-300PMU2 TR 92H6E(truck)"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/92H6E S-300PMU2 TR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300PS 5P85CE ln",
+      "variants": [
+        "SAM SA-10 (5V55RUD) S-300PS LN 5P85CE"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300PS 5P85DE ln",
+      "variants": [
+        "SAM SA-10 (5V55RUD) S-300PS LN 5P85DE"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300PS 5P85SE_mod ln",
+      "variants": [
+        "SAM SA-10B S-300PS 5P85SE LN"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300PS 5P85SU_mod ln",
+      "variants": [
+        "SAM SA-10B S-300PS 5P85SU LN"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300PS 64H6E MOD sr",
+      "variants": [
+        "SAM SA-10B S-300PS 64H6E SR (truck)"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300PS SA-10B 54K6 cp",
+      "variants": [
+        "SAM SA-10B S-300PS 54K6 CP"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300V 9A82 ln",
+      "variants": [
+        "SAM SA-12 S-300V 9A82 LN"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/9A82 S-300V LN.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300V 9A83 ln",
+      "variants": [
+        "SAM SA-12 S-300V 9A83 LN"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/9A83 S-300V LN.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300V 9S15 sr",
+      "variants": [
+        "SAM SA-12 S-300V 9S15 SR"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/9S15 S-300V SR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300V 9S19 sr",
+      "variants": [
+        "SAM SA-12 S-300V 9S19 SR"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/9S19 S-300V SR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300V 9S32 tr",
+      "variants": [
+        "SAM SA-12 S-300V 9S32 TR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/9S32 S-300V TR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300V 9S457 cp",
+      "variants": [
+        "SAM SA-12 S-300V 9S457 CP"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/S-300V CP 9S457.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary)"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300V4 9A82M-2E ln",
+      "variants": [
+        "SAM SA-23 S-300V4 9A82M-2E LN"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300V4 9A83M-2E ln",
+      "variants": [
+        "SAM SA-23 S-300V4 9A83M-2E LN"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300V4 9A84M-2E ln",
+      "variants": [
+        "SAM SA-23 S-300V4 9A84M-2E LN"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300V4 9S15MDE sr",
+      "variants": [
+        "SAM SA-23 S-300V4 9S15MDE SR"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300V4 9S19M-1E sr",
+      "variants": [
+        "SAM SA-23 S-300V4 9S19M-1E SR"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300V4 9S32M-1E tr",
+      "variants": [
+        "SAM SA-23 S-300V4 9S32M-1E TR"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300V4 9S457-2E cp",
+      "variants": [
+        "SAM SA-23 S-300V4 9S457-2E CP"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-300VM 9A82ME ln",
+      "variants": [
+        "SAM SA-23 S-300VM 9A82ME LN"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/9A82ME S-300VM LN.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300VM 9A83ME ln",
+      "variants": [
+        "SAM SA-23 S-300VM 9A83ME LN"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/9A83ME S-300VM LN.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300VM 9S15M2 sr",
+      "variants": [
+        "SAM SA-23 S-300VM 9S15M2 SR"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/9S15M2 S-300VM SR.lua",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 5,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300VM 9S19M2 sr",
+      "variants": [
+        "SAM SA-23 S-300VM 9S19M2 SR"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/9S19M2 S-300VM SR.lua",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 5,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300VM 9S32ME tr",
+      "variants": [
+        "SAM SA-23 S-300VM 9S32ME TR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/9S32ME S-300VM TR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-300VM 9S457ME cp",
+      "variants": [
+        "SAM SA-23 S-300VM 9S457ME CP"
+      ],
+      "mode": "unknown",
+      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/S-300VM CP 9S457ME.lua",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary)"
+            },
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S-400 51P6A (40N6E) ln",
+      "variants": [
+        "SAM SA-21 S-400 LN 51P6A (40N6E)"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-400 51P6A (9M96E2) ln",
+      "variants": [
+        "SAM SA-21 S-400 LN 51P6A (9M96E2)"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-400 51P6A ln",
+      "variants": [
+        "SAM SA-21 S-400 LN 51P6A (48N6DM)"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-400 55K6 cp",
+      "variants": [
+        "SAM SA-21 S-400 CP 55K6"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-400 91N6E sr",
+      "variants": [
+        "SAM SA-21 S-400 SR 91N6E"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-400 92N6E mast tr",
+      "variants": [
+        "SAM SA-21 S-400 TR 92N6E (mast)"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-400 92N6E tr",
+      "variants": [
+        "SAM SA-21 S-400 TR 92N6E (truck)"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-400 96L6E mast sr",
+      "variants": [
+        "SAM SA-21 S-400 SR 96L6E (mast)"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "S-400 96L6E sr",
+      "variants": [
+        "SAM SA-21 S-400 SR 96L6E (truck)"
+      ],
+      "mode": "unknown",
+      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
+      "sources": []
+    },
+    {
+      "dcs_id": "SAMPT_MC",
+      "variants": [
+        "SAM SAMP/T Control Station"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MC.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "SAMPT_ME",
+      "variants": [
+        "SAM SAMP/T Engagement Station"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_ME.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "SAMPT_MGE",
+      "variants": [
+        "SAM SAMP/T Electric Generator"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MGE.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "SAMPT_MLT_Blk1",
+      "variants": [
+        "SAM SAMP/T MLT Launcher Block 1"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MLT_Blk1.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "SAMPT_MLT_Blk1NT",
+      "variants": [
+        "SAM SAMP/T MLT Launcher Block 1NT"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MLT_Blk1NT.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "SAMPT_MLT_Blk2",
+      "variants": [
+        "SAM SAMP/T MLT Launcher Block 2"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MLT_Blk2.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "SAMPT_MRI_ARABEL",
+      "variants": [
+        "SAM SAMP/T MRI ARABEL STR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/SAMPT_MRI_ARABEL.lua",
+          "evidence": [
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "SAMPT_MRI_GF300",
+      "variants": [
+        "SAM SAMP/T MRI Ground Fire 300 STR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/SAMPT_MRI_GF300.lua",
+          "evidence": [
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "SNR_75V",
+      "variants": [
+        "SAM SA-2 S-75 \"Fan Song\" TR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/TechWeaponPack/Database/vehicles/SAM/Radar/S75_TR.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "SON_9",
+      "variants": [
+        "AAA Fire Can SON-9"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/TechWeaponPack/Database/vehicles/AirDefence/SON-9.lua",
+          "evidence": [
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 6,
+              "text": "GT.chassis.mass = 5000\t-- maybe false"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S_75M_Volhov",
+      "variants": [
+        "SAM SA-2 S-75 \"Guideline\" LN"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/TechWeaponPack/Database/vehicles/SAM/S75_Launcher.lua",
+          "evidence": [
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "S_75M_Volhov_V759",
+      "variants": [
+        "SAM SA-2 (V759) LN SM-90"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/V759 Launcher.lua",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dcs_id": "Silkworm_SR",
+      "variants": [
+        "AShM Silkworm SR"
+      ],
+      "mode": "unknown",
+      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "sources": [
+        {
+          "file": "CoreMods/tech/TechWeaponPack/Database/vehicles/MissilesSS/Mys-m1.lua",
+          "evidence": [
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 6,
+              "text": "GT.chassis.life = 4"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

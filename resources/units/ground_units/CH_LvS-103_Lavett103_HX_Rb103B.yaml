@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: self_propelled
 description: Medium range air defense launcher.
   
   Contains 16 x RB 103B hit-to-kill missiles

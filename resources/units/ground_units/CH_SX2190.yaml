@@ -1,4 +1,6 @@
 class: Logistics
+ground_mobility:
+  mode: self_propelled
 price: 1
 variants:
   "[CH] SX2190 Truck": null

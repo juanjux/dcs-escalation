@@ -1,4 +1,6 @@
 class: SearchTrackRadar
+ground_mobility:
+  mode: self_propelled
 reversed_heading: true
 description: "The IRIS-T SL is a family of short and high to medium air defense surface-to-air missile systems. 
   The missile systems are developed from the IRIS-T air-to-air missile. Two variants and their derivatives are at the moment in service. 
