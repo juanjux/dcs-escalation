@@ -5,6 +5,8 @@
   "description": "<p>A generic bluefor modern faction. This also includes many redfor units and is meant to be a faction that has access to most modern flyable modules.</p>",
   "aircrafts": [
     "F-15EX Eagle II",
+    "F-15EX Eagle II (CFTs)",
+    "F-15IA",
     "F-15C EG Golden Eagle",
     "Eurofighter Typhoon",
     "A-10A Thunderbolt II",

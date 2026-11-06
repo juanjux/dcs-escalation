@@ -411,6 +411,7 @@ previous map view and campaign controls are restored when selection ends.
 
 ## Modding & data
 - **F-15EX Eagle II, F-15C EG (Golden Eagle) and Eurofighter Typhoon** mod aircraft.
+  F-15EX v3.0 includes the EX, EX with CFTs and IA variants as air-to-air fighters only; install the mod's generated external models and hooks separately.
   ([#31](https://github.com/juanjux/dcs-escalation/pull/31),
   [#32](https://github.com/juanjux/dcs-escalation/pull/32),
   [#33](https://github.com/juanjux/dcs-escalation/pull/33))

@@ -1,0 +1,25 @@
+description:
+  "Spino F-15EX v3.0 with conformal fuel tanks, standalone avionics,
+  an AN/APG-82 radar and fifteen weapon stations. This version supports
+  air-to-air missions only; air-to-ground weapons are not available."
+introduced: 2025
+manufacturer: Boeing
+origin: USA
+price: 30
+role: Air-Superiority Fighter
+max_range: 1968
+variants:
+  F-15EX Eagle II (CFTs): {}
+radios:
+  intra_flight: AN/ARC-210
+  inter_flight: AN/ARC-210
+  channels:
+    type: common
+    intra_flight_radio_index: 2
+    inter_flight_radio_index: 1
+tasks:
+  Intercept: 850
+  Fighter sweep: 820
+  BARCAP: 750
+  TARCAP: 730
+  Escort: 720

@@ -15,6 +15,9 @@ the API before recommending them. Settings are read-only for this commander.
 
 # How to play OPFOR — commander's briefing
 
+Spino F-15EX v3.0 aircraft (EX, EX with CFTs and IA) support air-to-air missions
+only. Do not assign ground attack, SEAD, DEAD or anti-ship missions to them.
+
 Aircraft in loan squadrons cannot be bought or sold, including damaged aircraft
 in the workshop. Automatic purchases do not reinforce loan squadrons. A loan
 with damaged aircraft must finish repairs before relocating; healthy loans can
