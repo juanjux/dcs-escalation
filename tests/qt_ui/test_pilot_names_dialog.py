@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QListWidgetItem,
     QMessageBox,
-    QTabWidget,
 )
 
 from game.squadrons.namepresets import NameLibrary
@@ -376,53 +375,53 @@ def test_initial_squadron_can_be_selected_explicitly(tmp_path: Path) -> None:
         widget.deleteLater()
 
 
-def test_airwing_button_passes_current_side_and_selected_squadron(
-    tmp_path: Path,
-) -> None:
-    from PySide6.QtWidgets import QListWidget, QWidget
+def test_squadron_button_opens_names() -> None:
+    from qt_ui.windows.SquadronDialog import SquadronDialog
 
-    from game import persistency
-    from qt_ui.windows.AirWingDialog import AirWingDialog
-
-    selected = SquadronStub("OPFOR selected")
-    tabs = QTabWidget()
-    sources = []
-    for label in ("OWNFOR", "OPFOR"):
-        tabs.addTab(QWidget(), label)
-        source = QListWidget()
-        item = QListWidgetItem("Selected")
-        item.setData(USER_ROLE, selected)
-        source.addItem(item)
-        source.setCurrentRow(0)
-        sources.append(source)
-    cast(Any, tabs).squadron_lists = sources
-    tabs.setCurrentIndex(1)
-    wing = SimpleNamespace(iter_squadrons=lambda: iter([selected]))
-    coalition_for = Mock(return_value=SimpleNamespace(air_wing=wing))
-    model = SimpleNamespace(
-        blue_air_wing_model=None, game=SimpleNamespace(coalition_for=coalition_for)
+    window = SimpleNamespace(
+        discharge_pilot=Mock(),
+        open_names=Mock(),
+        rename_pilot=Mock(),
+        toggle_ai=Mock(),
+        toggle_leave=Mock(),
+        reset_button_states=Mock(),
+        pilot_list=Mock(),
     )
-    with patch("qt_ui.windows.AirWingDialog.AirWingTabs", return_value=tabs), patch(
-        "qt_ui.windows.AirWingDialog.PilotNamesDialog"
-    ) as factory, patch.object(persistency, "settings_dir", return_value=tmp_path):
-        window = AirWingDialog(cast(Any, model), None)
-        try:
-            window.assign_names_button.click()
-            from game.theater import Player
+    panel = SquadronDialog._build_buttons(cast(Any, window))
+    try:
+        assert window.assign_names_button.text() == "Assign Names"
+        window.assign_names_button.click()
+        window.open_names.assert_called_once()
+    finally:
+        for index in range(panel.count()):
+            item = panel.itemAt(index)
+            assert item is not None
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
 
-            coalition_for.assert_called_once_with(Player.RED)
-            args = factory.call_args.args
-            assert args[0] == [selected] and args[2] is selected
-            assert isinstance(args[1], NameLibrary)
-            factory.return_value.exec.assert_called_once()
-        finally:
-            window.deleteLater()
-            for source in sources:
-                source.deleteLater()
+
+def test_squadron_names_preselects_current_squadron(tmp_path: Path) -> None:
+    from game import persistency
+    from qt_ui.windows.SquadronDialog import SquadronDialog
+
+    selected, other = SquadronStub("Selected"), SquadronStub("Other")
+    cast(Any, selected).coalition = SimpleNamespace(
+        air_wing=SimpleNamespace(iter_squadrons=lambda: iter([other, selected]))
+    )
+    window = SimpleNamespace(squadron=selected, pilot_names_changed=Mock())
+    with patch(
+        "qt_ui.windows.SquadronDialog.PilotNamesDialog"
+    ) as factory, patch.object(persistency, "settings_dir", return_value=tmp_path):
+        SquadronDialog.open_names(cast(Any, window))
+    args = factory.call_args.args
+    assert args[0] == [other, selected] and args[2] is selected
+    assert isinstance(args[1], NameLibrary)
+    factory.return_value.exec.assert_called_once()
+    factory.return_value.deleteLater.assert_called_once()
 
 
 def test_name_change_notifications_are_limited_to_affected_flights() -> None:
-    from qt_ui.windows.AirWingDialog import AirWingDialog
     from qt_ui.windows.SquadronDialog import SquadronDialog
 
     squadron = SquadronStub("Changed")
@@ -442,19 +441,15 @@ def test_name_change_notifications_are_limited_to_affected_flights() -> None:
             )
         ]
     )
+    cast(Any, squadron).coalition = SimpleNamespace(game=game)
     controller = SimpleNamespace(sim_update=Mock())
-    dialog = Mock(spec=SquadronDialog)
-    tabs = SimpleNamespace(
-        squadron_lists=[SimpleNamespace(dialog=dialog)], count=lambda: 0
-    )
     window = SimpleNamespace(
-        game_model=SimpleNamespace(game=game, sim_controller=controller), tabs=tabs
+        squadron=squadron, sim_controller=controller, _pilot_changed=Mock()
     )
-    with patch("qt_ui.windows.AirWingDialog.EventStream.put_nowait") as send, patch(
-        "qt_ui.windows.AirWingDialog.live_window",
-        side_effect=lambda key: dialog if key == f"squadron:{squadron.id}" else None,
+    with patch("qt_ui.windows.SquadronDialog.EventStream.put_nowait") as send, patch(
+        "qt_ui.windows.SquadronDialog.live_window", return_value=None
     ):
-        AirWingDialog.pilot_names_changed(cast(Any, window), cast(Any, squadron))
+        SquadronDialog.pilot_names_changed(cast(Any, window), cast(Any, squadron))
     assert send.call_args.args[0].updated_flights == {flight}
     controller.sim_update.emit.assert_called_once()
-    dialog._pilot_changed.assert_called_once()
+    window._pilot_changed.assert_called_once()

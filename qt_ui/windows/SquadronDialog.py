@@ -50,6 +50,8 @@ from game.ato.flighttype import FlightType
 from game.ato.flightwaypointtype import FlightWaypointType
 from game.dcs.aircrafttype import AircraftType
 from game.settings import Settings
+from game import persistency
+from game.squadrons.namepresets import NameLibrary
 from game.squadrons import friendship
 from game.squadrons import hardening
 from game.squadrons import morale as morale_rules
@@ -81,7 +83,8 @@ from qt_ui.errorreporter import report_errors
 from qt_ui.models import AtoModel, SquadronModel
 from qt_ui.simcontroller import SimController
 from qt_ui.uiconstants import app_settings, AIRCRAFT_ICONS
-from qt_ui.dialogs import open_once
+from qt_ui.dialogs import live_window, open_once
+from qt_ui.windows.PilotNamesDialog import PilotNamesDialog
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.pilot import PilotDialog
 from qt_ui.widgets.combos.QSquadronLiverySelector import SquadronLiverySelector
@@ -1275,6 +1278,11 @@ class SquadronDialog(QDialog):
         panel.addSpacing(24)
         panel.addStretch()
 
+        self.assign_names_button = QPushButton("Assign Names")
+        self.assign_names_button.setStyleSheet(BUTTON_SECONDARY)
+        self.assign_names_button.clicked.connect(self.open_names)
+        panel.addWidget(self.assign_names_button)
+
         self.rename_button = QPushButton("Rename")
         self.rename_button.setStyleSheet(BUTTON_SECONDARY)
         self.rename_button.clicked.connect(self.rename_pilot)
@@ -1292,6 +1300,48 @@ class SquadronDialog(QDialog):
 
         self.reset_button_states(self.pilot_list.currentIndex())
         return panel
+
+    def open_names(self) -> None:
+        library_path = persistency.settings_dir() / "pilot-name-lists.json"
+        try:
+            library = NameLibrary.load(library_path)
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(
+                self, "Cannot load name library", f"{library_path}\n\n{error}"
+            )
+            return
+        dialog = PilotNamesDialog(
+            list(self.squadron.coalition.air_wing.iter_squadrons()),
+            library,
+            self.squadron,
+            self,
+        )
+        dialog.pilots_changed.connect(self.pilot_names_changed)
+        try:
+            dialog.exec()
+        finally:
+            dialog.deleteLater()
+
+    def pilot_names_changed(self, squadron: Squadron) -> None:
+        events = GameUpdateEvents()
+        for coalition in self.squadron.coalition.game.coalitions:
+            for package in coalition.ato.packages:
+                for flight in package.flights:
+                    if flight.squadron is squadron:
+                        events.update_flight(flight)
+        if not events.empty:
+            EventStream.put_nowait(events)
+        self.sim_controller.sim_update.emit(events)
+        if squadron is self.squadron:
+            self._pilot_changed()
+        else:
+            roster = live_window(f"squadron:{squadron.id}")
+            if isinstance(roster, SquadronDialog) and roster.isVisible():
+                roster._pilot_changed()
+        for pilot in squadron.current_roster:
+            pilot_view = live_window(f"pilot:{pilot.id}")
+            if isinstance(pilot_view, PilotDialog) and pilot_view.isVisible():
+                pilot_view._rebuild()
 
     def _warn_parking_overflow(self) -> None:
         overflow = self.transfer_destination.parking_overflow
