@@ -16,6 +16,7 @@ from game.ato.savedpoints import (
     SavedPoint,
     add_point,
     capacity_for,
+    campaign_points,
     kinds_for,
     points_of,
     receivers,
@@ -79,14 +80,15 @@ def test_writing_one_down_uses_up_its_room() -> None:
     assert room_for(cast(Any, flight), PointKind.MARKPOINT) == UNKNOWN_CEILING
 
 
-def test_a_full_aircraft_refuses_another() -> None:
-    """The Viper's usable points stop before its bullseye slot."""
+def test_full_aircraft_can_still_save_global_points() -> None:
+    """Storage is global; the Viper's export still has its own capacity."""
     flight = _flight("F-16C_50")
     for _ in range(24):
         assert add_point(cast(Any, flight), _point())
 
-    assert not add_point(cast(Any, flight), _point())
-    assert len(points_of(cast(Any, flight))) == 24
+    assert add_point(cast(Any, flight), _point())
+    assert len(points_of(cast(Any, flight))) == 25
+    assert room_for(cast(Any, flight), PointKind.WAYPOINT) == 0
 
 
 def test_one_can_be_taken_off_again() -> None:
@@ -183,8 +185,7 @@ def test_cancelling_the_flight_does_not_lose_what_was_written_down() -> None:
     assert point.name == "POWER STATION"
 
 
-def test_another_squadron_is_another_aircraft() -> None:
-    """They follow the aircraft the player flies, not the whole campaign."""
+def test_unattached_legacy_squadrons_keep_separate_storage_until_migration() -> None:
     mine = _flight()
     mine.squadron = SimpleNamespace()
     add_point(cast(Any, mine), _point())
@@ -221,3 +222,70 @@ def test_moving_them_across_twice_does_not_write_them_twice() -> None:
     points_of(cast(Any, first))
 
     assert len(points_of(cast(Any, second))) == 1
+
+
+def _campaign(*flights: Any) -> Any:
+    squadrons = [flight.squadron for flight in flights]
+    coalition = SimpleNamespace(
+        air_wing=SimpleNamespace(iter_squadrons=lambda: iter(squadrons)),
+        ato=SimpleNamespace(packages=[SimpleNamespace(flights=list(flights))]),
+    )
+    for squadron in squadrons:
+        squadron.coalition = coalition
+    return coalition
+
+
+def test_changing_hornet_to_a10_keeps_global_points_and_identity() -> None:
+    hornet, a10 = _flight(), _flight("A-10C_2", crewed=0)
+    campaign = _campaign(hornet, a10)
+    point = _point(name="WAREHOUSE")
+    hornet.squadron.saved_points = [point]
+    hornet.client_count, a10.client_count = 0, 1
+    assert points_of(a10) == [point]
+    assert points_of(a10)[0] is point
+    assert points_of(a10) is points_of(hornet) is campaign.saved_points
+    a10.squadron.saved_points[0].name = "RENAMED"
+    assert points_of(hornet)[0].name == "RENAMED"
+    assert remove_point(a10, 0)
+    assert points_of(hornet) == []
+    assert campaign_points(campaign) == []
+
+
+def test_legacy_points_merge_from_inactive_squadrons_and_old_flights_once() -> None:
+    first, second = _flight(crewed=0), _flight("A-10C_2")
+    campaign = _campaign(first, second)
+    original = _point(name="OLD")
+    first.squadron.saved_points = [original]
+    second.squadron.saved_points = [_point(name="OLD"), _point(name="NEW")]
+    first.saved_points = [_point(name="FLIGHT")]
+    assert [point.name for point in campaign_points(campaign)] == [
+        "OLD",
+        "NEW",
+        "FLIGHT",
+    ]
+    assert campaign.saved_points[0] is original
+    assert "saved_points" not in first.__dict__
+    assert (
+        first.squadron.saved_points
+        is second.squadron.saved_points
+        is campaign.saved_points
+    )
+    campaign.ato.packages.clear()
+    assert len(campaign_points(campaign)) == 3
+    campaign.saved_points.clear()
+    assert campaign_points(campaign) == []
+
+
+def test_campaign_points_survive_pickle_and_do_not_leak_between_campaigns() -> None:
+    import pickle
+
+    from game.coalition import Coalition
+    from game.theater import Player
+
+    coalition = Coalition.__new__(Coalition)
+    coalition.player = Player.NEUTRAL
+    coalition.saved_points = [_point()]
+    restored = pickle.loads(pickle.dumps(coalition))
+    assert campaign_points(restored)[0].id == coalition.saved_points[0].id
+    assert campaign_points(SimpleNamespace()) == []
+    assert campaign_points(restored) is not coalition.saved_points

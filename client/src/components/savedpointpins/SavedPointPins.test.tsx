@@ -57,7 +57,13 @@ const receiver = {
   aircraft: "A-10C",
   points: [point],
 };
-const response = (body: unknown, ok = true) => ({ ok, json: async () => body });
+const response = (body: unknown, ok = true) => ({
+  ok,
+  json: async () =>
+    Array.isArray(body)
+      ? { points: body.flatMap((one) => one.points ?? []), receivers: body }
+      : body,
+});
 function deferred() {
   let resolve!: (value: any) => void;
   const promise = new Promise<any>((done) => {
@@ -84,17 +90,36 @@ it("uses a yellow pin and shows one tooltip for shared squadron points", async (
   expect(PIN.options.html).toContain('fill="#ffdf32"');
 });
 
+it("keeps global pins visible and editable without any player flights", async () => {
+  (fetch as jest.Mock).mockResolvedValue(
+    response({ points: [point], receivers: [] }),
+  );
+  render(<SavedPointPins />);
+  expect(await screen.findAllByTestId("pin")).toHaveLength(1);
+  expect(screen.getByText(/Campaign GPS point/)).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("Name"), {
+    target: { value: "GLOBAL" },
+  });
+  fireEvent.click(screen.getByText("Rename"));
+  await waitFor(() =>
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/campaign/points/point-1"),
+      expect.objectContaining({ method: "PATCH" }),
+    ),
+  );
+});
+
 it("renames and deletes by persistent ID and announces each successful edit", async () => {
   const notify = jest.fn();
   window.addEventListener("saved-points-changed", notify);
-  render(<SavedPointPin point={point} receiver={receiver} />);
+  render(<SavedPointPin point={point} />);
   fireEvent.change(screen.getByLabelText("Name"), {
     target: { value: "BRIDGE" },
   });
   fireEvent.click(screen.getByText("Rename"));
   await waitFor(() => expect(notify).toHaveBeenCalledTimes(1));
   expect(fetch).toHaveBeenLastCalledWith(
-    expect.stringContaining("/flight-1/points/point-1"),
+    expect.stringContaining("/campaign/points/point-1"),
     expect.objectContaining({
       method: "PATCH",
       body: JSON.stringify({ name: "BRIDGE" }),
@@ -103,7 +128,7 @@ it("renames and deletes by persistent ID and announces each successful edit", as
   fireEvent.click(screen.getByText("Delete"));
   await waitFor(() => expect(notify).toHaveBeenCalledTimes(2));
   expect(fetch).toHaveBeenLastCalledWith(
-    expect.stringContaining("/flight-1/points/point-1"),
+    expect.stringContaining("/campaign/points/point-1"),
     expect.objectContaining({ method: "DELETE" }),
   );
   window.removeEventListener("saved-points-changed", notify);
@@ -112,7 +137,7 @@ it("renames and deletes by persistent ID and announces each successful edit", as
 it("locks edits during a move and restores the old position on failure", async () => {
   const pending = deferred();
   (fetch as jest.Mock).mockReturnValue(pending.promise);
-  render(<SavedPointPin point={point} receiver={receiver} />);
+  render(<SavedPointPin point={point} />);
   fireEvent.click(screen.getByText("Drag"));
   expect(screen.getByText("Delete")).toBeDisabled();
   expect(screen.getByText("Drag")).toBeDisabled();

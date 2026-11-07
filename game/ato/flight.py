@@ -249,10 +249,7 @@ class Flight(
 
     @property
     def saved_points(self) -> list[SavedPoint]:
-        """Points the player saved for this aircraft from the map's coordinate
-        picker. They go on the kneeboard and in the data cartridge, not in the flight
-        plan, and are kept on the squadron so cancelling the flight does not lose
-        them."""
+        """Campaign GPS points, shared across aircraft and exported off-route."""
         return points_of(self)
 
     @property

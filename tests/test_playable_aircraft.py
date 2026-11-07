@@ -212,9 +212,9 @@ def test_pasting_writes_what_fits_and_says_how_many() -> None:
     clipboard = data.Clipboard()
     clipboard.take(source)
 
-    assert clipboard.fits(target) == 24
-    assert clipboard.paste_into(target) == 24
-    assert target.total_used == 24
+    assert clipboard.fits(target) == 30
+    assert clipboard.paste_into(target) == 30
+    assert target.total_used == 30
 
 
 def test_pasting_twice_does_not_give_two_aircraft_the_same_point() -> None:

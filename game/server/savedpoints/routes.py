@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from uuid import UUID
+from typing import Callable
 
 from dcs.mapping import LatLng, Point
 from fastapi import APIRouter, Depends, HTTPException
@@ -18,6 +19,7 @@ from game.ato.savedpoints import (
     add_drawing,
     drawings_of,
     add_point,
+    campaign_points,
     kinds_for,
     points_of,
     receivers,
@@ -79,6 +81,11 @@ class NewPointJs(BaseModel):
     altitude_ft: int = 0
 
 
+class CampaignPointsJs(BaseModel):
+    points: list[SavedPointJs]
+    receivers: list[ReceiverJs]
+
+
 class SavedPointPosition(BaseModel):
     lat: float = Field(ge=-90, le=90, allow_inf_nan=False)
     lng: float = Field(ge=-180, le=180, allow_inf_nan=False)
@@ -108,12 +115,24 @@ def _kind(name: str) -> PointKind:
         raise HTTPException(status_code=400, detail=f"No such kind of point: {name}")
 
 
+def _point_js(game: Game, point: SavedPoint) -> SavedPointJs:
+    at = Point(point.x, point.y, game.theater.terrain).latlng()
+    chosen = getattr(game.settings, "coordinate_format", None)
+    return SavedPointJs(
+        id=point.id,
+        position=LeafletPoint.from_latlng(at),
+        kind=point.kind.value,
+        name=point.name,
+        coordinates=format_latlng(at, chosen) if chosen is not None else "",
+        altitude_ft=point.altitude_ft,
+    )
+
+
 def _describe(game: Game, flight: object) -> ReceiverJs:
     from game.ato.flight import Flight
 
     assert isinstance(flight, Flight)
     aircraft = flight.unit_type.dcs_unit_type.id
-    chosen = getattr(game.settings, "coordinate_format", None)
     return ReceiverJs(
         id=flight.id,
         callsign=flight.custom_name or str(flight.flight_type.value),
@@ -133,25 +152,7 @@ def _describe(game: Game, flight: object) -> ReceiverJs:
             )
             for drawing in drawings_of(flight)
         ],
-        points=[
-            SavedPointJs(
-                id=point.id,
-                position=LeafletPoint.from_latlng(
-                    Point(point.x, point.y, game.theater.terrain).latlng()
-                ),
-                kind=point.kind.value,
-                name=point.name,
-                coordinates=(
-                    format_latlng(
-                        Point(point.x, point.y, game.theater.terrain).latlng(), chosen
-                    )
-                    if chosen is not None
-                    else ""
-                ),
-                altitude_ft=point.altitude_ft,
-            )
-            for point in points_of(flight)
-        ],
+        points=[_point_js(game, point) for point in points_of(flight)],
     )
 
 
@@ -159,6 +160,63 @@ def _describe(game: Game, flight: object) -> ReceiverJs:
 def list_receivers(game: Game = Depends(GameContext.require)) -> list[ReceiverJs]:
     """Every aircraft the player is actually flying this turn."""
     return [_describe(game, flight) for flight in receivers(game.blue)]
+
+
+@router.get("/campaign", response_model=CampaignPointsJs)
+def list_campaign_points(game: Game = Depends(GameContext.require)) -> CampaignPointsJs:
+    """Return shared GPS points even when there are no player flights."""
+    return CampaignPointsJs(
+        points=[_point_js(game, point) for point in campaign_points(game.blue)],
+        receivers=list_receivers(game),
+    )
+
+
+def _new_point(game: Game, point: NewPointJs) -> SavedPoint:
+    at = Point.from_latlng(LatLng(point.lat, point.lng), game.theater.terrain)
+    return SavedPoint(
+        _kind(point.kind),
+        point.name.strip()[:24] or "Point",
+        at.x,
+        at.y,
+        max(0, point.altitude_ft),
+    )
+
+
+@router.post("/campaign", response_model=SavedPointJs)
+def add_campaign_point(
+    point: NewPointJs, game: Game = Depends(GameContext.require)
+) -> SavedPointJs:
+    saved = _new_point(game, point)
+    campaign_points(game.blue).append(saved)
+    publish_points_changed()
+    return _point_js(game, saved)
+
+
+def _campaign_point(game: Game, point_id: UUID) -> SavedPoint:
+    for point in campaign_points(game.blue):
+        if point.id == point_id:
+            return point
+    raise HTTPException(status_code=404, detail="No such point")
+
+
+@router.patch("/campaign/points/{point_id}", response_model=SavedPointJs)
+def edit_campaign_point(
+    point_id: UUID,
+    changes: SavedPointEdit,
+    game: Game = Depends(GameContext.require),
+) -> SavedPointJs:
+    point = _edit_point(game, lambda: _campaign_point(game, point_id), changes)
+    return _point_js(game, point)
+
+
+@router.delete("/campaign/points/{point_id}", status_code=204)
+def delete_campaign_point(
+    point_id: UUID, game: Game = Depends(GameContext.require)
+) -> None:
+    point = _campaign_point(game, point_id)
+    points = campaign_points(game.blue)
+    points[:] = [one for one in points if one is not point]
+    publish_points_changed()
 
 
 def _player_flight(game: Game, flight_id: UUID) -> Flight:
@@ -260,20 +318,25 @@ def edit(
     changes: SavedPointEdit,
     game: Game = Depends(GameContext.require),
 ) -> ReceiverJs:
-    point = _point(game, flight_id, point_id)
+    _edit_point(game, lambda: _point(game, flight_id, point_id), changes)
+    return _describe(game, _player_flight(game, flight_id))
+
+
+def _edit_point(
+    game: Game, lookup: Callable[[], SavedPoint], changes: SavedPointEdit
+) -> SavedPoint:
+    point = lookup()
     at = None
     height = None
     if changes.position is not None:
-        # Validate before changing the name so an invalid move cannot half-apply.
         at = Point.from_latlng(
             LatLng(changes.position.lat, changes.position.lng), game.theater.terrain
         )
         from game.elevation import elevation_ft
 
         height = elevation_ft(changes.position.lat, changes.position.lng)
-        # Elevation lookup can block while Qt removes the point or its flight.
-        # Resolve again before applying any edits to avoid a detached update.
-        point = _point(game, flight_id, point_id)
+        # Revalidate after a potentially blocking elevation lookup.
+        point = lookup()
     if changes.name is not None:
         point.name = changes.name.strip()[:24] or point.name
     if at is not None:
@@ -281,7 +344,7 @@ def edit(
         if height is not None:
             point.altitude_ft = max(0, height)
     publish_points_changed()
-    return _describe(game, _player_flight(game, flight_id))
+    return point
 
 
 @router.delete(
@@ -306,18 +369,7 @@ def add(
     game: Game = Depends(GameContext.require),
 ) -> ReceiverJs:
     flight = _player_flight(game, flight_id)
-    at = Point.from_latlng(LatLng(point.lat, point.lng), game.theater.terrain)
-    saved = SavedPoint(
-        kind=_kind(point.kind),
-        name=point.name.strip()[:24] or "Point",
-        x=at.x,
-        y=at.y,
-        altitude_ft=max(0, point.altitude_ft),
-    )
-    if not add_point(flight, saved):
-        raise HTTPException(
-            status_code=409, detail=f"{flight.callsign} has no room for another"
-        )
+    add_point(flight, _new_point(game, point))
     publish_points_changed()
     return _describe(game, flight)
 

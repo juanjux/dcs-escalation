@@ -22,6 +22,11 @@ interface Receiver {
   drawings?: Drawing[];
 }
 
+interface CampaignPoints {
+  points: SavedPoint[];
+  receivers: Receiver[];
+}
+
 export const PIN = L.divIcon({
   className: "saved-point-pin",
   html: '<svg viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg"><path d="M12.5 40C10 33 1 24 1 13a11.5 11.5 0 0 1 23 0c0 11-9 20-11.5 27Z" fill="#ffdf32" stroke="#504000" stroke-width="1.5"/><circle cx="12.5" cy="13" r="4" fill="#fff9d0" stroke="#504000"/></svg>',
@@ -31,14 +36,9 @@ export const PIN = L.divIcon({
   tooltipAnchor: [12, -25],
 });
 
-async function mutate(
-  receiver: Receiver,
-  point: SavedPoint,
-  method: string,
-  body?: object,
-) {
+async function mutate(point: SavedPoint, method: string, body?: object) {
   const response = await fetch(
-    `${HTTP_URL}saved-points/${receiver.id}/points/${point.id}`,
+    `${HTTP_URL}saved-points/campaign/points/${point.id}`,
     {
       method,
       headers: { "Content-Type": "application/json" },
@@ -56,13 +56,7 @@ async function mutate(
   window.dispatchEvent(new Event("saved-points-changed"));
 }
 
-export function SavedPointPin({
-  receiver,
-  point,
-}: {
-  receiver: Receiver;
-  point: SavedPoint;
-}) {
+export function SavedPointPin({ point }: { point: SavedPoint }) {
   const marker = useRef<LeafletMarker | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState(point.name);
@@ -74,7 +68,7 @@ export function SavedPointPin({
     setBusy(true);
     setError("");
     try {
-      await mutate(receiver, point, method, body);
+      await mutate(point, method, body);
     } catch (failure) {
       marker.current?.setLatLng(point.position);
       setError(
@@ -126,7 +120,7 @@ export function SavedPointPin({
             />
           </label>
           <div className="saved-point-owner">
-            {receiver.callsign} · {receiver.aircraft}
+            Campaign GPS point · shared by all player aircraft
           </div>
           <div>
             {point.coordinates} · {point.altitude_ft} ft
@@ -155,7 +149,10 @@ export function SavedPointPin({
 }
 
 export default function SavedPointPins() {
-  const [receivers, setReceivers] = useState<Receiver[]>([]);
+  const [data, setData] = useState<CampaignPoints>({
+    points: [],
+    receivers: [],
+  });
   useEffect(() => {
     let generation = 0;
     let disposed = false;
@@ -165,23 +162,29 @@ export default function SavedPointPins() {
       controller?.abort();
       controller = new AbortController();
       if ((event as CustomEvent | undefined)?.detail?.reset) {
-        setReceivers([]);
+        setData({ points: [], receivers: [] });
       }
       if ((event as CustomEvent | undefined)?.detail?.unloaded) {
-        setReceivers([]);
+        setData({ points: [], receivers: [] });
         return;
       }
       try {
-        const response = await fetch(`${HTTP_URL}saved-points/`, {
+        const response = await fetch(`${HTTP_URL}saved-points/campaign`, {
           signal: controller.signal,
         });
         const body: unknown = response.ok ? await response.json() : [];
         if (!disposed && request === generation) {
-          setReceivers(Array.isArray(body) ? body : []);
+          const campaign = body as Partial<CampaignPoints> | null;
+          const points = campaign?.points;
+          const receivers = campaign?.receivers;
+          setData({
+            points: Array.isArray(points) ? points : [],
+            receivers: Array.isArray(receivers) ? receivers : [],
+          });
         }
       } catch (error) {
         if (!disposed && request === generation) {
-          setReceivers([]);
+          setData({ points: [], receivers: [] });
           console.error("Could not load saved map points", error);
         }
       }
@@ -195,21 +198,17 @@ export default function SavedPointPins() {
     };
   }, []);
 
-  // Multiple player flights in one squadron share the same saved points.
+  // Campaign points are independent of player slots; drawings remain per squadron.
   const seen = new Set<string>();
   const seenDrawings = new Set<string>();
   return (
     <>
-      {receivers.flatMap((receiver) =>
-        (receiver.points ?? []).flatMap((point) => {
-          if (!point.id || !point.position || seen.has(point.id)) return [];
-          seen.add(point.id);
-          return [
-            <SavedPointPin key={point.id} receiver={receiver} point={point} />,
-          ];
-        }),
-      )}
-      {receivers.flatMap((receiver) =>
+      {data.points.flatMap((point) => {
+        if (!point.id || !point.position || seen.has(point.id)) return [];
+        seen.add(point.id);
+        return [<SavedPointPin key={point.id} point={point} />];
+      })}
+      {data.receivers.flatMap((receiver) =>
         (receiver.drawings ?? []).flatMap((drawing) => {
           if (
             !drawing.id ||

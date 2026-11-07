@@ -114,12 +114,7 @@ class Squadron:
         init=False, hash=False, compare=False, repr=False, default=None
     )
 
-    #: Points the player saved for the aircraft flown out of here.
-    #:
-    #: They belong to the squadron and not to one flight, because a flight is
-    #: cancelled and rebuilt several times a turn with the same aircraft, squadron
-    #: and player, and points kept on the flight went with it. Defaulted, so a
-    #: squadron from a save written before them reads an empty list.
+    #: Legacy save storage, aliased to the coalition's shared points on load.
     saved_points: list[SavedPoint] = field(
         init=False, hash=False, compare=False, repr=False, default_factory=list
     )

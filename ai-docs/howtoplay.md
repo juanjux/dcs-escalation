@@ -452,6 +452,12 @@ A mission is a **package** aimed at a **target**. A package contains one or more
 **task** (role), pilots, a start type, and a weapon loadout. **Escorts are flights
 too** — you add an escort/SEAD flight to the package, you don't "attach" an escort.
 
+Saved GPS points are shared by all player aircraft in the campaign, not tied to a
+pilot, squadron or flight. Existing squadron/flight points are migrated on load.
+Renaming, moving or deleting a point updates it everywhere. REST
+`/saved-points/campaign` remains available without player flights; avionics exports
+respect each aircraft's capacity, while the saved list and kneeboard keep all points.
+
 Common roles and what they're for:
 
 - **BARCAP / TARCAP / CAP / SWEEP** — air-to-air: protect an area/base/fleet

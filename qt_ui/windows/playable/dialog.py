@@ -466,8 +466,9 @@ class PlayableAircraftDialog(QDialog):
         layout.addWidget(
             _label(
                 "GPS Points can also be added from the map by clicking on any unit"
-                " or empty spot. They belong to the squadron, so cancelling a"
-                " flight and planning another does not lose them.",
+                " or empty spot. They are shared across the campaign: changing"
+                " aircraft, pilots or flights does not lose them. Renaming or"
+                " deleting one changes it for every player aircraft.",
                 f"font-size: 11px; color: {FAINT_INK}; padding: 6px 12px 10px;",
             )
         )
@@ -598,9 +599,7 @@ class PlayableAircraftDialog(QDialog):
 
     def _retitle(self) -> None:
         one = self.selected
-        caption = "SAVED POINTS"
-        if one is not None:
-            caption = f"SAVED POINTS · {one.title.upper()}"
+        caption = "CAMPAIGN GPS POINTS"
         self.points_label.setText(caption)
         self.slots.setText("" if one is None else f"{one.total_room} slots free")
 
