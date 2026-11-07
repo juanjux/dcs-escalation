@@ -40,7 +40,7 @@ def retained_mission(mission: dict[str, Any], row: dict[str, Any]) -> dict[str, 
     mission = deepcopy(mission)
     for coalition in mission["coalition"].values():
         for country in coalition.get("country", {}).values():
-            for category in ("static", "vehicle"):
+            for category in ("static", "vehicle", "ship"):
                 groups = country.get(category, {}).get("group", {})
                 for key, group in list(groups.items()):
                     infrastructure = category == "static" and all(
@@ -48,6 +48,18 @@ def retained_mission(mission: dict[str, Any], row: dict[str, Any]) -> dict[str, 
                     )
                     if infrastructure or group["name"] in row["new_jammers"]:
                         del groups[key]
+                    elif group["name"] in row.get("spaced_objectives", {}):
+                        # Restore only explicitly allowed whole-group positions;
+                        # composition, heading and all other fields stay checked.
+                        move = row["spaced_objectives"][group["name"]]
+                        positions = [
+                            group,
+                            *group["units"].values(),
+                            *group.get("route", {}).get("points", {}).values(),
+                        ]
+                        assert len(positions) == len(move["positions"])
+                        for item, (x, y) in zip(positions, move["positions"]):
+                            item["x"], item["y"] = x, y
                     elif group["name"] in row["relocated_radars"]:
                         # These two original copies of an EWR marker were at sea.
                         # Its identity, unit type and every other property remain checked.
@@ -57,7 +69,7 @@ def retained_mission(mission: dict[str, Any], row: dict[str, Any]) -> dict[str, 
                             *group.get("route", {}).get("points", {}).values(),
                         ]:
                             item["x"], item["y"] = 0, 0
-                if category in country and not groups:
+                if category != "ship" and category in country and not groups:
                     del country[category]
     # The resilience pass retires only these communications objectives and
     # their scenery member zones; all other trigger data remains protected.
