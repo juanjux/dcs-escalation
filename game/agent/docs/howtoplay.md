@@ -599,6 +599,12 @@ another flight. (A flight may carry `escort: air|sead|ewar|refuel` to mark what 
 escorting the package against; that is a label on the escorting flight, not a way to
 bolt an escort onto a strike flight.)
 
+Saved GPS points are shared by all player aircraft in the campaign, not tied to a
+pilot, squadron or flight. Existing squadron/flight points are migrated on load.
+Renaming, moving or deleting a point updates it everywhere. REST
+`/saved-points/campaign` remains available without player flights; avionics exports
+respect each aircraft's capacity, while the saved list and kneeboard keep all points.
+
 Common roles and what they're for:
 
 - **BARCAP / TARCAP / CAP / SWEEP** — air-to-air: protect an area/base/fleet

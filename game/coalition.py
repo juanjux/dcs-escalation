@@ -7,6 +7,7 @@ from typing import Any, Optional, TYPE_CHECKING
 
 from game.armedforces.armedforces import ArmedForces
 from game.ato.airtaaskingorder import AirTaskingOrder
+from game.ato.savedpoints import SavedPoint
 from game.campaignloader.defaultsquadronassigner import DefaultSquadronAssigner
 from game.commander import TheaterCommander
 from game.commander.missionscheduler import MissionScheduler
@@ -40,6 +41,7 @@ class Coalition:
         self.faction = faction
         self.budget = budget
         self.ato = AirTaskingOrder()
+        self.saved_points: list[SavedPoint] = []
         self.transit_network = TransitNetwork()
         self.procurement_requests: OrderedSet[AircraftProcurementRequest] = OrderedSet()
         self.bullseye = Bullseye(self.game.point_in_world(0, 0))

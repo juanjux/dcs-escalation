@@ -47,6 +47,8 @@ def api(monkeypatch: Any) -> Any:
         theater=SimpleNamespace(terrain=terrain),
         settings=SimpleNamespace(coordinate_format=None),
     )
+    game.blue.air_wing = SimpleNamespace(iter_squadrons=lambda: iter([flight.squadron]))
+    flight.squadron.coalition = game.blue
     notify = MagicMock()
     monkeypatch.setattr(routes, "publish_points_changed", notify)
     monkeypatch.setattr("game.elevation.elevation_ft", lambda lat, lng: 321)
@@ -166,6 +168,66 @@ def test_picker_add_notifies_and_returns_pin(api: Any) -> None:
     assert response.status_code == 200
     assert response.json()["points"][-1]["id"] == str(points_of(api.flight)[-1].id)
     api.notify.assert_called_once()
+
+
+def test_campaign_points_survive_switching_aircraft_and_removing_player_flights(
+    api: Any,
+) -> None:
+    a10 = _flight()
+    a10.squadron.coalition = api.game.blue
+    api.flight.client_count = 0
+    api.package.flights.append(a10)
+    api.flights[a10.id] = a10
+    assert api.client.get("/saved-points/").json()[0]["points"][0]["id"] == str(
+        api.point.id
+    )
+    api.package.flights.clear()
+    body = api.client.get("/saved-points/campaign").json()
+    assert body["receivers"] == []
+    assert body["points"][0]["id"] == str(api.point.id)
+    url = f"/saved-points/campaign/points/{api.point.id}"
+    assert api.client.patch(url, json={"name": "SHARED"}).status_code == 200
+    assert points_of(a10)[0].name == "SHARED"
+    assert api.client.delete(url).status_code == 204
+    assert points_of(api.flight) == points_of(a10) == []
+
+
+def test_save_point_without_player_aircraft_and_beyond_aircraft_capacity(
+    api: Any,
+) -> None:
+    api.package.flights.clear()
+    points_of(api.flight)[:] = [
+        SavedPoint(PointKind.WAYPOINT, str(i), i, i) for i in range(60)
+    ]
+    response = api.client.post(
+        "/saved-points/campaign",
+        json={
+            "kind": "waypoint",
+            "name": "GLOBAL",
+            "lat": 43,
+            "lng": 44,
+            "altitude_ft": 1234,
+        },
+    )
+    assert response.status_code == 200
+    saved = response.json()
+    assert saved["name"] == "GLOBAL" and saved["altitude_ft"] == 1234
+    assert len(points_of(api.flight)) == 61
+    api.notify.assert_called_once()
+
+
+def test_campaign_move_preserves_altitude_and_rejects_stale_point(
+    api: Any, monkeypatch: Any
+) -> None:
+    url = f"/saved-points/campaign/points/{api.point.id}"
+    monkeypatch.setattr("game.elevation.elevation_ft", lambda lat, lng: None)
+    assert (
+        api.client.patch(url, json={"position": {"lat": 43, "lng": 44}}).status_code
+        == 200
+    )
+    assert api.point.altitude_ft == 100
+    assert api.client.delete(url).status_code == 204
+    assert api.client.patch(url, json={"name": "STALE"}).status_code == 404
 
 
 def test_rename_updates_existing_object_without_moving(api: Any) -> None:

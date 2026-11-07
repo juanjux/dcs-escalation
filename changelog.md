@@ -49,7 +49,7 @@
 * **[Campaign]** Configurable persistent aircraft, ship and building damage, with shared base workshops, mechanic hiring, repair controls and debrief/API reporting.
 * **[High Command]** Objectives and rewards for both sides, with redeemable tickets, aircraft loans, base selection and integrated map and debrief tracking.
 * **[Campaigns]** Improve Gran Polvorin's IADS power and communications coverage; authored infrastructure moves require a new campaign.
-* **[UI]** Player Aircrafts waypoint management with GPS picking, ground elevations, editable map pins and aircraft/kneeboard export.
+* **[UI]** Campaign-wide GPS points shared across player aircraft, with ground elevations, editable map pins and aircraft/kneeboard export.
 * **[Campaign]** Protect newly captured bases from recapture for one full turn, with an event log notice for bases without ground forces.
 * **[Payload]** Select GAU-8 combat mix, HEI or practice ammunition for the A-10 family and save it with the loadout.
 * **[DTC]** Expanded Apache, Viper, Hornet and CJS aircraft cartridges with navigation, tactical overlays and recovery data (adapted from RetLab and Retribution #966).

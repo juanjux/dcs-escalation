@@ -195,6 +195,8 @@ def test_a_saved_point_follows_the_route(monkeypatch: Any) -> None:
     assert a10cdu.numbers_for(5, 2) == [5, 6]
     assert a10cdu.numbers_for(1, 2) == [1, 2]
     assert a10cdu.numbers_for(0, 3) == [1, 2, 3]
+    assert a10cdu.numbers_for(2049, 5) == [2049, 2050]
+    assert a10cdu.numbers_for(2051, 5) == []
 
 
 @pytest.mark.parametrize("route_length", [0, 1, 3, 8])

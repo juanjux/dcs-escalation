@@ -1,25 +1,4 @@
-"""Points the player puts in his own aircraft.
-
-A spot on the map is worth writing down long before it is worth a flight plan: the
-smoke somebody called in, the ship that was not there yesterday, the field the convoy
-turns at. The coordinate picker can read any point; this is where one goes once it has
-been read, and it goes to one aircraft -- the player's -- rather than into the flight
-plan everyone else has to fly.
-
-Two kinds, because the aircraft make the distinction: a **waypoint** is part of the
-navigation set and the aircraft flies to it, a **markpoint** is a spot marked for
-reference. How many of each an airframe holds is its own business -- a number per
-module, read off DCS's own data-cartridge scripts rather than remembered -- and an
-airframe nobody has measured claims none.
-
-They belong to the squadron the player flies out of rather than to one flight,
-because a flight is a plan and a plan is cancelled and rebuilt several times a turn.
-
-They appear on a kneeboard page of their own, so the route page stays the route, and
-in the aircraft itself where the airframe can hold them: the data cartridge on the
-Hornet and the Viper, the navigation computer on the A-10. Always outside the route
-the mission generated.
-"""
+"""Campaign GPS points shared by player aircraft, with legacy-save migration."""
 
 from __future__ import annotations
 
@@ -156,31 +135,57 @@ def capacity_for(dcs_id: str) -> Capacity:
     return CAPACITY.get(dcs_id, UNMEASURED)
 
 
-def points_of(flight: Flight) -> list[SavedPoint]:
-    """The points saved for this aircraft.
-
-    They belong to the squadron, not to the flight: a flight is cancelled and rebuilt
-    with the same aircraft and the same player several times a turn, and points kept
-    on the flight went with it.
-
-    A save written while they were on the flight has them moved across here once,
-    the first time anything asks.
-    """
-    squadron = flight.squadron
-    points = getattr(squadron, "saved_points", None)
+def campaign_points(coalition: Any) -> list[SavedPoint]:
+    """Shared campaign points for one side; merge legacy squadron/flight lists."""
+    points: list[SavedPoint] | None = getattr(coalition, "saved_points", None)
     if points is None:
         points = []
-        squadron.saved_points = points
+        coalition.saved_points = points
 
-    # Popped from the instance dict rather than read off the flight, because
-    # Flight.saved_points is a property and the property is what attribute access
-    # finds.
-    for point in flight.__dict__.pop("saved_points", None) or []:
-        if point not in points:
-            points.append(point)
+    def merge(legacy: list[SavedPoint]) -> None:
+        if legacy is points:
+            return
+        identities = {point.id for point in points if hasattr(point, "id")}
+        for point in legacy:
+            if not hasattr(point, "id"):
+                point.id = uuid4()
+            if point.id not in identities and point not in points:
+                points.append(point)
+                identities.add(point.id)
+
+    wing = getattr(coalition, "air_wing", None)
+    if wing is not None:
+        for squadron in wing.iter_squadrons():
+            merge(getattr(squadron, "saved_points", []))
+            squadron.saved_points = points
+    ato = getattr(coalition, "ato", None)
+    if ato is not None:
+        for package in ato.packages:
+            for flight in package.flights:
+                merge(flight.__dict__.pop("saved_points", None) or [])
     for point in points:
         if not hasattr(point, "id"):
             point.id = uuid4()
+    return points
+
+
+def points_of(flight: Flight) -> list[SavedPoint]:
+    """Campaign points shared by all flights, regardless of aircraft or pilot."""
+    squadron = flight.squadron
+    coalition = getattr(squadron, "coalition", None)
+    # Standalone legacy flights may not yet be attached to a campaign.
+    points = campaign_points(coalition if coalition is not None else squadron)
+    legacy = getattr(squadron, "saved_points", None)
+    pending = [] if legacy is points else list(legacy or [])
+    pending.extend(flight.__dict__.pop("saved_points", None) or [])
+    identities = {point.id for point in points}
+    for point in pending:
+        if not hasattr(point, "id"):
+            point.id = uuid4()
+        if point.id not in identities and point not in points:
+            points.append(point)
+            identities.add(point.id)
+    squadron.saved_points = points
     return points
 
 
@@ -220,9 +225,7 @@ def room_for(flight: Flight, kind: PointKind) -> int:
 
 
 def add_point(flight: Flight, point: SavedPoint) -> bool:
-    """Write one down, unless there is no room left for its kind."""
-    if room_for(flight, point.kind) <= 0:
-        return False
+    """Save globally; avionics capacity limits apply during export, not storage."""
     points_of(flight).append(point)
     return True
 

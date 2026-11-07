@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Sequence
 from dcs.mapping import Point
 from dcs.point import PointProperties, VNav
 
-from game.ato.savedpoints import SavedPoint, points_of
+from game.ato.savedpoints import SavedPoint, capacity_for, points_of
 
 if TYPE_CHECKING:
     from game import Game
@@ -67,7 +67,8 @@ def numbers_for(route_length: int, count: int) -> list[int]:
     occupy table slots; saved points follow the last route point.
     """
     first = max(1, route_length)
-    return list(range(first, first + count))
+    last = capacity_for("A-10C_2").waypoints
+    return list(range(first, min(first + count, last + 1)))
 
 
 def uses_custom_cdu(flight: FlightData) -> bool:

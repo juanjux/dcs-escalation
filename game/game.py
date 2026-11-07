@@ -515,6 +515,10 @@ class Game:
 
     def on_load(self, game_still_initializing: bool = False) -> None:
         from .sim import GameUpdateEvents
+        from .ato.savedpoints import campaign_points
+
+        for coalition in (self.blue, self.red):
+            campaign_points(coalition)
 
         if not hasattr(self, "name_generator"):
             self.name_generator = naming.namegen

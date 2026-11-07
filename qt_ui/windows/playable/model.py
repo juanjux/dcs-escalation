@@ -209,7 +209,7 @@ def figures(aircraft: Sequence[Aircraft]) -> tuple[int, int, int]:
     packages = {
         id(one.flight.package) for one in aircraft if one.assigned
     }  # by identity: a package has no id of its own
-    points = sum(one.total_used for one in aircraft)
+    points = len({point.id for one in aircraft for point in one.points})
     return len(aircraft), len(packages), points
 
 
@@ -255,14 +255,8 @@ class Clipboard:
         self.source = source
 
     def fits(self, aircraft: Aircraft) -> int:
-        """How many of the copied points the target will actually take."""
-        room = {kind: aircraft.room(kind) for kind in PointKind}
-        taken = 0
-        for point in self.points:
-            if room[point.kind] > 0:
-                room[point.kind] -= 1
-                taken += 1
-        return taken
+        """Campaign storage does not depend on the selected aircraft's capacity."""
+        return len(self.points)
 
     def paste_into(self, aircraft: Aircraft) -> int:
         """Write what fits, in order, and say how many went in."""

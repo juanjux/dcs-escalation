@@ -51,6 +51,8 @@ def dialog(monkeypatch: pytest.MonkeyPatch) -> Any:
         turn=1,
         conditions=SimpleNamespace(start_time=datetime(2026, 1, 1)),
     )
+    flight.squadron.coalition = game.blue
+    game.blue.air_wing = SimpleNamespace(iter_squadrons=lambda: iter([flight.squadron]))
     send = Mock()
     monkeypatch.setattr(
         "game.server.savedpoints.notifications.EventStream.put_nowait", send
@@ -90,6 +92,35 @@ def test_map_deletion_refreshes_the_open_list(dialog: Any) -> None:
     assert dialog.window.current_point() is None
     assert dialog.window.selected.total_used == 0
     assert not dialog.window.copy_all.isEnabled()
+
+
+def test_switch_player_to_another_aircraft_keeps_global_points(dialog: Any) -> None:
+    window = dialog.window
+    original = dialog.flight
+    original.client_count = 0
+    replacement = SimpleNamespace(**original.__dict__)
+    replacement.client_count = 1
+    replacement.squadron = SimpleNamespace(
+        nickname="Hornet", name="Other squadron", coalition=original.squadron.coalition
+    )
+    replacement.unit_type = SimpleNamespace(
+        dcs_unit_type=SimpleNamespace(id="FA-18C_hornet"),
+        display_name="F/A-18C",
+        helicopter=False,
+    )
+    window.game.blue.ato.packages[0].flights.append(replacement)
+    window.reload()
+    assert window.selected.flight is replacement
+    assert window.selected.points == [dialog.point]
+    assert "TARGET" in window.points_model.index(1, NAME).data()
+    window.game.blue.ato.packages.clear()
+    window.reload()
+    assert window.selected is None
+    window.game.blue.ato.packages.append(SimpleNamespace(flights=[replacement]))
+    window.reload()
+    restored = getattr(window, "selected")
+    assert restored is not None
+    assert restored.points[0].id == dialog.point.id
 
 
 def test_qt_rename_and_delete_publish_map_refresh(dialog: Any) -> None:
