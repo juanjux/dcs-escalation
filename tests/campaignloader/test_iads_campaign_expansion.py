@@ -59,6 +59,13 @@ def retained_mission(mission: dict[str, Any], row: dict[str, Any]) -> dict[str, 
                             item["x"], item["y"] = 0, 0
                 if category in country and not groups:
                     del country[category]
+    # The resilience pass retires only these communications objectives and
+    # their scenery member zones; all other trigger data remains protected.
+    retired = set(row.get("retired_comms_scenery_zones", []))
+    zones = mission.get("triggers", {}).get("zones", {})
+    for key, zone in list(zones.items()):
+        if zone["name"] in retired:
+            del zones[key]
     return mission
 
 

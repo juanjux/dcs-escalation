@@ -400,12 +400,16 @@ def test_infrastructure_events_refresh_paths_but_unrelated_deaths_do_not(
     """)
 
 
-def exported(network: IadsNetwork) -> dict[str, list[dict[str, Any]]]:
+def exported(
+    network: IadsNetwork, side: Player | None = None
+) -> dict[str, list[dict[str, Any]]]:
     game: Any = SimpleNamespace(
         iads_considerate_culling=lambda _: False, skynet_culled=lambda _: False
     )
     result: dict[str, list[dict[str, Any]]] = {}
     for entry in network.skynet_nodes(game):
+        if side is not None and entry.player is not side:
+            continue
         row: dict[str, Any] = {"dcsGroupName": entry.dcs_name, **entry.connections}
         if entry.independent_comms:
             row["independentComms"] = True

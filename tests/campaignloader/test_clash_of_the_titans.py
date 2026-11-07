@@ -23,6 +23,7 @@ from game.naming import namegen
 from game.settings import Settings
 from game.theater import Player
 from game.theater.controlpoint import ParkingType
+from game.theater.iadsnetwork.iadsnetwork import SkynetNode
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsstate import IadsState, IadsStateMap
 from game.theater.start_generator import GameGenerator, GeneratorSettings, ModSettings
@@ -139,7 +140,7 @@ def test_every_base_has_a_depot_clear_of_all_capture_zones(authored: Any) -> Non
         ), cp.name
 
 
-def test_all_active_air_defences_and_commands_have_redundant_local_links(
+def test_all_active_air_defences_and_commands_have_radio_and_redundant_power(
     authored: Any,
 ) -> None:
     _, _, placements, config = authored
@@ -163,10 +164,11 @@ def test_all_active_air_defences_and_commands_have_redundant_local_links(
                 assert point.distance_to_point(source) <= 35 * 1852, (name, dependency)
             else:
                 assert source_kind == "iads_command_center"
-        assert counts["iads_connection_node"] >= 2, name
+                assert point.distance_to_point(source) <= 15 * 1852, (name, dependency)
+        # A direct command link can replace a relay. Command redundancy is
+        # checked on complete radio paths, rather than the local tower count.
+        assert counts["iads_connection_node"] + counts["iads_command_center"] >= 1, name
         assert counts["iads_power_source"] >= 2, name
-        # Command links, like tower links, now have a radio coverage limit.
-        assert counts["iads_command_center"] <= 2, name
 
 
 def test_infrastructure_is_on_land_and_owned_by_its_named_side(authored: Any) -> None:
@@ -180,11 +182,13 @@ def test_infrastructure_is_on_land_and_owned_by_its_named_side(authored: Any) ->
         }:
             continue
         assert theater.is_on_land(point, ignore_exclusion=True), name
-        side = Player.BLUE if name.startswith("Blue ") else Player.RED
+        prefix = name.split(" ", 1)[0].casefold()
+        assert prefix in {"blue", "red"}, name
+        side = Player.BLUE if prefix == "blue" else Player.RED
         assert cp.starting_coalition is side, name
         if kind == "iads_command_center":
             counts[side] += 1
-    assert counts == {Player.BLUE: 2, Player.RED: 2}
+    assert counts == {Player.BLUE: 3, Player.RED: 2}
 
 
 def test_jammers_do_not_replace_the_original_early_warning_radars(
@@ -557,6 +561,7 @@ def test_authored_force_caps_limit_stealth_and_retain_red_modern_fighters(
 
 def test_generated_network_connects_all_sectors_and_exports_to_skynet(
     generated: Game,
+    authored: Any,
 ) -> None:
     network = generated.theater.iads_network
     owned = [
@@ -564,8 +569,14 @@ def test_generated_network_connects_all_sectors_and_exports_to_skynet(
         for site, status in network.state_map
         if not site.control_point.captured.is_neutral
     ]
-    assert len(owned) == 45
+    _, _, placements, _ = authored
+    expected = {
+        name
+        for name, (cp, kind, _) in placements.items()
+        if kind in IADS_KINDS and not cp.starting_coalition.is_neutral
+    }
     states = {site.original_name: status.state for site, status in owned}
+    assert set(states) == expected
     assert all(state is IadsState.NETWORKED for state in states.values())
     connectivity = network.state_map.connectivity
     assert connectivity is not None
@@ -575,9 +586,16 @@ def test_generated_network_connects_all_sectors_and_exports_to_skynet(
             or node.group.ground_object.control_point.captured.is_neutral
         ):
             continue
-        assert len(connectivity.centres_for(node)) == 2
+        assert len(connectivity.centres_for(node)) >= 2
     nodes = network.skynet_nodes(generated)
-    assert len([node for node in nodes if not node.iads_role.is_comms_or_power]) == 45
+    expected_exports = {
+        SkynetNode.dcs_name_for_group(node.group)
+        for node in network.nodes
+        if node.group.ground_object.original_name in expected
+    }
+    assert {
+        node.dcs_name for node in nodes if not node.iads_role.is_comms_or_power
+    } == expected_exports
     assert any(node.iads_role is IadsRole.CONNECTION_NODE for node in nodes)
     assert any(node.iads_role is IadsRole.POWER_SOURCE for node in nodes)
     for cp in generated.theater.controlpoints:
@@ -605,16 +623,17 @@ def test_generated_jammers_are_real_jammers_and_radars_still_detect(
         assert radar.max_detection_range().meters > 0
 
 
-def test_local_tower_and_power_redundancy_survives_single_losses(
+def test_command_and_power_redundancy_survives_single_losses(
     generated: Game,
 ) -> None:
     network = generated.theater.iads_network
     infrastructure = [
-        tgo
-        for tgo in generated.theater.ground_objects
-        if tgo.category in ("comms", "power")
+        node.group.ground_object
+        for node in network.nodes
+        if node.group.iads_role in (IadsRole.COMMAND_CENTER, IadsRole.POWER_SOURCE)
     ]
-    assert len(infrastructure) == 119
+    assert any(tgo.category == "power" for tgo in infrastructure)
+    assert any(tgo.category == "commandcenter" for tgo in infrastructure)
     initial = {site: status.state for site, status in network.state_map}
     for lost in infrastructure:
         picture = IadsStateMap(network, [lost])
@@ -625,12 +644,13 @@ def test_local_tower_and_power_redundancy_survives_single_losses(
         ), lost.original_name
 
 
-def test_destroying_all_local_comms_still_cuts_a_sam_off(generated: Game) -> None:
+@pytest.mark.parametrize("name,relay_count", [("Ground-13", 2), ("Ground-63", 1)])
+def test_losing_local_relays_cuts_a_powered_sam_off(
+    generated: Game, name: str, relay_count: int
+) -> None:
     network = generated.theater.iads_network
     sam = next(
-        tgo
-        for tgo in generated.theater.ground_objects
-        if tgo.original_name == "Ground-13"
+        tgo for tgo in generated.theater.ground_objects if tgo.original_name == name
     )
     node = next(node for node in network.nodes if node.group.ground_object is sam)
     towers = [
@@ -638,25 +658,40 @@ def test_destroying_all_local_comms_still_cuts_a_sam_off(generated: Game) -> Non
         for group in node.connections.values()
         if group.iads_role is IadsRole.CONNECTION_NODE
     ]
+    assert len(towers) == relay_count
     status = IadsStateMap(network, towers).status_for(sam)
     assert status is not None and status.state is IadsState.AUTONOMOUS
 
 
-def test_destroying_both_command_centres_removes_direction(generated: Game) -> None:
+@pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
+def test_destroying_all_command_centres_removes_direction(
+    generated: Game, side: Player
+) -> None:
     network = generated.theater.iads_network
     commands = [
         node.group.ground_object
         for node in network.nodes
         if node.group.iads_role is IadsRole.COMMAND_CENTER
-        and node.group.ground_object.control_point.captured is Player.RED
+        and node.group.ground_object.control_point.captured is side
     ]
-    sam = next(
-        tgo
-        for tgo in generated.theater.ground_objects
-        if tgo.original_name == "Ground-13"
-    )
-    status = IadsStateMap(network, commands).status_for(sam)
-    assert status is not None and status.state is IadsState.AUTONOMOUS
+    assert len(commands) == (3 if side is Player.BLUE else 2)
+    picture = IadsStateMap(network, commands)
+    sites = [
+        node.group.ground_object
+        for node in network.nodes
+        if node.group.iads_role in (IadsRole.SAM, IadsRole.EWR)
+        and node.group.ground_object.control_point.captured is side
+    ]
+    assert sites
+    for site in sites:
+        status = picture.status_for(site)
+        # GPS jammers need power, but do not need command direction.
+        expected = (
+            IadsState.NETWORKED
+            if isinstance(site, IadsGroundObject) and site.carries_gps_jammer
+            else IadsState.AUTONOMOUS
+        )
+        assert status is not None and status.state is expected, site.original_name
 
 
 def test_destroying_a_jammers_whole_power_grid_disables_it(generated: Game) -> None:
