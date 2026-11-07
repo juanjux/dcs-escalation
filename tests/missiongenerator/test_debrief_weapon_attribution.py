@@ -175,7 +175,7 @@ def test_real_lua_export_reaches_api_weapon_summary(vm: Any) -> None:
         )
         for name, kind in [("red", "FC-1"), ("other", "J-11A"), ("third", "J-11A")]
     }
-    debrief = object.__new__(Debriefing)
+    debrief: Any = object.__new__(Debriefing)
     debrief.state_data = SimpleNamespace(kill_details=kills(vm))
     debrief.unit_map = SimpleNamespace(flight=losses.get)
     index = debrief._index_kill_details()
@@ -188,7 +188,7 @@ def test_real_lua_export_reaches_api_weapon_summary(vm: Any) -> None:
         front_line_losses_by_type=lambda _: {},
         ground_object_losses_by_type=lambda _: {},
     )
-    game = SimpleNamespace(turn=1, debrief_history=[])
+    game: Any = SimpleNamespace(turn=1, debrief_history=[])
     Game.record_debrief(game, summary_input)
     assert game.debrief_history[-1]["blue_air_kills_by_weapon"] == {
         "SP_AIM_260A": 2,
