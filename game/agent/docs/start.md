@@ -106,7 +106,7 @@ tool/resource of the same name.
   flight — drop the package and rebuild it.
 
 **Plan — economy & forces**
-- `POST /packages/{index}/shared-route` `{side, single_route_for_all_flights}` — share compatible route positions, keeping per-flight altitude profiles and separating overlapping profiles by 1,000 ft (200 ft between helicopters) where altitude references match. Defaults on for new BARCAP, TARCAP and Refueling packages. Escort/SEAD Escort or mismatched mission waypoints prevent enabling it; package views report the reason. The same optional field is accepted in package create/evaluate specs.
+- `POST /packages/{index}/shared-route` `{side, single_route_for_all_flights}` — share compatible route positions, keeping per-flight altitude profiles and separating overlapping automatic profiles by 1,000 ft (200 ft between helicopters) where altitude references match. Explicit altitude/reference edits protect that flight's profile from automatic shifts; manual profiles need their own separation planning. Defaults on for new BARCAP, TARCAP and Refueling packages. Escort/SEAD Escort or mismatched mission waypoints prevent enabling it; package views report the reason. The same optional field is accepted in package create/evaluate specs.
 - `POST /buy/aircraft` · `POST /sell/aircraft` · `POST /buy/ground`
 - `POST /ground/transfer` `{side, origin_cp_id, dest_cp_id, unit_name, quantity, by_air}`
   — move ground units between your bases. Reserve-group movement uses the separate

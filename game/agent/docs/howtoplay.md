@@ -2115,10 +2115,13 @@ Write bodies:
   Enabling uses the first flight's horizontal route. Subsequent waypoint position
   edits on **any** flight update every flight's corresponding route points. NAV
   insertions and deletions are also shared. Altitudes and BARO/RADIO references stay
-  individual. Overlapping profiles are shifted vertically to keep at least 1,000 ft
+  individual. Overlapping automatic profiles are shifted vertically to keep at least 1,000 ft
   between flights (200 ft between helicopters) along shared legs with matching height
-  references, where the doctrine's altitude limits allow it. The edited flight keeps
-  its heights; other flights move only if needed for separation. New NAV points use
+  references, where the doctrine's altitude limits allow it. An explicit altitude or
+  BARO/RADIO edit, from the flight editor, map or API, protects that flight's profile
+  from automatic shifts, including after saving and mission generation. Automatic
+  profiles are separated around manual profiles; separation between two manual
+  profiles remains the planner's responsibility. New NAV points use
   the receiving flight's own height profile.
   Departure, landing, alternate, runway alignment and ground-target elevations remain
   unchanged, as do flight timings and TOT offsets. This is planned separation, not

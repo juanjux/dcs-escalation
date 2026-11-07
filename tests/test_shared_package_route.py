@@ -441,7 +441,9 @@ def test_saved_profiles_are_separated_before_simulation_and_retiming(
     assert seen == pytest.approx([21000 if share else 20000] * 2)
 
 
-def test_exported_dcs_waypoints_keep_separated_altitudes(
+@pytest.mark.parametrize("manual", [False, True])
+def test_exported_dcs_waypoints_keep_manual_or_separated_altitudes(
+    manual: bool,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from datetime import datetime
@@ -453,6 +455,11 @@ def test_exported_dcs_waypoints_keep_separated_altitudes(
     from game.utils import knots
 
     package = _package()
+    if manual:
+        for flight, height in zip(package.flights, (18000, 18500)):
+            for waypoint in _route(flight):
+                waypoint.apply_altitude_edit(feet(height))
+        package = pickle.loads(pickle.dumps(package))
     sharedroute.synchronize(package)
     monkeypatch.setattr(GroundSpeed, "for_flight", lambda *args: knots(300))
     monkeypatch.setattr(PydcsWaypointBuilder, "add_tasks", lambda *args: None)
@@ -474,5 +481,175 @@ def test_exported_dcs_waypoints_keep_separated_altitudes(
         )
         exported.append(builder.build())
     assert exported[0].position == exported[1].position
-    assert exported[1].alt - exported[0].alt == pytest.approx(feet(1000).meters)
+    assert exported[1].alt - exported[0].alt == pytest.approx(
+        feet(500 if manual else 1000).meters
+    )
     assert exported[0].alt_type == exported[1].alt_type == "BARO"
+
+
+@pytest.mark.parametrize("side", ["blue", "red"])
+def test_manual_profiles_survive_secondary_api_edits_and_saved_synchronization(
+    side: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    package = _package(FlightType.DEAD)
+    sharedroute.set_enabled(package, True)
+    monkeypatch.setattr(planner, "_push_map_events", lambda events: None)
+    game: Any = NS()
+    for flight, altitude in zip(package.flights, (18000, 18500)):
+        monkeypatch.setattr(planner, "flight_for_side", lambda *args: flight)
+        for point in _route(flight):
+            index = flight.flight_plan.waypoints.index(point) + 1
+            result = planner.edit_waypoint(
+                game, side, str(flight.id), index, alt_m=feet(altitude).meters
+            )
+            assert result.ok, result.error
+    expected = [
+        [feet(18000).meters] * len(_route(package.flights[0])),
+        [feet(18500).meters] * len(_route(package.flights[1])),
+    ]
+    assert [[w.alt.meters for w in _route(f)] for f in package.flights] == expected
+    restored = pickle.loads(pickle.dumps(package))
+    for source in [None, *restored.flights]:
+        sharedroute.synchronize(restored, source)
+        assert [[w.alt.meters for w in _route(f)] for f in restored.flights] == expected
+
+
+def _edit_table(flight: Any, heights: list[float]) -> None:
+    from qt_ui.windows.mission.flight.waypoints.QFlightWaypointList import (
+        QFlightWaypointList,
+    )
+
+    points = flight.flight_plan.waypoints
+    rows = [
+        (
+            NS(text=lambda w=w: w.display_name),
+            NS(text=lambda height=height: str(height)),
+        )
+        for w, height in zip(points, heights)
+    ]
+    view: Any = NS(
+        model=NS(
+            rowCount=lambda: len(rows), item=lambda row, column: rows[row][column]
+        ),
+        waypoint_at_row=lambda row: points[row],
+    )
+    QFlightWaypointList.on_changed(view)
+
+
+@pytest.mark.parametrize("bulk", [False, True])
+def test_flight_editor_manual_profiles_override_automatic_separation(
+    bulk: bool,
+) -> None:
+    from qt_ui.windows.mission.flight.waypoints.QFlightWaypointTab import (
+        QFlightWaypointTab,
+    )
+
+    package = _package(FlightType.DEAD)
+    sharedroute.set_enabled(package, True)
+    for flight, height in zip(package.flights, (18000, 18500)):
+        if bulk:
+            view: Any = NS(
+                flight=flight,
+                bulk_altitude=NS(value=lambda: height),
+                _is_bulk_editable=lambda w: w.waypoint_type
+                not in QFlightWaypointTab.BULK_ALTITUDE_SKIP_TYPES,
+                on_change=lambda: sharedroute.synchronize(package, flight),
+            )
+            QFlightWaypointTab.on_apply_bulk_altitude(view)
+        else:
+            _edit_table(
+                flight,
+                [
+                    height if sharedroute._flying(w) else round(w.alt.feet)
+                    for w in flight.flight_plan.waypoints
+                ],
+            )
+            sharedroute.synchronize(package, flight)
+    for flight, height in zip(package.flights, (18000, 18500)):
+        assert all(
+            w.alt == feet(height) and w.altitude_is_manual for w in _route(flight)
+        )
+
+
+def test_table_redraw_does_not_pin_or_round_automatic_altitudes() -> None:
+    flight = _package().flights[0]
+    flight.flight_plan.layout.nav_to[0].alt = feet(20000.4)
+    before = [w.alt for w in flight.flight_plan.waypoints]
+    _edit_table(flight, [round(w.alt.feet) for w in flight.flight_plan.waypoints])
+    assert [w.alt for w in flight.flight_plan.waypoints] == before
+    assert not any(w.altitude_is_manual for w in flight.flight_plan.waypoints)
+
+
+def test_map_manual_altitude_and_reference_survive_secondary_edits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from game.server import EventStream
+
+    package = _package()
+    sharedroute.synchronize(package)
+    monkeypatch.setattr(
+        routes, "_package_model_of", lambda flight: NS(update_tot=lambda: None)
+    )
+    monkeypatch.setattr(EventStream, "put_nowait", lambda events: None)
+    for flight, height in zip(package.flights, (18000, 18500)):
+        point = flight.flight_plan.layout.patrol_start
+        index = flight.flight_plan.waypoints.index(point) + 1
+        game: Any = NS(db=NS(flights=NS(get=lambda uid: flight)))
+        routes.edit_waypoint(
+            flight.id,
+            index,
+            routes.WaypointEdit(altitude_ft=height, altitude_reference="RADIO"),
+            game,
+        )
+    sharedroute.synchronize(package)
+    for flight, height in zip(package.flights, (18000, 18500)):
+        point = flight.flight_plan.layout.patrol_start
+        assert point.alt == feet(height)
+        assert point.alt_type == "RADIO"
+        assert point.altitude_is_manual
+
+
+def test_drag_preserves_each_receivers_manual_nav_heights_and_references() -> None:
+    package = _package()
+    first, second = package.flights
+    first.flight_plan.layout.nav_to.append(_wpt(Wpt.NAV, 100))
+    sharedroute.synchronize(package)
+    first.flight_plan.layout.nav_to[0].apply_altitude_edit(feet(18000))
+    first.flight_plan.layout.nav_to[1].apply_altitude_edit(feet(22000), "RADIO")
+    # Move the first shared point closer to the receiving flight's second point.
+    second.flight_plan.layout.nav_to[0].position = Point(99, 99, _TERRAIN)
+    sharedroute.synchronize(package, second)
+    one, two = first.flight_plan.layout.nav_to
+    assert (one.alt, one.alt_type) == (feet(18000), "BARO")
+    assert (two.alt, two.alt_type) == (feet(22000), "RADIO")
+    assert one.position.x == 99
+    assert all(w.altitude_is_manual for w in (one, two))
+    assert not any(w.altitude_is_manual for w in _route(second))
+
+
+def test_automatic_profiles_separate_around_a_manual_profile() -> None:
+    package = _package()
+    first, second = package.flights
+    second.flight_plan.layout.patrol_start.apply_altitude_edit(feet(20000))
+    sharedroute.synchronize(package, first)
+    assert all(w.alt == feet(20000) for w in _route(second))
+    assert [w.alt.feet for w in _route(first)] == pytest.approx(
+        [21000] * len(_route(first))
+    )
+
+
+def test_manual_altitude_metadata_survives_copy_and_old_save_loading() -> None:
+    waypoint = _wpt(Wpt.NAV)
+    waypoint.apply_altitude_edit(feet(18000), "RADIO")
+    cloned = deepcopy(waypoint)
+    assert (cloned.alt, cloned.alt_type, cloned.altitude_is_manual) == (
+        feet(18000),
+        "RADIO",
+        True,
+    )
+    state = waypoint.__dict__.copy()
+    state.pop("altitude_is_manual")
+    legacy = FlightWaypoint.__new__(FlightWaypoint)
+    legacy.__setstate__(state)
+    assert legacy.alt == feet(18000)
+    assert not legacy.altitude_is_manual

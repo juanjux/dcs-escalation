@@ -46,6 +46,7 @@ def _flying(waypoint: FlightWaypoint) -> bool:
 
 def _navigation(source: FlightWaypoint, own: list[FlightWaypoint]) -> FlightWaypoint:
     waypoint = deepcopy(source)
+    waypoint.altitude_is_manual = False
     if _flying(waypoint) and own:
         matching = [w for w in own if w.waypoint_type == waypoint.waypoint_type]
         nearest = min(
@@ -54,6 +55,7 @@ def _navigation(source: FlightWaypoint, own: list[FlightWaypoint]) -> FlightWayp
         )
         waypoint.alt = nearest.alt
         waypoint.alt_type = nearest.alt_type
+        waypoint.altitude_is_manual = nearest.altitude_is_manual
     waypoint.tot = waypoint.departure_time = None
     waypoint.min_fuel = None
     return waypoint
@@ -66,6 +68,8 @@ def _separate(flight: Flight, previous: list[Flight]) -> None:
     crossing between them. Different altitude references cannot be compared here.
     """
     route = [w for w in _plan(flight).waypoints if not _individual(w)]
+    if _manual_profile(flight):
+        return
     forbidden = []
     for other in previous:
         separation = feet(
@@ -110,6 +114,10 @@ def _separate(flight: Flight, previous: list[Flight]) -> None:
         for waypoint in route:
             if _flying(waypoint):
                 waypoint.alt += meters(offset)
+
+
+def _manual_profile(flight: Flight) -> bool:
+    return any(w.altitude_is_manual for w in _plan(flight).waypoints if _flying(w))
 
 
 def requested(package: Package) -> bool:
@@ -184,8 +192,8 @@ def synchronize(package: Package, source: Flight | None = None) -> list[Flight]:
 
     Only already-built plans are inspected, so this cannot recursively build another
     flight. Each flight keeps its own altitude profile, waypoint objects, targets,
-    fuel and TOT data. The source keeps its heights; other profiles are separated
-    only when needed.
+    fuel and TOT data. Manual profiles keep their heights; automatic profiles are
+    separated around them only when needed.
     """
     if not enabled(package):
         return []
@@ -203,11 +211,19 @@ def synchronize(package: Package, source: Flight | None = None) -> list[Flight]:
         for name in ("nav_to", "nav_from", "custom_waypoints"):
             old = getattr(other.layout, name)
             own = [w for w in old if _individual(w)]
+            existing = [w for w in old if not _individual(w)]
             altitudes = [w for w in old if _flying(w)] or own_route
+            incoming = [w for w in getattr(plan.layout, name) if not _individual(w)]
             shared = [
-                _navigation(w, altitudes)
-                for w in getattr(plan.layout, name)
-                if not _individual(w)
+                _navigation(
+                    w,
+                    (
+                        [existing[index]]
+                        if len(existing) == len(incoming) and _flying(existing[index])
+                        else altitudes
+                    ),
+                )
+                for index, w in enumerate(incoming)
             ]
             setattr(other.layout, name, shared + own)
         for original, counterpart in zip(core, _core(other)):
@@ -216,8 +232,10 @@ def synchronize(package: Package, source: Flight | None = None) -> list[Flight]:
             )
             counterpart.custom_name = original.custom_name
         changed.append(flight)
-    allocated = [source]
-    for flight in changed:
+    allocated = [f for f in package.flights if _manual_profile(f)]
+    for flight in [source, *changed]:
+        if any(flight is other for other in allocated):
+            continue
         _separate(flight, allocated)
         allocated.append(flight)
     return changed

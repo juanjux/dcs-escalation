@@ -343,7 +343,8 @@ def set_package_shared_route(
 ) -> dict:
     """Toggle a package's shared route. Incompatible mission waypoints are refused.
 
-    Edits to any flight then update the route positions and altitudes of every flight.
+    Position edits on any flight update every route. Altitudes remain individual;
+    manual height profiles are not shifted by automatic vertical separation.
     Airfield procedures remain individual. The package view reports availability.
     """
     return _dump(

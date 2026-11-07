@@ -446,7 +446,7 @@ class QPackageDialog(QDialog):
             self.shared_route_checkbox.setEnabled(reason is None)
         self.shared_route_checkbox.setToolTip(
             reason
-            or "Share route positions, not altitudes. Each flight keeps its height profile, with 1,000 ft separation (200 ft between helicopters) where matching altitude references and altitude limits allow it. Moving a waypoint updates all flights. Departure, landing, alternate and runway alignment stay individual."
+            or "Share route positions, not altitudes. Manually edited height profiles are kept unchanged. Automatic profiles use 1,000 ft separation (200 ft between helicopters) where matching altitude references and altitude limits allow it. Manual profiles need their own separation planning. Moving a waypoint updates all flights. Departure, landing, alternate and runway alignment stay individual."
         )
         flights = list(package.flights)
         self.package_type_text.setText(self.package_model.description)
