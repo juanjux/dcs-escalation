@@ -1,4 +1,6 @@
 class: EarlyWarningRadar
+ground_mobility:
+  mode: self_propelled
 price: 10
 variants:
   MCC-SR Sborka "Dog Ear" SR: null

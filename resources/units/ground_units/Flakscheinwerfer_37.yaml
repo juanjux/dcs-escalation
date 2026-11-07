@@ -1,4 +1,6 @@
 class: SearchLight
+ground_mobility:
+  mode: towed
 price: 4
 variants:
   SL Flakscheinwerfer 37: null

@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: towed
 price: 23
 variants:
   Iron Dome LN: null

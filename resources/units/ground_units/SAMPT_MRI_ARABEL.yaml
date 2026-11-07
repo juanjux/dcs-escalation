@@ -1,4 +1,6 @@
 class: TrackRadar
+ground_mobility:
+  mode: towed
 price: 33
 variants:
   SAM SAMP/T MRI ARABEL STR: null

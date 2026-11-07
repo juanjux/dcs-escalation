@@ -1,4 +1,6 @@
 class: CommandPost
+ground_mobility:
+  mode: self_propelled
 price: 26
 variants:
   SAM SA-20 S-300PMU1 CP 54K6: null

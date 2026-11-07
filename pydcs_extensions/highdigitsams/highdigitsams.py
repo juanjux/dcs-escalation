@@ -3,9 +3,8 @@ from dcs import unittype
 from game.modsupport import vehiclemod
 
 
-# Removed from High Digit SAMs in 2.x: DCS cannot resolve these two, so nothing may
-# offer them to a layout again. Kept declared only so campaigns saved earlier still load.
-@vehiclemod
+# Retired from High Digit SAMs. Keep the class importable for saved references,
+# but do not register an unavailable DCS type for new layouts.
 class AAA_SON_9_Fire_Can(unittype.VehicleType):
     id = "Fire Can radar"
     name = "AAA SON-9 Fire Can"
@@ -50,10 +49,8 @@ class SAM_SA_10B_S_300PS_5P85SU_LN(unittype.VehicleType):
     air_weapon_dist = 75000
 
 
-# Neither High Digit SAMs build registers this launcher; both call the 5P85CE a
-# PMU1 unit, which is declared below. Kept declared only so campaigns saved earlier
-# still load, like the two above.
-@vehiclemod
+# Current High Digit SAMs builds register 5P85CE as a PMU1 unit, declared below.
+# Keep this retired PS class importable, but unavailable to new layouts.
 class SAM_SA_10__5V55RUD__S_300PS_LN_5P85CE(unittype.VehicleType):
     id = "S-300PS 5P85CE ln"
     name = "SAM SA-10 (5V55RUD) S-300PS LN 5P85CE"

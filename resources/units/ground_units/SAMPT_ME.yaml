@@ -1,4 +1,6 @@
 class: CommandPost
+ground_mobility:
+  mode: towed
 price: 27
 variants:
   SAM SAMP/T Engagement Station: null

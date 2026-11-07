@@ -1,4 +1,6 @@
 class: EarlyWarningRadar
+ground_mobility:
+  mode: towed
 price: 25
 variants:
   EWR FuMG-401 Freya LZ: null

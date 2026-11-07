@@ -1,4 +1,6 @@
 class: SearchRadar
+ground_mobility:
+  mode: towed
 price: 40
 variants:
   SAM SAMP/T MRI Ground Fire 300 STR: null

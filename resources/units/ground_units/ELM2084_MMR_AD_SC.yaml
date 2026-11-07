@@ -1,4 +1,6 @@
 class: TrackRadar
+ground_mobility:
+  mode: towed
 price: 25
 variants:
   ELM-2084MMR AD Sector Mode: null

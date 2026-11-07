@@ -1,4 +1,6 @@
 class: SearchRadar
+ground_mobility:
+  mode: towed
 price: 22
 variants:
   SAM LvS-103 PM 103 Stationary STR: null

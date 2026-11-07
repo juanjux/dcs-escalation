@@ -1,4 +1,6 @@
 class: SearchRadar
+ground_mobility:
+  mode: towed
 price: 0
 variants:
   AShM Silkworm SR: null

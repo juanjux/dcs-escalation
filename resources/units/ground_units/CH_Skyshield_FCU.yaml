@@ -1,4 +1,6 @@
 class: SearchRadar
+ground_mobility:
+  mode: towed
 description: "The Skyshield fire control unit: a search and track radar with an electro-optical sight that directs the system's guns."
 introduced: 2010
 manufacturer: Rheinmetall

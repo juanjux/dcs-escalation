@@ -1,4 +1,6 @@
 class: EarlyWarningRadar
+ground_mobility:
+  mode: towed
 price: 32
 variants:
   EWR 1L119 Nebo-SVU: null

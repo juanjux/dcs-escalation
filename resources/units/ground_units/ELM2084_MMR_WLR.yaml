@@ -1,4 +1,6 @@
 class: SearchRadar
+ground_mobility:
+  mode: towed
 price: 25
 variants:
   ELM-2084MMR WLR Mode: null

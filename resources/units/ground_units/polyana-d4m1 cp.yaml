@@ -1,4 +1,6 @@
 class: CommandPost
+ground_mobility:
+  mode: self_propelled
 price: 14
 variants:
   Polyana-D4M1 C2 node: null

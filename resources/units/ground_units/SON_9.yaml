@@ -1,4 +1,6 @@
 class: SearchRadar
+ground_mobility:
+  mode: towed
 price: 8
 variants:
   AAA Fire Can SON-9: {}

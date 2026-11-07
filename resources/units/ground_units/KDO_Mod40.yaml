@@ -1,4 +1,6 @@
 class: AAA
+ground_mobility:
+  mode: towed
 price: 8
 variants:
   AAA SP Kdo.G.40: null
