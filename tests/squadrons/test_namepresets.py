@@ -26,6 +26,7 @@ def test_builtin_categories_are_populated_and_ordered(tmp_path: Path) -> None:
         "Darth Vader",
     )
     assert library.categories["top-gun"].names[0] == 'Pete "Maverick" Mitchell'
+    assert library.categories["game-of-thrones"].name == "Song of Ice and Fire"
     for category in library.categories.values():
         assert len({n.casefold() for n in category.names}) == len(category.names)
     assert not library.path.exists()
