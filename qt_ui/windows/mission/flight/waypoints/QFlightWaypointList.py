@@ -429,7 +429,10 @@ class QFlightWaypointList(QTableView):
             if altitude_item is None:
                 continue
             altitude_feet = float(altitude_item.text())
-            waypoint.alt = Distance.from_feet(altitude_feet)
+            # The displayed value is rounded. A redraw or rename is not an
+            # altitude edit and must not pin or round the rest of the profile.
+            if altitude_feet != round(waypoint.alt.feet):
+                waypoint.apply_altitude_edit(Distance.from_feet(altitude_feet))
             waypoint.apply_name_edit(self.model.item(i, 0).text())
 
     def tot_text(

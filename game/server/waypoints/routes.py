@@ -166,9 +166,9 @@ def edit_waypoint(
     if edit.name is not None:
         waypoint.apply_name_edit(edit.name)
     if edit.altitude_ft is not None:
-        waypoint.alt = feet(edit.altitude_ft)
+        waypoint.apply_altitude_edit(feet(edit.altitude_ft))
     if edit.altitude_reference is not None:
-        waypoint.alt_type = edit.altitude_reference  # type: ignore[assignment]
+        waypoint.apply_altitude_edit(reference=edit.altitude_reference)  # type: ignore[arg-type]
     _re_time_and_publish(flight, GameUpdateEvents())
 
 

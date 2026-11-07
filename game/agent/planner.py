@@ -855,7 +855,7 @@ def edit_waypoint(
             )
         warning = ""
         if alt_m is not None:
-            waypoint.alt = meters(alt_m)
+            waypoint.apply_altitude_edit(meters(alt_m))
             warning = _too_high_to_attack(flight, alt_m)
         events = _new_map_events()
         update_package_waypoints_if_primary_flight(waypoint, flight, events)

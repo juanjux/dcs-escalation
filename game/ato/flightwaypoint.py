@@ -50,6 +50,9 @@ class FlightWaypoint:
     tot: datetime | None = None
     departure_time: datetime | None = None
 
+    # Manual profiles take priority over automatic shared-route separation.
+    altitude_is_manual: bool = False
+
     @property
     def x(self) -> float:
         return self.position.x
@@ -79,6 +82,19 @@ class FlightWaypoint:
             stripped if stripped and stripped != self.pretty_name.strip() else None
         )
 
+    def apply_altitude_edit(
+        self,
+        altitude: Distance | None = None,
+        reference: AltitudeReference | None = None,
+    ) -> None:
+        """Keep an explicitly chosen height out of automatic profile adjustments."""
+        if altitude is not None:
+            self.alt = altitude
+        if reference is not None:
+            self.alt_type = reference
+        if altitude is not None or reference is not None:
+            self.altitude_is_manual = True
+
     def __hash__(self) -> int:
         return hash(id(self))
 
@@ -86,6 +102,7 @@ class FlightWaypoint:
         # Saves made before custom_name existed won't carry the key; default it so
         # attribute access on a reloaded waypoint is safe.
         state.setdefault("custom_name", None)
+        state.setdefault("altitude_is_manual", False)
         self.__dict__.update(state)
 
     def __deepcopy__(self, memo: Optional[Dict[int, Any]] = None) -> FlightWaypoint:

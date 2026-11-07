@@ -493,7 +493,7 @@ class QFlightWaypointTab(QFrame):
         changed = False
         for waypoint in self.flight.flight_plan.waypoints:
             if self._is_bulk_editable(waypoint):
-                waypoint.alt = altitude
+                waypoint.apply_altitude_edit(altitude)
                 changed = True
         if changed:
             self.on_change()
