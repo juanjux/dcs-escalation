@@ -347,6 +347,18 @@ def test_drag_instruction_is_prominent_and_explicit(dialog: PilotNamesDialog) ->
     assert "font-size: 15px" in dialog.drag_hint.styleSheet()
 
 
+@pytest.mark.parametrize("size", [(1040, 640), (1280, 800), (1911, 1566), (2560, 1440)])
+def test_drag_hint_stays_compact_when_window_grows(
+    dialog: PilotNamesDialog, size: tuple[int, int]
+) -> None:
+    dialog.resize(*size)
+    QApplication.processEvents()
+    assert dialog.drag_hint.height() <= 100
+    assert dialog.drag_hint.height() < dialog.height() * 0.15
+    if size[1] >= 1400:
+        assert dialog.pilots.height() > dialog.height() * 0.5
+
+
 def test_drop_and_autofill_preserve_pilot_scroll_and_selection(
     dialog: PilotNamesDialog,
 ) -> None:
