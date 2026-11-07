@@ -483,6 +483,12 @@ class LuaGenerator:
             iads_element.add_key_value("dcsGroupName", node.dcs_name)
             if node.independent_comms:
                 iads_element.add_key_value("independentComms", True)
+            if node.requires_power:
+                iads_element.add_key_value("requiresPower", True)
+            if node.local_power_sources:
+                iads_element.add_data_array(
+                    "localPowerSources", node.local_power_sources
+                )
             if node.iads_role in [IadsRole.SAM, IadsRole.SAM_AS_EWR]:
                 # add additional SkynetProperties to SAM Sites
                 for property, value in node.properties.items():

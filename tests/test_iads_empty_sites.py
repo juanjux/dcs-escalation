@@ -19,6 +19,7 @@ from game.theater.presetlocation import PresetLocation
 from game.theater.theatergroundobject import IadsBuildingGroundObject, SamGroundObject
 from game.theater.theatergroup import IadsGroundGroup
 from tests.test_iads_state import _unit
+from tests.test_iads_automatic_topology import site as powered_site
 
 
 def site(name: str, category: str = "aa", x: float = 0) -> Any:
@@ -53,11 +54,12 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
     sam, tower = site("BATTERY"), site("TOWER", "comms", 1000)
     # The battery reaches command through the tower, but not directly.
     command = site("COMMAND", "commandcenter", 28_000)
+    power = powered_site("POWER", IadsRole.POWER_SOURCE)
     deploy(sam)
     deploy(tower, IadsRole.CONNECTION_NODE)
     deploy(command, IadsRole.COMMAND_CENTER)
     network = IadsNetwork(True, [{"BATTERY": ["TOWER"]}] if configured else [])
-    network.initialize_network(iter([sam, tower, command]))
+    network.initialize_network(iter([sam, tower, command, power]))
     old_node = network.node_for_tgo(sam)
     assert old_node is not None
     assert IadsConnectionJs.connections_for_node(old_node, network)[0].active
@@ -66,13 +68,18 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
     sam.clear()
     sam.control_point.captured = tower.control_point.captured = Player.BLUE
     command.control_point.captured = Player.BLUE
+    power.control_point.captured = Player.BLUE
     events = GameUpdateEvents()
     network.update_tgo(sam, events)
     node = network.node_for_tgo(sam)
     assert node is not None and node.is_empty_site
     assert not sam.groups
     assert node in events.updated_iads
-    links = IadsConnectionJs.connections_for_node(node, network)
+    links = [
+        link
+        for link in IadsConnectionJs.connections_for_node(node, network)
+        if not link.is_power
+    ]
     assert len(links) == 1 and not links[0].active and links[0].blue
     assert links[0].connected == tower.id
     status = network.state_map.status_for(sam)
@@ -89,8 +96,10 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
     )
     tower.control_point.coalition = SimpleNamespace(player=Player.BLUE)
     command.control_point.coalition = SimpleNamespace(player=Player.BLUE)
+    power.control_point.coalition = SimpleNamespace(player=Player.BLUE)
     assert all(
-        node.iads_role in (IadsRole.CONNECTION_NODE, IadsRole.COMMAND_CENTER)
+        node.iads_role
+        in (IadsRole.CONNECTION_NODE, IadsRole.COMMAND_CENTER, IadsRole.POWER_SOURCE)
         for node in network.skynet_nodes(fake_game)
     )
 
@@ -98,7 +107,7 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
     network.update_tgo(sam, GameUpdateEvents())
     node = network.node_for_tgo(sam)
     assert node is not None and not node.is_empty_site
-    assert len(network.nodes) == 3
+    assert len(network.nodes) == 4
     assert IadsConnectionJs.connections_for_node(node, network)[0].active
 
 

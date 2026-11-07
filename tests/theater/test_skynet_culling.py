@@ -207,7 +207,7 @@ def _network(sam_distance: float, power_distance: float) -> tuple[Any, Any]:
     setattr(game, "_Game__culling_zones", [_Distances])
     game.skynet_culled = lambda tgo: Game.skynet_culled(game, tgo)
 
-    network: Any = IadsNetwork.__new__(IadsNetwork)
+    network: Any = IadsNetwork(advanced=True)
     network.nodes = [
         SimpleNamespace(group=sam, connections={"one": power}),
     ]
