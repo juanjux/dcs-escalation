@@ -29,8 +29,9 @@ def test_all_twelve_command_sites_keep_their_own_identity(inverted: bool) -> Non
         for scenery in cp.preset_locations.scenery:
             if scenery.category == "commandcenter":
                 placements.append((scenery.zone_def.name, scenery.position, cp))
-    assert len(placements) == 12
-    assert len({name for name, _, _ in placements}) == 12
+    original = [p for p in placements if " IADS Regional Command " not in p[0]]
+    assert len(original) == 12
+    assert len({name for name, _, _ in placements}) == len(placements)
     owners = {name: (cp.name, cp.starting_coalition) for name, _, cp in placements}
     assert owners["Command Center-1"] == ("FOB Khe-Sahn", Player.BLUE)
     assert owners["Red IADS Command FOB Laos"] == ("FOB Laos", Player.RED)
@@ -47,7 +48,7 @@ def test_all_twelve_command_sites_keep_their_own_identity(inverted: bool) -> Non
         objects.append(obj)
     network = IadsNetwork(True)
     network.initialize_network(iter(objects))
-    assert len(network.nodes) == 12
+    assert len(network.nodes) == len(placements)
     assert {id(n.group.ground_object) for n in network.nodes} == {
         id(obj) for obj in objects
     }

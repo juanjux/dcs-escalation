@@ -238,10 +238,20 @@
     },
     "other_entries_sha256": "f6991e482961053a7f8a3e6494141422e885913c7e7775e101b401d3cf25ae1e",
     "relocated_radars": {},
-    "retained_mission_sha256": "ff556cc995ff490891d696d16861aacded49eeb06f415065248b973a7e75e6c3",
+    "retained_mission_sha256": "18df306bb6413e03f9e4b10e4be5eeedda7023a9f1b3c617495bf9a8a8db527f",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "Hatzerim Research Guardhouse",
+      "Hatzerim Research Hangar 1A",
+      "Hatzerim Research Hangar 1B",
+      "Hatzerim Research Hangar 1C",
+      "Hatzerim Research Hangar 1D",
+      "Hatzerim Research Hangar 2A",
+      "Hatzerim Research Hangar 2B",
+      "New Trigger Zone-3"
     ]
   },
   "exercise_vegas_nerve.yaml": {
@@ -251,10 +261,24 @@
     },
     "other_entries_sha256": "dd2480a9085ea4085674e7f3eb51ee98f0342827fa0714c2e697f1e13b30be88",
     "relocated_radars": {},
-    "retained_mission_sha256": "b255d9492516a8f346d02489284e8fde9d28d13329c3723bb97042db618a44e9",
+    "retained_mission_sha256": "feb57595e20d99db65662e79d74ba6ff90a9eb8cd04e67a8cd74dc1aba643408",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "Airport Tower",
+      "Garage",
+      "Hangar 1",
+      "Hangar 2",
+      "Hangar 3",
+      "Hangar 4",
+      "New Trigger Zone-10",
+      "New Trigger Zone-18",
+      "Radio Communications",
+      "Security Forces",
+      "Temp Command and Control Center",
+      "Vehicle Bay"
     ]
   },
   "grabthars_hammer.yaml": {
@@ -316,10 +340,14 @@
     },
     "other_entries_sha256": "d4db4471a9a84fb18452950571fb54e5bddc5dc8509f85ac4fa9a8a262c9f280",
     "relocated_radars": {},
-    "retained_mission_sha256": "8fbb220c2fb324c887ededd817345d3e2ce6d80484fe7bf02b3497b0927f3429",
+    "retained_mission_sha256": "f12a1e493cee44dda0debdb3702f778d1ffc790c789b07268fef787fd8b5c946",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "Robert E. Kamosa Transmition Antenna",
+      "Robert E. Kamosa Transmitting Station"
     ]
   },
   "marianas_guam_barrigada.yaml": {
@@ -382,10 +410,14 @@
     "new_jammers": {},
     "other_entries_sha256": "149bbff21561262356fa67567235d38017a015c37adff1ad64762e814f49e68e",
     "relocated_radars": {},
-    "retained_mission_sha256": "319f0a380719ae8deb9dbda37788d9be4bbfcaeea676b344dee90e1bdfd5ab9a",
+    "retained_mission_sha256": "f63b2fb1d3495b5819482946befe814757ac16715d288e15d8f69bdd43983beb",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "New Trigger Zone-2",
+      "Sama Command Center"
     ]
   },
   "operation_blackball.yaml": {
@@ -489,10 +521,18 @@
     "restored_jammers": {
       "Ground-10": "GPS Jamming Site (Red, Unescorted)"
     },
-    "retained_mission_sha256": "e392d83891f1f2df7870276026377517be78f0996e3385fec2f3c50ddfc4634b",
+    "retained_mission_sha256": "6068ecbc1206d85b9e5c28543d1b62704ffdc06e31f94b2fda3e543bd360af12",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "Airport Domestic Terminal",
+      "Airport Military Terminal",
+      "New Trigger Zone-1",
+      "New Trigger Zone-11",
+      "Substation",
+      "UN Comms Facility"
     ]
   },
   "operation_velvet_thunder.yaml": {
@@ -500,10 +540,27 @@
     "new_jammers": {},
     "other_entries_sha256": "a5de8bdfc5382a79811070260360a0d9fc2ae5b9827a20dd4b1618aadfe979f5",
     "relocated_radars": {},
-    "retained_mission_sha256": "91aed8c3a1020888b80b48cc5275d9d101afef3e59f41672c37d2502a0ae7911",
+    "retained_mission_sha256": "ad2f69cf90ef894e0eb5b64981a5a82e9ff4c52c7e1cb39994c9dfa0dcc620fc",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "Guam Remote Ground Terminal",
+      "New Trigger Zone-1",
+      "New Trigger Zone-15",
+      "New Trigger Zone-9",
+      "Pacific Barrier Radar",
+      "Radar Facility Dorms",
+      "Radar Facility Office",
+      "Radar Facility Storage",
+      "Satellite Uplink Primary 1",
+      "Satellite Uplink Primary 2",
+      "Satellite Uplink Secondary",
+      "VOA Fuel Tank 1",
+      "VOA Fuel Tank 2",
+      "VOA Power Generator",
+      "Voice of America HQ"
     ]
   },
   "pacific_repartee.yaml": {
@@ -541,10 +598,14 @@
     "restored_jammers": {
       "Ground-27": "GPS Jamming Site (Red, Unescorted)"
     },
-    "retained_mission_sha256": "d806ec389530be48e9596c958cdca0005a0b0cc247d4d3fb6a3d8470ec312e69",
+    "retained_mission_sha256": "29c4bed22a6405234e7dd89adb8ce3b3531b0298fd66784a6828be08ff426076",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "Robert E. Kamosa Transmition Antenna",
+      "Robert E. Kamosa Transmitting Station"
     ]
   },
   "red_sea_rising.yaml": {
@@ -583,10 +644,21 @@
     },
     "other_entries_sha256": "0974e9b85d6fee1d96fce76fd4d54b1d5f0a329743ea5e118331c47382a1d80a",
     "relocated_radars": {},
-    "retained_mission_sha256": "59917b2f0e0cd91ccedb8da298a9c79dad9a5da50ea4daba8cce43faa996482e",
+    "retained_mission_sha256": "e8ba38b9c945d0342e9b1d3b8a455e4db7dd8b0030f483b38e8ed01c475ed4b1",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "Coms2",
+      "NATO CMD Center",
+      "Palace",
+      "adana_cityeducation_and_researchhospital_1",
+      "adana_cityeducation_and_researchhospital_2",
+      "adana_cityeducation_and_researchhospital_3",
+      "adana_cityeducation_and_researchhospital_4",
+      "asad_building",
+      "vor_dme"
     ]
   },
   "the_anvil_of_war.yaml": {
@@ -599,10 +671,19 @@
     "restored_jammers": {
       "Ground-33": "GPS Jamming Site (Red, Unescorted)"
     },
-    "retained_mission_sha256": "ec76e61c1c89aaf446b705327695f0007af9ffca735593e366ae576c386e21c9",
+    "retained_mission_sha256": "453723a16cfaa3d647716e25eecb139bb560876e8441f804eca6ed53b3b4f4d5",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "New Trigger Zone-18",
+      "ZEVS ELF Transmitter",
+      "ZEVS Extremely Low Frequency Radio Station",
+      "ZEVS Radio Transformer 1",
+      "ZEVS Radio Transformer 2",
+      "ZEVS Radio Transformer 3",
+      "ZEVS Submarine Communications Centre"
     ]
   },
   "tripoint_hostility.yaml": {
