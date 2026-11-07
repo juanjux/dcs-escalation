@@ -3,9 +3,11 @@
 from pathlib import Path
 
 import pytest
+from dcs.mapping import Point
 
 from game.campaignloader.campaign import Campaign
 from game.theater.iadsnetwork.iadsrole import IadsRole
+from game.theater.player import Player
 
 CAMPAIGNS = sorted(Path("resources/campaigns").glob("*.yaml"))
 CONSUMERS = (
@@ -25,7 +27,7 @@ def test_all_potential_iads_sites_have_initial_friendly_power(path: Path) -> Non
     if not campaign.advanced_iads:
         return
     theater = campaign.load_theater(True)
-    power = [
+    power: list[tuple[Player, Point]] = [
         (cp.starting_coalition, point)
         for cp in theater.controlpoints
         for point in cp.preset_locations.iads_power_source
