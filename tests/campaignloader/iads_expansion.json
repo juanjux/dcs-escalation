@@ -212,10 +212,19 @@
     "new_jammers": {},
     "other_entries_sha256": "1e3285f8c4044b6f92b3499bf8a663a8234252d590cc1ab1f6ce4a08f6b0174c",
     "relocated_radars": {},
-    "retained_mission_sha256": "ce05be378cac088c373bbe3b6b21f0596342cac04d2dd38d6734c37b506e5723",
+    "retained_mission_sha256": "9822dc74b376408595fcc0ad3e8ce7bb6d14817132c4fce66deffb1f028005d1",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "New Trigger Zone-8",
+      "ZEVS ELF Radio Transmitter",
+      "ZEVS Radio Station",
+      "ZEVS Radio Transformer 1",
+      "ZEVS Radio Transformer 2",
+      "ZEVS Radio Transformer 3",
+      "ZEVS Submarine Communications Centre"
     ]
   },
   "exercise_bright_star.yaml": {
@@ -225,10 +234,18 @@
     },
     "other_entries_sha256": "086beefc7459c44fcda03c13d4ce28f850bebdea743b048dc81b5a8c472f7e89",
     "relocated_radars": {},
-    "retained_mission_sha256": "0cb97761214b4d06c694790b74954431577a253a86ac151e2925345fc98ea28f",
+    "retained_mission_sha256": "3e7cb1e90bb7243970ff54297823441cec485218ffc577701fce03412ec7d0c9",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "NASMC Cafeteria",
+      "NASMC Comms Facility",
+      "NASMC Parking",
+      "NASMC Staff Quarters",
+      "National Airspace Management Center",
+      "New Trigger Zone-12"
     ]
   },
   "exercise_quasar.yaml": {
@@ -238,7 +255,7 @@
     },
     "other_entries_sha256": "f6991e482961053a7f8a3e6494141422e885913c7e7775e101b401d3cf25ae1e",
     "relocated_radars": {},
-    "retained_mission_sha256": "18df306bb6413e03f9e4b10e4be5eeedda7023a9f1b3c617495bf9a8a8db527f",
+    "retained_mission_sha256": "b166b295649661e6fb0f34345398d50e0a2787680653a1ced97fbd9959f98c81",
     "sides": [
       "BLUE",
       "RED"
@@ -251,6 +268,12 @@
       "Hatzerim Research Hangar 1D",
       "Hatzerim Research Hangar 2A",
       "Hatzerim Research Hangar 2B",
+      "NASMC Cafeteria",
+      "NASMC Comms Facility",
+      "NASMC Parking",
+      "NASMC Staff Quarters",
+      "National Airspace Management Center",
+      "New Trigger Zone-12",
       "New Trigger Zone-3"
     ]
   },
@@ -261,24 +284,33 @@
     },
     "other_entries_sha256": "dd2480a9085ea4085674e7f3eb51ee98f0342827fa0714c2e697f1e13b30be88",
     "relocated_radars": {},
-    "retained_mission_sha256": "feb57595e20d99db65662e79d74ba6ff90a9eb8cd04e67a8cd74dc1aba643408",
+    "retained_mission_sha256": "9093de8428f50b5e81d23c3a9a5c88188e228cce906c9f249a2515bb3eee646a",
     "sides": [
       "BLUE",
       "RED"
     ],
     "retired_comms_scenery_zones": [
       "Airport Tower",
+      "Cinetheodolite 1",
+      "Cinetheodolite 2",
       "Garage",
       "Hangar 1",
       "Hangar 2",
       "Hangar 3",
       "Hangar 4",
+      "Nevada Department of Motor Vehicles",
       "New Trigger Zone-10",
       "New Trigger Zone-18",
+      "New Trigger Zone-23",
+      "New Trigger Zone-27",
+      "Non-directional Beacon Tower",
       "Radio Communications",
+      "Sandia Control Tower",
+      "Sandia National Laboratories",
       "Security Forces",
       "Temp Command and Control Center",
-      "Vehicle Bay"
+      "Vehicle Bay",
+      "Water Tower"
     ]
   },
   "grabthars_hammer.yaml": {
@@ -377,10 +409,14 @@
     "new_jammers": {},
     "other_entries_sha256": "adcebbdf23de0b24e2cf0b4d65afeb6528a5b4bb05673ec991a84e190170d2c7",
     "relocated_radars": {},
-    "retained_mission_sha256": "436482b75731b829d770bbc69605be45db0ca228ed3eae2685b3b404a2bb2408",
+    "retained_mission_sha256": "a9a9d3f5da024f3b649f34b54a2d5ece00825bde73daf773a56704183d68b238",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "Mozdok Train Station",
+      "Mozdok railway station"
     ]
   },
   "northern_russia.yaml": {
@@ -478,10 +514,16 @@
     "new_jammers": {},
     "other_entries_sha256": "9046e58c7daf1661498435d6b2713c13d4df4d5fbc34e13123dd89ba6959fb9c",
     "relocated_radars": {},
-    "retained_mission_sha256": "be3c408fdf5e37ab5495f1d261f80bd6e826188b237db8d8c1dadc31dcae4fce",
+    "retained_mission_sha256": "c8eb33114ee6e9e3bcb771db0398ccc45bfe3b77a6b0f6f426838213f20612c8",
     "sides": [
       "BLUE",
       "RED"
+    ],
+    "retired_comms_scenery_zones": [
+      "Bir Gifgafa Command Coordination Centre",
+      "Bir Gifgafa Logistics HQ",
+      "Bir Gifgafa Staff Quarters",
+      "New Trigger Zone-16"
     ]
   },
   "operation_noisy_cricket.yaml": {
@@ -521,7 +563,7 @@
     "restored_jammers": {
       "Ground-10": "GPS Jamming Site (Red, Unescorted)"
     },
-    "retained_mission_sha256": "6068ecbc1206d85b9e5c28543d1b62704ffdc06e31f94b2fda3e543bd360af12",
+    "retained_mission_sha256": "74f9b24497729606074322235aa0b97ff93a137383ad5c2e4ff8b247401cb8ba",
     "sides": [
       "BLUE",
       "RED"
@@ -529,8 +571,11 @@
     "retired_comms_scenery_zones": [
       "Airport Domestic Terminal",
       "Airport Military Terminal",
+      "Central Services",
+      "Information Retrieval",
       "New Trigger Zone-1",
       "New Trigger Zone-11",
+      "New Trigger Zone-15",
       "Substation",
       "UN Comms Facility"
     ]
@@ -644,13 +689,14 @@
     },
     "other_entries_sha256": "0974e9b85d6fee1d96fce76fd4d54b1d5f0a329743ea5e118331c47382a1d80a",
     "relocated_radars": {},
-    "retained_mission_sha256": "e8ba38b9c945d0342e9b1d3b8a455e4db7dd8b0030f483b38e8ed01c475ed4b1",
+    "retained_mission_sha256": "e0d05f94f5fb579d95baadecb540ea13e0794f11ef23615f75d1660f66b16ab9",
     "sides": [
       "BLUE",
       "RED"
     ],
     "retired_comms_scenery_zones": [
       "Coms2",
+      "Ministry",
       "NATO CMD Center",
       "Palace",
       "adana_cityeducation_and_researchhospital_1",
@@ -658,6 +704,9 @@
       "adana_cityeducation_and_researchhospital_3",
       "adana_cityeducation_and_researchhospital_4",
       "asad_building",
+      "comms",
+      "ministry",
+      "ndb_high_tower",
       "vor_dme"
     ]
   },

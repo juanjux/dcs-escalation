@@ -644,23 +644,36 @@ def test_command_and_power_redundancy_survives_single_losses(
         ), lost.original_name
 
 
-@pytest.mark.parametrize("name,relay_count", [("Ground-13", 2), ("Ground-63", 1)])
+@pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
 def test_losing_local_relays_cuts_a_powered_sam_off(
-    generated: Game, name: str, relay_count: int
+    generated: Game, side: Player
 ) -> None:
     network = generated.theater.iads_network
-    sam = next(
-        tgo for tgo in generated.theater.ground_objects if tgo.original_name == name
-    )
-    node = next(node for node in network.nodes if node.group.ground_object is sam)
-    towers = [
-        group.ground_object
-        for group in node.connections.values()
-        if group.iads_role is IadsRole.CONNECTION_NODE
+    dependent = [
+        node
+        for node in network.nodes
+        if node.group.iads_role in (IadsRole.SAM, IadsRole.SAM_AS_EWR)
+        and node.group.ground_object.control_point.captured is side
+        and isinstance(node.group.ground_object, IadsGroundObject)
+        and not node.group.ground_object.carries_gps_jammer
+        and not any(
+            group.iads_role is IadsRole.COMMAND_CENTER
+            for group in node.connections.values()
+        )
     ]
-    assert len(towers) == relay_count
-    status = IadsStateMap(network, towers).status_for(sam)
-    assert status is not None and status.state is IadsState.AUTONOMOUS
+    assert dependent
+    for node in dependent:
+        sam = node.group.ground_object
+        towers = [
+            group.ground_object
+            for group in node.connections.values()
+            if group.iads_role is IadsRole.CONNECTION_NODE
+        ]
+        assert towers, sam.original_name
+        status = IadsStateMap(network, towers).status_for(sam)
+        assert (
+            status is not None and status.state is IadsState.AUTONOMOUS
+        ), sam.original_name
 
 
 @pytest.mark.parametrize("side", [Player.BLUE, Player.RED])

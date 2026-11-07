@@ -200,11 +200,101 @@
       "command_centres": 4
     },
     "after": {
-      "relays": 37,
+      "relays": 26,
       "command_centres": 8
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 37,
+      "after_relays": 26,
+      "new_locations": {
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 01": [
+          65133.413146615,
+          -58780.060803758
+        ],
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 02": [
+          112829.46590659,
+          -941.47872577252
+        ],
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 03": [
+          67905.6230014735,
+          -84344.963584633
+        ],
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 04": [
+          76695.60011630594,
+          -34787.54193832375
+        ],
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 05": [
+          87781.30488105035,
+          -11828.402362143603
+        ],
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 06": [
+          115150.9289941125,
+          26612.73525841174
+        ],
+        "BLUE IADS Relocated Relay Kish Intl 07": [
+          70809.57586228165,
+          -105396.65845563539
+        ],
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 08": [
+          94399.20977674649,
+          67448.489698356
+        ],
+        "BLUE IADS Relocated Relay Kish Intl 09": [
+          66072.8693515701,
+          -153399.78188192236
+        ],
+        "BLUE IADS Relocated Relay Kish Intl 10": [
+          59440.88659392091,
+          -128365.66461664054
+        ],
+        "RED IADS Relocated Relay Al Dhafra AFB 11": [
+          -214129.90934718,
+          -189767.98937292
+        ],
+        "RED IADS Relocated Relay Al Dhafra AFB 12": [
+          -234104.3260664406,
+          -208258.1059070196
+        ],
+        "RED IADS Relocated Relay Al Dhafra AFB 13": [
+          -195174.20907868247,
+          -171258.17999890467
+        ],
+        "RED IADS Relocated Relay Al Dhafra AFB 14": [
+          -170332.3818518546,
+          -160447.78352564631
+        ],
+        "RED IADS Relocated Relay Liwa AFB 15": [
+          -248689.252257381,
+          -227768.18627567103
+        ],
+        "RED IADS Relocated Relay Al Minhad AFB 16": [
+          -132966.3646207299,
+          -86412.60566499451
+        ],
+        "RED IADS Relocated Relay Al Minhad AFB 17": [
+          -111337.74447923151,
+          -103212.02080076926
+        ],
+        "RED IADS Relocated Relay Liwa AFB 18": [
+          -254159.6445849557,
+          -253020.2060630579
+        ],
+        "RED IADS Relocated Relay Liwa AFB 19": [
+          -239982.3643054855,
+          -276431.7505737645
+        ],
+        "RED IADS Relocated Relay FOB Al Maktoum 20": [
+          -150034.52113167,
+          -142410.4986918945
+        ],
+        "RED IADS Relocated Relay FOB Al Maktoum 21": [
+          -132502.3553335275,
+          -120993.14636779425
+        ]
+      }
+    }
   },
   "black_sea.yaml": {
     "autonomous_sites": [],
@@ -361,11 +451,141 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 50,
+      "relays": 33,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 50,
+      "after_relays": 33,
+      "new_locations": {
+        "RED IADS Relocated Relay Anapa-Vityazevo 01": [
+          319.02934269728996,
+          241148.94197193
+        ],
+        "RED IADS Relocated Relay Gelendzhik 02": [
+          -48830.651106562,
+          298475.09700787
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 03": [
+          -56764.753025033,
+          418446.80592303
+        ],
+        "RED IADS Relocated Relay Gelendzhik 04": [
+          -29871.228432794152,
+          280137.8885436996
+        ],
+        "RED IADS Relocated Relay Anapa-Vityazevo 05": [
+          -18433.70835224875,
+          261255.788375195
+        ],
+        "RED IADS Relocated Relay Anapa-Vityazevo 06": [
+          15366.3778755001,
+          218754.79625512
+        ],
+        "RED IADS Relocated Relay Anapa-Vityazevo 07": [
+          20795.271935441302,
+          210162.42676916192
+        ],
+        "RED IADS Relocated Relay Krasnodar-Center 08": [
+          -25795.914106166565,
+          368842.85967534274
+        ],
+        "RED IADS Relocated Relay Krasnodar-Center 09": [
+          -1609.4669061446502,
+          362623.408962205
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 10": [
+          -48119.8099943138,
+          486614.11248284654
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 11": [
+          -43940.25860583183,
+          459484.64869047835
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 12": [
+          -38395.659100867495,
+          436786.1717189122
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 13": [
+          -61009.66872325652,
+          538166.5876699268
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 14": [
+          -59070.1372836392,
+          565686.5712414177
+        ],
+        "RED IADS Relocated Relay FOB Gelendzhik 15": [
+          -50373.76952386709,
+          325308.82988213626
+        ],
+        "RED IADS Relocated Relay Sochi-Adler 16": [
+          -144076.804051236,
+          475925.33568220556
+        ],
+        "RED IADS Relocated Relay Sochi-Adler 17": [
+          -128943.97626467666,
+          453341.92126586667
+        ],
+        "RED IADS Relocated Relay FOB Sochi 18": [
+          -107219.18579227389,
+          436928.9474993553
+        ],
+        "RED IADS Relocated Relay FOB Gelendzhik 19": [
+          -60088.76493655649,
+          372876.2384617659
+        ],
+        "RED IADS Relocated Relay FOB Gelendzhik 20": [
+          -45289.817492327114,
+          349485.9999791946
+        ],
+        "RED IADS Relocated Relay FOB Sochi 21": [
+          -82410.1711787888,
+          427872.5823829705
+        ],
+        "RED IADS Relocated Relay FOB Sochi 22": [
+          -72931.45328766282,
+          396636.44556651794
+        ],
+        "BLUE IADS Relocated Relay Sukhumi-Babushara 23": [
+          -219114.98761651,
+          565026.23680633
+        ],
+        "BLUE IADS Relocated Relay Sukhumi-Babushara 24": [
+          -202135.143488027,
+          544640.1541702781
+        ],
+        "BLUE IADS Relocated Relay Senaki-Kolkhi 25": [
+          -256515.57956331226,
+          628490.5023322982
+        ],
+        "BLUE IADS Relocated Relay Gudauta 26": [
+          -189048.2671997187,
+          531993.0261445369
+        ],
+        "BLUE IADS Relocated Relay Senaki-Kolkhi 27": [
+          -282914.13200073654,
+          636310.7497605921
+        ],
+        "BLUE IADS Relocated Relay Senaki-Kolkhi 28": [
+          -244081.77876824365,
+          612865.7128190276
+        ],
+        "BLUE IADS Relocated Relay Kobuleti 29": [
+          -306265.26100822573,
+          643371.630626822
+        ],
+        "BLUE IADS Relocated Relay Senaki-Kolkhi 30": [
+          -277667.7951074125,
+          661398.0459948899
+        ],
+        "BLUE IADS Relocated Relay Kutaisi 31": [
+          -279770.838993575,
+          689050.3094010351
+        ]
+      }
+    }
   },
   "Caucasus_Multi_Full.yaml": {
     "autonomous_sites": [],
@@ -498,11 +718,197 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 61,
+      "relays": 51,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 61,
+      "after_relays": 51,
+      "new_locations": {
+        "RED IADS Relocated Relay Maykop-Khanskaya 01": [
+          -31632.302402205,
+          455959.94427467
+        ],
+        "RED IADS Relocated Relay Sukhumi-Babushara 02": [
+          -221419.84003379,
+          564902.4670002
+        ],
+        "RED IADS Relocated Relay Senaki-Kolkhi 03": [
+          -281575.43203924,
+          645764.96689693
+        ],
+        "RED IADS Relocated Relay Beslan 04": [
+          -152002.25055027,
+          838668.34346308
+        ],
+        "RED IADS Relocated Relay Anapa-Vityazevo 05": [
+          -8679.293540831099,
+          258434.26447373
+        ],
+        "RED IADS Relocated Relay Anapa-Vityazevo 06": [
+          16710.58122810111,
+          252407.91458197366
+        ],
+        "RED IADS Relocated Relay Krasnodar-Center 07": [
+          -16291.10583663626,
+          373870.57496061025
+        ],
+        "RED IADS Relocated Relay Krasnodar-Center 08": [
+          7208.600832404074,
+          352986.14051273
+        ],
+        "RED IADS Relocated Relay Novorossiysk 09": [
+          -21718.2329094205,
+          282063.172727405
+        ],
+        "RED IADS Relocated Relay Krymsk 10": [
+          -26322.290112730607,
+          308240.2532526196
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 11": [
+          -50103.18360706292,
+          436005.377260553
+        ],
+        "RED IADS Relocated Relay Sochi-Adler 12": [
+          -155576.93508111566,
+          485487.50399329426
+        ],
+        "RED IADS Relocated Relay Sukhumi-Babushara 13": [
+          -227152.87565526555,
+          591241.65176709
+        ],
+        "RED IADS Relocated Relay Senaki-Kolkhi 14": [
+          -264841.1551564829,
+          625170.8654033358
+        ],
+        "RED IADS Relocated Relay Kutaisi 15": [
+          -289861.44296972,
+          666918.8113207901
+        ],
+        "RED IADS Relocated Relay Kutaisi 16": [
+          -254594.71719319632,
+          701189.8016405591
+        ],
+        "RED IADS Relocated Relay Kutaisi 17": [
+          -280247.2185028525,
+          692095.7308264606
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 18": [
+          -70297.0368899128,
+          715337.7716044319
+        ],
+        "RED IADS Relocated Relay Nalchik 19": [
+          -142855.73489486065,
+          735467.1041717893
+        ],
+        "RED IADS Relocated Relay Nalchik 20": [
+          -117177.59473705073,
+          732949.7314498725
+        ],
+        "RED IADS Relocated Relay Nalchik 21": [
+          -116737.2717923388,
+          785552.6879085767
+        ],
+        "RED IADS Relocated Relay Mozdok 22": [
+          -112303.8476607757,
+          810196.5585089609
+        ],
+        "RED IADS Relocated Relay Mozdok 23": [
+          -99697.51844162514,
+          835838.5797402409
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 24": [
+          -327884.121197775,
+          888236.5895412951
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 25": [
+          -309369.0633543328,
+          876901.5752511562
+        ],
+        "RED IADS Relocated Relay Beslan 26": [
+          -172912.378647485,
+          855496.8560541405
+        ],
+        "RED IADS Relocated Relay Beslan 27": [
+          -126178.50523369873,
+          833358.1882385793
+        ],
+        "RED IADS Relocated Relay Krymsk 28": [
+          -22401.35914005499,
+          331714.1483322289
+        ],
+        "RED IADS Relocated Relay Krasnodar-Center 29": [
+          -19259.93158771543,
+          352932.5897963389
+        ],
+        "RED IADS Relocated Relay Krasnodar-Center 30": [
+          -28002.59837217409,
+          395929.4223461425
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 31": [
+          -38937.70655026566,
+          414214.16286673996
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 32": [
+          -74667.53688545998,
+          439244.904726746
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 33": [
+          -93945.4121386221,
+          440989.38507074746
+        ],
+        "RED IADS Relocated Relay Sochi-Adler 34": [
+          -129146.17390124501,
+          481553.6012634839
+        ],
+        "RED IADS Relocated Relay Gudauta 35": [
+          -189033.7452053575,
+          525080.5128106275
+        ],
+        "RED IADS Relocated Relay Sukhumi-Babushara 36": [
+          -246221.39505920166,
+          605629.6517358117
+        ],
+        "RED IADS Relocated Relay Kutaisi 37": [
+          -202921.8086164542,
+          703200.0229651864
+        ],
+        "RED IADS Relocated Relay Nalchik 38": [
+          -164862.09539162414,
+          721010.613331229
+        ],
+        "RED IADS Relocated Relay Nalchik 39": [
+          -119599.47028778502,
+          758547.1573143327
+        ],
+        "RED IADS Relocated Relay Nalchik 40": [
+          -90621.92553653829,
+          730808.9440469476
+        ],
+        "RED IADS Relocated Relay Beslan 41": [
+          -199173.67169997876,
+          859430.8741576399
+        ],
+        "RED IADS Relocated Relay Beslan 42": [
+          -220147.76438112624,
+          866005.1433624
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 43": [
+          -241121.85706227375,
+          872579.41256716
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 44": [
+          -262095.94974342122,
+          879153.6817719201
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 45": [
+          -283070.04242456873,
+          885727.95097668
+        ]
+      }
+    }
   },
   "Caucasus_Multi_Georgia.yaml": {
     "autonomous_sites": [],
@@ -568,11 +974,53 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 22,
+      "relays": 18,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 22,
+      "after_relays": 18,
+      "new_locations": {
+        "RED IADS Relocated Relay Kutaisi 01": [
+          -292894.51558423,
+          692559.71222671
+        ],
+        "RED IADS Relocated Relay Sukhumi-Babushara 02": [
+          -222208.39980927,
+          578799.97901047
+        ],
+        "RED IADS Relocated Relay Sukhumi-Babushara 03": [
+          -207208.39980927,
+          558799.97901047
+        ],
+        "RED IADS Relocated Relay Kutaisi 04": [
+          -295618.34781105653,
+          717669.613911038
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 05": [
+          -320318.826553195,
+          890787.3094012099
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 06": [
+          -318473.3343887894,
+          869026.2836854334
+        ],
+        "RED IADS Relocated Relay Senaki-Kolkhi 07": [
+          -278274.0506513291,
+          626735.3858708717
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 08": [
+          -326701.12210659764,
+          799488.4148733079
+        ],
+        "RED IADS Relocated Relay Gudauta 09": [
+          -195000.0,
+          540000.0
+        ]
+      }
+    }
   },
   "Caucasus_Multi_Russia.yaml": {
     "autonomous_sites": [],
@@ -687,11 +1135,177 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 62,
+      "relays": 51,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 62,
+      "after_relays": 51,
+      "new_locations": {
+        "RED IADS Relocated Relay Mineralnye Vody 01": [
+          -62128.838324206,
+          706966.77546211
+        ],
+        "RED IADS Relocated Relay Novorossiysk 02": [
+          -16694.957577641937,
+          268585.3637630935
+        ],
+        "RED IADS Relocated Relay Anapa-Vityazevo 03": [
+          -14529.067337542527,
+          253135.10289664014
+        ],
+        "RED IADS Relocated Relay Krasnodar-Center 04": [
+          -7822.745007409445,
+          369487.47470332414
+        ],
+        "RED IADS Relocated Relay Krasnodar-Center 05": [
+          -2573.583369769911,
+          344021.737476637
+        ],
+        "RED IADS Relocated Relay Krasnodar-Center 06": [
+          -15263.17414148585,
+          391408.3371552134
+        ],
+        "RED IADS Relocated Relay Krymsk 07": [
+          -23531.750097334003,
+          294737.43078449636
+        ],
+        "RED IADS Relocated Relay Krymsk 08": [
+          -15112.28055349792,
+          319574.0903348476
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 09": [
+          -49060.78986327322,
+          442646.24238385
+        ],
+        "RED IADS Relocated Relay Sochi-Adler 10": [
+          -142409.29827375943,
+          470656.4846175343
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 11": [
+          -59729.72183309628,
+          679503.1174658409
+        ],
+        "RED IADS Relocated Relay Nalchik 12": [
+          -110252.09702341293,
+          767707.1245789488
+        ],
+        "RED IADS Relocated Relay Nalchik 13": [
+          -119770.17395560708,
+          788327.503519397
+        ],
+        "RED IADS Relocated Relay Beslan 14": [
+          -138169.64209152354,
+          825432.9505198154
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 15": [
+          -70213.58377298403,
+          453364.50752140116
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 16": [
+          -85060.07336573015,
+          524561.3328974692
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 17": [
+          -83002.78658706087,
+          546061.0360795383
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 18": [
+          -78888.21302972239,
+          589060.4424436765
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 19": [
+          -76830.92625105302,
+          610560.1456257455
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 20": [
+          -74773.63947238383,
+          632059.8488078145
+        ],
+        "RED IADS Relocated Relay Nalchik 21": [
+          -87219.02754176252,
+          753252.7020449121
+        ],
+        "RED IADS Relocated Relay Mozdok 22": [
+          -119040.04500966407,
+          814999.306510295
+        ],
+        "BLUE IADS Relocated Relay Gudauta 23": [
+          -196143.34057438502,
+          536489.2967705249
+        ],
+        "BLUE IADS Relocated Relay Tbilisi-Lochini 24": [
+          -321403.87019049283,
+          872536.1785748847
+        ],
+        "BLUE IADS Relocated Relay Tbilisi-Lochini 25": [
+          -315223.6510446089,
+          695800.8919294572
+        ],
+        "BLUE IADS Relocated Relay Gudauta 26": [
+          -302857.14285714284,
+          672142.8571428572
+        ],
+        "BLUE IADS Relocated Relay Tbilisi-Lochini 27": [
+          -320670.95313382667,
+          722402.6757883716
+        ],
+        "BLUE IADS Relocated Relay Tbilisi-Lochini 28": [
+          -321118.2552230444,
+          744004.4596472861
+        ],
+        "BLUE IADS Relocated Relay Tbilisi-Lochini 29": [
+          -321565.55731226224,
+          765606.2435062006
+        ],
+        "BLUE IADS Relocated Relay Tbilisi-Lochini 30": [
+          -322012.85940148,
+          787208.027365115
+        ],
+        "BLUE IADS Relocated Relay Tbilisi-Lochini 31": [
+          -322460.16149069776,
+          808809.8112240294
+        ],
+        "BLUE IADS Relocated Relay Tbilisi-Lochini 32": [
+          -322907.4635799156,
+          830411.5950829439
+        ],
+        "BLUE IADS Relocated Relay Tbilisi-Lochini 33": [
+          -323354.76566913334,
+          852013.3789418584
+        ],
+        "BLUE IADS Relocated Relay Gudauta 34": [
+          -288571.4285714286,
+          656428.5714285714
+        ],
+        "BLUE IADS Relocated Relay Gudauta 35": [
+          -274285.7142857143,
+          640714.2857142857
+        ],
+        "BLUE IADS Relocated Relay Gudauta 36": [
+          -260000.0,
+          625000.0
+        ],
+        "BLUE IADS Relocated Relay Gudauta 37": [
+          -245714.2857142857,
+          609285.7142857143
+        ],
+        "BLUE IADS Relocated Relay Gudauta 38": [
+          -231428.57142857142,
+          593571.4285714286
+        ],
+        "BLUE IADS Relocated Relay Gudauta 39": [
+          -217142.85714285716,
+          577857.1428571428
+        ],
+        "BLUE IADS Relocated Relay Gudauta 40": [
+          -205000.0,
+          560000.0
+        ]
+      }
+    }
   },
   "clash_of_the_titans.yaml": {
     "autonomous_sites": [],
@@ -747,11 +1361,121 @@
       "command_centres": 4
     },
     "after": {
-      "relays": 44,
+      "relays": 33,
       "command_centres": 5
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 44,
+      "after_relays": 33,
+      "new_locations": {
+        "RED IADS Relocated Relay Tarinkot 01": [
+          -157107.39340804,
+          22883.747226815
+        ],
+        "RED IADS Relocated Relay Camp Bastion 02": [
+          -212974.45994875891,
+          -100890.8182638029
+        ],
+        "RED IADS Relocated Relay Tarinkot 03": [
+          -171658.74550101586,
+          -24103.430794592925
+        ],
+        "RED IADS Relocated Relay Tarinkot 04": [
+          -155961.64503396995,
+          -3919.7754575122526
+        ],
+        "RED IADS Relocated Relay Camp Bastion 05": [
+          -254577.9798593415,
+          -194871.77244394366
+        ],
+        "RED IADS Relocated Relay Camp Bastion 06": [
+          -235743.43755390844,
+          -146665.50043668307
+        ],
+        "RED IADS Relocated Relay Camp Bastion Heliport 07": [
+          -240206.60811893365,
+          -242417.82569608837
+        ],
+        "RED IADS Relocated Relay Kandahar Heliport 08": [
+          -214878.71212584735,
+          58825.44834679892
+        ],
+        "RED IADS Relocated Relay Tarinkot 09": [
+          -189380.5863951975,
+          60479.6508537005
+        ],
+        "RED IADS Relocated Relay Tarinkot 10": [
+          -173484.31065866252,
+          43866.084756167504
+        ],
+        "RED IADS Relocated Relay Tarinkot 11": [
+          -188614.47371841487,
+          -45529.24404516166
+        ],
+        "RED IADS Relocated Relay Tarinkot 12": [
+          -202364.58806064245,
+          -67334.44596852678
+        ],
+        "RED IADS Relocated Relay Camp Bastion 13": [
+          -231889.30147697977,
+          -119363.39560752346
+        ],
+        "RED IADS Relocated Relay Kandahar Heliport 14": [
+          -242602.07820599258,
+          -55814.53392144105
+        ],
+        "BLUE IADS Relocated Relay Kabul 15": [
+          83473.790180652,
+          267665.53587232
+        ],
+        "BLUE IADS Relocated Relay Bagram 16": [
+          117727.58286443,
+          262483.673548995
+        ],
+        "BLUE IADS Relocated Relay Bagram 17": [
+          117247.11365510573,
+          304710.50503827474
+        ],
+        "BLUE IADS Relocated Relay Kabul 18": [
+          100686.895090326,
+          282782.76793616
+        ],
+        "BLUE IADS Relocated Relay Kabul 19": [
+          76234.04666793103,
+          241671.05235402836
+        ],
+        "BLUE IADS Relocated Relay Sharana 20": [
+          -53013.2695620235,
+          237070.50716388965
+        ],
+        "BLUE IADS Relocated Relay Ghazni Heliport 21": [
+          -18971.36714667011,
+          212990.08420320204
+        ],
+        "BLUE IADS Relocated Relay Ghazni Heliport 22": [
+          -27553.925056154476,
+          229257.84725637536
+        ],
+        "BLUE IADS Relocated Relay Ghazni Heliport 23": [
+          -712.0016726447002,
+          234400.5673595098
+        ],
+        "BLUE IADS Relocated Relay Sharana 24": [
+          -28132.609773409484,
+          254859.67285392556
+        ],
+        "BLUE IADS Relocated Relay Sharana 25": [
+          -78138.11123983949,
+          243705.99167263
+        ],
+        "BLUE IADS Relocated Relay Kabul 26": [
+          23121.987356409674,
+          247387.06308398044
+        ]
+      }
+    }
   },
   "crossing_the_rubicon.yaml": {
     "autonomous_sites": [],
@@ -797,11 +1521,181 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 58,
+      "relays": 49,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 58,
+      "after_relays": 49,
+      "new_locations": {
+        "RED IADS Relocated Relay Wittstock 01": [
+          -128140.60255535277,
+          -507193.0335000101
+        ],
+        "RED IADS Relocated Relay Templin 02": [
+          -196412.9941518539,
+          -460168.24208023
+        ],
+        "RED IADS Relocated Relay Peenemunde 03": [
+          -94696.70293002075,
+          -455565.8903264595
+        ],
+        "RED IADS Relocated Relay Templin 04": [
+          -137539.53939100564,
+          -487603.83704065497
+        ],
+        "RED IADS Relocated Relay Templin 05": [
+          -159824.47653934124,
+          -475174.86166208016
+        ],
+        "RED IADS Relocated Relay Templin 06": [
+          -184869.019638615,
+          -466688.5150373783
+        ],
+        "RED IADS Relocated Relay Peenemunde 07": [
+          -38311.41688959587,
+          -500064.96604503127
+        ],
+        "RED IADS Relocated Relay Peenemunde 08": [
+          -56847.53726141686,
+          -456633.1652668777
+        ],
+        "RED IADS Relocated Relay Peenemunde 09": [
+          -27978.394626797075,
+          -515032.8224704213
+        ],
+        "RED IADS Relocated Relay Sperenberg 10": [
+          -249061.236710005,
+          -501278.20503673505
+        ],
+        "RED IADS Relocated Relay Sperenberg 11": [
+          -261247.77844237097,
+          -520976.2779129157
+        ],
+        "RED IADS Relocated Relay Schonefeld 12": [
+          -228815.1737648946,
+          -483018.0948020365
+        ],
+        "RED IADS Relocated Relay Haina 13": [
+          -359276.100167827,
+          -664465.8778391245
+        ],
+        "RED IADS Relocated Relay Haina 14": [
+          -370545.46932686376,
+          -683102.9802806912
+        ],
+        "RED IADS Relocated Relay Templin 15": [
+          -116849.06953329059,
+          -470146.10856865434
+        ],
+        "RED IADS Relocated Relay Peenemunde 16": [
+          -43782.77616926338,
+          -475361.23498368624
+        ],
+        "RED IADS Relocated Relay Sperenberg 17": [
+          -280944.678726085,
+          -539024.8203157275
+        ],
+        "RED IADS Relocated Relay Sperenberg 18": [
+          -292134.88178919104,
+          -556944.9713904985
+        ],
+        "RED IADS Relocated Relay Sperenberg 19": [
+          -303325.084852297,
+          -574865.1224652694
+        ],
+        "RED IADS Relocated Relay Sperenberg 20": [
+          -314515.287915403,
+          -592785.2735400405
+        ],
+        "RED IADS Relocated Relay Sperenberg 21": [
+          -325705.490978509,
+          -610705.4246148114
+        ],
+        "RED IADS Relocated Relay Sperenberg 22": [
+          -336895.694041615,
+          -628625.5756895824
+        ],
+        "RED IADS Relocated Relay Sperenberg 23": [
+          -348085.897104721,
+          -646545.7267643535
+        ],
+        "BLUE IADS Relocated Relay Hamburg 24": [
+          -75449.19537666492,
+          -709286.80810101
+        ],
+        "BLUE IADS Relocated Relay Spangdahlem 25": [
+          -451895.5577822382,
+          -980489.7232709621
+        ],
+        "BLUE IADS Relocated Relay Hahn 26": [
+          -454428.98930873664,
+          -955770.4999385013
+        ],
+        "BLUE IADS Relocated Relay Ramstein 27": [
+          -468746.633736765,
+          -940089.28318737
+        ],
+        "BLUE IADS Relocated Relay Frankfurt 28": [
+          -451076.32363001327,
+          -895080.5739704049
+        ],
+        "BLUE IADS Relocated Relay Frankfurt 29": [
+          -269946.3330067687,
+          -762735.4319642455
+        ],
+        "BLUE IADS Relocated Relay Hamburg 30": [
+          -229478.46530746412,
+          -746333.6032600285
+        ],
+        "BLUE IADS Relocated Relay Hamburg 31": [
+          -249712.39915711645,
+          -754534.517612137
+        ],
+        "BLUE IADS Relocated Relay Frankfurt 32": [
+          -298667.99250161415,
+          -808118.4193037999
+        ],
+        "BLUE IADS Relocated Relay Frankfurt 33": [
+          -318901.92635126645,
+          -816319.3336559084
+        ],
+        "BLUE IADS Relocated Relay Frankfurt 34": [
+          -371116.0022550303,
+          -803740.0037247875
+        ],
+        "BLUE IADS Relocated Relay Frankfurt 35": [
+          -391349.9361046827,
+          -811940.918076896
+        ],
+        "BLUE IADS Relocated Relay Frankfurt 36": [
+          -427577.27522946766,
+          -851310.3593996342
+        ],
+        "BLUE IADS Relocated Relay Hahn 37": [
+          -455578.0189774394,
+          -916375.6105867967
+        ],
+        "BLUE IADS Relocated Relay Hamburg 38": [
+          -209244.53145781177,
+          -738132.6889079202
+        ],
+        "BLUE IADS Relocated Relay Hamburg 39": [
+          -168776.66375850714,
+          -721730.8602037033
+        ],
+        "BLUE IADS Relocated Relay Hamburg 40": [
+          -116562.58785474332,
+          -734310.1901348241
+        ],
+        "BLUE IADS Relocated Relay Hamburg 41": [
+          -96328.65400509101,
+          -726109.2757827156
+        ]
+      }
+    }
   },
   "exercise_able_archer.yaml": {
     "autonomous_sites": [],
@@ -874,11 +1768,253 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 87,
+      "relays": 75,
       "command_centres": 6
     },
-    "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "removed_scenery_zones": [
+      "New Trigger Zone-8",
+      "ZEVS ELF Radio Transmitter",
+      "ZEVS Radio Station",
+      "ZEVS Radio Transformer 1",
+      "ZEVS Radio Transformer 2",
+      "ZEVS Radio Transformer 3",
+      "ZEVS Submarine Communications Centre"
+    ],
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 87,
+      "after_relays": 75,
+      "new_locations": {
+        "RED IADS Relocated Relay Ivalo 01": [
+          77394.523100842,
+          201693.59442751
+        ],
+        "RED IADS Relocated Relay Banak 02": [
+          245609.4352591928,
+          108301.25579766715
+        ],
+        "RED IADS Relocated Relay Banak 03": [
+          229608.73656980108,
+          117757.91209103081
+        ],
+        "RED IADS Relocated Relay Murmansk International 04": [
+          126380.47376401623,
+          430436.8570997431
+        ],
+        "RED IADS Relocated Relay Severomorsk-1 05": [
+          185594.7422290697,
+          437088.330237432
+        ],
+        "RED IADS Relocated Relay Severomorsk-1 06": [
+          163490.06056939927,
+          444284.9069284969
+        ],
+        "RED IADS Relocated Relay Olenya 07": [
+          101248.286888054,
+          442264.8004508251
+        ],
+        "RED IADS Relocated Relay Olenya 08": [
+          75483.91991143677,
+          437366.1984856955
+        ],
+        "RED IADS Relocated Relay Murmansk International 09": [
+          157869.9185213785,
+          395273.8840374628
+        ],
+        "RED IADS Relocated Relay Ivalo 10": [
+          53839.590798156205,
+          187923.79368390533
+        ],
+        "RED IADS Relocated Relay Ivalo 11": [
+          102749.0567521408,
+          208951.72129839467
+        ],
+        "RED IADS Relocated Relay Banak 12": [
+          181663.62074242244,
+          141166.9264201465
+        ],
+        "RED IADS Relocated Relay Kirkenes 13": [
+          169983.34651779887,
+          212462.77463910336
+        ],
+        "RED IADS Relocated Relay Ivalo 14": [
+          119260.9314326371,
+          230119.25282668587
+        ],
+        "RED IADS Relocated Relay Kirkenes 15": [
+          172386.93632447833,
+          238402.11340818994
+        ],
+        "RED IADS Relocated Relay Kirkenes 16": [
+          173148.97470564826,
+          290399.69568684633
+        ],
+        "RED IADS Relocated Relay Kirkenes 17": [
+          196514.0935270912,
+          293624.81613898213
+        ],
+        "RED IADS Relocated Relay Kirkenes 18": [
+          183161.73420804663,
+          310919.13289597665
+        ],
+        "RED IADS Relocated Relay Kirkenes 19": [
+          177893.8915730546,
+          331489.7899053869
+        ],
+        "RED IADS Relocated Relay Murmansk International 20": [
+          172515.58926355798,
+          350379.2536489102
+        ],
+        "RED IADS Relocated Relay Murmansk International 21": [
+          167137.2869540613,
+          369268.7173924335
+        ],
+        "RED IADS Relocated Relay Severomorsk-1 22": [
+          150975.36221135428,
+          421030.9827331569
+        ],
+        "RED IADS Relocated Relay Ivalo 23": [
+          27665.03857772574,
+          192120.82231988438
+        ],
+        "RED IADS Relocated Relay Ivalo 24": [
+          6152.130257105244,
+          188670.1808695381
+        ],
+        "RED IADS Relocated Relay Vuojarvi 25": [
+          -15360.778063515252,
+          185219.5394191919
+        ],
+        "RED IADS Relocated Relay Vuojarvi 26": [
+          -28603.381428503195,
+          198994.0324768295
+        ],
+        "RED IADS Relocated Relay Vuojarvi 27": [
+          -50116.28974912371,
+          195543.39102648324
+        ],
+        "BLUE IADS Relocated Relay Rovaniemi 28": [
+          -156967.54640616084,
+          140149.95055905427
+        ],
+        "BLUE IADS Relocated Relay Kiruna 29": [
+          66839.74075258827,
+          -63158.2291627752
+        ],
+        "BLUE IADS Relocated Relay Kiruna 30": [
+          11882.36467457187,
+          21716.562461385056
+        ],
+        "BLUE IADS Relocated Relay Kiruna 31": [
+          -29290.778264913213,
+          -90761.39007197658
+        ],
+        "BLUE IADS Relocated Relay Kiruna 32": [
+          42713.286995192575,
+          -60940.97148248086
+        ],
+        "BLUE IADS Relocated Relay Bodo 33": [
+          -86780.12069789832,
+          -333733.37011080177
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 34": [
+          -155733.90235496993,
+          -78404.74499669763
+        ],
+        "BLUE IADS Relocated Relay Kallax 35": [
+          -173864.28127152417,
+          38651.20232545175
+        ],
+        "BLUE IADS Relocated Relay Rovaniemi 36": [
+          -171843.3984095725,
+          58333.443808293254
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 37": [
+          -187856.23829538745,
+          -35550.90196767269
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 38": [
+          -182239.72432269543,
+          -13044.443833123009
+        ],
+        "BLUE IADS Relocated Relay Kallax 39": [
+          -181115.60219136535,
+          11975.175410681011
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 40": [
+          -136447.39301072535,
+          -95908.12650553229
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 41": [
+          -138521.27865229652,
+          -122110.8003636727
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 42": [
+          -115375.91540742894,
+          -94474.70663575514
+        ],
+        "BLUE IADS Relocated Relay Kiruna 43": [
+          -94304.4378041325,
+          -93041.286765978
+        ],
+        "BLUE IADS Relocated Relay Kiruna 44": [
+          -73232.96020083607,
+          -91607.86689620087
+        ],
+        "BLUE IADS Relocated Relay Kiruna 45": [
+          -52161.482597539645,
+          -90174.44702642372
+        ],
+        "BLUE IADS Relocated Relay Kiruna 46": [
+          22117.24403092327,
+          -76254.10379731648
+        ],
+        "BLUE IADS Relocated Relay Kiruna 47": [
+          21812.049472795126,
+          -54455.27451662503
+        ],
+        "BLUE IADS Relocated Relay Kiruna 48": [
+          21506.854914666983,
+          -32656.445235933566
+        ],
+        "BLUE IADS Relocated Relay Kiruna 49": [
+          12187.559232700007,
+          -82.26681930640083
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 50": [
+          -135718.2118638586,
+          -141625.78275510296
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 51": [
+          -136176.56350028503,
+          -168986.71878505623
+        ],
+        "BLUE IADS Relocated Relay Bodo 52": [
+          -91283.30999225231,
+          -283655.5824941166
+        ],
+        "BLUE IADS Relocated Relay Kallax 53": [
+          -212114.21823557993,
+          -30310.408071869013
+        ],
+        "BLUE IADS Relocated Relay Kallax 54": [
+          -231474.2970005241,
+          -29440.56697669101
+        ],
+        "BLUE IADS Relocated Relay Rovaniemi 55": [
+          -169947.51554762083,
+          78015.68529113475
+        ],
+        "BLUE IADS Relocated Relay Rovaniemi 56": [
+          -168051.63268566917,
+          97697.92677397624
+        ],
+        "BLUE IADS Relocated Relay Rovaniemi 57": [
+          -166155.74982371752,
+          117380.16825681776
+        ]
+      }
+    }
   },
   "exercise_bright_star.yaml": {
     "autonomous_sites": [],
@@ -936,11 +2072,104 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 37,
+      "relays": 27,
       "command_centres": 4
     },
-    "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "removed_scenery_zones": [
+      "NASMC Cafeteria",
+      "NASMC Comms Facility",
+      "NASMC Parking",
+      "NASMC Staff Quarters",
+      "National Airspace Management Center",
+      "New Trigger Zone-12"
+    ],
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 37,
+      "after_relays": 27,
+      "new_locations": {
+        "RED IADS Relocated Relay Wadi al Jandali 01": [
+          113590.64631054012,
+          39410.326431476
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 02": [
+          898.3226055845876,
+          84623.10256168575
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 03": [
+          13726.181498302554,
+          106975.69140542197
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 04": [
+          138359.62968793666,
+          78183.56936392108
+        ],
+        "RED IADS Relocated Relay Wadi Abu Rish 05": [
+          -110682.416119591,
+          62000.769743767
+        ],
+        "RED IADS Relocated Relay Wadi Abu Rish 06": [
+          -66594.97070445107,
+          86777.63768739345
+        ],
+        "RED IADS Relocated Relay Melez 07": [
+          37019.19621661925,
+          153102.23263162002
+        ],
+        "RED IADS Relocated Relay Al Salam Bridgehead 08": [
+          78538.3924332385,
+          116204.46526324
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 09": [
+          30765.785022541575,
+          127035.9794553804
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 10": [
+          124141.01782260214,
+          88237.83291698314
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 11": [
+          123782.16531837163,
+          58596.28176602552
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 12": [
+          -24991.96818952508,
+          86820.60762745599
+        ],
+        "RED IADS Relocated Relay Wadi Abu Rish 13": [
+          -89813.25365300718,
+          72388.60728695523
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 14": [
+          -17293.757447378688,
+          45761.87429058665
+        ],
+        "BLUE IADS Relocated Relay Ovda 15": [
+          -7511.3694760654,
+          359327.78407237
+        ],
+        "BLUE IADS Relocated Relay Ramon International Airport 16": [
+          -34183.393003492,
+          361057.13157261
+        ],
+        "BLUE IADS Relocated Relay Ramon Airbase 17": [
+          76156.50060746232,
+          372083.7222429189
+        ],
+        "BLUE IADS Relocated Relay Ramon Airbase 18": [
+          58723.13969642935,
+          350856.94684569805
+        ],
+        "BLUE IADS Relocated Relay Ovda 19": [
+          19097.461672850728,
+          365610.00119989645
+        ],
+        "BLUE IADS Relocated Relay Ovda 20": [
+          38570.50885700604,
+          358036.1443868513
+        ]
+      }
+    }
   },
   "exercise_quasar.yaml": {
     "autonomous_sites": [],
@@ -1015,7 +2244,7 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 39,
+      "relays": 30,
       "command_centres": 4
     },
     "removed_scenery_zones": [
@@ -1026,9 +2255,117 @@
       "Hatzerim Research Hangar 1D",
       "Hatzerim Research Hangar 2A",
       "Hatzerim Research Hangar 2B",
+      "NASMC Cafeteria",
+      "NASMC Comms Facility",
+      "NASMC Parking",
+      "NASMC Staff Quarters",
+      "National Airspace Management Center",
+      "New Trigger Zone-12",
       "New Trigger Zone-3"
     ],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 39,
+      "after_relays": 30,
+      "new_locations": {
+        "RED IADS Relocated Relay Cairo West 01": [
+          6905.6994602479,
+          -29823.926638147
+        ],
+        "RED IADS Relocated Relay Melez 02": [
+          96832.667155774,
+          113711.1365339465
+        ],
+        "RED IADS Relocated Relay Melez 03": [
+          34015.01478053945,
+          152459.35549427933
+        ],
+        "RED IADS Relocated Relay Melez 04": [
+          41810.50119089092,
+          212601.09981171455
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 05": [
+          2511.04318269535,
+          44227.290168043
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 06": [
+          44383.3314114025,
+          107146.11346450575
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 07": [
+          27852.29394925139,
+          86833.91789875376
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 08": [
+          141677.8043377459,
+          83969.84951661673
+        ],
+        "RED IADS Relocated Relay Cairo West 09": [
+          10223.492195781124,
+          -6291.741635633389
+        ],
+        "RED IADS Relocated Relay Cairo West 10": [
+          107901.9327521122,
+          -6278.510600247687
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 11": [
+          136501.7089445373,
+          57616.37400327667
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 12": [
+          -23781.0193753595,
+          113557.15360997
+        ],
+        "RED IADS Relocated Relay Cairo West 13": [
+          150183.4408106416,
+          -50021.765630510046
+        ],
+        "RED IADS Relocated Relay Melez 14": [
+          70474.1672215095,
+          109887.88280118325
+        ],
+        "RED IADS Relocated Relay Melez 15": [
+          121007.3879053567,
+          101537.3129497525
+        ],
+        "RED IADS Relocated Relay Melez 16": [
+          34015.10856660174,
+          129362.98646947375
+        ],
+        "RED IADS Relocated Relay Melez 17": [
+          28328.42155015412,
+          179166.24674312188
+        ],
+        "RED IADS Relocated Relay Melez 18": [
+          16268.015631711765,
+          203827.8832654382
+        ],
+        "RED IADS Relocated Relay Melez 19": [
+          67929.13360884726,
+          221095.6843874325
+        ],
+        "RED IADS Relocated Relay El Arish 20": [
+          84487.40180051635,
+          231757.5602722555
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 21": [
+          -13080.551531759254,
+          90078.55900986501
+        ],
+        "RED IADS Relocated Relay Wadi al Jandali 22": [
+          117352.82324580976,
+          43302.77604472425
+        ],
+        "RED IADS Relocated Relay Cairo West 23": [
+          129072.98660136868,
+          -23748.729970817203
+        ],
+        "RED IADS Relocated Relay Cairo West 24": [
+          146588.09889168292,
+          -36558.456452693456
+        ]
+      }
+    }
   },
   "exercise_vegas_nerve.yaml": {
     "autonomous_sites": [],
@@ -1097,24 +2434,119 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 33,
+      "relays": 22,
       "command_centres": 4
     },
     "removed_scenery_zones": [
       "Airport Tower",
+      "Cinetheodolite 1",
+      "Cinetheodolite 2",
       "Garage",
       "Hangar 1",
       "Hangar 2",
       "Hangar 3",
       "Hangar 4",
+      "Nevada Department of Motor Vehicles",
       "New Trigger Zone-10",
       "New Trigger Zone-18",
+      "New Trigger Zone-23",
+      "New Trigger Zone-27",
+      "Non-directional Beacon Tower",
       "Radio Communications",
+      "Sandia Control Tower",
+      "Sandia National Laboratories",
       "Security Forces",
       "Temp Command and Control Center",
-      "Vehicle Bay"
+      "Vehicle Bay",
+      "Water Tower"
     ],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 33,
+      "after_relays": 22,
+      "new_locations": {
+        "RED IADS Relocated Relay Creech 01": [
+          -346342.81469245,
+          -65975.346240873
+        ],
+        "RED IADS Relocated Relay Creech 02": [
+          -325286.0734414736,
+          -80838.90072420573
+        ],
+        "RED IADS Relocated Relay Creech 03": [
+          -406452.086571935,
+          -82392.82630607349
+        ],
+        "RED IADS Relocated Relay Creech 04": [
+          -381478.698695165,
+          -74712.87560400533
+        ],
+        "RED IADS Relocated Relay Nellis 05": [
+          -395116.1473185925,
+          -39815.47711280143
+        ],
+        "RED IADS Relocated Relay Groom Lake 06": [
+          -257573.8034618675,
+          -20000.938405683184
+        ],
+        "RED IADS Relocated Relay Groom Lake 07": [
+          -310125.33515314886,
+          -158853.5607642123
+        ],
+        "RED IADS Relocated Relay Groom Lake 08": [
+          -288104.16743759025,
+          -110427.1462715564
+        ],
+        "RED IADS Relocated Relay Groom Lake 09": [
+          -292818.2630589194,
+          -59683.731778865586
+        ],
+        "RED IADS Relocated Relay Groom Lake 10": [
+          -278338.2707198433,
+          -38293.19767812139
+        ],
+        "RED IADS Relocated Relay Nellis 11": [
+          -374539.676548254,
+          10095.134528454808
+        ],
+        "RED IADS Relocated Relay Boulder City 12": [
+          -430856.2784110764,
+          -29202.2103938608
+        ],
+        "RED IADS Relocated Relay Nellis 13": [
+          -395313.20795832697,
+          760.0285108336652
+        ],
+        "RED IADS Relocated Relay Creech 14": [
+          -370014.092436865,
+          -51449.82001153925
+        ],
+        "RED IADS Relocated Relay Nellis 15": [
+          -413361.93588673935,
+          -20285.086323850934
+        ],
+        "BLUE IADS Relocated Relay Tonopah 16": [
+          -175807.1484266,
+          -214418.86511195998
+        ],
+        "BLUE IADS Relocated Relay Tonopah Test Range 17": [
+          -238767.38381049526,
+          -182077.0322989028
+        ],
+        "BLUE IADS Relocated Relay Tonopah Test Range 18": [
+          -219113.10465710328,
+          -191538.7024837003
+        ],
+        "BLUE IADS Relocated Relay Tonopah 19": [
+          -199203.09965538373,
+          -205769.92926270748
+        ],
+        "BLUE IADS Relocated Relay Tonopah Test Range 20": [
+          -237053.77350355676,
+          -155238.83015856633
+        ]
+      }
+    }
   },
   "golan_heights_lite.yaml": {
     "autonomous_sites": [],
@@ -1161,11 +2593,25 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 6,
+      "relays": 5,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 6,
+      "after_relays": 5,
+      "new_locations": {
+        "RED IADS Relocated Relay Marj Ruhayyil 01": [
+          -190280.3787885625,
+          33740.2145331658
+        ],
+        "RED IADS Relocated Relay Marj Ruhayyil 02": [
+          -190586.52715939423,
+          20343.450158985186
+        ]
+      }
+    }
   },
   "grabthars_hammer.yaml": {
     "autonomous_sites": [],
@@ -1221,11 +2667,113 @@
       "command_centres": 4
     },
     "after": {
-      "relays": 37,
+      "relays": 32,
       "command_centres": 8
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 37,
+      "after_relays": 32,
+      "new_locations": {
+        "RED IADS Relocated Relay Rio Gallegos 01": [
+          22561.316412784,
+          -694607.13270006
+        ],
+        "RED IADS Relocated Relay Punta Arenas 02": [
+          -111488.48247123,
+          -764805.99713518
+        ],
+        "RED IADS Relocated Relay Rio Gallegos 03": [
+          34.465389734014025,
+          -709967.9643835452
+        ],
+        "RED IADS Relocated Relay Punta Arenas 04": [
+          -129281.15942267864,
+          -784465.9891481474
+        ],
+        "RED IADS Relocated Relay Punta Arenas 05": [
+          -85792.2225049543,
+          -755516.9821329393
+        ],
+        "RED IADS Relocated Relay Punta Arenas 06": [
+          -156424.77890586248,
+          -786025.1939487583
+        ],
+        "RED IADS Relocated Relay El Calafate 07": [
+          111135.19590988058,
+          -912651.2496750088
+        ],
+        "RED IADS Relocated Relay Rio Gallegos 08": [
+          -41003.24742351063,
+          -727112.70760951
+        ],
+        "RED IADS Relocated Relay Rio Gallegos 09": [
+          -23009.742270531875,
+          -721338.1228285299
+        ],
+        "RED IADS Relocated Relay Punta Arenas 10": [
+          -109921.10500342282,
+          -797116.7655920507
+        ],
+        "RED IADS Relocated Relay Punta Arenas 11": [
+          -88024.99990665373,
+          -810593.4599146293
+        ],
+        "RED IADS Relocated Relay Punta Arenas 12": [
+          -71513.12105436795,
+          -823233.4923849937
+        ],
+        "RED IADS Relocated Relay Punta Arenas 13": [
+          -55001.242202082016,
+          -835873.524855358
+        ],
+        "RED IADS Relocated Relay Punta Arenas 14": [
+          -38489.363349796244,
+          -848513.5573257222
+        ],
+        "RED IADS Relocated Relay Punta Arenas 15": [
+          -21977.484497510293,
+          -861153.5897960865
+        ],
+        "RED IADS Relocated Relay El Calafate 16": [
+          -3340.83425256226,
+          -878507.8978410824
+        ],
+        "RED IADS Relocated Relay El Calafate 17": [
+          22240.023900410684,
+          -879403.8618313092
+        ],
+        "RED IADS Relocated Relay El Calafate 18": [
+          42873.092833813265,
+          -882179.4390376364
+        ],
+        "RED IADS Relocated Relay El Calafate 19": [
+          63506.16176721598,
+          -884955.0162439635
+        ],
+        "RED IADS Relocated Relay El Calafate 20": [
+          84139.2307006187,
+          -887730.5934502906
+        ],
+        "RED IADS Relocated Relay El Calafate 21": [
+          104772.29963402155,
+          -890506.1706566178
+        ],
+        "RED IADS Relocated Relay Ushuaia Helo Port 22": [
+          -307153.53216634586,
+          -594757.5153851385
+        ],
+        "RED IADS Relocated Relay Punta Arenas 23": [
+          -158651.9326439065,
+          -722817.458531492
+        ],
+        "RED IADS Relocated Relay Ushuaia Helo Port 24": [
+          -215304.93738647507,
+          -660504.4024534508
+        ]
+      }
+    }
   },
   "gran_polvorin.yaml": {
     "autonomous_sites": [
@@ -1320,11 +2868,105 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 40,
+      "relays": 29,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 40,
+      "after_relays": 29,
+      "new_locations": {
+        "RED IADS Relocated Relay Herat 01": [
+          18355.943131189273,
+          -351508.71847753396
+        ],
+        "RED IADS Relocated Relay Herat 02": [
+          9955.011456643751,
+          -376025.8357914175
+        ],
+        "RED IADS Relocated Relay Herat 03": [
+          21411.405011706363,
+          -239772.002389155
+        ],
+        "RED IADS Relocated Relay Farah 04": [
+          -156794.90340928297,
+          -365070.7763929914
+        ],
+        "RED IADS Relocated Relay Shindand 05": [
+          -114115.29415889198,
+          -350794.4418910201
+        ],
+        "RED IADS Relocated Relay Shindand 06": [
+          -88507.95429073612,
+          -365981.1569301355
+        ],
+        "RED IADS Relocated Relay Shindand 07": [
+          -119840.47704701302,
+          -324632.6818261984
+        ],
+        "RED IADS Relocated Relay Shindand Heliport 08": [
+          -61920.975918998,
+          -358147.8580810975
+        ],
+        "RED IADS Relocated Relay Shindand Heliport 09": [
+          -37053.248072735034,
+          -365854.33283513866
+        ],
+        "RED IADS Relocated Relay Herat 10": [
+          -15412.41764734647,
+          -378162.3308168038
+        ],
+        "RED IADS Relocated Relay Farah 11": [
+          -138528.40190551348,
+          -375293.688041115
+        ],
+        "RED IADS Relocated Relay Herat 12": [
+          44489.242624421124,
+          -307314.42876750504
+        ],
+        "RED IADS Relocated Relay Herat 13": [
+          28041.21030303956,
+          -266549.30880341015
+        ],
+        "BLUE IADS Relocated Relay Camp Bastion 14": [
+          -188436.101376459,
+          -130152.824533301
+        ],
+        "BLUE IADS Relocated Relay Kandahar Heliport 15": [
+          -189804.1923964113,
+          -78702.30453253521
+        ],
+        "BLUE IADS Relocated Relay Camp Bastion Heliport 16": [
+          -236790.41495718498,
+          -186316.37322295498
+        ],
+        "BLUE IADS Relocated Relay Camp Bastion 17": [
+          -218038.06645734762,
+          -171359.32140323197
+        ],
+        "BLUE IADS Relocated Relay Kandahar Heliport 18": [
+          -256096.22292222,
+          -38330.038531103
+        ],
+        "BLUE IADS Relocated Relay Kandahar Heliport 19": [
+          -153950.4187343043,
+          -5579.43000604756
+        ],
+        "BLUE IADS Relocated Relay Kandahar Heliport 20": [
+          -205476.4823171478,
+          -35848.493106725444
+        ],
+        "BLUE IADS Relocated Relay Kandahar Heliport 21": [
+          -183903.3001246373,
+          -48906.17660101129
+        ],
+        "BLUE IADS Relocated Relay Kandahar Heliport 22": [
+          -168769.2514546575,
+          -25683.05527812695
+        ]
+      }
+    }
   },
   "IntotheHornetsNest.yaml": {
     "autonomous_sites": [],
@@ -1420,11 +3062,77 @@
       "command_centres": 6
     },
     "after": {
-      "relays": 24,
+      "relays": 16,
       "command_centres": 7
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 24,
+      "after_relays": 16,
+      "new_locations": {
+        "RED IADS Relocated Relay Khalkhalah 01": [
+          -219415.08789688,
+          55725.977167569
+        ],
+        "RED IADS Relocated Relay Beirut-Rafic Hariri 02": [
+          -145589.80066422667,
+          -21658.436697552665
+        ],
+        "RED IADS Relocated Relay Damascus 03": [
+          -181485.3937373,
+          66572.4637256815
+        ],
+        "RED IADS Relocated Relay Marj Ruhayyil 04": [
+          -193641.3193580299,
+          61278.13015239667
+        ],
+        "RED IADS Relocated Relay FOB ALPHA 05": [
+          -171515.97644446135,
+          20516.54564430224
+        ],
+        "RED IADS Relocated Relay Sayqal 06": [
+          -145309.99747647002,
+          99413.77300332523
+        ],
+        "RED IADS Relocated Relay Al-Dumayr 07": [
+          -157445.01024192,
+          76809.896072741
+        ],
+        "RED IADS Relocated Relay Beirut-Rafic Hariri 08": [
+          -135622.83019233381,
+          11703.050226314119
+        ],
+        "RED IADS Relocated Relay Sayqal 09": [
+          -118662.48303558891,
+          101121.49380131219
+        ],
+        "RED IADS Relocated Relay FOB BRAVO 10": [
+          -241134.99514794,
+          40763.2395546785
+        ],
+        "RED IADS Relocated Relay Khalkhalah 11": [
+          -222186.18931838998,
+          79332.5202085485
+        ],
+        "RED IADS Relocated Relay Marj Ruhayyil 12": [
+          -182389.8952571,
+          36399.5295312915
+        ],
+        "RED IADS Relocated Relay Sayqal 13": [
+          -153287.8109592675,
+          125319.69662785425
+        ],
+        "BLUE IADS Relocated Relay Ramat David 14": [
+          -252368.70802953502,
+          -54861.62529404226
+        ],
+        "BLUE IADS Relocated Relay Golan South 15": [
+          -229941.67022529437,
+          -40499.68839978772
+        ]
+      }
+    }
   },
   "Invasion_of_Canary_Islands.yaml": {
     "autonomous_sites": [
@@ -2041,11 +3749,60 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 22,
+      "relays": 16,
       "command_centres": 4
     },
-    "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "removed_scenery_zones": [
+      "Mozdok Train Station",
+      "Mozdok railway station"
+    ],
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 22,
+      "after_relays": 16,
+      "new_locations": {
+        "RED IADS Relocated Relay Maykop-Khanskaya 01": [
+          -27391.001701169076,
+          519204.08375523414
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 02": [
+          -65262.856112968,
+          682391.6458387601
+        ],
+        "RED IADS Relocated Relay Cherkessk FARP 03": [
+          -32933.30487037386,
+          587601.9994237121
+        ],
+        "RED IADS Relocated Relay Cherkessk FARP 04": [
+          -34314.789120110436,
+          614197.4629039437
+        ],
+        "RED IADS Relocated Relay Cherkessk FARP 05": [
+          -48908.57819455892,
+          636798.6818778026
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 06": [
+          -15685.119060019608,
+          538030.0584128104
+        ],
+        "RED IADS Relocated Relay Cherkessk FARP 07": [
+          -55198.042797956135,
+          660373.8442265779
+        ],
+        "BLUE IADS Relocated Relay Mozdok 08": [
+          -97732.7163533521,
+          806354.1523469958
+        ],
+        "BLUE IADS Relocated Relay Mozdok 09": [
+          -93096.55697026651,
+          829806.811516035
+        ],
+        "BLUE IADS Relocated Relay Zarechnoe FARP 10": [
+          -62105.16963121413,
+          767775.4313361289
+        ]
+      }
+    }
   },
   "Northern Guardian.yaml": {
     "autonomous_sites": [
@@ -2174,11 +3931,101 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 32,
+      "relays": 24,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 32,
+      "after_relays": 24,
+      "new_locations": {
+        "RED IADS Relocated Relay Mineralnye Vody 01": [
+          -89286.436454217,
+          722140.8524689
+        ],
+        "RED IADS Relocated Relay Nalchik 02": [
+          -186123.13474088,
+          774938.242
+        ],
+        "RED IADS Relocated Relay Nigniy Pasanauri FOB 03": [
+          -202613.2058491,
+          832580.99028951
+        ],
+        "RED IADS Relocated Relay Khashuri FOB 04": [
+          -293451.53356254,
+          783859.20476687
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 05": [
+          -64505.40716995164,
+          710670.5023043825
+        ],
+        "RED IADS Relocated Relay Nalchik 06": [
+          -92133.92091772695,
+          747749.1606457579
+        ],
+        "RED IADS Relocated Relay Nalchik 07": [
+          -130016.69129731608,
+          782873.0952938806
+        ],
+        "RED IADS Relocated Relay Nalchik 08": [
+          -110087.37950391124,
+          768145.1390518299
+        ],
+        "RED IADS Relocated Relay Nalchik 09": [
+          -178247.35965241483,
+          748730.7516367543
+        ],
+        "RED IADS Relocated Relay Beslan 10": [
+          -194229.5443066422,
+          800692.4620331883
+        ],
+        "RED IADS Relocated Relay Beslan 11": [
+          -130640.26217817499,
+          810066.1750680467
+        ],
+        "RED IADS Relocated Relay Mozdok 12": [
+          -109387.23895646688,
+          827702.4627844755
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 13": [
+          -326942.500826115,
+          905180.4213536249
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 14": [
+          -304289.34134018375,
+          889454.2530467163
+        ],
+        "RED IADS Relocated Relay Nigniy Pasanauri FOB 15": [
+          -215289.902134241,
+          797445.762027321
+        ],
+        "RED IADS Relocated Relay Nigniy Pasanauri FOB 16": [
+          -246811.34010403126,
+          864095.9571576088
+        ],
+        "RED IADS Relocated Relay Nigniy Pasanauri FOB 17": [
+          -224687.50949527547,
+          848571.1978611028
+        ],
+        "RED IADS Relocated Relay Beslan 18": [
+          -180814.0555686048,
+          817618.1960060919
+        ],
+        "RED IADS Relocated Relay Khashuri FOB 19": [
+          -266075.04960723105,
+          783706.441679036
+        ],
+        "RED IADS Relocated Relay Nigniy Pasanauri FOB 20": [
+          -264696.97814691375,
+          870960.7490889513
+        ],
+        "RED IADS Relocated Relay Tbilisi-Lochini 21": [
+          -282930.1035139362,
+          878158.2074490788
+        ]
+      }
+    }
   },
   "Operation-Desert-Sabre.yaml": {
     "autonomous_sites": [],
@@ -2302,11 +4149,125 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 41,
+      "relays": 30,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 41,
+      "after_relays": 30,
+      "new_locations": {
+        "RED IADS Relocated Relay As Salihiyah 01": [
+          65912.448835915,
+          100186.85368808
+        ],
+        "RED IADS Relocated Relay Melez 02": [
+          48881.235179587,
+          190131.4552151
+        ],
+        "RED IADS Relocated Relay Nevatim 03": [
+          125720.6076707,
+          365068.65319341
+        ],
+        "RED IADS Relocated Relay As Salihiyah 04": [
+          92093.28796563615,
+          109464.51110897955
+        ],
+        "RED IADS Relocated Relay As Salihiyah 05": [
+          65498.981604763685,
+          73332.99310752444
+        ],
+        "RED IADS Relocated Relay As Salihiyah 06": [
+          40010.8009148737,
+          109836.4488158125
+        ],
+        "RED IADS Relocated Relay As Salihiyah 07": [
+          108672.79756747668,
+          129087.74300471794
+        ],
+        "RED IADS Relocated Relay Melez 08": [
+          31106.431649914382,
+          169571.336562446
+        ],
+        "RED IADS Relocated Relay Melez 09": [
+          68303.5815447694,
+          208138.0493213074
+        ],
+        "RED IADS Relocated Relay Melez 10": [
+          17111.126256286178,
+          147701.46420590588
+        ],
+        "RED IADS Relocated Relay Melez 11": [
+          15298.149971997957,
+          120502.86930073622
+        ],
+        "RED IADS Relocated Relay Melez 12": [
+          109229.21638659999,
+          156065.40911095002
+        ],
+        "RED IADS Relocated Relay Melez 13": [
+          39413.24552924733,
+          201063.22929326666
+        ],
+        "RED IADS Relocated Relay Nevatim 14": [
+          115796.50766449171,
+          346767.76523423404
+        ],
+        "RED IADS Relocated Relay Ramon Airbase 15": [
+          103221.20511657516,
+          272033.98545293533
+        ],
+        "RED IADS Relocated Relay Ramon Airbase 16": [
+          97262.76991986201,
+          247058.253764815
+        ],
+        "RED IADS Relocated Relay Ramon Airbase 17": [
+          105974.51411507421,
+          321564.8644012468
+        ],
+        "RED IADS Relocated Relay Ramon Airbase 18": [
+          94409.8667068425,
+          350631.48005431495
+        ],
+        "RED IADS Relocated Relay Cairo International Airport 19": [
+          12303.35400170569,
+          37512.42869247537
+        ],
+        "RED IADS Relocated Relay Inshas Airbase 20": [
+          131271.17966892914,
+          -68173.66459514531
+        ],
+        "RED IADS Relocated Relay Melez 21": [
+          75667.57677785316,
+          232923.53510104583
+        ],
+        "RED IADS Relocated Relay Ramon Airbase 22": [
+          102624.16387778489,
+          294663.7034324331
+        ],
+        "RED IADS Relocated Relay Bilbeis Air Base 23": [
+          64465.65451243094,
+          48278.90489807753
+        ],
+        "RED IADS Relocated Relay Inshas Airbase 24": [
+          85662.53130407598,
+          97.62270850045388
+        ],
+        "RED IADS Relocated Relay Inshas Airbase 25": [
+          96951.49744161312,
+          -18384.309891886314
+        ],
+        "RED IADS Relocated Relay Inshas Airbase 26": [
+          108391.39151738511,
+          -34980.76145963931
+        ],
+        "RED IADS Relocated Relay Inshas Airbase 27": [
+          119831.2855931571,
+          -51577.21302739231
+        ]
+      }
+    }
   },
   "operation_aegean_aegis.yaml": {
     "autonomous_sites": [],
@@ -2336,11 +4297,37 @@
       "command_centres": 1
     },
     "after": {
-      "relays": 7,
+      "relays": 5,
       "command_centres": 2
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 7,
+      "after_relays": 5,
+      "new_locations": {
+        "RED IADS Relocated Relay Akrotiri 01": [
+          -16153.907550912038,
+          -254034.44851291485
+        ],
+        "RED IADS Relocated Relay Ercan 02": [
+          11255.485807115301,
+          -213928.266871185
+        ],
+        "RED IADS Relocated Relay Ercan 03": [
+          26976.37061802763,
+          -246693.3218298282
+        ],
+        "RED IADS Relocated Relay Ercan 04": [
+          4415.6612725704945,
+          -237115.96055745886
+        ],
+        "RED IADS Relocated Relay Ercan 05": [
+          26305.026102776716,
+          -193208.05102026978
+        ]
+      }
+    }
   },
   "operation_allied_sword.yaml": {
     "autonomous_sites": [],
@@ -2453,14 +4440,176 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 59,
+      "relays": 43,
       "command_centres": 4
     },
     "removed_scenery_zones": [
       "New Trigger Zone-2",
       "Sama Command Center"
     ],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 59,
+      "after_relays": 43,
+      "new_locations": {
+        "RED IADS Relocated Relay FOB Samandag 01": [
+          115843.48674926,
+          11358.935374548
+        ],
+        "RED IADS Relocated Relay Damascus 02": [
+          -176525.587812545,
+          42393.94591049025
+        ],
+        "RED IADS Relocated Relay Damascus 03": [
+          -158460.90874928999,
+          24554.748634698502
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 04": [
+          73000.44737899955,
+          13312.814837632373
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 05": [
+          53595.58430084982,
+          29762.997053037532
+        ],
+        "RED IADS Relocated Relay Aleppo 06": [
+          114032.94207570158,
+          130100.07619659272
+        ],
+        "RED IADS Relocated Relay FOB Ithriyah 07": [
+          45904.664337832284,
+          93844.91460056309
+        ],
+        "RED IADS Relocated Relay Kuweires 08": [
+          127619.57937463,
+          149212.128229965
+        ],
+        "RED IADS Relocated Relay Palmyra 09": [
+          -80948.2076055418,
+          212710.44244036908
+        ],
+        "RED IADS Relocated Relay Kuweires 10": [
+          99313.79385856022,
+          143362.21161163243
+        ],
+        "RED IADS Relocated Relay Kharab Ishk 11": [
+          152097.9957408899,
+          269211.435276998
+        ],
+        "RED IADS Relocated Relay Kharab Ishk 12": [
+          108933.46876879029,
+          263322.60710362945
+        ],
+        "RED IADS Relocated Relay FOB Al Quaryatayn 13": [
+          -103320.20879829681,
+          124892.0033869894
+        ],
+        "RED IADS Relocated Relay FOB Al Quaryatayn 14": [
+          -91211.191103106,
+          172396.35722977953
+        ],
+        "RED IADS Relocated Relay FOB Al Quaryatayn 15": [
+          -85137.702860862,
+          113139.08314052637
+        ],
+        "RED IADS Relocated Relay FOB Al Quaryatayn 16": [
+          -91963.43255065489,
+          144840.4466608062
+        ],
+        "RED IADS Relocated Relay FOB Homs 17": [
+          6820.213821479757,
+          55673.35719604396
+        ],
+        "RED IADS Relocated Relay FOB Homs 18": [
+          25722.022715088246,
+          74792.24972057367
+        ],
+        "RED IADS Relocated Relay FOB Homs 19": [
+          -83984.45364327042,
+          10834.40054389796
+        ],
+        "RED IADS Relocated Relay FOB Homs 20": [
+          -31659.1969249705,
+          66658.5267705335
+        ],
+        "RED IADS Relocated Relay FOB Homs 21": [
+          -15914.560069469175,
+          43951.61417209463
+        ],
+        "RED IADS Relocated Relay FOB Homs 22": [
+          -53440.403321366626,
+          82365.54756026197
+        ],
+        "RED IADS Relocated Relay FOB Ithriyah 23": [
+          61036.2694647663,
+          167017.65559853683
+        ],
+        "RED IADS Relocated Relay FOB Ithriyah 24": [
+          39580.70621930623,
+          119262.33361782787
+        ],
+        "RED IADS Relocated Relay FOB Ithriyah 25": [
+          71695.92644383437,
+          145752.6486730672
+        ],
+        "RED IADS Relocated Relay Kuweires 26": [
+          91676.27365336915,
+          217959.45109910055
+        ],
+        "RED IADS Relocated Relay FOB Samandag 27": [
+          134115.47432757582,
+          24294.069861117565
+        ],
+        "RED IADS Relocated Relay FOB Samandag 28": [
+          96367.70831276651,
+          2550.52601119865
+        ],
+        "RED IADS Relocated Relay Damascus 29": [
+          -131396.5834232521,
+          22662.1469496806
+        ],
+        "RED IADS Relocated Relay Beirut-Rafic Hariri 30": [
+          -145544.35829022268,
+          -28283.904607172393
+        ],
+        "RED IADS Relocated Relay Beirut-Rafic Hariri 31": [
+          -111366.14564453246,
+          10490.949372922405
+        ],
+        "RED IADS Relocated Relay FOB Homs 32": [
+          -31889.0406170811,
+          22121.34924670099
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 33": [
+          39202.73655043369,
+          52473.499305344005
+        ],
+        "RED IADS Relocated Relay FOB Ithriyah 34": [
+          71814.46051525715,
+          184349.24548204555
+        ],
+        "RED IADS Relocated Relay FOB Ithriyah 35": [
+          81745.36708431315,
+          201154.34829057308
+        ],
+        "RED IADS Relocated Relay Kharab Ishk 36": [
+          109764.70635237929,
+          238474.03124653557
+        ],
+        "RED IADS Relocated Relay FOB Homs 37": [
+          -70741.253560228,
+          98987.31638955913
+        ],
+        "RED IADS Relocated Relay Palmyra 38": [
+          -88909.4317959001,
+          197820.47728453702
+        ],
+        "BLUE IADS Relocated Relay Ramat David 39": [
+          -286724.143927862,
+          -80486.1510865089
+        ]
+      }
+    }
   },
   "operation_blackball.yaml": {
     "autonomous_sites": [],
@@ -2506,11 +4655,53 @@
       "command_centres": 1
     },
     "after": {
-      "relays": 13,
+      "relays": 10,
       "command_centres": 2
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 13,
+      "after_relays": 10,
+      "new_locations": {
+        "RED IADS Relocated Relay FOB Gecitkale 01": [
+          31303.610464079,
+          -196639.39668282
+        ],
+        "RED IADS Relocated Relay Akrotiri 02": [
+          -10887.408095484543,
+          -283790.51601397956
+        ],
+        "RED IADS Relocated Relay Paphos 03": [
+          7063.51322445898,
+          -304145.0758043878
+        ],
+        "RED IADS Relocated Relay Larnaca 04": [
+          15318.105621655272,
+          -217815.82922327868
+        ],
+        "RED IADS Relocated Relay FOB Gecitkale 05": [
+          45219.7728627012,
+          -176023.31209859397
+        ],
+        "RED IADS Relocated Relay FOB Guzelyurt 06": [
+          24714.15679314573,
+          -284736.65840952686
+        ],
+        "RED IADS Relocated Relay FOB Guzelyurt 07": [
+          36155.864278442,
+          -259659.47004260749
+        ],
+        "RED IADS Relocated Relay FOB Gecitkale 08": [
+          33010.009294455565,
+          -232451.89867547314
+        ],
+        "RED IADS Relocated Relay FOB Andreas 09": [
+          68106.33477808369,
+          -136424.163720994
+        ]
+      }
+    }
   },
   "operation_desert_aladeen.yaml": {
     "autonomous_sites": [],
@@ -2557,11 +4748,57 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 22,
+      "relays": 15,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 22,
+      "after_relays": 15,
+      "new_locations": {
+        "BLUE IADS Relocated Relay Baghdad International Airport 01": [
+          40509.99605317617,
+          2871.3381548815164
+        ],
+        "BLUE IADS Relocated Relay Baghdad International Airport 02": [
+          33980.67631356184,
+          -18127.734841849353
+        ],
+        "RED IADS Relocated Relay Erbil International Airport 03": [
+          331890.84871506,
+          -28600.952835481
+        ],
+        "RED IADS Relocated Relay Erbil International Airport 04": [
+          316122.17785859277,
+          -6510.11748964426
+        ],
+        "RED IADS Relocated Relay Qayyarah Airfield West 05": [
+          293489.08008031116,
+          -81221.11421200025
+        ],
+        "RED IADS Relocated Relay Sulaimaniyah International Airport 06": [
+          246545.67034317675,
+          92056.20895353847
+        ],
+        "RED IADS Relocated Relay Sulaimaniyah International Airport 07": [
+          250770.50573049087,
+          66002.5589442349
+        ],
+        "RED IADS Relocated Relay Kirkuk International Airport 08": [
+          259447.1626475042,
+          40336.231374760886
+        ],
+        "RED IADS Relocated Relay Erbil International Airport 09": [
+          290007.9565567462,
+          -1853.3772010568027
+        ],
+        "RED IADS Relocated Relay Erbil International Airport 10": [
+          325667.80625652336,
+          -55462.905274248995
+        ]
+      }
+    }
   },
   "operation_desert_trident.yaml": {
     "autonomous_sites": [],
@@ -2625,11 +4862,105 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 38,
+      "relays": 24,
       "command_centres": 6
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 38,
+      "after_relays": 24,
+      "new_locations": {
+        "RED IADS Relocated Relay H4 02": [
+          -276599.8526610589,
+          227761.39091862628
+        ],
+        "RED IADS Relocated Relay H4 03": [
+          -300273.66070999333,
+          191078.8001324365
+        ],
+        "RED IADS Relocated Relay H4 04": [
+          -281566.59831630386,
+          174582.82250162747
+        ],
+        "RED IADS Relocated Relay H3 05": [
+          -240980.02487196148,
+          339055.9071612261
+        ],
+        "RED IADS Relocated Relay H3 Northwest 06": [
+          -214234.759770855,
+          343678.95654812246
+        ],
+        "RED IADS Relocated Relay H3 Northwest 07": [
+          -232526.72207723607,
+          325074.48380679777
+        ],
+        "RED IADS Relocated Relay H3 Southwest 08": [
+          -251909.8690218609,
+          307952.24598149495
+        ],
+        "RED IADS Relocated Relay Prince Hassan 09": [
+          -317872.2171748425,
+          101888.10815715251
+        ],
+        "RED IADS Relocated Relay H4 10": [
+          -306706.04242408904,
+          126708.24149976521
+        ],
+        "RED IADS Relocated Relay H4 11": [
+          -336737.8177422925,
+          82294.43624948667
+        ],
+        "RED IADS Relocated Relay Muwaffaq Salti 12": [
+          -329105.81836477504,
+          55798.516317572
+        ],
+        "RED IADS Relocated Relay H4 13": [
+          -293018.34671792784,
+          242004.08301128604
+        ],
+        "RED IADS Relocated Relay H3 Southwest 14": [
+          -257127.70145479217,
+          281959.19340527395
+        ],
+        "RED IADS Relocated Relay H4 15": [
+          -293412.23604269075,
+          149566.63297604825
+        ],
+        "BLUE IADS Relocated Relay Hatzor 16": [
+          -376855.4560127664,
+          -115845.05197204731
+        ],
+        "BLUE IADS Relocated Relay Tel Nof 17": [
+          -361711.054808565,
+          -93560.621645467
+        ],
+        "BLUE IADS Relocated Relay Ben Gurion 18": [
+          -340140.97846611444,
+          -81059.2709351549
+        ],
+        "BLUE IADS Relocated Relay Ben Gurion 19": [
+          -328384.3117221736,
+          -56235.546064171795
+        ],
+        "BLUE IADS Relocated Relay Ben Gurion 20": [
+          -275976.08147625014,
+          -45286.9275538667
+        ],
+        "BLUE IADS Relocated Relay Ben Gurion 21": [
+          -251769.5997708123,
+          -53267.99614635599
+        ],
+        "BLUE IADS Relocated Relay Hatzor 22": [
+          -403380.43164976,
+          -123343.27021059167
+        ],
+        "BLUE IADS Relocated Relay Ben Gurion 23": [
+          -301168.63558127335,
+          -53841.64209086234
+        ]
+      }
+    }
   },
   "operation_frostbite.yaml": {
     "autonomous_sites": [],
@@ -2698,11 +5029,117 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 42,
+      "relays": 36,
       "command_centres": 6
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 42,
+      "after_relays": 36,
+      "new_locations": {
+        "RED IADS Relocated Relay Murmansk International 01": [
+          142847.22813968,
+          419549.52987722
+        ],
+        "RED IADS Relocated Relay Severomorsk-1 02": [
+          156299.76151011832,
+          436847.998345785
+        ],
+        "RED IADS Relocated Relay Severomorsk-1 03": [
+          180181.27369004,
+          446694.459332825
+        ],
+        "RED IADS Relocated Relay Olenya 04": [
+          69814.5595768727,
+          428183.5241771438
+        ],
+        "RED IADS Relocated Relay Murmansk International 05": [
+          129579.2997909,
+          398569.65730849
+        ],
+        "RED IADS Relocated Relay FOB Kovfor 06": [
+          7919.327373610897,
+          346776.30276466446
+        ],
+        "RED IADS Relocated Relay FOB Nikel 07": [
+          147040.4252787811,
+          276915.92015660316
+        ],
+        "RED IADS Relocated Relay FOB Nikel 08": [
+          141218.2284099383,
+          303792.56475808844
+        ],
+        "RED IADS Relocated Relay FOB Kevajarvi 09": [
+          105657.24511819782,
+          228768.6439831591
+        ],
+        "RED IADS Relocated Relay FOB Karigasniemi 10": [
+          174262.60173531267,
+          151128.9440608642
+        ],
+        "RED IADS Relocated Relay FOB Lokka 11": [
+          32032.72157560985,
+          217442.279312146
+        ],
+        "RED IADS Relocated Relay Murmansk International 12": [
+          90240.06687442308,
+          414427.21905097226
+        ],
+        "RED IADS Relocated Relay Monchegorsk 13": [
+          48783.66962889365,
+          411649.7541686379
+        ],
+        "RED IADS Relocated Relay FOB Zasheyek 14": [
+          28758.59278269724,
+          377496.0392671277
+        ],
+        "RED IADS Relocated Relay FOB Kovfor 15": [
+          18338.960078154072,
+          362136.1710158961
+        ],
+        "RED IADS Relocated Relay FOB Verkhnetulomskiy 16": [
+          130077.34569108099,
+          370909.0290581955
+        ],
+        "RED IADS Relocated Relay FOB Nikel 17": [
+          128978.28896046698,
+          320848.5464314511
+        ],
+        "RED IADS Relocated Relay FOB Nikel 18": [
+          168056.6877920757,
+          257884.21260061816
+        ],
+        "RED IADS Relocated Relay FOB Nikel 19": [
+          143605.75770386777,
+          249966.19301816972
+        ],
+        "RED IADS Relocated Relay FOB Kevajarvi 20": [
+          129468.09835997355,
+          236980.83781054697
+        ],
+        "RED IADS Relocated Relay FOB Kevajarvi 21": [
+          146433.70858069693,
+          218509.7206153026
+        ],
+        "RED IADS Relocated Relay FOB Kevajarvi 22": [
+          83607.58944993201,
+          214405.73999074742
+        ],
+        "RED IADS Relocated Relay FOB Kevajarvi 23": [
+          133299.6820383906,
+          197999.50589643046
+        ],
+        "RED IADS Relocated Relay FOB Karigasniemi 24": [
+          146853.482320009,
+          182683.69891186047
+        ],
+        "RED IADS Relocated Relay FOB Karigasniemi 25": [
+          160407.2826016274,
+          167367.89192729047
+        ]
+      }
+    }
   },
   "operation_gazelle.yaml": {
     "autonomous_sites": [],
@@ -2776,11 +5213,122 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 42,
+      "relays": 31,
       "command_centres": 4
     },
-    "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "removed_scenery_zones": [
+      "Bir Gifgafa Command Coordination Centre",
+      "Bir Gifgafa Logistics HQ",
+      "Bir Gifgafa Staff Quarters",
+      "New Trigger Zone-16"
+    ],
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 42,
+      "after_relays": 31,
+      "new_locations": {
+        "RED IADS Relocated Relay Melez 01": [
+          15881.63045478136,
+          184293.11661982173
+        ],
+        "RED IADS Relocated Relay Melez 02": [
+          28827.661925972523,
+          203546.85186954905
+        ],
+        "RED IADS Relocated Relay Al Mansurah 03": [
+          116481.60723885498,
+          -10202.471102684693
+        ],
+        "RED IADS Relocated Relay Al Mansurah 04": [
+          139660.112827149,
+          -5844.259901284611
+        ],
+        "RED IADS Relocated Relay Al Mansurah 05": [
+          65551.4992879505,
+          38148.1004381885
+        ],
+        "RED IADS Relocated Relay Al Mansurah 06": [
+          77989.24020904074,
+          60697.58340746444
+        ],
+        "RED IADS Relocated Relay Al Mansurah 07": [
+          89594.9297701015,
+          27046.996652583002
+        ],
+        "RED IADS Relocated Relay Al Mansurah 08": [
+          102451.24825438183,
+          11703.987056375834
+        ],
+        "RED IADS Relocated Relay Al Mansurah 09": [
+          138630.20357647672,
+          53180.95874647822
+        ],
+        "RED IADS Relocated Relay Cairo West 10": [
+          18128.17319522118,
+          -11518.31271580202
+        ],
+        "RED IADS Relocated Relay Al Mansurah 11": [
+          41107.47577800092,
+          34166.56044617208
+        ],
+        "RED IADS Relocated Relay Cairo West 12": [
+          6942.54724273065,
+          -27387.26461115
+        ],
+        "RED IADS Relocated Relay Baluza 13": [
+          100665.75336667601,
+          75253.36365882264
+        ],
+        "RED IADS Relocated Relay Baluza 14": [
+          104944.41507238465,
+          102035.97779104138
+        ],
+        "RED IADS Relocated Relay El Arish 15": [
+          95695.4149100304,
+          237534.891026786
+        ],
+        "RED IADS Relocated Relay Port Tewfik Staging Area 16": [
+          26189.905757131495,
+          82279.39321355053
+        ],
+        "RED IADS Relocated Relay Port Tewfik Staging Area 17": [
+          24975.232281656376,
+          55055.4511816852
+        ],
+        "RED IADS Relocated Relay Port Tewfik Staging Area 18": [
+          -7263.221543116539,
+          105960.01113070165
+        ],
+        "RED IADS Relocated Relay Port Tewfik Staging Area 19": [
+          14519.68386783416,
+          107460.08386556957
+        ],
+        "RED IADS Relocated Relay Port Tewfik Staging Area 20": [
+          23629.132251366675,
+          131880.44057981385
+        ],
+        "RED IADS Relocated Relay Melez 21": [
+          45590.66519243688,
+          223587.75431887648
+        ],
+        "RED IADS Relocated Relay El Arish 22": [
+          69618.79155398672,
+          237078.56931894633
+        ],
+        "RED IADS Relocated Relay Port Tewfik Staging Area 23": [
+          -34074.64340121976,
+          100413.61088055956
+        ],
+        "RED IADS Relocated Relay Cairo West 24": [
+          32564.032335428812,
+          10417.257195727518
+        ],
+        "RED IADS Relocated Relay Al Mansurah 25": [
+          116681.46681636327,
+          66681.46681636327
+        ]
+      }
+    }
   },
   "operation_noisy_cricket.yaml": {
     "autonomous_sites": [],
@@ -2840,11 +5388,153 @@
       "command_centres": 7
     },
     "after": {
-      "relays": 59,
+      "relays": 53,
       "command_centres": 12
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 59,
+      "after_relays": 53,
+      "new_locations": {
+        "RED IADS Relocated Relay Bandar Abbas Intl 01": [
+          112996.99823382005,
+          -306.32929789660557
+        ],
+        "RED IADS Relocated Relay Bandar Abbas Intl 02": [
+          136156.60064996645,
+          1623.7738593027898
+        ],
+        "RED IADS Relocated Relay Kerman 03": [
+          432110.36117473623,
+          71168.90101767363
+        ],
+        "RED IADS Relocated Relay Kerman 04": [
+          369535.5387335265,
+          75608.79069507954
+        ],
+        "RED IADS Relocated Relay Shiraz Intl 05": [
+          357710.7106124625,
+          -345682.744388803
+        ],
+        "RED IADS Relocated Relay Shiraz Intl 06": [
+          360667.18201600394,
+          -366096.3005446634
+        ],
+        "RED IADS Relocated Relay Kish Intl 07": [
+          83304.3458660744,
+          -245385.32191712726
+        ],
+        "RED IADS Relocated Relay Kish Intl 08": [
+          68800.4709259893,
+          -221751.03035498844
+        ],
+        "RED IADS Relocated Relay Bushehr Nuclear Power Plant 09": [
+          322735.9780840366,
+          -492397.0945136994
+        ],
+        "RED IADS Relocated Relay Bandar Abbas Intl 10": [
+          177268.39504765917,
+          35881.556989104676
+        ],
+        "RED IADS Relocated Relay Bandar Abbas Intl 11": [
+          264610.21623627737,
+          51983.41733120218
+        ],
+        "RED IADS Relocated Relay Kerman 12": [
+          286445.6715334319,
+          56008.88241672656
+        ],
+        "RED IADS Relocated Relay Kerman 13": [
+          389105.40707861935,
+          81347.59055909049
+        ],
+        "RED IADS Relocated Relay Bandar Abbas Intl 14": [
+          108542.0545021,
+          -22540.8525467835
+        ],
+        "RED IADS Relocated Relay Qeshm Island 15": [
+          104736.44723515333,
+          -43535.405540545704
+        ],
+        "RED IADS Relocated Relay Qeshm Island 16": [
+          100930.83996820667,
+          -64529.958534307894
+        ],
+        "RED IADS Relocated Relay Qeshm Island 17": [
+          97125.23270126,
+          -85524.51152807008
+        ],
+        "RED IADS Relocated Relay Qeshm Island 18": [
+          93319.62543431333,
+          -106519.0645218323
+        ],
+        "RED IADS Relocated Relay Qeshm Island 19": [
+          89514.01816736667,
+          -127513.6175155945
+        ],
+        "RED IADS Relocated Relay Kish Intl 20": [
+          85708.41090042,
+          -148508.1705093567
+        ],
+        "RED IADS Relocated Relay Kish Intl 21": [
+          81902.80363347333,
+          -169502.7235031189
+        ],
+        "RED IADS Relocated Relay Kish Intl 22": [
+          104069.41467292389,
+          -262433.8709072619
+        ],
+        "RED IADS Relocated Relay Kish Intl 23": [
+          204870.76369621998,
+          -303921.1836479603
+        ],
+        "RED IADS Relocated Relay Shiraz Intl 24": [
+          245191.30330553843,
+          -320516.10874423984
+        ],
+        "RED IADS Relocated Relay Shiraz Intl 25": [
+          265351.5731101976,
+          -328813.5712923795
+        ],
+        "RED IADS Relocated Relay Shiraz Intl 26": [
+          366779.5948213714,
+          -417906.7721950461
+        ],
+        "RED IADS Relocated Relay Bushehr Nuclear Power Plant 27": [
+          359412.5150495147,
+          -436380.7239882717
+        ],
+        "RED IADS Relocated Relay Bushehr Nuclear Power Plant 28": [
+          352045.435277658,
+          -454854.6757814972
+        ],
+        "BLUE IADS Relocated Relay Al Dhafra AFB 29": [
+          -212500.44557005566,
+          -196170.94577965655
+        ],
+        "BLUE IADS Relocated Relay Al Dhafra AFB 30": [
+          -206646.91318003807,
+          -181744.02810007866
+        ],
+        "BLUE IADS Relocated Relay Al Minhad AFB 31": [
+          -145671.34793275,
+          -104437.20214998216
+        ],
+        "BLUE IADS Relocated Relay Al Dhafra AFB 32": [
+          -176204.04170902,
+          -137703.0188708979
+        ],
+        "BLUE IADS Relocated Relay Al Minhad AFB 33": [
+          -162378.62830736,
+          -125035.06058836509
+        ],
+        "BLUE IADS Relocated Relay Al Dhafra AFB 34": [
+          -190937.56201922,
+          -160070.28559963946
+        ]
+      }
+    }
   },
   "operation_peace_spring.yaml": {
     "autonomous_sites": [],
@@ -2913,11 +5603,157 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 56,
+      "relays": 42,
       "command_centres": 6
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 56,
+      "after_relays": 42,
+      "new_locations": {
+        "RED IADS Relocated Relay Abu al-Duhur 01": [
+          137585.86522986,
+          79302.291764349
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 02": [
+          123592.56779198817,
+          102520.13490821404
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 03": [
+          148542.93261493,
+          55651.1458821745
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 04": [
+          -16005.593267439814,
+          30048.048236982948
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 05": [
+          84044.45503177475,
+          121212.74571947125
+        ],
+        "RED IADS Relocated Relay Damascus 06": [
+          -56590.99300265124,
+          21828.87759450461
+        ],
+        "RED IADS Relocated Relay Damascus 07": [
+          -157010.54232308603,
+          59032.93627314389
+        ],
+        "RED IADS Relocated Relay Gaziantep 08": [
+          187446.93076790255,
+          139385.15942137004
+        ],
+        "RED IADS Relocated Relay Incirlik 09": [
+          203032.81499076102,
+          -46755.74819101332
+        ],
+        "RED IADS Relocated Relay Incirlik 10": [
+          183452.22788647498,
+          -39803.934713086
+        ],
+        "RED IADS Relocated Relay Incirlik 11": [
+          206032.32595722744,
+          -21559.271049678842
+        ],
+        "RED IADS Relocated Relay Tiyas 12": [
+          -37784.41041566605,
+          204354.59376685607
+        ],
+        "RED IADS Relocated Relay Tiyas 13": [
+          -30862.12746623265,
+          146418.83696827336
+        ],
+        "RED IADS Relocated Relay Tiyas 14": [
+          -38842.8472591565,
+          170957.97531389998
+        ],
+        "RED IADS Relocated Relay Tiyas 15": [
+          -42714.512476306,
+          191341.21217719262
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 16": [
+          124064.52426335974,
+          140606.69181483155
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 17": [
+          111250.77713977685,
+          120191.59198054593
+        ],
+        "RED IADS Relocated Relay Gaziantep 18": [
+          147468.78618559786,
+          149656.5788330049
+        ],
+        "RED IADS Relocated Relay Gaziantep 19": [
+          165522.49232607786,
+          143358.40132175692
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 20": [
+          70402.61926753214,
+          97145.86708600263
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 21": [
+          24538.045513294324,
+          98502.16370443648
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 22": [
+          7055.343472279308,
+          62528.243056522915
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 23": [
+          5619.151567871576,
+          85917.17396705318
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 24": [
+          30105.920689361265,
+          17930.200152999983
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 25": [
+          160863.96059553156,
+          58840.09851117109
+        ],
+        "RED IADS Relocated Relay Incirlik 26": [
+          205462.52611719279,
+          31467.87952902239
+        ],
+        "RED IADS Relocated Relay Tiyas 27": [
+          -36093.75565666972,
+          32972.89020266267
+        ],
+        "RED IADS Relocated Relay Damascus 28": [
+          -81844.713102751,
+          29551.474466463016
+        ],
+        "RED IADS Relocated Relay Damascus 29": [
+          -99291.29731588547,
+          36024.50812036975
+        ],
+        "RED IADS Relocated Relay Damascus 30": [
+          -116737.88152901999,
+          42497.541774276484
+        ],
+        "RED IADS Relocated Relay Damascus 31": [
+          -134184.4657421545,
+          48970.57542818322
+        ],
+        "RED IADS Relocated Relay Tiyas 32": [
+          -6402.3329458352055,
+          107216.69851167085
+        ],
+        "RED IADS Relocated Relay Tiyas 33": [
+          -17949.533793903167,
+          124475.72425662985
+        ],
+        "BLUE IADS Relocated Relay Ramat David 34": [
+          -252980.15487849625,
+          -50302.96961482252
+        ],
+        "BLUE IADS Relocated Relay Ramat David 35": [
+          -277812.998982765,
+          -38343.12601019312
+        ]
+      }
+    }
   },
   "operation_syrian_shield.yaml": {
     "autonomous_sites": [],
@@ -3027,18 +5863,115 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 41,
+      "relays": 29,
       "command_centres": 6
     },
     "removed_scenery_zones": [
       "Airport Domestic Terminal",
       "Airport Military Terminal",
+      "Central Services",
+      "Information Retrieval",
       "New Trigger Zone-1",
       "New Trigger Zone-11",
+      "New Trigger Zone-15",
       "Substation",
       "UN Comms Facility"
     ],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 41,
+      "after_relays": 29,
+      "new_locations": {
+        "RED IADS Relocated Relay Anapa-Vityazevo 01": [
+          -4231.4021709725,
+          248046.77844098
+        ],
+        "RED IADS Relocated Relay Dzhugba 02": [
+          -75168.306205822,
+          354336.95130862
+        ],
+        "RED IADS Relocated Relay Anapa-Vityazevo 03": [
+          -19098.1227915124,
+          267244.61044156
+        ],
+        "RED IADS Relocated Relay Anapa-Vityazevo 04": [
+          -25337.114547804336,
+          292787.6066817915
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 05": [
+          -532.2707756453738,
+          423195.5803492225
+        ],
+        "RED IADS Relocated Relay Sochi-Adler 06": [
+          -125829.80598160907,
+          460417.96097216697
+        ],
+        "RED IADS Relocated Relay Sochi-Adler 07": [
+          -146726.06433982405,
+          477105.14046550926
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 08": [
+          -78190.78043659123,
+          693161.5485117801
+        ],
+        "RED IADS Relocated Relay Sochi-Adler 09": [
+          -158620.59536499874,
+          529452.2934813113
+        ],
+        "RED IADS Relocated Relay Sukhumi-Babushara 10": [
+          -182096.70331375283,
+          541352.5457570358
+        ],
+        "RED IADS Relocated Relay Sukhumi-Babushara 11": [
+          -177551.0119996338,
+          577526.7734880176
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 12": [
+          -73710.08946066983,
+          381119.45871884964
+        ],
+        "RED IADS Relocated Relay Anapa-Vityazevo 13": [
+          -58223.26868182875,
+          334547.60140553373
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 14": [
+          -79842.56720535684,
+          402256.96702563384
+        ],
+        "RED IADS Relocated Relay Sochi-Adler 15": [
+          -110000.0,
+          444922.6265870995
+        ],
+        "RED IADS Relocated Relay Sukhumi-Babushara 16": [
+          -173668.3420041741,
+          601210.4196311118
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 17": [
+          -143473.42111741778,
+          645450.4686861495
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 18": [
+          -95813.9104699892,
+          655309.3221907484
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 19": [
+          -77860.37174790815,
+          643319.5006786067
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 20": [
+          -80573.90325021169,
+          678290.5395367064
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 21": [
+          -61236.24766788792,
+          412893.6057155367
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 22": [
+          -39281.90696220102,
+          429609.03314451943
+        ]
+      }
+    }
   },
   "operation_velvet_thunder.yaml": {
     "autonomous_sites": [],
@@ -3262,11 +6195,185 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 67,
+      "relays": 57,
       "command_centres": 6
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 67,
+      "after_relays": 57,
+      "new_locations": {
+        "BLUE IADS Relocated Relay As Salihiyah 01": [
+          85675.53730397215,
+          55981.53631410864
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 02": [
+          15479.58356841449,
+          137778.28887670216
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 03": [
+          72306.87433617434,
+          107517.19225970664
+        ],
+        "BLUE IADS Relocated Relay Tel Nof 04": [
+          195114.4355478561,
+          354957.29994695017
+        ],
+        "BLUE IADS Relocated Relay Tel Nof 05": [
+          149731.50554585762,
+          300618.5269648421
+        ],
+        "BLUE IADS Relocated Relay Tel Nof 06": [
+          159587.22404480499,
+          323859.40320876497
+        ],
+        "BLUE IADS Relocated Relay Tel Nof 07": [
+          178953.8842711444,
+          338894.86847803707
+        ],
+        "BLUE IADS Relocated Relay Borg El Arab International Airport 08": [
+          105486.88513642043,
+          -45022.22308262107
+        ],
+        "BLUE IADS Relocated Relay Borg El Arab International Airport 09": [
+          90058.32435315105,
+          -94807.10131154109
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 10": [
+          40450.33060020904,
+          213143.4314734428
+        ],
+        "BLUE IADS Relocated Relay Tel Nof 11": [
+          111658.64781725,
+          280838.28793901496
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 12": [
+          42786.2454484069,
+          159486.25333461436
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 13": [
+          38379.81246339698,
+          142303.66891196466
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 14": [
+          55745.3863508386,
+          128105.53544311337
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 15": [
+          91446.60532762385,
+          33539.659801834365
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 16": [
+          94956.675279823,
+          13899.189080720509
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 17": [
+          98466.74523202215,
+          -5741.281640393354
+        ],
+        "BLUE IADS Relocated Relay As Salihiyah 18": [
+          101976.81518422128,
+          -25381.752361507213
+        ],
+        "RED IADS Relocated Relay Ovda 19": [
+          -38791.28901115493,
+          348068.7550465564
+        ],
+        "RED IADS Relocated Relay St Catherine 20": [
+          -164864.77829913,
+          267687.2574765
+        ],
+        "RED IADS Relocated Relay St Catherine 21": [
+          -184126.2916825576,
+          285867.72562541126
+        ],
+        "RED IADS Relocated Relay Sharm El Sheikh International Airport 22": [
+          -207571.939117616,
+          300606.43229872384
+        ],
+        "RED IADS Relocated Relay St Catherine 23": [
+          -87028.9195488895,
+          319349.90948116
+        ],
+        "RED IADS Relocated Relay Ovda 24": [
+          -71436.34249506079,
+          331707.7059521971
+        ],
+        "RED IADS Relocated Relay St Catherine 25": [
+          -102621.49660271822,
+          306992.1130101229
+        ],
+        "RED IADS Relocated Relay St Catherine 26": [
+          -118214.07365654693,
+          294634.3165390857
+        ],
+        "RED IADS Relocated Relay St Catherine 27": [
+          -141485.59706432233,
+          279589.7319493719
+        ],
+        "RED IADS Relocated Relay Ovda 28": [
+          -55843.76544123208,
+          344065.5024232343
+        ],
+        "RED IADS Relocated Relay Beni Suef 29": [
+          -112363.7957519535,
+          -13116.32145251698
+        ],
+        "RED IADS Relocated Relay Beni Suef 30": [
+          -107576.49813125766,
+          30798.25245684441
+        ],
+        "RED IADS Relocated Relay El Minya 31": [
+          -198868.6332214356,
+          -33210.35398338298
+        ],
+        "RED IADS Relocated Relay Hurghada International Airport 32": [
+          -288838.86428691825,
+          226243.86511059478
+        ],
+        "RED IADS Relocated Relay Hurghada International Airport 33": [
+          -310140.6162641768,
+          228927.89946784
+        ],
+        "RED IADS Relocated Relay Beni Suef 34": [
+          -96091.65228200368,
+          112613.93781496938
+        ],
+        "RED IADS Relocated Relay Beni Suef 35": [
+          -123392.47087025207,
+          115476.16468716523
+        ],
+        "RED IADS Relocated Relay Beni Suef 36": [
+          -100648.56085501975,
+          72367.56288788262
+        ],
+        "RED IADS Relocated Relay Beni Suef 37": [
+          -104070.96941539593,
+          51537.32835726235
+        ],
+        "RED IADS Relocated Relay Beni Suef 38": [
+          -110169.2388876531,
+          9094.132132257206
+        ],
+        "RED IADS Relocated Relay Beni Suef 39": [
+          -135659.56206702304,
+          -19767.384585440414
+        ],
+        "RED IADS Relocated Relay Beni Suef 40": [
+          -155841.59781219604,
+          -22482.2169013439
+        ],
+        "RED IADS Relocated Relay Hurghada International Airport 41": [
+          -222578.07730768376,
+          161263.1749553652
+        ],
+        "RED IADS Relocated Relay Hurghada International Airport 42": [
+          -242415.19859517005,
+          170420.57700900527
+        ]
+      }
+    }
   },
   "RetakeTheFalklands.yaml": {
     "autonomous_sites": [],
@@ -3317,11 +6424,97 @@
       "command_centres": 6
     },
     "after": {
-      "relays": 37,
+      "relays": 30,
       "command_centres": 10
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 37,
+      "after_relays": 30,
+      "new_locations": {
+        "RED IADS Relocated Relay Port Stanley 01": [
+          82906.305572209,
+          71260.7385735535
+        ],
+        "RED IADS Relocated Relay San Carlos FOB 02": [
+          95875.49050806466,
+          26628.498260157867
+        ],
+        "RED IADS Relocated Relay FOB Galy 03": [
+          -74793.198177995,
+          -809953.39312312
+        ],
+        "RED IADS Relocated Relay Rio Gallegos 04": [
+          -3924.3193983780493,
+          -704180.903039863
+        ],
+        "RED IADS Relocated Relay FOB Vista 05": [
+          -13073.395576242325,
+          -780991.9590435526
+        ],
+        "RED IADS Relocated Relay FOB Vista 06": [
+          -26300.82104237005,
+          -789190.0781653867
+        ],
+        "RED IADS Relocated Relay FOB Vista 07": [
+          -49139.064369907486,
+          -803862.5310537037
+        ],
+        "RED IADS Relocated Relay FOB Galy 08": [
+          -100396.5990889975,
+          -802476.69656156
+        ],
+        "RED IADS Relocated Relay Rio Gallegos 09": [
+          -12423.615296780956,
+          -728344.8782776608
+        ],
+        "RED IADS Relocated Relay FOB Dinero 10": [
+          -30655.80350352075,
+          -678820.8371420216
+        ],
+        "RED IADS Relocated Relay Ushuaia 11": [
+          -293720.1256251488,
+          -581356.5682247656
+        ],
+        "RED IADS Relocated Relay Ushuaia 12": [
+          -266291.4021750147,
+          -526813.9004052476
+        ],
+        "RED IADS Relocated Relay Ushuaia 13": [
+          -205699.2864756908,
+          -590198.8837181622
+        ],
+        "RED IADS Relocated Relay Ushuaia 14": [
+          -219472.26048198005,
+          -569794.8693085575
+        ],
+        "RED IADS Relocated Relay Punta Arenas 15": [
+          -164550.25889002552,
+          -707753.6298008984
+        ],
+        "RED IADS Relocated Relay Ushuaia 16": [
+          -196176.41138368836,
+          -627880.0093974317
+        ],
+        "RED IADS Relocated Relay Punta Arenas 17": [
+          -186988.78810899684,
+          -666080.6791602346
+        ],
+        "RED IADS Relocated Relay Ushuaia 18": [
+          -250634.49933018183,
+          -546697.3353265842
+        ],
+        "RED IADS Relocated Relay Ushuaia 19": [
+          -265756.68697108136,
+          -545302.467384478
+        ],
+        "RED IADS Relocated Relay Ushuaia 20": [
+          -283895.5997197899,
+          -566300.6033052849
+        ]
+      }
+    }
   },
   "scenic_inland.yaml": {
     "autonomous_sites": [],
@@ -3383,11 +6576,177 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 64,
+      "relays": 51,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 64,
+      "after_relays": 51,
+      "new_locations": {
+        "RED IADS Relocated Relay Lar 01": [
+          169274.75488744,
+          -180166.32094569
+        ],
+        "RED IADS Relocated Relay FOB Hasanabad 02": [
+          469031.92014097,
+          -24308.556715493
+        ],
+        "RED IADS Relocated Relay FOB Fars Border 03": [
+          161452.60035345968,
+          -154329.84732833056
+        ],
+        "RED IADS Relocated Relay Lar 04": [
+          153375.38756304377,
+          -202166.2482639408
+        ],
+        "RED IADS Relocated Relay Kerman 05": [
+          447732.54149586346,
+          75918.65824153525
+        ],
+        "RED IADS Relocated Relay FOB Sa'di 06": [
+          425294.75048689626,
+          73551.29462794228
+        ],
+        "RED IADS Relocated Relay FOB Sa'di 07": [
+          451715.84328291455,
+          49128.25626179815
+        ],
+        "RED IADS Relocated Relay Shiraz Intl 08": [
+          383005.66639511334,
+          -364008.9374135711
+        ],
+        "RED IADS Relocated Relay Shiraz Intl 09": [
+          361330.8878257425,
+          -351510.37448241503
+        ],
+        "RED IADS Relocated Relay FOB Fars Border 10": [
+          146075.62273573,
+          -117815.76091113
+        ],
+        "RED IADS Relocated Relay FOB Bikuyeh 11": [
+          192110.22865552426,
+          -115165.4276640428
+        ],
+        "RED IADS Relocated Relay FOB Mansurabad 12": [
+          152379.3791325285,
+          -284771.7645034608
+        ],
+        "RED IADS Relocated Relay FOB Bikuyeh 13": [
+          248011.9328362158,
+          -102418.29546159379
+        ],
+        "RED IADS Relocated Relay FOB Bikuyeh 14": [
+          177915.85393488035,
+          -71863.44786915851
+        ],
+        "RED IADS Relocated Relay FOB Mansurabad 15": [
+          128301.56649031251,
+          -336585.6021464325
+        ],
+        "RED IADS Relocated Relay FOB Najafabad 16": [
+          357967.4257388908,
+          -80276.69904827858
+        ],
+        "RED IADS Relocated Relay FOB Najafabad 17": [
+          382060.232035106,
+          -79605.8712429584
+        ],
+        "RED IADS Relocated Relay FOB Hasanabad 18": [
+          449284.57693986344,
+          -43034.93104953904
+        ],
+        "RED IADS Relocated Relay FOB Kabutarkhan 19": [
+          461882.3065128479,
+          1709.1287041728474
+        ],
+        "RED IADS Relocated Relay FOB Sa'di 20": [
+          374621.3671930357,
+          76801.53994562555
+        ],
+        "RED IADS Relocated Relay FOB Robat 21": [
+          454622.30061065924,
+          -123474.72213615458
+        ],
+        "RED IADS Relocated Relay Lar 22": [
+          127260.14878946834,
+          -293299.59976933635
+        ],
+        "RED IADS Relocated Relay FOB Mansurabad 23": [
+          130448.90184369334,
+          -320261.43094923
+        ],
+        "RED IADS Relocated Relay FOB Mansurabad 24": [
+          154007.94263505586,
+          -262337.6762011575
+        ],
+        "RED IADS Relocated Relay FOB Jahrom 25": [
+          218428.929452875,
+          -258823.523918075
+        ],
+        "RED IADS Relocated Relay FOB Mansurabad 26": [
+          166453.73800877828,
+          -249391.11278013312
+        ],
+        "RED IADS Relocated Relay FOB Jahrom 27": [
+          268571.8989512639,
+          -271687.80410830147
+        ],
+        "RED IADS Relocated Relay FOB Tower 28": [
+          301506.9097321789,
+          -310963.24944394187
+        ],
+        "RED IADS Relocated Relay FOB Nouderan 29": [
+          306978.38152446924,
+          -346207.6050682795
+        ],
+        "RED IADS Relocated Relay FOB Akbarabad 30": [
+          319207.20317701215,
+          -329016.40408691915
+        ],
+        "RED IADS Relocated Relay FOB Akbarabad 31": [
+          339386.8373615548,
+          -336731.38567715394
+        ],
+        "RED IADS Relocated Relay FOB Bikuyeh 32": [
+          212345.03245365797,
+          -132492.26169929118
+        ],
+        "RED IADS Relocated Relay FOB Bikuyeh 33": [
+          180018.6149000316,
+          -91108.640897659
+        ],
+        "RED IADS Relocated Relay FOB Bikuyeh 34": [
+          237594.7948368541,
+          -121835.09584992092
+        ],
+        "RED IADS Relocated Relay FOB Bikuyeh 35": [
+          266982.45844705496,
+          -92229.92138661629
+        ],
+        "RED IADS Relocated Relay FOB Najafabad 36": [
+          285939.44334631064,
+          -82129.64409785315
+        ],
+        "RED IADS Relocated Relay FOB Najafabad 37": [
+          304896.42824556644,
+          -72029.36680909003
+        ],
+        "RED IADS Relocated Relay FOB Plainguard 38": [
+          429474.6169180947,
+          -92578.36064254784
+        ],
+        "RED IADS Relocated Relay FOB Plainguard 39": [
+          432355.895807315,
+          -64018.167742531834
+        ],
+        "RED IADS Relocated Relay FOB Kabutarkhan 40": [
+          455131.5643189401,
+          27071.198796239863
+        ]
+      }
+    }
   },
   "scenic_merge.yaml": {
     "autonomous_sites": [
@@ -3532,11 +6891,21 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 2,
+      "relays": 1,
       "command_centres": 6
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 2,
+      "after_relays": 1,
+      "new_locations": {
+        "RED IADS Relocated Relay Bandar Abbas Intl 01": [
+          115996.10119963,
+          16062.842624705
+        ]
+      }
+    }
   },
   "slava_ukraini.yaml": {
     "autonomous_sites": [],
@@ -3583,11 +6952,125 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 34,
+      "relays": 28,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 34,
+      "after_relays": 28,
+      "new_locations": {
+        "BLUE IADS Relocated Relay Anapa-Vityazevo 01": [
+          4904.546846612175,
+          235701.84236675195
+        ],
+        "BLUE IADS Relocated Relay Anapa-Vityazevo 02": [
+          7429.666485071684,
+          262724.1706697351
+        ],
+        "BLUE IADS Relocated Relay Novorossiysk 03": [
+          -16129.658617841,
+          275406.222982695
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 04": [
+          -65860.18935075775,
+          480590.3742957853
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 05": [
+          -41889.790340311105,
+          473573.99287277256
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 06": [
+          -19128.478872371048,
+          459271.36798433005
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 07": [
+          -128627.33862903994,
+          658860.1505094591
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 08": [
+          -55843.18861018803,
+          705171.5221623067
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 09": [
+          -69164.1774814491,
+          688141.0939956884
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 10": [
+          -67873.8707191931,
+          724559.24873776
+        ],
+        "RED IADS Relocated Relay Mozdok 11": [
+          -82018.90516780583,
+          767194.2690898977
+        ],
+        "RED IADS Relocated Relay Mozdok 12": [
+          -91302.19466804054,
+          792630.1882957706
+        ],
+        "RED IADS Relocated Relay Mozdok 13": [
+          -132284.1235710241,
+          835067.1098642234
+        ],
+        "RED IADS Relocated Relay Mozdok 14": [
+          -95016.36572585914,
+          814600.76924059
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 15": [
+          -94396.70467077332,
+          560712.4901058741
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 16": [
+          -101530.8335007772,
+          580743.0190583963
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 17": [
+          -87262.57584076942,
+          540681.961153352
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 18": [
+          -80128.44701076554,
+          520651.43220082973
+        ],
+        "RED IADS Relocated Relay Maykop-Khanskaya 19": [
+          -72994.31818076165,
+          500620.9032483076
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 20": [
+          -108664.9623307811,
+          600773.5480109187
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 21": [
+          -115799.09116078497,
+          620804.0769634409
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 22": [
+          -111611.18287533481,
+          640290.2979065122
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 23": [
+          -111270.26732196042,
+          671986.2937880466
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 24": [
+          -95786.09642683259,
+          683750.3861091533
+        ],
+        "RED IADS Relocated Relay Mineralnye Vody 25": [
+          -80069.15858603608,
+          748518.5790794877
+        ],
+        "RED IADS Relocated Relay Mozdok 26": [
+          -119077.64690280975,
+          821071.2892425987
+        ],
+        "RED IADS Relocated Relay Mozdok 27": [
+          -153029.71596672284,
+          842454.7461982849
+        ]
+      }
+    }
   },
   "syria_full_map.yaml": {
     "autonomous_sites": [],
@@ -3684,11 +7167,12 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 59,
+      "relays": 44,
       "command_centres": 6
     },
     "removed_scenery_zones": [
       "Coms2",
+      "Ministry",
       "NATO CMD Center",
       "Palace",
       "adana_cityeducation_and_researchhospital_1",
@@ -3696,9 +7180,154 @@
       "adana_cityeducation_and_researchhospital_3",
       "adana_cityeducation_and_researchhospital_4",
       "asad_building",
+      "comms",
+      "ministry",
+      "ndb_high_tower",
       "vor_dme"
     ],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 59,
+      "after_relays": 44,
+      "new_locations": {
+        "RED IADS Relocated Relay Abu al-Duhur 01": [
+          49631.355935864216,
+          112745.97589052038
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 02": [
+          60469.92725003656,
+          88325.10780364864
+        ],
+        "RED IADS Relocated Relay Al Qusayr 03": [
+          -47439.01182113588,
+          52500.24442029813
+        ],
+        "RED IADS Relocated Relay Al Qusayr 04": [
+          -23019.480974067912,
+          41247.97883943282
+        ],
+        "RED IADS Relocated Relay Al Qusayr 05": [
+          -71883.61119787721,
+          41575.32709983136
+        ],
+        "RED IADS Relocated Relay Damascus 06": [
+          -175435.05028437002,
+          38100.111318117
+        ],
+        "RED IADS Relocated Relay Rayak 07": [
+          -156236.33280309715,
+          2617.670249806839
+        ],
+        "RED IADS Relocated Relay Rayak 08": [
+          -178576.200466445,
+          1487.0225298394998
+        ],
+        "RED IADS Relocated Relay Rayak 09": [
+          -151873.34722927667,
+          29071.894964360035
+        ],
+        "RED IADS Relocated Relay Hatay 10": [
+          123564.29890167637,
+          50705.8283591721
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 11": [
+          90662.97479479709,
+          20068.724035911197
+        ],
+        "RED IADS Relocated Relay Hatay 12": [
+          108639.46170865161,
+          35426.30561809447
+        ],
+        "RED IADS Relocated Relay King Hussein Air College 13": [
+          -274216.7285618476,
+          17763.881292803562
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 14": [
+          25865.257122133997,
+          35295.699508378
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 15": [
+          40731.93644284616,
+          12805.537736963666
+        ],
+        "RED IADS Relocated Relay Al Qusayr 16": [
+          -3829.2901687552803,
+          42493.26707614548
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 17": [
+          41027.24493463507,
+          71264.31012438225
+        ],
+        "RED IADS Relocated Relay Palmyra 18": [
+          -39246.52784553403,
+          198073.14596648247
+        ],
+        "RED IADS Relocated Relay Rayak 19": [
+          -125500.57191630726,
+          31002.709361196146
+        ],
+        "RED IADS Relocated Relay Ramat David 20": [
+          -216036.72527126945,
+          -27273.575987997094
+        ],
+        "RED IADS Relocated Relay Rayak 21": [
+          -98401.74704195338,
+          36864.31278217169
+        ],
+        "RED IADS Relocated Relay Tabqa 22": [
+          67214.7041910182,
+          235625.19886928287
+        ],
+        "RED IADS Relocated Relay SHUGNUR VALLEY FOB 23": [
+          23182.942090630368,
+          151320.97347797343
+        ],
+        "RED IADS Relocated Relay SHUGNUR VALLEY FOB 24": [
+          3067.4617025480384,
+          167898.30283100516
+        ],
+        "RED IADS Relocated Relay Damascus 25": [
+          -196565.38888064012,
+          -12565.661998912215
+        ],
+        "RED IADS Relocated Relay Ramat David 26": [
+          -241886.66562079583,
+          -63342.50974951271
+        ],
+        "RED IADS Relocated Relay Ramat David 27": [
+          -258510.1870956531,
+          -33150.899018832475
+        ],
+        "RED IADS Relocated Relay SHUGNUR VALLEY FOB 28": [
+          36792.32721714704,
+          135556.43229971844
+        ],
+        "RED IADS Relocated Relay SHUGNUR VALLEY FOB 29": [
+          20920.556082517316,
+          184830.94195737556
+        ],
+        "RED IADS Relocated Relay Tabqa 30": [
+          37468.233997014824,
+          196203.55304841473
+        ],
+        "BLUE IADS Relocated Relay Incirlik 31": [
+          216492.50295475332,
+          -16778.475822654724
+        ],
+        "BLUE IADS Relocated Relay Incirlik 32": [
+          250949.7669511193,
+          45262.58528731641
+        ],
+        "BLUE IADS Relocated Relay Gaziantep 33": [
+          257920.30457330454,
+          70000.0
+        ],
+        "BLUE IADS Relocated Relay Incirlik 34": [
+          228047.6397867883,
+          5147.309036354016
+        ]
+      }
+    }
   },
   "syria_TheLongRoadToH3.yaml": {
     "autonomous_sites": [],
@@ -3761,19 +7390,179 @@
       "command_centres": 6
     },
     "after": {
-      "relays": 59,
+      "relays": 45,
       "command_centres": 7
     },
     "removed_scenery_zones": [
+      "Communications Tower",
       "Damascus Tower",
       "NATO CMD Center",
       "New Trigger Zone-4",
       "adana_cityeducation_and_researchhospital_1",
       "adana_cityeducation_and_researchhospital_2",
       "adana_cityeducation_and_researchhospital_3",
-      "adana_cityeducation_and_researchhospital_4"
+      "adana_cityeducation_and_researchhospital_4",
+      "comms"
     ],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 59,
+      "after_relays": 45,
+      "new_locations": {
+        "RED IADS Relocated Relay Damascus 01": [
+          -157585.61559085225,
+          46666.9466412191
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 02": [
+          22927.963747277685,
+          34825.40640102481
+        ],
+        "RED IADS Relocated Relay Aleppo 03": [
+          99040.43696030088,
+          124014.8448303156
+        ],
+        "RED IADS Relocated Relay Aleppo 04": [
+          110808.75482221789,
+          146350.33780610794
+        ],
+        "RED IADS Relocated Relay Tabqa 05": [
+          90340.88665920155,
+          219596.22245853208
+        ],
+        "RED IADS Relocated Relay Tiyas 06": [
+          -83309.29543275252,
+          142764.1519289318
+        ],
+        "RED IADS Relocated Relay Tiyas 07": [
+          -60452.69459890354,
+          192202.39362574695
+        ],
+        "RED IADS Relocated Relay Tiyas 08": [
+          -80411.12868731754,
+          169922.35055455036
+        ],
+        "RED IADS Relocated Relay H3 09": [
+          -225138.07229276252,
+          348829.73120501
+        ],
+        "RED IADS Relocated Relay Kharab Ishk 10": [
+          141160.23408020657,
+          233398.61410698938
+        ],
+        "RED IADS Relocated Relay At Tanf 11": [
+          -190680.695668599,
+          282529.998614592
+        ],
+        "RED IADS Relocated Relay Tartus Naval Base 12": [
+          1807.8455870228136,
+          19766.8498480799
+        ],
+        "RED IADS Relocated Relay Al Qusayr 13": [
+          -59086.45288191528,
+          71725.85655066243
+        ],
+        "RED IADS Relocated Relay Al Qusayr 14": [
+          -79239.78516201112,
+          80770.65445391432
+        ],
+        "RED IADS Relocated Relay Al Qusayr 15": [
+          -79889.43700950991,
+          105451.10483513105
+        ],
+        "RED IADS Relocated Relay Tiyas 16": [
+          -81513.2698325775,
+          124425.08915358024
+        ],
+        "RED IADS Relocated Relay Tiyas 17": [
+          -75555.35603944719,
+          196277.5859289416
+        ],
+        "RED IADS Relocated Relay Tiyas 18": [
+          -97547.40083066933,
+          207487.300097588
+        ],
+        "RED IADS Relocated Relay At Tanf 19": [
+          -114996.1645022019,
+          215119.93331946197
+        ],
+        "RED IADS Relocated Relay At Tanf 20": [
+          -135803.31842111476,
+          226751.38922689215
+        ],
+        "RED IADS Relocated Relay At Tanf 21": [
+          -168586.24190902102,
+          265722.22690217546
+        ],
+        "RED IADS Relocated Relay H3 22": [
+          -196424.08844344103,
+          309153.288723788
+        ],
+        "RED IADS Relocated Relay H3 23": [
+          -209540.4100458845,
+          331008.579051311
+        ],
+        "RED IADS Relocated Relay Al Qusayr 24": [
+          -105653.15938027954,
+          72484.32189132382
+        ],
+        "RED IADS Relocated Relay Damascus 25": [
+          -133359.18376193335,
+          58417.33022807508
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 26": [
+          46881.908449626106,
+          20887.20452575705
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 27": [
+          47252.1817187838,
+          45421.1429824149
+        ],
+        "RED IADS Relocated Relay Bassel Al-Assad 28": [
+          55702.70789579901,
+          63961.155274053504
+        ],
+        "RED IADS Relocated Relay Aleppo 29": [
+          64153.23407281421,
+          82501.1675656921
+        ],
+        "RED IADS Relocated Relay Aleppo 30": [
+          80781.28515772324,
+          103344.97538077236
+        ],
+        "RED IADS Relocated Relay Aleppo 31": [
+          112211.77915996834,
+          173894.60305696668
+        ],
+        "RED IADS Relocated Relay Tabqa 32": [
+          106658.82170967566,
+          193798.8606222333
+        ],
+        "RED IADS Relocated Relay Tabqa 33": [
+          117445.31176086134,
+          219048.41907884416
+        ],
+        "BLUE IADS Relocated Relay Gaziantep 34": [
+          196957.4126127065,
+          125592.13485298128
+        ],
+        "BLUE IADS Relocated Relay Incirlik 35": [
+          211243.12055855634,
+          -5386.106011911744
+        ],
+        "BLUE IADS Relocated Relay Gaziantep 36": [
+          197143.38113384668,
+          103265.29762592852
+        ],
+        "BLUE IADS Relocated Relay Gaziantep 37": [
+          200346.38521308667,
+          61009.17265140853
+        ],
+        "BLUE IADS Relocated Relay Incirlik 38": [
+          214874.8711899474,
+          14506.241167472526
+        ]
+      }
+    }
   },
   "Task Force Thunder.yaml": {
     "autonomous_sites": [],
@@ -3851,11 +7640,149 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 58,
+      "relays": 47,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 58,
+      "after_relays": 47,
+      "new_locations": {
+        "RED IADS Relocated Relay Defensive Line 01": [
+          -144893.10002374,
+          196905.2817803
+        ],
+        "RED IADS Relocated Relay Al Qusayr 02": [
+          -49724.361176519,
+          68177.7159701585
+        ],
+        "RED IADS Relocated Relay Palmyra 03": [
+          -64010.12795891494,
+          195220.4564733207
+        ],
+        "RED IADS Relocated Relay Palmyra 04": [
+          -78623.79631369884,
+          268120.3613454435
+        ],
+        "RED IADS Relocated Relay Palmyra 05": [
+          -76648.7881859437,
+          240417.7190088416
+        ],
+        "RED IADS Relocated Relay Shayrat 06": [
+          -88730.74853270099,
+          82579.683273373
+        ],
+        "RED IADS Relocated Relay Tiyas 07": [
+          -68461.98756356967,
+          168232.90068670502
+        ],
+        "RED IADS Relocated Relay Tiyas 08": [
+          -95197.87008387383,
+          173584.347395845
+        ],
+        "RED IADS Relocated Relay Defensive Line 09": [
+          -194323.6096351676,
+          206325.52060020436
+        ],
+        "RED IADS Relocated Relay Defensive Line 10": [
+          -168019.04847314407,
+          211369.1599865388
+        ],
+        "RED IADS Relocated Relay Shayrat 11": [
+          -65084.86898291344,
+          117005.13336246926
+        ],
+        "RED IADS Relocated Relay Tiyas 12": [
+          -67805.37462013788,
+          144113.6127375025
+        ],
+        "RED IADS Relocated Relay Defensive Line 13": [
+          -118569.57700522713,
+          188257.2572143271
+        ],
+        "RED IADS Relocated Relay Palmyra 14": [
+          -62140.046529964085,
+          216855.02727172
+        ],
+        "BLUE IADS Relocated Relay Staging Point Bravo 15": [
+          -187116.26860851,
+          278611.00127402
+        ],
+        "BLUE IADS Relocated Relay H4 16": [
+          -261852.99231769593,
+          186702.1344649389
+        ],
+        "BLUE IADS Relocated Relay H4 17": [
+          -269727.88591521664,
+          212969.69163465418
+        ],
+        "BLUE IADS Relocated Relay Staging Point Bravo 18": [
+          -209061.877349105,
+          262852.4003246025
+        ],
+        "BLUE IADS Relocated Relay Staging Point Bravo 19": [
+          -160492.9885021,
+          321014.794204665
+        ],
+        "BLUE IADS Relocated Relay Staging Point Alpha 20": [
+          -97426.98504237636,
+          366489.3066541711
+        ],
+        "BLUE IADS Relocated Relay H4 21": [
+          -251302.724844458,
+          228947.56454142052
+        ],
+        "BLUE IADS Relocated Relay Staging Point Bravo 22": [
+          -141472.41988489576,
+          339071.3042031162
+        ],
+        "BLUE IADS Relocated Relay Staging Point Alpha 23": [
+          -118634.52114928726,
+          353925.63839208375
+        ],
+        "BLUE IADS Relocated Relay H4 24": [
+          -263836.83496809367,
+          165284.6075324523
+        ],
+        "BLUE IADS Relocated Relay H4 25": [
+          -240958.504290092,
+          116693.13452135694
+        ],
+        "BLUE IADS Relocated Relay H4 26": [
+          -249314.57770584908,
+          74251.16318204485
+        ],
+        "BLUE IADS Relocated Relay H4 27": [
+          -257670.65112160626,
+          31809.1918427327
+        ],
+        "BLUE IADS Relocated Relay H4 28": [
+          -266026.72453736345,
+          -10632.77949657945
+        ],
+        "BLUE IADS Relocated Relay H4 29": [
+          -275087.0453667174,
+          -33599.23878424513
+        ],
+        "BLUE IADS Relocated Relay Beach Hotel 30": [
+          -233638.8444225471,
+          -62199.641053189436
+        ],
+        "BLUE IADS Relocated Relay Beach Hotel 31": [
+          -191820.66260436526,
+          -49472.368325916716
+        ],
+        "BLUE IADS Relocated Relay Beach Hotel 32": [
+          -96361.15557745291,
+          12199.641053189429
+        ],
+        "BLUE IADS Relocated Relay Beach Hotel 33": [
+          -75452.064668362,
+          18563.27741682579
+        ]
+      }
+    }
   },
   "TblisiGap.yaml": {
     "autonomous_sites": [],
@@ -3922,11 +7849,45 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 12,
+      "relays": 9,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 12,
+      "after_relays": 9,
+      "new_locations": {
+        "RED IADS Relocated Relay FARP Mayhem 01": [
+          -289694.46890859,
+          787028.75112051
+        ],
+        "RED IADS Relocated Relay FARP Mayhem 02": [
+          -296284.00797699,
+          840538.23055577
+        ],
+        "RED IADS Relocated Relay Senaki-Kolkhi 03": [
+          -260267.44742936044,
+          663389.1118361361
+        ],
+        "RED IADS Relocated Relay Kutaisi 04": [
+          -273784.84207937255,
+          687470.0085214928
+        ],
+        "RED IADS Relocated Relay FARP Wild Horse 05": [
+          -292925.18636057747,
+          735978.1157789051
+        ],
+        "RED IADS Relocated Relay FARP Wild Horse 06": [
+          -289330.9956948759,
+          761132.1009825052
+        ],
+        "RED IADS Relocated Relay FARP Wild Horse 07": [
+          -316305.7984827816,
+          740151.55639473
+        ]
+      }
+    }
   },
   "the_anvil_of_war.yaml": {
     "autonomous_sites": [],
@@ -3995,7 +7956,7 @@
       "command_centres": 3
     },
     "after": {
-      "relays": 93,
+      "relays": 75,
       "command_centres": 6
     },
     "removed_scenery_zones": [
@@ -4007,7 +7968,277 @@
       "ZEVS Radio Transformer 3",
       "ZEVS Submarine Communications Centre"
     ],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 93,
+      "after_relays": 75,
+      "new_locations": {
+        "RED IADS Relocated Relay Banak 01": [
+          231918.19075527,
+          86608.784045974
+        ],
+        "RED IADS Relocated Relay Banak 02": [
+          218245.3668768098,
+          110009.93844200899
+        ],
+        "RED IADS Relocated Relay Rovaniemi 03": [
+          -161055.6338446284,
+          170560.50723607966
+        ],
+        "RED IADS Relocated Relay Rovaniemi 04": [
+          -135123.9071799141,
+          162704.57228916947
+        ],
+        "RED IADS Relocated Relay Severomorsk-3 05": [
+          125793.17582252625,
+          425494.4540036075
+        ],
+        "RED IADS Relocated Relay Severomorsk-1 06": [
+          141025.6155982026,
+          421774.9106200835
+        ],
+        "RED IADS Relocated Relay Severomorsk-1 07": [
+          185073.78119682,
+          437523.185571545
+        ],
+        "RED IADS Relocated Relay Monchegorsk 08": [
+          72896.21710139001,
+          417755.6454701991
+        ],
+        "RED IADS Relocated Relay Monchegorsk 09": [
+          49292.40027495875,
+          407843.7116817636
+        ],
+        "RED IADS Relocated Relay Ivalo 10": [
+          82473.33198484646,
+          200406.3280559574
+        ],
+        "RED IADS Relocated Relay Ivalo 11": [
+          108917.62671866403,
+          202321.97294549513
+        ],
+        "RED IADS Relocated Relay Kittila 12": [
+          -22042.435067991977,
+          155020.786250594
+        ],
+        "RED IADS Relocated Relay Kittila 13": [
+          -10850.937764307,
+          85512.343516641
+        ],
+        "RED IADS Relocated Relay Kittila 14": [
+          -51036.23983698178,
+          121542.74071268916
+        ],
+        "RED IADS Relocated Relay Banak 15": [
+          174154.95448776765,
+          158474.86517035568
+        ],
+        "RED IADS Relocated Relay Banak 16": [
+          199741.697137835,
+          149748.80112638837
+        ],
+        "RED IADS Relocated Relay Ivalo 17": [
+          133675.93897915317,
+          193771.53943117036
+        ],
+        "RED IADS Relocated Relay Ivalo 18": [
+          58379.634259131635,
+          208944.37898968515
+        ],
+        "RED IADS Relocated Relay Ivalo 19": [
+          15895.693948088921,
+          207262.42627563656
+        ],
+        "RED IADS Relocated Relay Ivalo 20": [
+          -2460.681324632895,
+          203842.7201409699
+        ],
+        "RED IADS Relocated Relay Kittila 21": [
+          -70516.78392154221,
+          136717.38185223727
+        ],
+        "RED IADS Relocated Relay Kittila 22": [
+          -32211.057944099877,
+          132172.5682144625
+        ],
+        "RED IADS Relocated Relay Rovaniemi 23": [
+          -113203.03159336951,
+          169312.37416239773
+        ],
+        "RED IADS Relocated Relay Ivalo 24": [
+          -20552.321947217664,
+          216279.93111939827
+        ],
+        "RED IADS Relocated Relay Ivalo 25": [
+          -26118.467463608795,
+          237671.223338407
+        ],
+        "RED IADS Relocated Relay Ivalo 26": [
+          -31684.612979999914,
+          259062.51555741575
+        ],
+        "RED IADS Relocated Relay Ivalo 27": [
+          -37250.75849639105,
+          280453.80777642445
+        ],
+        "RED IADS Relocated Relay Ivalo 28": [
+          -42816.90401278215,
+          301845.09999543324
+        ],
+        "RED IADS Relocated Relay Monchegorsk 29": [
+          -48383.049529173295,
+          323236.39221444196
+        ],
+        "RED IADS Relocated Relay Monchegorsk 30": [
+          -57613.26905421608,
+          348359.43937456876
+        ],
+        "RED IADS Relocated Relay Monchegorsk 31": [
+          -40710.31683372826,
+          345925.93447716057
+        ],
+        "RED IADS Relocated Relay Monchegorsk 32": [
+          -23143.199485588928,
+          357517.4504269635
+        ],
+        "RED IADS Relocated Relay Monchegorsk 33": [
+          -5576.082137449681,
+          369108.96637676633
+        ],
+        "RED IADS Relocated Relay Monchegorsk 34": [
+          11991.035210689637,
+          380700.48232656915
+        ],
+        "RED IADS Relocated Relay Monchegorsk 35": [
+          29558.152558828886,
+          392291.998276372
+        ],
+        "RED IADS Relocated Relay Olenya 36": [
+          99619.86382406429,
+          419924.5766648486
+        ],
+        "BLUE IADS Relocated Relay Kiruna 37": [
+          -14135.914269975,
+          -79532.337360218
+        ],
+        "BLUE IADS Relocated Relay Kalixfors 38": [
+          -40771.47484818347,
+          -85702.40942323276
+        ],
+        "BLUE IADS Relocated Relay Kiruna 39": [
+          11073.809716514832,
+          -87287.81339580147
+        ],
+        "BLUE IADS Relocated Relay Bodo 40": [
+          -87052.020188799,
+          -328860.365423485
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 41": [
+          -180957.63672607747,
+          -74488.49536290241
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 42": [
+          -155157.76452344956,
+          -75620.28619674048
+        ],
+        "BLUE IADS Relocated Relay Kalixfors 43": [
+          -65408.27531120958,
+          -97999.8487836855
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 44": [
+          -94724.34948267639,
+          -170763.05265075556
+        ],
+        "BLUE IADS Relocated Relay Kalixfors 45": [
+          -62289.550613685285,
+          -212749.62447099618
+        ],
+        "BLUE IADS Relocated Relay Kallax 46": [
+          -257127.75299679342,
+          -27040.24557752221
+        ],
+        "BLUE IADS Relocated Relay Vidsel 47": [
+          -238663.1750515929,
+          -70305.6294683394
+        ],
+        "BLUE IADS Relocated Relay Vidsel 48": [
+          -204314.7593261208,
+          -77071.1408174783
+        ],
+        "BLUE IADS Relocated Relay Vidsel 49": [
+          -221825.6002016901,
+          -67057.9299520313
+        ],
+        "BLUE IADS Relocated Relay Bardufoss 50": [
+          118112.85431406558,
+          -104353.21911296275
+        ],
+        "BLUE IADS Relocated Relay Kalixfors 51": [
+          -80697.40173995614,
+          -121163.22975043321
+        ],
+        "BLUE IADS Relocated Relay Kalixfors 52": [
+          -83945.69851054413,
+          -147967.43126361578
+        ],
+        "BLUE IADS Relocated Relay Kalixfors 53": [
+          -91200.81063548708,
+          -91368.06925130563
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 54": [
+          -109471.57516452571,
+          -85416.01142913935
+        ],
+        "BLUE IADS Relocated Relay Jokkmokk 55": [
+          -127742.33969356432,
+          -79463.95360697308
+        ],
+        "BLUE IADS Relocated Relay Kallax 56": [
+          -235317.2208619037,
+          -42889.595424796484
+        ],
+        "BLUE IADS Relocated Relay Bodo 57": [
+          -66388.55743118816,
+          -232977.11573728925
+        ],
+        "BLUE IADS Relocated Relay Bodo 58": [
+          -70562.81760815649,
+          -253109.59320584423
+        ],
+        "BLUE IADS Relocated Relay Bodo 59": [
+          -74737.07778512483,
+          -273242.07067439926
+        ],
+        "BLUE IADS Relocated Relay Bodo 60": [
+          -78911.33796209318,
+          -293374.54814295424
+        ],
+        "BLUE IADS Relocated Relay Bodo 61": [
+          -92938.88000591533,
+          -309363.94397746504
+        ],
+        "BLUE IADS Relocated Relay Kiruna 62": [
+          37587.97496777434,
+          -93501.18645116805
+        ],
+        "BLUE IADS Relocated Relay Kiruna 63": [
+          56832.095885761475,
+          -100917.13625629543
+        ],
+        "BLUE IADS Relocated Relay Bardufoss 64": [
+          76076.21680374857,
+          -108333.0860614228
+        ],
+        "BLUE IADS Relocated Relay Bardufoss 65": [
+          99299.01348785995,
+          -120544.51464987647
+        ],
+        "BLUE IADS Relocated Relay Bardufoss 66": [
+          101723.13996595243,
+          -145132.1896666718
+        ]
+      }
+    }
   },
   "TheFalconWentOverTheMountain.yaml": {
     "autonomous_sites": [],
@@ -4110,11 +8341,81 @@
       "command_centres": 5
     },
     "after": {
-      "relays": 21,
+      "relays": 16,
       "command_centres": 7
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 21,
+      "after_relays": 16,
+      "new_locations": {
+        "RED IADS Relocated Relay Aleppo 01": [
+          127901.66374683,
+          125075.89134266
+        ],
+        "RED IADS Relocated Relay Abu al-Duhur 02": [
+          101426.94185388884,
+          104742.45085972524
+        ],
+        "RED IADS Relocated Relay Minakh 03": [
+          221377.29279489478,
+          72210.18849166957
+        ],
+        "RED IADS Relocated Relay Gaziantep 04": [
+          215051.49259297224,
+          97474.96045699989
+        ],
+        "RED IADS Relocated Relay Gaziantep 05": [
+          208189.15164537387,
+          121351.12267183376
+        ],
+        "RED IADS Relocated Relay Hatay 06": [
+          153090.98319974894,
+          38660.30426173896
+        ],
+        "RED IADS Relocated Relay Hatay 07": [
+          120513.760363479,
+          71657.34105560827
+        ],
+        "RED IADS Relocated Relay Hatay 08": [
+          133497.71188327798,
+          51566.765107539
+        ],
+        "RED IADS Relocated Relay Hatay 09": [
+          120143.5488999763,
+          35579.78483024004
+        ],
+        "RED IADS Relocated Relay Jirah 10": [
+          101627.76978007153,
+          166017.07975542452
+        ],
+        "RED IADS Relocated Relay Minakh 11": [
+          182928.74547211028,
+          124724.55826601182
+        ],
+        "RED IADS Relocated Relay Kuweires 12": [
+          120421.96256074196,
+          151006.97476300556
+        ],
+        "RED IADS Relocated Relay Aleppo 13": [
+          120982.88915653105,
+          99000.29645473976
+        ],
+        "RED IADS Relocated Relay Minakh 14": [
+          155657.02828624172,
+          124395.82944537718
+        ],
+        "BLUE IADS Relocated Relay Incirlik 15": [
+          213697.235835705,
+          -12224.69241537955
+        ],
+        "BLUE IADS Relocated Relay Incirlik 16": [
+          199020.93016497904,
+          -23034.774138363002
+        ]
+      }
+    }
   },
   "TheValleyOfRotary.yaml": {
     "autonomous_sites": [
@@ -4222,11 +8523,65 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 27,
+      "relays": 20,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 27,
+      "after_relays": 20,
+      "new_locations": {
+        "RED IADS Relocated Relay FOB Qalea 02": [
+          -272356.48267763574,
+          180646.583491387
+        ],
+        "RED IADS Relocated Relay H4 03": [
+          -255329.41474910942,
+          202316.25577775197
+        ],
+        "RED IADS Relocated Relay Khalkhalah 04": [
+          -219268.361669091,
+          82360.94781643247
+        ],
+        "RED IADS Relocated Relay H3 Southwest 05": [
+          -243230.21187139006,
+          326144.57157908706
+        ],
+        "RED IADS Relocated Relay FOB Eadla 06": [
+          -251490.0561802205,
+          266312.72600078624
+        ],
+        "RED IADS Relocated Relay Ruwayshid 07": [
+          -269348.2238487887,
+          283713.4900509422
+        ],
+        "RED IADS Relocated Relay At Tanf 08": [
+          -193543.59600728168,
+          233813.60196615168
+        ],
+        "RED IADS Relocated Relay FOB Dhirae 09": [
+          -221204.77484770957,
+          131501.43459934948
+        ],
+        "RED IADS Relocated Relay FOB Dhirae 10": [
+          -215182.6118926845,
+          154621.5774689993
+        ],
+        "RED IADS Relocated Relay H4 11": [
+          -239943.10071659423,
+          183471.19074978164
+        ],
+        "RED IADS Relocated Relay FOB Kataf 12": [
+          -222138.5055138322,
+          207041.66437103224
+        ],
+        "RED IADS Relocated Relay At Tanf 13": [
+          -210856.83065796463,
+          232336.09104062113
+        ]
+      }
+    }
   },
   "WRL_AleppoInsurgency.yaml": {
     "autonomous_sites": [],
@@ -4303,11 +8658,61 @@
       "command_centres": 12
     },
     "after": {
-      "relays": 18,
+      "relays": 14,
       "command_centres": 14
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 18,
+      "after_relays": 14,
+      "new_locations": {
+        "BLUE IADS Relocated Relay Gaziantep 01": [
+          207212.026981665,
+          125519.03070175901
+        ],
+        "BLUE IADS Relocated Relay Hatay 02": [
+          153427.09056693455,
+          64472.88195357841
+        ],
+        "BLUE IADS Relocated Relay Incirlik 03": [
+          202084.47422000265,
+          -10004.280842515935
+        ],
+        "BLUE IADS Relocated Relay Bassel Al-Assad 04": [
+          60293.84457404184,
+          27172.260387438677
+        ],
+        "BLUE IADS Relocated Relay Taftanaz 05": [
+          101472.87859546019,
+          57279.66955205285
+        ],
+        "BLUE IADS Relocated Relay Gaziantep 06": [
+          191096.31585911452,
+          105599.39648624366
+        ],
+        "BLUE IADS Relocated Relay Hatay 07": [
+          179137.2103738205,
+          74658.85310672858
+        ],
+        "BLUE IADS Relocated Relay Hatay 08": [
+          204491.6160335997,
+          55662.80674642778
+        ],
+        "BLUE IADS Relocated Relay Hatay 09": [
+          208965.28157751076,
+          35216.26173436699
+        ],
+        "BLUE IADS Relocated Relay Hatay 10": [
+          126273.94928296501,
+          61652.5174357335
+        ],
+        "BLUE IADS Relocated Relay Taftanaz 12": [
+          81926.00553573234,
+          37767.848903527265
+        ]
+      }
+    }
   },
   "WRL_AssaultonDamascus.yaml": {
     "autonomous_sites": [],
@@ -4369,11 +8774,49 @@
       "command_centres": 4
     },
     "after": {
-      "relays": 13,
+      "relays": 9,
       "command_centres": 5
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 13,
+      "after_relays": 9,
+      "new_locations": {
+        "RED IADS Relocated Relay Al-Dumayr 01": [
+          -176552.4351725551,
+          80289.22261985918
+        ],
+        "RED IADS Relocated Relay Al-Dumayr 02": [
+          -172136.6232142599,
+          107379.24477745971
+        ],
+        "RED IADS Relocated Relay Al-Dumayr 03": [
+          -151429.64192341664,
+          76661.5803916365
+        ],
+        "RED IADS Relocated Relay Khalkhalah 04": [
+          -213982.61778481002,
+          55834.16335425551
+        ],
+        "RED IADS Relocated Relay Marj Ruhayyil 05": [
+          -191190.49921847016,
+          58922.87858078447
+        ],
+        "RED IADS Relocated Relay Marj Ruhayyil 06": [
+          -187632.60908638,
+          34185.3476687075
+        ],
+        "RED IADS Relocated Relay FOB BRAVO 07": [
+          -240687.05591867748,
+          50907.6166339925
+        ],
+        "BLUE IADS Relocated Relay Golan South 08": [
+          -227967.49427788705,
+          -41721.17737426341
+        ]
+      }
+    }
   },
   "WRL_Battle4area51.yaml": {
     "autonomous_sites": [],
@@ -4425,11 +8868,29 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 6,
+      "relays": 4,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 6,
+      "after_relays": 4,
+      "new_locations": {
+        "BLUE IADS Relocated Relay Nellis 01": [
+          -373116.3802779168,
+          -11601.020033044859
+        ],
+        "BLUE IADS Relocated Relay Nellis 02": [
+          -374406.51221314655,
+          -33064.832570721395
+        ],
+        "RED IADS Relocated Relay FARP A2 03": [
+          -292570.099139645,
+          -109177.0416191825
+        ]
+      }
+    }
   },
   "WRL_Battle4Georgia.yaml": {
     "autonomous_sites": [],
@@ -4481,11 +8942,45 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 13,
+      "relays": 9,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 13,
+      "after_relays": 9,
+      "new_locations": {
+        "RED IADS Relocated Relay Gudauta 01": [
+          -198278.34936796,
+          526614.76716804
+        ],
+        "RED IADS Relocated Relay H SAM 1 02": [
+          -160842.05959252248,
+          488625.9666310157
+        ],
+        "RED IADS Relocated Relay FARP CHARLIE 03": [
+          -195179.49349637155,
+          553226.523074322
+        ],
+        "RED IADS Relocated Relay FARP BRAVO 04": [
+          -226441.81516099,
+          590787.1432334476
+        ],
+        "RED IADS Relocated Relay Gudauta 05": [
+          -183438.76561002235,
+          504573.1137333901
+        ],
+        "RED IADS Relocated Relay FARP BRAVO 06": [
+          -231310.4440946575,
+          616545.7975429925
+        ],
+        "RED IADS Relocated Relay Sukhumi-Babushara 07": [
+          -203194.07194028562,
+          576702.5110505605
+        ]
+      }
+    }
   },
   "WRL_Battle4SyriaNorth.yaml": {
     "autonomous_sites": [],
@@ -4567,11 +9062,93 @@
       "command_centres": 5
     },
     "after": {
-      "relays": 26,
+      "relays": 20,
       "command_centres": 7
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 26,
+      "after_relays": 20,
+      "new_locations": {
+        "RED IADS Relocated Relay Gaziantep 01": [
+          194576.92076647,
+          134560.88718633
+        ],
+        "RED IADS Relocated Relay Kuweires 02": [
+          126468.6769591,
+          155203.04585768
+        ],
+        "RED IADS Relocated Relay Taftanaz 03": [
+          92623.73035372041,
+          90774.4094263087
+        ],
+        "RED IADS Relocated Relay Gaziantep 04": [
+          215177.94039206076,
+          116753.96926065811
+        ],
+        "RED IADS Relocated Relay Minakh 05": [
+          168224.81297290922,
+          134879.67087943858
+        ],
+        "RED IADS Relocated Relay BB90 FOB 06": [
+          223668.369955725,
+          95818.1339720505
+        ],
+        "RED IADS Relocated Relay ERZIN FOB 07": [
+          200934.83440164253,
+          52584.38755766826
+        ],
+        "RED IADS Relocated Relay Hatay 08": [
+          175186.91745128308,
+          43489.851020534865
+        ],
+        "RED IADS Relocated Relay Hatay 09": [
+          156502.94160061746,
+          23217.158850025422
+        ],
+        "RED IADS Relocated Relay Jirah 10": [
+          127265.7487829643,
+          193687.26329466293
+        ],
+        "RED IADS Relocated Relay Aleppo 11": [
+          144469.64276687434,
+          124856.33574634187
+        ],
+        "RED IADS Relocated Relay Aleppo 12": [
+          116339.23729392048,
+          102200.11668845188
+        ],
+        "RED IADS Relocated Relay Aleppo 13": [
+          120624.764443455,
+          128889.75524416499
+        ],
+        "RED IADS Relocated Relay Jirah 14": [
+          114678.04254086499,
+          176163.30875550502
+        ],
+        "RED IADS Relocated Relay Hatay 15": [
+          119688.33960698001,
+          27570.92423143415
+        ],
+        "RED IADS Relocated Relay BB90 FOB 16": [
+          217054.2430466325,
+          72453.83576121225
+        ],
+        "RED IADS Relocated Relay Hatay 17": [
+          144512.93720462642,
+          38672.88730300802
+        ],
+        "BLUE IADS Relocated Relay COAST DEFENSES 18": [
+          202917.3124333559,
+          -17138.73636861165
+        ],
+        "BLUE IADS Relocated Relay Incirlik 19": [
+          193526.9883037536,
+          -38941.99084237009
+        ]
+      }
+    }
   },
   "WRL_Kutaisi2Vaziani.yaml": {
     "autonomous_sites": [],
@@ -4607,11 +9184,57 @@
       "command_centres": 2
     },
     "after": {
-      "relays": 21,
+      "relays": 13,
       "command_centres": 4
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 21,
+      "after_relays": 13,
+      "new_locations": {
+        "RED IADS Relocated Relay Soganlug 01": [
+          -318441.6020394325,
+          871132.8803182554
+        ],
+        "RED IADS Relocated Relay Soganlug 02": [
+          -332192.13960335247,
+          894431.1953043086
+        ],
+        "RED IADS Relocated Relay FARP BRAVO 03": [
+          -291714.4541419143,
+          774142.8412474323
+        ],
+        "RED IADS Relocated Relay FARP BRAVO 04": [
+          -269108.7524622856,
+          774238.2530440277
+        ],
+        "RED IADS Relocated Relay FARP ALPHA 05": [
+          -243996.70459267244,
+          762735.1806233767
+        ],
+        "RED IADS Relocated Relay FARP BRAVO 06": [
+          -305352.67244575836,
+          797071.8051160884
+        ],
+        "RED IADS Relocated Relay FARP BRAVO 07": [
+          -375110.11347889004,
+          795783.90780433
+        ],
+        "RED IADS Relocated Relay FARP BRAVO 08": [
+          -331583.78725550225,
+          788525.4866581467
+        ],
+        "RED IADS Relocated Relay FARP BRAVO 09": [
+          -357108.0969513175,
+          782619.6105333675
+        ],
+        "RED IADS Relocated Relay FARP CHARLIE 10": [
+          -308165.9399901722,
+          823456.4752160972
+        ]
+      }
+    }
   },
   "WRL_Operation_Noisy_Cricket_Redux.yaml": {
     "autonomous_sites": [
@@ -4776,10 +9399,88 @@
       "command_centres": 5
     },
     "after": {
-      "relays": 33,
+      "relays": 26,
       "command_centres": 10
     },
     "removed_scenery_zones": [],
-    "island_mask_exceptions": {}
+    "island_mask_exceptions": {},
+    "relocation": {
+      "before_relays": 33,
+      "after_relays": 26,
+      "new_locations": {
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 01": [
+          111230.39458453501,
+          -12267.206766838
+        ],
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 02": [
+          104900.9921480355,
+          59170.9450287475
+        ],
+        "BLUE IADS Relocated Relay Kish Intl 03": [
+          56657.053600290215,
+          -139747.042763154
+        ],
+        "BLUE IADS Relocated Relay Kish Intl 04": [
+          72292.96339886296,
+          -118240.56114554874
+        ],
+        "BLUE IADS Relocated Relay Kish Intl 05": [
+          78225.06387608359,
+          -199722.68649836205
+        ],
+        "BLUE IADS Relocated Relay Bandar Abbas Intl 06": [
+          111128.2575085775,
+          41089.8194065465
+        ],
+        "RED IADS Relocated Relay Al Dhafra AFB 07": [
+          -199168.94113464502,
+          -179428.28064638498
+        ],
+        "RED IADS Relocated Relay Al Dhafra AFB 08": [
+          -214946.44189843937,
+          -200582.47073307875
+        ],
+        "RED IADS Relocated Relay Al Minhad AFB 09": [
+          -152691.92029677358,
+          -85142.24608349286
+        ],
+        "RED IADS Relocated Relay Liwa AFB 10": [
+          -258972.54740092,
+          -261728.941914385
+        ],
+        "RED IADS Relocated Relay Liwa AFB 11": [
+          -229400.7108239025,
+          -223983.58009989
+        ],
+        "RED IADS Relocated Relay Liwa AFB 12": [
+          -239982.3643054855,
+          -276431.7505737645
+        ],
+        "RED IADS Relocated Relay Liwa AFB 13": [
+          -250035.6665673679,
+          -240770.08283746237
+        ],
+        "RED IADS Relocated Relay Al Dhafra AFB 14": [
+          -178595.3956911577,
+          -161532.30388655953
+        ],
+        "RED IADS Relocated Relay FOB Al Maktoum 15": [
+          -158093.8150608422,
+          -144543.50262820246
+        ],
+        "RED IADS Relocated Relay Al Minhad AFB 16": [
+          -132882.14733205782,
+          -99043.16018125755
+        ],
+        "RED IADS Relocated Relay FOB Al Maktoum 17": [
+          -142730.98514130502,
+          -124739.24073374999
+        ],
+        "RED IADS Relocated Relay Al Minhad AFB 18": [
+          -112913.03099932948,
+          -89321.34109189665
+        ]
+      }
+    }
   }
 }
