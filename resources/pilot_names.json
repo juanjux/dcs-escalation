@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "star-wars",
+      "name": "Star Wars",
+      "names": [
+        "Luke Skywalker", "Darth Vader", "Leia Organa", "Han Solo", "Obi-Wan Kenobi",
+        "Yoda", "Palpatine", "Chewbacca", "R2-D2", "C-3PO", "Padmé Amidala",
+        "Lando Calrissian", "Boba Fett", "Ahsoka Tano", "Darth Maul", "Qui-Gon Jinn",
+        "Mace Windu", "Rey", "Kylo Ren", "Finn", "Poe Dameron", "Din Djarin",
+        "Grogu", "Jyn Erso", "Cassian Andor", "Hera Syndulla", "Ezra Bridger",
+        "Sabine Wren", "Grand Admiral Thrawn", "Wedge Antilles", "Captain Rex", "Mon Mothma"
+      ]
+    },
+    {
+      "id": "star-trek",
+      "name": "Star Trek",
+      "names": [
+        "James T. Kirk", "Spock", "Jean-Luc Picard", "William Riker", "Data",
+        "Leonard McCoy", "Nyota Uhura", "Montgomery Scott", "Worf", "Kathryn Janeway",
+        "Benjamin Sisko", "Geordi La Forge", "Deanna Troi", "Beverly Crusher",
+        "Hikaru Sulu", "Pavel Chekov", "Seven of Nine", "Kira Nerys", "Jadzia Dax",
+        "Odo", "Quark", "Miles O'Brien", "Julian Bashir", "Tom Paris", "B'Elanna Torres",
+        "Tuvok", "Chakotay", "Harry Kim", "Jonathan Archer", "T'Pol", "Christopher Pike", "Q"
+      ]
+    },
+    {
+      "id": "middle-earth",
+      "name": "Middle Earth",
+      "names": [
+        "Frodo Baggins", "Gandalf", "Aragorn", "Sauron", "Samwise Gamgee", "Bilbo Baggins",
+        "Legolas", "Gimli", "Gollum", "Boromir", "Meriadoc Brandybuck", "Peregrin Took",
+        "Galadriel", "Elrond", "Arwen", "Saruman", "Éowyn", "Théoden", "Faramir", "Éomer",
+        "Thorin Oakenshield", "Smaug", "Bard", "Radagast", "Treebeard", "Denethor",
+        "Gríma Wormtongue", "Tom Bombadil", "Glorfindel", "Beren", "Lúthien", "Fëanor"
+      ]
+    },
+    {
+      "id": "harry-potter",
+      "name": "Harry Potter",
+      "names": [
+        "Harry Potter", "Hermione Granger", "Ron Weasley", "Albus Dumbledore", "Lord Voldemort",
+        "Severus Snape", "Rubeus Hagrid", "Sirius Black", "Draco Malfoy", "Minerva McGonagall",
+        "Neville Longbottom", "Luna Lovegood", "Ginny Weasley", "Remus Lupin", "Dobby",
+        "Bellatrix Lestrange", "Fred Weasley", "George Weasley", "Molly Weasley", "Arthur Weasley",
+        "Alastor Moody", "Cedric Diggory", "Nymphadora Tonks", "Lucius Malfoy", "Dolores Umbridge",
+        "Peter Pettigrew", "Cho Chang", "Fleur Delacour", "Viktor Krum", "Gilderoy Lockhart",
+        "Horace Slughorn", "Kingsley Shacklebolt"
+      ]
+    },
+    {
+      "id": "game-of-thrones",
+      "name": "Game of Thrones",
+      "names": [
+        "Jon Snow", "Daenerys Targaryen", "Tyrion Lannister", "Arya Stark", "Eddard Stark",
+        "Cersei Lannister", "Jaime Lannister", "Sansa Stark", "Bran Stark", "Robb Stark",
+        "Catelyn Stark", "Tywin Lannister", "Joffrey Baratheon", "Robert Baratheon",
+        "Stannis Baratheon", "Davos Seaworth", "Brienne of Tarth", "Sandor Clegane",
+        "Gregor Clegane", "Petyr Baelish", "Varys", "Samwell Tarly", "Theon Greyjoy",
+        "Jorah Mormont", "Bronn", "Oberyn Martell", "Melisandre", "Tormund Giantsbane",
+        "Ygritte", "Gendry", "Grey Worm", "Missandei"
+      ]
+    },
+    {
+      "id": "warhammer-40000",
+      "name": "Warhammer 40,000",
+      "names": [
+        "The Emperor", "Horus Lupercal", "Roboute Guilliman", "Abaddon the Despoiler",
+        "Lion El'Jonson", "Sanguinius", "Leman Russ", "Rogal Dorn", "Vulkan", "Magnus the Red",
+        "Angron", "Mortarion", "Fulgrim", "Perturabo", "Lorgar Aurelian", "Konrad Curze",
+        "Corvus Corax", "Jaghatai Khan", "Ferrus Manus", "Alpharius", "Marneus Calgar",
+        "Dante", "Mephiston", "Logan Grimnar", "Ragnar Blackmane", "Ghazghkull Thraka",
+        "Yarrick", "Ciaphas Cain", "Ibram Gaunt", "Gregor Eisenhorn", "Trazyn the Infinite",
+        "Eldrad Ulthran"
+      ]
+    },
+    {
+      "id": "battlestar-galactica",
+      "name": "Battlestar Galactica",
+      "names": [
+        "William Adama", "Kara Thrace", "Lee Adama", "Laura Roslin", "Gaius Baltar",
+        "Saul Tigh", "Sharon Agathon", "Sharon Valerii", "Karl Agathon", "Number Six",
+        "Galen Tyrol", "Felix Gaeta", "Anastasia Dualla", "Samuel Anders", "Ellen Tigh",
+        "Callandra Henderson", "Billy Keikeya", "Tom Zarek", "Helena Cain", "Romo Lampkin",
+        "Brendan Costanza", "Louanne Katraine", "Diana Seelix", "Alex Quartararo",
+        "D'Anna Biers", "John Cavil", "Leoben Conoy", "Simon O'Neill", "Tory Foster",
+        "Sherman Cottle", "Hera Agathon", "Zak Adama"
+      ]
+    },
+    {
+      "id": "top-gun",
+      "name": "Top Gun",
+      "names": [
+        "Pete \"Maverick\" Mitchell", "Nick \"Goose\" Bradshaw", "Tom \"Iceman\" Kazansky",
+        "Mike \"Viper\" Metcalf", "Rick \"Jester\" Heatherly", "Charlotte \"Charlie\" Blackwood",
+        "Ron \"Slider\" Kerner", "Rick \"Hollywood\" Neven", "Leonard \"Wolfman\" Wolfe",
+        "Bill \"Cougar\" Cortell", "Sam \"Merlin\" Wells", "Marcus \"Sundown\" Williams",
+        "Carole Bradshaw", "Stinger"
+      ]
+    },
+    {
+      "id": "top-gun-maverick",
+      "name": "Top Gun Maverick",
+      "names": [
+        "Pete \"Maverick\" Mitchell", "Bradley \"Rooster\" Bradshaw", "Jake \"Hangman\" Seresin",
+        "Natasha \"Phoenix\" Trace", "Robert \"Bob\" Floyd", "Reuben \"Payback\" Fitch",
+        "Mickey \"Fanboy\" Garcia", "Javy \"Coyote\" Machado", "Tom \"Iceman\" Kazansky",
+        "Beau \"Cyclone\" Simpson", "Solomon \"Warlock\" Bates", "Chester \"Hammer\" Cain",
+        "Bernie \"Hondo\" Coleman", "Penny Benjamin", "Neil \"Omaha\" Vikander",
+        "Billy \"Fritz\" Avalone", "Logan \"Yale\" Lee", "Brigham \"Harvard\" Lennox",
+        "Callie \"Halo\" Bassett"
+      ]
+    },
+    {
+      "id": "pokemon",
+      "name": "Pokémon",
+      "names": [
+        "Pikachu", "Ash Ketchum", "Charizard", "Mewtwo", "Misty", "Brock", "Bulbasaur",
+        "Squirtle", "Eevee", "Meowth", "Jessie", "James", "Professor Oak", "Red", "Blue",
+        "Cynthia", "Leon", "Giovanni", "Serena", "Dawn", "May", "Gary Oak", "N", "Lillie",
+        "Lucario", "Gengar", "Jigglypuff", "Snorlax", "Dragonite", "Gardevoir", "Mew", "Greninja"
+      ]
+    },
+    {
+      "id": "dragonlance",
+      "name": "Dragonlance",
+      "names": [
+        "Tanis Half-Elven", "Raistlin Majere", "Caramon Majere", "Tasslehoff Burrfoot",
+        "Sturm Brightblade", "Laurana Kanan", "Flint Fireforge", "Goldmoon", "Riverwind",
+        "Tika Waylan", "Kitiara Uth Matar", "Lord Soth", "Fizban", "Takhisis", "Paladine",
+        "Dalamar", "Silvara", "Gilthanas", "Alhana Starbreeze", "Ariakas", "Steel Brightblade",
+        "Porthios", "Kaz", "Huma Dragonbane"
+      ]
+    },
+    {
+      "id": "baldurs-gate",
+      "name": "Baldur's Gate",
+      "names": [
+        "Minsc", "Jaheira", "Imoen", "Astarion", "Shadowheart", "Gale", "Lae'zel", "Karlach",
+        "Wyll", "Sarevok", "Viconia DeVir", "Edwin Odesseiron", "Khalid", "Dynaheir",
+        "Gorion", "Boo", "Halsin", "Minthara", "Aerie", "Yoshimo", "Jan Jansen",
+        "Keldorn Firecam", "Anomen Delryn", "Korgan Bloodaxe", "Nalia de'Arnise", "Cernd",
+        "Haer'Dalis", "Valygar Corthala", "Mazzy Fentan", "Irenicus", "Bodhi", "Bhaal"
+      ]
+    },
+    {
+      "id": "the-elder-scrolls",
+      "name": "The Elder Scrolls",
+      "names": [
+        "Tiber Septim", "Vivec", "Sheogorath", "Dagoth Ur", "Martin Septim", "Uriel Septim VII",
+        "Ulfric Stormcloak", "Lydia", "Serana", "Paarthurnax", "Alduin", "Miraak",
+        "Mannimarco", "Almalexia", "Sotha Sil", "Molag Bal", "Mehrunes Dagon", "Azura",
+        "Jarl Balgruuf", "Delphine", "Esbern", "Cicero", "Astrid", "General Tullius",
+        "M'aiq the Liar", "Lucien Lachance", "Baurus", "Jauffre", "Divayth Fyr",
+        "Queen Ayrenn", "Razum-dar", "Naryu Virian"
+      ]
+    }
+  ]
+}

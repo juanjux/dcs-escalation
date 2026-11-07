@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QListView,
+    QMessageBox,
     QTabWidget,
     QTableWidget,
     QTableWidgetItem,
@@ -19,12 +20,14 @@ from PySide6.QtWidgets import (
 )
 
 from game.armedforces.armedforces import ArmedForces
+from game import persistency
 from game.ato.flight import Flight
 from game.factions import Faction
 from game.server import EventStream
 from game.sim import GameUpdateEvents
 from game.squadrons import Squadron
 from game.squadrons.morale import emoji_for
+from game.squadrons.namepresets import NameLibrary
 from game.theater import ConflictTheater, Player
 from qt_ui.widgets.squadrondelegate import SquadronDelegate
 from qt_ui.widgets.squadronpanel import (
@@ -32,12 +35,14 @@ from qt_ui.widgets.squadronpanel import (
     SquadronFilterProxy,
     SquadronPanel,
 )
-from qt_ui.dialogs import open_once
+from qt_ui.dialogs import live_window, open_once
 from qt_ui.widgets.controls import style_button
 from qt_ui.models import AirWingModel, AtoModel, GameModel, SquadronModel
 from qt_ui.simcontroller import SimController
 from qt_ui.windows.AirWingConfigurationDialog import AirWingConfigurationDialog
 from qt_ui.windows.SquadronDialog import SquadronDialog
+from qt_ui.windows.PilotNamesDialog import PilotNamesDialog
+from qt_ui.windows.pilot import PilotDialog
 from qt_ui.widgets.factioneditor import FactionEditor
 
 
@@ -216,6 +221,7 @@ class AirInventoryView(QWidget):
         self.table.setSortingEnabled(True)
 
     def iter_allocated_aircraft(self) -> Iterator[AircraftInventoryData]:
+        assert self.game_model.game is not None
         coalition = self.game_model.game.coalition_for(
             Player.BLUE if not self.enemy_info else Player.RED
         )
@@ -224,6 +230,7 @@ class AirInventoryView(QWidget):
                 yield from AircraftInventoryData.from_flight(flight)
 
     def iter_unallocated_aircraft(self) -> Iterator[AircraftInventoryData]:
+        assert self.game_model.game is not None
         coalition = self.game_model.game.coalition_for(
             Player.BLUE if not self.enemy_info else Player.RED
         )
@@ -241,6 +248,8 @@ class AirWingTabs(QTabWidget):
         super().__init__()
 
         self.game_model = game_model
+        self.squadron_lists: list[SquadronList] = []
+        assert game_model.game is not None
 
         for air_wing_model, ato_model, label in (
             (game_model.blue_air_wing_model, game_model.ato_model, "Squadrons OWNFOR"),
@@ -256,6 +265,7 @@ class AirWingTabs(QTabWidget):
                 game_model.game.theater,
                 game_model.sim_controller,
             )
+            self.squadron_lists.append(squadrons)
             self.addTab(
                 SquadronPanel(squadrons, squadrons.proxy, squadrons.grouped), label
             )
@@ -267,7 +277,8 @@ class AirWingTabs(QTabWidget):
             pb.setMaximumWidth(300)
             layout = QHBoxLayout()
             layout.addWidget(pb)
-            w = QWidget(layout=layout)
+            w = QWidget()
+            w.setLayout(layout)
             self.addTab(w, "Cheats")
 
         qfu_ownfor = FactionEditor(
@@ -293,7 +304,8 @@ class AirWingTabs(QTabWidget):
             "Faction OPFOR",
         )
 
-    def open_awcd(self):
+    def open_awcd(self) -> None:
+        assert self.game_model.game is not None
         AirWingConfigurationDialog(self.game_model.game, True, self, cheat=True).exec_()
         events = GameUpdateEvents().begin_new_turn()
         EventStream.put_nowait(events)
@@ -305,6 +317,7 @@ class AirWingTabs(QTabWidget):
         Deliberately counts what is ON THE MAP rather than what the faction lists:
         the point is to keep the campaign consistent, not the paperwork.
         """
+        assert self.game_model.game is not None
         coalition = self.game_model.game.coalition_for(player)
         squadrons = [
             s for s in coalition.air_wing.iter_squadrons() if s.aircraft == unit
@@ -341,15 +354,17 @@ class AirWingTabs(QTabWidget):
         had fallen back to, and adding a second one after a rebuild never appeared at
         all. Rebuilding here costs a moment on a dialog the player already stopped at.
         """
+        assert self.game_model.game is not None
         self.game_model.game.coalition_for(player).armed_forces = ArmedForces(f)
 
 
 class AirWingDialog(QDialog):
     """Dialog window showing the player's air wing."""
 
-    def __init__(self, game_model: GameModel, parent) -> None:
+    def __init__(self, game_model: GameModel, parent: QWidget | None) -> None:
         super().__init__(parent)
         self.air_wing_model = game_model.blue_air_wing_model
+        self.game_model = game_model
 
         # 440 fitted nine of the old 40px rows; the taller rows plus the
         # toolbar and column header need the room back.
@@ -360,4 +375,63 @@ class AirWingDialog(QDialog):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        layout.addWidget(AirWingTabs(game_model))
+        self.tabs = AirWingTabs(game_model)
+        layout.addWidget(self.tabs)
+        footer = QHBoxLayout()
+        self.assign_names_button = style_button(QPushButton("Assign Names"), "primary")
+        self.assign_names_button.clicked.connect(self.open_names)
+        footer.addWidget(self.assign_names_button)
+        footer.addStretch()
+        layout.addLayout(footer)
+
+    def open_names(self) -> None:
+        game = self.game_model.game
+        if game is None:
+            return
+        side = Player.RED if self.tabs.currentIndex() == 1 else Player.BLUE
+        source = self.tabs.squadron_lists[1 if side == Player.RED else 0]
+        selected = source.currentIndex().data(AirWingModel.SquadronRole)
+        library_path = persistency.settings_dir() / "pilot-name-lists.json"
+        try:
+            library = NameLibrary.load(library_path)
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(
+                self, "Cannot load name library", f"{library_path}\n\n{error}"
+            )
+            return
+        dialog = PilotNamesDialog(
+            list(game.coalition_for(side).air_wing.iter_squadrons()),
+            library,
+            selected,
+            self,
+        )
+        dialog.pilots_changed.connect(self.pilot_names_changed)
+        try:
+            dialog.exec()
+        finally:
+            dialog.deleteLater()
+
+    def pilot_names_changed(self, squadron: Squadron) -> None:
+        game = self.game_model.game
+        if game is None:
+            return
+        events = GameUpdateEvents()
+        for coalition in game.coalitions:
+            for package in coalition.ato.packages:
+                for flight in package.flights:
+                    if flight.squadron is squadron:
+                        events.update_flight(flight)
+        if not events.empty:
+            EventStream.put_nowait(events)
+        self.game_model.sim_controller.sim_update.emit(events)
+        roster = live_window(f"squadron:{squadron.id}")
+        if isinstance(roster, SquadronDialog) and roster.isVisible():
+            roster._pilot_changed()
+        for pilot in squadron.current_roster:
+            pilot_view = live_window(f"pilot:{pilot.id}")
+            if isinstance(pilot_view, PilotDialog) and pilot_view.isVisible():
+                pilot_view._rebuild()
+        for index in range(self.tabs.count()):
+            view = self.tabs.widget(index)
+            if isinstance(view, AirInventoryView):
+                view.update_table()
