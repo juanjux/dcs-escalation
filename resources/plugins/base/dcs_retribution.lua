@@ -432,7 +432,56 @@ local function is_player_despawn(name)
     return left_at ~= nil and (timer.getTime() - left_at) <= PLAYER_LEAVE_GRACE_S
 end
 
+-- S_EVENT_KILL can arrive after the missile object has disappeared, even though
+-- S_EVENT_HIT supplied its type (observed with AIM-260 and NASAMS). Remember the
+-- latest impact per shooter AND victim, not the XP hit_details list: that list
+-- keeps only the FIRST hit per pair and excludes ground shooters altogether.
+local HIT_WEAPON_MEMORY_SECONDS = 30
+local hit_weapon_memory = {}
+local last_weapon_cleanup = 0
+
+local function debrief_weapon_name(event)
+    local weapon
+    if event.weapon then
+        pcall(function() weapon = event.weapon:getTypeName() end)
+    end
+    if type(weapon) ~= "string" or weapon == "" then weapon = nil end
+
+    local now = timer.getTime()
+    if now - last_weapon_cleanup >= HIT_WEAPON_MEMORY_SECONDS then
+        for key, entry in pairs(hit_weapon_memory) do
+            if now - entry.time > HIT_WEAPON_MEMORY_SECONDS then
+                hit_weapon_memory[key] = nil
+            end
+        end
+        last_weapon_cleanup = now
+    end
+
+    local shooter, victim
+    pcall(function() shooter = event.initiator:getName() end)
+    pcall(function() victim = event.target:getName() end)
+    if type(shooter) ~= "string" or type(victim) ~= "string" then return weapon end
+    local key = shooter .. "\30" .. victim
+    if event.id == world.event.S_EVENT_HIT then
+        -- An unknown newer impact invalidates the old weapon, rather than
+        -- crediting it to a later kill. This cache never creates a kill itself.
+        hit_weapon_memory[key] = weapon and {weapon = weapon, time = now} or nil
+    elseif event.id == world.event.S_EVENT_KILL then
+        local hit = hit_weapon_memory[key]
+        hit_weapon_memory[key] = nil
+        if weapon == nil and hit and now >= hit.time
+                and now - hit.time <= HIT_WEAPON_MEMORY_SECONDS then
+            weapon = hit.weapon
+        end
+    end
+    return weapon
+end
+
 local function onEvent(event)
+    local event_weapon
+    if event.id == world.event.S_EVENT_HIT or event.id == world.event.S_EVENT_KILL then
+        event_weapon = debrief_weapon_name(event)
+    end
     -- Indirect-kill attribution data (consumed by the debriefing): which units
     -- took off, and the first death-event time of each unit. pcall-guarded so a
     -- missing accessor never breaks the mission.
@@ -522,9 +571,7 @@ local function onEvent(event)
                 if pn and pn ~= "" then detail["initiator_player"] = pn end
             end)
         end
-        if event.weapon then
-            pcall(function() detail["weapon"] = event.weapon:getTypeName() end)
-        end
+        detail["weapon"] = event_weapon
         kill_details[#kill_details + 1] = detail
         dirty_state = true
     end

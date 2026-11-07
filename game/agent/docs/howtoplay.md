@@ -1958,9 +1958,13 @@ happened in the mission:
   `lost` maps: `red_air_kills_*` is what red shot down, `red_air_lost_*` is what red
   lost.
 
-  All of these are **counts by type, not a log of events**. They will not add up to what
-  a mission log shows, and a lower number here is not a missing kill -- an aggregate can
-  only credit what the engine attributed.
+  All of these are **counts by type, not a log of events**. Unknown weapons/shooters,
+  indirect kills and write-offs can leave the attribution totals below the loss count.
+  If DCS omits the weapon from a kill event, the mission exporter uses the latest hit
+  by that same shooter on that same victim within 30 seconds. It keeps the raw weapon
+  type ID and does not turn a hit into a kill or guess from the shooter's loadout.
+  This recovery applies to newly generated missions; already stored turn summaries
+  are not rewritten.
 
 `*_air_killers` predates these three and is kept for compatibility, but it falls back
 from the shooter to the weapon and so mixes airframes and missiles in one dict. Prefer
