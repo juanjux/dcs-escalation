@@ -167,7 +167,7 @@ export function WaypointDialog(props: DialogProps) {
     const feet = Number(altitude);
     props.onClose();
     try {
-      await editWaypoint({
+      const result = await editWaypoint({
         flightId: flight.id,
         waypointIdx: waypoint.index,
         waypointEdit: {
@@ -176,6 +176,7 @@ export function WaypointDialog(props: DialogProps) {
           altitude_reference: reference,
         },
       }).unwrap();
+      if (result?.warning) props.onError(`Warning: ${result.warning}`);
     } catch (error) {
       props.onError(refusal(error));
     }
@@ -217,8 +218,8 @@ export function WaypointDialog(props: DialogProps) {
           value={reference}
           onChange={(e) => setReference(e.target.value)}
         >
-          <option value="BARO">BARO</option>
-          <option value="RADIO">RADIO</option>
+          <option value="BARO">MSL (BARO)</option>
+          <option value="RADIO">AGL (RADIO)</option>
         </select>
       </div>
       <div className="wp-row">

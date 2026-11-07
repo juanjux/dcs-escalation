@@ -524,6 +524,7 @@ def _edit_table(flight: Any, heights: list[float]) -> None:
         (
             NS(text=lambda w=w: w.display_name),
             NS(text=lambda height=height: str(height)),
+            NS(text=lambda w=w: "AGL" if w.alt_type == "RADIO" else "MSL"),
         )
         for w, height in zip(points, heights)
     ]

@@ -849,14 +849,21 @@ def edit_waypoint(
                 ok=False, error=f"flight has no waypoint {waypoint_idx}"
             )
         waypoint = waypoints[waypoint_idx - 1]
+        previous_position = waypoint.position
         if lat is not None and lng is not None:
             waypoint.position = Point.from_latlng(
                 LatLng(lat, lng), game.theater.terrain
             )
         warning = ""
         if alt_m is not None:
-            waypoint.apply_altitude_edit(meters(alt_m))
+            try:
+                terrain_warning = waypoint.apply_altitude_edit(meters(alt_m))
+            except ValueError:
+                waypoint.position = previous_position
+                raise
             warning = _too_high_to_attack(flight, alt_m)
+            if terrain_warning:
+                warning += f" WARNING: {terrain_warning}"
         events = _new_map_events()
         update_package_waypoints_if_primary_flight(waypoint, flight, events)
         try:  # recalc TOT via the Qt model when available (no-op headless)

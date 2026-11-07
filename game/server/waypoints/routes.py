@@ -56,6 +56,10 @@ class WaypointEdit(BaseModel):
     altitude_reference: Optional[str] = None
 
 
+class WaypointEditResult(BaseModel):
+    warning: Optional[str] = None
+
+
 class WaypointInsert(BaseModel):
     """Where a new nav point goes, relative to the one addressed.
 
@@ -139,15 +143,14 @@ def set_position(
 @router.patch(
     "/{flight_id}/{waypoint_idx}",
     operation_id="edit_waypoint",
-    status_code=status.HTTP_204_NO_CONTENT,
-    response_class=Response,
+    response_model=WaypointEditResult,
 )
 def edit_waypoint(
     flight_id: UUID,
     waypoint_idx: int,
     edit: WaypointEdit,
     game: Game = Depends(GameContext.require),
-) -> None:
+) -> WaypointEditResult:
     """Rename a waypoint, or change the height it is flown at.
 
     The rename is the one the flight editor's list already does, so it reaches the
@@ -163,13 +166,21 @@ def edit_waypoint(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Altitude reference is BARO or RADIO.",
         )
+    warning = None
+    if edit.altitude_ft is not None or edit.altitude_reference is not None:
+        try:
+            warning = waypoint.apply_altitude_edit(
+                feet(edit.altitude_ft) if edit.altitude_ft is not None else None,
+                edit.altitude_reference,  # type: ignore[arg-type]
+            )
+        except ValueError as error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)
+            ) from error
     if edit.name is not None:
         waypoint.apply_name_edit(edit.name)
-    if edit.altitude_ft is not None:
-        waypoint.apply_altitude_edit(feet(edit.altitude_ft))
-    if edit.altitude_reference is not None:
-        waypoint.apply_altitude_edit(reference=edit.altitude_reference)  # type: ignore[arg-type]
     _re_time_and_publish(flight, GameUpdateEvents())
+    return WaypointEditResult(warning=warning)
 
 
 @router.delete(

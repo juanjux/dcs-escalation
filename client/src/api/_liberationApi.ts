@@ -412,7 +412,7 @@ export type SetWaypointPositionApiArg = {
   leafletPoint: LatLng;
 };
 export type EditWaypointApiResponse =
-  /** status 204 Successful Response */ undefined;
+  /** status 200 Successful Response */ WaypointEditResult;
 export type EditWaypointApiArg = {
   flightId: string;
   waypointIdx: number;
@@ -435,6 +435,9 @@ export type WaypointEdit = {
   name?: string | null;
   altitude_ft?: number | null;
   altitude_reference?: string | null;
+};
+export type WaypointEditResult = {
+  warning?: string | null;
 };
 export type WaypointInsert = {
   before?: boolean;
