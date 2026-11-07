@@ -76,6 +76,54 @@ def quiet_publish(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "_re_time_and_publish", lambda *_args: None)
 
 
+def test_msl_below_terrain_is_a_bad_request_without_partial_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from dcs import Point
+    from dcs.terrain import Caucasus
+    from game.ato import waypointaltitude
+
+    waypoint = _waypoint("NAV")
+    waypoint.position = Point(0, 0, Caucasus())
+    waypoint.alt = feet(21000)
+    monkeypatch.setattr(
+        waypointaltitude, "elevation_m", lambda *args: feet(6000).meters
+    )
+    flight_id, game = _game(_flight(_Plan([waypoint])))
+    with pytest.raises(HTTPException) as error:
+        routes.edit_waypoint(
+            flight_id, 1, routes.WaypointEdit(name="NEW", altitude_ft=600), game
+        )
+    assert error.value.status_code == 400
+    assert waypoint.alt == feet(21000)
+    assert waypoint.name == "NAV"
+    routes.edit_waypoint(
+        flight_id,
+        1,
+        routes.WaypointEdit(altitude_ft=600, altitude_reference="RADIO"),
+        game,
+    )
+    assert (waypoint.alt, waypoint.alt_type) == (feet(600), "RADIO")
+
+
+def test_missing_terrain_returns_an_accepted_edit_with_warning(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from dcs import Point
+    from dcs.terrain import Caucasus
+    from game.ato import waypointaltitude
+
+    waypoint = _waypoint("NAV")
+    waypoint.position = Point(0, 0, Caucasus())
+    monkeypatch.setattr(waypointaltitude, "elevation_m", lambda *args: None)
+    flight_id, game = _game(_flight(_Plan([waypoint])))
+    result = routes.edit_waypoint(
+        flight_id, 1, routes.WaypointEdit(altitude_ft=600), game
+    )
+    assert waypoint.alt == feet(600)
+    assert result.warning is not None and "could not be checked" in result.warning
+
+
 def test_the_departure_point_is_not_editable() -> None:
     flight = _flight(_Plan([_waypoint("NAV")]))
     with pytest.raises(HTTPException) as excinfo:

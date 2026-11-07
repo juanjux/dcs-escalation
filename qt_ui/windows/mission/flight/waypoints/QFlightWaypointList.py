@@ -1,6 +1,7 @@
 from typing import Any, Optional, Sequence
 
 from PySide6.QtCore import (
+    QAbstractItemModel,
     QItemSelectionModel,
     QModelIndex,
     QPoint,
@@ -18,12 +19,14 @@ from PySide6.QtGui import (
     QStandardItemModel,
 )
 from PySide6.QtWidgets import (
+    QComboBox,
     QHeaderView,
     QTableView,
     QStyledItemDelegate,
     QWidget,
     QStyleOptionViewItem,
     QDoubleSpinBox,
+    QMessageBox,
 )
 
 from game.ato.flight import Flight
@@ -80,6 +83,26 @@ class AltitudeEditorDelegate(QStyledItemDelegate):
         editor.setDecimals(0)
         editor.setSingleStep(1000)
         return editor
+
+
+class AltitudeReferenceEditorDelegate(QStyledItemDelegate):
+    def createEditor(
+        self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex
+    ) -> QComboBox:
+        editor = QComboBox(parent)
+        editor.addItems(["MSL", "AGL"])
+        editor.activated.connect(lambda: self.commitData.emit(editor))
+        return editor
+
+    def setEditorData(self, editor: QWidget, index: QModelIndex) -> None:
+        if isinstance(editor, QComboBox):
+            editor.setCurrentText(str(index.data(Qt.ItemDataRole.EditRole)))
+
+    def setModelData(
+        self, editor: QWidget, model: QAbstractItemModel, index: QModelIndex
+    ) -> None:
+        if isinstance(editor, QComboBox):
+            model.setData(index, editor.currentText(), Qt.ItemDataRole.EditRole)
 
 
 def patrol_laps(flight: Any, waypoint: FlightWaypoint) -> Optional[int]:
@@ -229,6 +252,8 @@ class QFlightWaypointList(QTableView):
 
         self.altitude_editor_delegate = AltitudeEditorDelegate(self)
         self.setItemDelegateForColumn(1, self.altitude_editor_delegate)
+        self.altitude_reference_delegate = AltitudeReferenceEditorDelegate(self)
+        self.setItemDelegateForColumn(2, self.altitude_reference_delegate)
         self.name_delegate = WaypointNameDelegate(self)
         self.setItemDelegateForColumn(0, self.name_delegate)
 
@@ -320,7 +345,10 @@ class QFlightWaypointList(QTableView):
 
         altitude_type = "AGL" if waypoint.alt_type == "RADIO" else "MSL"
         altitude_type_item = QStandardItem(f"{altitude_type}")
-        altitude_type_item.setEditable(False)
+        altitude_type_item.setEditable(True)
+        altitude_type_item.setToolTip(
+            "MSL: above sea level. AGL: above terrain. Changing the reference keeps the numeric altitude."
+        )
         self.model.setItem(row, 2, altitude_type_item)
 
         tot = self.tot_text(flight, waypoint)
@@ -431,8 +459,33 @@ class QFlightWaypointList(QTableView):
             altitude_feet = float(altitude_item.text())
             # The displayed value is rounded. A redraw or rename is not an
             # altitude edit and must not pin or round the rest of the profile.
-            if altitude_feet != round(waypoint.alt.feet):
-                waypoint.apply_altitude_edit(Distance.from_feet(altitude_feet))
+            altitude = (
+                Distance.from_feet(altitude_feet)
+                if altitude_feet != round(waypoint.alt.feet)
+                else None
+            )
+            reference_item = self.model.item(i, 2)
+            reference = waypoint.alt_type
+            if reference_item is not None and reference_item.text() in ("AGL", "MSL"):
+                reference = "RADIO" if reference_item.text() == "AGL" else "BARO"
+            if altitude is not None or reference != waypoint.alt_type:
+                try:
+                    warning = waypoint.apply_altitude_edit(altitude, reference)
+                    if warning:
+                        QMessageBox.warning(
+                            self, "Terrain elevation unavailable", warning
+                        )
+                except ValueError as error:
+                    blocked = self.model.blockSignals(True)
+                    try:
+                        altitude_item.setText(str(round(waypoint.alt.feet)))
+                        if reference_item is not None:
+                            reference_item.setText(
+                                "AGL" if waypoint.alt_type == "RADIO" else "MSL"
+                            )
+                    finally:
+                        self.model.blockSignals(blocked)
+                    QMessageBox.warning(self, "Invalid waypoint altitude", str(error))
             waypoint.apply_name_edit(self.model.item(i, 0).text())
 
     def tot_text(

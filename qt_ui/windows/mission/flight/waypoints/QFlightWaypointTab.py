@@ -147,7 +147,7 @@ class QFlightWaypointTab(QFrame):
         self.bulk_altitude.setSuffix(" ft")
         self.bulk_altitude.setToolTip(
             wrapped_tooltip(
-                "Apply this MSL altitude to every en-route waypoint. Takeoff, landing, "
+                "Apply this altitude to every en-route waypoint, keeping each point's MSL/AGL reference. Takeoff, landing, "
                 "divert, target, landing-zone, tanker, and ground (AGL) waypoints are "
                 "left unchanged."
             )
@@ -489,7 +489,19 @@ class QFlightWaypointTab(QFrame):
         return max(altitudes, default=0)
 
     def on_apply_bulk_altitude(self) -> None:
+        from game.ato.waypointaltitude import validate_altitude_edit
+
         altitude = feet(self.bulk_altitude.value())
+        warnings: set[str] = set()
+        try:
+            for waypoint in self.flight.flight_plan.waypoints:
+                if self._is_bulk_editable(waypoint):
+                    warning = validate_altitude_edit(waypoint, altitude)
+                    if warning:
+                        warnings.add(warning)
+        except ValueError as error:
+            QMessageBox.warning(self, "Invalid waypoint altitude", str(error))
+            return
         changed = False
         for waypoint in self.flight.flight_plan.waypoints:
             if self._is_bulk_editable(waypoint):
@@ -497,6 +509,10 @@ class QFlightWaypointTab(QFrame):
                 changed = True
         if changed:
             self.on_change()
+            if warnings:
+                QMessageBox.warning(
+                    self, "Terrain elevation unavailable", "\n".join(sorted(warnings))
+                )
 
     def refresh_fuel(self) -> None:
         """Recompute the footer without the route having changed.

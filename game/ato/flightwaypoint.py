@@ -86,14 +86,20 @@ class FlightWaypoint:
         self,
         altitude: Distance | None = None,
         reference: AltitudeReference | None = None,
-    ) -> None:
+    ) -> str | None:
         """Keep an explicitly chosen height out of automatic profile adjustments."""
+        from .waypointaltitude import validate_altitude_edit
+
+        if altitude is None and reference is None:
+            return None
+        warning = validate_altitude_edit(self, altitude, reference)
         if altitude is not None:
             self.alt = altitude
         if reference is not None:
             self.alt_type = reference
         if altitude is not None or reference is not None:
             self.altitude_is_manual = True
+        return warning
 
     def __hash__(self) -> int:
         return hash(id(self))

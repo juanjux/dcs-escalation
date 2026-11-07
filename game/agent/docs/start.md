@@ -85,6 +85,8 @@ tool/resource of the same name.
 - `POST /payload/validate` — check a custom `{pylon: clsid}` payload is valid for an airframe.
 - `POST /waypoints/edit` — move/adjust a flight waypoint (position/altitude); never deletes
   (waypoint 0 immovable). Read them first with `GET /waypoints/{flight_id}`.
+  MSL edits below the available terrain elevation estimate are refused. Missing
+  elevation data permits the edit with a warning; AGL heights are not compared to MSL terrain.
 - `POST /flights/crew` — put a named pilot in a seat (`{flight_id, seat, pilot_name}`),
   or empty it with a null name. Refuses anyone dead, wounded, on leave or already flying.
 - `POST /pilots/leave` — answer a pilot listed in `turn_context.leave_requests`
