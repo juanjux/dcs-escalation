@@ -194,8 +194,12 @@ unavailable. Dead units and existing planning reservations are excluded from
 available transport capacity.
 Transported or towed pieces cannot fire while loaded and are lost with their assigned tractor.
 The `towed` mobility category also covers palletized or portable equipment loaded
-on a vehicle, such as a Skyshield FCU or stationary RBS 70 launcher. Each piece
-still requires its own included tractor; a truck-mounted variant needs none.
+on a vehicle, such as a Skyshield FCU or stationary RBS 70 launcher. It also covers
+transportable truck-mounted equipment whose deployed DCS definition has no native
+driver, including SAMP/T trucks, some HDS tracking radars and the native 1L13 EWR.
+These use carrier-assisted relocation instead of receiving a route they cannot
+drive. Each piece requires its own included tractor; powered variants with native
+mobility, such as LvS-103 HX, need none. Fixed installations cannot relocate.
 
 Choose **Move units** in a friendly armor group's Ground transport card. Select
 units and a destination: coordinates copied from the map, a friendly land base,

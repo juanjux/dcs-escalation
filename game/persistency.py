@@ -73,6 +73,7 @@ class MigrationUnpickler(pickle.Unpickler):
             self._handle_ch_usa_assets,
             self._handle_ch_uk_assets,
             self._handle_ch_ukraine_assets,
+            self._handle_retired_highdigitsams,
             self._handle_frenchpack,
             self._handle_su30,
             self._handle_misc,
@@ -318,6 +319,18 @@ class MigrationUnpickler(pickle.Unpickler):
         native = {
             "CH_T64BV": Armor.CHAP_T64BV,
             "T84_OplotM": Armor.CHAP_T84OplotM,
+        }
+        return native.get(name)
+
+    def _handle_retired_highdigitsams(self, module: str, name: str) -> Any:
+        """Replace retired mod class references with current native DCS classes."""
+        if module != "pydcs_extensions.highdigitsams.highdigitsams":
+            return None
+        from dcs.vehicles import AirDefence
+
+        native = {
+            "AAA_SON_9_Fire_Can": AirDefence.SON_9,
+            "SAM_SA_10__5V55RUD__S_300PS_LN_5P85CE": AirDefence.S_300PS_5P85C_ln,
         }
         return native.get(name)
 

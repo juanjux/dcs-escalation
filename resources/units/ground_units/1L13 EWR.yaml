@@ -1,4 +1,6 @@
 class: EarlyWarningRadar
+ground_mobility:
+  mode: towed
 price: 30
 variants:
   EWR 1L13: null

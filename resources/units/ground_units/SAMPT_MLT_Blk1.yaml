@@ -1,4 +1,6 @@
 class: Launcher
+ground_mobility:
+  mode: towed
 price: 30
 variants:
   SAM SAMP/T MLT Launcher Block 1: null

@@ -193,6 +193,10 @@ class GroundUnitType(UnitType[Type[VehicleType]]):
             "[CH] T-84 Oplot-M MBT": "MBT T-84 Oplot-M [CH]",  # CHAP_T84OplotM
             # Frenchpack 5.0 dropped its own Mephisto; DCS ships one.
             "VAB Mephisto Frenchpack": "VAB Mephisto",  # VAB_Mephisto
+            # Retired High Digit SAMs types have native DCS replacements.
+            "AAA SON-9 Fire Can": "AAA Fire Can SON-9",  # SON_9
+            # The current catalogue labels native 5P85C as TEL D.
+            "SAM SA-10 (5V55RUD) S-300PS LN 5P85CE": 'SAM SA-10 S-300 "Grumble" TEL D',  # S-300PS 5P85C ln
         }
 
     @classmethod

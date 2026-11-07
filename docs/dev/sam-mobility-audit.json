@@ -1,14 +1,13 @@
 {
   "scope": "All 107 originally unknown DCS types in the registered air-defence catalog and SAM/AAA preset auxiliaries, plus the Polyana command-post auxiliary; all factions. No save data.",
   "date": "2026-11-07",
-  "sources": "Currenthill China 1.1.6, Germany 1.5.0, Russia 2.0.1, Sweden 1.5.0, USA 1.5.0; HighDigitSAMs 2.1.0; installed native DCS CoreMods; HighDigitSAMs Ultimate Compilation 1.4.4; DCS encyclopedia; Currenthill model galleries; linked manufacturer and military publications. Source package versions are identified per finding.",
-  "policy": "Classify exact DCS types using powered chassis plus matching model evidence, or documented separate transport. Stationary deployment alone proves neither fixed infrastructure nor transportability. Towed also covers equipment packed as vehicle cargo, with one included tractor per piece. No type gains can_tow and no transit-defence whitelist changes. STATIC-chassis trucks without propulsion overrides remain unknown. Native mission movement/fire/recovery probes were not run.",
+  "sources": "Currenthill China 1.1.6, Germany 1.5.0, Russia 2.0.1, Sweden 1.5.0, USA 1.5.0; HighDigitSAMs 2.1.0; installed native DCS CoreMods; HighDigitSAMs Ultimate Compilation 1.4.4; DCS encyclopedia; Currenthill model galleries; linked manufacturer and military publications. Source package versions are identified per finding.; exact local EDM geometry (32 unique shapes); DCS 2.9.31.29434 runtime-table export pinned to 72ea893c452c728267d78a3bd481ca59501ce709; historical HighDigitSAMs v1.4.2. Ultimate package 1.4.4 declares internal plugin version 1.4.3.",
+  "policy": "Classify exact DCS types using shipped geometry, resolved chassis data and primary transport documentation, not family names or speed alone. Mode describes operational relocation: towed includes equipment packed as vehicle cargo and complete transportable vehicles whose deployed DCS definition has no native driver. Each such piece needs one included tractor. Physical platform distinctions are recorded separately. No type gains can_tow and no transit-defence whitelist changes. Fixed installations stay blocked. Retired identifiers migrate to current native types; no installed mods or campaign layouts are modified. Native mission driving/fire/recovery probes were not run.",
   "counts": {
     "reviewed": 108,
-    "fixed": 2,
-    "self_propelled": 54,
-    "towed": 11,
-    "unknown": 41
+    "fixed": 4,
+    "self_propelled": 55,
+    "towed": 49
   },
   "units": [
     {
@@ -16,18 +15,181 @@
       "variants": [
         "EWR 1L13"
       ],
-      "mode": "unknown",
-      "reason": "Installed encyclopedia confirms a mobile radar, but exact DCS carrier configuration was not established. Historical family mixes truck-mounted radar and separate IFF trailer.",
-      "sources": []
+      "mode": "towed",
+      "reason": "The exact native model contains a complete three-axle six-wheel truck with cab, radar antenna and equipment cabin. The exported DCS record has zero MaxSpeed, so operational relocation requires carrier-assisted packed transport rather than native driving.",
+      "sources": [
+        {
+          "file": "_G/db/Units/Cars/Car/1L13 EWR.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "dcs_version": "2.9.31.29434",
+          "commit_date": "2026-10-28T15:24:51Z",
+          "blob_sha": "47a0946a171448a55ee1e16627edcce9f4cdd640",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "MaxSpeed = 0,"
+            },
+            {
+              "line": 183,
+              "text": "chassis = {},"
+            },
+            {
+              "line": 200,
+              "text": "type = \"1L13 EWR\","
+            },
+            {
+              "line": 211,
+              "text": "shape = \"1l13\","
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/Cars/Car/1L13 EWR.lua"
+        },
+        {
+          "file": "MissionEditor/data/scripts/Enc/SAM/radar 1L13.txt",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "1l13"
+            },
+            {
+              "line": 4,
+              "text": "1L13 EWR"
+            },
+            {
+              "line": 6,
+              "text": "Type: Long-range mobile air surveillance radar"
+            },
+            {
+              "line": 14,
+              "text": "Setting up/closing down time: 45 min max"
+            }
+          ]
+        },
+        {
+          "url": "https://odin.t2com.army.mil/WEG/Asset/33cf583a9dd0f05c46e51451cf3f558a",
+          "summary": "US Army OE Data Integration Network, 1L13-3 Nebo SV (Box Spring) Russian Mobile 2D Early Warning Radar, modified 2025-04-14. Both the Dimensions and Automotive sections identify Ural 4320 as the chassis. Primary government equipment description. Retrieved indexed page content."
+        },
+        {
+          "url": "https://pvo.guns.ru/rtv/nitel/1l13.htm",
+          "summary": "Preserved NITEL museum material and technical history, directly readable in full search indexing. Explicitly assigns equipment cabin, antenna/turntable cabin and diesel power plant to three Ural trucks; the separate 2-PN-4M trailer carries the IFF antenna and cables and is towed by the first or third truck. Original manufacturer's combat/travel photographs are credited to NITEL. This distinguishes the main radar truck from its auxiliary IFF trailer."
+        },
+        {
+          "url": "https://patents.google.com/patent/WO2018097752A1/en",
+          "summary": "Original Almaz-Antey/Radiofizika patent disclosure, published 2018-05-31, description identifies 1L13 as vehicle-mounted prior art. This corroborates vehicle mounting but does not independently distinguish a truck from a trailer."
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "carrier_assisted": true,
+      "native_max_speed_kph": 0,
+      "geometry_evidence": {
+        "model": "Bazar/World/Shapes/1l13.edm",
+        "sha256": "2c2f11dacd9fcc370b1b1dfa65226ec6921b08438a26a68de0e6c462202c7add",
+        "format_version": 10,
+        "triangles": 3180
+      }
     },
     {
       "dcs_id": "55G6 EWR",
       "variants": [
         "EWR 55G6"
       ],
-      "mode": "unknown",
-      "reason": "Installed encyclopedia confirms a mobile radar and 22-hour assembly, and historic primary-source reproductions describe semitrailers; exact DCS represented transport configuration remains unverified.",
-      "sources": []
+      "mode": "towed",
+      "reason": "The exact native model shows the deployed large antenna above a wheeled transport assembly, an equipment-cabin trailer and an accompanying truck cab. It has no permanent concrete foundation. Zero exported MaxSpeed requires carrier-assisted packed transport.",
+      "sources": [
+        {
+          "file": "_G/db/Units/Cars/Car/55G6 EWR.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "dcs_version": "2.9.31.29434",
+          "commit_date": "2026-10-28T15:24:51Z",
+          "blob_sha": "95a4e1a36cd137c0895b363b272e929f735d398c",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "MaxSpeed = 0,"
+            },
+            {
+              "line": 183,
+              "text": "chassis = {},"
+            },
+            {
+              "line": 200,
+              "text": "type = \"55G6 EWR\","
+            },
+            {
+              "line": 211,
+              "text": "shape = \"55g6\","
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/Cars/Car/55G6 EWR.lua"
+        },
+        {
+          "file": "MissionEditor/data/scripts/Enc/SAM/radar 55G6.txt",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "55g6"
+            },
+            {
+              "line": 4,
+              "text": "55G6 EWR"
+            },
+            {
+              "line": 6,
+              "text": "Type: Long-range mobile air detection radar"
+            },
+            {
+              "line": 14,
+              "text": "Setting up/closing down time: 22 h max"
+            }
+          ]
+        },
+        {
+          "url": "https://pvo.guns.ru/rtv/nitel/55j6.htm",
+          "summary": "Manufacturer museum text explicitly credited to Museum NITEL, title RLS 55Zh6. States that 55Zh6 is carried in seven van semitrailers. Search-indexed full description was readable; direct page fetch returned 502. This is preserved manufacturer primary material, rather than an unattributed contemporary encyclopedia."
+        },
+        {
+          "url": "https://radar.narod.ru/rdr-ap-rv.html",
+          "summary": "Readable secondary mirror of the same NITEL material: 55Zh6 section at web extracted lines 449-452 repeats seven semitrailers and links back to the original manufacturer-museum text. Useful accessibility backup, not a separate independent primary claim."
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "mixed_wheeled_assembly",
+      "carrier_assisted": true,
+      "native_max_speed_kph": 0,
+      "geometry_evidence": {
+        "model": "Bazar/World/Shapes/55g6.edm",
+        "sha256": "eeee46075961c6c54699faa01144dbdca05765de50486511ecf136677fd9e8a3",
+        "format_version": 10,
+        "triangles": 2482
+      }
     },
     {
       "dcs_id": "CHAP_IRISTSLM_CP",
@@ -316,8 +478,8 @@
         "SAM LvS-103 Lavett 103 Rb103A Stationary LN",
         "[CH] LvS-103 Lavett 103 Rb103A LN"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone. The author's gallery distinguishes stationary and mobile versions; the separately registered HX truck variants already have self-propelled mobility. The non-HX deployed model's transport method remains unverified.",
+      "mode": "towed",
+      "reason": "Coherent complete launcher semitrailer: tandem axles, long forward tractor attachment deck, stabilizer legs and four large missile canisters. No powered cab or tractor. Approximately 9.8 m longitudinal mesh span; exact pose/dimensions are not used as catalogue facts.",
       "sources": [
         {
           "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_Lavett103_Rb103A.lua",
@@ -335,8 +497,58 @@
         {
           "url": "https://www.currenthill.com/sweden",
           "summary": "Expanded LvS 103 model gallery explicitly distinguishes stationary and mobile versions. The illustrated HX vehicles must not be applied to the separate non-HX DCS types."
+        },
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_Lavett103_Rb103A.lua",
+          "version": "Currenthill Sweden 1.5.0",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"CH_LvS103_Lavett103A\";"
+            },
+            {
+              "line": 71,
+              "text": "GT.Name = \"CH_LvS-103_Lavett103_Rb103A\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.fmv.se/aktuellt--press/aktuella-handelser/fordon-till-luftvarnssystem-103/",
+          "publisher": "Swedish Defence Materiel Administration (FMV)",
+          "title": "Fordon till Luftvarnssystem 103",
+          "published": "2021-05-07",
+          "evidence": [
+            {
+              "locator": "Article paragraphs following the five-photo gallery, web text lines 189-203",
+              "summary": "FMV procured forty MAN HX vehicles in flatbed, tractor, and crane configurations. The vehicles transport the system's launchers, radar, and command containers. The shared carrier is an all-wheel-drive four-axle HX 8x8 platform. This establishes external transport for deployed LvS 103 modules, including radar, rather than permanent installation."
+            }
+          ]
+        },
+        {
+          "url": "https://www.fmv.se/aktuellt--press/aktuella-handelser/utmaningen-ar-att-fa-leveranserna-att-tajma-med-tidsplanen/",
+          "publisher": "Swedish Defence Materiel Administration (FMV)",
+          "title": "Utmaningen ar att fa leveranserna att tajma med tidsplanen",
+          "published": "2022-03-07",
+          "evidence": [
+            {
+              "locator": "First photograph and its caption, web text lines 181-183",
+              "summary": "The official photo caption identifies a new Swedish Patriot tractor unloading Patriot launchers from a US C-17 at Halmstad airport in summer 2021. This confirms separate traction for launcher transport."
+            }
+          ]
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Shapes/CH_LvS103_Lavett103A.edm",
+        "sha256": "0ef5e27fb0f6e5cd77774039bd15e942a8ba059e4965ef0787d6e84844ec7584",
+        "format_version": 10,
+        "triangles": 166315
+      }
     },
     {
       "dcs_id": "CH_LvS-103_Lavett103_Rb103B",
@@ -344,8 +556,8 @@
         "SAM LvS-103 Lavett 103 Rb103B Stationary LN",
         "[CH] LvS-103 Lavett 103 Rb103B LN"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone. The author's gallery distinguishes stationary and mobile versions; the separately registered HX truck variants already have self-propelled mobility. The non-HX deployed model's transport method remains unverified.",
+      "mode": "towed",
+      "reason": "Coherent complete launcher semitrailer: tandem axles, long forward tractor attachment deck, stabilizer legs and twelve smaller missile canisters. No powered cab or tractor.",
       "sources": [
         {
           "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_Lavett103_Rb103B.lua",
@@ -363,8 +575,58 @@
         {
           "url": "https://www.currenthill.com/sweden",
           "summary": "Expanded LvS 103 model gallery explicitly distinguishes stationary and mobile versions. The illustrated HX vehicles must not be applied to the separate non-HX DCS types."
+        },
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_Lavett103_Rb103B.lua",
+          "version": "Currenthill Sweden 1.5.0",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"CH_LvS103_Lavett103B\";"
+            },
+            {
+              "line": 87,
+              "text": "GT.Name = \"CH_LvS-103_Lavett103_Rb103B\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.fmv.se/aktuellt--press/aktuella-handelser/fordon-till-luftvarnssystem-103/",
+          "publisher": "Swedish Defence Materiel Administration (FMV)",
+          "title": "Fordon till Luftvarnssystem 103",
+          "published": "2021-05-07",
+          "evidence": [
+            {
+              "locator": "Article paragraphs following the five-photo gallery, web text lines 189-203",
+              "summary": "FMV procured forty MAN HX vehicles in flatbed, tractor, and crane configurations. The vehicles transport the system's launchers, radar, and command containers. The shared carrier is an all-wheel-drive four-axle HX 8x8 platform. This establishes external transport for deployed LvS 103 modules, including radar, rather than permanent installation."
+            }
+          ]
+        },
+        {
+          "url": "https://www.fmv.se/aktuellt--press/aktuella-handelser/utmaningen-ar-att-fa-leveranserna-att-tajma-med-tidsplanen/",
+          "publisher": "Swedish Defence Materiel Administration (FMV)",
+          "title": "Utmaningen ar att fa leveranserna att tajma med tidsplanen",
+          "published": "2022-03-07",
+          "evidence": [
+            {
+              "locator": "First photograph and its caption, web text lines 181-183",
+              "summary": "The official photo caption identifies a new Swedish Patriot tractor unloading Patriot launchers from a US C-17 at Halmstad airport in summer 2021. This confirms separate traction for launcher transport."
+            }
+          ]
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Shapes/CH_LvS103_Lavett103B.edm",
+        "sha256": "1f74529454440631ef5293eedf29ab91bf16686ae5a4a4da010fb14ff50e4812",
+        "format_version": 10,
+        "triangles": 190136
+      }
     },
     {
       "dcs_id": "CH_LvS-103_PM103",
@@ -372,8 +634,8 @@
         "SAM LvS-103 PM 103 Stationary STR",
         "[CH] LvS-103 PM 103 STR"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone. The author's gallery distinguishes stationary and mobile versions; the separately registered HX truck variants already have self-propelled mobility. The non-HX deployed model's transport method remains unverified.",
+      "mode": "towed",
+      "reason": "Coherent complete radar semitrailer: tandem axles, long forward tractor attachment deck, stabilizer legs and radar shelter/array. No powered cab or tractor. Thus direct trailer towing, not merely a guessed wheel-less cargo module.",
       "sources": [
         {
           "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_PM103.lua",
@@ -391,8 +653,46 @@
         {
           "url": "https://www.currenthill.com/sweden",
           "summary": "Expanded LvS 103 model gallery explicitly distinguishes stationary and mobile versions. The illustrated HX vehicles must not be applied to the separate non-HX DCS types."
+        },
+        {
+          "file": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Database/Vehicles/CH_LvS103_PM103.lua",
+          "version": "Currenthill Sweden 1.5.0",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"CH_LvS103_PM103\";"
+            },
+            {
+              "line": 99,
+              "text": "GT.Name = \"CH_LvS-103_PM103\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.fmv.se/aktuellt--press/aktuella-handelser/fordon-till-luftvarnssystem-103/",
+          "publisher": "Swedish Defence Materiel Administration (FMV)",
+          "title": "Fordon till Luftvarnssystem 103",
+          "published": "2021-05-07",
+          "evidence": [
+            {
+              "locator": "Article paragraphs following the five-photo gallery, web text lines 189-203",
+              "summary": "FMV procured forty MAN HX vehicles in flatbed, tractor, and crane configurations. The vehicles transport the system's launchers, radar, and command containers. The shared carrier is an all-wheel-drive four-axle HX 8x8 platform. This establishes external transport for deployed LvS 103 modules, including radar, rather than permanent installation."
+            }
+          ]
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "Mods/tech/CH Military Asset Pack Sweden 1.5.0/Shapes/CH_LvS103_PM103.edm",
+        "sha256": "425da9ee5ac572ed1da3c188157e091ce410ffd64bba864b06542ff086d92ccb",
+        "format_version": 10,
+        "triangles": 236084
+      }
     },
     {
       "dcs_id": "CH_LvS-103_PM103_HX",
@@ -818,9 +1118,49 @@
       "variants": [
         "David's Sling LN"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Launcher semitrailer with tandem rear axles, long forward tractor-attachment flatbed/deck, deployable support legs, twelve-round launcher and equipment cabinet. There is no powered tractor or cab in this exact shape.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/DAVID_SLING_LN.lua",
+          "version": "Ultimate package 1.4.4; internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"DAVID_SLING_LN\";"
+            },
+            {
+              "line": 73,
+              "text": "GT.Name = \"DAVID_SLING_LN\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        },
+        {
+          "url": "https://www.usmcu.edu/Portals/218/MES/AY%202012-13%20Series/Rubin_ppt_20120816.pdf?ver=2018-10-03-110026-190",
+          "publisher": "US Marine Corps University, hosted presentation by Uzi Rubin / Rubincon Ltd.",
+          "title": "Israel Response to Regional Missile and Rocket Threats",
+          "published": "2012-08",
+          "evidence": [
+            {
+              "locator": "Slide 57, David Sling Lower Tier Capability",
+              "summary": "The system presentation shows the Stunner interceptor, ELM-2084 radar, and a separately labelled Mobile Launcher. This supports launcher transportability; the shipped DAVID_SLING_LN model independently establishes the tandem-axle semitrailer identity."
+            }
+          ]
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/DAVID_SLING_LN.edm",
+        "sha256": "9bd3061af8b841633e336804c987e82a28866c2cd00ee1737df9f0bcd2852c0e",
+        "format_version": 10,
+        "triangles": 215312
+      }
     },
     {
       "dcs_id": "Dog Ear radar",
@@ -859,72 +1199,365 @@
       "variants": [
         "ELM-2084MMR AD Rotating Mode"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Wheel-less demountable radar equipment platform with array and four jack/stabilizer legs. No truck, cab or axles. All three ELM2084 modes share this same physical shape, so each requires external cargo transport.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/ELM2084_MMR_AD_RT.lua",
+          "version": "Ultimate package 1.4.4; internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"ELTA_ELM_2084\";"
+            },
+            {
+              "line": 79,
+              "text": "GT.Name = \"ELM2084_MMR_AD_RT\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        },
+        {
+          "url": "https://www.iai.co.il/product/elm-2084-mmr/",
+          "publisher": "Israel Aerospace Industries / ELTA",
+          "title": "ELM-2084 Multi-Mission AESA Radar and Air Defense Radar",
+          "evidence": [
+            {
+              "locator": "Overview and Highlights, web text lines 24-35",
+              "summary": "The exact MMR family is designed for high mobility and rapid deployment, with air transport and both weapon-location and air-defence operating modes. Therefore the AD rotating, AD sector, and WLR catalogue aliases do not imply different transport chassis."
+            }
+          ]
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ELTA_ELM_2084.edm",
+        "sha256": "d66c0cf0ec1e392f5816d4f2e16edf29967140532633c3b1927fe0dc25f8e9e8",
+        "format_version": 10,
+        "triangles": 244606
+      }
     },
     {
       "dcs_id": "ELM2084_MMR_AD_SC",
       "variants": [
         "ELM-2084MMR AD Sector Mode"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Wheel-less demountable radar equipment platform with array and four jack/stabilizer legs. No truck, cab or axles. All three ELM2084 modes share this same physical shape, so each requires external cargo transport.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/ELM2084_MMR_AD_SC.lua",
+          "version": "Ultimate package 1.4.4; internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"ELTA_ELM_2084\";"
+            },
+            {
+              "line": 85,
+              "text": "GT.Name = \"ELM2084_MMR_AD_SC\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        },
+        {
+          "url": "https://www.iai.co.il/product/elm-2084-mmr/",
+          "publisher": "Israel Aerospace Industries / ELTA",
+          "title": "ELM-2084 Multi-Mission AESA Radar and Air Defense Radar",
+          "evidence": [
+            {
+              "locator": "Overview and Highlights, web text lines 24-35",
+              "summary": "The exact MMR family is designed for high mobility and rapid deployment, with air transport and both weapon-location and air-defence operating modes. Therefore the AD rotating, AD sector, and WLR catalogue aliases do not imply different transport chassis."
+            }
+          ]
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ELTA_ELM_2084.edm",
+        "sha256": "d66c0cf0ec1e392f5816d4f2e16edf29967140532633c3b1927fe0dc25f8e9e8",
+        "format_version": 10,
+        "triangles": 244606
+      }
     },
     {
       "dcs_id": "ELM2084_MMR_WLR",
       "variants": [
         "ELM-2084MMR WLR Mode"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Wheel-less demountable radar equipment platform with array and four jack/stabilizer legs. No truck, cab or axles. All three ELM2084 modes share this same physical shape, so each requires external cargo transport.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/ELM2084_MMR_WLR.lua",
+          "version": "Ultimate package 1.4.4; internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"ELTA_ELM_2084\";"
+            },
+            {
+              "line": 85,
+              "text": "GT.Name = \"ELM2084_MMR_WLR\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        },
+        {
+          "url": "https://www.iai.co.il/product/elm-2084-mmr/",
+          "publisher": "Israel Aerospace Industries / ELTA",
+          "title": "ELM-2084 Multi-Mission AESA Radar and Air Defense Radar",
+          "evidence": [
+            {
+              "locator": "Overview and Highlights, web text lines 24-35",
+              "summary": "The exact MMR family is designed for high mobility and rapid deployment, with air transport and both weapon-location and air-defence operating modes. Therefore the AD rotating, AD sector, and WLR catalogue aliases do not imply different transport chassis."
+            }
+          ]
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ELTA_ELM_2084.edm",
+        "sha256": "d66c0cf0ec1e392f5816d4f2e16edf29967140532633c3b1927fe0dc25f8e9e8",
+        "format_version": 10,
+        "triangles": 244606
+      }
     },
     {
       "dcs_id": "ERO_SA2_SNR75",
       "variants": [
         "ERO SA-2 SNR-75 Fan Song"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Exact geometry shows a four-wheel two-axle equipment cabin with a towing drawbar, stabilizers, ladder and deployed cables; this is a trailer model, not the native SNR_75 antenna model.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/ERO_SA2_SNR75.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 2,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary)"
+            },
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 5,
+              "text": "GT.visual.shape = \"ERO_SA2_SNR75\""
+            },
+            {
+              "line": 20,
+              "text": "GT.Name = \"ERO_SA2_SNR75\""
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_SA2_SNR75.edm",
+        "sha256": "5d79081252309ac28018e99d9bb27fc0ec80a1bfd5ff4a255921bd2466e2529e",
+        "format_version": 10,
+        "triangles": 62182
+      }
     },
     {
       "dcs_id": "EWR 1L119 Nebo-SVU",
       "variants": [
         "EWR 1L119 Nebo-SVU"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Exact geometry shows radar and equipment cabin on a tandem-axle semitrailer with support legs and no tractor.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/EWR_1L119.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 5,
+              "text": "GT.chassis.life = 5;"
+            },
+            {
+              "line": 7,
+              "text": "GT.visual.shape = \"ERO_1L119_Nebo_SVU\";"
+            },
+            {
+              "line": 60,
+              "text": "GT.Name = \"EWR 1L119 Nebo-SVU\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_1L119_Nebo_SVU.edm",
+        "sha256": "5b255213cfac4f2d40a7f446fa06e6831a2a4b3448c494956c226e0f9a22f534",
+        "format_version": 10,
+        "triangles": 82618
+      }
     },
     {
       "dcs_id": "EWR 55G6U NEBO-U",
       "variants": [
         "EWR 55G6U Nebo-U"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Exact geometry shows the deployed antenna on a wheeled tandem-axle trailer base with hinged support structure and guy wires; the large deployed antenna is transportable equipment.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/EWR_55Zh6U.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 5,
+              "text": "GT.chassis.life = 5;"
+            },
+            {
+              "line": 7,
+              "text": "GT.visual.shape = \"ERO_55Zh6U_Nebo_U\";"
+            },
+            {
+              "line": 60,
+              "text": "GT.Name = \"EWR 55G6U NEBO-U\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_55Zh6U_Nebo_U.edm",
+        "sha256": "f7133626226d85fdd3684d069eadf2c9d248a309d05ffd19e6bf44f88621e8ab",
+        "format_version": 10,
+        "triangles": 118501
+      }
     },
     {
       "dcs_id": "EWR Generic radar tower",
       "variants": [
         "EWR Generic radar tower"
       ],
-      "mode": "unknown",
-      "reason": "No exact readable native declaration or sufficient primary model evidence found.",
-      "sources": []
+      "mode": "fixed",
+      "reason": "Exact geometry shows a tall lattice tower with radome on a massive rectangular foundation block. There is no wheeled chassis, tow frame, folding trailer or tractor.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/EWR_GenericEW.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 5,
+              "text": "GT.chassis.life = 10;"
+            },
+            {
+              "line": 7,
+              "text": "GT.visual.shape = \"ERO_GenericEW\";"
+            },
+            {
+              "line": 63,
+              "text": "GT.Name = \"EWR Generic radar tower\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "fixed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_GenericEW.edm",
+        "sha256": "e986b6cab9d6f93178033f536d3df439fdca4c657263a72484cdab8e97366e0f",
+        "format_version": 10,
+        "triangles": 20537
+      }
     },
     {
       "dcs_id": "EWR P-37 BAR LOCK",
       "variants": [
         "EWR P-37 Bar Lock"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Exact geometry shows a four-wheel two-axle trailer with drawbar, support legs and folding radar antenna structure; there is no powered cab.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/EWR_P_37.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 5,
+              "text": "GT.chassis.life = 5;"
+            },
+            {
+              "line": 7,
+              "text": "GT.visual.shape = \"ERO_P-37\";"
+            },
+            {
+              "line": 60,
+              "text": "GT.Name = \"EWR P-37 BAR LOCK\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_P-37.edm",
+        "sha256": "e1352b5a10dccf08aa01f4ab234cbc0a1b980be1efc8ce028b0dcf4ff2d6bd3d",
+        "format_version": 10,
+        "triangles": 67382
+      }
     },
     {
       "dcs_id": "FPS-117",
@@ -977,9 +1610,70 @@
       "variants": [
         "AAA SON-9 Fire Can"
       ],
-      "mode": "unknown",
-      "reason": "Likely legacy HDS type. Exact installed definition was outside the native source set; use the HDS audit to establish alias/model identity before applying SON-9 evidence.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Historical HDS SON-9 used the exact Mys-M1 two-axle trailer model as a stand-in. The retired identifier migrates to native SON_9, whose exact model is also a two-axle trailer. Both require separate transport; no unregistered legacy type is exported.",
+      "sources": [
+        {
+          "url": "https://github.com/Auranis/HighDigitSAMs/blob/b4ae14f3b5c2d06d832aa95fac21225c3e7a5392/Mods/tech/HighDigitSAMs/Database/Vehicle/radar/SON-9.lua",
+          "evidence": [
+            {
+              "line": 8,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 9,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 11,
+              "text": "GT.visual.shape = \"mys-m1\"; --Dog Ear used as stand-in model"
+            },
+            {
+              "line": 67,
+              "text": "GT.Name = \"Fire Can radar\";"
+            },
+            {
+              "line": 68,
+              "text": "GT.DisplayName = _(\"AAA SON-9 Fire Can TR\");"
+            }
+          ],
+          "summary": "Original HDS 1.4.2 source, tag commit b4ae14f3b5c2d06d832aa95fac21225c3e7a5392 dated 2021-04-27; blob afd577768c2c24babc8514573003ac6a01461ef4. Evidence line numbers refer to embedded original Lua text, not JSON wrapper. Exact type identity and proxy shape confirmed. The stale comment calls it Dog Ear, but the executable shape value is Mys-M1, consistent with the author's release notes."
+        },
+        {
+          "file": "pydcs_extensions/highdigitsams/highdigitsams.py",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "class AAA_SON_9_Fire_Can(unittype.VehicleType):"
+            },
+            {
+              "line": 10,
+              "text": "    id = \"Fire Can radar\""
+            },
+            {
+              "line": 11,
+              "text": "    name = \"AAA SON-9 Fire Can\""
+            }
+          ]
+        },
+        {
+          "url": "https://github.com/Auranis/HighDigitSAMs/releases",
+          "summary": "Original HDS author's release notes for v1.4.0 say SON-9 switched to the Silkworm 3D model; v1.3.0 identifies the addition as SON-9. v2.0.0 documents removal of Fire Can as obsolete. Primary mod identity and proxy-model provenance."
+        },
+        {
+          "url": "https://library.nstu.ru/fulltext/alumniassoc/2008/yakovlev.pdf",
+          "summary": "Same primary eyewitness SON-9 trailer deployment evidence described in SON_9 finding."
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "current_registration": "retired",
+      "replacement_dcs_id": "SON_9",
+      "geometry_evidence": {
+        "model": "CoreMods/tech/TechWeaponPack/Shapes/mys-m1.EDM",
+        "sha256": "6d6013e1d35bdd7bc51a9567b6f2401b551bbc40ba7124d1f4eaa47dbf06d4c6",
+        "format_version": 10,
+        "triangles": 68045
+      }
     },
     {
       "dcs_id": "Flakscheinwerfer_37",
@@ -1018,18 +1712,91 @@
       "variants": [
         "EWR FuMG-401 Freya LZ"
       ],
-      "mode": "unknown",
-      "reason": "Freya LZ was air-transportable and dismantlable; that alone establishes neither a towing arrangement nor fixed infrastructure.",
-      "sources": []
+      "mode": "towed",
+      "reason": "The exact DCS radar is Freya LZ, the transportable dismantlable version. An original British Air Ministry interrogation report documents dismantling, packing and airlifting a Freya LZ, then re-erecting it. Under the existing packed-vehicle-cargo abstraction, this is externally transported equipment rather than a permanently fixed radar or a self-propelled vehicle.",
+      "sources": [
+        {
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/Cars/Car/FuMG-401.lua",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "DisplayName = \"EWR FuMG-401 Freya LZ\","
+            },
+            {
+              "line": 10,
+              "text": "MaxSpeed = 0,"
+            },
+            {
+              "line": 224,
+              "text": "type = \"FuMG-401\","
+            },
+            {
+              "line": 234,
+              "text": "shape = \"FuMG-401\","
+            }
+          ],
+          "summary": "Version-pinned dump of actual DCS runtime tables, matching the installed DCS build. Explicitly establishes exact Freya LZ identity and shape. The source does not model self-propelled chassis or a transport animation."
+        },
+        {
+          "url": "https://www.digitalcombatsimulator.com/de/products/other/wwii_assets_pack/",
+          "summary": "Eagle Dynamics official WWII Assets Pack product inventory identifies the radar as FuMG 401 Freya LZ. Primary exact DCS identity source."
+        },
+        {
+          "url": "https://www.cdvandt.org/ADIK390all.pdf",
+          "summary": "Original Air Ministry A.D.I.(K) Report 390/1945, PDF page 7 (zero-based), paragraph 40. Records a Freya LZ stand dismantled and packed into three Ju 52 aircraft within three days; operational at Stavanger eight days after the request. The report's introduction says it is based on interrogation of General Martini and staff, supported by contemporary documents. The title page warns that prisoner statements had not yet been independently verified. This is positive dismantlable-transport evidence, not proof of wheels or a road towbar."
+        }
+      ],
+      "reviewed_on": "2026-11-07"
     },
     {
       "dcs_id": "FuSe-65",
       "variants": [
         "EWR FuSe-65 Würzburg-Riese"
       ],
-      "mode": "unknown",
-      "reason": "Historical Wuerzburg-Riese examples use fixed bunkers, railway cars and ship mounts. Ground-model pedestal identity not inspected, so classification withheld.",
-      "sources": []
+      "mode": "fixed",
+      "reason": "The exact DCS type maps to the FuSe-65 Würzburg-Riese shape. Original Eagle Dynamics product-model imagery shows this radar on a large polygonal concrete pedestal with an access stair, not a trailer or railway chassis. This directly confirms the fixed ground representation, corroborated by the National Electronics Museum's explanation of fixed bunker mountings.",
+      "sources": [
+        {
+          "url": "https://www.digitalcombatsimulator.com/de/news/newsletters/44a1596bd50f6319b0ff40ac7d76a1b7/",
+          "summary": "Eagle Dynamics newsletter dated 2020-06-26 identifies the pictured DCS radar as Würzburg-Riese and links to the original product-model render."
+        },
+        {
+          "url": "https://www.digitalcombatsimulator.com/images/newsletter/20200626/DE_Hero2.jpg",
+          "sha256": "44334d5ab1553bbbb7a37d55cb16881d537ce4cb7be228b3e9458fd25669aaee",
+          "summary": "Direct inspection of the original ED DCS model render: antenna, cabin and azimuth mechanism sit on a substantial polygonal concrete pedestal with an access stair. No road wheels, towbar, truck or railway carriage. This is dated developer model imagery, not a fresh local render."
+        },
+        {
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/Cars/Car/FuSe-65.lua",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "DisplayName = \"EWR FuSe-65 Würzburg-Riese\","
+            },
+            {
+              "line": 10,
+              "text": "MaxSpeed = 0,"
+            },
+            {
+              "line": 116,
+              "text": "type = \"FuSe-65\","
+            },
+            {
+              "line": 126,
+              "text": "shape = \"FuSe-65\","
+            }
+          ],
+          "summary": "Version-pinned runtime table matches the installed DCS build. Confirms exact ground radar name and visual shape; chassis only contains life, with no propulsion values."
+        },
+        {
+          "url": "https://www.digitalcombatsimulator.com/en/news/changelog/release/2.9.9.2280",
+          "summary": "Eagle Dynamics official changelog names the exact EWR FuSe-65 Würzburg-Riese type. Primary DCS identity anchor."
+        },
+        {
+          "url": "https://www.hmdb.org/m.asp?m=131631",
+          "summary": "Photograph and transcription of the National Electronics Museum's own FuG 65 Würzburg Riese display marker. Marker explains that the enlarged antenna prevented full mobility, with installations on fixed bunkers, railcars and one ship. The museum owns the described surviving apparatus and erected the sign; the page credits the marker explicitly to the museum. This is museum primary interpretation reproduced by a photographic record."
+        }
+      ],
+      "reviewed_on": "2026-11-07"
     },
     {
       "dcs_id": "HQ_2_Guideline_LN",
@@ -1098,9 +1865,48 @@
       "variants": [
         "Iron Dome LN"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Wheel-less launcher skid/pallet with twenty-round canisters, compact power/control equipment, mast and four jack/stabilizer legs. No truck, cab or powered chassis is represented. This is the offloaded transportable launcher, not the different truck-integrated I-DOME product.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/IRON_DOME_LN.lua",
+          "version": "Ultimate package 1.4.4; internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"IRON_DOME_LN\";"
+            },
+            {
+              "line": 94,
+              "text": "GT.Name = \"IRON_DOME_LN\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        },
+        {
+          "url": "https://www.rafael.co.il/system/iron-dome/",
+          "publisher": "Rafael Advanced Defense Systems",
+          "title": "Iron Dome",
+          "evidence": [
+            {
+              "locator": "Integrated and Multi-Mission and Land Applications sections",
+              "summary": "The manufacturer describes Iron Dome as mobile and transportable, with off-the-shelf vehicle integration and roll-on/roll-off air transport. The distinct I-DOME variant integrates its components on a single six-by-six truck; that should not be substituted for the mod's twenty-round standalone IRON_DOME_LN model."
+            }
+          ]
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/IRON_DOME_LN.edm",
+        "sha256": "57beea59169da804f4499c7eb6b54302edcd9b797203a4cb001c300f7ae44a19",
+        "format_version": 10,
+        "triangles": 1189504
+      }
     },
     {
       "dcs_id": "Iron_Dome_David_Sling_CP",
@@ -1232,27 +2038,55 @@
       "variants": [
         "SAM SA-5 S-200 P-14 'Tall king' SR"
       ],
-      "mode": "unknown",
-      "reason": "Native declaration identifies the P-14 radar but does not distinguish fixed P-14 from later trailer-carried variants. Generic stationary chassis is insufficient.",
+      "mode": "towed",
+      "reason": "The exact current native model visibly has a tandem-axle four-wheel semitrailer frame and deployed stabilizers below its large antenna. This geometry is transportable and must not be classified as fixed from descriptions of earlier fixed Tall King variants.",
       "sources": [
         {
-          "file": "CoreMods/tech/ColdWarAssetsPack/Database/Vehicles/SAM/radar/P14_SR.lua",
+          "file": "_G/db/Units/Cars/Car/P14_SR.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "dcs_version": "2.9.31.29434",
+          "commit_date": "2026-10-28T15:24:51Z",
+          "blob_sha": "d32a274245879fe629282e3184dbb15a5a8b1ed0",
           "evidence": [
             {
-              "line": 5,
-              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+              "line": 8,
+              "text": "MaxSpeed = 0,"
             },
             {
-              "line": 6,
-              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+              "line": 472,
+              "text": "_file = \"./CoreMods/tech/ColdWarAssetsPack/Database/db_units_cars.lua\","
             },
             {
-              "line": 7,
-              "text": "GT.chassis.life = 4;"
+              "line": 473,
+              "text": "_origin = \"ColdWarAssetsPack\","
+            },
+            {
+              "line": 485,
+              "text": "chassis = {"
+            },
+            {
+              "line": 521,
+              "text": "type = \"P14_SR\","
+            },
+            {
+              "line": 529,
+              "text": "shape = \"evr_p14_awr\","
             }
-          ]
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/Cars/Car/P14_SR.lua"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "carrier_assisted": true,
+      "native_max_speed_kph": 0,
+      "geometry_evidence": {
+        "model": "CoreMods/tech/ColdWarAssetsPack/Shapes/evr_p14_awr.edm",
+        "sha256": "a326bf09d658c8ead8cac16ffcdd2f718c5430fd079ee6a4b0c09e44eca24f9b",
+        "format_version": 10,
+        "triangles": 152888
+      }
     },
     {
       "dcs_id": "RLS_19J6",
@@ -1308,12 +2142,12 @@
       "variants": [
         "SAM SA-20 S-300PMU1 TR 30N6E(truck)"
       ],
-      "mode": "unknown",
-      "reason": "The model represents a powered truck or tracked platform, but the shipped unit definition inherits STATIC chassis without engine or speed overrides. Engine audio is not propulsion. Keep movement disabled until native driving is established or a transport representation is provided.",
+      "mode": "towed",
+      "reason": "Exact geometry shows a complete four-axle truck with driver cab. Its deployed DCS definition inherits STATIC with no engine or road-speed override; carrier-assisted packed transport avoids dispatching a zero-speed unit.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/30N6E S-300PMU1 TR.lua",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
           "evidence": [
             {
               "line": 5,
@@ -1322,6 +2156,10 @@
             {
               "line": 6,
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
             },
             {
               "line": 9,
@@ -1335,44 +2173,52 @@
           "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
         },
         {
-          "file": "Mods/tech/HighDigitSAMs/Encyclopedia/SAM/S-300PMU1, 30N6E Truck.txt",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
           "evidence": [
             {
-              "line": 3,
-              "text": "30h6_truck"
+              "line": 9,
+              "text": "engine_power = 0,"
             },
             {
               "line": 10,
-              "text": "Chassis: MAZ-7910 (8x8)"
-            }
-          ],
-          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
-        },
-        {
-          "file": "README_HighDigitSamsUltimate.md",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
-          "evidence": [
+              "text": "gear_type = 4,"
+            },
             {
-              "line": 102,
-              "text": "Now includes a truck-mounted 30N6 radar, 3D model by ERO."
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
             }
           ],
-          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
       ],
-      "reviewed_on": "2026-11-07"
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/30h6_truck.edm",
+        "sha256": "f7e04eea90db2d65b21da05a7b4bc3594cb10b023ec37b6d7cec9f391163d354",
+        "format_version": 10,
+        "triangles": 75563
+      },
+      "carrier_assisted": true
     },
     {
       "dcs_id": "S-300PMU1 40B6M tr",
       "variants": [
         "SAM SA-20 S-300PMU1 TR 30N6E"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "Exact geometry shows a wheeled semitrailer frame with tandem axle, hinged mast and deployed outriggers. No tractor is part of the model.",
       "sources": [
         {
-          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/40B6M S-300PMU1 TR.lua",
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/40B6M S-300PMU1 TR.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
           "evidence": [
             {
               "line": 5,
@@ -1385,21 +2231,39 @@
             {
               "line": 7,
               "text": "GT.chassis.life = 4;"
+            },
+            {
+              "line": 9,
+              "text": "GT.visual.shape = \"40b6m_mast\";"
+            },
+            {
+              "line": 92,
+              "text": "GT.Name = \"S-300PMU1 40B6M tr\";"
             }
-          ]
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/40b6m_mast.edm",
+        "sha256": "0d2365b9f2dcd0c95ac597b22a6b7302128754c27be6978f0629236c2aa418cf",
+        "format_version": 10,
+        "triangles": 47449
+      }
     },
     {
       "dcs_id": "S-300PMU1 40B6MD sr",
       "variants": [
         "SAM SA-20 S-300PMU1 SR 5N66E"
       ],
-      "mode": "unknown",
-      "reason": "Conflicting generic_stationary base and inherited MAZ543M chassis; native movement must be tested before enabling self-propulsion.",
+      "mode": "towed",
+      "reason": "Exact geometry shows a wheeled semitrailer frame with tandem axle, extended mast and deployed outriggers. MAZ543M inheritance does not supply a physical truck or tractor to this model.",
       "sources": [
         {
-          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/40B6MD S-300PMU1 SR.lua",
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/40B6MD S-300PMU1 SR.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
           "evidence": [
             {
               "line": 5,
@@ -1412,10 +2276,27 @@
             {
               "line": 7,
               "text": "GT.chassis.life = 4;"
+            },
+            {
+              "line": 9,
+              "text": "GT.visual.shape = \"40b6md_mast\";"
+            },
+            {
+              "line": 38,
+              "text": "GT.Name = \"S-300PMU1 40B6MD sr\";"
             }
-          ]
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/40b6md_mast.edm",
+        "sha256": "219c484d6436734cd64722b76733ea73e95cb291fd9efeb4c875a38999337427",
+        "format_version": 10,
+        "triangles": 52879
+      }
     },
     {
       "dcs_id": "S-300PMU1 54K6 cp",
@@ -1558,9 +2439,45 @@
       "variants": [
         "SAM SA-20B S-300PMU2 TR 92H6E(mast)"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Exact geometry shows a wheeled semitrailer frame with tandem axle, hinged mast and deployed outriggers. No tractor is part of the model.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/40B6M S-300PMU2 TR.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
+            },
+            {
+              "line": 9,
+              "text": "GT.visual.shape = \"40b6m_mast\";"
+            },
+            {
+              "line": 90,
+              "text": "GT.Name = \"S-300PMU2 40B6M tr\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/40b6m_mast.edm",
+        "sha256": "0d2365b9f2dcd0c95ac597b22a6b7302128754c27be6978f0629236c2aa418cf",
+        "format_version": 10,
+        "triangles": 47449
+      }
     },
     {
       "dcs_id": "S-300PMU2 54K6E2 cp",
@@ -1669,12 +2586,12 @@
       "variants": [
         "SAM SA-20B S-300PMU2 TR 92H6E(truck)"
       ],
-      "mode": "unknown",
-      "reason": "The model represents a powered truck or tracked platform, but the shipped unit definition inherits STATIC chassis without engine or speed overrides. Engine audio is not propulsion. Keep movement disabled until native driving is established or a transport representation is provided.",
+      "mode": "towed",
+      "reason": "Exact geometry shows a complete four-axle truck with driver cab. Its deployed DCS definition inherits STATIC with no engine or road-speed override; carrier-assisted packed transport avoids dispatching a zero-speed unit.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/92H6E S-300PMU2 TR.lua",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
           "evidence": [
             {
               "line": 5,
@@ -1683,6 +2600,10 @@
             {
               "line": 6,
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
             },
             {
               "line": 9,
@@ -1694,18 +2615,167 @@
             }
           ],
           "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
       ],
-      "reviewed_on": "2026-11-07"
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/92n6_truck.edm",
+        "sha256": "d3baa8a0f998b8ff46e99ea56bf87b670176ef9ceed3090091d176c1e61e8958",
+        "format_version": 10,
+        "triangles": 176778
+      },
+      "carrier_assisted": true
     },
     {
       "dcs_id": "S-300PS 5P85CE ln",
       "variants": [
         "SAM SA-10 (5V55RUD) S-300PS LN 5P85CE"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "self_propelled",
+      "reason": "Historical v1.4.2 explicitly registers this exact identifier on MAZ543M with the same 5p85se TEL model as the current PMU1 launcher. Resolved MAZ543M template has powered road mobility. It remains a retired identifier absent from the inspected current builds; availability is separate from mobility. Old saves migrate this retired type to the native S-300PS 5P85C ln; it is not registered for new layouts.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/5P85CE S-300PS LN.lua",
+          "commit": "b4ae14f3b5c2d06d832aa95fac21225c3e7a5392",
+          "blob_sha": "3e87ee718cd72035e5760404d5b697aec042d92f",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2;"
+            },
+            {
+              "line": 9,
+              "text": "GT.visual.shape = \"5p85se\";"
+            },
+            {
+              "line": 10,
+              "text": "GT.visual.shape_dstr = \"5p85se_d\";"
+            },
+            {
+              "line": 48,
+              "text": "GT.Name = \"S-300PS 5P85CE ln\";"
+            },
+            {
+              "line": 49,
+              "text": "GT.DisplayName = _(\"SAM SA-10 (5V55RUD) S-300 TEL C\");"
+            },
+            {
+              "line": 50,
+              "text": "GT.DisplayNameShort = _(\"SA-10c (HDS)\");"
+            }
+          ],
+          "repository": "https://github.com/Auranis/HighDigitSAMs",
+          "tag": "v1.4.2",
+          "date": "2021-04-27T05:01:59Z",
+          "url": "https://github.com/Auranis/HighDigitSAMs/blob/b4ae14f3b5c2d06d832aa95fac21225c3e7a5392/Mods/tech/HighDigitSAMs/Database/Vehicle/5P85CE S-300PS LN.lua"
+        },
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/5P85CE S-300PMU1 LN.lua",
+          "commit": "b4ae14f3b5c2d06d832aa95fac21225c3e7a5392",
+          "blob_sha": "de13ad7c01fba45c2c7495ce7eb2f2740c9725c2",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 2;"
+            },
+            {
+              "line": 9,
+              "text": "GT.visual.shape = \"5p85se\";"
+            },
+            {
+              "line": 10,
+              "text": "GT.visual.shape_dstr = \"5p85se_d\";"
+            },
+            {
+              "line": 47,
+              "text": "GT.Name = \"S-300PMU1 5P85CE ln\";"
+            },
+            {
+              "line": 48,
+              "text": "GT.DisplayName = _('SAM SA-20A S-300PMU-1 \"Gargoyle\" TEL C');"
+            },
+            {
+              "line": 49,
+              "text": "GT.DisplayNameShort = _(\"SA-20A\");"
+            }
+          ],
+          "repository": "https://github.com/Auranis/HighDigitSAMs",
+          "tag": "v1.4.2",
+          "date": "2021-04-27T05:01:59Z",
+          "url": "https://github.com/Auranis/HighDigitSAMs/blob/b4ae14f3b5c2d06d832aa95fac21225c3e7a5392/Mods/tech/HighDigitSAMs/Database/Vehicle/5P85CE S-300PMU1 LN.lua"
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/MAZ543M.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "6220ab87821d7783435947d1223e65961cb6ed53",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 330,"
+            },
+            {
+              "line": 11,
+              "text": "gear_type = 1,"
+            },
+            {
+              "line": 15,
+              "text": "max_acceleration = 1.30719,"
+            },
+            {
+              "line": 16,
+              "text": "max_road_velocity = 16.6667,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/MAZ543M.lua"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "current_registration": "retired",
+      "replacement_dcs_id": "S-300PS 5P85C ln"
     },
     {
       "dcs_id": "S-300PS 5P85DE ln",
@@ -2154,12 +3224,12 @@
       "variants": [
         "SAM SA-12 S-300V 9S32 TR"
       ],
-      "mode": "unknown",
-      "reason": "The model represents a powered truck or tracked platform, but the shipped unit definition inherits STATIC chassis without engine or speed overrides. Engine audio is not propulsion. Keep movement disabled until native driving is established or a transport representation is provided.",
+      "mode": "towed",
+      "reason": "Exact geometry shows a complete tracked vehicle with cab and seven road wheels per side. The deployed DCS definition inherits STATIC with no propulsion override; carrier-assisted packed transport avoids dispatching a zero-speed unit.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/9S32 S-300V TR.lua",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
           "evidence": [
             {
               "line": 5,
@@ -2168,6 +3238,10 @@
             {
               "line": 6,
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
             },
             {
               "line": 9,
@@ -2181,41 +3255,40 @@
           "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
         },
         {
-          "file": "README_HighDigitSamsUltimate.md",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
           "evidence": [
             {
-              "line": 97,
-              "text": "The S-300V was a tracked, mobile area defense SAM with a particular focus on countering ballistic missiles. It features SARH guidance for the 9M82 anti-ballstic missile, and the 9M83 anti-aircraft."
-            }
-          ],
-          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
-        },
-        {
-          "file": "Mods/tech/HighDigitSAMs/Sounds/Sounders/GroundUnits/AirDefence/S-300V 9S32 tr.lua",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
-          "evidence": [
-            {
-              "line": 3,
-              "text": "dofile(\"GroundUnits/Engines/IFV/Stryker_engine.lua\")"
+              "line": 9,
+              "text": "engine_power = 0,"
             },
             {
-              "line": 12,
-              "text": "env.max_speed = 27.7"
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
             },
             {
               "line": 15,
-              "text": "self.move_common = \"GndTech/TruckMove\""
-            },
-            {
-              "line": 28,
-              "text": "Stryker_eng:update(params)"
+              "text": "max_road_velocity = 0,"
             }
           ],
-          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
       ],
-      "reviewed_on": "2026-11-07"
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_9S32.edm",
+        "sha256": "909cdb79f553624b708339bdcb81630cd2ff77b83f18e41762648bc963cf9862",
+        "format_version": 10,
+        "triangles": 139325
+      },
+      "carrier_assisted": true
     },
     {
       "dcs_id": "S-300V 9S457 cp",
@@ -2630,12 +3703,12 @@
       "variants": [
         "SAM SA-23 S-300V4 9S32M-1E TR"
       ],
-      "mode": "unknown",
-      "reason": "The model represents a powered truck or tracked platform, but the shipped unit definition inherits STATIC chassis without engine or speed overrides. Engine audio is not propulsion. Keep movement disabled until native driving is established or a transport representation is provided.",
+      "mode": "towed",
+      "reason": "Exact geometry shows a complete tracked vehicle with cab and seven road wheels per side. The deployed DCS definition inherits STATIC with no propulsion override; carrier-assisted packed transport avoids dispatching a zero-speed unit.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/S-300V4_9S32M-1E_TR.lua",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
           "evidence": [
             {
               "line": 5,
@@ -2644,6 +3717,10 @@
             {
               "line": 6,
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
             },
             {
               "line": 9,
@@ -2657,41 +3734,40 @@
           "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
         },
         {
-          "file": "README_HighDigitSamsUltimate.md",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
           "evidence": [
             {
-              "line": 119,
-              "text": "This upgraded variant of the S-300VM features the extremely capable 9M82MV anti-ballstic missile, in addition to the 9M83MV missile, all on a tracked chassis."
-            }
-          ],
-          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
-        },
-        {
-          "file": "Mods/tech/HighDigitSAMs/Sounds/Sounders/GroundUnits/AirDefence/S-300V4 9S32M-1E tr.lua",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
-          "evidence": [
-            {
-              "line": 3,
-              "text": "dofile(\"GroundUnits/Engines/IFV/Stryker_engine.lua\")"
+              "line": 9,
+              "text": "engine_power = 0,"
             },
             {
-              "line": 12,
-              "text": "env.max_speed = 27.7"
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
             },
             {
               "line": 15,
-              "text": "self.move_common = \"GndTech/TruckMove\""
-            },
-            {
-              "line": 28,
-              "text": "Stryker_eng:update(params)"
+              "text": "max_road_velocity = 0,"
             }
           ],
-          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
       ],
-      "reviewed_on": "2026-11-07"
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_9S32ME.edm",
+        "sha256": "4cc028afc688fb9ff8b1a2e86ad5953ea0267cbff04b27cb4ba7e205d53cccc1",
+        "format_version": 10,
+        "triangles": 129534
+      },
+      "carrier_assisted": true
     },
     {
       "dcs_id": "S-300V4 9S457-2E cp",
@@ -3073,12 +4149,12 @@
       "variants": [
         "SAM SA-23 S-300VM 9S32ME TR"
       ],
-      "mode": "unknown",
-      "reason": "The model represents a powered truck or tracked platform, but the shipped unit definition inherits STATIC chassis without engine or speed overrides. Engine audio is not propulsion. Keep movement disabled until native driving is established or a transport representation is provided.",
+      "mode": "towed",
+      "reason": "Exact geometry shows a complete tracked vehicle with cab and seven road wheels per side. The deployed DCS definition inherits STATIC with no propulsion override; carrier-assisted packed transport avoids dispatching a zero-speed unit.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/9S32ME S-300VM TR.lua",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
           "evidence": [
             {
               "line": 5,
@@ -3087,6 +4163,10 @@
             {
               "line": 6,
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.chassis.life = 4;"
             },
             {
               "line": 9,
@@ -3100,64 +4180,40 @@
           "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
         },
         {
-          "file": "README_HighDigitSamsUltimate.md",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
           "evidence": [
-            {
-              "line": 109,
-              "text": "This upgraded variant of the S-300V features Track-Via-Missile guidance and the extremely capable 9M82M anti-ballstic missile, in addition to the 9M83M missile, all on a tracked chassis."
-            },
-            {
-              "line": 119,
-              "text": "This upgraded variant of the S-300VM features the extremely capable 9M82MV anti-ballstic missile, in addition to the 9M83MV missile, all on a tracked chassis."
-            }
-          ],
-          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
-        },
-        {
-          "file": "Mods/tech/HighDigitSAMs/Sounds/Sounders/GroundUnits/AirDefence/S-300VM 9S32ME tr.lua",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
-          "evidence": [
-            {
-              "line": 3,
-              "text": "dofile(\"GroundUnits/Engines/IFV/Stryker_engine.lua\")"
-            },
-            {
-              "line": 12,
-              "text": "env.max_speed = 27.7"
-            },
-            {
-              "line": 15,
-              "text": "self.move_common = \"GndTech/TruckMove\""
-            },
-            {
-              "line": 28,
-              "text": "Stryker_eng:update(params)"
-            }
-          ],
-          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
-        },
-        {
-          "file": "Mods/tech/HighDigitSAMs/Encyclopedia/SAM/S-300VM, 9S32ME.txt",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
-          "evidence": [
-            {
-              "line": 3,
-              "text": "9s32me"
-            },
             {
               "line": 9,
-              "text": "Time into action/time to close down: 5 min"
+              "text": "engine_power = 0,"
             },
             {
               "line": 10,
-              "text": "Chassis: Article 830 (tracked)"
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
             }
           ],
-          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
       ],
-      "reviewed_on": "2026-11-07"
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/9s32me.edm",
+        "sha256": "d1d72269e6c9dccb7bb1e339212ec2b5dc31cdb2e3a3c1d70fd11360d150e6a0",
+        "format_version": 10,
+        "triangles": 129534
+      },
+      "carrier_assisted": true
     },
     {
       "dcs_id": "S-300VM 9S457ME cp",
@@ -3421,21 +4477,57 @@
       "variants": [
         "SAM SA-21 S-400 TR 92N6E (mast)"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Exact geometry shows a wheeled semitrailer frame with tandem axle, extended mast and deployed outriggers. No tractor is part of the model.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/S-400_92H6E_Mast_TR.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 5,
+              "text": "GT.chassis.life = 4;"
+            },
+            {
+              "line": 7,
+              "text": "GT.visual.shape = \"ERO_92N6E_TR_Mast\";"
+            },
+            {
+              "line": 93,
+              "text": "GT.Name = \"S-400 92N6E mast tr\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_92N6E_TR_Mast.edm",
+        "sha256": "c7ea54f038a063fc420f4e316ba0f4ffa40087bd63640528165755746a84827f",
+        "format_version": 10,
+        "triangles": 112895
+      }
     },
     {
       "dcs_id": "S-400 92N6E tr",
       "variants": [
         "SAM SA-21 S-400 TR 92N6E (truck)"
       ],
-      "mode": "unknown",
-      "reason": "The model represents a powered truck or tracked platform, but the shipped unit definition inherits STATIC chassis without engine or speed overrides. Engine audio is not propulsion. Keep movement disabled until native driving is established or a transport representation is provided.",
+      "mode": "towed",
+      "reason": "Exact geometry shows a complete four-axle truck with driver cab. Its deployed DCS definition inherits STATIC with no engine or road-speed override; carrier-assisted packed transport avoids dispatching a zero-speed unit.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/S-400_92H6E_TR.lua",
-          "version": "HighDigitSAMs Ultimate Compilation 1.4.4",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
           "evidence": [
             {
               "line": 3,
@@ -3444,6 +4536,10 @@
             {
               "line": 4,
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 5,
+              "text": "GT.chassis.life = 4;"
             },
             {
               "line": 7,
@@ -3455,18 +4551,87 @@
             }
           ],
           "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
       ],
-      "reviewed_on": "2026-11-07"
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_92N6E_TR_Truck.edm",
+        "sha256": "1f16502d3c40be94ef7d0e1ab9c5268802a28b42fd3d3dd150b48fddd8b2a703",
+        "format_version": 10,
+        "triangles": 181259
+      },
+      "carrier_assisted": true
     },
     {
       "dcs_id": "S-400 96L6E mast sr",
       "variants": [
         "SAM SA-21 S-400 SR 96L6E (mast)"
       ],
-      "mode": "unknown",
-      "reason": "No matching GT.Name definition found in the installed Lua sources inspected; unverified or legacy type. Keep unknown.",
-      "sources": []
+      "mode": "towed",
+      "reason": "Exact geometry shows a wheeled semitrailer frame with tandem axle, extended mast and deployed outriggers. MAZ543M inheritance does not supply a physical truck or tractor to this model.",
+      "sources": [
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicles/radar/S-400_96L6E_Mast_SR.lua",
+          "version": "Package 1.4.4; entry.lua internal plugin 1.4.3",
+          "evidence": [
+            {
+              "line": 3,
+              "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
+            },
+            {
+              "line": 4,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.MAZ543M);"
+            },
+            {
+              "line": 5,
+              "text": "GT.chassis.life = 4;"
+            },
+            {
+              "line": 7,
+              "text": "GT.visual.shape = \"ERO_96L6E_SR_Mast\";"
+            },
+            {
+              "line": 64,
+              "text": "GT.Name = \"S-400 96L6E mast sr\";"
+            }
+          ],
+          "package": "HighDigitSAMs-Ultimate-Compilation-1.4.4"
+        }
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "geometry_evidence": {
+        "model": "IncomingMods/HighDigitSAMs-Ultimate-Compilation-1.4.4/Mods/tech/HighDigitSAMs/Shapes/ERO_96L6E_SR_Mast.edm",
+        "sha256": "704e4dcaed2ec09718e522ece9e5013a847facbd9afcd93b807800cd4a71fae5",
+        "format_version": 10,
+        "triangles": 115959
+      }
     },
     {
       "dcs_id": "S-400 96L6E sr",
@@ -3507,8 +4672,8 @@
       "variants": [
         "SAM SAMP/T Control Station"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "Complete four-axle truck: cab with windshield and vehicle grille, integrated wheeled chassis, shelter behind cab, deployed access stairs and mast. No separate-carrier inference required. The exact unit definition inherits zero-propulsion STATIC without a local driving override. Use carrier-assisted packed relocation, not a native route on this truck.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MC.lua",
@@ -3522,16 +4687,96 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             }
           ]
+        },
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MC.lua",
+          "version": "HighDigitSAMs 2.1.0",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"sampt_mc\";"
+            },
+            {
+              "line": 35,
+              "text": "GT.Name = \"SAMPT_MC\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.esercito.difesa.it/Rapporto-Esercito/Documents/2023/ok_RE23_A4_ITA.pdf",
+          "publisher": "Italian Army",
+          "title": "Rapporto Esercito 2023, Capacita e sistemi, Sistema d'arma SAMP/T",
+          "evidence": [
+            {
+              "locator": "Sistema d'arma SAMP/T, Mobilita subsection",
+              "text": "Tutti i moduli del sistema SAMP/T sono trasportati da autocarri ASTRA 8x8",
+              "summary": "The Army explicitly states that all SAMP/T modules are transported by ASTRA 8x8 trucks. The command-and-control subsection separately identifies the MC and ME modules. It supports transportability of the deployed command, engagement, generator, launcher, and radar modules."
+            }
+          ]
+        },
+        {
+          "url": "https://eurosam.com/ground-systems/",
+          "publisher": "EUROSAM",
+          "title": "Ground Systems Solution",
+          "evidence": [
+            {
+              "locator": "System performance, Mobility, web text lines 115-116",
+              "text": "Fully self-propelled (typically 8x8 prime movers)",
+              "summary": "The manufacturer describes the assembled battery with its prime movers as fully self-propelled. This must not be copied automatically onto an exact DCS shape that represents only the offloaded module."
+            },
+            {
+              "locator": "Radar module, web text line 49",
+              "summary": "The manufacturer describes a twenty-foot ISO radar module that meets road, rail, and aircraft transport requirements and can be deployed by two operators in under fifteen minutes."
+            }
+          ]
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "carrier_assisted": true,
+      "geometry_evidence": {
+        "model": "Mods/tech/HighDigitSAMs/Shapes/sampt_mc.edm",
+        "sha256": "83d3aa88a86ef8f76e90136599663fd93e410cae5d978b107a4c95e7fdeede4f",
+        "format_version": 10,
+        "triangles": 100962
+      }
     },
     {
       "dcs_id": "SAMPT_ME",
       "variants": [
         "SAM SAMP/T Engagement Station"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "Complete four-axle truck: cab, windshield, front grille, integrated wheeled chassis, engagement shelter and deployed access stairs. The exact unit definition inherits zero-propulsion STATIC without a local driving override. Use carrier-assisted packed relocation, not a native route on this truck.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_ME.lua",
@@ -3545,16 +4790,96 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             }
           ]
+        },
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_ME.lua",
+          "version": "HighDigitSAMs 2.1.0",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"sampt_me\";"
+            },
+            {
+              "line": 35,
+              "text": "GT.Name = \"SAMPT_ME\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.esercito.difesa.it/Rapporto-Esercito/Documents/2023/ok_RE23_A4_ITA.pdf",
+          "publisher": "Italian Army",
+          "title": "Rapporto Esercito 2023, Capacita e sistemi, Sistema d'arma SAMP/T",
+          "evidence": [
+            {
+              "locator": "Sistema d'arma SAMP/T, Mobilita subsection",
+              "text": "Tutti i moduli del sistema SAMP/T sono trasportati da autocarri ASTRA 8x8",
+              "summary": "The Army explicitly states that all SAMP/T modules are transported by ASTRA 8x8 trucks. The command-and-control subsection separately identifies the MC and ME modules. It supports transportability of the deployed command, engagement, generator, launcher, and radar modules."
+            }
+          ]
+        },
+        {
+          "url": "https://eurosam.com/ground-systems/",
+          "publisher": "EUROSAM",
+          "title": "Ground Systems Solution",
+          "evidence": [
+            {
+              "locator": "System performance, Mobility, web text lines 115-116",
+              "text": "Fully self-propelled (typically 8x8 prime movers)",
+              "summary": "The manufacturer describes the assembled battery with its prime movers as fully self-propelled. This must not be copied automatically onto an exact DCS shape that represents only the offloaded module."
+            },
+            {
+              "locator": "Radar module, web text line 49",
+              "summary": "The manufacturer describes a twenty-foot ISO radar module that meets road, rail, and aircraft transport requirements and can be deployed by two operators in under fifteen minutes."
+            }
+          ]
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "carrier_assisted": true,
+      "geometry_evidence": {
+        "model": "Mods/tech/HighDigitSAMs/Shapes/sampt_me.edm",
+        "sha256": "8f4b220b7f892d6f3046c2f2f8d8d95bb3b3ffde78649656a26266354ab5a928",
+        "format_version": 10,
+        "triangles": 97891
+      }
     },
     {
       "dcs_id": "SAMPT_MGE",
       "variants": [
         "SAM SAMP/T Electric Generator"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "Complete four-axle truck: cab, front grille and windshield, integrated four-axle chassis, generator shelter, side access stairs and stabilizer legs. The exact unit definition inherits zero-propulsion STATIC without a local driving override. Use carrier-assisted packed relocation, not a native route on this truck.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MGE.lua",
@@ -3568,16 +4893,96 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             }
           ]
+        },
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MGE.lua",
+          "version": "HighDigitSAMs 2.1.0",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"sampt_mge\";"
+            },
+            {
+              "line": 34,
+              "text": "GT.Name = \"SAMPT_MGE\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.esercito.difesa.it/Rapporto-Esercito/Documents/2023/ok_RE23_A4_ITA.pdf",
+          "publisher": "Italian Army",
+          "title": "Rapporto Esercito 2023, Capacita e sistemi, Sistema d'arma SAMP/T",
+          "evidence": [
+            {
+              "locator": "Sistema d'arma SAMP/T, Mobilita subsection",
+              "text": "Tutti i moduli del sistema SAMP/T sono trasportati da autocarri ASTRA 8x8",
+              "summary": "The Army explicitly states that all SAMP/T modules are transported by ASTRA 8x8 trucks. The command-and-control subsection separately identifies the MC and ME modules. It supports transportability of the deployed command, engagement, generator, launcher, and radar modules."
+            }
+          ]
+        },
+        {
+          "url": "https://eurosam.com/ground-systems/",
+          "publisher": "EUROSAM",
+          "title": "Ground Systems Solution",
+          "evidence": [
+            {
+              "locator": "System performance, Mobility, web text lines 115-116",
+              "text": "Fully self-propelled (typically 8x8 prime movers)",
+              "summary": "The manufacturer describes the assembled battery with its prime movers as fully self-propelled. This must not be copied automatically onto an exact DCS shape that represents only the offloaded module."
+            },
+            {
+              "locator": "Radar module, web text line 49",
+              "summary": "The manufacturer describes a twenty-foot ISO radar module that meets road, rail, and aircraft transport requirements and can be deployed by two operators in under fifteen minutes."
+            }
+          ]
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "carrier_assisted": true,
+      "geometry_evidence": {
+        "model": "Mods/tech/HighDigitSAMs/Shapes/sampt_mge.edm",
+        "sha256": "7e5429b0203630ab14708499983f4a9b02dc17339855e9f63394f5c3b1a21d54",
+        "format_version": 10,
+        "triangles": 91068
+      }
     },
     {
       "dcs_id": "SAMPT_MLT_Blk1",
       "variants": [
         "SAM SAMP/T MLT Launcher Block 1"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "Complete four-axle truck: cab, front grille and windshield, integrated four-axle wheeled chassis with erected launcher behind cab and deployed outriggers. All three MLT missile variants declare this same shape. The exact unit definition inherits zero-propulsion STATIC without a local driving override. Use carrier-assisted packed relocation, not a native route on this truck.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MLT_Blk1.lua",
@@ -3591,16 +4996,96 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             }
           ]
+        },
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MLT_Blk1.lua",
+          "version": "HighDigitSAMs 2.1.0",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"sampt_mlt\";"
+            },
+            {
+              "line": 76,
+              "text": "GT.Name = \"SAMPT_MLT_Blk1\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.esercito.difesa.it/Rapporto-Esercito/Documents/2023/ok_RE23_A4_ITA.pdf",
+          "publisher": "Italian Army",
+          "title": "Rapporto Esercito 2023, Capacita e sistemi, Sistema d'arma SAMP/T",
+          "evidence": [
+            {
+              "locator": "Sistema d'arma SAMP/T, Mobilita subsection",
+              "text": "Tutti i moduli del sistema SAMP/T sono trasportati da autocarri ASTRA 8x8",
+              "summary": "The Army explicitly states that all SAMP/T modules are transported by ASTRA 8x8 trucks. The command-and-control subsection separately identifies the MC and ME modules. It supports transportability of the deployed command, engagement, generator, launcher, and radar modules."
+            }
+          ]
+        },
+        {
+          "url": "https://eurosam.com/ground-systems/",
+          "publisher": "EUROSAM",
+          "title": "Ground Systems Solution",
+          "evidence": [
+            {
+              "locator": "System performance, Mobility, web text lines 115-116",
+              "text": "Fully self-propelled (typically 8x8 prime movers)",
+              "summary": "The manufacturer describes the assembled battery with its prime movers as fully self-propelled. This must not be copied automatically onto an exact DCS shape that represents only the offloaded module."
+            },
+            {
+              "locator": "Radar module, web text line 49",
+              "summary": "The manufacturer describes a twenty-foot ISO radar module that meets road, rail, and aircraft transport requirements and can be deployed by two operators in under fifteen minutes."
+            }
+          ]
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "carrier_assisted": true,
+      "geometry_evidence": {
+        "model": "Mods/tech/HighDigitSAMs/Shapes/sampt_mlt.edm",
+        "sha256": "1e979e9f1f7ac188496c2cd6df2b5aa9519a624b4b4a7759b9f70d407f803fbb",
+        "format_version": 10,
+        "triangles": 145688
+      }
     },
     {
       "dcs_id": "SAMPT_MLT_Blk1NT",
       "variants": [
         "SAM SAMP/T MLT Launcher Block 1NT"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "Complete four-axle truck: cab, front grille and windshield, integrated four-axle wheeled chassis with erected launcher behind cab and deployed outriggers. All three MLT missile variants declare this same shape. The exact unit definition inherits zero-propulsion STATIC without a local driving override. Use carrier-assisted packed relocation, not a native route on this truck.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MLT_Blk1NT.lua",
@@ -3614,16 +5099,96 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             }
           ]
+        },
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MLT_Blk1NT.lua",
+          "version": "HighDigitSAMs 2.1.0",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"sampt_mlt\";"
+            },
+            {
+              "line": 76,
+              "text": "GT.Name = \"SAMPT_MLT_Blk1NT\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.esercito.difesa.it/Rapporto-Esercito/Documents/2023/ok_RE23_A4_ITA.pdf",
+          "publisher": "Italian Army",
+          "title": "Rapporto Esercito 2023, Capacita e sistemi, Sistema d'arma SAMP/T",
+          "evidence": [
+            {
+              "locator": "Sistema d'arma SAMP/T, Mobilita subsection",
+              "text": "Tutti i moduli del sistema SAMP/T sono trasportati da autocarri ASTRA 8x8",
+              "summary": "The Army explicitly states that all SAMP/T modules are transported by ASTRA 8x8 trucks. The command-and-control subsection separately identifies the MC and ME modules. It supports transportability of the deployed command, engagement, generator, launcher, and radar modules."
+            }
+          ]
+        },
+        {
+          "url": "https://eurosam.com/ground-systems/",
+          "publisher": "EUROSAM",
+          "title": "Ground Systems Solution",
+          "evidence": [
+            {
+              "locator": "System performance, Mobility, web text lines 115-116",
+              "text": "Fully self-propelled (typically 8x8 prime movers)",
+              "summary": "The manufacturer describes the assembled battery with its prime movers as fully self-propelled. This must not be copied automatically onto an exact DCS shape that represents only the offloaded module."
+            },
+            {
+              "locator": "Radar module, web text line 49",
+              "summary": "The manufacturer describes a twenty-foot ISO radar module that meets road, rail, and aircraft transport requirements and can be deployed by two operators in under fifteen minutes."
+            }
+          ]
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "carrier_assisted": true,
+      "geometry_evidence": {
+        "model": "Mods/tech/HighDigitSAMs/Shapes/sampt_mlt.edm",
+        "sha256": "1e979e9f1f7ac188496c2cd6df2b5aa9519a624b4b4a7759b9f70d407f803fbb",
+        "format_version": 10,
+        "triangles": 145688
+      }
     },
     {
       "dcs_id": "SAMPT_MLT_Blk2",
       "variants": [
         "SAM SAMP/T MLT Launcher Block 2"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "Complete four-axle truck: cab, front grille and windshield, integrated four-axle wheeled chassis with erected launcher behind cab and deployed outriggers. All three MLT missile variants declare this same shape. The exact unit definition inherits zero-propulsion STATIC without a local driving override. Use carrier-assisted packed relocation, not a native route on this truck.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MLT_Blk2.lua",
@@ -3637,16 +5202,96 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             }
           ]
+        },
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/SAMPT_MLT_Blk2.lua",
+          "version": "HighDigitSAMs 2.1.0",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 8,
+              "text": "GT.visual.shape = \"sampt_mlt\";"
+            },
+            {
+              "line": 76,
+              "text": "GT.Name = \"SAMPT_MLT_Blk2\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.esercito.difesa.it/Rapporto-Esercito/Documents/2023/ok_RE23_A4_ITA.pdf",
+          "publisher": "Italian Army",
+          "title": "Rapporto Esercito 2023, Capacita e sistemi, Sistema d'arma SAMP/T",
+          "evidence": [
+            {
+              "locator": "Sistema d'arma SAMP/T, Mobilita subsection",
+              "text": "Tutti i moduli del sistema SAMP/T sono trasportati da autocarri ASTRA 8x8",
+              "summary": "The Army explicitly states that all SAMP/T modules are transported by ASTRA 8x8 trucks. The command-and-control subsection separately identifies the MC and ME modules. It supports transportability of the deployed command, engagement, generator, launcher, and radar modules."
+            }
+          ]
+        },
+        {
+          "url": "https://eurosam.com/ground-systems/",
+          "publisher": "EUROSAM",
+          "title": "Ground Systems Solution",
+          "evidence": [
+            {
+              "locator": "System performance, Mobility, web text lines 115-116",
+              "text": "Fully self-propelled (typically 8x8 prime movers)",
+              "summary": "The manufacturer describes the assembled battery with its prime movers as fully self-propelled. This must not be copied automatically onto an exact DCS shape that represents only the offloaded module."
+            },
+            {
+              "locator": "Radar module, web text line 49",
+              "summary": "The manufacturer describes a twenty-foot ISO radar module that meets road, rail, and aircraft transport requirements and can be deployed by two operators in under fifteen minutes."
+            }
+          ]
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "carrier_assisted": true,
+      "geometry_evidence": {
+        "model": "Mods/tech/HighDigitSAMs/Shapes/sampt_mlt.edm",
+        "sha256": "1e979e9f1f7ac188496c2cd6df2b5aa9519a624b4b4a7759b9f70d407f803fbb",
+        "format_version": 10,
+        "triangles": 145688
+      }
     },
     {
       "dcs_id": "SAMPT_MRI_ARABEL",
       "variants": [
         "SAM SAMP/T MRI ARABEL STR"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "Complete four-axle truck: cab, windshield and vehicle grille, integrated wheeled chassis carrying radar shelter and antenna, plus deployed steps and stabilizer legs. The exact unit definition inherits zero-propulsion STATIC without a local driving override. Use carrier-assisted packed relocation, not a native route on this truck.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/SAMPT_MRI_ARABEL.lua",
@@ -3660,16 +5305,96 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             }
           ]
+        },
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/SAMPT_MRI_ARABEL.lua",
+          "version": "HighDigitSAMs 2.1.0",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.visual.shape = \"sampt_mri_arabel\";"
+            },
+            {
+              "line": 83,
+              "text": "GT.Name = \"SAMPT_MRI_ARABEL\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.esercito.difesa.it/Rapporto-Esercito/Documents/2023/ok_RE23_A4_ITA.pdf",
+          "publisher": "Italian Army",
+          "title": "Rapporto Esercito 2023, Capacita e sistemi, Sistema d'arma SAMP/T",
+          "evidence": [
+            {
+              "locator": "Sistema d'arma SAMP/T, Mobilita subsection",
+              "text": "Tutti i moduli del sistema SAMP/T sono trasportati da autocarri ASTRA 8x8",
+              "summary": "The Army explicitly states that all SAMP/T modules are transported by ASTRA 8x8 trucks. The command-and-control subsection separately identifies the MC and ME modules. It supports transportability of the deployed command, engagement, generator, launcher, and radar modules."
+            }
+          ]
+        },
+        {
+          "url": "https://eurosam.com/ground-systems/",
+          "publisher": "EUROSAM",
+          "title": "Ground Systems Solution",
+          "evidence": [
+            {
+              "locator": "System performance, Mobility, web text lines 115-116",
+              "text": "Fully self-propelled (typically 8x8 prime movers)",
+              "summary": "The manufacturer describes the assembled battery with its prime movers as fully self-propelled. This must not be copied automatically onto an exact DCS shape that represents only the offloaded module."
+            },
+            {
+              "locator": "Radar module, web text line 49",
+              "summary": "The manufacturer describes a twenty-foot ISO radar module that meets road, rail, and aircraft transport requirements and can be deployed by two operators in under fifteen minutes."
+            }
+          ]
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "carrier_assisted": true,
+      "geometry_evidence": {
+        "model": "Mods/tech/HighDigitSAMs/Shapes/sampt_mri_arabel.edm",
+        "sha256": "176d20ce00ae9cd6e286ac66b48d71d7e76b48072222cdcc35dad7287470e9ab",
+        "format_version": 10,
+        "triangles": 100520
+      }
     },
     {
       "dcs_id": "SAMPT_MRI_GF300",
       "variants": [
         "SAM SAMP/T MRI Ground Fire 300 STR"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "Complete four-axle truck: cab, windshield and vehicle grille, integrated wheeled chassis carrying GF300 radar equipment and array, plus stabilizer legs and steps. The exact unit definition inherits zero-propulsion STATIC without a local driving override. Use carrier-assisted packed relocation, not a native route on this truck.",
       "sources": [
         {
           "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/SAMPT_MRI_GF300.lua",
@@ -3683,8 +5408,87 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             }
           ]
+        },
+        {
+          "file": "Mods/tech/HighDigitSAMs/Database/Vehicle/radar/SAMPT_MRI_GF300.lua",
+          "version": "HighDigitSAMs 2.1.0",
+          "evidence": [
+            {
+              "line": 5,
+              "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
+            },
+            {
+              "line": 7,
+              "text": "GT.visual.shape = \"sampt_mri\";"
+            },
+            {
+              "line": 83,
+              "text": "GT.Name = \"SAMPT_MRI_GF300\";"
+            }
+          ]
+        },
+        {
+          "url": "https://www.thalesgroup.com/en/solutions-catalogue/defence/air/ground-fire",
+          "publisher": "Thales",
+          "title": "Ground Fire",
+          "evidence": [
+            {
+              "locator": "Multi-Function Radar Ground Fire and Most mobile Ballistic Missile Defence capable radar sections",
+              "summary": "The radar and associated generator modules fit standard container dimensions and mount on military all-terrain trucks. The radar can operate directly from its truck platform and redeploy in about ten minutes. Offloaded modules remain transportable cargo; an integrated truck shape would be self-propelled."
+            }
+          ]
+        },
+        {
+          "url": "https://eurosam.com/ground-systems/",
+          "publisher": "EUROSAM",
+          "title": "Ground Systems Solution",
+          "evidence": [
+            {
+              "locator": "System performance, Mobility, web text lines 115-116",
+              "text": "Fully self-propelled (typically 8x8 prime movers)",
+              "summary": "The manufacturer describes the assembled battery with its prime movers as fully self-propelled. This must not be copied automatically onto an exact DCS shape that represents only the offloaded module."
+            },
+            {
+              "locator": "Radar module, web text line 49",
+              "summary": "The manufacturer describes a twenty-foot ISO radar module that meets road, rail, and aircraft transport requirements and can be deployed by two operators in under fifteen minutes."
+            }
+          ]
+        },
+        {
+          "file": "_G/db/Units/GT_t/CH_t/STATIC.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "blob_sha": "af6ac8238aba824e42be6b165ab17d816b6638a1",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "engine_power = 0,"
+            },
+            {
+              "line": 10,
+              "text": "gear_type = 4,"
+            },
+            {
+              "line": 14,
+              "text": "max_acceleration = 0,"
+            },
+            {
+              "line": 15,
+              "text": "max_road_velocity = 0,"
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/GT_t/CH_t/STATIC.lua"
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "self_propelled",
+      "carrier_assisted": true,
+      "geometry_evidence": {
+        "model": "Mods/tech/HighDigitSAMs/Shapes/sampt_mri.edm",
+        "sha256": "6bc2ab9d74f7431602bb081cadb68b5d9e857455754b49d7a1376248301511f6",
+        "format_version": 10,
+        "triangles": 110977
+      }
     },
     {
       "dcs_id": "SNR_75V",
@@ -3735,9 +5539,66 @@
       "variants": [
         "AAA Fire Can SON-9"
       ],
-      "mode": "unknown",
-      "reason": "Native declaration confirms SON-9, and secondary references call it trailer-mounted. Exact primary source with the transport arrangement was not confirmed within this pass.",
+      "mode": "towed",
+      "reason": "The exact native model is a four-wheel two-axle radar cabin trailer with towing drawbar and stabilizer legs. There is no powered driver cab.",
       "sources": [
+        {
+          "file": "_G/db/Units/Cars/Car/SON_9.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "dcs_version": "2.9.31.29434",
+          "commit_date": "2026-10-28T15:24:51Z",
+          "blob_sha": "f8bec3419473413eac2e6fbd325672b50d0fb550",
+          "evidence": [
+            {
+              "line": 9,
+              "text": "MaxSpeed = 0,"
+            },
+            {
+              "line": 189,
+              "text": "_file = \"./CoreMods/tech/TechWeaponPack/Database/db_units_cars.lua\","
+            },
+            {
+              "line": 190,
+              "text": "_origin = \"TechWeaponPack\","
+            },
+            {
+              "line": 204,
+              "text": "chassis = {"
+            },
+            {
+              "line": 242,
+              "text": "type = \"SON_9\","
+            },
+            {
+              "line": 253,
+              "text": "shape = \"son-9.EDM\","
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/Cars/Car/SON_9.lua"
+        },
+        {
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/Cars/Car/SON_9.lua",
+          "evidence": [
+            {
+              "line": 6,
+              "text": "DisplayName = \"AAA Fire Can SON-9\","
+            },
+            {
+              "line": 9,
+              "text": "MaxSpeed = 0,"
+            },
+            {
+              "line": 242,
+              "text": "type = \"SON_9\","
+            },
+            {
+              "line": 253,
+              "text": "shape = \"son-9.EDM\","
+            }
+          ],
+          "summary": "Pinned runtime table confirms the same native SON_9 identity and model as the readable installed Lua."
+        },
         {
           "file": "CoreMods/tech/TechWeaponPack/Database/vehicles/AirDefence/SON-9.lua",
           "evidence": [
@@ -3750,16 +5611,42 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             },
             {
-              "line": 6,
-              "text": "GT.chassis.mass = 5000\t-- maybe false"
+              "line": 9,
+              "text": "GT.visual.shape = \"son-9.EDM\""
             },
             {
-              "line": 7,
-              "text": "GT.chassis.life = 2"
+              "line": 119,
+              "text": "GT.Name = \"SON_9\""
+            },
+            {
+              "line": 120,
+              "text": "GT.DisplayName = _(\"AAA Fire Can SON-9\")"
             }
           ]
+        },
+        {
+          "url": "https://library.nstu.ru/fulltext/alumniassoc/2008/yakovlev.pdf",
+          "summary": "Novosibirsk State Technical University library-hosted first-person alumni memoir. The narrator describes a military-camp alarm, deployment of SON-9 as a huge trailer, a similarly large diesel generator, guns and trucks, followed by a roughly fifteen-vehicle convoy and radar setup. This is primary eyewitness transport testimony, not a technical manual; indexed passage readable, direct large PDF not fetched."
+        },
+        {
+          "url": "https://commons.wikimedia.org/wiki/File:SON-9_in_Technical_museum_Togliatti.jpg",
+          "summary": "Original museum photograph by ShinePhantom, 2010-04-17, explicitly identified as SON-9 or a modification at Technical Museum Togliatti, source Own work. Physical original-photography corroboration; parent can compare the exact native model with the trailer body."
+        },
+        {
+          "url": "https://date.army.gov.au/sites/default/files/2023-04/GREEN%20BOOK%20Belesian%20Federation%20Defence%20Forces.pdf",
+          "summary": "Australian Army official training equipment sheet, air-defence battery section. Its SON-9 FIRE CAN RADAR photograph shows a trailer/van, alongside separate Ural 375 trucks. Search-indexed page text and image description readable; direct source returned 503. This is corroborating official equipment photography, not the only towing basis."
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "carrier_assisted": true,
+      "native_max_speed_kph": 0,
+      "geometry_evidence": {
+        "model": "CoreMods/tech/TechWeaponPack/Shapes/son-9.EDM",
+        "sha256": "260d7ba023b18eb0ca9743c64dc1536bcba6e3eeda08be670b28228bfba7d73c",
+        "format_version": 10,
+        "triangles": 206141
+      }
     },
     {
       "dcs_id": "S_75M_Volhov",
@@ -3872,12 +5759,73 @@
       "variants": [
         "AShM Silkworm SR"
       ],
-      "mode": "unknown",
-      "reason": "Deployed stationary model found; its packing/carrier/tractor requirements are not established. Do not infer fixed or towed from generic_stationary alone.",
+      "mode": "towed",
+      "reason": "The exact native model is a four-wheel two-axle radar cabin trailer with towing drawbar and stabilizer legs. The historical HDS Fire Can radar identifier uses this same stand-in model.",
       "sources": [
+        {
+          "file": "_G/db/Units/Cars/Car/Silkworm_SR.lua",
+          "repository": "https://github.com/Quaggles/dcs-lua-datamine",
+          "commit": "72ea893c452c728267d78a3bd481ca59501ce709",
+          "dcs_version": "2.9.31.29434",
+          "commit_date": "2026-10-28T15:24:51Z",
+          "blob_sha": "5e1fe991b3898cd978318a82d7145a6c1b3fe5c9",
+          "evidence": [
+            {
+              "line": 7,
+              "text": "MaxSpeed = 0,"
+            },
+            {
+              "line": 180,
+              "text": "_file = \"./CoreMods/tech/TechWeaponPack/Database/db_units_cars.lua\","
+            },
+            {
+              "line": 181,
+              "text": "_origin = \"TechWeaponPack\","
+            },
+            {
+              "line": 217,
+              "text": "chassis = {"
+            },
+            {
+              "line": 253,
+              "text": "type = \"Silkworm_SR\","
+            },
+            {
+              "line": 264,
+              "text": "shape = \"mys-m1\","
+            }
+          ],
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/Cars/Car/Silkworm_SR.lua"
+        },
+        {
+          "url": "https://github.com/Quaggles/dcs-lua-datamine/blob/72ea893c452c728267d78a3bd481ca59501ce709/_G/db/Units/Cars/Car/Silkworm_SR.lua",
+          "evidence": [
+            {
+              "line": 7,
+              "text": "MaxSpeed = 0,"
+            },
+            {
+              "line": 182,
+              "text": "animation_arguments = {"
+            },
+            {
+              "line": 253,
+              "text": "type = \"Silkworm_SR\","
+            },
+            {
+              "line": 264,
+              "text": "shape = \"mys-m1\","
+            }
+          ],
+          "summary": "Pinned runtime table confirms Mys-M1 shape and supplies a 25-second alarm-state sequence using model arguments 3 and 11. No powered road chassis is present; deployment animation alone does not specify towing."
+        },
         {
           "file": "CoreMods/tech/TechWeaponPack/Database/vehicles/MissilesSS/Mys-m1.lua",
           "evidence": [
+            {
+              "line": 1,
+              "text": "-- Mys-M1 mobile shore radar"
+            },
             {
               "line": 4,
               "text": "set_recursive_metatable(GT, GT_t.generic_stationary);"
@@ -3887,12 +5835,38 @@
               "text": "set_recursive_metatable(GT.chassis, GT_t.CH_t.STATIC);"
             },
             {
-              "line": 6,
-              "text": "GT.chassis.life = 4"
+              "line": 8,
+              "text": "GT.visual.shape = \"mys-m1\";"
+            },
+            {
+              "line": 87,
+              "text": "GT.Name = \"Silkworm_SR\";"
+            },
+            {
+              "line": 88,
+              "text": "GT.DisplayName = _(\"AShM Silkworm Radar\");"
             }
           ]
+        },
+        {
+          "url": "https://www.granit-electron.ru/arctic-zone.php",
+          "summary": "Original manufacturer Concern Granit-Electron Arctic infrastructure product description explicitly lists Mys-M1 as the mobile coastal radar and MR-10M1 as the stationary coastal radar. Full relevant indexed content readable; direct fetch returned 502. Does not by itself specify wheels or a prime mover."
+        },
+        {
+          "url": "https://ivms.mil.gov.ua/wp-content/uploads/2025/09/dovidka-01.09-07.09.2025.pdf",
+          "summary": "Official Ukrainian Naval Institute briefing, page 166, describes trailer-mounted mobile Mys-M1E versus fixed MR-10M1 on a steel lattice mast. This is secondary corroboration compiled by an official institute, not substituted for the original manufacturer's variant distinction. Large 13 MB PDF rejected by direct web fetch; earlier indexed passage was readable."
         }
-      ]
+      ],
+      "reviewed_on": "2026-11-07",
+      "physical_mode": "towed",
+      "carrier_assisted": true,
+      "native_max_speed_kph": 0,
+      "geometry_evidence": {
+        "model": "CoreMods/tech/TechWeaponPack/Shapes/mys-m1.EDM",
+        "sha256": "6d6013e1d35bdd7bc51a9567b6f2401b551bbc40ba7124d1f4eaa47dbf06d4c6",
+        "format_version": 10,
+        "triangles": 68045
+      }
     },
     {
       "dcs_id": "polyana-d4m1 cp",
@@ -3942,12 +5916,13 @@
   ],
   "follow_up": {
     "date": "2026-11-07",
-    "newly_classified": 47,
-    "remaining_unknown": 41,
+    "newly_classified": 88,
+    "remaining_unknown": 0,
     "limitations": [
-      "Physical chassis documentation is not a live DCS driving test; legacy and Ultimate builds may differ.",
-      "Six physically powered models still inherit STATIC with no local propulsion overrides and remain blocked.",
-      "No installed mods, campaign layouts or saves are changed; catalogue data refreshes when a save is loaded."
+      "Catalog and native-mission serialization tests are not a live DCS driving, weapons or recovery test.",
+      "Carrier-assisted relocation is the existing one-tractor-per-piece gameplay abstraction, not a literal towing animation or exact real-world lift-capacity model.",
+      "FuMG-401 and FuSe-65 WWII models are not installed locally; exact native variant declarations and primary historical/model imagery establish their classifications.",
+      "No installed mods or save files are edited. Catalog metadata and obsolete unit-class aliases refresh when an existing save is loaded."
     ],
     "native_inspection": {
       "tool": "REA / Ghidra 12.1.4",
@@ -3959,6 +5934,26 @@
         "ev_22b7df7792bd3d9067723f3ab4ceb4b97a345360d13725faee61a74e36ed35aa"
       ],
       "scope": "Focused static string/function inspection, including Car::setMaxSpeed at 0x180010b30. This did not resolve per-SAM carrier or propulsion data, and is not used to promote unknown types. No target code was executed."
+    },
+    "final_pass_classified": 41,
+    "runtime_baseline": {
+      "revision": "72ea893c452c728267d78a3bd481ca59501ce709",
+      "commit_date": "2026-10-28T15:24:51Z",
+      "dcs_version": "2.9.31.29434",
+      "source_kind": "Primary runtime table export published by exporter author; not a fresh local runtime probe."
+    },
+    "geometry_method": {
+      "parser_repository": "https://github.com/devozdemirhasancan/DCS-EDM-Blender-Importer",
+      "parser_revision": "13cc40b32cd4a39d4337d7beb6e79365a8149770",
+      "unique_models": 32,
+      "method": "Parse exact local EDM v10 triangle meshes and scene transforms; inspect four untextured rest-pose views. Cumulative parent-range ends, duplicate identical parents and native per-vertex parent selectors are handled separately, with bounds and index validation. All render nodes are included; runtime visibility, textures, animations and driving are not simulated.",
+      "distribution": "Only model names, hashes and observations are recorded here, not copyrighted model bytes or extracted meshes."
+    },
+    "interpreter_inspection": {
+      "tool": "REA / Ghidra 12.1.4",
+      "artifact": "bin/luae.exe",
+      "sha256": "343e514a4b884659436c33b9b227aa8ea7407a6088f6b7bbb094176ca0666115",
+      "scope": "Static imports/strings and harmless interpreter checks identified standard Lua 5.1 loading, not DCS encrypted database/VFS loading. Packed Database.edce was not decoded; resolved per-unit data comes from the version-pinned runtime-table export, not this executable inspection."
     }
   }
 }

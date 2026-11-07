@@ -1,4 +1,6 @@
 class: Power
+ground_mobility:
+  mode: towed
 price: 15
 variants:
   SAM SAMP/T Electric Generator: null

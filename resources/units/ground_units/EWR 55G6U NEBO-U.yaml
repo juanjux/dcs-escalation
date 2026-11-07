@@ -1,4 +1,6 @@
 class: EarlyWarningRadar
+ground_mobility:
+  mode: towed
 price: 36
 variants:
   EWR 55G6U Nebo-U: null

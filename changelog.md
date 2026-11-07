@@ -9,7 +9,7 @@
 * **[Live Pilots]** Preselect post-debrief leave grants without understaffing squadrons and update projected pilot coverage as grants change.
 * **[Realistic CAS]** AFACs wait in a safe orbit when defences block their work area, recheck access and return at BINGO fuel.
 * **[F10 Map]** Label destroyed objectives, including cleared armor/SAM sites, and retain markers at destroyed building positions.
-* **[Ground Movement]** Relocate whole mobile SAM/radar sites with reviewed native/mod mobility, towing checks, packed radars and weapons during transit, and player/API controls.
+* **[Ground Movement]** Relocate whole mobile SAM/radar sites with audited mobility, towing/carrier checks, offline transit, legacy-save compatibility and player/API controls.
 * **[F10 Map]** Include installation types in objective marker labels alongside codenames and allegiance.
 * **[UI]** Add an aircraft payload library editor for Escalation and Custom presets, accessible from Edit → Payloads and flight payloads.
 * **[Mission Generation]** Automatically equip player A-10C II aircraft with HMCS + NVG at night, respecting disabled helmets and era restrictions.
