@@ -263,6 +263,7 @@ def capabilities() -> dict:
             "ground/movement/preview (validate an armor move, whole mobile SAM relocation or base-stock GPS deployment; returns a confirmation token)",
             "ground/movement/dispatch (confirm the preview; Ground Movement and Motor Pool required)",
             "ground/movement/stop (stop own reserve movement at its saved position; no refund or teleport)",
+            "ground/towing-trucks (buy faction tractors for a mobile SAM; options and total cap are in ground/movement/options with source_kind=sam)",
             "missiles/preview and missiles/target (validate and assign a persistent enemy objective or GPS aimpoint)",
             "missiles/{source_id}/target (delete: cancel an own missile assignment)",
             "naval/move (reposition one of your ship groups or carriers, <=80nm over water)",
@@ -751,6 +752,23 @@ def stop_ground_movement(side: str, order_id: str) -> dict:
     return _movement_call(
         lambda game, commands: groundmovement.stop(game, commands, UUID(order_id))
     )
+
+
+@opfor_order
+def buy_sam_trucks(side: str, request: schemas.BuySamTrucksRequest) -> dict:
+    from dataclasses import asdict
+    from game.groundmovement.samtrucks import sam_truck_options
+    from game.theater.player import Player
+
+    def execute(game, commands):
+        commands.buy_sam_trucks(
+            game, request.source_id, Player.RED, request.unit_type, request.quantity
+        )
+        result = asdict(sam_truck_options(game, request.source_id, Player.RED))
+        result["source_id"] = str(request.source_id)
+        return result
+
+    return _movement_call(execute)
 
 
 @opfor_order

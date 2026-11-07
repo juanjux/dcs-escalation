@@ -158,7 +158,11 @@ Groups reached or passed by their front automatically reinforce its supporting
 base, including groups in transit. Normal deployment limits apply, with surplus
 kept in the Motor Pool. Ground Movement requires Motor Pool.
 The OPFOR REST/MCP API supports the same reserve movements and base-stock deployments
-under BLUE's territory, transport and distance rules. Mobile SAM/radar sites can also
+under BLUE's territory, transport and distance rules. Mobile SAM batteries with towed
+units can buy faction towing trucks from their location dialog or the OPFOR API,
+without replacing the battery. The total truck limit is the number of towable units
+plus two, including existing and destroyed trucks so repairs cannot exceed it.
+Mobile SAM/radar sites can also
 relocate whole to friendly GPS positions. Each towed piece needs a surviving tractor
 in the battery; fixed/unknown units and pending repairs block relocation. Radars,
 jammers and weapons start packed and offline during transit, while the convoy remains

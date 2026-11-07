@@ -282,7 +282,15 @@ def world() -> Any:
     b = Fob("B", Point(100, 0, terrain), cast(Any, game.theater), Player.BLUE)
     enemy = Fob("Enemy", Point(200, 0, terrain), cast(Any, game.theater), Player.RED)
     for cp in (a, b, enemy):
-        cp._coalition = cast(Any, SimpleNamespace(player=cp.starting_coalition))
+        cp._coalition = cast(
+            Any,
+            SimpleNamespace(
+                player=cp.starting_coalition,
+                faction=SimpleNamespace(
+                    accessible_units=[GroundUnitType.named("Truck Ural-375")]
+                ),
+            ),
+        )
     a.convoy_routes[b] = (a.position, b.position)
     b.convoy_routes[a] = (b.position, a.position)
     a.front_lines[enemy] = cast(Any, object())
