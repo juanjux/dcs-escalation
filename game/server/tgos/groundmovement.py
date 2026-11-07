@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictInt
 
 from game import Game
+from game.groundmovement.samtrucks import SamTruckOptions, sam_truck_options
 from game.groundmovement.orders import DestinationKind, GroundPosition
 from game.groundmovement.planning import (
     ArmorMovementOptions,
@@ -30,6 +31,52 @@ from game.theater.player import Player
 from qt_ui.groundmovement import GroundMovementCommands, MovementCommandError
 
 router = APIRouter()
+
+
+def commands() -> GroundMovementCommands:
+    return GameContext.get_model().ground_movement_commands
+
+
+class SamTruckPurchaseRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    unit_type: str
+    quantity: StrictInt = Field(gt=0, le=1000)
+
+
+@router.get("/{tgo_id}/towing-trucks", operation_id="sam_towing_truck_options")
+def towing_trucks(
+    tgo_id: UUID,
+    game: Game = Depends(GameContext.require),
+    service: GroundMovementCommands = Depends(commands),
+) -> SamTruckOptions:
+    try:
+        return service.run(
+            lambda: service.inspect(
+                game, lambda: sam_truck_options(game, tgo_id, Player.BLUE)
+            )
+        )
+    except (ValueError, PermissionError) as exc:
+        raise _error(exc) from exc
+
+
+@router.post("/{tgo_id}/towing-trucks", operation_id="buy_sam_towing_trucks")
+def purchase_towing_trucks(
+    tgo_id: UUID,
+    request: SamTruckPurchaseRequest,
+    game: Game = Depends(GameContext.require),
+    service: GroundMovementCommands = Depends(commands),
+) -> SamTruckOptions:
+    try:
+
+        def execute() -> SamTruckOptions:
+            service.buy_sam_trucks(
+                game, tgo_id, Player.BLUE, request.unit_type, request.quantity
+            )
+            return sam_truck_options(game, tgo_id, Player.BLUE)
+
+        return service.run(execute)
+    except (ValueError, PermissionError) as exc:
+        raise _error(exc) from exc
 
 
 class MovementPreviewRequest(BaseModel):
@@ -107,10 +154,6 @@ class MovementReportJs(BaseModel):
             opposing_base_id=report.destination.opposing_base_id,
             position=_latlng(game, report.position),
         )
-
-
-def commands() -> GroundMovementCommands:
-    return GameContext.get_model().ground_movement_commands
 
 
 def _latlng(game: Game, position: GroundPosition) -> LeafletPoint:

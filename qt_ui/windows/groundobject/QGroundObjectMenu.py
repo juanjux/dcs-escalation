@@ -17,6 +17,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QFrame,
     QGridLayout,
@@ -51,6 +52,7 @@ from game.groundmovement.dispatch import active_transit
 from game.groundmovement.presentation import departed_detachments
 from game.groundmovement.report import movement_reports, destination_label
 from game.groundmovement.settings import enabled as ground_movement_enabled
+from game.groundmovement.samtrucks import SamTruckOptions, sam_truck_options
 from game.server import EventStream
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater import ControlPoint, Player, TheaterGroundObject
@@ -72,7 +74,7 @@ from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.windows.airwingconfig.common import CHEAT_BORDER, CHEAT_HINT
 from qt_ui.windows.groundobject.QBuildingInfo import QBuildingInfo
 from qt_ui.windows.groundobject.QGroundObjectBuyMenu import QGroundObjectBuyMenu
-from qt_ui.widgets.controls import button
+from qt_ui.widgets.controls import button, styled_input
 from qt_ui.widgets.maphover import bind_map_hover
 from qt_ui.windows.groundobject.buildingcard import (
     BuildingCard,
@@ -308,7 +310,12 @@ class QGroundObjectMenu(QDialog):
         ):
             return None
         reports = movement_reports(self.game, self.ground_object.id, self._viewer)
-        if not ground_movement_enabled(self.game.settings) and not reports:
+        trucks = sam_truck_options(self.game, self.ground_object.id, self._viewer)
+        if (
+            not ground_movement_enabled(self.game.settings)
+            and not reports
+            and not trucks.truck_limit
+        ):
             return None
         options = armor_movement_options(self.game, self.ground_object.id, self._viewer)
         in_transit = active_transit(self.game, self.ground_object.id) is not None
@@ -319,6 +326,8 @@ class QGroundObjectMenu(QDialog):
         column = QVBoxLayout(holder)
         column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(5)
+        if trucks.truck_limit and self._can_trade:
+            column.addWidget(self._towing_truck_purchase(trucks))
         if not in_transit:
             column.addWidget(
                 label(
@@ -379,6 +388,69 @@ class QGroundObjectMenu(QDialog):
             move.clicked.connect(self._move_units)
             column.addWidget(move)
         return captioned("Ground transport", holder)
+
+    def _towing_truck_purchase(self, options: SamTruckOptions) -> QWidget:
+        holder = QWidget()
+        column = QVBoxLayout(holder)
+        column.setContentsMargins(0, 0, 0, 6)
+        count = label(
+            f"Towing trucks: {options.owned_trucks}/{options.truck_limit} · "
+            f"limit = {options.towed_units} towable units + 2",
+            12,
+            TEXT_BASE,
+        )
+        count.setToolTip(
+            "Includes destroyed trucks and pieces, so repairs cannot bypass the limit."
+        )
+        column.addWidget(count)
+        row = QHBoxLayout()
+        choices = QComboBox()
+        styled_input(choices)
+        choices.setObjectName("sam-towing-truck-type")
+        for offer in options.offers:
+            choices.addItem(f"{offer.name} · ${offer.price:g}M", offer.unit_type)
+        amount = QSpinBox()
+        styled_input(amount, 75)
+        amount.setObjectName("sam-towing-truck-quantity")
+        amount.setRange(1, max(1, options.remaining))
+        buy = QPushButton("Buy towing trucks")
+        buy.setObjectName("buy-sam-towing-trucks")
+
+        def update_price() -> None:
+            index = choices.currentIndex()
+            price = options.offers[index].price * amount.value() if index >= 0 else 0
+            buy.setText(f"Buy · ${price:g}M")
+            buy.setEnabled(
+                not options.reason
+                and index >= 0
+                and price <= self.ground_object.coalition.budget
+            )
+            buy.setToolTip(options.reason or "Add trucks without replacing the battery")
+
+        def purchase() -> None:
+            try:
+                self.game_model.ground_movement_commands.buy_sam_trucks(
+                    self.game,
+                    self.ground_object.id,
+                    self._viewer,
+                    choices.currentData(),
+                    amount.value(),
+                )
+                self._rebuild()
+            except (ValueError, PermissionError) as exc:
+                QMessageBox.warning(self, "Cannot buy towing trucks", str(exc))
+
+        choices.currentIndexChanged.connect(update_price)
+        amount.valueChanged.connect(update_price)
+        buy.clicked.connect(purchase)
+        update_price()
+        row.addWidget(choices, 1)
+        row.addWidget(amount)
+        row.addWidget(buy)
+        column.addLayout(row)
+        if options.reason:
+            column.addWidget(label(options.reason, 11, AMBER))
+        return holder
 
     def _move_units(self) -> None:
         from qt_ui.windows.groundobject.movementdialog import ArmorMovementDialog

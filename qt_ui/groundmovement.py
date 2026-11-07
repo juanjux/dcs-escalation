@@ -137,6 +137,26 @@ class GroundMovementCommands(QObject):
             signal.budgetupdated.emit(game)
         return result
 
+    def buy_sam_trucks(
+        self,
+        game: Game,
+        source_id: UUID,
+        owner: Player,
+        unit_name: str,
+        quantity: int,
+    ) -> tuple[int, ...]:
+        from game.groundmovement.samtrucks import buy_sam_trucks
+        from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
+
+        self.require_planning(game)
+        events = GameUpdateEvents()
+        result = buy_sam_trucks(game, source_id, owner, unit_name, quantity, events)
+        self.publish(events)
+        signal = GameUpdateSignal.get_instance()
+        if signal is not None:
+            signal.budgetupdated.emit(game)
+        return result
+
     @staticmethod
     def publish(events: GameUpdateEvents) -> None:
         from game.server import EventStream

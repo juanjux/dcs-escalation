@@ -192,6 +192,12 @@ def options(game: Game, source_id: UUID, source_kind: str) -> dict[str, Any]:
     else:
         raise ValueError("Source kind must be armor, sam or base")
     result["source_kind"] = source_kind
+    if source_kind == "sam":
+        from game.groundmovement.samtrucks import sam_truck_options
+
+        trucks = asdict(sam_truck_options(game, source_id, Player.RED))
+        trucks["source_id"] = str(source_id)
+        result["towing_trucks"] = trucks
     result["bases"] = [
         {"id": str(cp.id), "name": cp.name}
         for cp in game.theater.controlpoints

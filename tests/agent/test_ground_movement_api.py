@@ -68,7 +68,8 @@ def api(stock: Any, monkeypatch: pytest.MonkeyPatch) -> Any:
     def request(method: str, path: str = "", *, auth: bool = True, **kw: Any) -> Any:
         if auth:
             kw["headers"] = {"X-API-Key": ApiKeyManager.current_key()}
-        future = executor.submit(client.request, method, ROOT + path, **kw)
+        url = path if path.startswith("/retribution-ai/") else ROOT + path
+        future = executor.submit(client.request, method, url, **kw)
         deadline = time.monotonic() + 15
         while not future.done() and time.monotonic() < deadline:
             app.processEvents()
@@ -103,6 +104,42 @@ def confirmed(api: Any, body: dict[str, Any] | None = None) -> dict[str, Any]:
     response = api.request("POST", "/preview", json=body)
     assert response.status_code == 200, response.text
     return {**body, "preview_token": response.json()["preview_token"]}
+
+
+def test_opfor_can_buy_tractors_without_replacing_a_mobile_battery(
+    stock: Any, api: Any
+) -> None:
+    from types import MethodType
+    from game.coalition import Coalition
+    from tests.test_sam_movement import make_site, PATRIOT
+
+    make_site(stock, PATRIOT[:2])
+    coalition = stock.a.coalition
+    coalition.budget = 100.0
+    coalition.adjust_budget = MethodType(Coalition.adjust_budget, coalition)
+    old = list(stock.sam.units)
+    response = api.request(
+        "GET", "/options", params={"source_id": str(stock.sam.id), "source_kind": "sam"}
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["towing_trucks"]["truck_limit"] == 4
+    body = {
+        "source_id": str(stock.sam.id),
+        "unit_type": "Truck Ural-375",
+        "quantity": 2,
+    }
+    response = api.request("POST", "/retribution-ai/ground/towing-trucks", json=body)
+    assert response.status_code == 200, response.text
+    assert response.json()["owned_trucks"] == 2
+    assert list(stock.sam.units)[:2] == old and coalition.budget == 94
+    assert stock.game.opfor_ai_orders_turn == stock.game.turn
+    response = api.request(
+        "POST", "/retribution-ai/ground/towing-trucks", json={**body, "quantity": 3}
+    )
+    assert response.status_code == 400
+    coalition.player = Player.BLUE
+    response = api.request("POST", "/retribution-ai/ground/towing-trucks", json=body)
+    assert response.status_code == 403 and coalition.budget == 94
 
 
 def gps(stock: Any, *, x: float = 80, base: bool = False) -> dict[str, Any]:

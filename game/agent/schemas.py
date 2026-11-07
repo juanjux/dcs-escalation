@@ -306,6 +306,14 @@ class StopGroundMovementRequest(BaseModel):
     order_id: UUID
 
 
+class BuySamTrucksRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    side: str = "red"
+    source_id: UUID
+    unit_type: str
+    quantity: StrictInt = Field(gt=0, le=1000)
+
+
 class MissileTargetRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     side: str = "red"

@@ -493,6 +493,11 @@ def stop_ground_movement(body: schemas.StopGroundMovementRequest) -> dict:
     )
 
 
+@router.post("/ground/towing-trucks", operation_id="ai_buy_sam_towing_trucks")
+def buy_sam_trucks(body: schemas.BuySamTrucksRequest) -> dict:
+    return _movement_response(lambda: service.buy_sam_trucks(body.side, body))
+
+
 @router.post(
     "/naval/move",
     operation_id="ai_move_ship",
