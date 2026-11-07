@@ -8,6 +8,7 @@ import pytest
 
 from game.campaignloader.campaign import Campaign
 from game.point_with_heading import PointWithHeading
+from game.settings import Settings
 from game.theater.iadsnetwork.connectivity import IadsConnectivity
 from game.theater.iadsnetwork.iadsnetwork import IadsNetwork, SkynetNode
 from game.theater.iadsnetwork.iadsrole import IadsRole
@@ -26,6 +27,9 @@ def test_network_survives_any_single_command_loss(filename: str, vm: Any) -> Non
     assert campaign.advanced_iads
     theater = campaign.load_theater(True)
     row = MANIFEST[filename]
+    settings = Settings()
+    settings.set_plugin_option("skynetiads.commsRangeNm", 15)
+    settings.set_plugin_option("skynetiads.powerRangeNm", 35)
     objects: list[Any] = []
     for cp in theater.controlpoints:
         if cp.starting_coalition.is_neutral:
@@ -45,12 +49,21 @@ def test_network_survives_any_single_command_loss(filename: str, vm: Any) -> Non
             if IadsRole.for_category(scenery.category) is not IadsRole.NO_BEHAVIOR
         )
         for name, point, role in placements:
-            obj = site(name, role, side=cp.starting_coalition)
+            obj = site(name, role, side=cp.starting_coalition, settings=settings)
             obj.position = PointWithHeading.from_point(point, Heading.from_degrees(0))
             objects.append(obj)
-            if " IADS Regional Command " in name or " IADS Consolidated Relay " in name:
+            if any(
+                marker in name
+                for marker in (
+                    " IADS Regional Command ",
+                    " IADS Consolidated Relay ",
+                    " IADS Relocated Relay ",
+                )
+            ):
                 if not theater.is_on_land(point, ignore_exclusion=True):
                     assert [point.x, point.y] == row["island_mask_exceptions"][name]
+            if name in row.get("relocation", {}).get("new_locations", {}):
+                assert [point.x, point.y] == row["relocation"]["new_locations"][name]
     network = IadsNetwork(True)
     network.initialize_network(iter(objects))
     relays = [n for n in network.nodes if n.group.iads_role is IadsRole.CONNECTION_NODE]
@@ -60,6 +73,13 @@ def test_network_survives_any_single_command_loss(filename: str, vm: Any) -> Non
     assert len(relays) == row["after"]["relays"]
     assert len(commands) == row["after"]["command_centres"]
     assert len(relays) <= row["before"]["relays"]
+    if "relocation" in row:
+        relocation = row["relocation"]
+        assert len(relays) == relocation["after_relays"]
+        assert len(relays) < relocation["before_relays"]
+        assert set(relocation["new_locations"]) <= {
+            n.group.ground_object.original_name for n in relays
+        }
     # Require resilience only for previously connected sites. Autonomous
     # outposts are not a reason to introduce additional command networks.
     targets = [
