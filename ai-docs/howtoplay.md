@@ -349,6 +349,9 @@ leave previously recorded damage unchanged.
 - **Pilots matter**: every aircraft in a flight needs a pilot. A flight with empty
   seats will **block the turn from starting** — always crew your flights (the API
   assigns pilots automatically and refuses pilotless flights).
+  Names are editable labels: themed or custom name lists can rename a squadron
+  without creating pilots or changing their UUIDs, records, status or flight seats.
+  Refresh the roster before using a name-based API selector after player edits.
 - **Ground forces**: vehicle groups at your bases and along the front. You buy them,
   move them between bases (transfers), and commit them via front-line stance.
 - **Money**: you earn income each turn and spend it on aircraft and ground units.

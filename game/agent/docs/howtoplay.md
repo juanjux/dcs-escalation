@@ -393,6 +393,9 @@ needed before the enemy recovers. Missing health data is not evidence of full he
 - **Pilots matter**: every aircraft in a flight needs a pilot. A flight with empty
   seats will **block the turn from starting** — always crew your flights (the API
   assigns pilots automatically and refuses pilotless flights).
+  Names are editable labels: themed or custom name lists can rename a squadron
+  without creating pilots or changing their UUIDs, records, status or flight seats.
+  Refresh the roster before using a name-based API selector after player edits.
 - **Pilots are people, and you can pick them.** `GET /squadrons/{squadron_id}/pilots`
   is the squadron's roster: each pilot's **rank**, **experience**, his **skill**, the
   **`flies_at`** skill he will actually take off with, his **morale**, whether he is
