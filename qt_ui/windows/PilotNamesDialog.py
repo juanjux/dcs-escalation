@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QListWidgetItem,
     QMessageBox,
+    QSizePolicy,
     QSplitter,
     QVBoxLayout,
     QWidget,
@@ -181,6 +182,9 @@ class PilotNamesDialog(QDialog):
         )
         self.drag_hint.setObjectName("pilotNameDragHint")
         self.drag_hint.setWordWrap(True)
+        self.drag_hint.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         self.drag_hint.setStyleSheet(
             self.drag_hint.styleSheet()
             + f" background: {HEADER}; border: 1px solid {ACCENT};"
@@ -191,7 +195,7 @@ class PilotNamesDialog(QDialog):
         splitter.setChildrenCollapsible(False)
         splitter.setHandleWidth(14)
         splitter.setStyleSheet("QSplitter::handle { background: transparent; }")
-        body_layout.addWidget(splitter)
+        body_layout.addWidget(splitter, 1)
         root.addWidget(body, 1)
 
         category_pane, categories, self.category_count = self._pane("LIBRARIES")
