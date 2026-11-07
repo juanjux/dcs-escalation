@@ -90,6 +90,45 @@ def test_duplicate_category_titles_are_rejected_case_insensitively(
 
 
 @pytest.mark.parametrize(
+    "duplicate", ["Luke Skywalker", " luke skywalker ", "Luke  Skywalker"]
+)
+def test_duplicate_names_are_rejected_without_changing_category(
+    tmp_path: Path, duplicate: str
+) -> None:
+    library = NameLibrary.load(tmp_path / "names.json")
+    original = library.categories["star-wars"]
+    with pytest.raises(ValueError, match="already exists"):
+        library.put(original.id, original.name, [*original.names, duplicate])
+    assert library.categories[original.id] is original
+    with pytest.raises(ValueError, match="already exists"):
+        library.put(None, "Friends", ["Luke Skywalker", duplicate])
+    assert len(library.categories) == 13
+
+
+def test_legacy_duplicates_keep_first_spelling_and_order(tmp_path: Path) -> None:
+    path = tmp_path / "names.json"
+    data = {
+        "version": 1,
+        "categories": [
+            {
+                "id": "friends",
+                "name": "Friends",
+                "names": ["Luke", "Vader", " luke ", "VADER", "Leia"],
+            }
+        ],
+    }
+    path.write_text(json.dumps(data), "utf-8")
+    library = NameLibrary.load(path)
+    assert library.categories["friends"].names == ("Luke", "Vader", "Leia")
+    library.save()
+    assert NameLibrary.load(path).categories["friends"].names == (
+        "Luke",
+        "Vader",
+        "Leia",
+    )
+
+
+@pytest.mark.parametrize(
     "data", ["not json", "[]", '{"version":2}', '{"version":1,"categories":[{}]}']
 )
 def test_corrupt_user_library_is_not_overwritten(tmp_path: Path, data: str) -> None:

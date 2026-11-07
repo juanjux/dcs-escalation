@@ -25,6 +25,23 @@ def clean_name(value: str) -> str:
     return name
 
 
+def unique_names(
+    values: Iterable[str], *, remove_duplicates: bool = False
+) -> tuple[str, ...]:
+    names: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        name = clean_name(value)
+        key = " ".join(name.split()).casefold()
+        if key in seen:
+            if remove_duplicates:
+                continue
+            raise ValueError(f'The name "{name}" already exists in this category.')
+        seen.add(key)
+        names.append(name)
+    return tuple(names)
+
+
 @dataclass(frozen=True)
 class NameCategory:
     id: str
@@ -43,7 +60,9 @@ class NameCategory:
         if not isinstance(names, list) or not all(isinstance(n, str) for n in names):
             raise ValueError("Category names must be a list of text entries.")
         return cls(
-            data["id"], clean_name(data["name"]), tuple(clean_name(n) for n in names)
+            data["id"],
+            clean_name(data["name"]),
+            unique_names(names, remove_duplicates=True),
         )
 
     def to_data(self) -> dict[str, Any]:
@@ -99,7 +118,7 @@ class NameLibrary:
         category = NameCategory(
             category_id or str(uuid4()),
             clean_name(name),
-            tuple(clean_name(n) for n in names),
+            unique_names(names),
         )
         if any(
             c.id != category.id and c.name.casefold() == category.name.casefold()

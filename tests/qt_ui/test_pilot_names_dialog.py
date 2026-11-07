@@ -202,7 +202,10 @@ def test_bad_drops_do_not_change_pilots(dialog: PilotNamesDialog, invalid: str) 
     if invalid == "outside":
         event.origin = object()
     elif invalid == "blank":
-        event.point = QPointF(5, dialog.pilots.height() - 5)
+        while dialog.pilots.count() > 1:
+            dialog.pilots.takeItem(dialog.pilots.count() - 1)
+        event.point = QPointF(5, dialog.pilots.viewport().height() - 5)
+        assert dialog.pilots.itemAt(event.point.toPoint()) is None
     elif invalid == "no-format":
         event.data = QMimeData()
         event.data.setText("External text")
@@ -212,7 +215,8 @@ def test_bad_drops_do_not_change_pilots(dialog: PilotNamesDialog, invalid: str) 
         event.data.setData(NAME_MIME, b"\xff")
     dialog.pilots.dropEvent(cast(Any, event))
     assert not event.accepted
-    assert [dialog.pilots.item(i).text() for i in range(4)] == [
+    assert dialog.squadron is not None
+    assert [pilot.name for pilot in dialog.squadron.current_roster] == [
         f"Pilot {i}" for i in range(4)
     ]
 
@@ -311,6 +315,67 @@ def test_cancel_library_edits_do_not_create_a_file(dialog: PilotNamesDialog) -> 
     ):
         dialog.add_names()
     assert not dialog.library.path.exists()
+
+
+def test_duplicate_add_and_edit_show_error_without_changing_list(
+    dialog: PilotNamesDialog,
+) -> None:
+    original = dialog.category
+    with patch.object(QMessageBox, "warning") as warning:
+        with patch.object(
+            QInputDialog, "getMultiLineText", return_value=(" luke skywalker ", True)
+        ):
+            dialog.add_names()
+        assert warning.call_count == 1
+        dialog.names.setCurrentRow(1)
+        with patch.object(
+            QInputDialog, "getText", return_value=("LUKE SKYWALKER", True)
+        ):
+            dialog.edit_name()
+        assert warning.call_count == 2
+    assert dialog.category == original
+    assert dialog.names.item(1).text() == "Darth Vader"
+    assert not dialog.library.path.exists()
+
+
+def test_drag_instruction_is_prominent_and_explicit(dialog: PilotNamesDialog) -> None:
+    dialog.show()
+    QApplication.processEvents()
+    assert dialog.drag_hint.isVisible()
+    assert "middle column" in dialog.drag_hint.text()
+    assert "pilot on the right" in dialog.drag_hint.text()
+    assert "font-size: 15px" in dialog.drag_hint.styleSheet()
+
+
+def test_drop_and_autofill_preserve_pilot_scroll_and_selection(
+    dialog: PilotNamesDialog,
+) -> None:
+    squadron = SquadronStub("Large squadron", 40)
+    dialog.squadrons.addItem(str(squadron), squadron)
+    dialog.squadrons.setCurrentIndex(1)
+    dialog.pilots.setCurrentRow(35)
+    dialog.pilots.scrollToItem(dialog.pilots.item(35))
+    QApplication.processEvents()
+    scrollbar = dialog.pilots.verticalScrollBar()
+    before = scrollbar.value()
+    assert before > 0
+    original_item = dialog.pilots.item(35)
+    event = Drop(dialog, 35)
+    dialog.pilots.dropEvent(cast(Any, event))
+    QApplication.processEvents()
+    assert event.accepted
+    assert scrollbar.value() == before
+    assert dialog.pilots.currentRow() == 35
+    assert dialog.pilots.item(35) is original_item
+    assert original_item.text() == "Luke Skywalker"
+    assert original_item.toolTip().startswith("Luke Skywalker")
+    with patch.object(
+        QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes
+    ):
+        dialog.autofill_names()
+    QApplication.processEvents()
+    assert scrollbar.value() == before
+    assert dialog.pilots.currentRow() == 35
 
 
 def test_library_write_failure_rolls_back_ui_and_memory(
