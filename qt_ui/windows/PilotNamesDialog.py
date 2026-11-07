@@ -173,6 +173,20 @@ class PilotNamesDialog(QDialog):
         make_transparent(body)
         body_layout = QVBoxLayout(body)
         body_layout.setContentsMargins(22, 18, 22, 18)
+        self.drag_hint = label(
+            "Drag a name from the middle column onto a pilot on the right to assign it.",
+            15,
+            ACCENT,
+            True,
+        )
+        self.drag_hint.setObjectName("pilotNameDragHint")
+        self.drag_hint.setWordWrap(True)
+        self.drag_hint.setStyleSheet(
+            self.drag_hint.styleSheet()
+            + f" background: {HEADER}; border: 1px solid {ACCENT};"
+            " border-radius: 4px; padding: 12px 16px;"
+        )
+        body_layout.addWidget(self.drag_hint)
         splitter = QSplitter(Qt.Orientation.Horizontal)
         splitter.setChildrenCollapsible(False)
         splitter.setHandleWidth(14)
@@ -545,12 +559,21 @@ class PilotNamesDialog(QDialog):
         if squadron is None or not any(p is pilot for p in squadron.current_roster):
             return
         rename_pilot(pilot, name)
-        self.show_pilots()
+        self.update_pilot_name(pilot)
         self.status.setText(f"Assigned {name}.")
         self.status.setStyleSheet(
             f"font-size: 12px; color: {GREEN}; background: transparent; border: none;"
         )
         self.pilots_changed.emit(squadron)
+
+    def update_pilot_name(self, pilot: Pilot) -> None:
+        for row in range(self.pilots.count()):
+            item = self.pilots.item(row)
+            if item.data(USER_ROLE) is pilot:
+                item.setText(pilot.name)
+                status = pilot.status.value.replace("OnLeave", "On leave")
+                item.setToolTip(f"{pilot.name} · {status}")
+                break
 
     def autofill_names(self) -> None:
         category, squadron = self.category, self.squadron
@@ -570,7 +593,8 @@ class PilotNamesDialog(QDialog):
         if answer != QMessageBox.StandardButton.Yes:
             return
         changed = autofill(squadron.current_roster, category.names)
-        self.show_pilots()
+        for pilot in squadron.current_roster:
+            self.update_pilot_name(pilot)
         self.status.setText(f"Renamed {changed} pilots using {category.name}.")
         self.status.setStyleSheet(
             f"font-size: 12px; color: {GREEN}; background: transparent; border: none;"
