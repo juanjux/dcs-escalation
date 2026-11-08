@@ -621,7 +621,11 @@ def _power_links(node: IadsNetworkNode, friendly: bool) -> list[IadsLink]:
                     "the grid reaches it"
                     if friendly or generator is not None
                     else (
-                        "cut both fixed feeds and the site goes dark"
+                        (
+                            "cut both fixed feeds and the site goes dark"
+                            if len(sources) == 2
+                            else "cut all fixed feeds and the site goes dark"
+                        )
                         if len(sources) > 1
                         else "kill it and the site goes dark"
                     )

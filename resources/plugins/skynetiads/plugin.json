@@ -123,11 +123,19 @@
         },
         {
             "nameInUI": "Power station range (nm)",
-            "descriptionInUI": "Maximum distance to a power station. Each land site uses up to two fixed feeds from the nearest stations. Losing both does not connect a third station. Towers do not relay electricity; wiring is rebuilt each turn.",
+            "descriptionInUI": "Maximum distance to a power station. Each land site uses a configurable number of fixed feeds from the nearest stations. Losing its feeds does not connect another station. Towers do not relay electricity; wiring is rebuilt each turn.",
             "mnemonic": "powerRangeNm",
             "defaultValue": 35,
             "minimumValue": 1,
             "maximumValue": 500
+        },
+        {
+            "nameInUI": "Power stations per node",
+            "descriptionInUI": "Maximum number of nearest friendly power stations wired to each node, including SAMs, EWRs, command centres, comms towers and GPS jammers. Default: 2. Only stations in range count, regardless of damage; destroyed feeds are not replaced. Applied when topology is rebuilt at turn start or on loading a save.",
+            "mnemonic": "powerSourceCount",
+            "defaultValue": 2,
+            "minimumValue": 1,
+            "maximumValue": 10000
         },
         {
             "nameInUI": "Radius from the action (km, 0 = whole map)",

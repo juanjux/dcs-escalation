@@ -225,9 +225,10 @@ previous map view and campaign controls are restored when selection ends.
 - **Automatic topology.** Each coalition's advanced IADS is rebuilt from current
   objectives at the start of every turn and when loading a save. Sites connect to
   a sparse radio backbone through nearby towers and command centres, with one
-  active radio uplink and up to two fixed power-station feeds per site. Radio
-  links switch to available infrastructure in range when a tower or command
-  centre fails; electricity never switches to an unwired third station. Radio
+  active radio uplink and a configurable number of fixed power-station feeds
+  per site (default: two, under **Power stations per node** in the Skynet options).
+  Radio links switch to available infrastructure in range when a tower or command
+  centre fails; electricity never switches to an unwired station. Radio
   and power coverage default to 35 nm and remain
   configurable in the Skynet plugin; campaign-authored links are no longer used.
   Powered towers and command centres relay communications along

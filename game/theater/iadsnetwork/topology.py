@@ -12,6 +12,27 @@ if TYPE_CHECKING:
 
 
 RADIO_ROLES = frozenset({IadsRole.CONNECTION_NODE, IadsRole.COMMAND_CENTER})
+DEFAULT_POWER_SOURCE_COUNT = 2
+MAX_POWER_SOURCE_COUNT = 10_000
+
+
+def power_source_count(settings: Any = None) -> int:
+    """Fixed supplies per node, including a default for older saved settings."""
+    if settings is None:
+        return DEFAULT_POWER_SOURCE_COUNT
+    try:
+        value = settings.plugin_option_or(
+            "skynetiads.powerSourceCount", DEFAULT_POWER_SOURCE_COUNT
+        )
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return DEFAULT_POWER_SOURCE_COUNT
+    if isinstance(value, bool) or (isinstance(value, float) and not value.is_integer()):
+        return DEFAULT_POWER_SOURCE_COUNT
+    try:
+        count = int(value)
+    except (TypeError, ValueError, OverflowError):
+        return DEFAULT_POWER_SOURCE_COUNT
+    return max(1, min(MAX_POWER_SOURCE_COUNT, count))
 
 
 class Components:
@@ -39,7 +60,7 @@ def sparse_connections(
     friendly: Callable[[TheaterGroundObject, TheaterGroundObject], bool],
     settings_for: Callable[[TheaterGroundObject], Any],
 ) -> dict[TheaterGroundObject, list[TheaterGroundObject]]:
-    """Wire two nearest stations without replacing a destroyed power feed.
+    """Wire the configured nearest stations without replacing destroyed feeds.
 
     Radio candidates are separate: their active uplinks depend on the current
     availability of the radio network, not on this physical power wiring.
@@ -70,7 +91,7 @@ def sparse_connections(
             ),
             key=lambda plant: (distance(obj, plant), plant.original_name),
         )
-        result[obj].extend(power[:2])
+        result[obj].extend(power[: power_source_count(settings_for(obj))])
     return result
 
 
