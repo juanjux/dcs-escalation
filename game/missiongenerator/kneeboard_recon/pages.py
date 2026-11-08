@@ -550,7 +550,7 @@ class AirfieldDeparturePage(_RecordingPage):
             sunset=sunset,
             runway_name=self.flight.departure.runway_name,
             runway_heading_deg=int(self.flight.departure.runway_heading.degrees),
-            atc_freq_str=self._format_freq(self.flight.departure.atc),
+            atc_freq_str=self._format_freq(self.flight.departure.atc) or "No ATC",
             tacan_str=self._format_tacan(),
             field_elevation_m=_field_elevation_m(airport, self.game.theater.terrain),
         )

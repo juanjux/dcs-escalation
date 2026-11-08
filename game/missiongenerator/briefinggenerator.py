@@ -210,7 +210,7 @@ class BriefingGenerator(MissionInfoGenerator):
             if isinstance(cp, TacanContainer) and cp.tacan is not None:
                 tacan = str(cp.tacan)
                 callsign = cp.tcn_name or ""
-            atc = "-"
+            atc = "No ATC"
             atc_radio = AtcData.from_pydcs(cp.airport)
             if atc_radio is not None and atc_radio.uhf is not None:
                 atc = str(atc_radio.uhf)

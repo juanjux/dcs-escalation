@@ -600,7 +600,7 @@ class BriefingPage(KneeboardPage):
         if runway is None:
             return [row_title, "", "", "", "", ""]
 
-        atc = ""
+        atc = "No ATC"
         if runway.atc is not None:
             atc = self.format_frequency(runway.atc)
         if runway.tacan is None:
