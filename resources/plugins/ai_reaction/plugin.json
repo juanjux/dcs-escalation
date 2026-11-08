@@ -1,10 +1,11 @@
 {
     "nameInUI": "Smart Threat Reaction",
-    "descriptionInUI": "AI aircraft default to Passive Defense; only the flight a missile is actually guiding on switches to Evade Fire (via the native weapon:getTarget), so one SAM launch no longer sends every nearby package defensive.",
+    "descriptionInUI": "Fixed-wing AI flights use Passive Defense unless a missile reports them as its target. Only the targeted flight receives Evade Fire. Missiles are followed until gone, including delayed targets and retargeting; failed controller orders are retried. Bounded command/error logs are always written to dcs.log; accepted orders do not guarantee a native evasive manoeuvre.",
     "defaultValue": true,
     "specificOptions": [
         {
             "nameInUI": "DEBUG (extra logging)",
+            "descriptionInUI": "Add rate-limited on-screen diagnostics and debug lines. Command acceptance, failures and periodic tracking statistics are logged even when this is off.",
             "mnemonic": "DEBUG",
             "defaultValue": false
         }
