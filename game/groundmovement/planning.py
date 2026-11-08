@@ -158,11 +158,9 @@ def armor_movement_options(
             sam_warnings.append("Some battery units are already reserved for movement")
         warnings.extend(sam_warnings)
         warnings.append(
-            "SAM/radar sites relocate as a whole and leave the IADS network. "
-            "Validated self-propelled batteries can stop to engage detected enemies "
-            "within their defensive envelope, or defend after a hit; "
-            "packing and reloading may delay their return to the route. "
-            "Other sites keep radars and weapons packed until arrival or an explicit stop."
+            "SAM/radar sites relocate as a whole. IADS connections are recalculated "
+            "from nearby friendly power stations, comms and command centres when "
+            "the site stops or arrives."
         )
         restriction = transit_defense_warning(
             unit.dcs_unit_type.id for unit in unit_types.values()
