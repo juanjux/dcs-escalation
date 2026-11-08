@@ -88,5 +88,6 @@ def test_regular_armor_card_exposes_truck_purchases(app: Any, battery: Any) -> N
     assert card is not None
     purchase = card.findChild(QPushButton, "buy-sam-towing-trucks")
     assert purchase is not None and purchase.isEnabled()
-    assert card.findChild(QSpinBox, "sam-towing-truck-quantity").maximum() == 5
+    amount = card.findChild(QSpinBox, "sam-towing-truck-quantity")
+    assert amount is not None and amount.maximum() == 5
     card.deleteLater()
