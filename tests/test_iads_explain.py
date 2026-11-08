@@ -393,7 +393,21 @@ def test_a_destroyed_substation_says_what_it_cost() -> None:
     picture = describe(substation.ground_object, network)
 
     assert _link(picture, "POWERS").chip == "CUT"
-    assert "on its own" in picture.summary
+    assert "alternate supplies or radio paths" in picture.summary
+
+
+def test_two_fixed_feeds_do_not_claim_losing_one_switches_the_site_off() -> None:
+    first = _group("FIRST", IadsRole.POWER_SOURCE, _unit(alive=False))
+    backup = _group("BACKUP", IadsRole.POWER_SOURCE)
+    sam = _group("KAKAPO", IadsRole.SAM)
+    network = _network(_node(sam, first, backup))
+
+    power = _link(describe(sam.ground_object, network, friendly=False), "POWER")
+
+    assert power.chip == "GRID UP"
+    assert "both fixed feeds" in power.note
+    destroyed = describe(first.ground_object, network)
+    assert "alternate supplies" in destroyed.summary
 
 
 def test_an_antenna_connects_rather_than_feeding() -> None:

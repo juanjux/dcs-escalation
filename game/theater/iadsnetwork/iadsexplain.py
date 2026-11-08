@@ -195,7 +195,9 @@ def describe(
                 tone=LinkTone.INFO,
                 places=_places_of([group.ground_object]),
             )
-            for group in node.connections.values()
+            for group in getattr(
+                network, "effective_connections", lambda item: item.connections
+            )(node).values()
             if group.ground_object.control_point.captured == tgo.control_point.captured
         )
         return IadsPicture(status, gets=links)
@@ -425,9 +427,24 @@ def _comms_link(
     """The comms this site hangs off, when the campaign gave it any."""
     nodes = [
         group
-        for group in node.connections.values()
+        for group in (
+            connectivity.effective_connections(node)
+            if connectivity is not None
+            else node.connections
+        ).values()
         if group.iads_role is IadsRole.CONNECTION_NODE
     ]
+    if not nodes and node.group.iads_role not in (
+        IadsRole.COMMAND_CENTER,
+        IadsRole.CONNECTION_NODE,
+    ):
+        # Failed candidates explain a cut without drawing them as simultaneous
+        # links or pretending an isolated tower is an effective attachment.
+        nodes = [
+            group
+            for group, _distance in getattr(node, "radio_candidates", None) or []
+            if group.iads_role is IadsRole.CONNECTION_NODE
+        ]
     if not nodes:
         return None
     names = _some_of(sorted(group.ground_object.name for group in nodes))
@@ -603,7 +620,15 @@ def _power_links(node: IadsNetworkNode, friendly: bool) -> list[IadsLink]:
                 note=(
                     "the grid reaches it"
                     if friendly or generator is not None
-                    else "kill it and the site goes dark"
+                    else (
+                        (
+                            "cut both fixed feeds and the site goes dark"
+                            if len(sources) == 2
+                            else "cut all fixed feeds and the site goes dark"
+                        )
+                        if len(sources) > 1
+                        else "kill it and the site goes dark"
+                    )
                 ),
                 chip="GRID UP",
                 tone=LinkTone.GOOD,
@@ -616,9 +641,9 @@ def _power_links(node: IadsNetworkNode, friendly: bool) -> list[IadsLink]:
                 caption="POWER",
                 title=" · ".join(sorted(group.ground_object.name for group in sources)),
                 note=(
-                    "its substation is down; the site runs on its own generator"
+                    "its grid feeds are down; the site runs on its own generator"
                     if generator is not None
-                    else "its substation is down and the site stays switched off"
+                    else "its grid feeds are down and the site stays switched off"
                 ),
                 chip="GRID DOWN",
                 tone=LinkTone.WARN if generator is not None else LinkTone.BAD,
@@ -652,7 +677,12 @@ def _feeds(tgo: TheaterGroundObject, network: IadsNetwork) -> list[IadsNetworkNo
     return [
         node
         for node in network.nodes
-        if any(group.ground_object is tgo for group in node.connections.values())
+        if any(
+            group.ground_object is tgo
+            for group in getattr(
+                network, "effective_connections", lambda item: item.connections
+            )(node).values()
+        )
     ]
 
 
@@ -723,7 +753,9 @@ def _infrastructure(
         chip_text = f"{len(fed)} SITE{'S' if len(fed) > 1 else ''}"
         tone = LinkTone.GOOD
     else:
-        headline = "Destroyed: what it held up is on its own."
+        headline = (
+            "Destroyed: alternate supplies or radio paths may still be available."
+        )
         note = "nothing reaches them through it any more"
         chip_text = "CUT"
         tone = LinkTone.BAD

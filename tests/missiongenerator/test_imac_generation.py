@@ -146,6 +146,47 @@ def test_miz_embeds_runtime_in_dependency_order_and_native_route() -> None:
     ]
 
 
+def test_command_authority_exports_all_members_of_its_fixed_power_stations() -> None:
+    s = scenario()
+    command = s.nodes[0]
+    command.static_members = [command.dcs_name, "CC SECOND"]
+    command.requires_power = True
+    command.connections[IadsRole.POWER_SOURCE.value] = ["P1", "P2"]
+    s.nodes.extend(
+        NS(
+            iads_role=IadsRole.POWER_SOURCE,
+            dcs_name=name,
+            player=Player.BLUE,
+            static_members=[name, name + " SECOND"],
+        )
+        for name in ("P1", "P2", "P3")
+    )
+    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    assert data is not None
+    [row] = data["commandCenters"]
+    assert row["members"] == ['CC "quoted" object', "CC SECOND object"]
+    assert row["power"] == [
+        "P1 object",
+        "P1 SECOND object",
+        "P2 object",
+        "P2 SECOND object",
+    ]
+    assert row["requiresPower"] is True
+
+
+def test_advanced_command_with_an_empty_grid_keeps_its_power_requirement() -> None:
+    s = scenario()
+    command = s.nodes[0]
+    command.requires_power = True
+    command.connections.clear()
+    s.game.settings.set_plugin_option("skynetiads", False)
+    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    assert data is not None
+    [row] = data["commandCenters"]
+    assert row["power"] == []
+    assert row["requiresPower"] is True
+
+
 def test_serialized_miz_contains_every_runtime_dependency(tmp_path: Path) -> None:
     s = scenario()
     data = imac.configure(s.generator, dict(imac.DEFAULTS))

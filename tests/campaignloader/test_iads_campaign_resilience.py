@@ -77,18 +77,13 @@ def test_network_survives_any_single_command_loss(filename: str, vm: Any) -> Non
         feeds = [
             g for g in node.connections.values() if g.iads_role is IadsRole.POWER_SOURCE
         ]
-        assert len(feeds) <= 1
-        if node.group.iads_role in (IadsRole.SAM, IadsRole.EWR):
-            radio = [
-                g
-                for g in node.connections.values()
-                if g.iads_role
-                in (
-                    IadsRole.CONNECTION_NODE,
-                    IadsRole.COMMAND_CENTER,
-                )
-            ]
-            assert len(radio) <= 2
+        assert len(feeds) <= 2
+        radio = [
+            g
+            for g in network.effective_connections(node).values()
+            if g.iads_role in (IadsRole.CONNECTION_NODE, IadsRole.COMMAND_CENTER)
+        ]
+        assert len(radio) <= 1
     if "relocation" in row:
         relocation = row["relocation"]
         assert len(relays) == relocation["after_relays"]
@@ -130,6 +125,11 @@ def test_network_survives_any_single_command_loss(filename: str, vm: Any) -> Non
         side_targets = [
             n for n in targets if n.group.ground_object.control_point.captured is side
         ]
+        side_nodes = [
+            n
+            for n in network.nodes
+            if n.group.ground_object.control_point.captured is side
+        ]
         # Compare Python and the actual mission Lua for every command and power
         # loss. Regional outages are expected; disagreement between them is not.
         for failed in [None, *side_losses]:
@@ -141,6 +141,26 @@ def test_network_survives_any_single_command_loss(filename: str, vm: Any) -> Non
             topology = vm.globals().iads.topology
             topology.beginCycle(topology)
             connectivity = IadsConnectivity(network, loss)
+            for target in side_nodes:
+                name = SkynetNode.dcs_name_for_group(target.group)
+                parent = connectivity.radio_parent(target)
+                assert topology.radioParents[name] == (
+                    SkynetNode.dcs_name_for_group(parent)
+                    if parent is not None
+                    else None
+                ), (
+                    filename,
+                    name,
+                    failed.group.ground_object.original_name if failed else None,
+                )
+                assert (
+                    sum(
+                        group.iads_role
+                        in (IadsRole.CONNECTION_NODE, IadsRole.COMMAND_CENTER)
+                        for group in connectivity.effective_connections(target).values()
+                    )
+                    <= 1
+                )
             for target in side_targets:
                 element = vm.globals().elements[
                     SkynetNode.dcs_name_for_group(target.group)

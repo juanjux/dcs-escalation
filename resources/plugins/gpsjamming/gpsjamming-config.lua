@@ -100,9 +100,44 @@ local function buildSites()
                 reach = reach,
                 miss = tonumber(rec.missRadiusM) or 200,
                 units = units,
+                power = rec.power,
             }
         end
     end
+end
+
+local function sourceAlive(source, side)
+    if source.kind == "scenery" then
+        if source.alive == false or (scenery_zone_reported and scenery_zone_reported[source.name]) then
+            return false
+        end
+        local zones = ESCALATION_SCENERY_ZONES or RETRIBUTION_SCENERY_ZONES or {}
+        for _, zone in ipairs(zones) do
+            if zone.name == source.name then
+                return not zone.dead
+            end
+        end
+        return false -- Unknown physical scenery must not supply electricity.
+    end
+    if source.kind ~= "static" and source.kind ~= "unit" then return false end
+    local api = source.kind == "static" and StaticObject or Unit
+    if not (api and api.getByName) then return false end
+    local ok, object = pcall(api.getByName, source.name)
+    if not ok or not object then return false end
+    local available, alive = pcall(function()
+        return object:isExist() and object:getLife() > 0
+            and (not object.getCoalition or object:getCoalition() == side)
+    end)
+    return available and alive
+end
+
+local function sitePowered(site)
+    -- Missing metadata retains the behavior of old missions and basic IADS.
+    if type(site.power) ~= "table" or site.power.required ~= true then return true end
+    for _, source in ipairs(site.power.sources or {}) do
+        if sourceAlive(source, site.side) then return true end
+    end
+    return false
 end
 
 -- A site jams only while a JAMMER VEHICLE is still alive. Re-checked (cheaply, and only when a
@@ -114,6 +149,7 @@ end
 -- group-level check would keep jamming on the strength of a surviving truck beside the wreck of
 -- the actual jammer. The player must be able to kill the thing that is jamming them.
 local function siteAlive(site)
+    if not sitePowered(site) then return false end
     for i = 1, #site.units do
         local ok, u = pcall(Unit.getByName, site.units[i])
         if ok and u and u:isExist() then

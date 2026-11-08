@@ -599,6 +599,10 @@ def test_generated_network_connects_all_sectors_and_exports_to_skynet(
             or node.group.ground_object.control_point.captured.is_neutral
         ):
             continue
+        if getattr(node.group.ground_object, "carries_gps_jammer", False):
+            assert node.radio_candidates == []
+            assert connectivity.powered(node)
+            continue
         assert len(connectivity.centres_for(node)) >= 2
     nodes = network.skynet_nodes(generated)
     expected_exports = {
@@ -722,7 +726,7 @@ def test_power_losses_follow_fixed_feeds_without_mutating_the_live_campaign(
 
 
 @pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
-def test_losing_local_relays_cuts_a_powered_sam_off(
+def test_losing_all_in_range_radios_cuts_a_powered_sam_off(
     generated: Game, side: Player
 ) -> None:
     network = generated.theater.iads_network
@@ -733,21 +737,18 @@ def test_losing_local_relays_cuts_a_powered_sam_off(
         and node.group.ground_object.control_point.captured is side
         and isinstance(node.group.ground_object, IadsGroundObject)
         and not node.group.ground_object.carries_gps_jammer
-        and not any(
-            group.iads_role is IadsRole.COMMAND_CENTER
-            for group in node.connections.values()
-        )
     ]
     assert dependent
     for node in dependent:
         sam = node.group.ground_object
-        towers = [
-            group.ground_object
-            for group in node.connections.values()
-            if group.iads_role is IadsRole.CONNECTION_NODE
+        radios = [
+            group.ground_object for group, _distance in node.radio_candidates or []
         ]
-        assert towers, sam.original_name
-        status = IadsStateMap(network, towers).status_for(sam)
+        assert radios, sam.original_name
+        picture = IadsStateMap(network, radios)
+        assert picture.connectivity is not None
+        assert picture.connectivity.powered(node), sam.original_name
+        status = picture.status_for(sam)
         assert (
             status is not None and status.state is IadsState.AUTONOMOUS
         ), sam.original_name

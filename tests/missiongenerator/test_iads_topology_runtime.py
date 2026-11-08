@@ -14,9 +14,11 @@ from game.missiongenerator.missiondata import MissionData
 from game.plugins.luaplugin import LuaPlugin
 from game.settings import Settings
 from game.sim.gameupdateevents import GameUpdateEvents
-from game.theater.iadsnetwork.iadsnetwork import IadsNetwork
+from game.theater.iadsnetwork.iadsnetwork import IadsNetwork, SkynetNode
+from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.player import Player
 from tests.test_iads_relay_connectivity import chain, node
+from tests.test_iads_automatic_topology import site
 
 
 @pytest.fixture
@@ -400,6 +402,210 @@ def test_infrastructure_events_refresh_paths_but_unrelated_deaths_do_not(
     """)
 
 
+def automatic_data() -> dict[str, list[dict[str, Any]]]:
+    """A redundant radio sector, an isolated relay and three nearby plants."""
+    positions = {"CC1": 0, "A": 1000, "B": 2000, "C": 3000, "CC2": 4000}
+    data: dict[str, list[dict[str, Any]]] = {
+        "CommandCenter": [],
+        "ConnectionNode": [],
+        "PowerSource": [{"dcsGroupName": name} for name in ["P1", "P2", "P3"]],
+    }
+    for name, position in positions.items():
+        candidates = sorted(
+            (
+                {"name": other, "distance": abs(position - x)}
+                for other, x in positions.items()
+                if other != name
+            ),
+            key=lambda row: (row["distance"], row["name"]),
+        )
+        role = "CommandCenter" if name.startswith("CC") else "ConnectionNode"
+        data[role].append(
+            {
+                "dcsGroupName": name,
+                "topologyKey": name,
+                "radioCandidates": candidates,
+            }
+        )
+    data["ConnectionNode"].append(
+        {"dcsGroupName": "ISOLATED", "topologyKey": "ISOLATED", "radioCandidates": []}
+    )
+    for role, name in [("Sam", "SAM"), ("Ewr", "EWR")]:
+        data[role] = [
+            {
+                "dcsGroupName": name,
+                "topologyKey": name,
+                "radioCandidates": [
+                    {"name": name, "distance": distance}
+                    for name, distance in [
+                        ("ISOLATED", 1),
+                        ("A", 10),
+                        ("B", 20),
+                        ("C", 30),
+                    ]
+                ],
+                "ConnectionNode": ["ISOLATED"],  # A stale initial link is not reused.
+                "requiresPower": True,
+                "PowerSource": ["P1", "P2"],
+            }
+        ]
+    return data
+
+
+@pytest.mark.parametrize("side", [1, 2])
+def test_automatic_radio_uses_one_live_rooted_uplink_and_all_standbys(
+    vm: Any, side: int
+) -> None:
+    data = automatic_data()
+    data["Sam"][0]["PD"] = ["PD"]
+    start(vm, data, side)
+    vm.execute("""
+        objects.PD={isExist=function() return true end,
+            getUnits=function() return {{isExist=function() return true end,getLife=function() return 100 end}} end}
+        pd=setmetatable({iads=iads,dcsName='PD',connectionNodes={}},SkynetIADSSamSite)
+        cover(elements.EWR,elements.SAM)
+        iads.topology:beginCycle()
+        assert(iads.topology.radioParents.SAM=='A')
+        assert(iads.topology.radioParents.EWR=='A')
+        assert(iads.topology.radioParents.PD=='A')
+        assert(iads.topology:canExchange(pd,elements.SAM))
+        objects.A.live=false
+        iads.topology:beginCycle()
+        assert(iads.topology.radioParents.SAM=='B')
+        assert(iads.topology.radioParents.PD=='B')
+        assert(not elements.SAM:getAutonomousState())
+        objects.B.live=false
+        iads.topology:beginCycle()
+        assert(iads.topology.radioParents.SAM=='C')
+        assert(elements.SAM:hasActiveConnectionNode())
+        objects.C.live=false
+        iads.topology:beginCycle()
+        assert(iads.topology.radioParents.SAM==nil)
+        assert(not elements.SAM:hasActiveConnectionNode())
+        assert(elements.SAM:getAutonomousState())
+        objects.A.live=true
+        iads.topology:beginCycle()
+        assert(iads.topology.radioParents.SAM=='A')
+        assert(not elements.SAM:getAutonomousState())
+    """)
+
+
+def test_automatic_power_never_rewires_to_a_third_station(vm: Any) -> None:
+    start(vm, automatic_data())
+    vm.execute("""
+        objects.P1.live=false
+        iads.topology:beginCycle()
+        assert(elements.SAM:hasWorkingPowerSource())
+        objects.P2.live=false
+        iads.topology:beginCycle()
+        assert(objects.P3.live)
+        assert(not elements.SAM:hasWorkingPowerSource())
+        assert(not elements.EWR:hasWorkingPowerSource())
+        assert(not elements.SAM:isActive())
+        objects.P2.live=true
+        iads.topology:beginCycle()
+        assert(elements.SAM:hasWorkingPowerSource())
+    """)
+
+
+def test_automatic_command_centres_share_the_component_and_reroute_on_loss(
+    vm: Any,
+) -> None:
+    start(vm, automatic_data())
+    vm.execute("""
+        assert(iads.topology.roots.SAM.CC1 and iads.topology.roots.SAM.CC2)
+        assert(iads.topology:canExchange(elements.CC1,elements.CC2))
+        objects.CC1.live=false
+        iads.topology:beginCycle()
+        assert(not iads.topology.roots.SAM.CC1 and iads.topology.roots.SAM.CC2)
+        assert(elements.SAM:hasActiveConnectionNode())
+        assert(iads.topology:canExchange(elements.CC2,elements.EWR))
+        objects.CC2.live=false
+        iads.topology:beginCycle()
+        assert(not elements.SAM:hasActiveConnectionNode())
+    """)
+
+
+def test_automatic_power_only_rows_never_relay_radio(vm: Any) -> None:
+    data = automatic_data()
+    data["Ewr"].append(
+        {
+            "dcsGroupName": "GPS",
+            "powerOnly": True,
+            "radioCandidates": [],
+            "requiresPower": True,
+            "PowerSource": ["P1", "P2"],
+        }
+    )
+    start(vm, data)
+    vm.execute("""
+        objects.CC1.live=false; objects.CC2.live=false
+        iads.topology:beginCycle()
+        assert(elements.GPS:hasWorkingPowerSource())
+        assert(iads.topology:connected(elements.GPS))
+        assert(iads.topology.radioParents.GPS==nil)
+        assert(not iads.topology:canExchange(elements.GPS,elements.SAM))
+        objects.P1.live=false; objects.P2.live=false
+        iads.topology:beginCycle()
+        assert(not iads.topology:connected(elements.GPS))
+    """)
+
+
+def test_automatic_forest_is_recomputed_only_when_availability_changes(vm: Any) -> None:
+    start(vm, automatic_data())
+    vm.execute("""
+        local original=iads.topology.selectRadio
+        rebuilds=0
+        function iads.topology:selectRadio(alive,powered)
+            rebuilds=rebuilds+1
+            return original(self,alive,powered)
+        end
+        for _=1,20 do
+            iads.topology:beginCycle()
+            iads.topology:canExchange(elements.SAM,elements.EWR)
+        end
+        assert(rebuilds==0)
+        objects.A.live=false
+        iads.topology:beginCycle()
+        assert(rebuilds==1)
+    """)
+
+
+def test_multi_building_station_and_command_survive_partial_losses(vm: Any) -> None:
+    data = automatic_data()
+    data["PowerSource"][0]["staticMembers"] = ["P1", "P1_SECOND"]
+    data["CommandCenter"][0]["staticMembers"] = ["CC1", "CC1_SECOND"]
+    start(vm, data)
+    vm.execute("""
+        for _, name in ipairs({'P1_SECOND','CC1_SECOND'}) do
+            local object={live=true,side=iads.topology.coalition}
+            function object:isExist() return self.live end
+            function object:getLife() return self.live and 100 or 0 end
+            function object:getCoalition() return self.side end
+            objects[name]=object
+        end
+        elements.CC1.isDestroyed=SkynetIADSAbstractElement.isDestroyed
+        function elements.CC1:getDCSRepresentation() return objects.CC1 end
+        objects.P1.live=false; objects.P2.live=false; objects.CC1.live=false
+        objects.CC2.live=false
+        iads.topology:beginCycle()
+        assert(elements.SAM:hasWorkingPowerSource())
+        assert(not elements.CC1:isDestroyed())
+        assert(elements.SAM:hasActiveConnectionNode())
+        objects.CC1_SECOND.live=false
+        iads.topology:onEvent({initiator={getName=function() return 'CC1_SECOND object' end}})
+        assert(elements.CC1:isDestroyed())
+        assert(not elements.SAM:hasActiveConnectionNode())
+        objects.P1_SECOND.live=false
+        iads.topology:onEvent({initiator={getName=function() return 'P1_SECOND object' end}})
+        assert(not elements.SAM:hasWorkingPowerSource())
+        objects.CC1_SECOND.live=true; objects.P1_SECOND.live=true
+        iads.topology:beginCycle()
+        assert(elements.SAM:hasActiveConnectionNode())
+        assert(elements.SAM:hasWorkingPowerSource())
+    """)
+
+
 def exported(
     network: IadsNetwork, side: Player | None = None
 ) -> dict[str, list[dict[str, Any]]]:
@@ -411,6 +617,16 @@ def exported(
         if side is not None and entry.player is not side:
             continue
         row: dict[str, Any] = {"dcsGroupName": entry.dcs_name, **entry.connections}
+        if entry.radio_candidates is not None:
+            row["topologyKey"] = entry.topology_key
+            row["radioCandidates"] = [
+                {"name": name, "distance": distance}
+                for name, distance in entry.radio_candidates
+            ]
+        if entry.power_only:
+            row["powerOnly"] = True
+        if entry.static_members:
+            row["staticMembers"] = entry.static_members
         if entry.independent_comms:
             row["independentComms"] = True
         if entry.requires_power:
@@ -457,6 +673,80 @@ def test_exported_python_graph_and_runtime_agree_through_remote_losses(
                 assert element.hasWorkingPowerSource(element) == connectivity.powered(
                     node(network, obj)
                 )
+
+
+@pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
+def test_generated_failover_parents_power_and_shared_roots_match_python(
+    vm: Any, side: Player
+) -> None:
+    objects = [
+        site("CC1", IadsRole.COMMAND_CENTER, 0, side),
+        site("CC2", IadsRole.COMMAND_CENTER, 30_000, side),
+        site("A", IadsRole.CONNECTION_NODE, 1000, side),
+        site("B", IadsRole.CONNECTION_NODE, 2000, side),
+        site("C", IadsRole.CONNECTION_NODE, 3000, side),
+        site("P1", IadsRole.POWER_SOURCE, 0, side),
+        site("P2", IadsRole.POWER_SOURCE, 100, side),
+        site("P3", IadsRole.POWER_SOURCE, 200, side),
+        site("SAM", IadsRole.SAM, 0, side),
+        site("EWR", IadsRole.EWR, 1, side),
+    ]
+    network = IadsNetwork(True)
+    network.initialize_network(iter(objects))
+    start(vm, exported(network), 2 if side is Player.BLUE else 1)
+    by_name = {obj.original_name: obj for obj in objects}
+    names = {obj: SkynetNode.dcs_name_for_group(obj.groups[0]) for obj in objects}
+    sequence: list[tuple[str | None, bool]] = [
+        (None, True),
+        ("A", False),
+        ("B", False),
+        ("C", False),
+        ("A", True),
+        ("CC1", False),
+        ("CC2", False),
+        ("P1", False),
+        ("P2", False),
+        ("P2", True),
+        ("CC2", True),
+        ("CC1", True),
+        ("B", True),
+    ]
+    for changed, alive in sequence:
+        if changed is not None:
+            obj = by_name[changed]
+            obj.groups[0].units[0].alive = alive
+            network.update_tgo(obj, GameUpdateEvents())
+            vm.globals().objects[names[obj]].live = alive
+        runtime = vm.globals().iads.topology
+        runtime.beginCycle(runtime)
+        connectivity = network.state_map.connectivity
+        assert connectivity is not None
+        for obj, name in names.items():
+            current = node(network, obj)
+            parent = connectivity.radio_parent(current)
+            assert runtime.radioParents[name] == (
+                SkynetNode.dcs_name_for_group(parent) if parent is not None else None
+            ), (changed, obj.original_name)
+            roots = {
+                names[n.group.ground_object] for n in connectivity.centres_for(current)
+            }
+            assert set(runtime.roots[name]) == roots, (changed, obj.original_name)
+            assert runtime.powered[name] == connectivity.powered(current)
+            element = vm.globals().elements[name]
+            if element is not None:
+                assert runtime.connected(runtime, element) == connectivity.connected(
+                    current
+                )
+                for other in objects:
+                    other_element = vm.globals().elements[names[other]]
+                    if other_element is not None:
+                        assert runtime.canExchange(
+                            runtime, element, other_element
+                        ) == connectivity.can_exchange(current, node(network, other)), (
+                            changed,
+                            obj.original_name,
+                            other.original_name,
+                        )
 
 
 def test_plugin_loads_topology_before_configuration() -> None:
@@ -520,6 +810,9 @@ def test_generated_miz_packages_the_graph_and_runtime_in_load_order(
         assert len(data.RED.ConnectionNode) == 2
         assert len(data.RED.CommandCenter) == 1
         assert len(data.RED.Sam[1].ConnectionNode) == 1
+        assert len(data.RED.Sam[1].radioCandidates) == 1
+        assert data.RED.Sam[1].radioCandidates[1].distance == 20000
+        assert data.RED.Sam[1].topologyKey == "SAM"
     else:
         assert data.RED.Sam[1].requiresPower is None
         assert data.RED.ConnectionNode is None

@@ -1,4 +1,4 @@
-"""Sparse local feeds and a radio backbone derived from the available sites."""
+"""Fixed power feeds and range-limited radio candidates."""
 
 from __future__ import annotations
 
@@ -12,6 +12,27 @@ if TYPE_CHECKING:
 
 
 RADIO_ROLES = frozenset({IadsRole.CONNECTION_NODE, IadsRole.COMMAND_CENTER})
+DEFAULT_POWER_SOURCE_COUNT = 2
+MAX_POWER_SOURCE_COUNT = 10_000
+
+
+def power_source_count(settings: Any = None) -> int:
+    """Fixed supplies per node, including a default for older saved settings."""
+    if settings is None:
+        return DEFAULT_POWER_SOURCE_COUNT
+    try:
+        value = settings.plugin_option_or(
+            "skynetiads.powerSourceCount", DEFAULT_POWER_SOURCE_COUNT
+        )
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return DEFAULT_POWER_SOURCE_COUNT
+    if isinstance(value, bool) or (isinstance(value, float) and not value.is_integer()):
+        return DEFAULT_POWER_SOURCE_COUNT
+    try:
+        count = int(value)
+    except (TypeError, ValueError, OverflowError):
+        return DEFAULT_POWER_SOURCE_COUNT
+    return max(1, min(MAX_POWER_SOURCE_COUNT, count))
 
 
 class Components:
@@ -39,24 +60,15 @@ def sparse_connections(
     friendly: Callable[[TheaterGroundObject, TheaterGroundObject], bool],
     settings_for: Callable[[TheaterGroundObject], Any],
 ) -> dict[TheaterGroundObject, list[TheaterGroundObject]]:
-    """Keep radio sectors connected, without an all-to-all proximity mesh.
+    """Wire the configured nearest stations without replacing destroyed feeds.
 
-    Radio links form a minimum-length backbone. Additional backbone edges preserve
-    any single-router-loss bypass that the full range graph provides. Consumers
-    attach locally, with a second attachment only when it supplies a path to
-    command that avoids their first hop. Power is a separate nearest-station
-    feed: neither towers nor power stations relay electricity.
-
-    Health does not choose the wiring. Destroying a dependency cuts its links;
-    it does not silently reroute them to every other station in range.
+    Radio candidates are separate: their active uplinks depend on the current
+    availability of the radio network, not on this physical power wiring.
     """
     sites = sorted(objects, key=lambda obj: obj.original_name)
     result: dict[TheaterGroundObject, list[TheaterGroundObject]] = {
         obj: [] for obj in sites
     }
-    routers = [
-        obj for obj in sites if IadsRole.for_category(obj.category) in RADIO_ROLES
-    ]
     plants = [
         obj
         for obj in sites
@@ -66,53 +78,6 @@ def sparse_connections(
     def distance(left: TheaterGroundObject, right: TheaterGroundObject) -> float:
         return left.position.distance_to_point(right.position)
 
-    ranges = {
-        obj: IadsRole.for_category(obj.category)
-        .connection_range(settings_for(obj))
-        .meters
-        for obj in [*routers, *plants]
-    }
-
-    def reach(obj: TheaterGroundObject) -> float:
-        return ranges[obj]
-
-    # An infrastructure link is bidirectional, so both radio endpoints must reach.
-    edges = sorted(
-        (distance(left, right), i, j)
-        for i, left in enumerate(routers)
-        for j, right in enumerate(routers[:i])
-        if friendly(left, right)
-        and distance(left, right) <= min(reach(left), reach(right))
-    )
-    selected: set[tuple[int, int]] = set()
-    components = Components(len(routers))
-    for _, left, right in edges:
-        if components.join(left, right):
-            selected.add((left, right))
-
-    commands = {
-        i
-        for i, obj in enumerate(routers)
-        if IadsRole.for_category(obj.category) is IadsRole.COMMAND_CENTER
-    }
-    # A tower or command centre must not become an avoidable single point of
-    # failure just because the shortest tree happened to route through it.
-    failure_components = []
-    for failed in range(len(routers)):
-        surviving = Components(len(routers))
-        for left, right in sorted(selected):
-            if failed not in (left, right):
-                surviving.join(left, right)
-        for _, left, right in edges:
-            if failed not in (left, right) and surviving.join(left, right):
-                selected.add((left, right))
-        failure_components.append(surviving)
-
-    for left, right in sorted(selected):
-        result[routers[left]].append(routers[right])
-        result[routers[right]].append(routers[left])
-
-    command_components = {components.root(i) for i in commands}
     for obj in sites:
         if obj in plants:
             continue
@@ -120,33 +85,55 @@ def sparse_connections(
             (
                 plant
                 for plant in plants
-                if friendly(obj, plant) and distance(obj, plant) <= reach(plant)
+                if friendly(obj, plant)
+                and distance(obj, plant)
+                <= IadsRole.POWER_SOURCE.connection_range(settings_for(plant)).meters
             ),
             key=lambda plant: (distance(obj, plant), plant.original_name),
         )
-        if power:
-            result[obj].append(power[0])
-        if obj in routers:
+        result[obj].extend(power[: power_source_count(settings_for(obj))])
+    return result
+
+
+def radio_candidates(
+    objects: Iterable[TheaterGroundObject],
+    friendly: Callable[[TheaterGroundObject, TheaterGroundObject], bool],
+    settings_for: Callable[[TheaterGroundObject], Any],
+) -> dict[TheaterGroundObject, list[tuple[TheaterGroundObject, int]]]:
+    """Return possible radios, not simultaneous connections, in stable order."""
+    sites = sorted(objects, key=lambda obj: obj.original_name)
+    routers = [
+        obj for obj in sites if IadsRole.for_category(obj.category) in RADIO_ROLES
+    ]
+    ranges = {
+        obj: IadsRole.for_category(obj.category)
+        .connection_range(settings_for(obj))
+        .meters
+        for obj in routers
+    }
+    result: dict[TheaterGroundObject, list[tuple[TheaterGroundObject, int]]] = {}
+    for obj in sites:
+        if IadsRole.for_category(obj.category) is IadsRole.POWER_SOURCE or getattr(
+            obj, "carries_gps_jammer", False
+        ):
+            result[obj] = []
             continue
-        nearby = sorted(
-            (
-                i
-                for i, router in enumerate(routers)
-                if friendly(obj, router) and distance(obj, router) <= reach(router)
-            ),
-            key=lambda i: (
-                components.root(i) not in command_components,
-                distance(obj, routers[i]),
-                routers[i].original_name,
+        candidates = []
+        for router in routers:
+            if router is obj or not friendly(obj, router):
+                continue
+            reach = ranges[router]
+            if obj in ranges:
+                reach = min(reach, ranges[obj])
+            distance = obj.position.distance_to_point(router.position)
+            if distance <= reach:
+                candidates.append((router, int(distance + 0.5)))
+        result[obj] = sorted(
+            candidates,
+            key=lambda item: (
+                IadsRole.for_category(item[0].category) is not IadsRole.CONNECTION_NODE,
+                item[1],
+                item[0].original_name,
             ),
         )
-        if not nearby:
-            continue
-        first = nearby[0]
-        result[obj].append(routers[first])
-        surviving = failure_components[first]
-        roots = {surviving.root(i) for i in commands if i != first}
-        backup = next((i for i in nearby[1:] if surviving.root(i) in roots), None)
-        if backup is not None:
-            result[obj].append(routers[backup])
     return result
