@@ -133,8 +133,12 @@ def test_spacing_preserves_iads_under_command_and_power_losses(filename: str) ->
     row = MANIFEST[filename]
     theater = campaign.load_theater(True)
     settings = Settings()
-    settings.set_plugin_option("skynetiads.commsRangeNm", 15)
-    settings.set_plugin_option("skynetiads.powerRangeNm", 35)
+    settings.set_plugin_option(
+        "skynetiads.commsRangeNm", row["iads"].get("comms_range_nm", 15)
+    )
+    settings.set_plugin_option(
+        "skynetiads.powerRangeNm", row["iads"].get("power_range_nm", 35)
+    )
     scenery_roles = {
         scenery.zone_def.name: IadsRole.for_category(scenery.category)
         for cp in theater.controlpoints

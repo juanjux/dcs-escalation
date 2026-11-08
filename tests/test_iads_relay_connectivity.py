@@ -6,6 +6,7 @@ import pytest
 
 from game.server.iadsnetwork.models import IadsConnectionJs
 from game.sim.gameupdateevents import GameUpdateEvents
+from game.settings import Settings
 from game.theater.iadsnetwork.iadsexplain import describe
 from game.theater.iadsnetwork.iadsnetwork import IadsNetwork
 from game.theater.iadsnetwork.iadsrole import IadsRole
@@ -15,6 +16,8 @@ from tests.test_iads_automatic_topology import site
 
 
 def chain(side: Player = Player.RED) -> tuple[IadsNetwork, list[Any]]:
+    settings = Settings()
+    settings.set_plugin_option("skynetiads.commsRangeNm", 15)
     objects = [
         site("COMMAND", IadsRole.COMMAND_CENTER, 0, side),
         site("RELAY A", IadsRole.CONNECTION_NODE, 20_000, side),
@@ -23,6 +26,8 @@ def chain(side: Player = Player.RED) -> tuple[IadsNetwork, list[Any]]:
         site("EWR", IadsRole.EWR, 60_001, side),
         site("POWER", IadsRole.POWER_SOURCE, 30_000, side),
     ]
+    for obj in objects:
+        obj.control_point.coalition.game.settings = settings
     network = IadsNetwork(True)
     network.initialize_network(iter(objects))
     return network, objects

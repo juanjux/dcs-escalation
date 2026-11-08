@@ -41,7 +41,7 @@ def test_a_ship_is_not_wired_to_the_shore_by_range(monkeypatch: Any) -> None:
     events: Any = SimpleNamespace(update_iads_node=lambda node: None)
 
     assert network.enrol_sites_that_arrived_late() == []
-    network._update_network(cast(Any, power), events)
+    network._rebuild_advanced_connections(events)
 
     assert _wired(node) == []
 

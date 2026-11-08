@@ -21,11 +21,10 @@ def _settings(**options: Any) -> Any:
     )
 
 
-def test_the_defaults_are_the_ranges_the_fork_always_used() -> None:
-    """15 and 35 nm, so a campaign in progress builds the same network it did."""
-    assert DEFAULT_COMMS_RANGE_NM == 15.0
+def test_both_infrastructure_ranges_default_to_35_nm() -> None:
+    assert DEFAULT_COMMS_RANGE_NM == 35.0
     assert DEFAULT_POWER_RANGE_NM == 35.0
-    assert IadsRole.CONNECTION_NODE.connection_range() == nautical_miles(15)
+    assert IadsRole.CONNECTION_NODE.connection_range() == nautical_miles(35)
     assert IadsRole.POWER_SOURCE.connection_range() == nautical_miles(35)
 
 
@@ -41,7 +40,7 @@ def test_the_options_are_read_when_they_are_set() -> None:
 def test_a_save_that_never_had_the_options_gets_the_defaults() -> None:
     """plugin_option_or answers with the default for settings written before them."""
     settings = _settings()
-    assert IadsRole.CONNECTION_NODE.connection_range(settings) == nautical_miles(15)
+    assert IadsRole.CONNECTION_NODE.connection_range(settings) == nautical_miles(35)
     assert IadsRole.POWER_SOURCE.connection_range(settings) == nautical_miles(35)
 
 

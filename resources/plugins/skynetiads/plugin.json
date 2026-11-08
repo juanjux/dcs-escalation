@@ -115,15 +115,15 @@
         },
         {
             "nameInUI": "Comms tower / command centre range (nm)",
-            "descriptionInUI": "Radio coverage for automatic links each turn. Powered towers and command centres relay traffic along a chain; sites without a path to command fight autonomously.",
+            "descriptionInUI": "Maximum radio hop for the sparse automatic backbone. Sites use local attachments to powered towers or command centres, not every station in range. Sites without a path to command fight autonomously.",
             "mnemonic": "commsRangeNm",
-            "defaultValue": 15,
+            "defaultValue": 35,
             "minimumValue": 1,
             "maximumValue": 500
         },
         {
             "nameInUI": "Power station range (nm)",
-            "descriptionInUI": "Power coverage used to rebuild both coalitions' IADS topology from current sites at the start of every turn.",
+            "descriptionInUI": "Maximum distance to the nearest power station. Each land site gets one local grid supply; towers do not relay electricity. Wiring is rebuilt at the start of every turn.",
             "mnemonic": "powerRangeNm",
             "defaultValue": 35,
             "minimumValue": 1,
