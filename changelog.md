@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Intel]** Economy map links with icon hover highlighting and direct base-tab links from Air and Ground forces.
 * **[Ground Movement]** Buy faction towing trucks for mobile SAM batteries in the location dialog and REST/MCP API, limited to the total number of towable units plus two.
 * **[Pilots]** Assign names by drag-and-drop or ordered squadron autofill, with thirteen themed name lists and editable user categories shared across campaigns.
 * **[Mods]** Update Spino's F-15EX to v3.0 with three air-to-air variants, fifteen stations, revised payloads, fuel capacities and radio presets.

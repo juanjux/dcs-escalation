@@ -90,7 +90,8 @@ class QBaseMenu2(QDialog):
 
         tabs_holder = QVBoxLayout()
         tabs_holder.setContentsMargins(16, 0, 16, 0)
-        tabs_holder.addWidget(QBaseMenuTabs(cp, self.game_model))
+        self.tabs = QBaseMenuTabs(cp, self.game_model)
+        tabs_holder.addWidget(self.tabs)
         main_layout.addLayout(tabs_holder, 1)
         order_line = self._high_command_line()
         if order_line is not None:
