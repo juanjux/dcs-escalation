@@ -61,7 +61,8 @@ SHARE_COLUMN = 60
 NAME_INDENT = 44
 TYPE_BAR_WIDTH = 120
 ECONOMY_BAR_WIDTH = 200
-ECONOMY_DETAIL_X = 170
+ECONOMY_DETAIL_X = 330
+ACTION_WIDTH = 124
 
 
 @dataclass(frozen=True)
@@ -148,6 +149,12 @@ class IntelListModel(QAbstractListModel):
         # decides whether a line can be clicked.
         if role == Qt.ItemDataRole.UserRole:
             return self.line(index)
+        if role == Qt.ItemDataRole.ToolTipRole:
+            line = self.line(index)
+            if isinstance(line, HeaderLine):
+                return line.group.name
+            if isinstance(line, EconomyLine):
+                return f"{line.row.name}\n{line.row.detail}"
         return None
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlag:
@@ -174,9 +181,48 @@ def _elided(painter: QPainter, text: str, width: int) -> str:
 class IntelDelegate(QStyledItemDelegate):
     """Paints every kind of line in all three tabs."""
 
-    def __init__(self, accent: QColor, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self,
+        accent: QColor,
+        parent: Optional[QWidget] = None,
+        *,
+        base_action: str = "Open base ↗",
+    ) -> None:
         super().__init__(parent)
         self.accent = accent
+        self.base_action = base_action
+
+    def action_text(self, line: Optional[Line]) -> str:
+        if isinstance(line, HeaderLine) and line.group.control_point is not None:
+            return self.base_action
+        if isinstance(line, EconomyLine) and line.row.target is not None:
+            return "Show on map ↗"
+        return ""
+
+    def action_rect(self, rect: QRect, line: Optional[Line]) -> QRect:
+        """Use the same link geometry for painting, hit testing and map hover."""
+        if not self.action_text(line):
+            return QRect()
+        if isinstance(line, EconomyLine):
+            room = ECONOMY_DETAIL_X - ACTION_WIDTH - 36
+            metrics = QFontMetrics(_font(13, demi=True))
+            name = metrics.elidedText(line.row.name, Qt.TextElideMode.ElideRight, room)
+            x = rect.left() + 26 + metrics.horizontalAdvance(name)
+        else:
+            x = rect.right() - RIGHT_MARGIN - SHARE_COLUMN - 40 - ACTION_WIDTH
+        return QRect(x, rect.top() + (rect.height() - 24) // 2, ACTION_WIDTH, 24)
+
+    def _action(self, painter: QPainter, rect: QRect, line: Line) -> None:
+        text = self.action_text(line)
+        if not text:
+            return
+        font = _font(12)
+        font.setUnderline(True)
+        painter.setFont(font)
+        painter.setPen(self.accent)
+        painter.drawText(
+            self.action_rect(rect, line), Qt.AlignmentFlag.AlignVCenter, text
+        )
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
         line = index.data(Qt.ItemDataRole.UserRole)
@@ -231,7 +277,14 @@ class IntelDelegate(QStyledItemDelegate):
 
         painter.setFont(_font(13, demi=True))
         painter.setPen(QColor("#FFFFFF") if hovered else TEXT)
-        name_room = rect.width() - (x - rect.left()) - SHARE_COLUMN - 80
+        right = (
+            self.action_rect(rect, line).left() - 12
+            if self.action_text(line)
+            else rect.right() - RIGHT_MARGIN - SHARE_COLUMN - 40
+        )
+        kind = group.kind + (" · no match" if group.no_match else "")
+        kind_width = QFontMetrics(_font(11)).horizontalAdvance(kind)
+        name_room = max(0, right - x - kind_width - 10)
         name = _elided(painter, group.name, name_room)
         painter.drawText(
             QRect(x, rect.top(), name_room, rect.height() - 3),
@@ -240,11 +293,15 @@ class IntelDelegate(QStyledItemDelegate):
         )
         used = QFontMetrics(painter.font()).horizontalAdvance(name)
 
-        kind = group.kind + (" · no match" if group.no_match else "")
         painter.setFont(_font(11))
         painter.setPen(MUTED)
         painter.drawText(
-            QRect(x + used + 10, rect.top(), name_room, rect.height() - 3),
+            QRect(
+                x + used + 10,
+                rect.top(),
+                max(0, right - x - used - 10),
+                rect.height() - 3,
+            ),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
             kind,
         )
@@ -257,6 +314,7 @@ class IntelDelegate(QStyledItemDelegate):
             count_size=15,
             ink=QColor("#FFFFFF") if hovered else TEXT,
         )
+        self._action(painter, rect, line)
         # The proportion, along the bottom of the header: at forty bases this says
         # where the air force is without a single count being read.
         width = round((rect.width() - 1) * group.share)
@@ -355,11 +413,15 @@ class IntelDelegate(QStyledItemDelegate):
         # Damage recedes the name a step rather than shouting: the same rule the air
         # wing uses for a depleted squadron.
         painter.setPen(NAME_DIMMED if row.damage else TEXT)
+        name_room = ECONOMY_DETAIL_X - 26
+        if self.action_text(line):
+            name_room = ECONOMY_DETAIL_X - ACTION_WIDTH - 36
         painter.drawText(
-            QRect(rect.left() + 16, rect.top(), ECONOMY_DETAIL_X - 26, rect.height()),
+            QRect(rect.left() + 16, rect.top(), name_room, rect.height()),
             Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-            _elided(painter, row.name, ECONOMY_DETAIL_X - 26),
+            _elided(painter, row.name, name_room),
         )
+        self._action(painter, rect, line)
 
         self._detail(painter, rect, row)
 

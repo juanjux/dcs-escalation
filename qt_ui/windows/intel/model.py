@@ -8,14 +8,14 @@ nothing to decide.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Iterable, Optional, Sequence
 
 from game.game import Game
 from game.income import Income
 from game.theater import ControlPoint, ParkingType, Player
-from game.theater.theatergroundobject import NAME_BY_CATEGORY
+from game.theater.theatergroundobject import NAME_BY_CATEGORY, TheaterGroundObject
 
 
 class Sort(Enum):
@@ -77,6 +77,9 @@ class ForceGroup:
     hidden: int = 0
     #: The filter is on and nothing here matched.
     no_match: bool = False
+    control_point: Optional[ControlPoint] = field(
+        default=None, compare=False, repr=False
+    )
 
     @property
     def biggest_row(self) -> int:
@@ -106,6 +109,9 @@ class EconomyRow:
     after: str
     income: int
     share: float
+    target: ControlPoint | TheaterGroundObject | None = field(
+        default=None, compare=False, repr=False
+    )
 
     @property
     def detail(self) -> str:
@@ -186,16 +192,7 @@ def _filtered(
         if _matches(group.name, needle):
             rows = tuple(ForceRow(r.name, r.variant, r.count, True) for r in group.rows)
             matching += sum(r.count for r in rows)
-            kept.append(
-                ForceGroup(
-                    group.name,
-                    group.kind,
-                    group.afloat,
-                    group.count,
-                    group.share,
-                    rows,
-                )
-            )
+            kept.append(replace(group, rows=rows))
             continue
         hits = tuple(
             ForceRow(r.name, r.variant, r.count, True)
@@ -204,13 +201,9 @@ def _filtered(
         )
         matching += sum(r.count for r in hits)
         kept.append(
-            ForceGroup(
-                group.name,
-                group.kind,
-                group.afloat,
-                group.count,
-                group.share,
-                hits,
+            replace(
+                group,
+                rows=hits,
                 hidden=len(group.rows) - len(hits),
                 no_match=not hits,
             )
@@ -234,18 +227,7 @@ def _sorted(groups: Iterable[ForceGroup], sort: Sort) -> tuple[ForceGroup, ...]:
             rows.sort(key=lambda r: r.display.casefold())
         else:
             rows.sort(key=lambda r: (-r.count, r.display.casefold()))
-        out.append(
-            ForceGroup(
-                group.name,
-                group.kind,
-                group.afloat,
-                group.count,
-                group.share,
-                tuple(rows),
-                group.hidden,
-                group.no_match,
-            )
-        )
+        out.append(replace(group, rows=tuple(rows)))
     return tuple(out)
 
 
@@ -269,10 +251,7 @@ def _force_tab(
 
 
 def _with_shares(groups: Sequence[ForceGroup], total: int) -> list[ForceGroup]:
-    return [
-        ForceGroup(g.name, g.kind, g.afloat, g.count, _share(g.count, total), g.rows)
-        for g in groups
-    ]
+    return [replace(g, share=_share(g.count, total)) for g in groups]
 
 
 def _side(player: Player) -> str:
@@ -308,6 +287,7 @@ def air_forces(
                 count,
                 0.0,
                 tuple(rows),
+                control_point=control_point,
             )
         )
     groups = _with_shares(raw, total)
@@ -355,6 +335,7 @@ def ground_forces(
                 count,
                 0.0,
                 tuple(rows),
+                control_point=control_point,
             )
         )
     groups = _with_shares(raw, total)
@@ -393,6 +374,7 @@ def economy(game: Game, player: Player) -> EconomyTab:
                 after="",
                 income=round(control_point.income_per_turn),
                 share=_share(control_point.income_per_turn, gross),
+                target=control_point,
             )
         )
 
@@ -409,6 +391,7 @@ def economy(game: Game, player: Player) -> EconomyTab:
                 after=each,
                 income=round(building.income),
                 share=_share(building.income, gross),
+                target=building.ground_object,
             )
         )
 

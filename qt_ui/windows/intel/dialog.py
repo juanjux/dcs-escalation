@@ -34,15 +34,19 @@ from PySide6.QtWidgets import (
 )
 
 from game.game import Game
-from game.theater import Player
+from game.theater import ControlPoint, Player
+from game.server import EventStream
+from game.sim import GameUpdateEvents
 from qt_ui.models import GameModel
 from qt_ui.uiconstants import ICONS
 from qt_ui.widgets.cards import CARD_BG, CARD_BORDER, card, make_transparent
 from qt_ui.widgets.controls import mono, style_button, styled_input
 from qt_ui.windows.intel import model as data
+from qt_ui.windows.intel.navigation import IntelListView
 from qt_ui.windows.intel.rows import (
     ENEMY_ACCENT,
     HeaderLine,
+    EconomyLine,
     IntelDelegate,
     IntelListModel,
     OWN_ACCENT,
@@ -129,8 +133,7 @@ class ForcesPane(QWidget):
         self.fold_all = style_button(QPushButton("Collapse all"))
         self.fold_all.clicked.connect(self._toggle_all)
 
-        self.view = QListView()
-        self.view.setModel(self.lines)
+        self.view = IntelListView(self.lines)
         self.view.setMouseTracking(True)
         self.view.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         # Every row is painted to the width it is given, so a horizontal scrollbar
@@ -140,6 +143,7 @@ class ForcesPane(QWidget):
         self.view.setFrameShape(QListView.Shape.NoFrame)
         self.view.setStyleSheet(f"QListView {{ background: {CARD_BG}; border: none; }}")
         self.view.clicked.connect(self._clicked)
+        self.view.action_clicked.connect(self._open_base)
 
         self.empty = _label("", f"color: {SUB_LABEL}; font-size: 12px;")
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -204,8 +208,22 @@ class ForcesPane(QWidget):
     def _toggle_all(self) -> None:
         self.window_.toggle_all(self.tab)
 
+    def _open_base(self, index: QModelIndex) -> None:
+        line = self.lines.line(index)
+        if isinstance(line, HeaderLine) and line.group.control_point is not None:
+            self.window_.open_base(
+                line.group.control_point,
+                "Aircraft" if self.tab == AIR else "Ground forces",
+            )
+
     def refresh(self, accent: QColor, tab: data.ForceTab, folded: set[str]) -> None:
-        self.view.setItemDelegate(IntelDelegate(accent, self.view))
+        self.view.setItemDelegate(
+            IntelDelegate(
+                accent,
+                self.view,
+                base_action="Aircraft ↗" if self.tab == AIR else "Ground forces ↗",
+            )
+        )
         self.figures.show_figures(tab.figures)
         self.lines.set_lines(force_lines(tab.groups, folded))
         self.sort.setCurrentIndex(
@@ -249,8 +267,7 @@ class EconomyPane(QWidget):
         make_transparent(holder_head)
         holder_head.setLayout(head)
 
-        self.view = QListView()
-        self.view.setModel(self.lines)
+        self.view = IntelListView(self.lines)
         self.view.setMouseTracking(True)
         self.view.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         # Every row is painted to the width it is given, so a horizontal scrollbar
@@ -258,6 +275,7 @@ class EconomyPane(QWidget):
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setFrameShape(QListView.Shape.NoFrame)
         self.view.setStyleSheet(f"QListView {{ background: {CARD_BG}; border: none; }}")
+        self.view.action_clicked.connect(self._show_on_map)
 
         self.empty = _label("", f"color: {SUB_LABEL}; font-size: 12px;")
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -277,6 +295,13 @@ class EconomyPane(QWidget):
         outer.setContentsMargins(14, 14, 14, 14)
         outer.addWidget(holder)
         self.setLayout(outer)
+
+    def _show_on_map(self, index: QModelIndex) -> None:
+        line = self.lines.line(index)
+        if isinstance(line, EconomyLine) and line.row.target is not None:
+            EventStream.put_nowait(
+                GameUpdateEvents().look_at(line.row.target.position.latlng())
+            )
 
     def refresh(self, accent: QColor, tab: data.EconomyTab) -> None:
         self.view.setItemDelegate(IntelDelegate(accent, self.view))
@@ -389,6 +414,8 @@ class IntelWindow(QDialog):
     def __init__(self, game: Game, game_model: Optional[GameModel] = None) -> None:
         super().__init__()
         self.game = game
+        self.game_model = game_model
+        self._base_dialog: Optional[QDialog] = None
         self.player = Player.BLUE
         self.setModal(True)
         self.setWindowTitle("Intelligence")
@@ -453,6 +480,22 @@ class IntelWindow(QDialog):
         self.redraw()
 
     # ------------------------------------------------------------------ state
+
+    def open_base(self, control_point: ControlPoint, section: str) -> None:
+        from qt_ui.windows.basemenu.QBaseMenu2 import QBaseMenu2
+
+        model = self.game_model
+        if model is None:
+            from qt_ui.windows.highcommand.dialog import main_window
+
+            model = getattr(main_window(), "game_model", None)
+        if model is None or model.game is not self.game:
+            return
+        dialog = QBaseMenu2(self, control_point, model)
+        dialog.tabs.select_section(section)
+        dialog.finished.connect(self.redraw)
+        self._base_dialog = dialog
+        dialog.show()
 
     @property
     def accent(self) -> QColor:

@@ -34,11 +34,12 @@ class QBaseMenuTabs(QTabWidget):
         super(QBaseMenuTabs, self).__init__()
         self.cp = cp
         self.game_model = game_model
+        self.sections: dict[str, int] = {}
         game = game_model.game
 
         if cp.captured.is_red:
             self.intel = QIntelInfo(cp, game_model)
-            self.addTab(self.intel, "Intel")
+            self._add(self.intel, "Intel")
 
             self.departing_convoys = DepartingConvoysMenu(cp, game_model)
             self._add(self.departing_convoys, "Convoys", count=self._convoy_count())
@@ -145,9 +146,18 @@ class QBaseMenuTabs(QTabWidget):
     ) -> None:
         label = name if count is None else f"{name}  {count}"
         index = self.addTab(widget, label)
+        self.sections[name] = index
         if disabled_because:
             self.setTabEnabled(index, False)
             self.setTabToolTip(index, disabled_because)
+
+    def select_section(self, name: str) -> None:
+        """Open the requested tab, or read-only Intel when enemy controls are absent."""
+        index = self.sections.get(name)
+        if index is not None and self.isTabEnabled(index):
+            self.setCurrentIndex(index)
+        elif "Intel" in self.sections:
+            self.setCurrentIndex(self.sections["Intel"])
 
     # -- the counts ----------------------------------------------------------
 
