@@ -25,7 +25,7 @@ from game.theater import Player
 from game.theater.controlpoint import ParkingType
 from game.theater.iadsnetwork.iadsnetwork import SkynetNode
 from game.theater.iadsnetwork.iadsrole import IadsRole
-from game.theater.iadsnetwork.iadsstate import IadsState, IadsStateMap
+from game.theater.iadsnetwork.iadsstate import IadsState, IadsStateMap, own_generator
 from game.theater.start_generator import GameGenerator, GeneratorSettings, ModSettings
 from game.theater.theatergroundobject import IadsGroundObject, MotorpoolGroundObject
 
@@ -38,6 +38,20 @@ IADS_KINDS = {
     "ewrs",
     "iads_command_center",
 }
+INFRASTRUCTURE_ROLES = {
+    "iads_connection_node": IadsRole.CONNECTION_NODE,
+    "iads_power_source": IadsRole.POWER_SOURCE,
+    "iads_command_center": IadsRole.COMMAND_CENTER,
+}
+
+
+def infrastructure_ranges(campaign: Campaign) -> dict[str, float]:
+    settings = Settings()
+    settings.__dict__.update(Settings.deserialize_state_dict(campaign.settings))
+    return {
+        kind: role.connection_range(settings).meters
+        for kind, role in INFRASTRUCTURE_ROLES.items()
+    }
 
 
 @pytest.fixture(scope="module")
@@ -52,15 +66,15 @@ def authored() -> Any:
         for point in locations
         if hasattr(point, "original_name")
     }
+    ranges = infrastructure_ranges(campaign)
     config = {
         name: [
             other_name
             for other_name, (other_cp, other_kind, other) in placements.items()
             if other_name != name
             and other_cp.starting_coalition is cp.starting_coalition
-            and other_kind
-            in {"iads_connection_node", "iads_power_source", "iads_command_center"}
-            and point.distance_to_point(other) <= 35 * 1852
+            and other_kind in ranges
+            and point.distance_to_point(other) <= ranges[other_kind]
         ]
         for name, (cp, kind, point) in placements.items()
         if kind in IADS_KINDS and not cp.starting_coalition.is_neutral
@@ -139,10 +153,11 @@ def test_every_base_has_a_depot_clear_of_all_capture_zones(authored: Any) -> Non
         ), cp.name
 
 
-def test_all_active_air_defences_and_commands_have_radio_and_redundant_power(
+def test_all_active_air_defences_and_commands_have_radio_and_alternative_power_coverage(
     authored: Any,
 ) -> None:
-    _, _, placements, config = authored
+    campaign, _, placements, config = authored
+    ranges = infrastructure_ranges(campaign)
     expected = {
         name
         for name, (cp, kind, _) in placements.items()
@@ -157,16 +172,15 @@ def test_all_active_air_defences_and_commands_have_radio_and_redundant_power(
             source_cp, source_kind, source = placements[dependency]
             assert source_cp.starting_coalition is cp.starting_coalition
             counts[source_kind] += 1
-            if source_kind == "iads_connection_node":
-                assert point.distance_to_point(source) <= 35 * 1852, (name, dependency)
-            elif source_kind == "iads_power_source":
-                assert point.distance_to_point(source) <= 35 * 1852, (name, dependency)
-            else:
-                assert source_kind == "iads_command_center"
-                assert point.distance_to_point(source) <= 35 * 1852, (name, dependency)
+            assert source_kind in ranges
+            assert point.distance_to_point(source) <= ranges[source_kind], (
+                name,
+                dependency,
+            )
         # A direct command link can replace a relay. Command redundancy is
         # checked on complete radio paths, rather than the local tower count.
         assert counts["iads_connection_node"] + counts["iads_command_center"] >= 1, name
+        # In-range alternatives are not all simultaneous physical power feeds.
         assert counts["iads_power_source"] >= 2, name
 
 
@@ -626,25 +640,89 @@ def test_generated_jammers_are_real_jammers_and_radars_still_detect(
         assert radar.max_detection_range().meters > 0
 
 
-def test_command_and_power_redundancy_survives_single_losses(
+def test_command_redundancy_survives_single_command_centre_losses(
     generated: Game,
 ) -> None:
     network = generated.theater.iads_network
-    infrastructure = [
+    centres = [
         node.group.ground_object
         for node in network.nodes
-        if node.group.iads_role in (IadsRole.COMMAND_CENTER, IadsRole.POWER_SOURCE)
+        if node.group.iads_role is IadsRole.COMMAND_CENTER
     ]
-    assert any(tgo.category == "power" for tgo in infrastructure)
-    assert any(tgo.category == "commandcenter" for tgo in infrastructure)
+    assert centres
     initial = {site: status.state for site, status in network.state_map}
-    for lost in infrastructure:
+    for lost in centres:
         picture = IadsStateMap(network, [lost])
         assert all(
             status.state is initial[site]
             for site, status in picture
             if site is not lost and not site.control_point.captured.is_neutral
         ), lost.original_name
+
+
+def test_power_losses_follow_fixed_feeds_without_mutating_the_live_campaign(
+    generated: Game,
+) -> None:
+    network = generated.theater.iads_network
+    initial = network.state_map
+    assert initial.connectivity is not None
+    plants = [
+        node.group.ground_object
+        for node in network.nodes
+        if node.group.iads_role is IadsRole.POWER_SOURCE
+    ]
+    assert plants
+    consumers = [
+        node
+        for node in network.nodes
+        if node.group.iads_role is not IadsRole.POWER_SOURCE
+        and not node.group.ground_object.control_point.captured.is_neutral
+    ]
+    physical_power = {node: initial.connectivity.powered(node) for node in consumers}
+    original_connections = {node: dict(node.connections) for node in network.nodes}
+    units = [unit for node in network.nodes for unit in node.group.units]
+    original_health = [
+        (unit.alive, unit.health, unit.repair_turns_remaining) for unit in units
+    ]
+    checked_direct = checked_unaffected = 0
+    for lost in plants:
+        picture = IadsStateMap(network, [lost])
+        assert picture.connectivity is not None
+        for node in consumers:
+            sources = [
+                group
+                for group in node.connections.values()
+                if group.iads_role is IadsRole.POWER_SOURCE
+            ]
+            if not any(group.ground_object is lost for group in sources):
+                # A remote relay or command centre may lose its own electricity,
+                # but that must not remove this node's separate physical supply.
+                assert picture.connectivity.powered(node) == physical_power[node], (
+                    lost.original_name,
+                    node.group.ground_object.original_name,
+                )
+                checked_unaffected += 1
+                continue
+            checked_direct += 1
+            remaining = own_generator(node.group) is not None or any(
+                group.ground_object is not lost and group.alive_units > 0
+                for group in sources
+            )
+            assert picture.connectivity.powered(node) is remaining
+            if not remaining and node.group.iads_role is not IadsRole.CONNECTION_NODE:
+                status = picture.status_for(node.group.ground_object)
+                assert status is not None and status.state is IadsState.DARK, (
+                    lost.original_name,
+                    node.group.ground_object.original_name,
+                )
+    assert checked_direct > 0 and checked_unaffected > 0
+    assert network.state_map is initial
+    assert {
+        node: dict(node.connections) for node in network.nodes
+    } == original_connections
+    assert [
+        (unit.alive, unit.health, unit.repair_turns_remaining) for unit in units
+    ] == original_health
 
 
 @pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
