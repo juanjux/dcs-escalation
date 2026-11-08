@@ -616,6 +616,12 @@ Renaming, moving or deleting a point updates it everywhere. REST
 `/saved-points/campaign` remains available without player flights; avionics exports
 respect each aircraft's capacity, while the saved list and kneeboard keep all points.
 
+With Smart Threat Reaction enabled, only the fixed-wing group reported as a
+missile's target receives native Evade Fire; nearby untargeted flights remain in
+Passive Defense. Delayed targets and retargeting are tracked while the missile
+exists. Controller failures are retried and logged. An accepted defensive order
+does not prove that DCS actually performed an evasive manoeuvre.
+
 Common roles and what they're for:
 
 - **BARCAP / TARCAP / CAP / SWEEP** — air-to-air: protect an area/base/fleet

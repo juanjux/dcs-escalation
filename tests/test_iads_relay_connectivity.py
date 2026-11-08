@@ -160,6 +160,7 @@ def test_separate_command_components_do_not_share_cues() -> None:
     network.initialize_network(iter([sam, ewr, first, second, plant]))
     for obj, centre in [(sam, first), (ewr, second), (first, first), (second, second)]:
         current = node(network, obj)
+        current.radio_candidates = None
         current.connections.clear()
         current.add_connection_for_group(plant.groups[0])
         if obj is not centre:

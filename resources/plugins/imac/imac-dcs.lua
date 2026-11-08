@@ -122,17 +122,24 @@ do
         end
         for _,meta in ipairs(config.commandCenters) do
           if meta.side==side then
-            local cc=StaticObject.getByName(meta.name)
-            if alive(cc) and cc:getCoalition()==side then
-              local powered=#meta.power==0
+            local standing=false
+            for _,name in ipairs(meta.members or {meta.name}) do
+              local cc=StaticObject.getByName(name)
+              if alive(cc) and cc:getCoalition()==side then standing=true;break end
+            end
+            if standing then
+              local powered=meta.requiresPower~=true and #meta.power==0
               for _,name in ipairs(meta.power) do
                 local source=StaticObject.getByName(name)
                 if alive(source) and source:getCoalition()==side then powered=true;break end
               end
               local query=dcsRetribution and dcsRetribution.iadsHasWorkingPower
-              if query and query(meta.key)==false then powered=false end
+              if query then
+                local working=query(meta.key)
+                if working~=nil then powered=working==true end
+              end
               if powered then
-                commandSource[side]='command centre '..meta.key..(#meta.power==0 and ' (standalone)' or ' (powered)')
+                commandSource[side]='command centre '..meta.key..(#meta.power==0 and meta.requiresPower~=true and ' (standalone)' or ' (powered)')
                 return true
               end
             end
