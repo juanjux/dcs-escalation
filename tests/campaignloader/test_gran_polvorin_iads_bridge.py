@@ -10,6 +10,7 @@ from game.campaignloader.campaign import Campaign
 from game.point_with_heading import PointWithHeading
 from game.server.iadsnetwork.models import IadsNetworkJs
 from game.settings import Settings
+from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater import Player
 from game.theater.iadsnetwork.iadsnetwork import IadsNetwork
 from game.theater.iadsnetwork.iadsrole import IadsRole
@@ -72,13 +73,14 @@ def test_ushuaia_outposts_remain_powered_and_autonomous() -> None:
 
 @pytest.mark.parametrize("side", [Player.RED, Player.BLUE])
 @pytest.mark.parametrize("range_nm", [15, 200])
-def test_relay_links_follow_coverage_and_remain_exported_when_destroyed(
+def test_relay_loss_selects_direct_command_only_within_coverage(
     side: Player,
     range_nm: int,
 ) -> None:
     settings = Settings()
     settings.set_plugin_option("skynetiads.commsRangeNm", range_nm)
-    distances = (0, 15 * 1852, 15 * 1852 + 1, 200 * 1852 + 1)
+    reach = range_nm * 1852
+    distances = (0, reach - 1, reach, reach + 1)
     sams = [
         site(f"SAM {index}", x=distance, side=side, settings=settings)
         for index, distance in enumerate(distances)
@@ -99,10 +101,16 @@ def test_relay_links_follow_coverage_and_remain_exported_when_destroyed(
     expected = {
         sam.groups[0].group_name
         for sam, distance in zip(sams, distances)
-        if distance <= range_nm * 1852
+        if distance <= reach
+    }
+    fallback = {
+        sam.groups[0].group_name
+        for sam, distance in zip(sams, distances)
+        if distance + 1 <= reach
     }
     sam_nodes = [node for node in nodes if node.iads_role is IadsRole.SAM]
-    assert len(expected) == (2 if range_nm == 15 else 3)
+    assert len(expected) == 3
+    assert len(fallback) == 2
     assert len(sam_nodes) == len(sams)
     for node in sam_nodes:
         assert node.connections["ConnectionNode"] == (
@@ -118,18 +126,38 @@ def test_relay_links_follow_coverage_and_remain_exported_when_destroyed(
     assert all(link.active and link.blue == side.is_blue for link in links)
     link_ids = {link.id for link in links}
     relay.groups[0].units[0].alive = False
-    network.invalidate_state_map()
-    links = [
-        link
-        for link in IadsNetworkJs.from_network(network).connections
-        if link.id in link_ids
+    events = GameUpdateEvents()
+    network.update_tgo(relay, events)
+    after = IadsNetworkJs.from_network(network).connections
+    assert not any(link.id in link_ids for link in after)
+    assert link_ids <= events.deleted_iads_connections
+    replacement = [
+        link for link in after if link.node in sam_ids and link.connected == command.id
     ]
-    assert {link.id for link in links} == link_ids
-    assert all(not link.active for link in links)
+    fallback_ids = {sam.id for sam in sams if sam.groups[0].group_name in fallback}
+    assert {link.node for link in replacement} == fallback_ids
+    assert all(link.active and link.blue == side.is_blue for link in replacement)
+    assert not {link.id for link in replacement} & link_ids
+    connectivity = network.state_map.connectivity
+    assert connectivity is not None
+    for sam in sams:
+        current = network.node_for_tgo(sam)
+        assert current is not None
+        assert connectivity.connected(current) is (sam.groups[0].group_name in fallback)
+        if sam.groups[0].group_name in expected:
+            assert current in events.updated_iads
+    boundary = network.state_map.status_for(sams[2])
+    assert boundary is not None and boundary.state is IadsState.AUTONOMOUS
     for node in network.skynet_nodes(game):
         if node.iads_role is IadsRole.SAM:
-            assert node.connections["ConnectionNode"] == (
-                [relay.groups[0].units[0].unit_name]
-                if node.dcs_name in expected
+            assert node.connections["ConnectionNode"] == []
+            assert node.connections["CommandCenter"] == (
+                [command.groups[0].units[0].unit_name]
+                if node.dcs_name in fallback
                 else []
             )
+            assert node.radio_candidates is not None
+            assert any(
+                name == relay.groups[0].units[0].unit_name
+                for name, _distance in node.radio_candidates
+            ) is (node.dcs_name in expected)

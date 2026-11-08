@@ -53,8 +53,9 @@ def test_all_twelve_command_sites_keep_their_own_identity(inverted: bool) -> Non
         id(obj) for obj in objects
     }
     for node in network.nodes:
+        assert node.radio_candidates is not None
         assert all(
             group.ground_object.control_point.captured
             is node.group.ground_object.control_point.captured
-            for group in node.connections.values()
+            for group, _distance in node.radio_candidates
         )

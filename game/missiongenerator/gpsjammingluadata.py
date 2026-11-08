@@ -21,10 +21,16 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from game.data.units import UnitClass
+from game.theater.iadsnetwork.iadsrole import IadsRole
+from game.theater.theatergroup import SceneryUnit
+
 if TYPE_CHECKING:
     from game import Game
+    from game.theater.theatergroundobject import TheaterGroundObject
+    from game.theater.theatergroup import TheaterUnit
 
-    from .luagenerator import LuaData
+    from .luagenerator import LuaData, LuaItem
     from .missiondata import MissionData
 
 
@@ -38,7 +44,7 @@ def populate_gps_jamming_lua(
         gps_jamming_enabled,
     )
 
-    sites = gps_jammer_sites(game)
+    sites = gps_jammer_sites(game, include_unpowered=True)
     if not sites:
         # Say so at generation time, while it can still be fixed. "The setting is
         # on but nothing jams" is otherwise indistinguishable from "the feature is
@@ -60,6 +66,12 @@ def populate_gps_jamming_lua(
     # IADS `engine` marker hit).
     node.add_item("weaponPatterns").set_data_array(list(GPS_GUIDED_WEAPON_PATTERNS))
     site_list = node.add_item("sites")
+    objectives = {
+        unit.unit_name: tgo
+        for cp in game.theater.controlpoints
+        for tgo in cp.ground_objects
+        for unit in tgo.units
+    }
     for site in sites:
         rec = site_list.add_item()
         rec.add_key_value("name", site.name)
@@ -75,3 +87,51 @@ def populate_gps_jamming_lua(
         # shares its group with the rest of the site, so a group-level liveness
         # check would keep jamming after the jammer truck itself was killed.
         rec.add_data_array("units", list(site.unit_names))
+        _add_power(rec, game, objectives[site.unit_names[0]])
+
+
+def _add_power(rec: LuaItem, game: Game, tgo: TheaterGroundObject) -> None:
+    """Export fixed physical supplies independently of Skynet's runtime state."""
+    network = getattr(game.theater, "iads_network", None)
+    if network is None or not getattr(network, "advanced_iads", False):
+        return
+    node = next(
+        (node for node in network.nodes if node.group.ground_object is tgo), None
+    )
+    units = [
+        unit
+        for group in tgo.groups
+        for unit in group.units
+        if unit.unit_type is not None and unit.unit_type.unit_class is UnitClass.POWER
+    ]
+    if node is not None:
+        units.extend(
+            unit
+            for group in node.connections.values()
+            if group.iads_role is IadsRole.POWER_SOURCE
+            and group.ground_object.control_point.captured == tgo.control_point.captured
+            for unit in group.units
+        )
+    power = rec.add_item("power")
+    power.add_key_value("required", True)
+    sources = power.add_item("sources")
+    seen = set()
+    for unit in units:
+        key = unit.unit_name
+        if key in seen:
+            continue
+        seen.add(key)
+        _add_source(sources.add_item(), unit)
+
+
+def _add_source(rec: LuaItem, unit: TheaterUnit) -> None:
+    if isinstance(unit, SceneryUnit):
+        # The base script tracks physical scenery even with Skynet disabled.
+        rec.add_key_value("kind", "scenery")
+        rec.add_key_value("name", unit.name)
+        rec.add_key_value("alive", unit.alive)
+    else:
+        rec.add_key_value("kind", "static" if unit.is_static else "unit")
+        rec.add_key_value(
+            "name", unit.unit_name + " object" if unit.is_static else unit.unit_name
+        )

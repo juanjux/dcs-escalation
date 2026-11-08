@@ -3241,6 +3241,10 @@ function SkynetIADSAbstractElement:cleanUp()
 end
 
 function SkynetIADSAbstractElement:isDestroyed()
+	if self.iads.topology then
+		local destroyed = self.iads.topology:staticDestroyed(self)
+		if destroyed ~= nil then return destroyed end
+	end
 	return self:getDCSRepresentation():isExist() == false
 end
 

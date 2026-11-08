@@ -5,7 +5,7 @@
 * **[Pilots]** Assign names by drag-and-drop or ordered squadron autofill, with thirteen themed name lists and editable user categories shared across campaigns.
 * **[Mods]** Update Spino's F-15EX to v3.0 with three air-to-air variants, fifteen stations, revised payloads, fuel capacities and radio presets.
 * **[IMAC]** Optional in-mission scripted air coordination with detected-contact interception, support evasion, DEAD waiting and F10 pause controls for both coalitions.
-* **[IADS]** Rebuild sparse topology each turn with local power feeds, redundant radio relay chains and 35 nm coverage defaults; reduce redundant campaign infrastructure.
+* **[IADS]** Rebuild sparse topology with two fixed power feeds, automatic radio failover and 35 nm coverage defaults; reduce redundant campaign infrastructure.
 * **[Map]** Add separate Blue/Red visibility filters for destroyed repairable sites, alongside the non-repairable filters.
 * **[Repairs]** Cancel pending building repairs with refunds in the UI and OPFOR REST/MCP; select individual buildings through the API.
 * **[Live Pilots]** Preselect post-debrief leave grants without understaffing squadrons and update projected pilot coverage as grants change.

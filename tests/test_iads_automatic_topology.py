@@ -59,7 +59,15 @@ def site(
 def links(network: IadsNetwork, obj: Any) -> set[Any]:
     node = network.node_for_tgo(obj)
     assert node is not None
-    return {group.ground_object for group in node.connections.values()}
+    return {
+        group.ground_object for group in network.effective_connections(node).values()
+    }
+
+
+def candidates(network: IadsNetwork, obj: Any) -> set[Any]:
+    node = network.node_for_tgo(obj)
+    assert node is not None and node.radio_candidates is not None
+    return {group.ground_object for group, _distance in node.radio_candidates}
 
 
 @pytest.mark.parametrize("side", [Player.RED, Player.BLUE])
@@ -77,7 +85,8 @@ def test_sites_use_local_feeds_and_no_enemy_infrastructure(
     objects = [sam, tower, backup, power, centre, far, enemy, neutral]
     network = IadsNetwork(True)
     network.initialize_network(iter(objects))
-    assert links(network, sam) == {tower, backup, power}
+    assert links(network, sam) == {tower, power}
+    assert candidates(network, sam) == {tower, backup, centre, far}
     assert power in links(network, centre)
     assert all(len(links(network, obj)) < len(objects) - 1 for obj in objects)
     assert sam not in links(network, sam)
@@ -103,7 +112,8 @@ def test_rebuild_discards_old_positions_groups_and_deleted_objectives() -> None:
     added = site("NEW", IadsRole.COMMAND_CENTER, 101_000)
     events = GameUpdateEvents()
     network.initialize_network(iter([sam, tower, added]), events)
-    assert links(network, sam) == {added}
+    assert links(network, sam) == set()
+    assert candidates(network, sam) == {added}
     assert all(node not in old_nodes for node in network.nodes)
     assert all(node.group.ground_object is not removed for node in network.nodes)
     assert events.deleted_iads_connections == old_links
@@ -118,7 +128,8 @@ def test_repeated_builds_have_no_duplicate_nodes_or_links() -> None:
     for _ in range(3):
         network.initialize_network(iter([sam, tower]))
         assert len(network.nodes) == 2
-        assert links(network, sam) == {tower}
+        assert links(network, sam) == set()
+        assert candidates(network, sam) == {tower}
 
 
 def test_replaced_infrastructure_group_updates_incoming_links_immediately() -> None:
@@ -135,8 +146,10 @@ def test_replaced_infrastructure_group_updates_incoming_links_immediately() -> N
     network.update_tgo(tower, events)
     node = network.node_for_tgo(sam)
     assert node is not None
-    assert list(node.connections.values()) == tower.groups
+    assert node.radio_candidates is not None
+    assert [group for group, _ in node.radio_candidates] == tower.groups
     assert old_group not in node.connections.values()
+    assert all(group is not old_group for group, _ in node.radio_candidates)
     assert node in events.updated_iads
 
 
@@ -198,12 +211,15 @@ def test_changed_ranges_take_effect_on_the_next_rebuild_including_the_boundary()
     sam = site("SAM", settings=settings)
     tower = site("TOWER", IadsRole.CONNECTION_NODE, 10 * 1852, settings=settings)
     centre = site("COMMAND", IadsRole.COMMAND_CENTER, 12 * 1852, settings=settings)
+    power = site("POWER", IadsRole.POWER_SOURCE, settings=settings)
     network = IadsNetwork(True)
-    network.initialize_network(iter([sam, tower, centre]))
-    assert links(network, sam) == {tower}
+    network.initialize_network(iter([sam, tower, centre, power]))
+    assert links(network, sam) == {tower, power}
+    assert candidates(network, sam) == {tower}
     settings.set_plugin_option("skynetiads.commsRangeNm", 12)
-    network.initialize_network(iter([sam, tower, centre]))
-    assert links(network, sam) == {tower, centre}
+    network.initialize_network(iter([sam, tower, centre, power]))
+    assert links(network, sam) == {tower, power}
+    assert candidates(network, sam) == {tower, centre}
 
 
 def test_saved_authored_links_are_discarded_and_not_serialized_again() -> None:
@@ -223,15 +239,19 @@ def test_saved_authored_links_are_discarded_and_not_serialized_again() -> None:
 
 def test_both_sides_rebuild_before_threat_zones_and_planning() -> None:
     sam, tower = site("SAM"), site("TOWER", IadsRole.CONNECTION_NODE, 1000)
+    command = site("COMMAND", IadsRole.COMMAND_CENTER, 2000)
+    power = site("POWER", IadsRole.POWER_SOURCE)
     network = IadsNetwork(True)
     steps = []
 
     def threats(events: Any) -> None:
-        assert links(network, sam) == {tower}
+        assert links(network, sam) == {tower, power}
         steps.append("threats")
 
     game: Any = NS(
-        theater=NS(iads_network=network, ground_objects=iter([sam, tower])),
+        theater=NS(
+            iads_network=network, ground_objects=iter([sam, tower, command, power])
+        ),
         check_win_loss=lambda: TurnState.CONTINUE,
         set_bullseye=lambda: None,
         game_stats=NS(update=lambda game: None),

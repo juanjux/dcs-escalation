@@ -224,16 +224,18 @@ previous map view and campaign controls are restored when selection ends.
 
 - **Automatic topology.** Each coalition's advanced IADS is rebuilt from current
   objectives at the start of every turn and when loading a save. Sites connect to
-  a sparse radio backbone through nearby towers and command centres, with at
-  most two local radio attachments and one nearest power-station feed per site.
-  Short backbone links preserve available bypasses around individual tower or
-  command-centre losses. Radio and power coverage default to 35 nm and remain
+  a sparse radio backbone through nearby towers and command centres, with one
+  active radio uplink and up to two fixed power-station feeds per site. Radio
+  links switch to available infrastructure in range when a tower or command
+  centre fails; electricity never switches to an unwired third station. Radio
+  and power coverage default to 35 nm and remain
   configurable in the Skynet plugin; campaign-authored links are no longer used.
   Powered towers and command centres relay communications along
   multi-hop paths. Isolated sectors cannot exchange radar cues or HARM warnings,
   and losses or repairs update the paths during the mission. Power stations do not
-  relay radio traffic. Destroyed dependencies remain visible as broken links, and
-  ships do not depend on shore infrastructure.
+  relay radio traffic. GPS jammers need only power, not a radio path to command.
+  Destroyed power feeds remain visible as broken links, and ships do not depend
+  on shore infrastructure.
 
 - **Custom Skynetfork**, [juanjux/Skynet-IADS](https://github.com/juanjux/Skynet-IADS): upstream 3.3.0 with its
   HARM fixes, plus `ActMobile` and the four High Digit SAMs systems (S-400, S-300V4,

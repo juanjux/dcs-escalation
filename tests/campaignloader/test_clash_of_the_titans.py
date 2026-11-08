@@ -60,8 +60,7 @@ def authored() -> Any:
             and other_cp.starting_coalition is cp.starting_coalition
             and other_kind
             in {"iads_connection_node", "iads_power_source", "iads_command_center"}
-            and point.distance_to_point(other)
-            <= (35 if other_kind == "iads_power_source" else 15) * 1852
+            and point.distance_to_point(other) <= 35 * 1852
         ]
         for name, (cp, kind, point) in placements.items()
         if kind in IADS_KINDS and not cp.starting_coalition.is_neutral
@@ -159,12 +158,12 @@ def test_all_active_air_defences_and_commands_have_radio_and_redundant_power(
             assert source_cp.starting_coalition is cp.starting_coalition
             counts[source_kind] += 1
             if source_kind == "iads_connection_node":
-                assert point.distance_to_point(source) <= 15 * 1852, (name, dependency)
+                assert point.distance_to_point(source) <= 35 * 1852, (name, dependency)
             elif source_kind == "iads_power_source":
                 assert point.distance_to_point(source) <= 35 * 1852, (name, dependency)
             else:
                 assert source_kind == "iads_command_center"
-                assert point.distance_to_point(source) <= 15 * 1852, (name, dependency)
+                assert point.distance_to_point(source) <= 35 * 1852, (name, dependency)
         # A direct command link can replace a relay. Command redundancy is
         # checked on complete radio paths, rather than the local tower count.
         assert counts["iads_connection_node"] + counts["iads_command_center"] >= 1, name
@@ -586,6 +585,10 @@ def test_generated_network_connects_all_sectors_and_exports_to_skynet(
             or node.group.ground_object.control_point.captured.is_neutral
         ):
             continue
+        if getattr(node.group.ground_object, "carries_gps_jammer", False):
+            assert node.radio_candidates == []
+            assert connectivity.powered(node)
+            continue
         assert len(connectivity.centres_for(node)) >= 2
     nodes = network.skynet_nodes(generated)
     expected_exports = {
@@ -645,7 +648,7 @@ def test_command_and_power_redundancy_survives_single_losses(
 
 
 @pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
-def test_losing_local_relays_cuts_a_powered_sam_off(
+def test_losing_all_in_range_radios_cuts_a_powered_sam_off(
     generated: Game, side: Player
 ) -> None:
     network = generated.theater.iads_network
@@ -656,21 +659,18 @@ def test_losing_local_relays_cuts_a_powered_sam_off(
         and node.group.ground_object.control_point.captured is side
         and isinstance(node.group.ground_object, IadsGroundObject)
         and not node.group.ground_object.carries_gps_jammer
-        and not any(
-            group.iads_role is IadsRole.COMMAND_CENTER
-            for group in node.connections.values()
-        )
     ]
     assert dependent
     for node in dependent:
         sam = node.group.ground_object
-        towers = [
-            group.ground_object
-            for group in node.connections.values()
-            if group.iads_role is IadsRole.CONNECTION_NODE
+        radios = [
+            group.ground_object for group, _distance in node.radio_candidates or []
         ]
-        assert towers, sam.original_name
-        status = IadsStateMap(network, towers).status_for(sam)
+        assert radios, sam.original_name
+        picture = IadsStateMap(network, radios)
+        assert picture.connectivity is not None
+        assert picture.connectivity.powered(node), sam.original_name
+        status = picture.status_for(sam)
         assert (
             status is not None and status.state is IadsState.AUTONOMOUS
         ), sam.original_name

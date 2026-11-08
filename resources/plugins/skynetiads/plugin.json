@@ -115,7 +115,7 @@
         },
         {
             "nameInUI": "Comms tower / command centre range (nm)",
-            "descriptionInUI": "Maximum radio hop for the sparse automatic backbone. Sites use local attachments to powered towers or command centres, not every station in range. Sites without a path to command fight autonomously.",
+            "descriptionInUI": "Maximum radio hop for the sparse automatic backbone. Each site has one active uplink, switching to another available tower or command centre in range if needed. Sites without a path to command fight autonomously.",
             "mnemonic": "commsRangeNm",
             "defaultValue": 35,
             "minimumValue": 1,
@@ -123,7 +123,7 @@
         },
         {
             "nameInUI": "Power station range (nm)",
-            "descriptionInUI": "Maximum distance to the nearest power station. Each land site gets one local grid supply; towers do not relay electricity. Wiring is rebuilt at the start of every turn.",
+            "descriptionInUI": "Maximum distance to a power station. Each land site uses up to two fixed feeds from the nearest stations. Losing both does not connect a third station. Towers do not relay electricity; wiring is rebuilt each turn.",
             "mnemonic": "powerRangeNm",
             "defaultValue": 35,
             "minimumValue": 1,

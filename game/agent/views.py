@@ -2071,7 +2071,9 @@ def build_iads(game: Game, side: str) -> IadsView:
             continue
         depends = [
             str(conn.ground_object.id)
-            for conn in node.connections.values()
+            for conn in getattr(
+                network, "effective_connections", lambda item: item.connections
+            )(node).values()
             if conn.ground_object.id != tgo.id
         ]
         status = network.state_map.status_for(tgo)

@@ -37,9 +37,9 @@ def test_dense_sectors_use_a_sparse_backbone_and_bounded_local_feeds() -> None:
     network, objects = layout()
     for obj in objects:
         parents = links(network, obj)
-        assert len([p for p in parents if p.category == "power"]) <= 1
+        assert len([p for p in parents if p.category == "power"]) <= 2
         if obj.category == "aa":
-            assert len(parents) == 3  # Two radio paths and one local power feed.
+            assert len(parents) == 2  # One selected radio parent and one plant.
     backbone = [
         n
         for n in network.nodes
@@ -53,13 +53,13 @@ def test_dense_sectors_use_a_sparse_backbone_and_bounded_local_feeds() -> None:
         len(
             [
                 g
-                for g in n.connections.values()
+                for g in network.effective_connections(n).values()
                 if g.iads_role is not IadsRole.POWER_SOURCE
             ]
         )
         for n in backbone
     )
-    assert edges < 4 * len(backbone)
+    assert edges == len(backbone) - 1
     assert links(network, objects[0]) == set()  # Plants do not relay radio or power.
 
 
@@ -83,18 +83,20 @@ def test_input_order_does_not_change_the_selected_topology() -> None:
 def test_destroying_a_feed_does_not_silently_select_another_station() -> None:
     sam = site("SAM")
     primary = site("PRIMARY", IadsRole.POWER_SOURCE, 100)
+    backup = site("BACKUP", IadsRole.POWER_SOURCE, 200)
     remote = site("REMOTE", IadsRole.POWER_SOURCE, 10_000)
     network = IadsNetwork(True)
-    network.initialize_network(iter([sam, primary, remote]))
-    assert links(network, sam) == {primary}
-    primary.groups[0].units[0].alive = False
-    network.update_tgo(primary, GameUpdateEvents())
-    assert links(network, sam) == {primary}
+    network.initialize_network(iter([sam, primary, backup, remote]))
+    assert links(network, sam) == {primary, backup}
+    for plant in (primary, backup):
+        plant.groups[0].units[0].alive = False
+        network.update_tgo(plant, GameUpdateEvents())
+    assert links(network, sam) == {primary, backup}
     node = network.node_for_tgo(sam)
     assert node is not None
     assert not IadsConnectivity(network).powered(node)
-    network.initialize_network(iter([sam, primary, remote]))
-    assert links(network, sam) == {primary}
+    network.initialize_network(iter([sam, primary, backup, remote]))
+    assert links(network, sam) == {primary, backup}
 
 
 def test_unchanged_links_keep_their_identifiers_when_a_station_changes() -> None:
