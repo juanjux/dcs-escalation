@@ -10,6 +10,7 @@ from .test_imac_dcs import runtime as native_runtime, start
 def runtime() -> Any:
     lua = native_runtime()
     lua.execute("""
+        Weapon={Category={MISSILE=1},MissileCategory={AAM=1,SAM=2,BM=3,ANTI_SHIP=4,CRUISE=5,OTHER=6}}
         missile={id_=101,side=1,x=120000,alt=100,observedX=120000,alive=true,
           attributes={['Cruise missiles']=true},category=1,positionReads=0,poison=true,
           velocity={x=-250,y=0,z=0}}
@@ -18,7 +19,8 @@ def runtime() -> Any:
         -- Some native builds report descriptor categories here. Missile=1
         -- collides with Unit.HELICOPTER; only the Weapon API identifies it.
         function missile:getCategory()return 1 end
-        function missile:getDesc()return {category=self.category,attributes=self.attributes}end
+        function missile:getDesc()return {category=self.category,attributes=self.attributes,
+          missileCategory=self.missileCategory}end
         function missile:getLauncher()error('launcher intelligence is forbidden')end
         function missile:getGroup()error('Weapons have no Group')end
         function missile:isActive()error('Weapons have no isActive')end
@@ -102,6 +104,42 @@ def test_current_missile_detection_requires_range_before_live_coordinates() -> N
     lua.execute("tick(5)")
     assert lua.eval("#groups.CAP.pushes") == 1
     assert lua.eval("missile.positionReads") > 0
+
+
+@pytest.mark.parametrize("visible", [True, False])
+@pytest.mark.parametrize(
+    "category,interceptable",
+    [
+        ("CRUISE", True),
+        ("ANTI_SHIP", True),
+        ("AAM", False),
+        ("SAM", False),
+        ("BM", False),
+        ("OTHER", False),
+    ],
+)
+def test_native_weapon_categories_work_without_attributes(
+    category: str, interceptable: bool, visible: bool
+) -> None:
+    lua = runtime()
+    lua.execute(
+        "missile.attributes=nil;missile.missileCategory=Weapon.MissileCategory."
+        + category
+    )
+    lua.globals().missile.visible = visible
+    lua.globals().missile.poison = not visible
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == int(interceptable)
+    assert lua.eval("table.concat(logs,';'):find('IMAC|ERROR|',1,true)==nil") is True
+
+
+def test_native_category_overrides_inconsistent_legacy_attributes() -> None:
+    lua = runtime()
+    lua.execute("missile.missileCategory=Weapon.MissileCategory.AAM")
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 0
 
 
 def test_weapon_without_unit_get_id_uses_its_native_handle() -> None:

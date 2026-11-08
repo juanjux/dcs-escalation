@@ -145,6 +145,17 @@ do
     end
     local detection={Controller.Detection.VISUAL,Controller.Detection.OPTIC,
       Controller.Detection.RADAR,Controller.Detection.IRST}
+    local function interceptableMissile(desc)
+      -- Native Weapon descriptors need not contain database attributes. Their
+      -- missileCategory is authoritative; never turn AAMs or SAMs into cruise
+      -- tracks because a compatibility layer supplied contradictory attributes.
+      local categories=Weapon and Weapon.MissileCategory
+      if categories and desc.missileCategory~=nil then
+        return desc.missileCategory==categories.CRUISE or desc.missileCategory==categories.ANTI_SHIP
+      end
+      local attributes=desc.attributes or {}
+      return attributes['Cruise missiles'] or attributes['Anti-Ship missiles'] or attributes['Antiship Missiles']
+    end
     local function readSensor(sensor,side,now)
       local unit=Unit.getByName(sensor.name)
       if not activeUnit(unit) or unit:getCoalition()~=side or (sensor.air and not unit:inAir()) then return end
@@ -168,8 +179,7 @@ do
           if detected==true and knownDistance==true then
             local desc=target:getDesc()
             local attributes=desc.attributes or {}
-            local missile=weapon and knownType==true and desc.category==1 and
-              (attributes['Cruise missiles'] or attributes['Anti-Ship missiles'] or attributes['Antiship Missiles'])
+            local missile=weapon and knownType==true and desc.category==1 and interceptableMissile(desc)
             if missile or (not weapon and
               (desc.category==Unit.Category.AIRPLANE or desc.category==Unit.Category.HELICOPTER)) then
               -- Native DCS returns four flags for a current detection. Memory
