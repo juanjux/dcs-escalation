@@ -22,7 +22,7 @@ from game.theater.iadsnetwork.iadsnetwork import SkynetNode
 from game.theater.player import Player
 from .afacthreats import envelope
 
-SCRIPTS = ("geometry.lua", "commander.lua", "dcs.lua")
+SCRIPTS = ("geometry.lua", "commander.lua", "imac-dcs.lua")
 DEFAULTS: dict[str, float | bool] = {
     "blue": True,
     "red": True,
@@ -434,7 +434,9 @@ def inject(generator: Any, config: dict[str, Any] | None) -> None:
     if config is None:
         return
     for name in SCRIPTS:
-        generator.inject_plugin_script("imac", name, f"imac-{name}")
+        generator.inject_plugin_script(
+            "imac", name, f"imac-{name.removeprefix('imac-')}"
+        )
     generator.inject_lua_trigger(
         "EscalationIMAC.start(" + dumps(config) + ")", "In-Mission Air Commander"
     )

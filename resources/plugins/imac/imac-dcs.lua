@@ -1,4 +1,4 @@
--- Native DCS adapter. Only friendly sensors supply enemy air-track positions.
+-- Native IMAC adapter. Only friendly sensors supply enemy air-track positions.
 assert(EscalationIMAC and EscalationIMAC.newCommander,'load IMAC commander first')
 do
   local API,G=EscalationIMAC,EscalationIMAC.geometry

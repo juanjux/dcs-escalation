@@ -101,7 +101,7 @@ def runtime() -> Any:
         end
         function tick(t)now=t;scheduled[1](nil,t)end
     """)
-    for name in ("geometry.lua", "commander.lua", "dcs.lua"):
+    for name in ("geometry.lua", "commander.lua", "imac-dcs.lua"):
         lua.execute((ROOT / name).read_text(encoding="utf-8"))
     return lua
 
