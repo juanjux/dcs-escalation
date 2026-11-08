@@ -10,7 +10,7 @@ from .test_imac_dcs import runtime as native_runtime, start
 def runtime() -> Any:
     lua = native_runtime()
     lua.execute("""
-        missile={side=1,x=120000,alt=100,observedX=120000,alive=true,
+        missile={id_=101,side=1,x=120000,alt=100,observedX=120000,alive=true,
           attributes={['Cruise missiles']=true},category=1,positionReads=0,poison=true,
           velocity={x=-250,y=0,z=0}}
         function missile:isExist()return self.alive end
@@ -19,7 +19,6 @@ def runtime() -> Any:
         -- collides with Unit.HELICOPTER; only the Weapon API identifies it.
         function missile:getCategory()return 1 end
         function missile:getDesc()return {category=self.category,attributes=self.attributes}end
-        function missile:getID()return 101 end
         function missile:getLauncher()error('launcher intelligence is forbidden')end
         function missile:getGroup()error('Weapons have no Group')end
         function missile:isActive()error('Weapons have no isActive')end
@@ -103,6 +102,40 @@ def test_current_missile_detection_requires_range_before_live_coordinates() -> N
     lua.execute("tick(5)")
     assert lua.eval("#groups.CAP.pushes") == 1
     assert lua.eval("missile.positionReads") > 0
+
+
+def test_weapon_without_unit_get_id_uses_its_native_handle() -> None:
+    lua = runtime()
+    assert lua.eval("missile.getID==nil") is True
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("EscalationIMAC.instance.states.CAP.order.data.key") == "weapon:101"
+    assert (
+        lua.eval("#logs>0 and table.concat(logs,';'):find('IMAC|ERROR|',1,true)==nil")
+        is True
+    )
+
+
+def test_unidentifiable_weapon_is_not_cached_as_a_shared_nil_target() -> None:
+    lua = runtime()
+    lua.execute("missile.id_=nil")
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 0
+    assert lua.eval("table.concat(logs,';'):find('IMAC|ERROR|',1,true)==nil") is True
+
+
+def test_separate_sensor_wrappers_share_the_same_weapon_identity() -> None:
+    lua = runtime()
+    lua.execute("""
+        duplicate={};for key,value in pairs(missile)do duplicate[key]=value end
+        assert(duplicate~=missile and duplicate.id_==missile.id_)
+        cap.detections={duplicate}
+    """)
+    start(lua)
+    lua.execute("tick(5)")
+    assert "tracks: 1" in lua.eval("EscalationIMAC.status(2)")
+    assert lua.eval("#groups.CAP.pushes") == 1
 
 
 @pytest.mark.parametrize("removed", [True, False])

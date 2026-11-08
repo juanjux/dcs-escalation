@@ -190,11 +190,17 @@ do
                   elseif a.Transports or a['Transport helicopters'] then kind='transport' end
                 end
                 local g=not weapon and target:getGroup()
-                local key=(weapon and 'weapon:' or '')..tostring(target:getID())
-                local old=cache[side][key]
-                if (weapon or g) and (not old or lastSeen>=old.seen) then
-                  cache[side][key]={key=key,groupId=g and g:getID(),point=G.copy(point),velocity=G.copy(velocity),
-                    kind=kind,seen=lastSeen,visible=visible==true,weapon=weapon and target or nil}
+                -- Native Weapon objects expose id_, not Unit.getID(). Use the
+                -- shared native handle so separate sensors reserve one track.
+                local id
+                if weapon then id=target.id_ else id=target:getID() end
+                if id~=nil then
+                  local key=(weapon and 'weapon:' or '')..tostring(id)
+                  local old=cache[side][key]
+                  if (weapon or g) and (not old or lastSeen>=old.seen) then
+                    cache[side][key]={key=key,groupId=g and g:getID(),point=G.copy(point),velocity=G.copy(velocity),
+                      kind=kind,seen=lastSeen,visible=visible==true,weapon=weapon and target or nil}
+                  end
                 end
               end
             end
