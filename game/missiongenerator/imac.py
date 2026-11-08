@@ -229,21 +229,34 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
                 "package": str(id(flight.package)),
             }
         )
-    for node in generator.game.theater.iads_network.skynet_nodes(generator.game):
+    iads_nodes = generator.game.theater.iads_network.skynet_nodes(generator.game)
+    power_members = {
+        node.dcs_name: getattr(node, "static_members", [])
+        for node in iads_nodes
+        if node.iads_role is IadsRole.POWER_SOURCE
+    }
+    for node in iads_nodes:
         if node.iads_role is IadsRole.COMMAND_CENTER:
-            result["commandCenters"].append(
-                {
-                    "name": node.dcs_name + " object",
-                    "key": node.dcs_name,
-                    "side": 2 if node.player.is_blue else 1,
-                    "power": [
-                        name + " object"
+            command: dict[str, Any] = {
+                "name": node.dcs_name + " object",
+                "key": node.dcs_name,
+                "side": 2 if node.player.is_blue else 1,
+                "power": list(
+                    dict.fromkeys(
+                        member + " object"
                         for name in node.connections.get(
                             IadsRole.POWER_SOURCE.value, []
                         )
-                    ],
-                }
-            )
+                        for member in (power_members.get(name) or [name])
+                    )
+                ),
+            }
+            members = getattr(node, "static_members", [])
+            if members:
+                command["members"] = [name + " object" for name in members]
+            if getattr(node, "requires_power", False):
+                command["requiresPower"] = True
+            result["commandCenters"].append(command)
     # Basic IADS does not enrol infrastructure. A physical standalone command
     # centre still provides command authority even without the Skynet plugin.
     known_centres = {row["name"] for row in result["commandCenters"]}
@@ -275,9 +288,17 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
                     and mapped
                     and isinstance(mapped.dcs_unit, Static)
                 ):
-                    result["commandCenters"].append(
-                        {"name": name, "key": key, "side": standalone_side, "power": []}
-                    )
+                    command = {
+                        "name": name,
+                        "key": key,
+                        "side": standalone_side,
+                        "power": [],
+                    }
+                    if len(group.units) > 1:
+                        command["members"] = [
+                            u.unit_name + " object" for u in group.units
+                        ]
+                    result["commandCenters"].append(command)
                     known_centres.add(name)
     _threats(generator, result)
     return result

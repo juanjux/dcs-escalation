@@ -20,7 +20,7 @@ from game.theater.theatergroundobject import (
 from game.theater.theatergroup import IadsGroundGroup
 from game.theater.player import Player
 from game.point_with_heading import PointWithHeading
-from game.theater.iadsnetwork.topology import sparse_connections
+from game.theater.iadsnetwork.topology import sparse_connections, radio_candidates
 
 if TYPE_CHECKING:
     from game.game import Game
@@ -88,9 +88,16 @@ class SkynetNode:
     independent_comms: bool = False
     requires_power: bool = False
     local_power_sources: list[str] = field(default_factory=list)
+    radio_candidates: list[tuple[str, int]] | None = None
+    topology_key: str = ""
+    power_only: bool = False
+    static_members: list[str] = field(default_factory=list)
 
     @staticmethod
     def dcs_name_for_group(group: IadsGroundGroup) -> str:
+        if group.iads_role in STATIC_BACKED_ROLES:
+            # Infrastructure keeps one identity as individual buildings are lost.
+            return group.units[0].unit_name
         if group.iads_role in [
             IadsRole.EWR,
             IadsRole.COMMAND_CENTER,
@@ -119,6 +126,8 @@ class SkynetNode:
             group.iads_role,
         )
         node.independent_comms = isinstance(group.ground_object, NavalGroundObject)
+        if group.iads_role in STATIC_BACKED_ROLES:
+            node.static_members = [unit.unit_name for unit in group.units]
         unit_type = group.units[0].unit_type
         if unit_type is not None and isinstance(unit_type, GroundUnitType):
             node.properties = unit_type.skynet_properties.to_dict()
@@ -132,6 +141,9 @@ class IadsNetworkNode:
         self.group = group
         self.requires_power = requires_power
         self.connections: dict[UUID, IadsGroundGroup] = {}
+        # None retains authored/legacy graph semantics. Empty means managed but
+        # currently without any in-range radio infrastructure.
+        self.radio_candidates: list[tuple[IadsGroundGroup, int]] | None = None
 
     def __str__(self) -> str:
         return self.group.group_name
@@ -194,6 +206,16 @@ class IadsNetwork:
     def invalidate_state_map(self) -> None:
         self._state_map = None
 
+    def effective_connections(
+        self, node: IadsNetworkNode
+    ) -> dict[UUID, IadsGroundGroup]:
+        connectivity = self.state_map.connectivity
+        return (
+            connectivity.effective_connections(node)
+            if connectivity is not None
+            else node.connections
+        )
+
     def skynet_nodes(self, game: Game) -> list[SkynetNode]:
         """Get all skynet nodes from the IADS Network"""
         skynet_nodes: list[SkynetNode] = []
@@ -223,6 +245,22 @@ class IadsNetwork:
             #  (originating from SkynetNode.dcs_name_for_group)
             # but if it does, we want to know because it's supposed to be impossible afaict
             skynet_node = SkynetNode.from_group(node.group)
+            skynet_node.topology_key = node.group.ground_object.original_name
+            skynet_node.power_only = bool(
+                getattr(node.group.ground_object, "carries_gps_jammer", False)
+            )
+            candidates = getattr(node, "radio_candidates", None)
+            if candidates is not None:
+                skynet_node.radio_candidates = [
+                    (SkynetNode.dcs_name_for_group(group), distance)
+                    for group, distance in candidates
+                    if group.ground_object.is_friendly(skynet_node.player)
+                    and not game.iads_considerate_culling(group.ground_object)
+                    and not getattr(group.ground_object, "in_transit", False)
+                    and (
+                        group.alive_units > 0 or group.iads_role in STATIC_BACKED_ROLES
+                    )
+                ]
             skynet_node.requires_power = self.advanced_iads and not self._is_ship(node)
             if skynet_node.requires_power:
                 skynet_node.local_power_sources = [
@@ -231,7 +269,7 @@ class IadsNetwork:
                     if unit.unit_type is not None
                     and unit.unit_type.unit_class is UnitClass.POWER
                 ]
-            for connection in node.connections.values():
+            for connection in self.effective_connections(node).values():
                 if getattr(connection.ground_object, "in_transit", False):
                     continue
                 # A destroyed building has to keep reaching Skynet. Dropping it here left
@@ -272,9 +310,11 @@ class IadsNetwork:
         connectivity = self.state_map.connectivity
         before_links = (
             {
-                cid: connectivity.link_operational(node, group)
+                (node.group.ground_object, cid): connectivity.link_operational(
+                    node, group
+                )
                 for node in self.nodes
-                for cid, group in node.connections.items()
+                for cid, group in connectivity.effective_connections(node).items()
             }
             if connectivity is not None
             else None
@@ -290,7 +330,7 @@ class IadsNetwork:
         tgo: TheaterGroundObject,
         before: dict[TheaterGroundObject, IadsStatus],
         events: GameUpdateEvents,
-        before_links: dict[UUID, bool] | None = None,
+        before_links: dict[tuple[TheaterGroundObject, UUID], bool] | None = None,
     ) -> None:
         after = {obj: status for obj, status in self.state_map}
         changed = {
@@ -305,16 +345,36 @@ class IadsNetwork:
         # of the sites that report to it, which are their nodes, not its own.
         changed.add(tgo)
         connectivity = self.state_map.connectivity
+        after_links = (
+            {
+                (node.group.ground_object, cid): connectivity.link_operational(
+                    node, group
+                )
+                for node in self.nodes
+                for cid, group in connectivity.effective_connections(node).items()
+            }
+            if connectivity is not None and before_links is not None
+            else {}
+        )
+        if before_links is not None:
+            for _source, cid in before_links.keys() - after_links.keys():
+                events.delete_iads_connection(cid)
         for node in self.nodes:
             # Relays have no radar status, but a remote outage can change their
             # outgoing links without changing either endpoint's physical health.
             link_changed = (
                 before_links is not None
                 and connectivity is not None
-                and any(
-                    before_links.get(cid) != connectivity.link_operational(node, group)
-                    for cid, group in node.connections.items()
-                )
+                and {
+                    cid: active
+                    for (source, cid), active in before_links.items()
+                    if source is node.group.ground_object
+                }
+                != {
+                    cid: active
+                    for (source, cid), active in after_links.items()
+                    if source is node.group.ground_object
+                }
             )
             if link_changed:
                 events.update_tgo(node.group.ground_object)
@@ -322,7 +382,7 @@ class IadsNetwork:
                 node.group.ground_object in changed
                 or any(
                     group.ground_object in changed
-                    for group in node.connections.values()
+                    for group in self.effective_connections(node).values()
                 )
                 or link_changed
             ):
@@ -346,6 +406,7 @@ class IadsNetwork:
             for cid, group in list(other.connections.items()):
                 if group.ground_object is tgo and (
                     not self.advanced_iads
+                    or not self._is_friendly(other, tgo)
                     or not any(group is current for current in tgo.groups)
                 ):
                     del other.connections[cid]
@@ -373,6 +434,10 @@ class IadsNetwork:
             requires_power=self.advanced_iads
             and not isinstance(group.ground_object, NavalGroundObject),
         )
+        if self.advanced_iads and not isinstance(
+            group.ground_object, NavalGroundObject
+        ):
+            node.radio_candidates = []
         self.nodes.append(node)
         return node
 
@@ -440,7 +505,7 @@ class IadsNetwork:
         """Rebuild from current objects, discarding old groups, positions and links."""
         if events is not None:
             for node in self.nodes:
-                for connection_id in node.connections:
+                for connection_id in self.effective_connections(node):
                     events.delete_iads_connection(connection_id)
             events.updated_iads.clear()
         self.nodes = []
@@ -477,19 +542,30 @@ class IadsNetwork:
         have no outgoing feeds and do not trigger repeated topology rebuilds.
         """
         pending = []
+        new_infrastructure = False
         for go in self.ground_objects.values():
             if not self._belongs_in_the_network(go):
                 continue
+            present = any(node.group.ground_object is go for node in self.nodes)
             node = self.node_for_tgo(go)
+            if (
+                not present
+                and node is not None
+                and node.group.iads_role in STATIC_BACKED_ROLES
+            ):
+                new_infrastructure = True
             if (
                 node is None
                 or self._is_ship(node)
                 or node.group.iads_role is IadsRole.POWER_SOURCE
+                or (present and getattr(node, "radio_candidates", None) is not None)
                 or self._has_grid(node)
             ):
                 continue
             pending.append(node)
-        if pending:
+        if pending or new_infrastructure:
+            for node in pending:
+                node.radio_candidates = []
             self._rebuild_advanced_connections()
         return [
             node.group.ground_object.name for node in pending if self._has_grid(node)
@@ -504,7 +580,7 @@ class IadsNetwork:
         """
         return any(
             group.iads_role.is_comms_or_power for group in node.connections.values()
-        )
+        ) or bool(getattr(node, "radio_candidates", None))
 
     @staticmethod
     def _belongs_in_the_network(go: TheaterGroundObject) -> bool:
@@ -620,14 +696,36 @@ class IadsNetwork:
             return node is not None and self._is_friendly(node, right)
 
         plan = sparse_connections(objects, friendly, _settings_of)
+        candidates = radio_candidates(objects, friendly, _settings_of)
+        # New infrastructure can arrive after the consumer was registered.
+        for target in {
+            target for choices in candidates.values() for target, _ in choices
+        }:
+            if target not in by_object:
+                target_node = self.node_for_tgo(target)
+                if target_node is not None:
+                    by_object[target] = target_node
         for node in self.nodes:
+            obj = node.group.ground_object
+            previous_candidates = getattr(node, "radio_candidates", None)
+            if previous_candidates is None and not self._is_ship(node):
+                continue
+            node.radio_candidates = (
+                None
+                if self._is_ship(node)
+                else [
+                    (by_object[target].group, distance)
+                    for target, distance in candidates.get(obj, [])
+                    if target in by_object
+                ]
+            )
             wanted = [
                 group
                 for obj in plan.get(node.group.ground_object, [])
                 for group in obj.groups
                 if isinstance(group, IadsGroundGroup) and group.iads_role.participate
             ]
-            changed = False
+            changed = node.radio_candidates != previous_candidates
             for cid, group in list(node.connections.items()):
                 if group.iads_role in STATIC_BACKED_ROLES and not any(
                     group is target for target in wanted

@@ -44,7 +44,12 @@ class IadsConnectionJs(BaseModel):
             if getattr(network, "advanced_iads", False)
             else None
         )
-        for id, connection in network_node.connections.items():
+        connections = (
+            connectivity.effective_connections(network_node)
+            if connectivity is not None
+            else network_node.connections
+        )
+        for id, connection in connections.items():
             if connection.ground_object.is_friendly(Player.BLUE) != tgo.is_friendly(
                 Player.BLUE
             ):

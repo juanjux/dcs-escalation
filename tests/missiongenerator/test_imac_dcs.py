@@ -353,6 +353,92 @@ def test_isolated_command_centre_needs_no_iads_membership_or_radio_link() -> Non
     assert "authority: unavailable" in lua.eval("EscalationIMAC.status(2)")
 
 
+def test_command_centre_and_two_fixed_stations_survive_partial_building_losses() -> (
+    None
+):
+    lua = runtime()
+    lua.execute("""
+        awacs.life=0;cap.detections={bandit}
+        cc=addStatic('CC object',2);cc.life=0
+        ccSecond=addStatic('CC SECOND object',2)
+        p1=addStatic('P1 object',2);p1.life=0
+        p1Second=addStatic('P1 SECOND object',2)
+        p2=addStatic('P2 object',2);p2.life=0
+        third=addStatic('P3 object',2)
+        cfg.commandCenters={{name='CC object',key='CC',side=2,
+          members={'CC object','CC SECOND object'},requiresPower=true,
+          power={'P1 object','P1 SECOND object','P2 object'}}}
+    """)
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 1
+    lua.execute("p1Second.life=0;tick(15)")
+    assert lua.eval("third.life") == 100
+    assert "authority: unavailable" in lua.eval("EscalationIMAC.status(2)")
+    lua.execute("p2.life=100;tick(25)")
+    assert "authority: available" in lua.eval("EscalationIMAC.status(2)")
+    lua.execute("ccSecond.life=0;tick(35)")
+    assert "authority: unavailable" in lua.eval("EscalationIMAC.status(2)")
+
+
+@pytest.mark.parametrize("requires_power,expected", [(True, False), (False, True)])
+def test_empty_advanced_grid_is_not_independent_standalone_authority(
+    requires_power: bool, expected: bool
+) -> None:
+    lua = runtime()
+    lua.execute("""
+        awacs.life=0;cap.detections={bandit};cc=addStatic('CC object',2)
+        cfg.commandCenters={{name='CC object',key='CC',side=2,power={}}}
+    """)
+    lua.globals().cfg.commandCenters[1].requiresPower = requires_power
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == int(expected)
+
+
+@pytest.mark.parametrize(
+    "physical,answer,expected",
+    [
+        (False, True, True),
+        (True, False, False),
+        (False, None, False),
+        (True, None, True),
+    ],
+)
+def test_iads_power_answer_overrides_only_the_supply_fallback(
+    physical: bool, answer: bool | None, expected: bool
+) -> None:
+    lua = runtime()
+    lua.execute("""
+        awacs.life=0;cap.detections={bandit}
+        cc=addStatic('CC object',2);power=addStatic('POWER object',2)
+        cfg.commandCenters={{name='CC object',key='CC',side=2,
+          requiresPower=true,power={'POWER object'}}}
+        dcsRetribution={iadsHasWorkingPower=function()return powerAnswer end}
+    """)
+    lua.globals().power.life = 100 if physical else 0
+    lua.globals().powerAnswer = answer
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == int(expected)
+
+
+@pytest.mark.parametrize("side,life", [(2, 0), (1, 100)])
+def test_iads_power_cannot_revive_a_dead_or_enemy_command_centre(
+    side: int, life: int
+) -> None:
+    lua = runtime()
+    lua.execute("""
+        awacs.life=0;cap.detections={bandit}
+        cfg.commandCenters={{name='CC object',key='CC',side=2,power={}}}
+        dcsRetribution={iadsHasWorkingPower=function()return true end}
+    """)
+    lua.globals().addStatic("CC object", side).life = life
+    start(lua)
+    lua.execute("tick(5)")
+    assert lua.eval("#groups.CAP.pushes") == 0
+
+
 def test_isolated_command_centre_does_not_supply_undetected_contacts() -> None:
     lua = runtime()
     lua.execute("""

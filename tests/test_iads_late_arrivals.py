@@ -87,7 +87,10 @@ def test_a_site_with_no_grid_is_wired_to_what_is_in_range(monkeypatch: Any) -> N
     monkeypatch.setattr(IadsNetwork, "_is_friendly", lambda self, node, tgo: True)
 
     assert network.enrol_sites_that_arrived_late() == ["GUPPY"]
-    assert _wired(node) == ["PIRANHA", "RAGDOLL"]
+    assert _wired(node) == ["RAGDOLL"]
+    assert [group.ground_object.name for group, _ in node.radio_candidates or []] == [
+        "PIRANHA"
+    ]
 
 
 def test_calling_it_again_wires_nothing_twice(monkeypatch: Any) -> None:
@@ -174,6 +177,9 @@ def test_a_site_the_campaign_did_not_name_keeps_its_grid_when_it_changes(
 
     [turkey] = [n for n in network.nodes if n.group.ground_object is site]
     [ground_7] = [n for n in network.nodes if n.group.ground_object is named]
-    assert _wired(turkey) == ["IMPALA", "MOA"]
+    assert _wired(turkey) == ["MOA"]
+    assert [group.ground_object.name for group, _ in turkey.radio_candidates or []] == [
+        "IMPALA"
+    ]
     # Legacy authored links outside the configured reach are discarded.
     assert _wired(ground_7) == []

@@ -481,6 +481,17 @@ class LuaGenerator:
             iads_type = coalition.get_or_create_item(node.iads_role.value)
             iads_element = iads_type.add_item()
             iads_element.add_key_value("dcsGroupName", node.dcs_name)
+            if node.radio_candidates is not None:
+                iads_element.add_key_value("topologyKey", node.topology_key)
+                candidates = iads_element.add_item("radioCandidates")
+                for name, distance in node.radio_candidates:
+                    candidate = candidates.add_item()
+                    candidate.add_key_value("name", name)
+                    candidate.add_key_value("distance", distance)
+            if node.power_only:
+                iads_element.add_key_value("powerOnly", True)
+            if node.static_members:
+                iads_element.add_data_array("staticMembers", node.static_members)
             if node.independent_comms:
                 iads_element.add_key_value("independentComms", True)
             if node.requires_power:
@@ -578,9 +589,9 @@ class LuaGenerator:
 
 class LuaValue:
     key: Optional[str]
-    value: str | list[str] | bool
+    value: str | list[str] | bool | int
 
-    def __init__(self, key: Optional[str], value: str | list[str] | bool):
+    def __init__(self, key: Optional[str], value: str | list[str] | bool | int):
         self.key = key
         self.value = value
 
@@ -588,6 +599,8 @@ class LuaValue:
         serialized_value = self.key + " = " if self.key else ""
         if isinstance(self.value, bool):
             serialized_value += "true" if self.value else "false"
+        elif isinstance(self.value, int):
+            serialized_value += str(self.value)
         elif isinstance(self.value, str):
             serialized_value += f'"{escape_string_for_lua(self.value)}"'
         else:
@@ -613,7 +626,7 @@ class LuaItem(ABC):
     def add_data_array(self, key: str, values: list[str]) -> None:
         self._add_value(LuaValue(key, values))
 
-    def add_key_value(self, key: str, value: str | bool) -> None:
+    def add_key_value(self, key: str, value: str | bool | int) -> None:
         self._add_value(LuaValue(key, value))
 
     def _add_value(self, value: LuaValue) -> None:

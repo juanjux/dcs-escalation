@@ -33,6 +33,7 @@ from game.theater.theatergroundobject import (
     IadsBuildingGroundObject,
     SamGroundObject,
 )
+from tests.test_iads_automatic_topology import site
 
 ALARM_STATE_RED = 2
 ALARM_STATE_GREEN = 1
@@ -163,38 +164,18 @@ def _network(sam_distance: float, power_distance: float) -> tuple[Any, Any]:
     Geometrically ordinary: a power source reaches 35 nm, so a SAM 99 km from the
     action can be fed by a station 110 km from it.
     """
-    power_tgo = _tgo(IadsBuildingGroundObject)
-    power_tgo.is_friendly = lambda player: True
-    power = SimpleNamespace(
-        group_name="Power Station",
-        iads_role=IadsRole.POWER_SOURCE,
-        ground_object=power_tgo,
-        # Bombed: nothing alive, but the static is still spawned, dead.
-        units=[SimpleNamespace(alive=False, is_static=True, unit_name="Power Station")],
-    )
-
-    sam_tgo = _tgo(SamGroundObject)
-    sam_tgo.is_friendly = lambda player: True
-    # from_group reads the owning side through the control point.
-    sam_tgo.control_point = SimpleNamespace(
-        coalition=SimpleNamespace(player=SimpleNamespace(is_blue=False))
-    )
-    sam = SimpleNamespace(
-        group_name="SA-10 Site",
-        iads_role=IadsRole.SAM,
-        ground_object=sam_tgo,
-        units=[SimpleNamespace(alive=True, is_static=False, unit_type=None)],
-    )
+    power_tgo = site("Power Station", IadsRole.POWER_SOURCE, power_distance)
+    power_tgo.groups[0].units[0].alive = False
+    sam_tgo = site("SAM Site", IadsRole.SAM, sam_distance)
+    network = IadsNetwork(advanced=True)
+    network.initialize_network(iter([sam_tgo, power_tgo]))
 
     class _Distances:
         """One zone that answers a different distance for each object."""
 
         @staticmethod
         def distance_to_point(position: Any) -> float:
-            return sam_distance if position == "sam" else power_distance
-
-    sam_tgo.position = "sam"
-    power_tgo.position = "power"
+            return sam_distance if position is sam_tgo.position else power_distance
 
     game: Any = SimpleNamespace(
         settings=SimpleNamespace(
@@ -207,10 +188,6 @@ def _network(sam_distance: float, power_distance: float) -> tuple[Any, Any]:
     setattr(game, "_Game__culling_zones", [_Distances])
     game.skynet_culled = lambda tgo: Game.skynet_culled(game, tgo)
 
-    network: Any = IadsNetwork(advanced=True)
-    network.nodes = [
-        SimpleNamespace(group=sam, connections={"one": power}),
-    ]
     return network, game
 
 
@@ -224,12 +201,21 @@ def test_a_kept_sam_keeps_a_power_source_that_falls_outside_the_radius() -> None
 
     nodes = IadsNetwork.skynet_nodes(network, game)
 
-    assert len(nodes) == 1
-    assert nodes[0].connections[IadsRole.POWER_SOURCE.value] == ["Power Station"]
+    assert len(nodes) == 2
+    sam = next(node for node in nodes if node.iads_role is IadsRole.SAM)
+    station = next(node for node in nodes if node.iads_role is IadsRole.POWER_SOURCE)
+    assert sam.connections[IadsRole.POWER_SOURCE.value] == [station.dcs_name]
+    assert station.static_members == [station.dcs_name]
+    sam_node = next(
+        node for node in network.nodes if node.group.iads_role is IadsRole.SAM
+    )
+    assert network.state_map.connectivity is not None
+    assert not network.state_map.connectivity.powered(sam_node)
 
 
 def test_the_sam_itself_still_goes_when_it_is_the_one_out_of_range() -> None:
     """The radius still does its job; it just does not reach the infrastructure."""
     network, game = _network(sam_distance=150_000.0, power_distance=110_000.0)
 
-    assert IadsNetwork.skynet_nodes(network, game) == []
+    nodes = IadsNetwork.skynet_nodes(network, game)
+    assert len(nodes) == 1 and nodes[0].iads_role is IadsRole.POWER_SOURCE

@@ -176,12 +176,15 @@ def gps_jamming_enabled(game: "Game") -> bool:
     return bool(game.settings.plugin_option("gpsjamming"))
 
 
-def gps_jammer_sites(game: "Game") -> list[GpsJammerSite]:
+def gps_jammer_sites(
+    game: "Game", *, include_unpowered: bool = False
+) -> list[GpsJammerSite]:
     """Every live GPS-jamming site in the theater, both coalitions.
 
     Ground truth (``viewer=None``) -- this feeds the runtime, which must behave
     the same whether or not the player has engaged the site. The *briefing* is
-    fogged separately (:func:`briefed_jammer_areas`).
+    fogged separately (:func:`briefed_jammer_areas`). Mission generation also
+    includes unpowered emitters so restoring a fixed supply can restart them.
     """
     if not gps_jamming_enabled(game):
         return []
@@ -190,7 +193,14 @@ def gps_jammer_sites(game: "Game") -> list[GpsJammerSite]:
     sites: list[GpsJammerSite] = []
     for cp in game.theater.controlpoints:
         for tgo in cp.ground_objects:
-            site = _site_for_tgo(game, tgo, cp, default_reach, default_miss)
+            site = _site_for_tgo(
+                game,
+                tgo,
+                cp,
+                default_reach,
+                default_miss,
+                include_unpowered=include_unpowered,
+            )
             if site is not None:
                 sites.append(site)
     return sites
@@ -274,9 +284,13 @@ def _site_for_tgo(
     cp: "ControlPoint",
     default_reach: Distance,
     default_miss: Distance,
+    *,
+    include_unpowered: bool = False,
 ) -> Optional[GpsJammerSite]:
     """Build the site record for a TGO that carries live jammer vehicles."""
-    if switched_off(game, tgo) or getattr(tgo, "in_transit", False):
+    if (not include_unpowered and switched_off(game, tgo)) or getattr(
+        tgo, "in_transit", False
+    ):
         return None
     units: list[str] = []
     # A site with several jammer types takes the LONGEST declared reach and the
