@@ -63,7 +63,7 @@ def links(network: IadsNetwork, obj: Any) -> set[Any]:
 
 
 @pytest.mark.parametrize("side", [Player.RED, Player.BLUE])
-def test_every_site_connects_to_all_in_range_infrastructure_and_no_enemies(
+def test_sites_use_local_feeds_and_no_enemy_infrastructure(
     side: Player,
 ) -> None:
     sam = site("SAM", side=side)
@@ -77,9 +77,9 @@ def test_every_site_connects_to_all_in_range_infrastructure_and_no_enemies(
     objects = [sam, tower, backup, power, centre, far, enemy, neutral]
     network = IadsNetwork(True)
     network.initialize_network(iter(objects))
-    assert links(network, sam) == {tower, backup, power, centre}
-    assert {tower, backup, power} <= links(network, centre)
-    assert centre in links(network, tower)
+    assert links(network, sam) == {tower, backup, power}
+    assert power in links(network, centre)
+    assert all(len(links(network, obj)) < len(objects) - 1 for obj in objects)
     assert sam not in links(network, sam)
     for node in network.nodes:
         assert len(node.connections) == len({id(g) for g in node.connections.values()})

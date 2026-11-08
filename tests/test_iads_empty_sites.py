@@ -10,6 +10,7 @@ from dcs.terrain import Caucasus
 from game.data.groups import GroupTask
 from game.server.iadsnetwork.models import IadsConnectionJs
 from game.sim.gameupdateevents import GameUpdateEvents
+from game.settings import Settings
 from game.theater.iadsnetwork.iadsexplain import describe
 from game.theater.iadsnetwork.iadsnetwork import IadsNetwork
 from game.theater.iadsnetwork.iadsrole import IadsRole
@@ -55,6 +56,12 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
     # The battery reaches command through the tower, but not directly.
     command = site("COMMAND", "commandcenter", 28_000)
     power = powered_site("POWER", IadsRole.POWER_SOURCE)
+    settings = Settings()
+    settings.set_plugin_option("skynetiads.commsRangeNm", 15)
+    for obj in (sam, tower, command):
+        obj.control_point.coalition = SimpleNamespace(
+            game=SimpleNamespace(settings=settings)
+        )
     deploy(sam)
     deploy(tower, IadsRole.CONNECTION_NODE)
     deploy(command, IadsRole.COMMAND_CENTER)
@@ -87,8 +94,8 @@ def test_capture_keeps_links_and_redeployment_reactivates(configured: bool) -> N
     assert "Empty site" in status.reason
     picture = describe(sam, network)
     assert picture.off is None
-    assert picture.gets[0].title == "TOWER"
-    assert picture.gets[0].chip == "INACTIVE"
+    tower_link = next(link for link in picture.gets if link.title == "TOWER")
+    assert tower_link.chip == "INACTIVE"
     assert describe(tower, network).gives[0].places[0].objective is sam
     assert not network.renew_stale_nodes()
     fake_game: Any = SimpleNamespace(

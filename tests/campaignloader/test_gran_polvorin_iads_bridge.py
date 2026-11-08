@@ -84,7 +84,8 @@ def test_relay_links_follow_coverage_and_remain_exported_when_destroyed(
         for index, distance in enumerate(distances)
     ]
     relay = site("RELAY", IadsRole.CONNECTION_NODE, side=side, settings=settings)
-    command = site("COMMAND", IadsRole.COMMAND_CENTER, side=side, settings=settings)
+    # The tower is the closest first hop, rather than tying the command centre.
+    command = site("COMMAND", IadsRole.COMMAND_CENTER, -1, side, settings)
     power = [
         site(f"POWER {index}", IadsRole.POWER_SOURCE, distance, side, settings)
         for index, distance in enumerate(distances)

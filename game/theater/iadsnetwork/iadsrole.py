@@ -8,7 +8,7 @@ from game.data.groups import GroupTask
 from game.utils import Distance, meters, nautical_miles
 
 #: Infrastructure coverage used to rebuild each coalition's topology every turn.
-DEFAULT_COMMS_RANGE_NM = 15.0
+DEFAULT_COMMS_RANGE_NM = 35.0
 DEFAULT_POWER_RANGE_NM = 35.0
 
 

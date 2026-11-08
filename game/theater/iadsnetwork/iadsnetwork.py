@@ -20,6 +20,7 @@ from game.theater.theatergroundobject import (
 from game.theater.theatergroup import IadsGroundGroup
 from game.theater.player import Player
 from game.point_with_heading import PointWithHeading
+from game.theater.iadsnetwork.topology import sparse_connections
 
 if TYPE_CHECKING:
     from game.game import Game
@@ -343,7 +344,10 @@ class IadsNetwork:
         # A capture also removes links to the previous owner's infrastructure.
         for other in self.nodes:
             for cid, group in list(other.connections.items()):
-                if group.ground_object is tgo:
+                if group.ground_object is tgo and (
+                    not self.advanced_iads
+                    or not any(group is current for current in tgo.groups)
+                ):
                     del other.connections[cid]
                     events.delete_iads_connection(cid)
                     events.update_iads_node(other)
@@ -351,11 +355,12 @@ class IadsNetwork:
         node = self.node_for_tgo(tgo)
         if node is None:
             # Not participating
+            if self.advanced_iads:
+                self._rebuild_advanced_connections(events)
             return
         events.update_iads_node(node)
         if self.advanced_iads:
-            self._make_advanced_connections_by_range(node)
-            self._update_network(tgo, events)
+            self._rebuild_advanced_connections(events)
 
     def node_for_group(self, group: IadsGroundGroup) -> IadsNetworkNode:
         """Get existing node from the iads network or create a new node"""
@@ -468,22 +473,27 @@ class IadsNetwork:
         rebuild that enrols unnamed sites runs once. Anything registered after it sat
         in the theater with nothing to cue it and no plant to bomb.
 
-        Safe to call again: a node that already has a comms tower or a power station
-        is left alone, so nothing is wired twice.
+        Rebuild once after finding all unwired sites. Power stations deliberately
+        have no outgoing feeds and do not trigger repeated topology rebuilds.
         """
-        enrolled = []
+        pending = []
         for go in self.ground_objects.values():
             if not self._belongs_in_the_network(go):
                 continue
             node = self.node_for_tgo(go)
-            if node is None or self._has_grid(node):
+            if (
+                node is None
+                or self._is_ship(node)
+                or node.group.iads_role is IadsRole.POWER_SOURCE
+                or self._has_grid(node)
+            ):
                 continue
-            self._make_advanced_connections_by_range(node)
-            if self._has_grid(node):
-                enrolled.append(go.name)
-        if enrolled:
-            self.invalidate_state_map()
-        return enrolled
+            pending.append(node)
+        if pending:
+            self._rebuild_advanced_connections()
+        return [
+            node.group.ground_object.name for node in pending if self._has_grid(node)
+        ]
 
     @staticmethod
     def _has_grid(node: IadsNetworkNode) -> bool:
@@ -507,42 +517,17 @@ class IadsNetwork:
         )
 
     def initialize_network_from_range(self) -> None:
-        """Initialize the IADS Network by range"""
+        """Build a sparse topology after all participating sites have a node."""
         for go in self.ground_objects.values():
             if self._belongs_in_the_network(go):
-                # Set as primary node
-                node = self.node_for_tgo(go)
-                if node is None:
-                    # TGO does not participate to iads network
-                    continue
-                self._make_advanced_connections_by_range(node)
+                self.node_for_tgo(go)
+        self._rebuild_advanced_connections()
 
     def _is_friendly(self, node: IadsNetworkNode, tgo: TheaterGroundObject) -> bool:
         return any(
             node.group.ground_object.is_friendly(side) and tgo.is_friendly(side)
             for side in (Player.BLUE, Player.RED)
         )
-
-    def _update_network(
-        self, tgo: TheaterGroundObject, events: GameUpdateEvents
-    ) -> None:
-        iads_role = IadsRole.for_category(tgo.category)
-        if iads_role not in STATIC_BACKED_ROLES:
-            return
-        reach = iads_role.connection_range(_settings_of(tgo)).meters
-        for node in self.nodes:
-            if (
-                self._is_ship(node)
-                or node.group.ground_object is tgo
-                or getattr(node.group.ground_object, "in_transit", False)
-                or getattr(tgo, "in_transit", False)
-            ):
-                continue
-            dist = node.group.ground_object.position.distance_to_point(tgo.position)
-            in_range = dist <= reach
-            if in_range and self._is_friendly(node, tgo):
-                node.add_connection_for_tgo(tgo)
-                events.update_iads_node(node)
 
     @staticmethod
     def _is_ship(node: IadsNetworkNode) -> bool:
@@ -612,25 +597,49 @@ class IadsNetwork:
             self.invalidate_state_map()
         return unwired
 
-    def _make_advanced_connections_by_range(self, node: IadsNetworkNode) -> None:
-        if self._is_ship(node) or getattr(
-            node.group.ground_object, "in_transit", False
-        ):
-            return
-        tgo = node.group.ground_object
-        # Destroyed dependencies remain represented; dropping the last one would
-        # make Skynet treat the site as independently powered or connected.
-        for nearby_go in self.ground_objects.values():
-            iads_role = IadsRole.for_category(nearby_go.category)
-            if (
-                iads_role not in STATIC_BACKED_ROLES
-                or nearby_go is tgo
-                or getattr(nearby_go, "in_transit", False)
-            ):
-                continue
-            dist = nearby_go.position.distance_to_point(tgo.position)
-            in_range = (
-                dist <= iads_role.connection_range(_settings_of(nearby_go)).meters
+    def _rebuild_advanced_connections(
+        self, events: GameUpdateEvents | None = None
+    ) -> None:
+        """Recompute selected links, keeping the IDs of unchanged connections."""
+        by_object = {n.group.ground_object: n for n in self.nodes}
+        objects = [
+            obj
+            for obj in self.ground_objects.values()
+            if not isinstance(obj, NavalGroundObject)
+            and not getattr(obj, "in_transit", False)
+            and (
+                obj in by_object
+                or IadsRole.for_category(obj.category) in STATIC_BACKED_ROLES
             )
-            if in_range and self._is_friendly(node, nearby_go):
-                node.add_connection_for_tgo(nearby_go)
+        ]
+
+        def friendly(left: TheaterGroundObject, right: TheaterGroundObject) -> bool:
+            node = by_object.get(left)
+            if node is None:
+                node = self.node_for_tgo(left)
+            return node is not None and self._is_friendly(node, right)
+
+        plan = sparse_connections(objects, friendly, _settings_of)
+        for node in self.nodes:
+            wanted = [
+                group
+                for obj in plan.get(node.group.ground_object, [])
+                for group in obj.groups
+                if isinstance(group, IadsGroundGroup) and group.iads_role.participate
+            ]
+            changed = False
+            for cid, group in list(node.connections.items()):
+                if group.iads_role in STATIC_BACKED_ROLES and not any(
+                    group is target for target in wanted
+                ):
+                    del node.connections[cid]
+                    if events is not None:
+                        events.delete_iads_connection(cid)
+                    changed = True
+            for group in wanted:
+                if not any(group is current for current in node.connections.values()):
+                    node.add_connection_for_group(group)
+                    changed = True
+            if changed and events is not None:
+                events.update_iads_node(node)
+        self.invalidate_state_map()

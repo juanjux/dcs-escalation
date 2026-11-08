@@ -28,7 +28,7 @@ def test_network_survives_any_single_command_loss(filename: str, vm: Any) -> Non
     theater = campaign.load_theater(True)
     row = MANIFEST[filename]
     settings = Settings()
-    settings.set_plugin_option("skynetiads.commsRangeNm", 15)
+    settings.set_plugin_option("skynetiads.commsRangeNm", 35)
     settings.set_plugin_option("skynetiads.powerRangeNm", 35)
     objects: list[Any] = []
     for cp in theater.controlpoints:
@@ -73,6 +73,22 @@ def test_network_survives_any_single_command_loss(filename: str, vm: Any) -> Non
     assert len(relays) == row["after"]["relays"]
     assert len(commands) == row["after"]["command_centres"]
     assert len(relays) <= row["before"]["relays"]
+    for node in network.nodes:
+        feeds = [
+            g for g in node.connections.values() if g.iads_role is IadsRole.POWER_SOURCE
+        ]
+        assert len(feeds) <= 1
+        if node.group.iads_role in (IadsRole.SAM, IadsRole.EWR):
+            radio = [
+                g
+                for g in node.connections.values()
+                if g.iads_role
+                in (
+                    IadsRole.CONNECTION_NODE,
+                    IadsRole.COMMAND_CENTER,
+                )
+            ]
+            assert len(radio) <= 2
     if "relocation" in row:
         relocation = row["relocation"]
         assert len(relays) == relocation["after_relays"]
@@ -105,13 +121,18 @@ def test_network_survives_any_single_command_loss(filename: str, vm: Any) -> Non
         ]
     for side in (Player.BLUE, Player.RED):
         start(vm, exported(network, side), 2 if side.is_blue else 1)
-        side_commands = [
-            n for n in commands if n.group.ground_object.control_point.captured is side
+        side_losses = [
+            n
+            for n in network.nodes
+            if n.group.iads_role in (IadsRole.COMMAND_CENTER, IadsRole.POWER_SOURCE)
+            and n.group.ground_object.control_point.captured is side
         ]
         side_targets = [
             n for n in targets if n.group.ground_object.control_point.captured is side
         ]
-        for failed in [None, *side_commands]:
+        # Compare Python and the actual mission Lua for every command and power
+        # loss. Regional outages are expected; disagreement between them is not.
+        for failed in [None, *side_losses]:
             loss = [failed.group.ground_object] if failed is not None else []
             if failed is not None:
                 vm.globals().objects[

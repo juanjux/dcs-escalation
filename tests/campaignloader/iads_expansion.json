@@ -2555,7 +2555,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "Caucasus_Multi_Georgia.yaml": {
     "island_anchors": [],
@@ -3728,7 +3729,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "Caucasus_Multi_Russia.yaml": {
     "island_anchors": [],
@@ -5926,7 +5928,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "Northern Guardian.yaml": {
     "island_anchors": [],
@@ -6380,7 +6383,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "Operation-Desert-Sabre.yaml": {
     "island_anchors": [],
@@ -8215,7 +8219,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "RetakeTheFalklands.yaml": {
     "island_anchors": [],
@@ -9291,7 +9296,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "Task Force Thunder.yaml": {
     "island_anchors": [],
@@ -10829,7 +10835,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "TblisiGap.yaml": {
     "island_anchors": [],
@@ -12722,7 +12729,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "TheValleyOfRotary.yaml": {
     "island_anchors": [],
@@ -16071,7 +16079,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "WRL_Battle4Georgia.yaml": {
     "island_anchors": [],
@@ -17306,7 +17315,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "WRL_PG_Wargames.yaml": {
     "island_anchors": [],
@@ -18066,7 +18076,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "battle_of_abu_dhabi.yaml": {
     "island_anchors": [],
@@ -18704,7 +18715,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "black_sea.yaml": {
     "island_anchors": [],
@@ -19842,7 +19854,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "crossing_the_rubicon.yaml": {
     "island_anchors": [],
@@ -20135,7 +20148,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "exercise_able_archer.yaml": {
     "island_anchors": [],
@@ -22762,7 +22776,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "graveyard_of_empires.yaml": {
     "island_anchors": [],
@@ -23220,7 +23235,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "marianas_2027.yaml": {
     "island_anchors": [
@@ -25737,12 +25753,14 @@
     "new_jammers": {},
     "other_entries_sha256": "adcebbdf23de0b24e2cf0b4d65afeb6528a5b4bb05673ec991a84e190170d2c7",
     "relocated_radars": {},
-    "retained_mission_sha256": "a9a9d3f5da024f3b649f34b54a2d5ece00825bde73daf773a56704183d68b238",
+    "retained_mission_sha256": "ed64b2fdb5f37563426b85a5368fddc8d0704c3ce52003f0b9b793c7b7e159cf",
     "sides": [
       "BLUE",
       "RED"
     ],
     "retired_comms_scenery_zones": [
+      "Maykop Air Command",
+      "Maykop Comms",
       "Mozdok Train Station",
       "Mozdok railway station"
     ],
@@ -27880,7 +27898,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "operation_aegean_aegis.yaml": {
     "island_anchors": [],
@@ -28053,7 +28072,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "operation_allied_sword.yaml": {
     "island_anchors": [],
@@ -31266,7 +31286,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "operation_desert_aladeen.yaml": {
     "island_anchors": [],
@@ -31602,7 +31623,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "operation_desert_trident.yaml": {
     "island_anchors": [],
@@ -31915,7 +31937,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "operation_frostbite.yaml": {
     "island_anchors": [],
@@ -33411,7 +33434,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "operation_gazelle.yaml": {
     "island_anchors": [],
@@ -34205,7 +34229,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "operation_peace_spring.yaml": {
     "island_anchors": [],
@@ -34681,7 +34706,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "operation_vectrons_claw.yaml": {
     "island_anchors": [],
@@ -36525,7 +36551,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "slava_ukraini.yaml": {
     "island_anchors": [],
@@ -36720,7 +36747,8 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   },
   "syria_full_map.yaml": {
     "island_anchors": [],
@@ -40113,6 +40141,7 @@
           ]
         ]
       }
-    }
+    },
+    "retired_comms_scenery_zones": []
   }
 }
