@@ -245,7 +245,7 @@ def movement_destination(
     # select the deployed force and its reserve; the motor pool is not new stock.
     return MovementDestination(
         kind,
-        GroundPosition(base.position.x, base.position.y),
+        CampaignGroundRouter.for_game(game, owner).base_access_position(base),
         base.id,
         opposing_base_id,
     )
@@ -296,9 +296,15 @@ def preview_armor_movement(
     road_budget = distance_per_turn(game.settings, on_road=True)
     offroad_budget = distance_per_turn(game.settings, on_road=False)
     origin = GroundPosition(source.position.x, source.position.y)
-    local_delivery = (
-        destination.kind in (DestinationKind.BASE, DestinationKind.FRONTLINE)
-        and origin == destination.position
+    base_origin = GroundPosition(
+        source.control_point.position.x, source.control_point.position.y
+    )
+    local_delivery = destination.kind in (
+        DestinationKind.BASE,
+        DestinationKind.FRONTLINE,
+    ) and (
+        origin == destination.position
+        or (destination.target_id == source.control_point.id and origin == base_origin)
     )
     if local_delivery:
         route = GroundRoute((), stationary_at=origin)

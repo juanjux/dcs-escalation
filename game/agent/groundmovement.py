@@ -192,7 +192,7 @@ def options(game: Game, source_id: UUID, source_kind: str) -> dict[str, Any]:
     else:
         raise ValueError("Source kind must be armor, sam or base")
     result["source_kind"] = source_kind
-    if source_kind == "sam":
+    if source_kind in ("armor", "sam"):
         from game.groundmovement.samtrucks import sam_truck_options
 
         trucks = asdict(sam_truck_options(game, source_id, Player.RED))

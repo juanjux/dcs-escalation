@@ -21,6 +21,8 @@ from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater.player import Player
 from tests.test_armor_movement_dispatch import prepare
 from tests.test_armor_movement_planning import world  # noqa: F401
+from tests.test_armor_movement_planning import landmap
+from shapely.geometry import box
 
 
 def local_destination(world: Any, owner: Player, kind: DestinationKind) -> Any:
@@ -127,6 +129,23 @@ def test_stationary_journey_preserves_position_after_reload() -> None:
     restored = pickle.loads(pickle.dumps(journey))
     assert restored.advance(1, 100, 50) == (position,)
     assert restored.remaining_distance == restored.travelled_distance == 0
+
+
+def test_local_delivery_at_excluded_base_marker_stays_immediate(world: Any) -> None:
+    prepare(world)
+    world.a.convoy_routes.clear()
+    world.b.convoy_routes.clear()
+    world.game.theater.landmap = landmap(box(-5, -5, 5, 5))
+    destination = local_destination(world, Player.BLUE, DestinationKind.BASE)
+    assert destination.position != GroundPosition(0, 0)
+    preview = preview_armor_movement(
+        world.game, world.source.id, Player.BLUE, [7], destination
+    )
+    assert preview.arrival_in_turns == 0
+    transit = dispatch_armor(
+        world.game, world.source.id, Player.BLUE, [7], destination, GameUpdateEvents()
+    )
+    assert transit.finished and world.a.base.armor == {world.units[7]: 1}
 
 
 def test_local_reinforcement_does_not_enable_zero_length_gps_moves(world: Any) -> None:

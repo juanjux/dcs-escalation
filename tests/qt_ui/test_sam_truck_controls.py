@@ -69,3 +69,25 @@ def test_controls_disable_at_cap_and_when_unaffordable(app: Any, battery: Any) -
     assert purchase is not None and not purchase.isEnabled()
     assert "limit" in purchase.toolTip()
     holder.deleteLater()
+
+
+def test_regular_armor_card_exposes_truck_purchases(app: Any, battery: Any) -> None:
+    w = battery
+    context: Any = NS(
+        game=w.game,
+        ground_object=w.source,
+        _viewer=Player.BLUE,
+        _friendly=True,
+        _can_trade=True,
+        _move_units=lambda: None,
+    )
+    context._towing_truck_purchase = (
+        lambda options: QGroundObjectMenu._towing_truck_purchase(context, options)
+    )
+    card = QGroundObjectMenu._ground_transport(context)
+    assert card is not None
+    purchase = card.findChild(QPushButton, "buy-sam-towing-trucks")
+    assert purchase is not None and purchase.isEnabled()
+    amount = card.findChild(QSpinBox, "sam-towing-truck-quantity")
+    assert amount is not None and amount.maximum() == 5
+    card.deleteLater()

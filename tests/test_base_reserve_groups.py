@@ -43,6 +43,7 @@ from qt_ui.windows.basemenu.NewUnitTransferDialog import NewUnitTransferDialog
 from qt_ui.windows.groundobject.common import kind_of
 from tests.test_armor_movement_dispatch import native
 from tests.test_armor_movement_planning import world  # noqa: F401
+from tests.test_armor_movement_planning import landmap
 from tests.test_armor_movement_controls import controls  # noqa: F401
 
 
@@ -100,6 +101,27 @@ def test_preview_is_read_only_and_adds_owned_tractors(stock: Any) -> None:
     assert dict(result.automatically_added) == {stock.units[5].variant_id: 2}
     assert len(result.manifest.towing) == 2
     assert pickle.dumps(stock.game) == before
+
+
+def test_reserve_departure_uses_access_outside_excluded_base_marker(stock: Any) -> None:
+    w = stock
+    terrain = w.game.theater.terrain
+    w.a.convoy_routes[w.b] = (Point(20, 0, terrain), w.b.position)
+    w.b.convoy_routes[w.a] = tuple(reversed(w.a.convoy_routes[w.b]))
+    w.game.theater.landmap = landmap(box(-5, -5, 5, 5))
+    preview = preview_base_movement(
+        w.game, w.a.id, Player.BLUE, {w.units[7]: 1}, P(80, 10)
+    )
+    assert preview.route.segments[0].start == P(20, 0)
+    transit = dispatch_base_movement(
+        w.game, w.a.id, Player.BLUE, {w.units[7]: 1}, P(80, 10), GameUpdateEvents()
+    )
+    moving = w.game.db.tgos.get(transit.detachment_id)
+    assert (moving.position.x, moving.position.y) == (20, 0)
+    w.game.turn += 1
+    advance_armor(w.game, GameUpdateEvents())
+    assert transit.finished
+    assert (moving.position.x, moving.position.y) == (80, 10)
 
 
 def test_pending_transfers_cannot_spend_the_same_stock(stock: Any) -> None:

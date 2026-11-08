@@ -156,6 +156,9 @@ in `turn_context.ground_convoys`.
    and enemy `opposing_base_id` from a current front. GPS routes and destinations
    must stay on your side. A front delivery reinforces its supporting base's stock;
    normal deployment caps and Motor Pool surplus rules still apply.
+   If a base marker is excluded by the terrain mask, its stock handoff uses a
+   nearby valid convoy endpoint or safe ground within 600 m. This does not relax
+   GPS validation or allow travel through excluded terrain or water.
    If the reserve is already at the receiving base's exact position, confirming
    the delivery adds the selected units to its stock immediately (zero turns).
 4. Check the returned distance, `arrival_in_turns`, `first_turn_stop`, warnings
@@ -184,6 +187,14 @@ each towed piece needs its own surviving tractor in that battery. Mounted weapon
 already paired with their vehicle do not need another tractor. Fixed/unknown units,
 insufficient tractors, or pending repairs block relocation; options explains why.
 No trucks are created or borrowed automatically from base stock.
+
+Armor groups and mobile SAM/radar sites with towed pieces can buy faction tractors
+using `buy_sam_trucks` / `POST /retribution-ai/ground/towing-trucks` with
+`{side:"red", source_id, unit_type, quantity}`. Read `towing_trucks` in movement
+options (`source_kind:"armor"` or `"sam"`) for offers, prices, remaining capacity
+and any restriction. The total allowance is towable pieces + 2, counting destroyed
+pieces and trucks too. Purchases cost money immediately and add trucks without
+replacing existing units; stop the group before buying.
 
 The same site and unit IDs survive the move. Radars, jammers and weapons are packed
 and offline while relocating, including a paused journey. The convoy remains
@@ -1742,7 +1753,9 @@ are being given to you), `turn`; `requests[]` {`objective`, `kind`, `base`, `ask
   already tasked` / `no available pilots` / `grounded`. **Its presence means: do not
   plan with this squadron this turn**, and `all N already tasked` means those aircraft
   are flying in packages you already created — check `packages` before concluding a
-  jet is idle), `pending`?, `pilots`, `price` (cost of
+  jet is idle), `pending`? (signed inventory change next turn: positive purchases,
+  negative sales), `pending_sales`? (already credited and unavailable for missions,
+  but still counted in `owned` until next turn), `pilots`, `price` (cost of
   **ONE** aircraft — `buy/aircraft` with `quantity: n` costs `n * price`, so
   `budget / price` is how many you can actually afford this turn; do not guess it),
   `max_ac`?

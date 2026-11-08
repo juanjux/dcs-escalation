@@ -26,11 +26,15 @@ from game.groundmovement.orders import (
     MovementDestination,
 )
 from game.groundmovement.settings import set_enabled
+from game.groundmovement.planning import movement_destination
 from game.missiongenerator.tgogenerator import GroundObjectGenerator
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater.player import Player
 from game.unitmap import UnitMap
 from tests.test_armor_movement_planning import world  # noqa: F401
+from tests.test_armor_movement_planning import landmap
+from dcs import Point
+from shapely.geometry import box
 
 
 def prepare(world: Any) -> Any:
@@ -81,6 +85,28 @@ def test_partial_detachment_moves_existing_objects_and_reserves_tractors(
             world.destination,
             GameUpdateEvents(),
         )
+
+
+def test_safe_base_access_survives_reload_and_delivers_stock_once(world: Any) -> None:
+    prepare(world)
+    terrain = world.game.theater.terrain
+    world.a.convoy_routes[world.b] = (world.a.position, Point(80, 0, terrain))
+    world.b.convoy_routes[world.a] = tuple(reversed(world.a.convoy_routes[world.b]))
+    world.game.theater.landmap = landmap(box(90, -10, 110, 10))
+    destination = movement_destination(
+        world.game, Player.BLUE, DestinationKind.BASE, base_id=world.b.id
+    )
+    transit = dispatch_armor(
+        world.game, world.source.id, Player.BLUE, [7], destination, GameUpdateEvents()
+    )
+    world = pickle.loads(pickle.dumps(world))
+    transit = world.game.ground_movements.transits[transit.order_id]
+    world.game.turn += 1
+    advance_armor(world.game, GameUpdateEvents())
+    assert transit.finished and transit.pause_reason is None
+    assert world.b.base.armor == {world.units[7]: 1}
+    advance_armor(world.game, GameUpdateEvents())
+    assert world.b.base.armor == {world.units[7]: 1}
 
 
 def test_stale_or_invalid_dispatch_does_not_remove_source_inventory(world: Any) -> None:
