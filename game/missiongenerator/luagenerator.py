@@ -515,6 +515,8 @@ class LuaGenerator:
             escort_item.add_key_value(
                 "engagementRangeMeters", str(escort.engagement_range_meters)
             )
+            if escort.release_flag is not None:
+                escort_item.add_key_value("releaseFlag", escort.release_flag)
 
         # Emits dcsRetribution.cruiseMissiles only when the setting is on and a live
         # land-attack ship group still has missiles; the cruisemissiles plugin then

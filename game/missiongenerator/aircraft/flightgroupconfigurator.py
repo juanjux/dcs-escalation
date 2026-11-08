@@ -241,6 +241,7 @@ class FlightGroupConfigurator:
                 escort_group_id=escort_group_id,
                 escorted_group_id=escorted_group_id,
                 engagement_range_meters=int(engagement_range),
+                release_flag=f"split-{id(self.flight.package)}",
             )
         )
 

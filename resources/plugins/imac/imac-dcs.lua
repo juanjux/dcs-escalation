@@ -1,4 +1,4 @@
--- Native DCS adapter. Only friendly sensors supply enemy air-track positions.
+-- Native IMAC adapter. Only friendly sensors supply enemy air-track positions.
 assert(EscalationIMAC and EscalationIMAC.newCommander,'load IMAC commander first')
 do
   local API,G=EscalationIMAC,EscalationIMAC.geometry
@@ -152,6 +152,17 @@ do
     end
     local detection={Controller.Detection.VISUAL,Controller.Detection.OPTIC,
       Controller.Detection.RADAR,Controller.Detection.IRST}
+    local function interceptableMissile(desc)
+      -- Native Weapon descriptors need not contain database attributes. Their
+      -- missileCategory is authoritative; never turn AAMs or SAMs into cruise
+      -- tracks because a compatibility layer supplied contradictory attributes.
+      local categories=Weapon and Weapon.MissileCategory
+      if categories and desc.missileCategory~=nil then
+        return desc.missileCategory==categories.CRUISE or desc.missileCategory==categories.ANTI_SHIP
+      end
+      local attributes=desc.attributes or {}
+      return attributes['Cruise missiles'] or attributes['Anti-Ship missiles'] or attributes['Antiship Missiles']
+    end
     local function readSensor(sensor,side,now)
       local unit=Unit.getByName(sensor.name)
       if not activeUnit(unit) or unit:getCoalition()~=side or (sensor.air and not unit:inAir()) then return end
@@ -167,13 +178,17 @@ do
       for _,entry in pairs(entries) do
         count=count+1;if count>512 then break end
         local target=type(entry)=='table' and entry.object
-        if target and target:isExist() and target:getCategory()==Object.Category.UNIT and
-          target:isActive()==true and target:getCoalition()==3-side then
+        local weapon=target and target.getLauncher~=nil
+        if target and target:isExist() and target:getCoalition()==3-side and
+          (weapon or (target:getCategory()==Object.Category.UNIT and target:isActive()==true)) then
           local detected,visible,knownType,knownDistance,lastSeen,point,velocity=
             controller:isTargetDetected(target,unpack(detection))
           if detected==true and knownDistance==true then
             local desc=target:getDesc()
-            if desc.category==Unit.Category.AIRPLANE or desc.category==Unit.Category.HELICOPTER then
+            local attributes=desc.attributes or {}
+            local missile=weapon and knownType==true and desc.category==1 and interceptableMissile(desc)
+            if missile or (not weapon and
+              (desc.category==Unit.Category.AIRPLANE or desc.category==Unit.Category.HELICOPTER)) then
               -- Native DCS returns four flags for a current detection. Memory
               -- time/position/velocity follow only when the contact is not visible.
               -- Read live coordinates only after positional detection and range
@@ -183,20 +198,26 @@ do
               end
               if G.finite(lastSeen) and now-lastSeen<=TTL and lastSeen<=now+1 and
                 G.vector(point) and G.vector(velocity) then
-                local kind='unknown'
-                if knownType==true then
-                  local a=desc.attributes or {}
+                local kind=missile and 'missile' or 'unknown'
+                if not missile and knownType==true then
+                  local a=attributes
                   if a.Fighters or a.Interceptors or a['Multirole fighters'] then kind='fighter'
                   elseif a.Bombers or a['Strategic bombers'] then kind='bomber'
                   elseif a.Battleplanes or a['Attack helicopters'] then kind='attack'
                   elseif a.Transports or a['Transport helicopters'] then kind='transport' end
                 end
-                local g=target:getGroup()
-                local key=tostring(target:getID())
-                local old=cache[side][key]
-                if g and (not old or lastSeen>=old.seen) then
-                  cache[side][key]={key=key,groupId=g:getID(),point=G.copy(point),velocity=G.copy(velocity),
-                    kind=kind,seen=lastSeen,visible=visible==true}
+                local g=not weapon and target:getGroup()
+                -- Native Weapon objects expose id_, not Unit.getID(). Use the
+                -- shared native handle so separate sensors reserve one track.
+                local id
+                if weapon then id=target.id_ else id=target:getID() end
+                if id~=nil then
+                  local key=(weapon and 'weapon:' or '')..tostring(id)
+                  local old=cache[side][key]
+                  if (weapon or g) and (not old or lastSeen>=old.seen) then
+                    cache[side][key]={key=key,groupId=g and g:getID(),point=G.copy(point),velocity=G.copy(velocity),
+                      kind=kind,seen=lastSeen,visible=visible==true,weapon=weapon and target or nil}
+                  end
                 end
               end
             end
@@ -217,7 +238,12 @@ do
       end
       local out={}
       for key,t in pairs(cache[side]) do
-        if now-t.seen>TTL then cache[side][key]=nil else out[#out+1]=t end
+        local exists=true
+        if t.weapon then
+          local ok,live=pcall(function()return t.weapon:isExist()end)
+          exists=ok and live
+        end
+        if now-t.seen>TTL or not exists then cache[side][key]=nil else out[#out+1]=t end
       end
       table.sort(out,function(a,b)return a.key<b.key end)
       return out
@@ -276,7 +302,24 @@ do
       if not controller then return false,'not an airborne AI group' end
       local task
       if order.kind=='intercept' then
-        task={id='AttackGroup',params={groupId=order.data.groupId,groupAttack=true}}
+        if order.data.missile then
+          -- Weapons have no Group or Unit target for AttackGroup/AttackUnit.
+          -- Use DCS's native missile engagement filter on a temporary route.
+          local function waypoint(point)
+            return {x=point.x,y=point.z,alt=p.point.y,alt_type='BARO',
+              type='Turning Point',action='Turning Point',speed=math.max(200,p.speed),
+              ETA_locked=false,speed_locked=true,task={id='ComboTask',params={tasks={
+                {id='EngageTargets',enabled=true,auto=false,number=1,params={
+                  targetTypes={'Cruise missiles','Antiship Missiles'},priority=1,
+                  maxDistEnabled=true,maxDist=opt.patrolLeashNm*1852}},
+              }}}}
+          end
+          local aim=G.copy(order.data.point)
+          local finish=waypoint(aim)
+          finish.task.params.tasks[2]={id='Orbit',enabled=true,auto=false,number=2,params={
+            pattern='Circle',point={x=aim.x,y=aim.z},altitude=p.point.y,speed=math.max(200,p.speed)}}
+          task={id='Mission',params={route={points={waypoint(p.point),finish}}}}
+        else task={id='AttackGroup',params={groupId=order.data.groupId,groupAttack=true}} end
       else
         local point=order.data.point
         local routePoint=s.meta.route[math.min(#s.meta.route,s.index+1)]
@@ -350,7 +393,9 @@ do
           end)
           local names={}
           for name,s in pairs(instance.states) do
-            if s.meta.side==side and s.meta.mode~='observe' then names[#names+1]=name end
+            if s.meta.side==side and (s.meta.mode~='observe' or s.meta.returnInterceptor) then
+              names[#names+1]=name
+            end
           end
           table.sort(names)
           local page=missionCommands.addSubMenuForCoalition(side,'Flight control',root)

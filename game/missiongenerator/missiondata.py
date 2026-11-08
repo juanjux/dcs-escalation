@@ -78,6 +78,7 @@ class EscortInfo:
     escort_group_id: int
     escorted_group_id: int
     engagement_range_meters: int
+    release_flag: str | None = None
 
 
 @dataclass
