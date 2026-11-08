@@ -720,7 +720,16 @@ local function escort_leash_update()
         local escorted_group = escort_leash_get_group(pair.escortedGroupId)
 
         -- If the escorted group no longer exists (dead/despawned), ensure escort isn't stuck.
-        if escort_group and not escorted_group then
+        local released = pair.released or (pair.releaseFlag and
+            (tonumber(trigger.misc.getUserFlag(pair.releaseFlag)) or 0) ~= 0)
+        if escort_group and released then
+            -- Once the package releases its escorts, its leash no longer owns
+            -- their ROE, including while IMAC uses a returning fighter.
+            if not pair.released then
+                escort_leash_set_roe(escort_group, AI.Option.Air.val.ROE.OPEN_FIRE)
+                pair.released = true
+            end
+        elseif escort_group and not escorted_group then
             escort_leash_set_roe(escort_group, AI.Option.Air.val.ROE.OPEN_FIRE)
         elseif escort_group and escorted_group then
             local escort_unit = escort_group:getUnit(1)

@@ -9,6 +9,7 @@ from typing import Any
 from zipfile import ZipFile
 
 import pytest
+import yaml
 from dcs import Point
 from dcs.lua import loads
 from dcs.planes import F_16C_50
@@ -17,6 +18,7 @@ from dcs.task import CAP, ControlledTask, OrbitAction
 from dcs.vehicles import AirDefence
 
 from game.ato import FlightType
+from game.dcs.aircrafttype import AircraftType
 from game.missiongenerator import imac
 from game.missiongenerator.luagenerator import LuaGenerator
 from game.plugins.luaplugin import LuaPlugin, LuaPluginDefinition
@@ -200,6 +202,65 @@ def test_missing_orbit_window_and_afac_routes_are_not_claimed() -> None:
     before = copy.deepcopy(s.group.dict())
     data = imac.configure(s.generator, dict(imac.DEFAULTS))
     assert data is not None and data["flights"][0]["mode"] == "observe"
+    assert s.group.dict() == before
+
+
+@pytest.mark.parametrize(
+    "aircraft,eligible",
+    [
+        ("F-16C_50", True),
+        ("FA-18C_hornet", True),
+        ("F15EX", True),
+        ("Su-34", False),
+        ("A-10C_2", False),
+    ],
+)
+@pytest.mark.parametrize(
+    "role", [FlightType.STRIKE, FlightType.ESCORT, FlightType.DEAD]
+)
+def test_return_interception_uses_real_aircraft_capabilities(
+    aircraft: str, eligible: bool, role: FlightType
+) -> None:
+    s = scenario()
+    definition = yaml.safe_load(
+        Path(f"resources/units/aircraft/{aircraft}.yaml").read_text(encoding="utf-8")
+    )
+    s.cap.aircraft_type.task_priorities = AircraftType.get_task_priorities(definition)
+    s.cap.flight_type = role
+    s.group.points[2].name = "SPLIT"
+    s.group.points[-2].name = "ALIGN"
+    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    assert data is not None
+    flight = data["flights"][0]
+    assert flight["returnInterceptor"] is eligible
+    assert flight["returnStartIndex"] == 3
+    assert flight["approachIndex"] == len(s.group.points) - 1
+    assert flight["mode"] == (
+        "observe"
+        if role == FlightType.ESCORT
+        else "dead" if role == FlightType.DEAD else "strike"
+    )
+    if eligible:
+        assert "EscalationIMAC.reached" in str(s.group.points[2].tasks[0].dict())
+
+
+@pytest.mark.parametrize("change", ["human", "no_split", "invalid_bingo"])
+def test_return_interception_requires_an_explicit_return_leg_and_ai_control(
+    change: str,
+) -> None:
+    s = scenario()
+    s.cap.aircraft_type.task_priorities = {FlightType.INTERCEPTION: 1}
+    s.cap.flight_type = FlightType.ESCORT
+    if change == "human":
+        s.cap.client_units = [object()]
+    elif change == "no_split":
+        s.group.points[2].name = "NAV"
+    else:
+        s.cap.bingo_fuel = float("nan")
+    before = copy.deepcopy(s.group.dict())
+    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    assert data is not None
+    assert data["flights"][0]["returnInterceptor"] is False
     assert s.group.dict() == before
 
 
