@@ -185,7 +185,7 @@ class SquadronView(BaseModel):
     damaged: int | None = None
     aircraft: str
     base: str
-    owned: int | None = None  # aircraft on hand (omitted when 0)
+    owned: int | None = None  # gross inventory; includes pending_sales until turn end
     untasked: int | None = (
         None  # available to task; a literal 0 whenever the squadron owns aircraft,
         # omitted only when it owns none (see `unflyable`)
@@ -195,7 +195,10 @@ class SquadronView(BaseModel):
         # the real number to plan with (untasked can exceed available pilots); a literal 0
         # whenever the squadron owns aircraft, omitted only when it owns none
     )
-    pending: int | None = None  # arriving next turn (omitted when 0)
+    pending: int | None = None  # signed next-turn change: purchases > 0, sales < 0
+    pending_sales: int | None = (
+        None  # already credited and unavailable; still included in owned until turn end
+    )
     pilots: int
     price: int  # cost of ONE aircraft, so budget / price = how many you can afford
     sale_price: float = (
@@ -934,6 +937,15 @@ def _unflyable_reason(sq: Squadron, grounded: bool) -> str | None:
         from game.aircraftmaintenance import damaged_count
 
         damaged = damaged_count(sq)
+        sold = max(0, -sq.pending_deliveries)
+        if sold:
+            reasons = [f"{sold} sold (already credited; inventory settles next turn)"]
+            if damaged:
+                reasons.append(f"{damaged} in workshop")
+            tasked = max(0, sq.owned_aircraft - sold - damaged)
+            if tasked:
+                reasons.append(f"{tasked} already tasked")
+            return "; ".join(reasons)
         if damaged:
             return f"{damaged} in workshop; remaining aircraft already tasked or sold"
         return f"all {sq.owned_aircraft} already tasked"
@@ -972,6 +984,7 @@ def build_squadron(sq: Squadron, player: Player | None = None) -> SquadronView:
         flyable=_squadron_flyable(sq, grounded) if owned else None,
         unflyable=_unflyable_reason(sq, grounded),
         pending=sq.pending_deliveries or None,
+        pending_sales=max(0, -sq.pending_deliveries) or None,
         pilots=sq.number_of_available_pilots,
         price=math.ceil(sq.aircraft.price),
         sale_price=resale_value(sq.settings, sq.aircraft.price),

@@ -459,6 +459,70 @@ def test_frontline_requires_a_current_enemy_neighbor_and_uses_base_stock(
         )
 
 
+@pytest.mark.parametrize("kind", [DestinationKind.BASE, DestinationKind.FRONTLINE])
+def test_excluded_base_marker_uses_nearby_valid_access(world: Any, kind: Any) -> None:
+    # The convoy road ends outside the abstract base marker's exclusion polygon.
+    terrain = world.game.theater.terrain
+    world.a.convoy_routes[world.b] = (world.a.position, Point(80, 0, terrain))
+    world.b.convoy_routes[world.a] = tuple(reversed(world.a.convoy_routes[world.b]))
+    world.b.front_lines[world.enemy] = object()
+    world.game.theater.landmap = landmap(box(90, -10, 110, 10))
+    destination = movement_destination(
+        world.game,
+        Player.BLUE,
+        kind,
+        base_id=world.b.id,
+        opposing_base_id=world.enemy.id if kind is DestinationKind.FRONTLINE else None,
+    )
+    assert destination.position == P(80, 0)
+    preview = preview_armor_movement(
+        world.game, world.source.id, Player.BLUE, [7], destination
+    )
+    assert preview.route.segments[-1].end == destination.position
+    router = CampaignGroundRouter.for_game(world.game, Player.BLUE)
+    assert all(router.allowed(s) for s in preview.route.segments)
+    # Selecting the excluded marker as a GPS point must still fail.
+    with pytest.raises(GroundRouteError, match="exclusion"):
+        router.plan(P(10, 10), P(100, 0), 100, 50)
+
+
+def test_base_without_road_uses_bounded_safe_access_search(world: Any) -> None:
+    world.a.convoy_routes.clear()
+    world.b.convoy_routes.clear()
+    world.game.theater.landmap = landmap(box(90, -10, 110, 10))
+    world.source.position = Point(120, 20, world.game.theater.terrain)
+    destination = movement_destination(
+        world.game, Player.BLUE, DestinationKind.BASE, base_id=world.b.id
+    )
+    assert destination.position != P(100, 0)
+    assert math.hypot(destination.position.x - 100, destination.position.z) <= 600
+    preview_armor_movement(world.game, world.source.id, Player.BLUE, [7], destination)
+    assert destination == movement_destination(
+        world.game, Player.BLUE, DestinationKind.BASE, base_id=world.b.id
+    )
+
+
+def test_base_access_search_does_not_teleport_to_remote_safe_ground(world: Any) -> None:
+    world.a.convoy_routes.clear()
+    world.b.convoy_routes.clear()
+    world.game.theater.landmap = landmap(box(-600, -700, 800, 700))
+    with pytest.raises(GroundRouteError, match="safe ground access"):
+        movement_destination(
+            world.game, Player.BLUE, DestinationKind.BASE, base_id=world.b.id
+        )
+
+
+def test_base_access_fallback_rejects_water_and_hostile_ground(world: Any) -> None:
+    mask = landmap(box(90, -10, 110, 10))
+    mask = replace(mask, sea_zones=MultiPolygon([box(110, -1000, 1000, 1000)]))
+    router = CampaignGroundRouter(
+        mask, [], offroad_permission=lambda s: s.start.x < 100
+    )
+    position = router.base_access_position(world.b)
+    assert position.x < 100
+    assert router.allowed(GroundSegment(position, position, False))
+
+
 def test_enemy_source_and_destination_are_rejected(world: Any) -> None:
     with pytest.raises(PermissionError):
         armor_movement_options(world.game, world.source.id, Player.RED)
@@ -603,6 +667,7 @@ def test_ground_transport_card_warns_about_missing_tractors(
         ground_object=world.source,
         _friendly=True,
         _viewer=owner,
+        _can_trade=False,
         _move_units=lambda: None,
     )
     card = QGroundObjectMenu._ground_transport(window)
@@ -611,4 +676,5 @@ def test_ground_transport_card_warns_about_missing_tractors(
     assert any("2 tractors available" in text for text in texts)
     assert any("only 2 are available" in text for text in texts)
     set_enabled(world.game.settings, False)
-    assert QGroundObjectMenu._ground_transport(window) is None
+    # Truck purchases remain available even with movement disabled.
+    assert QGroundObjectMenu._ground_transport(window) is not None

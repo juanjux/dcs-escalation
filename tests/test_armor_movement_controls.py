@@ -424,6 +424,7 @@ def test_paused_transport_card_keeps_stop_control(world: Any, controls: Any) -> 
         game=world.game,
         ground_object=world.game.db.tgos.get(moving.detachment_id),
         _friendly=True,
+        _can_trade=False,
         _viewer=Player.BLUE,
         _stop_movement=lambda *args: None,
     )
@@ -581,6 +582,7 @@ def test_source_card_links_each_independent_departure(
         game=world.game,
         ground_object=world.source,
         _friendly=True,
+        _can_trade=False,
         _viewer=Player.BLUE,
         _stop_movement=lambda *args: None,
         _move_units=lambda: None,

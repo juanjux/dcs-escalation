@@ -1,4 +1,4 @@
-"""Buy towing trucks without replacing a mobile SAM battery."""
+"""Buy towing trucks without replacing an armor group or mobile SAM battery."""
 
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ from game.groundmovement.mobility import MobilityMode, movement_mobility
 from game.groundmovement.planning import armor_source
 from game.point_with_heading import PointWithHeading
 from game.theater.player import Player
-from game.theater.theatergroundobject import SamGroundObject
 from game.theater.theatergroup import TheaterGroup, TheaterUnit
 
 if TYPE_CHECKING:
@@ -43,7 +42,7 @@ class SamTruckOptions:
 def sam_truck_options(game: Game, source_id: UUID, owner: Player) -> SamTruckOptions:
     source = armor_source(game, source_id, owner)
     towed = owned = 0
-    mobile = isinstance(source, SamGroundObject)
+    mobile = True  # armor_source has already restricted ownership and source types
     # Include destroyed pieces and trucks: repairing them must not increase the
     # battery beyond its allowance. Existing trucks can be repaired, not rebought.
     for unit in source.units:
@@ -74,15 +73,15 @@ def sam_truck_options(game: Game, source_id: UUID, owner: Player) -> SamTruckOpt
     )
     reason = None
     if not limit:
-        reason = "Only mobile SAM batteries with towed units can buy towing trucks"
+        reason = "Only mobile SAM batteries or armor groups with towed units can buy towing trucks"
     elif source.in_transit or active_transit(game, source.id) is not None:
-        reason = "Stop the battery before buying towing trucks"
+        reason = "Stop the group before buying towing trucks"
     elif not any(u.alive for u in source.units):
-        reason = "Repair the battery before buying towing trucks"
+        reason = "Repair the group before buying towing trucks"
     elif not trucks:
         reason = "This faction has no towing trucks available"
     elif owned >= limit:
-        reason = "The battery has reached its towing truck limit"
+        reason = "The group has reached its towing truck limit"
     return SamTruckOptions(
         source.id,
         towed,
@@ -109,7 +108,7 @@ def buy_sam_trucks(
         raise ValueError(options.reason)
     if quantity > options.remaining:
         raise ValueError(
-            f"The battery can own at most {options.truck_limit} towing trucks; "
+            f"The group can own at most {options.truck_limit} towing trucks; "
             f"only {options.remaining} more can be bought"
         )
     offer = next((o for o in options.offers if o.unit_type == unit_name), None)
@@ -132,7 +131,7 @@ def buy_sam_trucks(
                 if all(point.distance_to_point(p) >= 15 for p in positions):
                     break
         else:
-            raise ValueError("No space remains for towing trucks beside this battery")
+            raise ValueError("No space remains for towing trucks beside this group")
         positions.append(point)
     group = TheaterGroup(
         game.next_group_id(),
@@ -154,6 +153,8 @@ def buy_sam_trucks(
         existing.append(unit)
     source.groups.append(group)
     coalition.adjust_budget(-cost)
-    game.theater.iads_network.invalidate_state_map()
+    network = getattr(game.theater, "iads_network", None)
+    if network is not None:
+        network.invalidate_state_map()
     events.update_tgo(source)
     return tuple(u.id for u in group.units)

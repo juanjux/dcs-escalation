@@ -263,7 +263,7 @@ def capabilities() -> dict:
             "ground/movement/preview (validate an armor move, whole mobile SAM relocation or base-stock GPS deployment; returns a confirmation token)",
             "ground/movement/dispatch (confirm the preview; Ground Movement and Motor Pool required)",
             "ground/movement/stop (stop own reserve movement at its saved position; no refund or teleport)",
-            "ground/towing-trucks (buy faction tractors for a mobile SAM; options and total cap are in ground/movement/options with source_kind=sam)",
+            "ground/towing-trucks (buy faction tractors for armor groups or mobile SAMs; options and total cap are in ground/movement/options with source_kind=armor or sam)",
             "missiles/preview and missiles/target (validate and assign a persistent enemy objective or GPS aimpoint)",
             "missiles/{source_id}/target (delete: cancel an own missile assignment)",
             "naval/move (reposition one of your ship groups or carriers, <=80nm over water)",

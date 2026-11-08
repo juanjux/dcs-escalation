@@ -132,6 +132,10 @@ tool/resource of the same name.
   deployment without changing anything. Returns distance, arrival estimate and `preview_token`.
 - `POST /ground/movement/dispatch` — send the same request plus its `preview_token`;
   revalidates ownership, territory, inventory and route. Requires Ground Movement + Motor Pool.
+- `POST /ground/towing-trucks` `{side, source_id, unit_type, quantity}` — buy faction
+  towing trucks for an armor group or mobile SAM/radar site without replacing units.
+  Movement options (`source_kind=armor` or `sam`) report prices and the shared cap:
+  towable pieces + 2, including destroyed pieces and trucks. Stop the group first.
 - `GET /ground/movement` — own saved reserve orders, positions, losses, progress and pause reasons.
 - `POST /ground/movement/stop` `{side, order_id}` — stop at the saved campaign position;
   no refund or teleport. Use `source_kind=sam` to relocate a whole mobile SAM/radar

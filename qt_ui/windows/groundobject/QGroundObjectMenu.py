@@ -425,7 +425,7 @@ class QGroundObjectMenu(QDialog):
                 and index >= 0
                 and price <= self.ground_object.coalition.budget
             )
-            buy.setToolTip(options.reason or "Add trucks without replacing the battery")
+            buy.setToolTip(options.reason or "Add trucks without replacing the group")
 
         def purchase() -> None:
             try:

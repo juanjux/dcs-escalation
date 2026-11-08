@@ -174,12 +174,11 @@ def preview_base_movement(
     destination = movement_destination(
         game, owner, DestinationKind.POSITION, position=position
     )
-    origin = GroundPosition(base.position.x, base.position.y)
+    router = CampaignGroundRouter.for_game(game, owner)
+    origin = router.base_access_position(base)
     road_budget = distance_per_turn(game.settings, on_road=True)
     offroad_budget = distance_per_turn(game.settings, on_road=False)
-    route = CampaignGroundRouter.for_game(game, owner).plan(
-        origin, position, road_budget, offroad_budget
-    )
+    route = router.plan(origin, position, road_budget, offroad_budget)
     road = sum(s.length for s in route.segments if s.on_road)
     offroad = sum(s.length for s in route.segments if not s.on_road)
     count = len(manifest.unit_ids)
@@ -214,7 +213,17 @@ def dispatch_base_movement(
     group_id = game.next_group_id()
     name = f"Reserve Armor Group {group_id}"
     tgo = VehicleGroupGroundObject(
-        name, PresetLocation(name, base.position), base, None
+        name,
+        PresetLocation(
+            name,
+            Point(
+                preview.route.segments[0].start.x,
+                preview.route.segments[0].start.z,
+                game.theater.terrain,
+            ),
+        ),
+        base,
+        None,
     )
     tgo.reserve_from_base = True
     identities = {i: game.next_unit_id() for i in preview.manifest.unit_ids}

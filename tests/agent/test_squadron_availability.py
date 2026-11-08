@@ -82,6 +82,52 @@ def test_an_available_squadron_has_no_reason() -> None:
     assert view.unflyable is None
 
 
+def test_sold_aircraft_are_not_reported_as_tasked() -> None:
+    sq = _squadron(owned=4, untasked=0)
+    sq.pending_deliveries = -4
+    view = views.build_squadron(sq)
+    assert view.pending_sales == 4
+    assert view.pending == -4
+    assert view.untasked == view.flyable == 0
+    assert view.unflyable == "4 sold (already credited; inventory settles next turn)"
+
+
+def test_sales_and_actual_tasking_are_distinguished() -> None:
+    sq = _squadron(owned=4, untasked=0)
+    sq.pending_deliveries = -2
+    view = views.build_squadron(sq)
+    assert view.pending_sales == 2
+    assert view.unflyable == (
+        "2 sold (already credited; inventory settles next turn); 2 already tasked"
+    )
+
+
+def test_sales_remain_visible_when_other_aircraft_are_available() -> None:
+    sq = _squadron(owned=4, untasked=2)
+    sq.pending_deliveries = -2
+    view = views.build_squadron(sq)
+    assert view.pending_sales == 2 and view.flyable == 2
+    assert view.unflyable is None
+
+
+def test_sales_workshop_and_tasking_do_not_double_count() -> None:
+    sq = _squadron(owned=4, untasked=0)
+    sq.pending_deliveries = -2
+    sq.aircraft_repairs = [object()]
+    view = views.build_squadron(sq)
+    assert view.unflyable == (
+        "2 sold (already credited; inventory settles next turn); "
+        "1 in workshop; 1 already tasked"
+    )
+
+
+def test_no_sales_field_when_nothing_is_sold() -> None:
+    payload = views.build_squadron(_squadron(owned=4, untasked=2)).model_dump(
+        exclude_none=True
+    )
+    assert "pending_sales" not in payload
+
+
 def test_the_real_squadron_has_the_attributes_this_reads() -> None:
     """Guard: the fakes above would happily validate a rename or a property/method mix-up."""
     from game.squadrons.squadron import Squadron

@@ -154,6 +154,37 @@ def gps(stock: Any, *, x: float = 80, base: bool = False) -> dict[str, Any]:
     }
 
 
+def test_opfor_can_buy_tractors_for_regular_armor(stock: Any, api: Any) -> None:
+    from types import MethodType
+    from game.coalition import Coalition
+
+    coalition = stock.a.coalition
+    coalition.budget = 100.0
+    coalition.adjust_budget = MethodType(Coalition.adjust_budget, coalition)
+    before = list(stock.source.units)
+    response = api.request(
+        "GET",
+        "/options",
+        params={"source_id": str(stock.source.id), "source_kind": "armor"},
+    )
+    assert response.status_code == 200, response.text
+    trucks = response.json()["towing_trucks"]
+    assert trucks["towed_units"] == 5 and trucks["truck_limit"] == 7
+    response = api.request(
+        "POST",
+        "/retribution-ai/ground/towing-trucks",
+        json={
+            "source_id": str(stock.source.id),
+            "unit_type": "Truck Ural-375",
+            "quantity": 2,
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["owned_trucks"] == 4
+    assert list(stock.source.units)[: len(before)] == before
+    assert coalition.budget == 94
+
+
 def test_read_only_options_preview_and_own_context(stock: Any, api: Any) -> None:
     before = pickle.dumps(stock.game)
     response = api.request(

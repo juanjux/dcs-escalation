@@ -511,7 +511,7 @@ def stop_ground_movement(order_id: str, side: str = "red") -> dict:
 
 @_tool()
 def buy_sam_trucks(request: schemas.BuySamTrucksRequest) -> dict:
-    """Add faction towing trucks to a mobile SAM; cap is towable units + 2."""
+    """Add faction towing trucks to armor or a mobile SAM; cap is towable units + 2."""
     return service.buy_sam_trucks(request.side, request)
 
 
