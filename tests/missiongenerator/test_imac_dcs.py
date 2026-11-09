@@ -525,17 +525,24 @@ def test_debug_suppresses_disabled_sides_and_limits_screen_messages() -> None:
     assert lua.eval("#messages") <= 8
 
 
-def test_grounded_debug_stays_in_the_log_without_using_screen_message_budget() -> None:
+@pytest.mark.parametrize(
+    "change,reason",
+    [("cap.air=false", "not airborne"), ("cap.active=false", "flight unavailable")],
+)
+def test_inactive_debug_stays_in_the_log_without_using_screen_message_budget(
+    change: str, reason: str
+) -> None:
     lua = runtime()
-    lua.execute("cfg.options.debug=true;cfg.options.reports=false;cap.air=false")
+    lua.execute("cfg.options.debug=true;cfg.options.reports=false;" + change)
     start(lua)
     lua.execute("tick(5);tick(65)")
-    assert "availability|not airborne" in lua.eval("table.concat(logs,';')")
+    assert "availability|" + reason in lua.eval("table.concat(logs,';')")
+    lua.globals().quietReason = reason
     assert lua.eval(
         "(function() for _,m in ipairs(messages) do "
-        "if m.text:find('not airborne',1,true) then return false end end return true end)()"
+        "if m.text:find(quietReason,1,true) then return false end end return true end)()"
     )
-    lua.execute("cap.air=true;cap.fuel=.1;tick(75)")
+    lua.execute("cap.air=true;cap.active=true;cap.fuel=.1;tick(75)")
     assert "fuel at BINGO reserve" in lua.eval("messages[#messages].text")
     assert lua.eval("#groups.CAP.pushes") == 0
 
