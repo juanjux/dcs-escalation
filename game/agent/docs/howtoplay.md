@@ -754,17 +754,16 @@ The DCS AI that actually flies these missions is limited. Plan robustly around i
   the ingress can't sit OUTSIDE the defender's umbrella, the jet gets engaged on the way in
   and (dumb AI) aborts anyway. (Plus: soften the defense with DEAD/ANTISHIP and add
   **ESCORT** to pull blue's CAP off the strikers.)
-- **SEAD and ESCORT waypoints sit too close too — move them out as well.** The same close-in
-  placement bites more than the strike ingress:
+- **Check SEAD placement and keep escort holds at ingress.** Stand-off packages need
+  more than a suitable strike ingress:
   - **SEAD / SEAD_ESCORT / SEAD_SWEEP:** the **SEAD SEARCH** and **INGRESS** waypoints are put
     right up on the target. Against a SAM site — or a SAM-armed **ship** — that's a death
     sentence: the SEADer is killed before it suppresses anything. Move **SEAD SEARCH / INGRESS**
     OUT to where its anti-radiation missile still reaches but the jet stays outside the threat's
     lethal envelope (same idea as the ingress rule — match it to the ARM's range).
-  - **ESCORT:** the **ESCORT SEARCH** waypoint is dragged almost onto the target, so the escort
-    leaves the strikers and flies into the defenses alone. Move **ESCORT SEARCH** back to the
-    **ingress zone** (where the package forms up and the strikers actually need cover) — the
-    same move used for a jamming/EWAR escort.
+  - **ESCORT / SEAD_ESCORT:** attack escorts place **ESCORT HOLD** at their ingress,
+    not near the target. Patrol escorts protect the racetrack; transport escorts protect
+    the drop-off. If the ingress is moved manually, check the hold and move it too if needed.
   Read `GET /waypoints/{flight_id}` and reposition these with `/waypoints/edit` (move, never
   delete), exactly like the strike ingress above.
 
@@ -786,9 +785,10 @@ The DCS AI that actually flies these missions is limited. Plan robustly around i
   miss.** After every DEAD/SEAD package, walk the whole list per flight:
 
   1. `INGRESS_*` on every flight that shoots.
-  2. `ESCORT HOLD` (type `CUSTOM`) — the planner parks it a few miles off the target, so
-     the escort orbits inside the ring while the strikers stand off.
-  3. The escort's `TARGET_GROUP_LOC` — it points at the SAM itself.
+  2. `ESCORT HOLD` (type `CUSTOM`) — generated at the escort's ingress. Keep it there
+     when manually moving the ingress out for a stand-off attack.
+  3. The escort's `TARGET_GROUP_LOC` — a target reference omitted from AI routes;
+     keep it on the objective, not at the hold.
   4. `NAV/SEAD Sweep` on the sweep flight.
 
   `JOIN` can stay where it is. If you moved the ingress to 90 nm and left HOLD at 7 nm,

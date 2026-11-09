@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Flight Plans]** Place attack Escort and SEAD Escort holds at ingress instead of near the target, preserving patrol and transport protection.
 * **[Intel]** Economy map links with icon hover highlighting and direct base-tab links from Air and Ground forces.
 * **[Ground Movement]** Buy faction towing trucks for mobile SAM batteries in the location dialog and REST/MCP API, limited to the total number of towable units plus two.
 * **[Pilots]** Assign names by drag-and-drop or ordered squadron autofill, with thirteen themed name lists and editable user categories shared across campaigns.
