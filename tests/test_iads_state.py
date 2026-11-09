@@ -92,17 +92,27 @@ def test_a_site_with_no_dependencies_is_working() -> None:
     assert _status(_map(_node(ewr)), ewr).state is IadsState.NETWORKED
 
 
-def test_relocating_radar_is_dark_and_cannot_feed_other_sites() -> None:
+def test_relocating_radar_has_its_own_state_and_cannot_feed_other_sites() -> None:
     ewr = _group("RADAR", IadsRole.EWR, _unit(detection=100_000))
     sam = _group("SAM", IadsRole.SAM, _unit(detection=50_000))
     ewr.ground_object.in_transit = True
     state = _map(_node(ewr), _node(sam))
-    assert _status(state, ewr).state is IadsState.DARK
-    assert "Relocating" in _status(state, ewr).reason
+    status = _status(state, ewr)
+    assert status.state is IadsState.RELOCATING
+    assert status.notable and not status.blind
+    assert "Relocating" in status.reason
+    assert "packed" not in status.reason
+    assert "No power" not in status.reason
     assert _status(state, sam).state is IadsState.AUTONOMOUS
     ewr.ground_object.in_transit = False
     state = _map(_node(ewr), _node(sam))
     assert _status(state, sam).state is IadsState.NETWORKED
+
+
+def test_a_destroyed_relocating_site_stays_destroyed() -> None:
+    sam = _group("SAM", IadsRole.SAM, _unit(alive=False))
+    sam.ground_object.in_transit = True
+    assert _status(_map(_node(sam)), sam).state is IadsState.DESTROYED
 
 
 def test_losing_the_substation_puts_a_site_out_for_the_mission() -> None:

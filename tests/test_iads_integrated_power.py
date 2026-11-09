@@ -146,6 +146,21 @@ def test_integrated_power_lasts_only_while_a_combat_vehicle_survives() -> None:
     assert not mains_are_up(node(network, sam))
 
 
+def test_moving_integrated_site_is_relocating_not_unpowered() -> None:
+    sam = site("TUNGUSKA")
+    sam.groups[0].units[0].type = AirDefence.x_2S6_Tunguska
+    sam.in_transit = True
+    network = IadsNetwork(True)
+    network.initialize_network(iter([sam]))
+    assert mains_are_up(node(network, sam))
+    status = network.state_map.status_for(sam)
+    assert status is not None and status.state is IadsState.RELOCATING
+    assert describe(sam, network).verdict == "RELOCATING"
+    sam.in_transit = False
+    network.initialize_network(iter([sam]))
+    assert state(network, sam) is IadsState.AUTONOMOUS
+
+
 def test_legacy_grid_links_do_not_override_integrated_power() -> None:
     network, objects = chain()
     sam, plant = objects[3], objects[5]

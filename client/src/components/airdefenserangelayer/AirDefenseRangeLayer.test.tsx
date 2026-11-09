@@ -241,6 +241,19 @@ describe("AirDefenseRangeLayer", () => {
     expect(mockCircle).not.toHaveBeenCalled();
   });
 
+  it.each([false, true])(
+    "keeps fixed coverage hidden during relocation (detection %s)",
+    (detection) => {
+      renderWithProviders(
+        <AirDefenseRangeLayer blue={false} detection={detection} />,
+        {
+          preloadedState: withIadsState("relocating", false, [400]) as any,
+        },
+      );
+      expect(mockCircle).not.toHaveBeenCalled();
+    },
+  );
+
   // An autonomous site still shoots, at whatever its own radar finds, so its ring is
   // left exactly as it is. Dashing or recolouring it would say "jamming bubble".
   it("leaves an autonomous site's ring alone", () => {

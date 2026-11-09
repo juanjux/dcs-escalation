@@ -111,7 +111,7 @@ def test_arrival_and_explicit_stop_reconnect_to_the_new_friendly_sector(
     transit = move(world)
     assert sam.in_transit
     assert not links(network, sam)
-    assert network.state_map.status_for(sam).state is IadsState.DARK
+    assert network.state_map.status_for(sam).state is IadsState.RELOCATING
     assert exported_site(world) is None
 
     world.game.turn += 1
@@ -122,7 +122,7 @@ def test_arrival_and_explicit_stop_reconnect_to_the_new_friendly_sector(
         assert not transit.finished and sam.in_transit
         assert GroundPosition(sam.position.x, sam.position.y) == deployed
         assert exported_site(world) is None
-        assert network.state_map.status_for(sam).state is IadsState.DARK
+        assert network.state_map.status_for(sam).state is IadsState.RELOCATING
         stop_armor(world.game, transit.order_id, Player.BLUE, events)
     else:
         advance_armor(world.game, events)

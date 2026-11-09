@@ -1,5 +1,11 @@
 import { Tgo as TgoModel } from "../../api/liberationApi";
-import { iadsBarColor, iconForTgo, isJammer, isRepairing } from "./shared";
+import {
+  iadsBarColor,
+  iadsStateLabel,
+  iconForTgo,
+  isJammer,
+  isRepairing,
+} from "./shared";
 
 // APP-6(D) SIDC with the status/condition digit (index 6) parameterised.
 function sidc(status: string): string {
@@ -79,6 +85,19 @@ describe("iadsBarColor", () => {
     expect(iadsBarColor(withState("2", "autonomous"))).toBe("rgb(178,120,255)");
   });
 
+  it.each(["2", "3"])(
+    "paints a relocating site's bar blue (condition %s)",
+    (status) => {
+      const tgo = withState(status, "relocating");
+      expect(iadsBarColor(tgo)).toBe("rgb(70,160,255)");
+      expect(iadsStateLabel(tgo)).toBe("IADS: relocating");
+      const url = iconForTgo(tgo).options.iconUrl ?? "";
+      const svg = decodeURIComponent(url.slice(url.indexOf(",") + 1));
+      expect(svg).toContain("rgb(70,160,255)");
+      expect(svg).not.toContain("rgb(130,140,150)");
+    },
+  );
+
   it("leaves a working site alone", () => {
     expect(iadsBarColor(withState("2", "networked"))).toBeNull();
     expect(iadsBarColor(withState("2", null))).toBeNull();
@@ -88,6 +107,7 @@ describe("iadsBarColor", () => {
     // It is dark, of course it is -- but "destroyed" is the more useful of the two
     // things to be told, and the red bar is the only place the map says it.
     expect(iadsBarColor(withState("4", "dark"))).toBeNull();
+    expect(iadsBarColor(withState("4", "relocating"))).toBeNull();
   });
 
   it("wins over the repair orange", () => {

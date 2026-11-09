@@ -242,6 +242,14 @@ def _jamming_link(status: Optional[IadsStatus], friendly: bool) -> IadsLink:
     unpowered site up, so a dark one denies nothing: the row said it was jamming
     regardless, which was the last place the card disagreed with the mission.
     """
+    if status is not None and status.state is IadsState.RELOCATING:
+        return IadsLink(
+            caption="JAMMING",
+            title="Nothing is being jammed",
+            note="jamming is suspended while the site relocates",
+            chip="RELOCATING",
+            tone=LinkTone.INFO,
+        )
     if status is not None and status.state is IadsState.DARK:
         return IadsLink(
             caption="JAMMING",
