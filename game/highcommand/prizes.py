@@ -44,7 +44,7 @@ MIN_SCORE = 2
 MAX_SCORE = 10
 MIN_SQUADRON_SCORE = 7
 MIN_SQUADRON_AIRCRAFT = 6
-SQUADRON_AIRCRAFT_LIMITS = {"[CH] B-21": 2}
+BOMBER_SQUADRON_AIRCRAFT = 2
 
 #: The five rungs of pilot skill, as the mission editor names them.
 RUNGS = ("Cadet", "Rookie", "Trained", "Veteran", "Ace")
@@ -112,7 +112,9 @@ class Prize(SaveCompatible):
         if self.kind != "squadron":
             return
         terms = dict(self.terms)
-        limit = SQUADRON_AIRCRAFT_LIMITS.get(terms.get("type", ""))
+        if terms.get("aircraft", 0) <= BOMBER_SQUADRON_AIRCRAFT:
+            return
+        limit = _saved_squadron_limit(terms.get("type", ""))
         if limit is None or terms.get("aircraft", 0) <= limit:
             return
         terms["aircraft"] = limit
@@ -533,6 +535,27 @@ def _squadron_line(count: int, aircraft: str, turns: int) -> str:
     return f"A ticket for a squadron of {count} {aircraft} on loan for {_turns(turns)}."
 
 
+def _squadron_aircraft_limit(aircraft: AircraftType) -> Optional[int]:
+    role = getattr(aircraft, "role", "").casefold()
+    if "bomber" in role and "fighter" not in role and "light" not in role:
+        return BOMBER_SQUADRON_AIRCRAFT
+    return None
+
+
+def _saved_squadron_limit(name: str) -> Optional[int]:
+    from game.dcs.aircrafttype import AircraftType
+
+    aircraft: Optional[AircraftType]
+    try:
+        aircraft = AircraftType.named(name)
+    except KeyError:
+        # Tickets store display names, which need not equal the variant key.
+        aircraft = next(
+            (a for a in AircraftType.iter_all() if a.display_name == name), None
+        )
+    return _squadron_aircraft_limit(aircraft) if aircraft is not None else None
+
+
 @_kind("squadron", min_score=MIN_SQUADRON_SCORE, ticket=True)
 def _squadron(score: int, context: Context) -> Worked:
     fleet = sorted(
@@ -565,7 +588,9 @@ def _squadron(score: int, context: Context) -> Worked:
         return None
     aircraft = fleet[min(available, key=lambda index: (abs(index - pick), index))]
     count = MIN_SQUADRON_AIRCRAFT + 2 * (score - MIN_SQUADRON_SCORE)
-    count = min(count, SQUADRON_AIRCRAFT_LIMITS.get(aircraft.display_name, count))
+    limit = _squadron_aircraft_limit(aircraft)
+    if limit is not None:
+        count = min(count, limit)
     turns = half_up(score)
     return (
         _squadron_line(count, aircraft.display_name, turns),
