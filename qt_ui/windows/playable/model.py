@@ -204,13 +204,19 @@ def aircraft_of(game: Any) -> list[Aircraft]:
     return [Aircraft(flight) for flight in receivers(game.blue)]
 
 
-def figures(aircraft: Sequence[Aircraft]) -> tuple[int, int, int]:
+def figures(
+    aircraft: Sequence[Aircraft], points: Optional[Sequence[SavedPoint]] = None
+) -> tuple[int, int, int]:
     """The three headline numbers: aircraft, packages, points."""
     packages = {
         id(one.flight.package) for one in aircraft if one.assigned
     }  # by identity: a package has no id of its own
-    points = len({point.id for one in aircraft for point in one.points})
-    return len(aircraft), len(packages), points
+    saved = (
+        {point.id for point in points}
+        if points is not None
+        else {point.id for one in aircraft for point in one.points}
+    )
+    return len(aircraft), len(packages), len(saved)
 
 
 @dataclass
@@ -229,6 +235,10 @@ class Clipboard:
         return not self.points
 
     def take(self, aircraft: Aircraft) -> None:
+        self.take_points(aircraft.points, aircraft.title)
+
+    def take_points(self, points: Sequence[SavedPoint], source: str) -> None:
+        """Copy campaign points even when no player aircraft is selected."""
         self.points = [
             SavedPoint(
                 kind=point.kind,
@@ -237,9 +247,9 @@ class Clipboard:
                 y=point.y,
                 altitude_ft=point.altitude_ft,
             )
-            for point in aircraft.points
+            for point in points
         ]
-        self.source = aircraft.title
+        self.source = source
 
     def take_one(self, point: SavedPoint, source: str) -> None:
         """Copying one point is a copy too: the Paste beside it has to light up."""
@@ -259,10 +269,10 @@ class Clipboard:
         return len(self.points)
 
     def paste_into(self, aircraft: Aircraft) -> int:
-        """Write what fits, in order, and say how many went in."""
-        from game.ato.savedpoints import add_point
+        return self.paste_points(aircraft.points)
 
-        written = 0
+    def paste_points(self, points: list[SavedPoint]) -> int:
+        """Append independent copies to campaign storage without aircraft limits."""
         for point in self.points:
             copy = SavedPoint(
                 kind=point.kind,
@@ -271,9 +281,8 @@ class Clipboard:
                 y=point.y,
                 altitude_ft=point.altitude_ft,
             )
-            if add_point(aircraft.flight, copy):
-                written += 1
-        return written
+            points.append(copy)
+        return len(self.points)
 
 
 def kind_rows(aircraft: Aircraft) -> Iterator[tuple[PointKind, list[tuple[int, Any]]]]:
