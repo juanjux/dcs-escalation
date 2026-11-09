@@ -48,7 +48,10 @@ def site(
         else SamGroundObject(name, location, cp, None)
     )
     position = PointWithHeading.from_point(location, Heading.from_degrees(0))
-    kind = Fortification.Comms_tower_M if role in categories else AirDefence.Osa_9A33_ln
+    # Generic sites require external power; integrated defences have separate tests.
+    kind = (
+        Fortification.Comms_tower_M if role in categories else AirDefence.Kub_1S91_str
+    )
     unit = TheaterUnit(1, name, kind, position, obj)
     group = IadsGroundGroup(1, name, position, [unit], obj)
     group.iads_role = role
