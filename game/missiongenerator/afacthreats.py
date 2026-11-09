@@ -9,6 +9,7 @@ from dcs.vehicles import AirDefence, vehicle_map
 from game.data.units import ANTI_AIR_UNIT_CLASSES, UnitClass
 from game.data.radar_db import LAUNCHER_TRACKER_PAIRS
 from game.dcs.groundunittype import GroundUnitType
+from game.theater.iadsnetwork.iadsstate import IadsState
 
 # Metres above the launcher, added to its native MSL position by AFACSafety.
 # Sources: installed DCS 2.9.31 TechWeaponPack and the named mod weapon files.
@@ -194,3 +195,27 @@ def radar_support(unit: Any, group: Any, unit_map: Any) -> dict[str, Any]:
             if required_types and other.type in required_types
         ]
     return {"needsRadar": True, "radars": radars}
+
+
+def disabled_iads_units(network: Any, unit_map: Any) -> set[str]:
+    """Native units in primary batteries shown dark for this campaign turn.
+
+    Point-defence groups have their own power and must not inherit the primary
+    battery's state. Relocating and autonomous sites are not switched off.
+    """
+    nodes = getattr(network, "nodes", ())
+    if not nodes:
+        return set()
+    state_map = network.state_map
+    disabled = {
+        id(unit)
+        for node in nodes
+        if (status := state_map.status_for(node.group.ground_object)) is not None
+        and status.state is IadsState.DARK
+        for unit in node.group.units
+    }
+    return {
+        name
+        for name, entry in unit_map.theater_objects.items()
+        if id(entry.theater_unit) in disabled
+    }

@@ -18,7 +18,7 @@ from game.groundmovement.samdefense import transit_defense
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsnetwork import SkynetNode
 from game.theater.player import Player
-from .afacthreats import envelope, radar_support
+from .afacthreats import disabled_iads_units, envelope, radar_support
 
 SCRIPTS = ("geometry.lua", "commander.lua", "imac-dcs.lua")
 DEFAULTS: dict[str, float | bool] = {
@@ -329,6 +329,7 @@ def _threats(generator: Any, result: dict[str, Any]) -> None:
     mapping = generator.unit_map
     if mapping is None:
         raise ValueError("IMAC requires UnitMap for coalition-known SAM intelligence")
+    disabled = disabled_iads_units(generator.game.theater.iads_network, mapping)
     settings = generator.game.settings
     fog = settings.plugin_option_or("realisticcas", False)
     armor = fog and settings.plugin_option_or("realisticcas.includeArmorGroups", False)
@@ -385,6 +386,7 @@ def _threats(generator: Any, result: dict[str, Any]) -> None:
                                 else None
                             ),
                             **support,
+                            iadsDisabled=unit.name in disabled,
                             transitDefense=reactive is not None,
                         )
                     )

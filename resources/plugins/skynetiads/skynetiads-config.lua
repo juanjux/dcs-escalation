@@ -20,6 +20,17 @@ if dcsRetribution and SkynetIADS then
         end
         return nil -- Unmanaged sites must remain potential threats.
     end
+    dcsRetribution.iadsCanEngage = function(groupName)
+        local element = elementsByGroup[groupName]
+        if not element then return nil end
+        if not element:hasWorkingPowerSource() then return false end
+        if element:getAutonomousState() and element:getAutonomousBehaviour() ==
+                SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK then
+            return false
+        end
+        -- Ordinary radar silence is not a shutdown: the IADS can wake it.
+        return true
+    end
 
     -- specific options
     local createRedIADS = false
