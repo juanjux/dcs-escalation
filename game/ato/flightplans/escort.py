@@ -118,19 +118,13 @@ class Builder(FormationAttackBuilder[EscortFlightPlan, FormationAttackLayout]):
 
         split = builder.split(self._get_split())
 
-        is_helo = builder.flight.is_helo
-
-        # When escorting a flight that flies a racetrack orbit (AWACS/tanker), hold
-        # on that racetrack so the escort actually co-locates with and protects it.
-        # Otherwise the hold defaults to the package's target-relative geometry, which
-        # can land 70-80 NM away from where the protected flight actually orbits.
+        # Protect patrols on their racetrack. Attack escorts wait at their ingress,
+        # not at the target-relative initial point inside the enemy defences.
         racetrack_hold = self._racetrack_hold_point(escorted)
         if racetrack_hold is not None:
             initial = builder.escort_hold(racetrack_hold)
         else:
-            initial = builder.escort_hold(
-                target.position if is_helo else self.package.waypoints.initial,
-            )
+            initial = builder.escort_hold(ingress.position)
 
         if escorted and escorted.flight_type in [
             FlightType.AIR_ASSAULT,
@@ -192,7 +186,7 @@ class Builder(FormationAttackBuilder[EscortFlightPlan, FormationAttackLayout]):
         package's target reference (70-80 NM beyond the threat boundary). Returning
         the racetrack center lets the escort hold on the orbit it is meant to
         protect, instead of at the unrelated target-relative escort-hold geometry.
-        Returns None for non-racetrack primaries, leaving the default behaviour.
+        Returns None for other primaries, which use the ingress or transport route.
         """
         if primary is None:
             return None
