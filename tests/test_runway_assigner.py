@@ -7,12 +7,13 @@ from typing import Any
 
 import pytest
 from dcs.terrain.afghanistan import Afghanistan
+from dcs.terrain.nevada import Nevada
 
 from game.ato.flightplans.alignpoint import align_waypoint
-from game.runways import CALM_WIND, RunwayAssigner, RunwayData
+from game.runways import RunwayAssigner, RunwayData, runway_centerline
 from game.theater.controlpoint import Airfield
 from game.theater.player import Player
-from game.utils import Heading, knots
+from game.utils import Heading, nautical_miles
 
 
 def _runway(name: str, heading: int, ils: bool = False) -> RunwayData:
@@ -57,9 +58,8 @@ def _chosen(
     return assigner.get_preferred_runway(None, None).runway_name  # type: ignore[arg-type]
 
 
-def test_calm_air_uses_the_instrument_runway(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Two knots from the north-east would otherwise select 05, which has no ILS."""
-    assert _chosen(monkeypatch, from_degrees=29, mps=1.0) == "28"
+def test_zero_wind_uses_the_instrument_runway(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert _chosen(monkeypatch, from_degrees=29, mps=0.0) == "28"
 
 
 def test_a_real_wind_still_decides(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -67,12 +67,11 @@ def test_a_real_wind_still_decides(monkeypatch: pytest.MonkeyPatch) -> None:
     assert _chosen(monkeypatch, from_degrees=50, mps=10.0) == "05"
 
 
-def test_the_threshold_is_where_the_wind_takes_over(
-    monkeypatch: pytest.MonkeyPatch,
+@pytest.mark.parametrize("speed", [0.01, 1.0, 2.3260408068684355, 2.58, 10.0])
+def test_light_wind_does_not_prefer_a_tailwind_ils_runway(
+    monkeypatch: pytest.MonkeyPatch, speed: float
 ) -> None:
-    calm = CALM_WIND.meters_per_second
-    assert _chosen(monkeypatch, from_degrees=29, mps=calm - 0.01) == "28"
-    assert _chosen(monkeypatch, from_degrees=29, mps=calm) == "05"
+    assert _chosen(monkeypatch, from_degrees=29, mps=speed) == "05"
 
 
 def test_calm_air_at_a_field_with_no_aid_still_reads_the_wind(
@@ -83,8 +82,11 @@ def test_calm_air_at_a_field_with_no_aid_still_reads_the_wind(
     assert _chosen(monkeypatch, from_degrees=29, mps=1.0, runways=bare) == "05"
 
 
-def test_the_calm_threshold_is_five_knots() -> None:
-    assert CALM_WIND == knots(5)
+def test_instrument_runway_is_still_preferred_when_headwinds_tie(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parallel = [_runway("09L", 90), _runway("09R", 90, ils=True)]
+    assert _chosen(monkeypatch, 90, mps=1, runways=parallel) == "09R"
 
 
 @pytest.mark.parametrize("from_degrees", [0, 14, 90, 194, 270, 359])
@@ -136,3 +138,41 @@ def test_kabul_zero_surface_wind_aligns_with_runway_11(direction: int) -> None:
     assert waypoint.description == "Established on Kabul runway 11"
     approach_heading = waypoint.position.heading_between_point(arrival.position)
     assert approach_heading == pytest.approx(110)
+
+
+def test_tonopah_test_range_light_wind_aligns_with_headwind_runway_32() -> None:
+    terrain = Nevada()
+    theater: Any = SimpleNamespace(terrain=terrain)
+    arrival = Airfield(terrain.airports["Tonopah Test Range"], theater, Player.BLUE)
+    conditions: Any = SimpleNamespace(
+        weather=SimpleNamespace(
+            wind=SimpleNamespace(
+                at_0m=SimpleNamespace(direction=160, speed=2.3260408068684355)
+            )
+        )
+    )
+    runways = list(RunwayData.for_pydcs_airport(theater, arrival.dcs_airport))
+    assert next(r for r in runways if r.runway_name == "14").ils is not None
+    assert arrival.active_runway(theater, conditions, {}).runway_name == "32"
+    flight: Any = SimpleNamespace(
+        arrival=arrival,
+        is_helo=False,
+        coalition=SimpleNamespace(
+            game=SimpleNamespace(
+                conditions=conditions,
+                settings=SimpleNamespace(
+                    align_before_landing=True, align_distance_nm=15
+                ),
+            )
+        ),
+    )
+    waypoint = align_waypoint(flight)
+    assert waypoint is not None
+    assert waypoint.description == "Established on Tonopah Test Range runway 32"
+    axis = runway_centerline(theater, arrival.dcs_airport, "32")
+    assert axis is not None
+    center, course = axis
+    expected = center.point_from_heading(
+        (course + 180) % 360, nautical_miles(15).meters
+    )
+    assert waypoint.position.distance_to_point(expected) < 1e-7
