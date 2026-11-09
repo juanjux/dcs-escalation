@@ -35,7 +35,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from game.ato.savedpoints import PointKind
+from game.ato.savedpoints import PointKind, SavedPoint
 from game.server.savedpoints.notifications import publish_points_changed
 from qt_ui.uiconstants import AIRCRAFT_ICONS
 from qt_ui.widgets.controls import mono
@@ -442,29 +442,47 @@ class PointRow:
 
 
 class PointsModel(QAbstractTableModel):
-    """One aircraft's points, grouped by kind."""
+    """Campaign points, with aircraft export capacity when one is selected."""
 
     def __init__(self) -> None:
         super().__init__()
         self._rows: list[PointRow] = []
         self._aircraft: Optional[Aircraft] = None
+        self._points: list[SavedPoint] = []
         self._format: Any = None
 
-    def show(self, aircraft: Optional[Aircraft], coordinates: Any) -> None:
+    def show(
+        self,
+        aircraft: Optional[Aircraft],
+        coordinates: Any,
+        points: Optional[list[SavedPoint]] = None,
+    ) -> None:
         self.beginResetModel()
         self._aircraft = aircraft
+        self._points = (
+            points if points is not None else aircraft.points if aircraft else []
+        )
         self._format = coordinates
         self._rows = []
-        if aircraft is not None:
-            for kind in aircraft.kinds:
-                held = aircraft.of_kind(kind)
-                self._rows.append(
-                    PointRow(kind, used=len(held), maximum=aircraft.maximum(kind))
+        for kind in aircraft.kinds if aircraft else PointKind:
+            held = [
+                (index, point)
+                for index, point in enumerate(self._points)
+                if point.kind is kind
+            ]
+            if not held and aircraft is None:
+                continue
+            self._rows.append(
+                PointRow(
+                    kind,
+                    used=len(held),
+                    maximum=aircraft.maximum(kind) if aircraft else 0,
                 )
-                for number, (index, point) in enumerate(held, start=1):
-                    self._rows.append(
-                        PointRow(kind, index=index, point=point, number=number)
-                    )
+            )
+            for number, (index, point) in enumerate(held, start=1):
+                self._rows.append(
+                    PointRow(kind, index=index, point=point, number=number)
+                )
         self.endResetModel()
 
     @property
@@ -502,6 +520,8 @@ class PointsModel(QAbstractTableModel):
         return None
 
     def _header_text(self, row: PointRow) -> str:
+        if self._aircraft is None:
+            return f"{row.kind.label.upper()}S     {row.used} saved"
         # A kind the aircraft cannot be given says so rather than reading "2 / 0".
         count = (
             f"{row.used} / {row.maximum}"
@@ -569,9 +589,7 @@ class PointsModel(QAbstractTableModel):
         row = self.at(index)
         if row is None or row.is_header or role != Qt.ItemDataRole.EditRole:
             return False
-        if self._aircraft is None or not any(
-            point is row.point for point in self._aircraft.points
-        ):
+        if not any(point is row.point for point in self._points):
             return False
         if index.column() == NAME:
             name = str(value).strip()[:NAME_LENGTH]

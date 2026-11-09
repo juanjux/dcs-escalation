@@ -1,13 +1,7 @@
-"""What the player is flying this turn, and what is written down for each aircraft.
+"""Player aircraft, shared campaign GPS points and aircraft-specific notes.
 
-The information existed, in three places: the air tasking order knew the flight, the
-flight dialog knew the pilot, and the map knew the points. None of them answered the
-one question a player asks before a sortie -- what am I sitting in, and what have I
-noted for it -- so this does, as a master list of aircraft with one aircraft's points
-beside it.
-
-It does not create points: they are written from the map. This is where they are
-named, copied between aircraft, shown and deleted.
+Campaign points remain visible and editable without a player flight. Selecting an
+aircraft adds its export capacity and loading instructions, not a separate point list.
 """
 
 from __future__ import annotations
@@ -36,7 +30,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from game.ato.savedpoints import PointKind, remove_point
+from game.ato.savedpoints import PointKind, SavedPoint, campaign_points
 from game.server.savedpoints.notifications import publish_points_changed
 from qt_ui.windows.GameUpdateSignal import GameUpdateSignal
 from qt_ui.widgets.cards import CAPTION, CARD_BG, CARD_BORDER, card
@@ -146,7 +140,7 @@ class Headline(QWidget):
             (packages, "packages"),
             (points, "saved points"),
         )
-        for number, caption in pairs if aircraft else pairs[:1]:
+        for number, caption in pairs if aircraft else (pairs[0], pairs[2]):
             value = QLabel(str(number))
             font = mono(22)
             font.setPixelSize(22)
@@ -170,7 +164,9 @@ class NewPoint(QDialog):
     line under the field says what it read.
     """
 
-    def __init__(self, aircraft: data.Aircraft, parent: Optional[QWidget]) -> None:
+    def __init__(
+        self, aircraft: Optional[data.Aircraft], parent: Optional[QWidget]
+    ) -> None:
         super().__init__(parent)
         self.aircraft = aircraft
         self.latlng: Any = None
@@ -515,7 +511,7 @@ class PlayableAircraftDialog(QDialog):
     def reload(self) -> None:
         aircraft = data.aircraft_of(self.game)
         self.aircraft_model.set_aircraft(aircraft)
-        self.headline.show_figures(*data.figures(aircraft))
+        self.headline.show_figures(*data.figures(aircraft, self.saved_points))
         game = self.game
         if game is not None:
             self.headline.turn.setText(
@@ -532,11 +528,16 @@ class PlayableAircraftDialog(QDialog):
     def selected(self) -> Optional[data.Aircraft]:
         return self.aircraft_model.at(self.aircraft_view.currentIndex())
 
+    @property
+    def saved_points(self) -> list[SavedPoint]:
+        game = self.game
+        return campaign_points(game.blue) if game is not None else []
+
     def show_points(self) -> None:
         one = self.selected
         self.notes.show_aircraft(one)
         self.drawings.show_aircraft(one)
-        self.points_model.show(one, self._coordinates)
+        self.points_model.show(one, self._coordinates, self.saved_points)
         for row in self.points_model.header_rows():
             self.points_view.setFirstColumnSpanned(row, QModelIndex(), True)
         self.carried.setText(self._how_it_is_carried(one))
@@ -549,7 +550,7 @@ class PlayableAircraftDialog(QDialog):
         point = current.point if current is not None else None
         # Do not rebuild the notes editor or change the selected aircraft when
         # a map edit arrives. Keep the selected point too if it still exists.
-        self.points_model.show(self.selected, self._coordinates)
+        self.points_model.show(self.selected, self._coordinates, self.saved_points)
         for row in range(self.points_model.rowCount()):
             index = self.points_model.index(row, 0)
             entry = self.points_model.at(index)
@@ -560,7 +561,9 @@ class PlayableAircraftDialog(QDialog):
         self._retitle()
         self._restate()
         self.aircraft_model.layoutChanged.emit()
-        self.headline.show_figures(*data.figures(data.aircraft_of(self.game)))
+        self.headline.show_figures(
+            *data.figures(data.aircraft_of(self.game), self.saved_points)
+        )
 
     def _how_it_is_carried(self, one: Optional[data.Aircraft]) -> str:
         """What this airframe does with the points, said where they are edited.
@@ -604,12 +607,12 @@ class PlayableAircraftDialog(QDialog):
         self.slots.setText("" if one is None else f"{one.total_room} slots free")
 
     def _restate(self) -> None:
-        one = self.selected
-        self.copy_all.setEnabled(one is not None and one.total_used > 0)
+        self.add.setEnabled(self.game is not None)
+        self.copy_all.setEnabled(bool(self.saved_points))
         if self.clipboard.empty:
             self.paste.setEnabled(False)
             self.paste.setText("Paste")
-            self.paste.setToolTip("Copy the points of an aircraft first")
+            self.paste.setToolTip("Copy campaign points first")
             self.status.setText("Nothing copied yet")
             self.status.setStyleSheet(
                 f"font-size: 11px; color: {FAINT_INK};"
@@ -617,24 +620,14 @@ class PlayableAircraftDialog(QDialog):
             )
             return
         held = len(self.clipboard.points)
-        self.paste.setEnabled(one is not None)
+        self.paste.setEnabled(self.game is not None)
         self.paste.setText(f"Paste {held}")
         self.paste.setToolTip("")
-        if one is None:
-            return
-        fits = self.clipboard.fits(one)
-        if fits < held:
-            self.status.setText(f"Only {fits} fit — the rest will not be pasted")
-            self.status.setStyleSheet(
-                f"font-size: 11px; color: {MARKPOINT};"
-                " background: transparent; border: none;"
-            )
-        else:
-            self.status.setText(f"{held} points from {self.clipboard.source}")
-            self.status.setStyleSheet(
-                f"font-size: 11px; color: {QUIET_INK};"
-                " background: transparent; border: none;"
-            )
+        self.status.setText(f"{held} points from {self.clipboard.source}")
+        self.status.setStyleSheet(
+            f"font-size: 11px; color: {QUIET_INK};"
+            " background: transparent; border: none;"
+        )
 
     # ---------------------------------------------------------------- actions
 
@@ -642,19 +635,18 @@ class PlayableAircraftDialog(QDialog):
         """A point the player has as a number rather than as a spot on the map."""
         one = self.selected
         game = self.game
-        if one is None or game is None:
+        if game is None:
             return
         asked = NewPoint(one, self)
         if asked.exec() != QDialog.DialogCode.Accepted or asked.latlng is None:
             return
         from dcs.mapping import Point
 
-        from game.ato.savedpoints import SavedPoint, add_point, kinds_for
+        from game.ato.savedpoints import kinds_for
 
-        kinds = kinds_for(one.dcs_id)
+        kinds = kinds_for(one.dcs_id) if one is not None else []
         where = Point.from_latlng(asked.latlng, game.theater.terrain)
-        add_point(
-            one.flight,
+        self.saved_points.append(
             SavedPoint(
                 kind=kinds[0] if kinds else PointKind.WAYPOINT,
                 name=asked.name.text().strip() or "Point",
@@ -668,17 +660,13 @@ class PlayableAircraftDialog(QDialog):
         publish_points_changed()
 
     def copy_everything(self) -> None:
-        one = self.selected
-        if one is None:
-            return
-        self.clipboard.take(one)
+        self.clipboard.take_points(self.saved_points, "Campaign")
         self._restate()
 
     def paste_everything(self) -> None:
-        one = self.selected
-        if one is None or self.clipboard.empty:
+        if self.game is None or self.clipboard.empty:
             return
-        self.clipboard.paste_into(one)
+        self.clipboard.paste_points(self.saved_points)
         self.show_points()
         self.aircraft_model.layoutChanged.emit()
         publish_points_changed()
@@ -711,12 +699,12 @@ class PlayableAircraftDialog(QDialog):
         """
         row = self.current_point()
         one = self.selected
-        if row is None or one is None:
+        if row is None:
             return
         clipboard = QApplication.clipboard()
         if clipboard is not None:
             clipboard.setText(self.points_model.coordinates_of(row.point))
-        self.clipboard.take_one(row.point, one.title)
+        self.clipboard.take_one(row.point, one.title if one else "Campaign")
         self._restate()
 
     def rename_current(self) -> None:
@@ -733,15 +721,13 @@ class PlayableAircraftDialog(QDialog):
 
     def delete_current(self) -> None:
         row = self.current_point()
-        one = self.selected
-        if row is None or one is None or row.index is None:
+        if row is None or row.index is None:
             return
         # A map deletion may have shifted indices before its queued refresh.
-        index = next(
-            (i for i, point in enumerate(one.points) if point is row.point), None
-        )
+        points = self.saved_points
+        index = next((i for i, point in enumerate(points) if point is row.point), None)
         if index is not None:
-            remove_point(one.flight, index)
+            del points[index]
         self.show_points()
         self.aircraft_model.layoutChanged.emit()
         publish_points_changed()
