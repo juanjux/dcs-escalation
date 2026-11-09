@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Collection, Iterator, Optional
 from game.data.units import UnitClass
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.connectivity import IadsConnectivity
+from game.theater.iadsnetwork.power import integrated_power_units
 
 if TYPE_CHECKING:
     from game.theater.iadsnetwork.iadsnetwork import IadsNetwork, IadsNetworkNode
@@ -128,9 +129,11 @@ def mains_are_up(
 ) -> bool:
     """Whether external power reaches this site, or it needs no grid supply.
 
-    Advanced land sites require an actual source. Basic IADS and ships retain
-    their independent supply. On-site generators are checked separately.
+    Integrated air defences, basic IADS and ships need no grid supply.
+    Separate on-site generators are checked by the caller.
     """
+    if any(unit.alive for unit in integrated_power_units(node.group)):
+        return True
     sources = [
         group
         for group in node.connections.values()
