@@ -1872,7 +1872,9 @@ are being given to you), `turn`; `requests[]` {`objective`, `kind`, `base`, `ask
 `enemy_income_multiplier`, `crashes_dont_count` (bool — when true, a non-combat air
 loss (crash/collision, no credited shooter) does NOT deplete the squadron or kill the
 pilot; those show as `*_air_crashed` in `prev_turns`, so subtract them to get real
-combat losses), `pilot_replenishment_per_squadron`? (new pilots each squadron regains
+combat losses; a confirmed aircraft collision remains non-combat even if a pilot
+ejects, while confirmed weapon kills and unrelated ejections still count),
+`pilot_replenishment_per_squadron`? (new pilots each squadron regains
 per turn, up to the limit — paces how fast you can rebuild after losses),
 `squadron_pilot_limit`? (max active pilots per squadron; both omitted when pilot
 limits are off = unlimited), `runway_repair_turns` (turns a cratered runway takes to
