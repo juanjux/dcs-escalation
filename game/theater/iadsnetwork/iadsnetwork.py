@@ -195,7 +195,7 @@ class IadsNetwork:
 
     @property
     def state_map(self) -> IadsStateMap:
-        """What Skynet will do with each site: networked, autonomous or dark.
+        """Each site's network, power and relocation state.
 
         Worked out once and kept until something changes the network, because every
         site's answer depends on every other site's.

@@ -43,6 +43,7 @@ CAPTION_WIDTH = 112
 STATE_INK = {
     IadsState.NETWORKED: GREEN,
     IadsState.AUTONOMOUS: AMBER,
+    IadsState.RELOCATING: "#46A0FF",
     IadsState.DARK: "#8E9DAA",
     IadsState.DESTROYED: RED,
 }

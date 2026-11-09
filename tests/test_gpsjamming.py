@@ -221,6 +221,14 @@ def test_a_powered_jammer_keeps_jamming() -> None:
     assert not switched_off(_game({tgo: _status(IadsState.NETWORKED)}), tgo)
 
 
+def test_relocating_state_keeps_jamming_suspended() -> None:
+    from game.gpsjamming import switched_off
+    from game.theater.iadsnetwork.iadsstate import IadsState
+
+    tgo = _Site("JAMMER")
+    assert switched_off(_game({tgo: _status(IadsState.RELOCATING)}), tgo)
+
+
 def test_a_campaign_with_no_network_keeps_jamming() -> None:
     """No network means no answer to read, not an answer of "no power"."""
     from game.gpsjamming import switched_off

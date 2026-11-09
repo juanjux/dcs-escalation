@@ -71,7 +71,7 @@ class TgoJs(BaseModel):
     mobile: bool
     destination: Optional[LeafletPoint]
     # What the IADS will do with this site when the mission starts: "networked",
-    # "autonomous" or "dark", or None for anything that is not part of an IADS. Derived
+    # "autonomous", "relocating" or "dark", or None outside an IADS. Derived
     # from the network, because DCS never reports it back.
     iads_state: Optional[str]
     # Why, in a line, for the tooltip.

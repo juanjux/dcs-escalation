@@ -275,7 +275,10 @@ def switched_off(game: "Game", tgo: Any) -> bool:
     if network is None or not network.nodes:
         return False
     status = network.state_map.status_for(tgo)
-    return status is not None and status.state is IadsState.DARK
+    return status is not None and status.state in (
+        IadsState.DARK,
+        IadsState.RELOCATING,
+    )
 
 
 def _site_for_tgo(
