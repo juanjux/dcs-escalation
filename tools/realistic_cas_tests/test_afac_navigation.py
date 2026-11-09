@@ -91,6 +91,32 @@ class AfacNavigationTests(unittest.TestCase):
         assert(#assigned==0 and not RealisticCAS.afacAbort.blue)
         """)
 
+    def test_missing_tracking_radar_does_not_block_with_a_live_search_radar(self):
+        self.rt.execute("""
+        search=unit('search',red,'CH_HQ22_SR',0,0)
+        config.airDefenseThreats[1].known=true
+        config.airDefenseThreats[1].radius=170000
+        config.airDefenseThreats[1].ceiling=27000
+        config.airDefenseThreats[1].needsRadar=true
+        config.airDefenseThreats[1].radars={'tracking'}
+        beginNavigation();tick()
+        assert(#assigned==0 and nav:clear('blue',{x=0,y=2000,z=0}))
+        tracking=unit('tracking',red,'CH_HQ22_STR',0,0)
+        for i=1,15 do tick()end
+        assert(not nav:clear('blue',{x=0,y=2000,z=0}))
+        tracking.life=0
+        assert(nav:clear('blue',{x=0,y=2000,z=0}))
+        """)
+
+    def test_empty_tracking_radar_list_does_not_block(self):
+        self.rt.execute("""
+        config.airDefenseThreats[1].known=true
+        config.airDefenseThreats[1].needsRadar=true
+        config.airDefenseThreats[1].radars={}
+        beginNavigation();tick()
+        assert(#assigned==0 and nav:clear('blue',{x=0,y=2000,z=0}))
+        """)
+
     def test_friendly_nasams_never_blocks_departure_or_marking(self):
         self.rt.execute("""
         local friendly=group('friendly-nasams',40,2,0)

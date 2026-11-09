@@ -69,6 +69,13 @@ do
       end
       -- Real firing evidence takes precedence over a conflicting power report.
       if r.firingUntil and timer.getTime()<r.firingUntil then return true end
+      if r.meta.needsRadar then
+        local working=false
+        for _,name in ipairs(r.meta.radars or {}) do
+          if live(name) then working=true;break end
+        end
+        if not working then return false end
+      end
       local query=dcsRetribution and dcsRetribution.iadsHasWorkingPower
       if type(query)~='function' then return true end
       local ok,result=pcall(query,r.meta.groupName)

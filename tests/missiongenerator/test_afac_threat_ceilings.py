@@ -81,6 +81,17 @@ def test_igla_s_ceiling_matches_native_encyclopedia() -> None:
     assert VERIFIED_CEILINGS["SA-18 Igla-S manpad"] == int(match.group(1))
 
 
+def test_pgz95_uses_its_gun_ceiling_not_the_optical_tracker() -> None:
+    root = Path(get_dcs_saved_games_directory()) / "Mods/tech"
+    sources = list(root.glob("*/Database/Weapons/PGZ-95_GunsAndAmmo.lua"))
+    if not sources:
+        pytest.skip("PGZ-95 weapon source is not installed")
+    source = sources[0].read_text(encoding="utf-8")
+    match = re.search(r"PGZ95_25MM\.max_trg_alt\s*=\s*([\d.]+)", source)
+    assert match is not None
+    assert VERIFIED_CEILINGS["CH_PGZ95"] == float(match.group(1)) == 2000
+
+
 # Each marker selects a weapon block, not the first H_max anywhere in a family.
 # These are optional checks against locally installed primary sources. CI uses
 # the deterministic inventory and geometry tests above without requiring DCS.

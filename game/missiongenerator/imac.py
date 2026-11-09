@@ -14,13 +14,11 @@ from dcs.ships import ship_map
 from dcs.unit import Static
 
 from game.ato import FlightType
-from game.data.units import UnitClass
-from game.data.radar_db import LAUNCHER_TRACKER_PAIRS
 from game.groundmovement.samdefense import transit_defense
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsnetwork import SkynetNode
 from game.theater.player import Player
-from .afacthreats import envelope
+from .afacthreats import envelope, radar_support
 
 SCRIPTS = ("geometry.lua", "commander.lua", "imac-dcs.lua")
 DEFAULTS: dict[str, float | bool] = {
@@ -33,9 +31,9 @@ DEFAULTS: dict[str, float | bool] = {
     "patrolLeashNm": 80,
     "pursuitSeconds": 180,
     "defendRangeNm": 45,
-    "holdSeconds": 600,
 }
 CAP_TYPES = {FlightType.BARCAP, FlightType.TARCAP}
+DEAD_TYPES = {FlightType.DEAD, FlightType.SEAD, FlightType.SEAD_SWEEP}
 STRIKE_TYPES = {
     FlightType.STRIKE,
     FlightType.BAI,
@@ -81,7 +79,6 @@ def options(plugins: Any) -> dict[str, Any] | None:
         "patrolLeashNm": (10, 150),
         "pursuitSeconds": (30, 600),
         "defendRangeNm": (10, 100),
-        "holdSeconds": (60, 1800),
     }
     for key, default in DEFAULTS.items():
         value = result[key]
@@ -155,7 +152,7 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
             mode = "strike"
         elif role in SUPPORT_TYPES:
             mode = "support"
-        elif role == FlightType.DEAD:
+        elif role in DEAD_TYPES:
             mode = "dead"
         else:
             # AFAC and escort navigation already have dedicated owners.
@@ -237,7 +234,7 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
                 "side": side,
                 "mode": mode,
                 "awacs": role == FlightType.AEWC,
-                "deadSupport": role == FlightType.DEAD,
+                "deadSupport": role in DEAD_TYPES,
                 "route": route,
                 "stationStart": start,
                 "recoveryIndex": end,
@@ -335,16 +332,6 @@ def _threats(generator: Any, result: dict[str, Any]) -> None:
     settings = generator.game.settings
     fog = settings.plugin_option_or("realisticcas", False)
     armor = fog and settings.plugin_option_or("realisticcas.includeArmorGroups", False)
-    trackers: dict[int, list[str]] = {}
-    tracking_classes = {
-        UnitClass.TRACK_RADAR,
-        UnitClass.SEARCH_TRACK_RADAR,
-        UnitClass.TELAR,
-    }
-    for name, entry in mapping.theater_objects.items():
-        unit = entry.theater_unit
-        if unit.unit_type is not None and unit.unit_type.unit_class in tracking_classes:
-            trackers.setdefault(id(unit.ground_object), []).append(name)
     for side_name, side in (("red", 1), ("blue", 2)):
         coalition = generator.mission.coalition.get(side_name)
         if coalition is None:
@@ -382,34 +369,9 @@ def _threats(generator: Any, result: dict[str, Any]) -> None:
                         and objective is not None
                         and objective.category == "armor"
                     )
-                    is_launcher = (
-                        entry is not None
-                        and entry.theater_unit.unit_type is not None
-                        and entry.theater_unit.unit_type.unit_class
-                        is UnitClass.LAUNCHER
-                    )
-                    native = vehicle_map.get(unit.type)
-                    required = (
-                        LAUNCHER_TRACKER_PAIRS.get(native)
-                        if native is not None
-                        else None
-                    )
-                    radars = trackers.get(id(objective), []) if is_launcher else []
-                    if required:
-                        radars = (
-                            [
-                                name
-                                for name, candidate in mapping.theater_objects.items()
-                                if candidate.theater_unit.ground_object is objective
-                                and candidate.dcs_unit.type in {r.id for r in required}
-                            ]
-                            if objective is not None
-                            else [
-                                other.name
-                                for other in group.units
-                                if other.type in {r.id for r in required}
-                            ]
-                        )
+                    support = radar_support(unit, group, mapping)
+                    if reactive:
+                        support = {"needsRadar": False, "radars": []}
                     result["threats"].append(
                         dict(
                             threat,
@@ -422,8 +384,7 @@ def _threats(generator: Any, result: dict[str, Any]) -> None:
                                 if not concealed
                                 else None
                             ),
-                            needsRadar=not reactive and (is_launcher or bool(required)),
-                            radars=radars,
+                            **support,
                             transitDefense=reactive is not None,
                         )
                     )

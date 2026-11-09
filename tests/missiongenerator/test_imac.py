@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from game.missiongenerator.imac import DEFAULTS
+from game.missiongenerator.afacthreats import envelope
 
 ROOT = Path("resources/plugins/imac")
 
@@ -308,6 +309,21 @@ def test_waits_for_dead_and_rechecks_original_blocked_corridor() -> None:
     assert lua.eval("#recovered") == 0
 
 
+def test_high_strike_does_not_wait_for_a_pgz95_below_its_route() -> None:
+    pgz = envelope("CH_PGZ95")
+    assert pgz is not None and pgz["ceiling"] == 2000
+    lua = runtime([metadata("STRIKE", "strike"), metadata("DEAD", "dead")])
+    lua.globals().pgzCeiling = pgz["ceiling"]
+    lua.execute("""
+        own.STRIKE.point.y=7010
+        rings[2]={threat(40000,0,2500,pgzCeiling,2200)};tick(5)
+        assert(commander.states.STRIKE.order==nil and #recovered==0)
+        -- The same defence still matters to a low-level attack.
+        own.STRIKE.point.y=3500;tick(15)
+        assert(commander.states.STRIKE.order.kind=='hold')
+    """)
+
+
 def test_human_dead_can_support_an_ai_attack_without_receiving_orders() -> None:
     dead = metadata("HUMAN_DEAD", "observe")
     dead["deadSupport"] = True
@@ -317,7 +333,7 @@ def test_human_dead_can_support_an_ai_attack_without_receiving_orders() -> None:
     assert lua.eval("commander.states.HUMAN_DEAD.order==nil") is True
 
 
-def test_holding_strike_evades_fighters_then_resumes_remaining_dead_wait() -> None:
+def test_holding_strike_evades_fighters_then_resumes_waiting_for_dead() -> None:
     lua = runtime([metadata("STRIKE", "strike"), metadata("DEAD", "dead")])
     lua.execute("""
         own.DEAD.point.x=-110000
@@ -328,17 +344,60 @@ def test_holding_strike_evades_fighters_then_resumes_remaining_dead_wait() -> No
     assert lua.eval("commander.states.STRIKE.pendingHold.deadline") == 605
     lua.execute("observations[2]={};tick(25);tick(60)")
     assert lua.eval("commander.states.STRIKE.order.kind") == "hold"
-    assert lua.eval("commander.states.STRIKE.order.deadline") == 605
+    assert lua.eval("commander.states.STRIKE.order.deadline") == 660
 
 
-def test_fighter_evasion_does_not_restart_dead_wait_timeout() -> None:
+def test_dead_temporarily_evading_does_not_cancel_a_waiting_strike() -> None:
+    lua = runtime([metadata("STRIKE", "strike"), metadata("DEAD", "dead")])
+    lua.execute("""
+        own.DEAD.point.x=-80000
+        rings[2]={threat(40000,0,5000)}
+        rings[2][1].name='SAM TRACKER'
+        tick(5)
+        assert(commander.states.STRIKE.order.kind=='hold')
+        assert(string.find(commander.states.STRIKE.order.data.reason,'SAM TRACKER',1,true))
+        observations[2]={track('fighter',-110000,0,250,'fighter')};tick(15);tick(25)
+        assert(commander.states.DEAD.order.kind=='evade')
+        assert(commander.states.STRIKE.order.kind=='hold')
+        assert(not commander.states.STRIKE.finished and #recovered==0)
+        assert(commander.states.STRIKE.order.deadline==605)
+        observations[2]={};tick(35);tick(70)
+        assert(commander.states.DEAD.order==nil)
+        assert(commander.states.STRIKE.order.kind=='hold')
+        rings[2]={};tick(80)
+        assert(commander.states.STRIKE.order==nil and #recovered==0)
+    """)
+
+
+def test_strike_evasion_can_outlast_the_initial_hold_lease() -> None:
     lua = runtime([metadata("STRIKE", "strike"), metadata("DEAD", "dead")])
     lua.execute("""
         own.DEAD.point.x=-110000
         rings[2]={threat(40000,0,5000)};tick(5)
         observations[2]={track('fighter',30000,0,-250,'fighter')};tick(15);tick(610)
     """)
-    assert lua.eval("commander.states.STRIKE.finished") is True
+    assert lua.eval("commander.states.STRIKE.order.kind") == "evade"
+    assert lua.eval("#recovered") == 0
+    lua.execute("observations[2]={};tick(620);tick(660)")
+    assert lua.eval("commander.states.STRIKE.order.kind") == "hold"
+
+
+def test_dead_evasion_can_outlast_multiple_hold_leases() -> None:
+    lua = runtime([metadata("STRIKE", "strike"), metadata("DEAD", "dead")])
+    lua.execute("""
+        own.DEAD.point.x=-80000
+        rings[2]={threat(40000,0,5000)};tick(5)
+        observations[2]={track('fighter',-110000,0,250,'fighter')};tick(15);tick(25)
+        assert(commander.states.DEAD.order.kind=='evade')
+        assert(commander.states.STRIKE.order.kind=='hold')
+        assert(commander.states.STRIKE.order.deadline==605)
+        tick(610);tick(1220)
+        assert(commander.states.STRIKE.order.kind=='hold' and #recovered==0)
+        observations[2]={};tick(1230);tick(1270)
+        assert(commander.states.DEAD.order==nil)
+        rings[2]={};tick(1280)
+        assert(commander.states.STRIKE.order==nil and #recovered==0)
+    """)
 
 
 @pytest.mark.parametrize(
@@ -351,20 +410,94 @@ def test_cancels_attack_if_dead_is_unavailable(change: str) -> None:
     assert lua.eval("commander.states.STRIKE.finished") is True
 
 
-def test_hold_expires_and_does_not_disable_native_bingo() -> None:
+@pytest.mark.parametrize("native_callback", [False, True])
+def test_hold_renews_until_bingo_then_installs_recovery(native_callback: bool) -> None:
     lua = runtime([metadata("STRIKE", "strike"), metadata("DEAD", "dead")])
-    lua.execute("rings[2]={threat(40000,0,5000)};tick(5);tick(610)")
+    lua.execute("rings[2]={threat(40000,0,5000)};tick(5);tick(610);tick(1220)")
+    assert lua.eval("commander.states.STRIKE.order.kind") == "hold"
+    assert lua.eval("#recovered") == 0
+    lua.execute("own.STRIKE.fuel=.29")
+    if native_callback:
+        token = lua.eval("commander.states.STRIKE.order.revision")
+        assert lua.eval(f"commander:shouldStop('STRIKE',{token})") is False
+    lua.execute("tick(1230)")
     assert lua.eval("recovered[1]") == "STRIKE"
+    assert lua.eval("commander.states.STRIKE.finished") is True
 
 
-def test_native_hold_expiry_keeps_a_lease_until_recovery_is_installed() -> None:
+def test_native_hold_lease_renews_without_cancelling_the_attack() -> None:
     lua = runtime([metadata("STRIKE", "strike"), metadata("DEAD", "dead")])
     lua.execute("rings[2]={threat(40000,0,5000)};tick(5);now=610")
     token = lua.eval("commander.states.STRIKE.order.revision")
     assert lua.eval(f"commander:shouldStop('STRIKE',{token})") is False
-    assert lua.eval("commander.states.STRIKE.abortReason") == "DEAD wait expired"
+    assert lua.eval("commander.states.STRIKE.abortReason") is None
     lua.execute("tick(615)")
-    assert lua.eval("recovered[1]") == "STRIKE"
+    assert lua.eval("commander.states.STRIKE.order.kind") == "hold"
+    assert lua.eval("#recovered") == 0
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "own.DEAD=nil",
+        "commander.states.DEAD.finished=true",
+        "commander.states.DEAD.abortReason='attack cancelled'",
+        "commander:reached('DEAD',4)",
+    ],
+)
+@pytest.mark.parametrize("sam_survives", [False, True])
+def test_dead_ending_rechecks_the_sam_before_cancelling(
+    change: str, sam_survives: bool
+) -> None:
+    lua = runtime([metadata("STRIKE", "strike"), metadata("DEAD", "dead")])
+    lua.execute("rings[2]={threat(40000,0,5000)};tick(5)")
+    lua.execute(change)
+    if not sam_survives:
+        lua.execute("rings[2]={}")
+    lua.execute("tick(15)")
+    assert lua.eval("commander.states.STRIKE.finished or false") is sam_survives
+    assert lua.eval("commander.states.STRIKE.order==nil") is True
+
+
+def test_support_is_not_lost_when_evading_farther_from_a_separate_package() -> None:
+    dead = metadata("DEAD", "dead")
+    dead["package"] = "separate package"
+    lua = runtime([metadata("STRIKE", "strike"), dead])
+    lua.execute("""
+        rings[2]={threat(40000,0,5000)};tick(5)
+        own.DEAD.point.x=-200000;tick(15);tick(1220)
+        assert(commander.states.STRIKE.order.kind=='hold' and #recovered==0)
+    """)
+
+
+def test_wait_continues_while_any_assigned_support_flight_remains() -> None:
+    lua = runtime(
+        [
+            metadata("STRIKE", "strike"),
+            metadata("DEAD", "dead"),
+            metadata("SEAD", "dead"),
+        ]
+    )
+    lua.execute("""
+        rings[2]={threat(40000,0,5000)};tick(5)
+        own.DEAD=nil;tick(15)
+        assert(commander.states.STRIKE.order.kind=='hold' and #recovered==0)
+        commander:reached('SEAD',4);tick(25)
+        assert(commander.states.STRIKE.finished)
+    """)
+
+
+@pytest.mark.parametrize("ending", ["own.DEAD=nil", "own.STRIKE.fuel=.29"])
+def test_strike_also_recovers_if_wait_ends_while_evading(ending: str) -> None:
+    lua = runtime([metadata("STRIKE", "strike"), metadata("DEAD", "dead")])
+    lua.execute("""
+        own.DEAD.point.x=-110000
+        rings[2]={threat(40000,0,5000)};tick(5)
+        observations[2]={track('fighter',30000,0,-250,'fighter')};tick(15)
+        assert(commander.states.STRIKE.order.kind=='evade')
+    """)
+    lua.execute(ending + ";tick(25)")
+    assert lua.eval("commander.states.STRIKE.finished") is True
 
 
 def test_failed_recovery_does_not_ignore_manual_pause() -> None:

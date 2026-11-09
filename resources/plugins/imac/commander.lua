@@ -2,7 +2,7 @@
 assert(EscalationIMAC and EscalationIMAC.geometry,'load IMAC geometry first')
 do
   local API,G=EscalationIMAC,EscalationIMAC.geometry
-  local NM=1852
+  local NM,ORBIT_LEASE=1852,600
   function API.newCommander(config,io)
     local opt=config.options
     local api={states={},paused={},active=true,history={}}
@@ -70,6 +70,10 @@ do
     local function available(s,p)
       return unavailable(s,p)==nil
     end
+    local function bingoWhileWaiting(s,p,why)
+      return why=='fuel at BINGO reserve or unavailable' and p and G.finite(p.fuel) and
+        (s.pendingHold or (s.order and s.order.kind=='hold'))
+    end
     local function push(s,kind,data,duration)
       if s.order or now<s.cooldown then return false end
       s.revision=s.revision+1
@@ -105,23 +109,27 @@ do
     function api:shouldStop(name,revision)
       local s=self.states[name]
       if not self.active or not s or not s.order or s.revision~=revision then return true end
-      -- Native stop conditions also run between decision ticks. BINGO, player
-      -- takeover, station expiry and loss of authority release tasks immediately.
+      -- Native stop conditions also run between decision ticks. Player takeover,
+      -- station expiry and loss of authority release tasks immediately. BINGO
+      -- during a DEAD/SEAD hold first requests a safe recovery route.
       now=io.time()
       authority[s.meta.side]=io.authority(s.meta.side)
-      if not available(s,io.sample(s.meta)) then
+      local p=io.sample(s.meta)
+      local why=unavailable(s,p)
+      if bingoWhileWaiting(s,p,why) then
+        -- Keep the attack suspended until the decision cycle installs recovery.
+        s.abortReason='BINGO while waiting for DEAD/SEAD';return false
+      end
+      if why then
         release(s,'temporary order ended');return true
       end
       if now>=s.order.deadline then
-        if s.order.kind=='hold' or s.order.kind=='recoveryHold' then
-          -- Let the next decision cycle install recovery while the safe hold
-          -- stays above the attack route. Native callback ordering is undefined.
-          s.abortReason=s.abortReason or 'DEAD wait expired'
+        if s.order.kind=='recoveryHold' then
           s.order.deadline=now+opt.interval*2
-        elseif s.order.kind=='evade' then
+        elseif s.order.kind=='evade' or s.order.kind=='hold' then
           -- Safety, not lease age, decides when to resume. The next tick still
           -- checks clearance; BINGO and command loss remain higher priority.
-          s.order.deadline=now+600
+          s.order.deadline=now+ORBIT_LEASE
         else release(s,'temporary order expired');return true end
       end
       return false
@@ -171,7 +179,7 @@ do
       s.abortReason=reason
       local ok,why=io.recover(s,p,threats[s.meta.side])
       if ok then
-        s.revision=s.revision+1;s.order=nil;s.finished=true;s.abortReason=nil;record(s,'rtb',reason)
+        s.revision=s.revision+1;s.order=nil;s.pendingHold=nil;s.finished=true;s.abortReason=nil;record(s,'rtb',reason)
       else
         -- Keep an existing safe hold suspended above the original attack route.
         -- A failed recovery search must not accidentally resume that attack.
@@ -199,34 +207,35 @@ do
       local clear,t=G.leg(p.point,q,altitude,threats[s.meta.side],10000)
       if not clear then return t,p.point,q,altitude end
     end
-    local function workingDEAD(s,t)
+    local function pendingDEAD(s,t,support)
+      local pending={}
       for name,other in pairs(api.states) do
         local p=samples[name]
-        if other.meta.side==s.meta.side and (other.meta.deadSupport or other.meta.mode=='dead') and p and p.airborne and p.healthy and
-          p.fuel>other.meta.bingo+0.05 and not other.finished and not other.paused and
-          (not other.order or other.order.kind~='evade') and
+        if other.meta.side==s.meta.side and (other.meta.deadSupport or other.meta.mode=='dead') and p and p.airborne and
+          G.finite(p.fuel) and p.fuel>other.meta.bingo+0.05 and not other.finished and not other.abortReason and
           other.index<other.meta.recoveryIndex and
-          (other.meta.package==s.meta.package or G.distance(p.point,t.point)<60*NM) then return true end
+          ((support and support[name]) or (not support and
+            (other.meta.package==s.meta.package or G.distance(p.point,t.point)<60*NM))) then pending[name]=true end
       end
-      return false
+      if next(pending) then return pending end
     end
     local function resumeHold(s,p)
       local hold=s.pendingHold
       if not hold then return end
       s.pendingHold=nil
-      if now>=hold.deadline then retreat(s,p,'DEAD wait expired');return end
       local clear,t=G.leg(hold.data.from,hold.data.to,hold.data.altitude,threats[s.meta.side],10000)
       if clear then return end
-      if not workingDEAD(s,t) then retreat(s,p,'DEAD unavailable; attack cancelled');return end
+      if not pendingDEAD(s,t,hold.data.support) then retreat(s,p,'DEAD/SEAD ended; attack corridor still unsafe');return end
       local q=G.escape(p.point,{},threats[s.meta.side],io.height,p.speed,destination(s))
       if not q then retreat(s,p,'no safe holding area');return end
       hold.data.point=q;s.cooldown=0
-      push(s,'hold',hold.data,hold.deadline-now)
+      push(s,'hold',hold.data,ORBIT_LEASE)
     end
     local function service(s,p)
       local why=unavailable(s,p)
       if why then
         if s.meta.mode~='observe' or s.meta.returnInterceptor then diagnose(s,'availability',why) end
+        if bingoWhileWaiting(s,p,why) then retreat(s,p,'BINGO while waiting for DEAD/SEAD');return end
         release(s,'unavailable, BINGO, recovery or command lost');return
       end
       if s.abortReason then
@@ -235,18 +244,22 @@ do
         end
         return
       end
-      if s.pendingHold and now>=s.pendingHold.deadline then
-        s.pendingHold=nil;retreat(s,p,'DEAD wait expired');return
+      if s.pendingHold then
+        local hold=s.pendingHold
+        local clear,t=G.leg(hold.data.from,hold.data.to,hold.data.altitude,threats[s.meta.side],10000)
+        if clear then s.pendingHold=nil
+        elseif not pendingDEAD(s,t,hold.data.support) then
+          retreat(s,p,'DEAD/SEAD ended; attack corridor still unsafe');return
+        end
       end
       local order=s.order
       if order then
         diagnose(s,'active',string.format('%s; waypoint=%d; fuel=%.0f%%; remaining=%.0fs',
           order.kind,s.index,p.fuel*100,math.max(0,order.deadline-now)))
         if now>=order.deadline then
-          if order.kind=='hold' then retreat(s,p,'DEAD wait expired')
-          elseif order.kind=='evade' then order.deadline=now+600
+          if order.kind=='hold' or order.kind=='evade' then order.deadline=now+ORBIT_LEASE
           else release(s,'temporary order expired');resumeHold(s,p) end
-          if order.kind~='evade' then return end
+          if order.kind~='evade' and order.kind~='hold' then return end
         end
         if order.kind=='intercept' then
           local target
@@ -301,7 +314,7 @@ do
           end
           local clear,threat=G.leg(order.data.from,order.data.to,order.data.altitude,threats[s.meta.side],10000)
           if clear then release(s,'attack corridor clear')
-          elseif not workingDEAD(s,threat) then retreat(s,p,'DEAD unavailable; attack cancelled') end
+          elseif not pendingDEAD(s,threat,order.data.support) then retreat(s,p,'DEAD/SEAD ended; attack corridor still unsafe') end
         end
         return
       end
@@ -316,12 +329,13 @@ do
       if s.pendingHold then resumeHold(s,p);return end
       local threat,from,to,altitude=blocker(s,p)
       if threat then
-        if workingDEAD(s,threat) then
+        local support=pendingDEAD(s,threat)
+        if support then
           local q=G.escape(p.point,{},threats[s.meta.side],io.height,p.speed,destination(s))
           if q then push(s,'hold',{point=q,from=G.copy(from),to=G.copy(to),altitude=altitude,
-            reason='known SAM blocks ingress; waiting for DEAD'},opt.holdSeconds)
+            support=support,reason='known SAM blocks ingress ('..tostring(threat.name or 'unknown')..'); waiting for DEAD/SEAD'},ORBIT_LEASE)
           else retreat(s,p,'no safe holding area') end
-        else retreat(s,p,'known SAM blocks ingress; no active DEAD') end
+        else retreat(s,p,'known SAM blocks ingress; no active DEAD/SEAD') end
       end
     end
     local function targetPriority(t,side)

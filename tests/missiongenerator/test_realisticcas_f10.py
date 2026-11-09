@@ -100,7 +100,10 @@ def test_campaign_scope_preserves_known_armor_threats_and_front_only_f10(
     # Campaign membership, not vehicle type or proximity, selects armor groups.
     s.base.units[0].type = "SA-18 Igla-S manpad"
     s.g.unit_map.theater_objects[s.base.units[0].name] = NS(
-        theater_unit=NS(ground_object=NS(category="armor", name="ARMOR"))
+        theater_unit=NS(
+            ground_object=NS(category="armor", name="ARMOR"), unit_type=None
+        ),
+        dcs_unit=s.base.units[0],
     )
     blue_armor = s.m.vehicle_group(
         s.m.country("USA"), "BLUE ARMOR", Unarmed.Ural_375, Point(2000, 0, s.m.terrain)
@@ -109,7 +112,10 @@ def test_campaign_scope_preserves_known_armor_threats_and_front_only_f10(
         s.m.country("Russia"), "OTHER", Unarmed.Ural_375, Point(3000, 0, s.m.terrain)
     )
     s.g.unit_map.theater_objects[blue_armor.units[0].name] = NS(
-        theater_unit=NS(ground_object=NS(category="armor", name="BLUE ARMOR"))
+        theater_unit=NS(
+            ground_object=NS(category="armor", name="BLUE ARMOR"), unit_type=None
+        ),
+        dcs_unit=blue_armor.units[0],
     )
     for name, value in (
         ("includeArmorGroups", include_armor),
@@ -167,7 +173,10 @@ def test_enabled_f10_is_serialized_and_its_scripts_compile(
 
     s = scenario()
     s.g.unit_map.theater_objects[s.base.units[0].name] = NS(
-        theater_unit=NS(ground_object=NS(category="armor", name="ARMOR"))
+        theater_unit=NS(
+            ground_object=NS(category="armor", name="ARMOR"), unit_type=None
+        ),
+        dcs_unit=s.base.units[0],
     )
     next(
         o for o in s.plugin.options if o.identifier == "realisticcas.includeArmorGroups"

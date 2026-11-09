@@ -602,6 +602,7 @@ def test_known_sam_uses_launcher_msl_and_does_not_leak_hidden_ground_position() 
         "sam.life=0",
         "radar.life=0",
         "dcsRetribution={iadsHasWorkingPower=function()return false end}",
+        "cfg.threats[1].radars={};search=add('SEARCH',1,60000,false)",
     ],
 )
 def test_destroyed_radar_or_power_does_not_leave_a_phantom_sam_circle(

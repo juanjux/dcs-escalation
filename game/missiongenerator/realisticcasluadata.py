@@ -16,7 +16,7 @@ from game.dcs.afaccapabilities import capabilities_for, smoke_rounds
 from game.dcs.skills import SKILL_LADDER
 from game.ato.afac import station_minutes
 from game.groundmovement.samdefense import transit_defense
-from game.missiongenerator.afacthreats import envelope
+from game.missiongenerator.afacthreats import envelope, radar_support
 from game.theater.theatergroundobject import IadsGroundObject
 
 if TYPE_CHECKING:
@@ -463,6 +463,11 @@ def collect_registry(
                                         coalition=side,
                                         typeName=unit.type,
                                         known=not concealed,
+                                        **(
+                                            {"needsRadar": False, "radars": []}
+                                            if reactive
+                                            else radar_support(unit, group, unit_map)
+                                        ),
                                     )
                                 )
                             if not concealed:

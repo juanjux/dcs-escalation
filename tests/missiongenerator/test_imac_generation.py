@@ -21,12 +21,15 @@ from game.ato import FlightType
 from game.dcs.aircrafttype import AircraftType
 from game.missiongenerator import imac
 from game.missiongenerator.luagenerator import LuaGenerator
+from game.missiongenerator.missiondata import MissionData
 from game.plugins.luaplugin import LuaPlugin, LuaPluginDefinition
 from game.settings import Settings
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.player import Player
 from game.unitmap import UnitMap
 from .test_barcap_refuelling import scenario as barcap_scenario
+from game.missiongenerator.realisticcasluadata import collect_registry
+from pydcs_extensions import chinesemilitaryassetspack as cmap
 
 
 def scenario() -> Any:
@@ -99,7 +102,7 @@ def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> 
         ("blue", 1),
         ("reports", "yes"),
         ("interval", 0),
-        ("holdSeconds", float("nan")),
+        ("defendRangeNm", float("nan")),
         ("pursuitSeconds", True),
     ],
 )
@@ -247,6 +250,23 @@ def test_missing_orbit_window_and_afac_routes_are_not_claimed() -> None:
 
 
 @pytest.mark.parametrize(
+    "role", [FlightType.DEAD, FlightType.SEAD, FlightType.SEAD_SWEEP]
+)
+def test_dead_and_sead_roles_export_support_and_completion_hooks(
+    role: FlightType,
+) -> None:
+    s = scenario()
+    s.cap.flight_type = role
+    s.group.points[2].name = "SPLIT"
+    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    assert data is not None
+    flight = data["flights"][0]
+    assert flight["mode"] == "dead" and flight["deadSupport"] is True
+    assert flight["recoveryIndex"] == 3
+    assert "EscalationIMAC.reached" in str(s.group.points[2].tasks[0].dict())
+
+
+@pytest.mark.parametrize(
     "aircraft,eligible",
     [
         ("F-16C_50", True),
@@ -365,6 +385,42 @@ def test_native_ground_sensors_and_exact_launcher_radar_pairs() -> None:
     assert data is not None
     sam = next(t for t in data["threats"] if t["name"] == launcher.units[0].name)
     assert sam["radars"] == [correct.name]
+
+
+@pytest.mark.parametrize("tracking", [False, True])
+def test_hq22_search_radar_alone_does_not_satisfy_imac_or_afac(tracking: bool) -> None:
+    s = scenario()
+    country = s.mission.country("Russia")
+    launcher = s.mission.vehicle_group(
+        country, "HQ22", cmap.CH_HQ22_LN, Point(20000, 0, s.mission.terrain)
+    )
+    search = s.mission.vehicle("SEARCH", cmap.CH_HQ22_SR)
+    search.position = launcher.units[0].position
+    launcher.add_unit(search)
+    if tracking:
+        tracker = s.mission.vehicle("TRACKER", cmap.CH_HQ22_STR)
+        tracker.position = search.position
+        launcher.add_unit(tracker)
+    objective = NS(category="aa", name="HQ22")
+    for unit in launcher.units:
+        s.unit_map.theater_objects[unit.name] = NS(
+            theater_unit=NS(ground_object=objective, unit_type=None), dcs_unit=unit
+        )
+    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    registry = collect_registry(
+        s.mission,
+        MissionData(),
+        enabled=True,
+        unit_map=s.unit_map,
+    )
+    assert data is not None and registry is not None
+    name = launcher.units[0].name
+    imac_threat = next(t for t in data["threats"] if t["name"] == name)
+    afac_threat = next(t for t in registry["airDefenseThreats"] if t["name"] == name)
+    for threat in [imac_threat, afac_threat]:
+        assert threat["needsRadar"] is True
+        assert threat["radars"] == ([tracker.name] if tracking else [])
+        assert search.name not in threat["radars"]
 
 
 def test_standalone_command_centre_does_not_require_advanced_iads_or_skynet() -> None:

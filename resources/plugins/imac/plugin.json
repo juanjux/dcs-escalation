@@ -11,8 +11,7 @@
         {"nameInUI": "Maximum intercept distance (NM)", "mnemonic": "interceptRangeNm", "defaultValue": 120, "minimumValue": 20, "maximumValue": 200},
         {"nameInUI": "Maximum distance from intercept anchor (NM)", "descriptionInUI": "Measured from the patrol station or, for a returning fighter, its position when the diversion began.", "mnemonic": "patrolLeashNm", "defaultValue": 80, "minimumValue": 10, "maximumValue": 150},
         {"nameInUI": "Maximum pursuit time (seconds)", "mnemonic": "pursuitSeconds", "defaultValue": 180, "minimumValue": 30, "maximumValue": 600},
-        {"nameInUI": "Vulnerable flight danger radius (NM)", "mnemonic": "defendRangeNm", "defaultValue": 45, "minimumValue": 10, "maximumValue": 100},
-        {"nameInUI": "Maximum wait for DEAD (seconds)", "mnemonic": "holdSeconds", "defaultValue": 600, "minimumValue": 60, "maximumValue": 1800}
+        {"nameInUI": "Vulnerable flight danger radius (NM)", "mnemonic": "defendRangeNm", "defaultValue": 45, "minimumValue": 10, "maximumValue": 100}
     ],
     "scriptsWorkOrders": [],
     "configurationWorkOrders": [],
