@@ -161,6 +161,7 @@ class Campaign:
         status = self.network.state_map.status_for(tgo)
         if status is not None and status.state in (
             IadsState.DARK,
+            IadsState.RELOCATING,
             IadsState.DESTROYED,
         ):
             return None

@@ -22,6 +22,7 @@ from dcs.ships import (
     VINSON,
 )
 from dcs.vehicles import AirDefence
+from dcs.unittype import VehicleType
 
 from pydcs_extensions import highdigitsams as hds
 from pydcs_extensions import iranmilitaryassetspack as imap
@@ -34,7 +35,7 @@ from pydcs_extensions import ukmilitaryassetspack as ukmap
 from pydcs_extensions import usamilitaryassetspack as usamap
 from pydcs_extensions import germanymilitaryassetspack as demap
 
-TELARS = {
+TELARS: set[type[VehicleType]] = {
     AirDefence.x_2S6_Tunguska,
     AirDefence.SA_11_Buk_LN_9A310M1,
     AirDefence.Osa_9A33_ln,
@@ -182,6 +183,32 @@ LAUNCHER_TRACKER_PAIRS = {
         usamap.CH_MIM104_LTAMDS_HEMTT,
     ),
     usamap.CH_THAAD_M1120: (usamap.CH_THAAD_ANTPY2,),
+}
+
+# Integrated air defences carry their own sensors, weapons and power supply.
+# Some TELARs still require a separate tracker or battery command post.
+SELF_CONTAINED_AIR_DEFENCES: set[type[VehicleType]] = (
+    TELARS
+    - LAUNCHER_TRACKER_PAIRS.keys()
+    - {AirDefence.SA_11_Buk_LN_9A310M1, hds.SAM_SA_17_Buk_M1_2_LN_9A310M1_2}
+) | {
+    AirDefence.Gepard,
+    AirDefence.Vulcan,
+    AirDefence.ZSU_23_4_Shilka,
+    AirDefence.HEMTT_C_RAM_Phalanx,
+    AirDefence.CHAP_PantsirS1,
+    AirDefence.CHAP_TorM2,
+    hds.SAM_SA_22_Pantsir_SM,
+    cmap.CH_PGZ09,
+    cmap.CH_PGZ95,
+    cmap.CH_LD3000,
+    cmap.CH_LD3000_stationary,
+    demap.CH_FlaRakRad,
+    demap.CH_SkynexHX,
+    rmap.CH_PantsirS2,
+    rmap.CH_TorM2K,
+    rmap.CH_ZSU234,
+    usamap.CH_Centurion_C_RAM,
 }
 
 UNITS_WITH_RADAR = {

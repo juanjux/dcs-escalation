@@ -361,6 +361,18 @@ class Debriefing:
                     continue
                 obj = self._resolve_killed_object(str(name))
                 if obj is not None:
+                    previous = index.get(id(obj))
+                    if (
+                        self._detail_is_collision(detail)
+                        and previous
+                        and not self._detail_is_collision(previous)
+                        and (
+                            previous.get("initiator_player")
+                            or previous.get("initiator_type")
+                        )
+                    ):
+                        # A subsequent collision must not erase a confirmed weapon kill.
+                        continue
                     index[id(obj)] = detail
         except Exception:
             logging.exception("Failed to index kill details; killer attribution off")
@@ -398,16 +410,21 @@ class Debriefing:
             return self._resolve_killed_object(f"{name} object")
         return None
 
+    @staticmethod
+    def _detail_is_collision(detail: Optional[Dict[str, Any]]) -> bool:
+        if not detail:
+            return False
+        weapon = detail.get("weapon")
+        return bool(weapon and weapon == detail.get("initiator_type"))
+
     def _has_direct_shooter(self, loss: "FlyingUnit") -> bool:
         """True if DCS credited a weapon/SAM kill (not a collision) to this loss."""
         detail = self.kill_info_by_unit_id.get(id(loss))
         if not detail:
             return False
         initiator_type = detail.get("initiator_type")
-        weapon = detail.get("weapon")
         has_shooter = bool(detail.get("initiator_player") or initiator_type)
-        collision = bool(weapon and weapon == initiator_type)
-        return has_shooter and not collision
+        return has_shooter and not self._detail_is_collision(detail)
 
     def _compute_indirect_loss_ids(self) -> set[int]:
         """Air losses with no DCS shooter that are still combat kills, not crashes.
@@ -456,6 +473,8 @@ class Debriefing:
 
             for loss in losses:
                 if self._has_direct_shooter(loss):
+                    continue
+                if self._detail_is_collision(self.kill_info_by_unit_id.get(id(loss))):
                     continue
                 name = self._loss_name_by_id.get(id(loss))
                 flight = getattr(loss, "flight", None)
@@ -516,21 +535,19 @@ class Debriefing:
         parked, or the same attack as a confirmed weapon-kill flightmate)."""
         unit_name = getattr(self, "_loss_name_by_id", {}).get(id(flying_unit))
         report = getattr(self.state_data, "aircraft_damage", {}).get(unit_name or "")
-        if report is not None and (report.ejected or report.killed):
+        detail = getattr(self, "kill_info_by_unit_id", {}).get(id(flying_unit))
+        collision = self._detail_is_collision(detail)
+        if report is not None and (report.ejected or report.killed) and not collision:
             return False
         if id(flying_unit) in self._sim_loss_ids:
             return False
+        # DCS may emit EJECTION for only one aircraft in a collision. That does not
+        # turn the accident into a combat loss or override the crash doctrine.
+        if collision:
+            return True
         if id(flying_unit) in self._indirect_loss_ids:
             return False
-        detail = self.kill_info_by_unit_id.get(id(flying_unit))
-        if detail:
-            initiator_type = detail.get("initiator_type")
-            weapon = detail.get("weapon")
-            has_shooter = bool(detail.get("initiator_player") or initiator_type)
-            collision = bool(weapon and weapon == initiator_type)
-            if has_shooter and not collision:
-                return False  # shot down by a weapon / SAM
-        return True
+        return not self._has_direct_shooter(flying_unit)
 
     @property
     def front_line_losses(self) -> Iterator[FrontLineUnit]:

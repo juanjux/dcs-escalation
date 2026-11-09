@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Collection, Iterator, Optional
 from game.data.units import UnitClass
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.connectivity import IadsConnectivity
+from game.theater.iadsnetwork.power import integrated_power_units
 
 if TYPE_CHECKING:
     from game.theater.iadsnetwork.iadsnetwork import IadsNetwork, IadsNetworkNode
@@ -34,6 +35,10 @@ class IadsState(Enum):
     #: Cut off from the network but still powered. It fights on whatever its own radar
     #: can see, which is a good deal less than the network was giving it.
     AUTONOMOUS = "autonomous"
+
+    #: Moving between positions and temporarily outside the IADS. Local self-defence
+    #: during transit is handled separately, not disabled by this state.
+    RELOCATING = "relocating"
 
     #: Switched off. Skynet will not bring the radar up, so the site is silent for the
     #: whole mission unless it is repaired first.
@@ -128,9 +133,11 @@ def mains_are_up(
 ) -> bool:
     """Whether external power reaches this site, or it needs no grid supply.
 
-    Advanced land sites require an actual source. Basic IADS and ships retain
-    their independent supply. On-site generators are checked separately.
+    Integrated air defences, basic IADS and ships need no grid supply.
+    Separate on-site generators are checked by the caller.
     """
+    if any(unit.alive for unit in integrated_power_units(node.group)):
+        return True
     sources = [
         group
         for group in node.connections.values()
@@ -276,11 +283,15 @@ class IadsStateMap:
     ) -> IadsStatus:
         role = node.group.iads_role
 
-        if getattr(node.group.ground_object, "in_transit", False):
+        if (
+            getattr(node.group.ground_object, "in_transit", False)
+            and node.group.alive_units > 0
+            and node.group.ground_object not in self._destroyed
+        ):
             return IadsStatus(
-                IadsState.DARK,
-                "Relocating: radars and weapons are packed until arrival or a stop.",
-                True,
+                IadsState.RELOCATING,
+                "Relocating: temporarily disconnected from the IADS network.",
+                False,
             )
         if node.is_empty_site:
             return IadsStatus(

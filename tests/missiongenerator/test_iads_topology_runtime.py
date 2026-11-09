@@ -7,6 +7,7 @@ from typing import Any
 from zipfile import ZipFile
 
 from dcs import Mission
+from dcs.vehicles import AirDefence
 import pytest
 
 from game.missiongenerator.luagenerator import LuaGenerator, LuaValue
@@ -16,6 +17,7 @@ from game.settings import Settings
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater.iadsnetwork.iadsnetwork import IadsNetwork, SkynetNode
 from game.theater.iadsnetwork.iadsrole import IadsRole
+from game.theater.iadsnetwork.iadsstate import IadsState
 from game.theater.player import Player
 from tests.test_iads_relay_connectivity import chain, node
 from tests.test_iads_automatic_topology import site
@@ -638,6 +640,54 @@ def exported(
 
 
 @pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
+def test_exported_integrated_power_preserves_native_autonomy(
+    vm: Any, side: Player
+) -> None:
+    network, objects = chain(side)
+    sam, plant = objects[3], objects[5]
+    unit = sam.groups[0].units[0]
+    unit.type = AirDefence.x_2S6_Tunguska
+    network.initialize_network(iter(objects))
+    data = exported(network)
+    row = data["Sam"][0]
+    assert row["localPowerSources"] == [unit.unit_name]
+    assert "PowerSource" not in row
+    assert not row.get("independentComms", False)
+    start(vm, data, 2 if side is Player.BLUE else 1)
+    vm.globals().sam_name = row["dcsGroupName"]
+    vm.globals().unit_name = unit.unit_name
+    vm.globals().ewr_name = data["Ewr"][0]["dcsGroupName"]
+    vm.globals().plant_name = plant.groups[0].units[0].unit_name
+    vm.globals().cc_name = data["CommandCenter"][0]["dcsGroupName"]
+    vm.execute("""
+        objects[unit_name]=objects[sam_name]
+        cover(elements[ewr_name],elements[sam_name])
+        iads.topology:beginCycle()
+        assert(elements[sam_name]:hasWorkingPowerSource())
+        assert(not elements[sam_name]:getAutonomousState())
+        objects[cc_name].live=false
+        iads.topology:beginCycle()
+        assert(elements[sam_name]:getAutonomousState())
+        assert(elements[sam_name]:isActive())
+        objects[cc_name].live=true
+        iads.topology:beginCycle()
+        assert(not elements[sam_name]:getAutonomousState())
+        objects[plant_name].live=false
+        iads.topology:beginCycle()
+        assert(elements[sam_name]:hasWorkingPowerSource())
+        assert(elements[sam_name]:getAutonomousState())
+        assert(elements[sam_name]:isActive())
+        objects[unit_name].live=false
+        iads.topology:beginCycle()
+        assert(not elements[sam_name]:hasWorkingPowerSource())
+    """)
+    plant.groups[0].units[0].alive = False
+    network.update_tgo(plant, GameUpdateEvents())
+    status = network.state_map.status_for(sam)
+    assert status is not None and status.state is IadsState.AUTONOMOUS
+
+
+@pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
 def test_exported_python_graph_and_runtime_agree_through_remote_losses(
     vm: Any, side: Player
 ) -> None:
@@ -764,10 +814,13 @@ def test_topology_flags_are_lua_booleans_not_truthy_strings(
 
 
 @pytest.mark.parametrize("advanced", [True, False])
+@pytest.mark.parametrize("integrated", [True, False])
 def test_generated_miz_packages_the_graph_and_runtime_in_load_order(
-    vm: Any, tmp_path: Path, advanced: bool
+    vm: Any, tmp_path: Path, advanced: bool, integrated: bool
 ) -> None:
     network, objects = chain()
+    if integrated:
+        objects[3].groups[0].units[0].type = AirDefence.x_2S6_Tunguska
     network.advanced_iads = advanced
     network.initialize_network(iter(objects))
     game: Any = SimpleNamespace(
@@ -807,6 +860,14 @@ def test_generated_miz_packages_the_graph_and_runtime_in_load_order(
     assert len(data.RED.Sam) == 1
     if advanced:
         assert data.RED.Sam[1].requiresPower is True
+        if integrated:
+            assert data.RED.Sam[1].PowerSource is None
+            assert (
+                data.RED.Sam[1].localPowerSources[1]
+                == objects[3].groups[0].units[0].unit_name
+            )
+        else:
+            assert len(data.RED.Sam[1].PowerSource) == 1
         assert len(data.RED.ConnectionNode) == 2
         assert len(data.RED.CommandCenter) == 1
         assert len(data.RED.Sam[1].ConnectionNode) == 1

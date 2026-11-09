@@ -134,11 +134,19 @@ class IadsConnectivity:
         self, node: IadsNetworkNode
     ) -> dict[UUID, IadsGroundGroup]:
         """Physical dependencies and the single currently selected radio uplink."""
-        if not self.managed(node):
-            return dict(node.connections)
-        connections = {
+        from .power import integrated_power_units
+
+        integrated = bool(integrated_power_units(node.group))
+        physical = {
             cid: group
             for cid, group in node.connections.items()
+            if not (integrated and group.iads_role is IadsRole.POWER_SOURCE)
+        }
+        if not self.managed(node):
+            return physical
+        connections = {
+            cid: group
+            for cid, group in physical.items()
             if group.iads_role not in RADIO_ROLES
         }
         # Empty emplacements keep one inactive reservation for later deployment.

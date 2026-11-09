@@ -228,7 +228,7 @@ def test_same_site_and_units_are_offline_in_transit_and_redeploy_on_arrival(
         for unit in site.units
     )
     assert network.skynet_nodes(world.game) == []
-    assert network.state_map.status_for(site).state is IadsState.DARK
+    assert network.state_map.status_for(site).state is IadsState.RELOCATING
     world.game.turn += 1
     advance_armor(world.game, GameUpdateEvents())
     assert transit.finished and not site.in_transit and site.purchasable

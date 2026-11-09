@@ -22,13 +22,15 @@ function IadsStateLine(props: {
   blind?: boolean;
 }) {
   const label =
-    props.state === "dark"
-      ? "Dark"
-      : props.state === "autonomous"
-        ? "Autonomous"
-        : props.blind
-          ? "No radar of its own"
-          : null;
+    props.state === "relocating"
+      ? "Relocating"
+      : props.state === "dark"
+        ? "Dark"
+        : props.state === "autonomous"
+          ? "Autonomous"
+          : props.blind
+            ? "No radar of its own"
+            : null;
   if (label == null) {
     return null;
   }
@@ -75,9 +77,10 @@ export function colorFor(blue: boolean, detection: boolean) {
 // threat that is not there. An autonomous one keeps its ring exactly as it is -- it
 // does still shoot, at whatever its own radar finds -- and says so in the tooltip and
 // on its health bar. Which is why nothing here is recoloured or dashed: dashed already
-// means a GPS jamming bubble.
+// means a GPS jamming bubble. Relocating sites do not advertise a fixed coverage ring;
+// their local self-defence during transit is handled separately.
 export function ringsAreOff(state?: string | null): boolean {
-  return state === "dark";
+  return state === "dark" || state === "relocating";
 }
 
 // Bright colour used to mark the hovered ring and its emitter.

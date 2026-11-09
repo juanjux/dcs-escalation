@@ -33,7 +33,7 @@ def test_a_switched_off_or_destroyed_site_has_no_ring() -> None:
 
     ring = measured.ring(battery)
     assert ring is not None and ring.weight == RING_WEIGHT[Band.LONG]
-    for state in (IadsState.DARK, IadsState.DESTROYED):
+    for state in (IadsState.DARK, IadsState.RELOCATING, IadsState.DESTROYED):
         status["now"] = IadsStatus(state, "", False)
         assert measured.ring(battery) is None
     status["now"] = IadsStatus(IadsState.AUTONOMOUS, "", False)

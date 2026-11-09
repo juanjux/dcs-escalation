@@ -11,6 +11,7 @@ from game.data.units import UnitClass
 from game.dcs.groundunittype import GroundUnitType
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsstate import IadsStateMap, IadsStatus
+from game.theater.iadsnetwork.power import integrated_power_units
 from game.theater.theatergroundobject import (
     IadsBuildingGroundObject,
     IadsGroundObject,
@@ -194,7 +195,7 @@ class IadsNetwork:
 
     @property
     def state_map(self) -> IadsStateMap:
-        """What Skynet will do with each site: networked, autonomous or dark.
+        """Each site's network, power and relocation state.
 
         Worked out once and kept until something changes the network, because every
         site's answer depends on every other site's.
@@ -262,6 +263,7 @@ class IadsNetwork:
                     )
                 ]
             skynet_node.requires_power = self.advanced_iads and not self._is_ship(node)
+            integrated = integrated_power_units(node.group)
             if skynet_node.requires_power:
                 skynet_node.local_power_sources = [
                     unit.unit_name
@@ -269,7 +271,12 @@ class IadsNetwork:
                     if unit.unit_type is not None
                     and unit.unit_type.unit_class is UnitClass.POWER
                 ]
+                skynet_node.local_power_sources.extend(
+                    unit.unit_name for unit in integrated
+                )
             for connection in self.effective_connections(node).values():
+                if integrated and connection.iads_role is IadsRole.POWER_SOURCE:
+                    continue
                 if getattr(connection.ground_object, "in_transit", False):
                     continue
                 # A destroyed building has to keep reaching Skynet. Dropping it here left
@@ -719,11 +726,14 @@ class IadsNetwork:
                     if target in by_object
                 ]
             )
+            integrated = bool(integrated_power_units(node.group))
             wanted = [
                 group
                 for obj in plan.get(node.group.ground_object, [])
                 for group in obj.groups
-                if isinstance(group, IadsGroundGroup) and group.iads_role.participate
+                if isinstance(group, IadsGroundGroup)
+                and group.iads_role.participate
+                and not integrated
             ]
             changed = node.radio_candidates != previous_candidates
             for cid, group in list(node.connections.items()):

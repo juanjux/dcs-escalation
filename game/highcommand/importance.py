@@ -585,6 +585,7 @@ class Worth:
                     continue
                 if after.state is IadsState.DARK and before.state not in (
                     IadsState.DARK,
+                    IadsState.RELOCATING,
                     IadsState.DESTROYED,
                 ):
                     dark[site.name] = whole[site.name]

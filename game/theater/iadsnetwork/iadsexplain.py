@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Optional, Sequence
 
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.connectivity import IadsConnectivity
+from game.theater.iadsnetwork.power import integrated_power_units
 from game.theater.iadsnetwork.iadsstate import (
     IadsState,
     IadsStatus,
@@ -241,6 +242,14 @@ def _jamming_link(status: Optional[IadsStatus], friendly: bool) -> IadsLink:
     unpowered site up, so a dark one denies nothing: the row said it was jamming
     regardless, which was the last place the card disagreed with the mission.
     """
+    if status is not None and status.state is IadsState.RELOCATING:
+        return IadsLink(
+            caption="JAMMING",
+            title="Nothing is being jammed",
+            note="jamming is suspended while the site relocates",
+            chip="RELOCATING",
+            tone=LinkTone.INFO,
+        )
     if status is not None and status.state is IadsState.DARK:
         return IadsLink(
             caption="JAMMING",
@@ -580,6 +589,18 @@ def _command_link(
 
 
 def _power_links(node: IadsNetworkNode, friendly: bool) -> list[IadsLink]:
+    integrated = integrated_power_units(node.group)
+    if integrated:
+        powered = any(unit.alive for unit in integrated)
+        return [
+            IadsLink(
+                caption="POWER",
+                title="Integrated power supplies",
+                note="self-contained air defences do not need an external power station",
+                chip="OWN POWER" if powered else "DESTROYED",
+                tone=LinkTone.INFO if powered else LinkTone.BAD,
+            )
+        ]
     sources = [
         group
         for group in node.connections.values()

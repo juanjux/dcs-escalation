@@ -20,13 +20,15 @@ const REPAIRING_ORANGE = "rgb(255,140,0)";
 // The health bar says how well the site is working, so what the IADS will do with it
 // belongs there: GREY when Skynet will not switch it on at all (no power -- it will not
 // see or shoot for the whole mission, and its range rings are not drawn either), VIOLET
-// when it is cut off from the network and fighting on its own radar.
+// when fighting autonomously, and BLUE during relocation. Moving does not mean that
+// a site's independent self-defence weapons cannot engage.
 //
 // milsymbol paints the bar green when intact and yellow when damaged (the frame colours
 // carry spaces inside the rgb(), so these strings only ever match the bar).
 const MILSYMBOL_INTACT_GREEN = "rgb(0,255,0)";
 const IADS_DARK_GREY = "rgb(130,140,150)";
 const IADS_AUTONOMOUS_VIOLET = "rgb(178,120,255)";
+const IADS_RELOCATING_BLUE = "rgb(70,160,255)";
 
 // A destroyed site keeps its red bar. It is dark, of course it is -- but "destroyed" is
 // the more useful of the two things to be told, and the red bar is the only place the
@@ -37,6 +39,9 @@ export function iadsBarColor(tgo: TgoModel): string | null {
   }
   if (tgo.iads_state === "dark") {
     return IADS_DARK_GREY;
+  }
+  if (tgo.iads_state === "relocating") {
+    return IADS_RELOCATING_BLUE;
   }
   if (tgo.iads_state === "autonomous") {
     return IADS_AUTONOMOUS_VIOLET;
@@ -248,6 +253,9 @@ export function IadsStateLine(props: { tgo: TgoModel }) {
 }
 
 export function iadsStateLabel(tgo: TgoModel): string | null {
+  if (tgo.iads_state === "relocating") {
+    return "IADS: relocating";
+  }
   if (tgo.iads_state === "dark") {
     return tgo.iads_blind ? "IADS: dark, and blind" : "IADS: dark";
   }
