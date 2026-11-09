@@ -525,6 +525,21 @@ def test_debug_suppresses_disabled_sides_and_limits_screen_messages() -> None:
     assert lua.eval("#messages") <= 8
 
 
+def test_grounded_debug_stays_in_the_log_without_using_screen_message_budget() -> None:
+    lua = runtime()
+    lua.execute("cfg.options.debug=true;cfg.options.reports=false;cap.air=false")
+    start(lua)
+    lua.execute("tick(5);tick(65)")
+    assert "availability|not airborne" in lua.eval("table.concat(logs,';')")
+    assert lua.eval(
+        "(function() for _,m in ipairs(messages) do "
+        "if m.text:find('not airborne',1,true) then return false end end return true end)()"
+    )
+    lua.execute("cap.air=true;cap.fuel=.1;tick(75)")
+    assert "fuel at BINGO reserve" in lua.eval("messages[#messages].text")
+    assert lua.eval("#groups.CAP.pushes") == 0
+
+
 @pytest.mark.parametrize(
     "change",
     [
