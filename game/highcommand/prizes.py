@@ -44,6 +44,7 @@ MIN_SCORE = 2
 MAX_SCORE = 10
 MIN_SQUADRON_SCORE = 7
 MIN_SQUADRON_AIRCRAFT = 6
+SQUADRON_AIRCRAFT_LIMITS = {"[CH] B-21": 2}
 
 #: The five rungs of pilot skill, as the mission editor names them.
 RUNGS = ("Cadet", "Rookie", "Trained", "Veteran", "Ace")
@@ -105,6 +106,20 @@ class Prize(SaveCompatible):
     terms: tuple[tuple[str, Any], ...] = ()
     #: The side it was drawn for, and is given to.
     side: Player = Player.BLUE
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        super().__setstate__(state)
+        if self.kind != "squadron":
+            return
+        terms = dict(self.terms)
+        limit = SQUADRON_AIRCRAFT_LIMITS.get(terms.get("type", ""))
+        if limit is None or terms.get("aircraft", 0) <= limit:
+            return
+        terms["aircraft"] = limit
+        object.__setattr__(self, "terms", tuple(sorted(terms.items())))
+        object.__setattr__(
+            self, "line", _squadron_line(limit, terms["type"], terms["turns"])
+        )
 
     def term(self, name: str) -> Any:
         return dict(self.terms)[name]
@@ -514,6 +529,10 @@ def _runway(score: int, context: Context) -> Worked:
     return "A ticket for an instant repair of one of our runways.", {}
 
 
+def _squadron_line(count: int, aircraft: str, turns: int) -> str:
+    return f"A ticket for a squadron of {count} {aircraft} on loan for {_turns(turns)}."
+
+
 @_kind("squadron", min_score=MIN_SQUADRON_SCORE, ticket=True)
 def _squadron(score: int, context: Context) -> Worked:
     fleet = sorted(
@@ -546,10 +565,10 @@ def _squadron(score: int, context: Context) -> Worked:
         return None
     aircraft = fleet[min(available, key=lambda index: (abs(index - pick), index))]
     count = MIN_SQUADRON_AIRCRAFT + 2 * (score - MIN_SQUADRON_SCORE)
+    count = min(count, SQUADRON_AIRCRAFT_LIMITS.get(aircraft.display_name, count))
     turns = half_up(score)
     return (
-        f"A ticket for a squadron of {count} {aircraft.display_name} on loan for "
-        f"{_turns(turns)}.",
+        _squadron_line(count, aircraft.display_name, turns),
         {"aircraft": count, "type": aircraft.display_name, "turns": turns},
     )
 

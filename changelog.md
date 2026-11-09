@@ -24,7 +24,7 @@
 * **[Naval]** Release attacked formations locally and limit anti-ship salvos per mission, with defensive exceptions and persistent shot accounting (adapted from RetLab).
 * **[Ground Forces]** Generate configurable vehicle-based MANPADS teams with rifleman auxiliaries and dispersed placement.
 * **[Units]** Add eight stock CurrentHill ground units from DCS 2.9.31 and missing Iraqi aircraft availability without requiring mod packs (adapted from RetLab #1413).
-* **[High Command]** Balance reward score ranges, avoid redundant support loans, and show difficulty separately from priority.
+* **[High Command]** Balance reward score ranges, limit B-21 squadron rewards to two aircraft, avoid redundant support loans, and show difficulty separately from priority.
 * **[Live Pilots]** Share small, configurable morale gains from squadron mates' air and ground victories.
 * **[UI]** Allow missile sites to be disbanded for a refund after campaign start.
 * **[Realistic CAS]** Show discovery times on F10 contact markers.
