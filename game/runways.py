@@ -14,17 +14,12 @@ from game.atcdata import AtcData
 from game.dcs.beacons import BeaconType, Beacons
 from game.radio.radios import RadioFrequency
 from game.radio.tacan import TacanChannel
-from game.utils import Heading, Speed, knots, mps
+from game.utils import Heading
 from game.weather.conditions import Conditions
 
 if TYPE_CHECKING:
     from game.dcs.beacons import Beacon
     from game.theater import ConflictTheater
-
-
-#: Below this there is no meaningful headwind to choose between runways, so the one
-#: with an approach aid is preferred. Above it the wind decides.
-CALM_WIND: Speed = knots(5)
 
 
 def runway_centerline(
@@ -185,19 +180,11 @@ class RunwayAssigner:
     ) -> RunwayData:
         """Returns the preferred runway for the given airport.
 
-        The wind decides. Below CALM_WIND there is no meaningful headwind to choose
-        between runways, so an ILS-equipped runway is preferred instead: two knots of
-        wind was otherwise enough to select a bare runway at a field whose instrument
-        runway was unused. At zero speed, ignore the stored wind direction and use
-        data order to break ties, still preferring an ILS-equipped runway.
+        Prefer the best headwind even in light wind. An instrument approach must
+        not select a tailwind runway over its reciprocal. At zero speed, ignore
+        the stored direction; prefer ILS and then data order to break ties.
         """
         runways = list(RunwayData.for_pydcs_airport(theater, airport))
-
-        if mps(self.conditions.weather.wind.at_0m.speed) < CALM_WIND:
-            instrument = [runway for runway in runways if runway.ils is not None]
-            if instrument:
-                # Of those, the one most into what wind there is.
-                return min(instrument, key=lambda r: self.angle_off_headwind(r).degrees)
 
         # Find the runway with the best headwind first.
         best_runways = [runways[0]]
