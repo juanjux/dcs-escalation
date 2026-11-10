@@ -26,16 +26,43 @@ METHODS = (
     "UNIT_REFRESH",
     "GROUP_REFRESH",
 )
+ISOLATION_CASES = (
+    ("CLEAR_CONTROL", "CONTROL", False),
+    ("FOG_CONTROL", "CONTROL", True),
+    ("FOG_PRODUCTION", "PRODUCTION", True),
+    ("FOG_UNIT_REFRESH", "UNIT_REFRESH", True),
+    ("FOG_GROUP_REFRESH", "GROUP_REFRESH", True),
+)
 
 
-def build_mission() -> Mission:
+def build_mission(*, sensor_isolation: bool = False) -> Mission:
     mission = Mission()
     mission.start_time = datetime(2026, 6, 1, 12)
     mission.groundControl.blue_game_masters = 1
     mission.groundControl.red_game_masters = 1
     mission.weather.wind_at_ground.speed = 0
     mission.weather.enable_fog = False
-    config: dict = {"cases": [], "duration": 240, "ttl": 80, "refresh": 5}
+    # Runtime fog is clamped below the cloud base. Keep that limit above the
+    # isolation layer, with no automatic weather changes during the sequence.
+    mission.weather.auto_fog = False
+    mission.weather.clouds_preset = None
+    mission.weather.clouds_base = 3000
+    mission.weather.clouds_density = 0
+    config: dict = {
+        "cases": [],
+        "duration": 240,
+        "ttl": 80,
+        "refresh": 5,
+        "version": 3 if sensor_isolation else 2,
+        "sensorIsolation": sensor_isolation,
+        "fogThickness": 1000,
+        "fogVisibility": 100,
+    }
+    cases = (
+        ISOLATION_CASES
+        if sensor_isolation
+        else tuple((method, method, False) for method in METHODS)
+    )
     # This exact ray allowed the BLUE_CONTROL tank to fire in the first probe.
     # Only one late-activated pair exists at a time, so every case uses the same
     # terrain, target bearing and range without other targets or physical overlap.
@@ -43,8 +70,8 @@ def build_mission() -> Mission:
         180, 13000
     )
     for side in (2, 1):
-        for method in METHODS:
-            label = ("BLUE_" if side == 2 else "RED_") + method
+        for suffix, method, dense_fog in cases:
+            label = ("BLUE_" if side == 2 else "RED_") + suffix
             country = mission.country("USA" if side == 2 else "Russia")
             enemy = mission.country("Russia" if side == 2 else "USA")
             receiver = mission.vehicle_group(
@@ -75,6 +102,8 @@ def build_mission() -> Mission:
                 {
                     "label": label,
                     "method": method,
+                    "denseFog": dense_fog,
+                    "scenario": suffix,
                     "receiver": receiver.units[0].name,
                     "receiverGroup": receiver.name,
                     "name": target.units[0].name,
@@ -97,7 +126,22 @@ def build_mission() -> Mission:
     trigger.add_action(DoScript(String(source)))
     mission.triggerrules.triggers.append(trigger)
     mission.description_text = (
-        "Ground intel V2: 12 sequential cases, six per side. One active tank and "
+        "Ground intel V3: ten sequential cases, five per side. Clear and dense-fog "
+        "controls are compared with production sharing and repeated direct "
+        "unit/group knowledge calls. Native fog must prevent the no-intel control "
+        "from acquiring the target; otherwise that side is INCONCLUSIVE. Clear "
+        "controls must acquire and fire to validate the geometry and weapons. "
+        "Knowledge and engagement effects are reported separately, not inferred "
+        "from successful API calls. One active tank and one immortal unarmed "
+        "target at a time, at 1200 metres on the same terrain ray. Each case "
+        "lasts four simulated minutes; total about 41 minutes. Time acceleration "
+        "is allowed. No player orders or aircraft modules needed. Wait for "
+        "GROUND INTEL V3 COMPLETE. Raw native returns, actual fog settings, "
+        "shots and expiry samples are logged under GROUND_INTEL_V3 in dcs.log. "
+        "Observations at 20/150 seconds, TTL 80, open fire at 30, hidden movement "
+        "at 120. Repeated calls never extend the contact lifetime."
+        if sensor_isolation
+        else "Ground intel V2: 12 sequential cases, six per side. One active tank and "
         "one immortal unarmed target at a time, always on the same 1200-metre ray. "
         "CONTROL, production adapter, direct unit/group controller calls, and "
         "unit/group calls refreshed every five seconds while the contact is valid. "
