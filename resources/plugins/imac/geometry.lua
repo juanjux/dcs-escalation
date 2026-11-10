@@ -47,7 +47,7 @@ do
   function G.safe(a,b,alt,threats,height,padding,escape)
     return G.leg(a,b,alt,threats,padding,escape) and G.terrainClear(a,b,alt,height)
   end
-  function G.escape(source,dangers,threats,height,speed,home)
+  function G.escape(source,dangers,threats,height,speed,home,accept)
     local best,bestScore
     local radius=math.max(20000,math.min(70000,speed*180))
     for i=0,23 do
@@ -55,7 +55,8 @@ do
       local p={x=source.x+math.cos(angle)*radius,y=source.y,z=source.z+math.sin(angle)*radius}
       -- Include room for a turn, rather than checking only the orbit centre.
       local padding=math.max(10000,speed*35)
-      if G.safe(source,p,p.y,threats,height,padding,true) and G.leg(p,p,p.y,threats,padding+5000) then
+      if G.safe(source,p,p.y,threats,height,padding,true) and G.leg(p,p,p.y,threats,padding+5000) and
+        (not accept or accept(p)) then
         local score=math.huge
         for _,t in ipairs(dangers) do
           local d=G.segment(source,p,t.point)
