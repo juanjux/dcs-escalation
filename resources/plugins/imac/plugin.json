@@ -1,6 +1,6 @@
 {
     "nameInUI": "In-Mission Air Commander",
-    "descriptionInUI": "Optional in-mission scripted air coordination for both sides, without an LLM, while an airborne, operating AWACS or a powered command centre survives. Redirects available BARCAP/TARCAP patrols and returning fighter-capable flights against detected aircraft and interceptable cruise/anti-ship missiles. SAM avoidance and protective fighter evasion have separate switches and mission-type exemptions. Temporary orders retain the original mission. Excludes Player/Client groups and AFAC navigation. F10 pause controls allow manual tasking. No emergency scrambles or ground orders. Off by default.",
+    "descriptionInUI": "Optional in-mission scripted air coordination for both sides. If an airborne, operating AWACS or a powered (Skynet IADS') command centre survives. Redirects available fight-capable aircrafts against detected enemies and interceptable cruise/anti-ship missiles. Also provides optional SAM avoidance and protective fighter evasion for all packages. F10 pause controls allow manual tasking.",
     "defaultValue": false,
     "specificOptions": [
         {"nameInUI": "Enable BLUE commander", "descriptionInUI": "Allow IMAC to command BLUE AI flights. Independent of the RED setting; Player/Client groups are never commanded.", "mnemonic": "blue", "defaultValue": true},
