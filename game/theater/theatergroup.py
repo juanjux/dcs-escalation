@@ -290,9 +290,14 @@ class TheaterGroup:
         ranges = (u.detection_range for u in self.units if u.is_anti_air)
         return max(ranges, default=meters(0))
 
-    def max_threat_range(self, radar_only: bool = False) -> Distance:
+    def max_threat_range(
+        self, radar_only: bool = False, *, include_relocating: bool = False
+    ) -> Distance:
         """Calculate the maximum threat range of the TheaterGroup.
         This also checks for Launcher and Tracker Pairs and if they are functioning or not. Allows to also use only radar emitting units for the calculation with the parameter.
+
+        include_relocating is for nominal map coverage only. Planning and mission
+        generation must retain the default operational ranges during transit.
         """
         max_non_radar = meters(0)
         max_telar_range = meters(0)
@@ -302,17 +307,22 @@ class TheaterGroup:
         for unit in self.units:
             if not unit.alive or not unit.is_anti_air:
                 continue
+            threat_range = (
+                meters(getattr(unit.type, "threat_range", 0) or 0)
+                if include_relocating
+                else unit.threat_range
+            )
             if unit.type in TRACK_RADARS:
                 live_trs.add(unit.type)
             elif unit.type in TELARS:
-                max_telar_range = max(max_telar_range, unit.threat_range)
+                max_telar_range = max(max_telar_range, threat_range)
             elif (
                 issubclass(unit.type, VehicleType)
                 and unit.type in LAUNCHER_TRACKER_PAIRS
             ):
-                launchers[unit.type] = unit.threat_range
+                launchers[unit.type] = threat_range
             else:
-                max_non_radar = max(max_non_radar, unit.threat_range)
+                max_non_radar = max(max_non_radar, threat_range)
         for launcher, threat_range in launchers.items():
             for tr in LAUNCHER_TRACKER_PAIRS[launcher]:
                 if tr in live_trs:
