@@ -38,7 +38,9 @@ do
       if previous and now-previous.time<60 and (previous.detail==detail or topic=='active') then return end
       debugLast[key]={time=now,detail=detail}
       env.info(string.format('IMAC|DEBUG|t=%.1f|side=%d|group=%s|%s|%s',now,side,group,topic,detail))
-      if topic=='availability' and (detail=='not airborne' or detail=='flight unavailable') then return end
+      -- Routine authority and availability details remain available in dcs.log.
+      if topic=='authority' or (topic=='availability' and
+        (detail=='not airborne' or detail=='flight unavailable' or detail=='landing approach')) then return end
       local budget=debugBudget[side]
       if not budget or now-budget.time>=60 then budget={time=now,count=0};debugBudget[side]=budget end
       if topic~='active' and budget.count<4 and screen~=false then
