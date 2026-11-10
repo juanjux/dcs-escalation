@@ -19,6 +19,7 @@ from game.groundmovement.dispatch import (
     dispatch_armor,
     rehome_before_capture,
     stop_armor,
+    validate_transit,
 )
 from game.groundmovement.orders import (
     DestinationKind,
@@ -107,6 +108,47 @@ def test_safe_base_access_survives_reload_and_delivers_stock_once(world: Any) ->
     assert world.b.base.armor == {world.units[7]: 1}
     advance_armor(world.game, GameUpdateEvents())
     assert world.b.base.armor == {world.units[7]: 1}
+
+
+def test_exclusion_exit_survives_partial_progress_reload_and_delivery(
+    world: Any,
+) -> None:
+    world.game.theater.landmap = landmap(box(5, 5, 15, 15))
+    transit = dispatch(world, (7,))
+    first = transit.journey.route.segments[0]
+    assert first.start == GroundPosition(10, 10) and not first.on_road
+    # Spend only part of the first exit before saving. It must not be rejected
+    # on the following turn simply because the unit is still inside the mask.
+    with patch("game.groundmovement.dispatch.distance_per_turn", return_value=2):
+        world.game.turn += 1
+        advance_armor(world.game, GameUpdateEvents())
+    assert transit.pause_reason is None and not transit.finished
+    assert transit.journey.segment_index == 0
+    assert transit.journey.travelled_distance == pytest.approx(2)
+    world = pickle.loads(pickle.dumps(world))
+    transit = world.game.ground_movements.transits[transit.order_id]
+    assert validate_transit(world.game, transit) == world.destination
+    world.game.turn += 1
+    advance_armor(world.game, GameUpdateEvents())
+    assert transit.finished and transit.pause_reason is None
+    assert world.b.base.armor == {world.units[7]: 1}
+
+
+def test_exit_exception_does_not_follow_the_journey_to_later_segments(
+    world: Any,
+) -> None:
+    world.game.theater.landmap = landmap(box(5, 5, 15, 15))
+    transit = dispatch(world, (7,))
+    # The next leg is now blocked at its origin. It is not the original exit,
+    # even though its geometry would otherwise qualify for a local exit.
+    transit.journey.segment_index = 1
+    current = transit.journey.position
+    world.game.theater.landmap = landmap(
+        box(5, 5, 15, 15),
+        box(current.x - 0.01, current.z - 0.01, current.x + 0.01, current.z + 0.01),
+    )
+    with pytest.raises(ValueError, match="route is no longer available"):
+        validate_transit(world.game, transit)
 
 
 def test_stale_or_invalid_dispatch_does_not_remove_source_inventory(world: Any) -> None:

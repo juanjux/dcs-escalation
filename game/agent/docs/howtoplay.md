@@ -286,6 +286,11 @@ corridors, or when they cannot connect, the planner searches off-road detours
 around excluded terrain and water. Detours must stay in friendly territory and
 use the configured off-road distance budget (half the road budget by default).
 
+An existing group inside a coarse terrain exclusion may leave it through a
+local off-road exit of at most 600 m. This first leg is travelled normally and
+must stay on land and in friendly territory. Once outside, all remaining legs
+obey the normal exclusion checks; excluded destinations remain forbidden.
+
 GPS destinations must be in friendly territory, determined by the nearest land
 base or authored road sector. Roads between opposing bases are divided at the
 current frontline. Fleets do not claim land; neutral or tied sectors are not
