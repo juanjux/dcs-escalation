@@ -48,9 +48,10 @@ do
   local function setWeather(state)
     assert(world.weather and world.weather.setFogThickness and world.weather.setFogVisibilityDistance and
       world.weather.getFogThickness and world.weather.getFogVisibilityDistance,'native fog API unavailable')
-    world.weather.setFogVisibilityDistance(state.row.denseFog and c.fogVisibility or 0)
+    -- Enable the layer before setting visibility. A visibility request while
+    -- fog is disabled did not survive the native clear-to-fog transition.
     world.weather.setFogThickness(state.row.denseFog and c.fogThickness or 0)
-    checkWeather(state)
+    world.weather.setFogVisibilityDistance(state.row.denseFog and c.fogVisibility or 0)
   end
   local function sample(state,label)
     local target=assert(Unit.getByName(state.row.name),'target absent')
@@ -206,7 +207,7 @@ do
         '|clearShots='..tostring(clear and clear.visibleShots or 'missing')..
         '|fogAcquisition='..tostring(dense and dense.nativeSamples or 'missing')..
         '|fogShots='..tostring(dense and dense.visibleShots or 'missing'))
-      trigger.action.outText('Ground intel V3 '..name..' sensor control: '..status,45)
+      trigger.action.outText('Ground intel V'..c.version..' '..name..' sensor control: '..status,45)
       for _,key in ipairs({'FOG_PRODUCTION','FOG_UNIT_REFRESH','FOG_GROUP_REFRESH'})do
         local row=rows[key]
         local valid=qualified and row and row.errors==0 and row.weatherVerified
@@ -233,15 +234,11 @@ do
       return
     end
     local row=c.cases[index]
-    local state={row=row,started=timer.getTime()+2,visibleShots=0,concealedShots=0,notifications=0,errors=0,
+    local state={row=row,started=timer.getTime()+(c.sensorIsolation and 4 or 2),
+      visibleShots=0,concealedShots=0,notifications=0,errors=0,
       nativeSamples=0,concealedNativeSamples=0}
     active=state
-    local ok,err=pcall(function()
-      if c.sensorIsolation then setWeather(state)end
-      trigger.action.activateGroup(assert(Group.getByName(row.receiverGroup)))
-      trigger.action.activateGroup(assert(Group.getByName(row.groupName)))
-    end)
-    if not ok then
+    local function activationFailed(err)
       failures=failures+1;log('ACTIVATION_ERROR',tostring(err))
       for _,name in ipairs({row.receiverGroup,row.groupName})do
         pcall(function()
@@ -250,21 +247,37 @@ do
       end
       active=nil
       timer.scheduleFunction(function()beginCase()end,nil,timer.getTime()+2)
-      return
     end
-    timer.scheduleFunction(function()
-      local ready,why=pcall(function()setup(state)end)
-      if not ready then
-        state.errors=state.errors+1;log('SETUP_ERROR',tostring(why))
-        if state.intel then state.intel:stop()end
-        for _,name in ipairs({row.receiverGroup,row.groupName})do
-          local g=Group.getByName(name);if g and g:isExist()then g:destroy()end
+    local function activate()
+      if active~=state then return end
+      local ok,err=pcall(function()
+        -- No units exist during the weather transition. Check actual native
+        -- getters after two seconds, before allowing any sensor acquisition.
+        if c.sensorIsolation then checkWeather(state)end
+        trigger.action.activateGroup(assert(Group.getByName(row.receiverGroup)))
+        trigger.action.activateGroup(assert(Group.getByName(row.groupName)))
+      end)
+      if not ok then activationFailed(err);return end
+      timer.scheduleFunction(function()
+        if active~=state then return end
+        local ready,why=pcall(function()setup(state)end)
+        if not ready then
+          state.errors=state.errors+1;log('SETUP_ERROR',tostring(why))
+          if state.intel then state.intel:stop()end
+          for _,name in ipairs({row.receiverGroup,row.groupName})do
+            local g=Group.getByName(name);if g and g:isExist()then g:destroy()end
+          end
+          if state.fog then state.fog:stop()end
+          failures=failures+state.errors;active=nil
+          timer.scheduleFunction(function()beginCase()end,nil,timer.getTime()+2)
         end
-        if state.fog then state.fog:stop()end
-        failures=failures+state.errors;active=nil
-        timer.scheduleFunction(function()beginCase()end,nil,timer.getTime()+2)
-      end
-    end,nil,state.started)
+      end,nil,state.started)
+    end
+    if c.sensorIsolation then
+      local ok,err=pcall(function()setWeather(state)end)
+      if not ok then activationFailed(err);return end
+      timer.scheduleFunction(activate,nil,timer.getTime()+2)
+    else activate()end
   end
   function handler:onEvent(event)
     local state=active

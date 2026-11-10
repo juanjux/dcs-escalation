@@ -1,4 +1,4 @@
-"""Build the automatic V3 fog-isolation probe for native ground knowledge."""
+"""Build the automatic V4 fog-isolation probe for native ground knowledge."""
 
 import argparse
 from pathlib import Path

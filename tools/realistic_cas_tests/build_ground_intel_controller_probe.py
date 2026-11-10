@@ -53,7 +53,7 @@ def build_mission(*, sensor_isolation: bool = False) -> Mission:
         "duration": 240,
         "ttl": 80,
         "refresh": 5,
-        "version": 3 if sensor_isolation else 2,
+        "version": 4 if sensor_isolation else 2,
         "sensorIsolation": sensor_isolation,
         "fogThickness": 1000,
         "fogVisibility": 100,
@@ -126,7 +126,7 @@ def build_mission(*, sensor_isolation: bool = False) -> Mission:
     trigger.add_action(DoScript(String(source)))
     mission.triggerrules.triggers.append(trigger)
     mission.description_text = (
-        "Ground intel V3: ten sequential cases, five per side. Clear and dense-fog "
+        "Ground intel V4: ten sequential cases, five per side. Clear and dense-fog "
         "controls are compared with production sharing and repeated direct "
         "unit/group knowledge calls. Native fog must prevent the no-intel control "
         "from acquiring the target; otherwise that side is INCONCLUSIVE. Clear "
@@ -136,8 +136,8 @@ def build_mission(*, sensor_isolation: bool = False) -> Mission:
         "target at a time, at 1200 metres on the same terrain ray. Each case "
         "lasts four simulated minutes; total about 41 minutes. Time acceleration "
         "is allowed. No player orders or aircraft modules needed. Wait for "
-        "GROUND INTEL V3 COMPLETE. Raw native returns, actual fog settings, "
-        "shots and expiry samples are logged under GROUND_INTEL_V3 in dcs.log. "
+        "GROUND INTEL V4 COMPLETE. Raw native returns, actual fog settings, "
+        "shots and expiry samples are logged under GROUND_INTEL_V4 in dcs.log. "
         "Observations at 20/150 seconds, TTL 80, open fire at 30, hidden movement "
         "at 120. Repeated calls never extend the contact lifetime."
         if sensor_isolation

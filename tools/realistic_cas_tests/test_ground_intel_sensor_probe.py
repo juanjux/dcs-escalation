@@ -1,4 +1,4 @@
-"""V3 serialization, isolation guards and reporting, not native fog acceptance."""
+"""V4 serialization, isolation guards and reporting, not native fog acceptance."""
 
 from pathlib import Path
 import tempfile
@@ -67,7 +67,7 @@ class GroundIntelSensorProbeTests(unittest.TestCase):
 
     def execute(self, options="", weather_override=""):
         with tempfile.TemporaryDirectory() as directory:
-            native, _, script = self.saved(Path(directory) / "v3.miz")
+            native, _, script = self.saved(Path(directory) / "v4.miz")
         runtime = LuaRuntime()
         for source in (
             CORE,
@@ -87,7 +87,7 @@ class GroundIntelSensorProbeTests(unittest.TestCase):
 
     def test_round_trip_keeps_fresh_pairs_and_clear_cloud_limit(self):
         with tempfile.TemporaryDirectory() as directory:
-            _, saved, script = self.saved(Path(directory) / "v3.miz")
+            _, saved, script = self.saved(Path(directory) / "v4.miz")
         self.assertEqual(saved["weather"]["clouds"]["base"], 3000)
         self.assertFalse(saved["weather"]["enable_fog"])
         positions = {}
@@ -117,7 +117,7 @@ class GroundIntelSensorProbeTests(unittest.TestCase):
 
     def test_isolated_control_reports_knowledge_and_firing_separately(self):
         logs = self.execute("effect=true")
-        results = [line for line in logs if "GROUND_INTEL_V3|RESULT|" in line]
+        results = [line for line in logs if "GROUND_INTEL_V4|RESULT|" in line]
         self.assertEqual(len(results), 10)
         self.assertTrue(all("errors=0" in line for line in results))
         qualifications = [line for line in logs if "|QUALIFICATION|" in line]
@@ -194,6 +194,42 @@ class GroundIntelSensorProbeTests(unittest.TestCase):
                     )
                 )
                 self.assertFalse(any("knowledge=OBSERVED" in s for s in logs))
+
+    def test_clear_to_fog_sets_thickness_before_visibility(self):
+        logs = self.execute(
+            "effect=true",
+            """
+            world.weather.setFogVisibilityDistance=function(value)
+              fogVisibility=(fogThickness==0 and value>0)and 100000 or value
+            end
+            """,
+        )
+        results = [s for s in logs if "|RESULT|" in s]
+        self.assertEqual(len(results), 10)
+        self.assertTrue(all("errors=0" in s for s in results))
+        self.assertFalse(any("ACTIVATION_ERROR" in s for s in logs))
+
+    def test_units_wait_until_the_delayed_native_weather_is_verified(self):
+        logs = self.execute(
+            "effect=true",
+            """
+            local activate=trigger.action.activateGroup
+            trigger.action.activateGroup=function(g)
+              if not g.name:find('CLEAR_',1,true)then
+                assert(fogThickness==1000 and fogVisibility==100,'premature sensor activation')
+              end
+              activate(g)
+            end
+            world.weather.setFogThickness=function(value)
+              timer.scheduleFunction(function()fogThickness=value end,nil,now+.5)
+            end
+            world.weather.setFogVisibilityDistance=function(value)
+              timer.scheduleFunction(function()fogVisibility=value end,nil,now+.5)
+            end
+            """,
+        )
+        self.assertEqual(sum("|RESULT|" in s for s in logs), 10)
+        self.assertFalse(any("ACTIVATION_ERROR" in s for s in logs))
 
 
 if __name__ == "__main__":
