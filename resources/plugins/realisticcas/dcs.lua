@@ -34,6 +34,8 @@ do
     assert(type(o.targets)=="table","explicit targets allowlist required")
     RealisticCAS.validateContactReports(o)
     assert(o.onFire==nil or type(o.onFire)=='function','onFire callback must be a function')
+    assert(o.onObservation==nil or type(o.onObservation)=='function','invalid observation callback')
+    assert(o.onTick==nil or type(o.onTick)=='function','invalid tick callback')
     local interval=o.interval or 1
     local budget=o.expiryBudget or 128
     assert(type(interval)=="number" and interval>=0.1 and interval<=60,"invalid interval")
@@ -106,6 +108,11 @@ do
         return true -- Acceptance by DCS API, not independently observable engine visibility.
       end})
     local adapter={service=service,active=true}
+    local function observed(id,side,unitName)
+      if not o.onObservation or not unitName then return end
+      local ok,err=pcall(o.onObservation,unitName,side,service:getContact(id,side))
+      if not ok then log('ADAPTER_ERROR',id,'contact sharing: '..tostring(err))end
+    end
     local function retireDestroyed(id)
       if alive(id)~=false then return false end
       service:unregister(id,false)
@@ -134,14 +141,16 @@ do
       else managed[id]=nil;log("ADAPTER_ERROR",id,why) end
       return ok
     end
-    function adapter:observe(groupName,coalition,point,reason,typeName)
+    function adapter:observe(groupName,coalition,point,reason,typeName,unitName)
       if not self.active or self.stopping then return false,"stopped" end
       local g=Group.getByName(groupName)
       if not g or not g:isExist() then return false,"unmanaged group" end
       local item=managed[g:getID()]
       if not item or item.name~=groupName or item.owner~=g:getCoalition() then return false,"unmanaged group" end
       if retireDestroyed(g:getID())then return false,'destroyed group'end
-      return service:observe(g:getID(),coalition,point,reason,typeName)
+      local success,why=service:observe(g:getID(),coalition,point,reason,typeName)
+      if success then observed(g:getID(),coalition,unitName)end
+      return success,why
     end
     local handler={}
     function handler:onEvent(event)
@@ -161,6 +170,7 @@ do
           local p=u:getPoint()
           local typed,typeName=pcall(function()return u:getTypeName()end)
           local revealed=service:fire(g:getID(),p,typed and typeName or nil)
+          if revealed then observed(g:getID(),g:getCoalition()==1 and 2 or 1,u:getName())end
           if revealed and o.onFire then o.onFire(g:getName(),u:getName(),p)end
         end
       end)
@@ -193,6 +203,7 @@ do
           if not retireDestroyed(managedIds[aliveCursor])then aliveCursor=aliveCursor+1 end
         end
         service:tick(budget)
+        if o.onTick then o.onTick()end
       end)
       if not ok then log("ADAPTER_ERROR",nil,err) end
       return now+interval

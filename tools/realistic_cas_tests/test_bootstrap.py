@@ -44,6 +44,26 @@ class BootstrapTests(unittest.TestCase):
         assert(m:stop());run(3)
         """)
 
+    def test_sensor_contacts_reach_ground_ai_with_reports_disabled(self):
+        self.check("""
+        cfg.acquisitionSeconds=0;cfg.contactReports=false
+        cfg.registry.targets[1].coalition=1
+        local receiverGroup=group('receiver-group',4,2)
+        local receiver=unit('receiver',receiverGroup,'M-1 Abrams',0,0)
+        function target:getID()return 11 end
+        function target:getName()return 'target'end
+        local shares=0
+        function receiver:getController()return {knowTarget=function(_,enemy)
+          assert(enemy==target);shares=shares+1
+        end}end
+        cfg.registry.observers[#cfg.registry.observers+1]={
+          name='receiver',category='ground',coalition=2,typeName='M-1 Abrams'}
+        local m=assert(RealisticCAS.startMission(cfg))
+        run(30);assert(shares>0 and m.groundIntel:getDiagnostics().errors==0)
+        assert(m:stop());run(3)
+        assert(not m.groundIntel.active and m.groundIntel:getDiagnostics().queued==0)
+        """)
+
     def test_invalid_sensor_rolls_back_already_hidden_groups(self):
         self.check("""
         cfg.registry.observers[1].typeName=nil

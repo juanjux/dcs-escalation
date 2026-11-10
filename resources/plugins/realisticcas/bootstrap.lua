@@ -53,6 +53,7 @@ do
     local api={active=false}
     local handler={}
     function api:stop()
+      if self.groundIntel then self.groundIntel:stop()end
       local mapStopped=not self.f10Contacts or self.f10Contacts:stop()
       local markersStopped=not self.detectors or self.detectors:stop()
       if self.fog and not self.fog:stop() then
@@ -111,10 +112,20 @@ do
         contactReports=c.contactReports,contactReportSeconds=c.contactReportSeconds,
         contactCoordinateFormat=c.afacMarking and c.afacMarking.coordinateFormat,
         afacObservers=afacObservers,
+        onObservation=function(unitName,side,contact)
+          if api.groundIntel then api.groundIntel:observe(unitName,side,contact)end
+        end,
+        onTick=function()
+          if api.active and api.groundIntel then api.groundIntel:tick()end
+        end,
         debug=c.debug,expiryBudget=c.expiryBudget,onFire=function(groupName,unitName,point)
           local nav=api.detectors and api.detectors.afacNavigation
           if nav then nav:fire(groupName,unitName,point)end
         end}))
+      api.groundIntel=RealisticCAS.newGroundIntel(api.fog,r.observers,r.targets,{
+        log=function(kind,detail)
+          if c.debug or kind=='ERROR' then log('GROUND_INTEL_'..kind,detail)end
+        end})
       api.detectors=RealisticCAS.startDetection(api.fog,{targets=r.targets,observers=r.observers,
         knownTargets=c.afacEnabled and r.afacKnownTargets or nil,
         airDefenseThreats=r.airDefenseThreats,afacAvoidance=c.afacAvoidance,

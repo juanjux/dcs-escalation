@@ -44,6 +44,7 @@ TARGETING_PODS = frozenset(
 
 SCRIPT_ORDER = (
     "core.lua",
+    "ground-intel.lua",
     "dcs.lua",
     "f10-contacts.lua",
     "afac-search.lua",

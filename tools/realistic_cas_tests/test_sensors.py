@@ -5,7 +5,13 @@ import unittest
 from lupa.lua51 import LuaRuntime
 from test_contact_core import CORE, ADAPTER, ADAPTER_FIXTURE, PLUGIN
 
-FILES = ["sensors.lua", "environment.lua", "detection.lua", "detectors-dcs.lua"]
+FILES = [
+    "ground-intel.lua",
+    "sensors.lua",
+    "environment.lua",
+    "detection.lua",
+    "detectors-dcs.lua",
+]
 SOURCES = [(PLUGIN / name).read_text(encoding="utf-8") for name in FILES]
 
 MODEL = """

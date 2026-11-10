@@ -11,6 +11,27 @@ including saving/reloading a MIZ and compiling its scripts. This is NOT yet a
 full generated-campaign DCS acceptance or campaign-scale performance measurement.
 Adapters for arbitrary CTLD/MOOSE runtime-created units remain unsupported.
 
+Discovered managed units are also reported to generated ground AI of the observing
+coalition through native `Controller:knowTarget`, without changing tasks, ROE or
+movement. Only individually observed units are reported, not their unseen group
+members. Reports are queued with at most 128 receiver deliveries per second;
+repeated observations are coalesced and a completed wave is refreshed no more
+than every 15 seconds, only after another genuine observation or firing event.
+Expired contacts are not delivered, including when a native hide command fails.
+Range, weapon constraints, line of fire and ROE still determine engagement.
+Native target memory after concealment needs the standalone ground-sharing probe;
+the script does not claim to erase DCS controller memory.
+
+Generate the automatic native probe with
+`python tools/realistic_cas_tests/build_ground_intel_probe.py --output <new-path.miz>`.
+It needs no aircraft modules or player input. Both sides have a shared-contact
+tank and an unnotified control, with immortal unarmed targets. Observations occur
+at 20 and 140 seconds, expire after 40 seconds, and targets move while hidden.
+Run until `GROUND INTEL PROBE COMPLETE` at 240 seconds. Inspect
+`GROUND_INTEL_PROBE` samples and shot records in `dcs.log`, especially native
+last-known positions and any shots while concealed. Automated tests only verify
+the adapter contracts, saved MIZ resources and Lua compilation, not native AI.
+
 ## Enabling the plugin
 
 - Select **Realistic CAS (experimental)** in Mission Plugins. Initial options:
