@@ -242,17 +242,35 @@ describe("AirDefenseRangeLayer", () => {
   });
 
   it.each([false, true])(
-    "keeps fixed coverage hidden during relocation (detection %s)",
-    (detection) => {
+    "keeps threat rings visible during relocation (blue %s)",
+    (blue) => {
+      const state = withIadsState("relocating", false, [400]);
+      state.tgos.tgos.sam.blue = blue;
       renderWithProviders(
-        <AirDefenseRangeLayer blue={false} detection={detection} />,
+        <AirDefenseRangeLayer blue={blue} />,
         {
-          preloadedState: withIadsState("relocating", false, [400]) as any,
+          preloadedState: state as any,
         },
       );
-      expect(mockCircle).not.toHaveBeenCalled();
+      expect(mockCircle).toHaveBeenCalledWith(
+        expect.objectContaining({
+          center: { lat: 10, lng: 20 },
+          radius: 500,
+          pathOptions: expect.objectContaining({ color: colorFor(blue, false) }),
+        }),
+      );
+      expect(mockCircle).not.toHaveBeenCalledWith(
+        expect.objectContaining({ radius: 400 }),
+      );
     },
   );
+
+  it("keeps detection coverage hidden during relocation", () => {
+    renderWithProviders(<AirDefenseRangeLayer blue={false} detection />, {
+      preloadedState: withIadsState("relocating", false, [400]) as any,
+    });
+    expect(mockCircle).not.toHaveBeenCalled();
+  });
 
   // An autonomous site still shoots, at whatever its own radar finds, so its ring is
   // left exactly as it is. Dashing or recolouring it would say "jamming bubble".

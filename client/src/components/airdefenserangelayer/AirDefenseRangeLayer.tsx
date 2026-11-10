@@ -77,10 +77,11 @@ export function colorFor(blue: boolean, detection: boolean) {
 // threat that is not there. An autonomous one keeps its ring exactly as it is -- it
 // does still shoot, at whatever its own radar finds -- and says so in the tooltip and
 // on its health bar. Which is why nothing here is recoloured or dashed: dashed already
-// means a GPS jamming bubble. Relocating sites do not advertise a fixed coverage ring;
-// their local self-defence during transit is handled separately.
-export function ringsAreOff(state?: string | null): boolean {
-  return state === "dark" || state === "relocating";
+// means a GPS jamming bubble. Relocating sites keep their potential threat range
+// visible: some batteries can stop and engage during transit. Their detection
+// coverage stays hidden until they stop or arrive.
+export function ringsAreOff(state?: string | null, detection = false): boolean {
+  return state === "dark" || (state === "relocating" && detection);
 }
 
 // Bright colour used to mark the hovered ring and its emitter.
@@ -117,7 +118,7 @@ const RangeCircles = (props: RangeCirclesProps) => {
   // The detection layer draws every detection range, including that of a site with
   // nothing left to shoot with: a search radar that survived its launchers still sees,
   // still feeds the IADS, and is still worth striking.
-  const radii = ringsAreOff(props.iads_state)
+  const radii = ringsAreOff(props.iads_state, props.detection)
     ? []
     : props.detection
       ? props.detection_ranges
