@@ -172,6 +172,25 @@ class PluginOptionsBox(QGroupBox):
                     ):
                         control.setEnabled(controller.isChecked())
                         controller.toggled.connect(control.setEnabled)
+            if option.forced_true_when_off:
+                controller = self.widgets.get(option.forced_true_when_off)
+                if isinstance(controller, QCheckBox):
+                    controller.toggled.connect(self._update_forced_options)
+        self._update_forced_options()
+
+    def _update_forced_options(self) -> None:
+        for identifier, option in self.options.items():
+            if not option.forced_true_when_off:
+                continue
+            controller = self.widgets.get(option.forced_true_when_off)
+            widget = self.widgets.get(identifier)
+            if isinstance(controller, QCheckBox) and isinstance(widget, QCheckBox):
+                forced = not controller.isChecked()
+                if forced:
+                    widget.setChecked(True)
+                    option.set_value(True)
+                widget.setEnabled(not forced)
+                self.labels[identifier].setEnabled(not forced)
 
     def update_from_settings(self, settings: Settings) -> None:
         for identifier in self.widgets:
@@ -194,6 +213,7 @@ class PluginOptionsBox(QGroupBox):
                 w.blockSignals(blocked)
             elif isinstance(w, QLineEdit):
                 w.setText("" if value is None else str(value))
+        self._update_forced_options()
 
 
 class PluginOptionsDialog(QDialog):

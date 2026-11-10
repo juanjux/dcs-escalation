@@ -101,6 +101,10 @@ def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> 
     [
         ("blue", 1),
         ("reports", "yes"),
+        ("avoidSamThreats", 1),
+        ("neverDivertSead", "true"),
+        ("evadeFighters", 1),
+        ("neverEvadeFighterMissions", "true"),
         ("interval", 0),
         ("defendRangeNm", float("nan")),
         ("pursuitSeconds", True),
@@ -262,8 +266,76 @@ def test_dead_and_sead_roles_export_support_and_completion_hooks(
     assert data is not None
     flight = data["flights"][0]
     assert flight["mode"] == "dead" and flight["deadSupport"] is True
+    assert flight["seadMission"] is True
     assert flight["recoveryIndex"] == 3
     assert "EscalationIMAC.reached" in str(s.group.points[2].tasks[0].dict())
+
+
+@pytest.mark.parametrize(
+    "parent,child",
+    [
+        ("avoidSamThreats", "neverDivertSead"),
+        ("evadeFighters", "neverEvadeFighterMissions"),
+    ],
+)
+@pytest.mark.parametrize(
+    "active,exempt", [(False, False), (False, True), (True, False), (True, True)]
+)
+def test_avoidance_dependencies_are_enforced_without_opening_the_ui(
+    parent: str, child: str, active: bool, exempt: bool
+) -> None:
+    plugin = LuaPlugin.from_json("imac", Path("resources/plugins/imac/plugin.json"))
+    assert plugin is not None
+    settings = Settings()
+    plugin.set_settings(settings)
+    plugin.set_value(True)
+    settings.set_plugin_option("imac." + parent, active)
+    settings.set_plugin_option("imac." + child, exempt)
+    plugin.set_settings(pickle.loads(pickle.dumps(settings)))
+    options = imac.options([plugin])
+    assert options is not None
+    assert options[parent] is active
+    assert options[child] is (not active or exempt)
+    s = scenario()
+    raw = dict(imac.DEFAULTS, **{parent: active, child: exempt})
+    data = imac.configure(s.generator, raw)
+    assert data is not None
+    assert data["options"][child] is (not active or exempt)
+    assert raw[child] is exempt  # Normalization must not mutate caller settings.
+
+
+@pytest.mark.parametrize("role", [FlightType.ESCORT, FlightType.SWEEP])
+@pytest.mark.parametrize(
+    "evade,exempt", [(False, False), (False, True), (True, False), (True, True)]
+)
+def test_combat_flights_only_accept_protective_evasion_when_explicitly_enabled(
+    role: FlightType, evade: bool, exempt: bool
+) -> None:
+    s = scenario()
+    s.cap.flight_type = role
+    s.group.points[2].name = "NAV"  # No returning-fighter route hooks in this case.
+    data = imac.configure(
+        s.generator,
+        dict(imac.DEFAULTS, evadeFighters=evade, neverEvadeFighterMissions=exempt),
+    )
+    assert data is not None
+    flight = data["flights"][0]
+    assert flight["fighterMission"] is True
+    assert flight["mode"] == ("combat" if evade and not exempt else "observe")
+    hooked = "EscalationIMAC.reached" in str(s.group.points[0].tasks)
+    assert hooked is (evade and not exempt)
+
+
+def test_sead_escort_is_marked_for_sam_exemption_without_becoming_a_fighter_escort() -> (
+    None
+):
+    s = scenario()
+    s.cap.flight_type = FlightType.SEAD_ESCORT
+    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    assert data is not None
+    flight = data["flights"][0]
+    assert flight["seadMission"] is True and flight["fighterMission"] is False
+    assert flight["mode"] == "dead"
 
 
 @pytest.mark.parametrize(

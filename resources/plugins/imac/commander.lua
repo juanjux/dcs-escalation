@@ -8,6 +8,15 @@ do
     local api={states={},paused={},active=true,history={}}
     local now=0
     local tracks,threats,samples,authority={},{},{},{}
+    local noThreats={}
+    local function flightThreats(s)
+      local sead=s.meta.seadMission or s.meta.deadSupport or s.meta.mode=='dead'
+      if sead then
+        if opt.avoidSamThreats==false or opt.neverDivertSead~=false then return noThreats end
+      elseif opt.avoidSamThreats==false and
+        (s.meta.mode=='strike' or s.meta.mode=='cap' or s.meta.returnInterceptor) then return noThreats end
+      return threats[s.meta.side]
+    end
     local function diagnose(s,topic,detail)
       if opt.debug and io.debug then io.debug(s.meta.side,s.meta.group,topic,detail) end
     end
@@ -136,6 +145,8 @@ do
     end
     local function dangers(s,p)
       local out={}
+      if opt.evadeFighters==false or
+        (s.meta.fighterMission and opt.neverEvadeFighterMissions~=false) then return out end
       for _,t in ipairs(tracks[s.meta.side]) do
         if t.kind=='fighter' or t.kind=='unknown' then
           local d=G.distance(p.point,t.point)
@@ -177,7 +188,7 @@ do
     end
     local function retreat(s,p,reason)
       s.abortReason=reason
-      local ok,why=io.recover(s,p,threats[s.meta.side])
+      local ok,why=io.recover(s,p,flightThreats(s))
       if ok then
         s.revision=s.revision+1;s.order=nil;s.pendingHold=nil;s.finished=true;s.abortReason=nil;record(s,'rtb',reason)
       else
@@ -185,7 +196,7 @@ do
         -- A failed recovery search must not accidentally resume that attack.
         if s.order then s.order.deadline=now+60
         else
-          local q=G.escape(p.point,{},threats[s.meta.side],io.height,p.speed,destination(s))
+          local q=G.escape(p.point,{},flightThreats(s),io.height,p.speed,destination(s))
           if q then push(s,'recoveryHold',{point=q,reason='waiting for a safe recovery corridor'},60) end
         end
         if now>=(s.nextRecovery or 0) then
@@ -194,7 +205,7 @@ do
       end
     end
     local function blocker(s,p)
-      if s.meta.mode~='strike' or s.index>=s.meta.attackIndex then return end
+      if (s.meta.mode~='strike' and s.meta.mode~='dead') or s.index>=s.meta.attackIndex then return end
       local target=s.meta.route[s.index+1]
       if not target then return end
       local q={x=target.x,y=target.alt,z=target.y}
@@ -204,14 +215,14 @@ do
         local f=reach/length;q.x=p.point.x+(q.x-p.point.x)*f;q.z=p.point.z+(q.z-p.point.z)*f
       end
       local altitude=math.min(p.point.y,io.altitude(target))
-      local clear,t=G.leg(p.point,q,altitude,threats[s.meta.side],10000)
+      local clear,t=G.leg(p.point,q,altitude,flightThreats(s),10000)
       if not clear then return t,p.point,q,altitude end
     end
     local function pendingDEAD(s,t,support)
       local pending={}
       for name,other in pairs(api.states) do
         local p=samples[name]
-        if other.meta.side==s.meta.side and (other.meta.deadSupport or other.meta.mode=='dead') and p and p.airborne and
+        if other~=s and other.meta.side==s.meta.side and (other.meta.deadSupport or other.meta.mode=='dead') and p and p.airborne and
           G.finite(p.fuel) and p.fuel>other.meta.bingo+0.05 and not other.finished and not other.abortReason and
           other.index<other.meta.recoveryIndex and
           ((support and support[name]) or (not support and
@@ -223,10 +234,10 @@ do
       local hold=s.pendingHold
       if not hold then return end
       s.pendingHold=nil
-      local clear,t=G.leg(hold.data.from,hold.data.to,hold.data.altitude,threats[s.meta.side],10000)
+      local clear,t=G.leg(hold.data.from,hold.data.to,hold.data.altitude,flightThreats(s),10000)
       if clear then return end
       if not pendingDEAD(s,t,hold.data.support) then retreat(s,p,'DEAD/SEAD ended; attack corridor still unsafe');return end
-      local q=G.escape(p.point,{},threats[s.meta.side],io.height,p.speed,destination(s))
+      local q=G.escape(p.point,{},flightThreats(s),io.height,p.speed,destination(s))
       if not q then retreat(s,p,'no safe holding area');return end
       hold.data.point=q;s.cooldown=0
       push(s,'hold',hold.data,ORBIT_LEASE)
@@ -246,7 +257,7 @@ do
       end
       if s.pendingHold then
         local hold=s.pendingHold
-        local clear,t=G.leg(hold.data.from,hold.data.to,hold.data.altitude,threats[s.meta.side],10000)
+        local clear,t=G.leg(hold.data.from,hold.data.to,hold.data.altitude,flightThreats(s),10000)
         if clear then s.pendingHold=nil
         elseif not pendingDEAD(s,t,hold.data.support) then
           retreat(s,p,'DEAD/SEAD ended; attack corridor still unsafe');return
@@ -280,9 +291,9 @@ do
           elseif G.distance(p.point,centre)>opt.patrolLeashNm*NM or
             G.distance(aim,centre)>opt.patrolLeashNm*NM then reason='intercept leash exceeded; resume original route'
           elseif not G.safe(p.point,aim,target.kind=='missile' and p.point.y or math.min(p.point.y,aim.y),
-            threats[s.meta.side],io.height,12000) or
+            flightThreats(s),io.height,12000) or
             not G.safe(p.point,target.point,target.kind=='missile' and p.point.y or math.min(p.point.y,target.point.y),
-              threats[s.meta.side],io.height,12000) then
+              flightThreats(s),io.height,12000) then
             reason='known SAM or terrain blocks pursuit; resume original route'
           end
           if reason then release(s,reason);return end
@@ -297,13 +308,13 @@ do
             order.clearSince=order.clearSince or now
             if now-order.clearSince>=30 then release(s,'air threat cleared');resumeHold(s,p) end
           else order.clearSince=nil end
-          if not G.safe(p.point,order.data.point,p.point.y,threats[s.meta.side],io.height,15000,true) then
+          if not G.safe(p.point,order.data.point,p.point.y,flightThreats(s),io.height,15000,true) then
             release(s,'evasion corridor changed')
           end
         elseif order.kind=='hold' then
           local danger=dangers(s,p)
           if #danger>0 then
-            local q=G.escape(p.point,danger,threats[s.meta.side],io.height,p.speed,destination(s))
+            local q=G.escape(p.point,danger,flightThreats(s),io.height,p.speed,destination(s))
             if q then
               s.order=nil
               if push(s,'evade',{point=q,reason='enemy fighters approaching; leave holding area'},600) then
@@ -312,7 +323,7 @@ do
               return
             end
           end
-          local clear,threat=G.leg(order.data.from,order.data.to,order.data.altitude,threats[s.meta.side],10000)
+          local clear,threat=G.leg(order.data.from,order.data.to,order.data.altitude,flightThreats(s),10000)
           if clear then release(s,'attack corridor clear')
           elseif not pendingDEAD(s,threat,order.data.support) then retreat(s,p,'DEAD/SEAD ended; attack corridor still unsafe') end
         end
@@ -322,7 +333,7 @@ do
         (returningFighter(s) and p.ammo) then return end
       local danger=dangers(s,p)
       if #danger>0 then
-        local q=G.escape(p.point,danger,threats[s.meta.side],io.height,p.speed,destination(s))
+        local q=G.escape(p.point,danger,flightThreats(s),io.height,p.speed,destination(s))
         if q then push(s,'evade',{point=q,reason='enemy fighters approaching; reposition safely'},600) end
         return
       end
@@ -331,7 +342,7 @@ do
       if threat then
         local support=pendingDEAD(s,threat)
         if support then
-          local q=G.escape(p.point,{},threats[s.meta.side],io.height,p.speed,destination(s))
+          local q=G.escape(p.point,{},flightThreats(s),io.height,p.speed,destination(s))
           if q then push(s,'hold',{point=q,from=G.copy(from),to=G.copy(to),altitude=altitude,
             support=support,reason='known SAM blocks ingress ('..tostring(threat.name or 'unknown')..'); waiting for DEAD/SEAD'},ORBIT_LEASE)
           else retreat(s,p,'no safe holding area') end
@@ -395,9 +406,9 @@ do
                 G.distance(aim,centre)>=opt.patrolLeashNm*NM then reason='contact beyond patrol leash'
               elseif not returning and now+d/math.max(100,p.speed)+120>=s.meta.endTime then reason='insufficient station time'
               elseif not G.safe(p.point,t.point,t.kind=='missile' and p.point.y or math.min(p.point.y,t.point.y),
-                threats[side],io.height,12000) or
+                flightThreats(s),io.height,12000) or
                 not G.safe(p.point,aim,t.kind=='missile' and p.point.y or math.min(p.point.y,aim.y),
-                  threats[side],io.height,12000) then
+                  flightThreats(s),io.height,12000) then
                 reason='known SAM or terrain blocks intercept corridor'
               end
               if reason then diagnose(s,'intercept rejected',reason)

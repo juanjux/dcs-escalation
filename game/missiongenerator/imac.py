@@ -26,6 +26,10 @@ DEFAULTS: dict[str, float | bool] = {
     "red": True,
     "reports": True,
     "debug": False,
+    "avoidSamThreats": True,
+    "neverDivertSead": True,
+    "evadeFighters": True,
+    "neverEvadeFighterMissions": True,
     "interval": 10,
     "interceptRangeNm": 120,
     "patrolLeashNm": 80,
@@ -34,6 +38,8 @@ DEFAULTS: dict[str, float | bool] = {
 }
 CAP_TYPES = {FlightType.BARCAP, FlightType.TARCAP}
 DEAD_TYPES = {FlightType.DEAD, FlightType.SEAD, FlightType.SEAD_SWEEP}
+SEAD_TYPES = DEAD_TYPES | {FlightType.SEAD_ESCORT}
+FIGHTER_MISSIONS = {FlightType.ESCORT, FlightType.SWEEP}
 STRIKE_TYPES = {
     FlightType.STRIKE,
     FlightType.BAI,
@@ -91,6 +97,10 @@ def options(plugins: Any) -> dict[str, Any] | None:
             or not bounds[key][0] <= value <= bounds[key][1]
         ):
             raise ValueError(f"IMAC: {key} outside {bounds[key]}")
+    if not result["avoidSamThreats"]:
+        result["neverDivertSead"] = True
+    if not result["evadeFighters"]:
+        result["neverEvadeFighterMissions"] = True
     for name in SCRIPTS:
         if not (Path("resources/plugins/imac") / name).is_file():
             raise FileNotFoundError(name)
@@ -101,6 +111,11 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
     """Run after other generators finish changing native routes; off is inert."""
     if config is None:
         return None
+    config = dict(DEFAULTS, **config)
+    if not config["avoidSamThreats"]:
+        config["neverDivertSead"] = True
+    if not config["evadeFighters"]:
+        config["neverEvadeFighterMissions"] = True
     mission, data = generator.mission, generator.mission_data
     result: dict[str, Any] = {
         "options": config,
@@ -152,10 +167,16 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
             mode = "strike"
         elif role in SUPPORT_TYPES:
             mode = "support"
-        elif role in DEAD_TYPES:
+        elif role in SEAD_TYPES:
             mode = "dead"
+        elif (
+            role in FIGHTER_MISSIONS
+            and config["evadeFighters"]
+            and not config["neverEvadeFighterMissions"]
+        ):
+            mode = "combat"
         else:
-            # AFAC and escort navigation already have dedicated owners.
+            # AFAC/air assault and exempt combat missions retain native navigation.
             mode = "observe"
         if human:
             mode = "observe"  # Still protect human flights, but never task them.
@@ -235,6 +256,8 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
                 "mode": mode,
                 "awacs": role == FlightType.AEWC,
                 "deadSupport": role in DEAD_TYPES,
+                "seadMission": role in SEAD_TYPES,
+                "fighterMission": role in FIGHTER_MISSIONS,
                 "route": route,
                 "stationStart": start,
                 "recoveryIndex": end,

@@ -81,6 +81,58 @@ def qt_app() -> Any:
     yield QApplication.instance() or QApplication([])
 
 
+@pytest.mark.parametrize(
+    "parent,child",
+    [
+        ("avoidSamThreats", "neverDivertSead"),
+        ("evadeFighters", "neverEvadeFighterMissions"),
+    ],
+)
+def test_imac_avoidance_exemptions_are_forced_only_when_parent_is_off(
+    qt_app: Any, parent: str, child: str
+) -> None:
+    from PySide6.QtWidgets import QCheckBox
+    from game.settings import Settings
+    from qt_ui.windows.settings.plugins import PluginOptionsBox
+
+    plugin = LuaPlugin.from_json("imac", ROOT / "resources/plugins/imac/plugin.json")
+    assert plugin is not None
+    settings = Settings()
+    plugin.set_settings(settings)
+    box = PluginOptionsBox(plugin)
+    try:
+        main = box.widgets["imac." + parent]
+        exception = box.widgets["imac." + child]
+        assert isinstance(main, QCheckBox) and isinstance(exception, QCheckBox)
+        assert main.isChecked() and exception.isChecked() and exception.isEnabled()
+        exception.setChecked(False)
+        assert settings.plugin_option("imac." + child) is False
+        main.setChecked(False)
+        assert exception.isChecked() and not exception.isEnabled()
+        assert not box.labels["imac." + child].isEnabled()
+        assert settings.plugin_option("imac." + child) is True
+        main.setChecked(True)
+        assert exception.isEnabled() and exception.isChecked()
+        assert box.labels["imac." + child].isEnabled()
+        exception.setChecked(False)
+        box.update_from_settings(settings)
+        assert not exception.isChecked() and exception.isEnabled()
+        restored = Settings()
+        restored.set_plugin_option("imac." + parent, False)
+        restored.set_plugin_option("imac." + child, False)
+        plugin.set_settings(restored)
+        box.update_from_settings(restored)
+        assert exception.isChecked() and not exception.isEnabled()
+        assert restored.plugin_option("imac." + child) is True
+        # The same parent state emits no toggled signal on a second refresh.
+        restored.set_plugin_option("imac." + child, False)
+        box.update_from_settings(restored)
+        assert exception.isChecked() and not exception.isEnabled()
+        assert restored.plugin_option("imac." + child) is True
+    finally:
+        box.close()
+
+
 @pytest.mark.parametrize("value", [True, 20, 0.5, "text"])
 @pytest.mark.parametrize("help_text", ["Range < 5 & height > 2.", ""])
 def test_option_help_and_editing(
