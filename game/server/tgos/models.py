@@ -141,11 +141,20 @@ class TgoJs(BaseModel):
         # Only include non-zero ranges: a zero-radius circle renders as a stray
         # dot (normally hidden under the unit icon, but visible once the icon is
         # hidden by the destroyed-object layers). Matches ControlPointJs.
-        threat_ranges = [
-            meters
-            for meters in (group.max_threat_range().meters for group in tgo.groups)
-            if meters > 0
-        ]
+        relocating = isinstance(tgo, IadsGroundObject) and getattr(
+            tgo, "in_transit", False
+        )
+        # Display potential weapon reach while relocating, without reactivating
+        # the operational ranges used by the planner and mission generators.
+        ranges = (
+            (
+                group.max_threat_range(include_relocating=True).meters
+                if relocating
+                else group.max_threat_range().meters
+            )
+            for group in tgo.groups
+        )
+        threat_ranges = [radius for radius in ranges if radius > 0]
         detection_ranges = [
             meters
             for meters in (group.max_detection_range().meters for group in tgo.groups)
