@@ -31,6 +31,7 @@ from game.point_with_heading import PointWithHeading
 from game.missiongenerator.realisticcasluadata import collect_registry
 from game.missiongenerator.tgogenerator import GroundObjectGenerator
 from game.sim.gameupdateevents import GameUpdateEvents
+from game.server.tgos.models import TgoJs
 from game.theater.iadsnetwork.iadsnetwork import IadsNetwork
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsstate import IadsState
@@ -114,6 +115,47 @@ def move(world: Any) -> Any:
         world.destination,
         GameUpdateEvents(),
     )
+
+
+def test_relocating_map_range_does_not_reactivate_operational_coverage(
+    world: Any,
+) -> None:
+    site = make_site(world)
+    group = site.groups[0]
+    radius = group.max_threat_range().meters
+    assert radius > 0
+    move(world)
+    assert site.in_transit and group.max_threat_range().meters == 0
+    assert group.max_detection_range().meters == 0
+    world.game.settings.set_plugin_option("gpsjamming", False)
+    model = TgoJs.for_tgo(site)
+    assert model.iads_state == "relocating"
+    assert model.threat_ranges == [radius] and model.detection_ranges == []
+    assert group.max_threat_range().meters == 0 and site.in_transit
+
+
+def test_relocating_map_range_still_requires_live_launcher_and_tracker(
+    world: Any,
+) -> None:
+    site = make_site(world)
+    move(world)
+    world.game.settings.set_plugin_option("gpsjamming", False)
+    site.groups[0].units[0].alive = False
+    assert TgoJs.for_tgo(site).threat_ranges == []
+    site.groups[0].units[0].alive = True
+    site.groups[0].units[1].alive = False
+    assert TgoJs.for_tgo(site).threat_ranges == []
+
+
+def test_towed_battery_keeps_nominal_map_range_while_packed(world: Any) -> None:
+    site = make_site(world, PATRIOT)
+    radius = site.groups[0].max_threat_range().meters
+    assert radius > 0
+    move(world)
+    assert any(unit.transported_by_id is not None for unit in site.units)
+    assert site.groups[0].max_threat_range().meters == 0
+    world.game.settings.set_plugin_option("gpsjamming", False)
+    assert TgoJs.for_tgo(site).threat_ranges == [radius]
 
 
 def test_mobile_battery_preview_is_read_only_and_requires_the_whole_site(
