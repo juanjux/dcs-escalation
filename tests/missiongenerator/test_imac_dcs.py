@@ -527,9 +527,17 @@ def test_debug_suppresses_disabled_sides_and_limits_screen_messages() -> None:
 
 @pytest.mark.parametrize(
     "change,reason",
-    [("cap.air=false", "not airborne"), ("cap.active=false", "flight unavailable")],
+    [
+        ("cap.air=false", "not airborne"),
+        ("cap.active=false", "flight unavailable"),
+        (
+            "cfg.flights[1].returnInterceptor=true;cfg.flights[1].returnStartIndex=2;"
+            "cfg.flights[1].approachIndex=5;cap.x=-50000;cap.alt=1000",
+            "landing approach",
+        ),
+    ],
 )
-def test_inactive_debug_stays_in_the_log_without_using_screen_message_budget(
+def test_routine_availability_debug_stays_in_the_log_without_using_screen_budget(
     change: str, reason: str
 ) -> None:
     lua = runtime()
@@ -545,6 +553,25 @@ def test_inactive_debug_stays_in_the_log_without_using_screen_message_budget(
     lua.execute("cap.air=true;cap.active=true;cap.fuel=.1;tick(75)")
     assert "fuel at BINGO reserve" in lua.eval("messages[#messages].text")
     assert lua.eval("#groups.CAP.pushes") == 0
+
+
+def test_authority_debug_is_log_only_even_if_a_caller_requests_screen_output() -> None:
+    lua = runtime()
+    lua.execute("""
+        cfg.options.debug=true;cfg.options.reports=false;cfg.options.red=false
+        local create=EscalationIMAC.newCommander
+        EscalationIMAC.newCommander=function(config,io)
+          testIO=io;return create(config,io)
+        end
+    """)
+    start(lua)
+    lua.execute("""
+        for i=1,8 do testIO.debug(2,'commander'..i,'authority','AWACS test '..i,true)end
+        assert(#messages==0)
+        assert(table.concat(logs,';'):find('|authority|AWACS test 8',1,true))
+        for i=1,4 do testIO.debug(2,'flight'..i,'availability','fuel at BINGO reserve or unavailable',true)end
+        assert(#messages==4,'routine messages consumed the visible warning budget')
+    """)
 
 
 @pytest.mark.parametrize(
