@@ -32,6 +32,10 @@ do
     end
     local function release(s,reason)
       if not s.order then return end
+      if s.order.kind=='samAvoid' then
+        local ok,why=io.resumeCap(s)
+        if not ok then diagnose(s,'resume blocked',tostring(why));return end
+      end
       s.revision=s.revision+1;s.order=nil;s.cooldown=now+30
       record(s,'resume',reason)
       -- No popTask: it could remove a tanker's or human commander's task.
@@ -81,7 +85,7 @@ do
     end
     local function bingoWhileWaiting(s,p,why)
       return why=='fuel at BINGO reserve or unavailable' and p and G.finite(p.fuel) and
-        (s.pendingHold or (s.order and s.order.kind=='hold'))
+        (s.pendingHold or (s.order and (s.order.kind=='hold' or s.order.kind=='samAvoid')))
     end
     local function push(s,kind,data,duration)
       if s.order or now<s.cooldown then return false end
@@ -135,7 +139,7 @@ do
       if now>=s.order.deadline then
         if s.order.kind=='recoveryHold' then
           s.order.deadline=now+opt.interval*2
-        elseif s.order.kind=='evade' or s.order.kind=='hold' then
+        elseif s.order.kind=='evade' or s.order.kind=='hold' or s.order.kind=='samAvoid' then
           -- Safety, not lease age, decides when to resume. The next tick still
           -- checks clearance; BINGO and command loss remain higher priority.
           s.order.deadline=now+ORBIT_LEASE
@@ -204,6 +208,70 @@ do
         end
       end
     end
+    local function capPathSafe(s,p,q,escape)
+      for _,member in ipairs(p.members or {p})do
+        if not G.safe(member.point,q,math.min(member.point.y,q.y),flightThreats(s),io.height,12000,escape)then
+          return false
+        end
+      end
+      return true
+    end
+    local function capExposure(s,p)
+      for _,member in ipairs(p.members or {p})do
+        local a,v=member.point,member.velocity
+        local q={x=a.x+v.x*60,y=a.y+(v.y or 0)*60,z=a.z+v.z*60}
+        local clear,threat=G.leg(a,q,math.min(a.y,q.y),flightThreats(s),12000,true)
+        if not clear then return threat end
+      end
+    end
+    local function avoidCapSam(s,p,threat)
+      if s.index>=s.meta.recoveryIndex then retreat(s,p,'SAM blocks returning patrol');return end
+      local q=G.escape(p.point,{},flightThreats(s),io.height,p.speed,anchor(s,p),
+        function(point)return capPathSafe(s,p,point,true)end)
+      if not q then
+        if now>=(s.nextCapWarning or 0)then
+          s.nextCapWarning=now+60;record(s,'blocked','no safe SAM escape corridor for all patrol members')
+        end
+        return
+      end
+      local old,revision=s.order,s.revision
+      s.order=nil;s.cooldown=0
+      if not push(s,'samAvoid',{point=q,reason='known SAM threatens patrol ('..
+        tostring(threat and threat.name or 'unknown')..'); suspend native pursuit'},ORBIT_LEASE)then
+        s.order=old;s.revision=revision
+      end
+    end
+    local function capResumeClear(s,p)
+      local index=s.index<s.meta.recoveryIndex and s.meta.stationStart or math.min(#s.meta.route,s.index+1)
+      local wp=s.meta.route[math.max(1,index)]
+      local q={x=wp.x,y=io.altitude(wp),z=wp.y}
+      if not capPathSafe(s,p,q,false)then return false end
+      if s.index<s.meta.recoveryIndex then
+        for i=s.meta.stationStart+1,s.meta.recoveryIndex do
+          local nextPoint=s.meta.route[i]
+          local to={x=nextPoint.x,y=io.altitude(nextPoint),z=nextPoint.y}
+          if not G.safe(q,to,math.min(q.y,to.y),flightThreats(s),io.height,12000)then return false end
+          q=to
+        end
+        q={x=wp.x,y=io.altitude(wp),z=wp.y}
+        local reach=50*NM
+        for _,point in ipairs(s.meta.route)do
+          for _,task in ipairs(point.task and point.task.params and point.task.params.tasks or {})do
+            if task.id=='EngageTargets' then
+              reach=task.params.maxDistEnabled and task.params.maxDist or math.huge
+            end
+          end
+        end
+        -- Do not restore the native pursuit while an observed target within its
+        -- engagement range would immediately draw it back through a SAM ring.
+        for _,t in ipairs(tracks[s.meta.side])do
+          if math.min(G.distance(p.point,t.point),G.distance(q,t.point))<reach and
+            (not G.leg(p.point,t.point,math.min(p.point.y,t.point.y),flightThreats(s),12000)or
+             not G.leg(q,t.point,math.min(q.y,t.point.y),flightThreats(s),12000))then return false end
+        end
+      end
+      return true
+    end
     local function blocker(s,p)
       if (s.meta.mode~='strike' and s.meta.mode~='dead') or s.index>=s.meta.attackIndex then return end
       local target=s.meta.route[s.index+1]
@@ -246,7 +314,10 @@ do
       local why=unavailable(s,p)
       if why then
         if s.meta.mode~='observe' or s.meta.returnInterceptor then diagnose(s,'availability',why) end
-        if bingoWhileWaiting(s,p,why) then retreat(s,p,'BINGO while waiting for DEAD/SEAD');return end
+        if bingoWhileWaiting(s,p,why) then
+          retreat(s,p,s.order and s.order.kind=='samAvoid' and 'BINGO during SAM avoidance' or
+            'BINGO while waiting for DEAD/SEAD');return
+        end
         release(s,'unavailable, BINGO, recovery or command lost');return
       end
       if s.abortReason then
@@ -263,14 +334,21 @@ do
           retreat(s,p,'DEAD/SEAD ended; attack corridor still unsafe');return
         end
       end
+      -- Native EngageTargets can pursue independently of IMAC orders. Guard
+      -- every patrol member's actual heading, including during a cooldown.
+      if s.meta.mode=='cap' and s.index>=s.meta.stationStart and
+        (not s.order or s.order.kind=='intercept')then
+        local threat=capExposure(s,p)
+        if threat then avoidCapSam(s,p,threat);return end
+      end
       local order=s.order
       if order then
         diagnose(s,'active',string.format('%s; waypoint=%d; fuel=%.0f%%; remaining=%.0fs',
           order.kind,s.index,p.fuel*100,math.max(0,order.deadline-now)))
         if now>=order.deadline then
-          if order.kind=='hold' or order.kind=='evade' then order.deadline=now+ORBIT_LEASE
+          if order.kind=='hold' or order.kind=='evade' or order.kind=='samAvoid' then order.deadline=now+ORBIT_LEASE
           else release(s,'temporary order expired');resumeHold(s,p) end
-          if order.kind~='evade' and order.kind~='hold' then return end
+          if order.kind~='evade' and order.kind~='hold' and order.kind~='samAvoid' then return end
         end
         if order.kind=='intercept' then
           local target
@@ -296,13 +374,29 @@ do
               flightThreats(s),io.height,12000) then
             reason='known SAM or terrain blocks pursuit; resume original route'
           end
-          if reason then release(s,reason);return end
+          if reason then
+            if s.meta.mode=='cap' and reason=='known SAM or terrain blocks pursuit; resume original route' then
+              local _,threat=G.leg(p.point,aim,math.min(p.point.y,aim.y),flightThreats(s),12000)
+              if not threat then _,threat=G.leg(p.point,target.point,math.min(p.point.y,target.point.y),flightThreats(s),12000)end
+              if threat then avoidCapSam(s,p,threat);return end
+            end
+            release(s,reason);return
+          end
           local d=G.distance(target.point,order.data.asset)
           if d>order.data.nearest+5000 then order.retreatSince=order.retreatSince or now
           else order.retreatSince=nil;order.data.nearest=math.min(order.data.nearest,d) end
           if order.retreatSince and now-order.retreatSince>=opt.pursuitSeconds then
             release(s,'enemy withdrawing; resume original route')
           end
+        elseif order.kind=='samAvoid' then
+          if not capPathSafe(s,p,order.data.point,true) or
+            not G.leg(order.data.point,order.data.point,order.data.point.y,flightThreats(s),17000)then
+            avoidCapSam(s,p);return
+          end
+          if capResumeClear(s,p) then
+            order.clearSince=order.clearSince or now
+            if now-order.clearSince>=60 then release(s,'SAM-safe patrol and pursuit corridors restored')end
+          else order.clearSince=nil end
         elseif order.kind=='evade' then
           if evasionClear(s,p) then
             order.clearSince=order.clearSince or now

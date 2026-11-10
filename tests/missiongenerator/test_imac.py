@@ -60,7 +60,7 @@ def runtime(extra: list[dict[str, Any]] | None = None) -> Any:
     lua.globals().cfg = lua.table_from(cfg, recursive=True)
     lua.execute("""
         now=0; auth={[1]=true,[2]=true}; observations={[1]={},[2]={}}
-        rings={[1]={},[2]={}}; own={}; sent={}; recovered={}; reports={}
+        rings={[1]={},[2]={}}; own={}; sent={}; recovered={}; resumed={}; reports={}
         for _,m in ipairs(cfg.flights) do
           own[m.group]={point={x=0,y=6000,z=0},velocity={x=0,y=0,z=0},
             speed=220,fuel=.95,airborne=true,healthy=true,ammo=true}
@@ -89,6 +89,10 @@ def runtime(extra: list[dict[str, Any]] | None = None) -> Any:
           recover=function(state,p,threats)
             recovered[#recovered+1]=state.meta.group
             return not rejectRecovery,'blocked'
+          end,
+          resumeCap=function(state)
+            resumed[#resumed+1]=state.meta.group
+            return not rejectResume,'blocked'
           end,
           report=function(event)reports[#reports+1]=event end
         }
@@ -162,7 +166,10 @@ def test_intercept_releases_without_rebuilding_original_route(change: str) -> No
     lua = runtime()
     lua.execute("observations[2]={track('bandit',120000)};tick(5)")
     lua.execute(change + ";tick(15)")
-    assert lua.eval("commander.states.CAP.order==nil") is True
+    if change.startswith("rings[2]"):
+        assert lua.eval("commander.states.CAP.order.kind") == "samAvoid"
+    else:
+        assert lua.eval("commander.states.CAP.order==nil") is True
     assert lua.eval("#recovered") == 0
 
 

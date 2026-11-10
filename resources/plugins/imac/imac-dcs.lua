@@ -72,7 +72,7 @@ do
       return protected('sample '..meta.group,function()
         local g=Group.getByName(meta.group)
         if not g or not g:isExist() or g:getCoalition()~=meta.side then return end
-        local result={fuel=1,healthy=true,ammo=false,airborne=true,player=false}
+        local result={fuel=1,healthy=true,ammo=false,airborne=true,player=false,members={}}
         local count=0
         for _,u in ipairs(g:getUnits()) do
           if activeUnit(u) then
@@ -88,9 +88,10 @@ do
             end
             -- The entire patrol must be combat-ready, not only the leader.
             if count==1 then result.ammo=hasAmmo else result.ammo=result.ammo and hasAmmo end
+            local p,v=u:getPoint(),u:getVelocity()
+            if not G.vector(p) or not G.vector(v) then return end
+            result.members[#result.members+1]={point=G.copy(p),velocity=G.copy(v)}
             if not result.point then
-              local p,v=u:getPoint(),u:getVelocity()
-              if not G.vector(p) or not G.vector(v) then return end
               result.point=G.copy(p);result.velocity=G.copy(v)
               result.speed=math.sqrt(v.x*v.x+v.z*v.z)
             end
@@ -148,7 +149,7 @@ do
         end
         return false
       end)==true
-      io.debug(side,'commander','authority',commandSource[side])
+      io.debug(side,'commander','authority',commandSource[side],false)
       return granted
     end
     local detection={Controller.Detection.VISUAL,Controller.Detection.OPTIC,
@@ -175,9 +176,7 @@ do
       local controller=unit:getController() -- Air group controllers cannot report detections.
       if not controller then return end
       local entries=controller:getDetectedTargets(unpack(detection)) or {}
-      local count=0
-      for _,entry in pairs(entries) do
-        count=count+1;if count>512 then break end
+      local function readEntry(entry)
         local target=type(entry)=='table' and entry.object
         local weapon=target and target.getLauncher~=nil
         if target and target:isExist() and target:getCoalition()==3-side and
@@ -223,6 +222,16 @@ do
               end
             end
           end
+        end
+      end
+      local count=0
+      for _,entry in pairs(entries)do
+        count=count+1;if count>512 then break end
+        -- Native contact tables can retain destroyed Static/Weapon handles.
+        -- One stale entry must not discard the sensor's other air contacts.
+        local ok,why=pcall(readEntry,entry)
+        if not ok and not tostring(why):find("doesn't exist",1,true)then
+          warning('sensor contact '..sensor.name,why)
         end
       end
     end
@@ -303,7 +312,22 @@ do
       local controller,p=controllerFor(s)
       if not controller then return false,'not an airborne AI group' end
       local task
-      if order.kind=='intercept' then
+      if order.kind=='samAvoid' then
+        -- Replace the root mission to remove native EngageTargets and an
+        -- already-running pursuit. A pushed Orbit would retain en-route tasks.
+        local q=order.data.point
+        local speed=math.max(200,p.speed)
+        local function waypoint(point)
+          return {x=point.x,y=point.z,alt=q.y,alt_type='BARO',type='Turning Point',
+            action='Turning Point',speed=speed,speed_locked=true,ETA_locked=false,
+            task={id='ComboTask',params={tasks={}}}}
+        end
+        local finish=waypoint(q)
+        finish.task.params.tasks[1]={id='Orbit',enabled=true,auto=false,number=1,
+          params={pattern='Circle',point={x=q.x,y=q.z},altitude=q.y,speed=speed}}
+        controller:setTask({id='Mission',params={airborne=true,route={points={waypoint(p.point),finish}}}})
+        return true
+      elseif order.kind=='intercept' then
         if order.data.missile then
           -- Weapons have no Group or Unit target for AttackGroup/AttackUnit.
           -- Use DCS's native missile engagement filter on a temporary route.
@@ -330,6 +354,20 @@ do
       end
       controller:pushTask({id='ControlledTask',params={task=task,stopCondition={
         condition=string.format('return EscalationIMAC.shouldStop(%q,%d)',s.meta.group,order.revision)}}})
+      return true
+    end
+    function io.resumeCap(s)
+      local controller,p=controllerFor(s)
+      if not controller then return true end -- Never overwrite a human takeover.
+      local first=s.index<s.meta.recoveryIndex and s.meta.stationStart or s.index+1
+      first=math.max(1,math.min(first,#s.meta.route))
+      local points={{x=p.point.x,y=p.point.z,alt=p.point.y,alt_type='BARO',type='Turning Point',
+        action='Turning Point',speed=math.max(200,p.speed),speed_locked=true,ETA_locked=false,
+        task={id='ComboTask',params={tasks={}}}}}
+      for i=first,#s.meta.route do
+        local q=copy(s.meta.route[i]);q.ETA_locked=false;points[#points+1]=q
+      end
+      controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
       return true
     end
     function io.recover(s,p,threats)
@@ -428,7 +466,7 @@ do
           status[side]=string.format('IMAC: %s | command authority: %s | tracks: %d | temporary orders: %d | source: %s',
             not enabled and 'disabled' or instance.paused[side] and 'paused' or 'running',
             hasAuthority and 'available' or 'unavailable',contactCount,orders,commandSource[side])
-          io.debug(side,'commander','authority',commandSource[side])
+          io.debug(side,'commander','authority',commandSource[side],false)
           io.debug(side,'commander','status',status[side],false)
         end
       end)
