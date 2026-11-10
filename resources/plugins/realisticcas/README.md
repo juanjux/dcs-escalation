@@ -32,6 +32,18 @@ Run until `GROUND INTEL PROBE COMPLETE` at 240 seconds. Inspect
 last-known positions and any shots while concealed. Automated tests only verify
 the adapter contracts, saved MIZ resources and Lua compilation, not native AI.
 
+The controller-scope follow-up is generated with
+`python tools/realistic_cas_tests/build_ground_intel_controller_probe.py --output <new-path.miz>`.
+It runs 12 sequential cases, six per side, in approximately 49 simulated minutes.
+Each has only one active receiver and target on the same 1200-metre terrain ray.
+It compares no notification, the production adapter, direct unit/group controller
+calls, and unit/group calls refreshed every five seconds while the contact is
+valid. Diagnostic refresh never renews visibility. Native return values are
+logged by index and type, without assuming field order, along with both
+controllers' contact lists, ammunition, geometry, shots and hits. Run until
+`GROUND INTEL V2 COMPLETE`; inspect `GROUND_INTEL_V2` in `dcs.log`. Call acceptance
+and the offline scheduler tests are not evidence of native target acquisition.
+
 ## Enabling the plugin
 
 - Select **Realistic CAS (experimental)** in Mission Plugins. Initial options:
