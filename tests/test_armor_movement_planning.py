@@ -218,8 +218,13 @@ def test_convoy_corridors_cross_coarse_exclusions_but_access_does_not() -> None:
     assert planner.allowed(GroundSegment(P(45, 0), P(55, 0)))
     assert not planner.allowed(GroundSegment(P(45, 0), P(55, 0), False))
     assert not planner.allowed(GroundSegment(P(0, 10), P(100, 10)))
+    # A group already inside the placement mask may exit it once, off-road.
+    result = planner.plan(P(50, 10), P(100, 10), 100, 50)
+    assert not result.segments[0].on_road
+    assert not planner.allowed(result.segments[0])
+    assert all(planner.allowed(s) for s in result.segments[1:])
     with pytest.raises(GroundRouteError, match="exclusion zone"):
-        planner.plan(P(50, 10), P(100, 10), 100, 50)
+        planner.plan(P(100, 10), P(50, 10), 100, 50)
 
 
 def test_authored_road_allows_interpolated_departure_inside_an_exclusion() -> None:

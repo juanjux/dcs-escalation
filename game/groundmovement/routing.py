@@ -11,6 +11,7 @@ from typing import Callable, Iterable, TYPE_CHECKING
 from shapely import STRtree
 from shapely.geometry import LineString, Point
 
+from game.groundmovement.egress import allowed_origin_exit, origin_exits
 from game.groundmovement.journey import GroundRoute, GroundSegment
 from game.groundmovement.orders import GroundPosition
 from game.groundmovement.offroad import offroad_route
@@ -160,6 +161,21 @@ class CampaignGroundRouter:
             raise GroundRouteError("Ground movement position is outside mapped land")
         if self.landmap.exclusion_zones.intersects(point):
             raise GroundRouteError("Ground movement position is in an exclusion zone")
+
+    def allowed_exit_remainder(
+        self, segment: GroundSegment, original: GroundSegment
+    ) -> bool:
+        """Revalidate a saved first exit, including a stop before its boundary."""
+        if (
+            segment.on_road
+            or segment.end != original.end
+            or not allowed_origin_exit(self.landmap, original)
+        ):
+            return False
+        line = LineString(
+            [(original.start.x, original.start.z), (original.end.x, original.end.z)]
+        )
+        return bool(line.distance(Point(segment.start.x, segment.start.z)) <= 1e-6)
 
     def base_access_position(self, base: ControlPoint) -> GroundPosition:
         """Resolve a stock handoff, not a drive through an invalid base marker.
@@ -333,7 +349,38 @@ class CampaignGroundRouter:
                 raise GroundRouteError(
                     "Ground movement budgets must be positive and finite"
                 )
-        self._validate_position(origin)
+        try:
+            self._validate_position(origin)
+        except GroundRouteError:
+            # Existing groups can originate inside a coarse placement mask.
+            # Only their first, local off-road exit gets an exception; normal
+            # planning and ownership checks still govern the remaining route.
+            point = Point(origin.x, origin.z)
+            if (
+                not self.landmap.inclusion_zones.covers(point)
+                or not self.landmap.exclusion_zones.covers(point)
+                or self.landmap.sea_zones.intersects(point)
+            ):
+                raise
+            self._validate_position(destination)
+            for exit_segment in origin_exits(self.landmap, origin):
+                if self.offroad_permission is not None and not self.offroad_permission(
+                    exit_segment
+                ):
+                    continue
+                if exit_segment.end == destination:
+                    return GroundRoute((exit_segment,))
+                try:
+                    remainder = self.plan(
+                        exit_segment.end, destination, road_budget, offroad_budget
+                    )
+                except GroundRouteError:
+                    continue
+                return GroundRoute((exit_segment, *remainder.segments))
+            raise GroundRouteError(
+                "Ground movement origin is in an exclusion zone and has no safe "
+                "local exit route within 600 m"
+            )
         self._validate_position(destination)
         if origin == destination:
             raise GroundRouteError("The ground group is already at that position")

@@ -43,6 +43,8 @@ from game.utils import Heading
 from game.unitmap import UnitMap
 from tests.test_armor_movement_dispatch import native, prepare
 from tests.test_armor_movement_planning import world  # noqa: F401
+from tests.test_armor_movement_planning import landmap
+from shapely.geometry import box
 
 KUB = ('SAM SA-6 Kub "Straight Flush" STR', 'SAM SA-6 Kub "Gainful" TEL')
 PATRIOT = ("SAM Patriot STR", "SAM Patriot LN", "Truck Ural-375", "Truck Ural-375")
@@ -175,6 +177,28 @@ def test_mobile_battery_preview_is_read_only_and_requires_the_whole_site(
             world.game, site.id, Player.BLUE, [100], world.destination
         )
     assert pickle.dumps(world.game) == before
+
+
+def test_battery_exits_placement_exclusion_with_native_offroad_route(
+    world: Any,
+) -> None:
+    site = make_site(world)
+    world.game.theater.landmap = landmap(box(5, 5, 15, 15))
+    identities = list(site.units)
+    transit = move(world)
+    group, _mapping = native(world, transit)
+    first = transit.journey.route.segments[0]
+    assert group.points[0].position.x == first.start.x
+    assert group.points[0].position.y == first.start.z
+    assert group.points[0].action.value == "Off Road"
+    assert group.points[0].speed == pytest.approx(20 / 3.6)
+    assert group.points[1].position.x == first.end.x
+    assert group.points[1].position.y == first.end.z
+    world.game.turn += 1
+    advance_armor(world.game, GameUpdateEvents())
+    assert transit.finished and transit.pause_reason is None
+    assert list(site.units) == identities and not site.in_transit
+    assert site.position.x == 90 and site.position.y == 10
 
 
 @pytest.mark.parametrize("kind", [DestinationKind.BASE, DestinationKind.FRONTLINE])

@@ -119,6 +119,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Ground Movement]** Let existing armor groups and mobile SAMs leave a nearby terrain exclusion through a bounded off-road exit, retaining terrain and ownership checks for the rest of the route.
 * **[OPFOR AI]** Preserve ground orders and deliberately empty air plans instead of replacing them with the scripted Take Off fallback.
 * **[Campaign]** Remove captured aircraft from squadrons without an evacuation destination and clean up affected saves without paying capture proceeds twice.
 * **[Ground Movement]** Allow reserve armor already at a friendly base to join its stock immediately without a zero-length route error.

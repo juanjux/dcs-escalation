@@ -233,6 +233,11 @@ road segments must stay on mapped land and clear exclusion zones. Missing terrai
 data or an unverified water/bridge crossing blocks the preview. With no friendly
 road corridors, only a validated direct off-road route is available.
 
+An existing group inside a coarse terrain exclusion may leave it through a
+local off-road exit of at most 600 m. This first leg is travelled normally and
+must stay on land and in friendly territory. Once outside, all remaining legs
+obey the normal exclusion checks; excluded destinations remain forbidden.
+
 To dispatch through the API, send the preview request plus its returned
 `preview_token` to `POST /tgos/{id}/ground-movement`. The token is a stale-preview
 check, not authorization. `GET /tgos/{id}/ground-movement` reports departures from
