@@ -16,7 +16,11 @@ from game.dcs.afaccapabilities import capabilities_for, smoke_rounds
 from game.dcs.skills import SKILL_LADDER
 from game.ato.afac import station_minutes
 from game.groundmovement.samdefense import transit_defense
-from game.missiongenerator.afacthreats import envelope
+from game.missiongenerator.afacthreats import (
+    disabled_iads_units,
+    envelope,
+    radar_support,
+)
 from game.theater.theatergroundobject import IadsGroundObject
 
 if TYPE_CHECKING:
@@ -258,6 +262,7 @@ def collect_registry(
     unit_map: UnitMap | None = None,
     excluded_groups: Collection[str] = (),
     include_armor_groups: bool = False,
+    iads_network: Any = None,
 ) -> dict[str, Any] | None:
     """Collect declared units without modifying pydcs or activating any Lua.
 
@@ -274,6 +279,7 @@ def collect_registry(
         raise ValueError(
             "Realistic CAS requires UnitMap to distinguish SAM objectives from frontline SAMs"
         )
+    disabled = disabled_iads_units(iads_network, unit_map)
     result: dict[str, Any] = {
         "schemaVersion": 1,
         "groups": [],
@@ -463,6 +469,12 @@ def collect_registry(
                                         coalition=side,
                                         typeName=unit.type,
                                         known=not concealed,
+                                        iadsDisabled=unit.name in disabled,
+                                        **(
+                                            {"needsRadar": False, "radars": []}
+                                            if reactive
+                                            else radar_support(unit, group, unit_map)
+                                        ),
                                     )
                                 )
                             if not concealed:

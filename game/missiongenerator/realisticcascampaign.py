@@ -132,6 +132,7 @@ def prepare_campaign(
         enabled=True,
         unit_map=generator.unit_map,
         include_armor_groups=include_armor,
+        iads_network=getattr(generator.game.theater, "iads_network", None),
     )
     assert registry is not None
     registry["warnings"].extend(warnings)

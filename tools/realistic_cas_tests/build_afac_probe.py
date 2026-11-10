@@ -198,8 +198,10 @@ def build_mission(
             if index != 3:
                 theater_objects[defence.units[0].name] = NS(
                     theater_unit=NS(
-                        ground_object=NS(category="aa", name=f"PROBE_AA_{index}")
-                    )
+                        ground_object=NS(category="aa", name=f"PROBE_AA_{index}"),
+                        unit_type=None,
+                    ),
+                    dcs_unit=defence.units[0],
                 )
             else:
                 frontline_groups.add(defence.name)

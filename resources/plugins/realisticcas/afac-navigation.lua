@@ -63,18 +63,27 @@ do
       return g and fog.service:isRevealed(g:getID(),3-r.meta.coalition)==true
     end
     local function powered(r)
+      if r.meta.iadsDisabled then return false end
       if r.meta.transitDefense then
         local state=ESCALATION_SAM_TRANSIT
         return state and state.active[r.meta.groupName]==true
       end
-      -- Real firing evidence takes precedence over a conflicting power report.
+      local query=dcsRetribution and (dcsRetribution.iadsCanEngage or dcsRetribution.iadsHasWorkingPower)
+      if type(query)=='function' then
+        local ok,result=pcall(query,r.meta.groupName)
+        if ok and result==false then return false end
+      end
+      -- Actual fire can resolve uncertain weapon/radar metadata, not a definite
+      -- IADS shutdown. Missing IADS data and query failures stay conservative.
       if r.firingUntil and timer.getTime()<r.firingUntil then return true end
-      local query=dcsRetribution and dcsRetribution.iadsHasWorkingPower
-      if type(query)~='function' then return true end
-      local ok,result=pcall(query,r.meta.groupName)
-      -- Only a definitive power failure disables a known threat. Missing IADS
-      -- data and query failures remain conservative, as do silent radars.
-      return not ok or result~=false
+      if r.meta.needsRadar then
+        local working=false
+        for _,name in ipairs(r.meta.radars or {}) do
+          if live(name) then working=true;break end
+        end
+        if not working then return false end
+      end
+      return true
     end
     local function sample()
       local used,visited=0,{}

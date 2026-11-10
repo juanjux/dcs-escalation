@@ -71,7 +71,10 @@ class RegistryTests(unittest.TestCase):
         mapping = NS(
             theater_objects={
                 self.g.units[0].name: NS(
-                    theater_unit=NS(ground_object=NS(category="aa", name="QUAGGA"))
+                    theater_unit=NS(
+                        ground_object=NS(category="aa", name="QUAGGA"), unit_type=None
+                    ),
+                    dcs_unit=self.g.units[0],
                 )
             }
         )
@@ -111,7 +114,11 @@ class RegistryTests(unittest.TestCase):
         mapping = NS(
             theater_objects={
                 self.g.units[0].name: NS(
-                    theater_unit=NS(ground_object=NS(category="armor", name="PLATYPUS"))
+                    theater_unit=NS(
+                        ground_object=NS(category="armor", name="PLATYPUS"),
+                        unit_type=None,
+                    ),
+                    dcs_unit=self.g.units[0],
                 )
             }
         )

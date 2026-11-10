@@ -59,6 +59,9 @@ class AfacIadsPowerTests(unittest.TestCase):
         assert(query('pd')==true and sites.pd:getIsAPointDefence())
         assert(query('blueSam')==true and query('autonomous')==true)
         assert(query('unsupported')==nil and query('unmanaged')==nil)
+        local combat=dcsRetribution.iadsCanEngage
+        assert(combat('red')==false and combat('pd')==true)
+        assert(combat('blueSam')==true and combat('unmanaged')==nil)
         backup.alive=true;assert(query('red')==true)
         backup.alive=false;assert(query('red')==false)
         primary.alive=true;assert(query('red')==true)
@@ -189,7 +192,8 @@ class AfacIadsPowerTests(unittest.TestCase):
             with self.subTest(change=change):
                 self.setUp()
                 self.rt.execute(
-                    change
+                    "dcsRetribution.iadsCanEngage=nil;"
+                    + change
                     + ";fixedThreat();beginNavigation();tick();assert(#assigned==1)"
                 )
 
@@ -204,13 +208,40 @@ class AfacIadsPowerTests(unittest.TestCase):
         fixedThreat();beginNavigation();tick();assert(#assigned==1)
         """)
 
-    def test_actual_known_fire_temporarily_overrides_conflicting_power_state(self):
+    def test_actual_known_fire_does_not_override_a_definite_iads_shutdown(self):
         self.rt.execute("""
         fixedThreat();beginNavigation();tick();assert(#assigned==0)
         function gun:getName()return 'gun'end
         nav:fireEvent(gun);tick()
+        assert(#assigned==0 and nav:clear('blue',{x=0,y=2000,z=0}))
+        primary.alive=true;tick()
         assert(#assigned==1 and not nav:clear('blue',{x=0,y=2000,z=0}))
-        now=now+61;tick()
-        assert(nav:clear('blue',{x=0,y=2000,z=0}))
-        assert(#assigned==2 and not RealisticCAS.afacNavigation.blue.active)
+        """)
+
+    def test_powered_autonomous_dark_site_is_not_a_threat_but_silent_site_is(self):
+        self.rt.execute("""
+        primary.alive=true
+        sites.red:setAutonomousBehaviour(SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DARK)
+        sites.red.isAutonomous=true
+        assert(dcsRetribution.iadsHasWorkingPower('red')==true)
+        assert(dcsRetribution.iadsCanEngage('red')==false)
+        fixedThreat();beginNavigation();tick()
+        assert(#assigned==0 and nav:clear('blue',{x=0,y=2000,z=0}))
+        sites.red.isAutonomous=false;tick()
+        assert(#assigned==1 and not nav:clear('blue',{x=0,y=2000,z=0}))
+        assert(sites.red.aiState==false)
+        sites.red.isAutonomous=true
+        sites.red:setAutonomousBehaviour(SkynetIADSAbstractRadarElement.AUTONOMOUS_STATE_DCS_AI)
+        assert(dcsRetribution.iadsCanEngage('red')==true)
+        """)
+
+    def test_grey_turn_snapshot_remains_disabled_if_runtime_iads_cannot_manage_it(self):
+        self.rt.execute("""
+        fixedThreat();config.airDefenseThreats[1].iadsDisabled=true
+        dcsRetribution.iadsCanEngage=function()return nil end
+        dcsRetribution.iadsHasWorkingPower=function()return nil end
+        primary.alive=true;beginNavigation();tick()
+        nav:fire('red','gun',{x=0,y=1,z=0});tick()
+        assert(#assigned==0 and nav:clear('blue',{x=0,y=2000,z=0}))
+        assert(not RealisticCAS.afacReturn.blue)
         """)

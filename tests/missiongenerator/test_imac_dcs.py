@@ -602,6 +602,9 @@ def test_known_sam_uses_launcher_msl_and_does_not_leak_hidden_ground_position() 
         "sam.life=0",
         "radar.life=0",
         "dcsRetribution={iadsHasWorkingPower=function()return false end}",
+        "cfg.threats[1].radars={};search=add('SEARCH',1,60000,false)",
+        "cfg.threats[1].iadsDisabled=true;sam.positionError=true",
+        "dcsRetribution={iadsCanEngage=function()return false end,iadsHasWorkingPower=function()return true end}",
     ],
 )
 def test_destroyed_radar_or_power_does_not_leave_a_phantom_sam_circle(
@@ -615,6 +618,60 @@ def test_destroyed_radar_or_power_does_not_leave_a_phantom_sam_circle(
     start(lua)
     lua.execute("tick(5)")
     assert lua.eval("#groups.CAP.pushes") == 1
+
+
+@pytest.mark.parametrize(
+    "disabled",
+    [
+        "cfg.threats[1].iadsDisabled=true",
+        "dcsRetribution={iadsCanEngage=function()return false end,iadsHasWorkingPower=function()return true end}",
+    ],
+)
+def test_iads_disabled_battery_neither_holds_nor_cancels_a_strike(
+    disabled: str,
+) -> None:
+    lua = runtime()
+    lua.globals().strikeMeta = lua.table_from(
+        metadata("STRIKE", "strike"), recursive=True
+    )
+    lua.execute("""
+        cfg.flights[#cfg.flights+1]=strikeMeta
+        strike=add('STRIKE',2,0,true);strike.velocity.x=220
+        sam=add('SAM',1,40000,false);sam.alt=0
+        radar=add('RADAR',1,40000,false)
+        cfg.threats={{name='SAM-unit',group='SAM',side=1,known=true,
+          radius=5000,ceiling=27000,needsRadar=true,radars={'RADAR-unit'}}}
+    """ + disabled)
+    start(lua)
+    lua.execute("""
+        EscalationIMAC.reached('STRIKE',2);tick(5);tick(615)
+        assert(#groups.STRIKE.pushes==0 and #groups.STRIKE.rtbs==0)
+        assert(not EscalationIMAC.instance.states.STRIKE.finished)
+    """)
+
+
+def test_iads_shutdown_releases_an_existing_strike_hold_instead_of_cancelling() -> None:
+    lua = runtime()
+    lua.globals().strikeMeta = lua.table_from(
+        metadata("STRIKE", "strike"), recursive=True
+    )
+    lua.globals().deadMeta = lua.table_from(metadata("DEAD", "dead"), recursive=True)
+    lua.execute("""
+        cfg.flights[#cfg.flights+1]=strikeMeta;cfg.flights[#cfg.flights+1]=deadMeta
+        strike=add('STRIKE',2,0,true);strike.velocity.x=220;dead=add('DEAD',2,0,true)
+        sam=add('SAM',1,40000,false);sam.alt=0
+        cfg.threats={{name='SAM-unit',group='SAM',side=1,known=true,radius=5000}}
+        enabled=true;dcsRetribution={iadsCanEngage=function()return enabled end}
+    """)
+    start(lua)
+    lua.execute("""
+        EscalationIMAC.reached('STRIKE',2);EscalationIMAC.reached('DEAD',2);tick(5)
+        assert(EscalationIMAC.instance.states.STRIKE.order.kind=='hold')
+        condition=groups.STRIKE.pushes[1].params.stopCondition.condition
+        enabled=false;tick(15)
+        assert(EscalationIMAC.instance.states.STRIKE.order==nil)
+        assert(loadstring(condition)() and #groups.STRIKE.rtbs==0)
+    """)
 
 
 def test_failed_known_sam_query_keeps_its_conservative_ring() -> None:

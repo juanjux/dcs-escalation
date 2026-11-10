@@ -261,13 +261,14 @@ do
               known=fog and fog.active and group and fog.service:isRevealed(group:getID(),side)==true
             end
             if not known then return end -- Gate all enemy ground life/position queries.
+            if meta.iadsDisabled then lastThreats[meta.name]=nil;return end
             if meta.transitDefense then
               local transit=ESCALATION_SAM_TRANSIT
               if not transit or transit.active[meta.group]~=true then lastThreats[meta.name]=nil;return end
             end
             local u=Unit.getByName(meta.name)
             if not activeUnit(u) or u:getCoalition()~=meta.side then lastThreats[meta.name]=nil;return end
-            local query=dcsRetribution and dcsRetribution.iadsHasWorkingPower
+            local query=dcsRetribution and (dcsRetribution.iadsCanEngage or dcsRetribution.iadsHasWorkingPower)
             if query and query(meta.group)==false then lastThreats[meta.name]=nil;return end
             if meta.needsRadar then
               local radar=false

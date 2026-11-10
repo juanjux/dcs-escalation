@@ -74,6 +74,7 @@ class LuaPluginOption(PluginSettings):
         display_unit: str = "",
         section: str = "",
         enabled_by: str = "",
+        forced_true_when_off: str = "",
     ) -> None:
         super().__init__(identifier, value)
         self.name = name
@@ -85,6 +86,7 @@ class LuaPluginOption(PluginSettings):
         self.display_unit = display_unit
         self.section = section
         self.enabled_by = enabled_by
+        self.forced_true_when_off = forced_true_when_off
         if type(value) == int or type(value) == float:
             self.min, self.max = min, max
         else:
@@ -131,6 +133,11 @@ class LuaPluginDefinition:
                     enabled_by=(
                         f"{name}.{option['enabledBy']}"
                         if option.get("enabledBy")
+                        else ""
+                    ),
+                    forced_true_when_off=(
+                        f"{name}.{option['forcedTrueWhenOff']}"
+                        if option.get("forcedTrueWhenOff")
                         else ""
                     ),
                 )

@@ -6,8 +6,10 @@ from typing import Any
 
 from dcs.vehicles import AirDefence, vehicle_map
 
-from game.data.units import ANTI_AIR_UNIT_CLASSES
+from game.data.units import ANTI_AIR_UNIT_CLASSES, UnitClass
+from game.data.radar_db import LAUNCHER_TRACKER_PAIRS
 from game.dcs.groundunittype import GroundUnitType
+from game.theater.iadsnetwork.iadsstate import IadsState
 
 # Metres above the launcher, added to its native MSL position by AFACSafety.
 # Sources: installed DCS 2.9.31 TechWeaponPack and the named mod weapon files.
@@ -119,6 +121,8 @@ VERIFIED_CEILINGS = {
     "HQ17A": 10000,
     "CH_HQ22_LN": 27000,
     "PGL_625": 5000,
+    # CH China 1.1.6: PGZ95_25MM weapon station, not its 11 km optical tracker.
+    "CH_PGZ95": 2000,
     # CH Germany 1.5.0: CH_FlaRakRad_Roland3 and explicit gun station ceilings.
     "CH_FlaRakRad": 6000,
     "CH_SkynexHX": 3500,
@@ -151,3 +155,67 @@ def envelope(type_name: str) -> dict[str, Any] | None:
     ):
         return None
     return {"radius": radius, "ceiling": VERIFIED_CEILINGS.get(type_name)}
+
+
+def radar_support(unit: Any, group: Any, unit_map: Any) -> dict[str, Any]:
+    """Required live radars for this launcher, including split objective groups."""
+    native = vehicle_map.get(unit.type)
+    required = LAUNCHER_TRACKER_PAIRS.get(native) if native is not None else None
+    entry = unit_map.theater_objects.get(unit.name)
+    objective = entry.theater_unit.ground_object if entry else None
+    is_launcher = (
+        entry is not None
+        and entry.theater_unit.unit_type is not None
+        and entry.theater_unit.unit_type.unit_class is UnitClass.LAUNCHER
+    )
+    if not required and not is_launcher:
+        return {"needsRadar": False, "radars": []}
+    required_types = {radar.id for radar in required} if required else None
+    tracking_classes = {
+        UnitClass.TRACK_RADAR,
+        UnitClass.SEARCH_TRACK_RADAR,
+        UnitClass.TELAR,
+    }
+    if objective is not None:
+        radars = [
+            name
+            for name, candidate in unit_map.theater_objects.items()
+            if candidate.theater_unit.ground_object is objective
+            and (
+                candidate.dcs_unit.type in required_types
+                if required_types is not None
+                else candidate.theater_unit.unit_type is not None
+                and candidate.theater_unit.unit_type.unit_class in tracking_classes
+            )
+        ]
+    else:
+        radars = [
+            other.name
+            for other in group.units
+            if required_types and other.type in required_types
+        ]
+    return {"needsRadar": True, "radars": radars}
+
+
+def disabled_iads_units(network: Any, unit_map: Any) -> set[str]:
+    """Native units in primary batteries shown dark for this campaign turn.
+
+    Point-defence groups have their own power and must not inherit the primary
+    battery's state. Relocating and autonomous sites are not switched off.
+    """
+    nodes = getattr(network, "nodes", ())
+    if not nodes:
+        return set()
+    state_map = network.state_map
+    disabled = {
+        id(unit)
+        for node in nodes
+        if (status := state_map.status_for(node.group.ground_object)) is not None
+        and status.state is IadsState.DARK
+        for unit in node.group.units
+    }
+    return {
+        name
+        for name, entry in unit_map.theater_objects.items()
+        if id(entry.theater_unit) in disabled
+    }
