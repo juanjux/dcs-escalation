@@ -34,6 +34,10 @@ with damaged aircraft must finish repairs before relocating; healthy loans can
 still relocate normally. These rules apply while the loan remains registered,
 including its return turn.
 
+Bomber squadron rewards grant at most two aircraft, including strategic, heavy
+and maritime bombers. Fighter-bombers and light bombers keep the normal reward
+scale. This limit applies to both coalitions and does not shorten the loan.
+
 High Command reward variety: new requests cannot repeat a reward kind already
 offered by another open request on the same side, regardless of amount or duration.
 Squadron loans may repeat only for distinct aircraft or helicopter models. Generic

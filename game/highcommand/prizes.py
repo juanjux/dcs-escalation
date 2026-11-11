@@ -44,6 +44,7 @@ MIN_SCORE = 2
 MAX_SCORE = 10
 MIN_SQUADRON_SCORE = 7
 MIN_SQUADRON_AIRCRAFT = 6
+BOMBER_SQUADRON_AIRCRAFT = 2
 
 #: The five rungs of pilot skill, as the mission editor names them.
 RUNGS = ("Cadet", "Rookie", "Trained", "Veteran", "Ace")
@@ -105,6 +106,22 @@ class Prize(SaveCompatible):
     terms: tuple[tuple[str, Any], ...] = ()
     #: The side it was drawn for, and is given to.
     side: Player = Player.BLUE
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        super().__setstate__(state)
+        if self.kind != "squadron":
+            return
+        terms = dict(self.terms)
+        if terms.get("aircraft", 0) <= BOMBER_SQUADRON_AIRCRAFT:
+            return
+        limit = _saved_squadron_limit(terms.get("type", ""))
+        if limit is None or terms.get("aircraft", 0) <= limit:
+            return
+        terms["aircraft"] = limit
+        object.__setattr__(self, "terms", tuple(sorted(terms.items())))
+        object.__setattr__(
+            self, "line", _squadron_line(limit, terms["type"], terms["turns"])
+        )
 
     def term(self, name: str) -> Any:
         return dict(self.terms)[name]
@@ -514,6 +531,31 @@ def _runway(score: int, context: Context) -> Worked:
     return "A ticket for an instant repair of one of our runways.", {}
 
 
+def _squadron_line(count: int, aircraft: str, turns: int) -> str:
+    return f"A ticket for a squadron of {count} {aircraft} on loan for {_turns(turns)}."
+
+
+def _squadron_aircraft_limit(aircraft: AircraftType) -> Optional[int]:
+    role = getattr(aircraft, "role", "").casefold()
+    if "bomber" in role and "fighter" not in role and "light" not in role:
+        return BOMBER_SQUADRON_AIRCRAFT
+    return None
+
+
+def _saved_squadron_limit(name: str) -> Optional[int]:
+    from game.dcs.aircrafttype import AircraftType
+
+    aircraft: Optional[AircraftType]
+    try:
+        aircraft = AircraftType.named(name)
+    except KeyError:
+        # Tickets store display names, which need not equal the variant key.
+        aircraft = next(
+            (a for a in AircraftType.iter_all() if a.display_name == name), None
+        )
+    return _squadron_aircraft_limit(aircraft) if aircraft is not None else None
+
+
 @_kind("squadron", min_score=MIN_SQUADRON_SCORE, ticket=True)
 def _squadron(score: int, context: Context) -> Worked:
     fleet = sorted(
@@ -546,10 +588,12 @@ def _squadron(score: int, context: Context) -> Worked:
         return None
     aircraft = fleet[min(available, key=lambda index: (abs(index - pick), index))]
     count = MIN_SQUADRON_AIRCRAFT + 2 * (score - MIN_SQUADRON_SCORE)
+    limit = _squadron_aircraft_limit(aircraft)
+    if limit is not None:
+        count = min(count, limit)
     turns = half_up(score)
     return (
-        f"A ticket for a squadron of {count} {aircraft.display_name} on loan for "
-        f"{_turns(turns)}.",
+        _squadron_line(count, aircraft.display_name, turns),
         {"aircraft": count, "type": aircraft.display_name, "turns": turns},
     )
 
