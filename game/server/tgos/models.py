@@ -5,12 +5,17 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
+from dcs import Point
 
+from game.coordinates import format_dd
 from game.dcs.groundunittype import GroundUnitType
 from game.health import HealthStatus
 from game.persistentdamage import report_for_tgo
 from game.ground_forces.ai_ground_planner import reserve_armor_for
 from game.groundmovement.presentation import empty_movement_group
+from game.groundmovement.dispatch import active_transit
+from game.groundmovement.orders import DestinationKind
+from game.groundmovement.report import destination_label
 from game.missiongenerator.motorpoolpopulator import (
     MotorpoolPopulator,
     motorpools_at,
@@ -23,6 +28,7 @@ from game.theater.theatergroundobject import (
     IadsGroundObject,
     MotorpoolGroundObject,
     ShipGroundObject,
+    VehicleGroupGroundObject,
 )
 
 if TYPE_CHECKING:
@@ -71,6 +77,7 @@ class TgoJs(BaseModel):
     mobile: bool
     # Campaign movement state, independent of IADS membership or ship dragging.
     in_transit: bool = False
+    movement_destination_label: Optional[str] = None
     destination: Optional[LeafletPoint]
     # What the IADS will do with this site when the mission starts: "networked",
     # "autonomous", "relocating" or "dark", or None outside an IADS. Derived
@@ -83,6 +90,43 @@ class TgoJs(BaseModel):
 
     class Config:
         title = "Tgo"
+
+    @staticmethod
+    def _movement_destination_label(tgo: TheaterGroundObject) -> Optional[str]:
+        if (
+            not isinstance(tgo, (VehicleGroupGroundObject, IadsGroundObject))
+            or not getattr(tgo, "in_transit", False)
+            or not tgo.control_point.captured.is_blue
+        ):
+            return None
+        # Match ship destinations: never expose an enemy's planned movement.
+        game = getattr(getattr(tgo.control_point, "coalition", None), "game", None)
+        if game is None:
+            return None
+        transit = active_transit(game, tgo.id)
+        if transit is None:
+            return None
+        order = game.ground_movements.orders.get(transit.order_id)
+        if (
+            order is None
+            or order.cancelled
+            or order.completed
+            or not order.owner.is_blue
+        ):
+            return None
+        destination = order.destination
+        if destination.kind is DestinationKind.POSITION:
+            return format_dd(
+                Point(
+                    destination.position.x,
+                    destination.position.z,
+                    game.theater.terrain,
+                ).latlng()
+            )
+        label = destination_label(game, destination)
+        if destination.kind is DestinationKind.FRONTLINE:
+            return "front line " + label
+        return label
 
     @staticmethod
     def _jamming_range_of(tgo: TheaterGroundObject) -> Optional[float]:
@@ -251,6 +295,7 @@ class TgoJs(BaseModel):
             ),
             mobile=mobile,
             in_transit=getattr(tgo, "in_transit", False),
+            movement_destination_label=TgoJs._movement_destination_label(tgo),
             destination=destination,
             iads_state=iads.state.value if iads is not None else None,
             iads_reason=iads.reason if iads is not None else None,
