@@ -46,17 +46,15 @@ if (-not (Test-Path (Join-Path $venv 'python.exe'))) {
 $before = (git rev-parse HEAD).Trim()
 if (-not $NoPull) {
     $branch = (git rev-parse --abbrev-ref HEAD).Trim()
-    # Only what tracked files say: _notas/ and other untracked scratch are nobody's
-    # business and must not stop a launch.
-    $dirty = (git status --porcelain --untracked-files=no)
     if ($branch -ne 'master') {
         Say "On $branch, not master -- running it as it is, no pull."
-    } elseif ($dirty) {
-        Say 'Uncommitted changes -- running them as they are, no pull.'
     } else {
+        # Git preserves compatible local edits and refuses updates that overwrite them.
         Say 'Pulling master...'
-        git pull --ff-only origin master
-        if ($LASTEXITCODE -ne 0) { Die 'Pull failed. Sort the tree out and try again.' }
+        git pull --ff-only --no-rebase --no-autostash origin master
+        if ($LASTEXITCODE -ne 0) {
+            Die 'Could not update master. See the Git output above, or use -NoPull to launch the current checkout.'
+        }
     }
 }
 $after = (git rev-parse HEAD).Trim()
