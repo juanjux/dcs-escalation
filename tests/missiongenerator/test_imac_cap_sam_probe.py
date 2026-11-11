@@ -9,6 +9,7 @@ import pytest
 
 from dcs import Mission
 from dcs.lua import loads
+from dcs.unittype import FlyingType
 
 from tools.imac_cap_sam_probe import build_mission, PLUGIN, SCRIPTS
 
@@ -36,8 +37,9 @@ def saved_probe(path: Path) -> tuple[dict[str, Any], str]:
 
 
 def test_probe_serializes_stock_armed_patrols_and_locked_late_activation(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr(FlyingType, "loadout", classmethod(lambda cls, task: None))
     saved, script = saved_probe(tmp_path / "cap.miz")
     planes = []
     vehicles = []
