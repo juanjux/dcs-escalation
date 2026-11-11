@@ -9,7 +9,7 @@ from pathlib import Path
 from dcs import Mission
 from dcs.action import DoScript, DoScriptFile
 from dcs.condition import TimeAfter
-from dcs.lua import dumps
+from dcs.lua import dumps, loads
 from dcs.planes import B_52H, F_16C_50, Su_27, Tu_95MS
 from dcs.statics import Fortification
 from dcs.task import (
@@ -34,6 +34,7 @@ from game.missiongenerator.imac import DEFAULTS, SCRIPTS, _array
 
 HERE = Path(__file__).resolve().parent
 PLUGIN = HERE.parent / "resources/plugins/imac"
+PAYLOADS = HERE.parent / "resources/customized_payloads"
 
 
 def build_mission() -> Mission:
@@ -56,6 +57,17 @@ def build_mission() -> Mission:
     for side in (2, 1):
         country = mission.country("USA" if side == 2 else "Russia")
         enemy = mission.country("Russia" if side == 2 else "USA")
+        plane = F_16C_50 if side == 2 else Su_27
+        preset = "Retribution BARCAP" if side == 2 else "CAP"
+        payload_file = PAYLOADS / f"{plane.id}.lua"
+        payloads = loads(payload_file.read_text(encoding="utf-8-sig"))["unitPayloads"]
+        payload = next(
+            entry for entry in payloads["payloads"].values() if entry["name"] == preset
+        )
+        pylons = {
+            pylon["num"]: {"CLSID": pylon["CLSID"]}
+            for pylon in payload["pylons"].values()
+        }
         cc = mission.static_group(
             country,
             "BLUE_CC" if side == 2 else "RED_CC",
@@ -69,11 +81,11 @@ def build_mission() -> Mission:
             name = ("BLUE_" if side == 2 else "RED_") + (
                 "GUARDED" if guarded else "CONTROL"
             )
-            plane = F_16C_50 if side == 2 else Su_27
             fighter = mission.flight_group_inflight(
                 country, name, plane, station, 6500, 800, CAP, group_size=2
             )
             for unit in fighter.units:
+                unit.pylons = copy.deepcopy(pylons)
                 unit.heading = 90
                 unit.skill = Skill.Excellent
                 unit.fuel = plane.fuel_max * 0.95

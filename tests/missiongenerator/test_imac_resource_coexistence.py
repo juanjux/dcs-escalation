@@ -39,7 +39,7 @@ def test_saved_miz_keeps_both_adapters_and_starts_both_plugins(
             "visibility": 100000,
         },
     }
-    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    data = imac.configure(s.generator, dict(imac.DEFAULTS, debug=True, debugOpfor=True))
     if cas_first:
         inject_campaign(s.generator, cas)
         imac.inject(s.generator, data)
@@ -99,6 +99,11 @@ def test_saved_miz_keeps_both_adapters_and_starts_both_plugins(
                         ).decode()
                     )
                 elif action["predicate"] == "a_do_script":
+                    text = action["text"]
+                    if text.startswith("EscalationIMAC.start("):
+                        literal = text[len("EscalationIMAC.start(") : -1]
+                        saved_options = loads("config=" + literal)["config"]["options"]
+                        assert saved_options["debugOpfor"] is True
                     lua.execute(action["text"])
 
     assert lua.eval("type(RealisticCAS.start)=='function'") is True

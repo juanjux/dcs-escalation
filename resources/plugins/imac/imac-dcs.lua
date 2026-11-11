@@ -28,6 +28,13 @@ do
     local debugLast,debugBudget={},{}
     local instance
     local io={time=timer.getTime}
+    local function showDebug(recipient,key,limit,now,message)
+      local budget=debugBudget[key]
+      if not budget or now-budget.time>=60 then budget={time=now,count=0};debugBudget[key]=budget end
+      if budget.count>=limit then return end
+      budget.count=budget.count+1
+      trigger.action.outTextForCoalition(recipient,message,15)
+    end
     function io.debug(side,group,topic,detail,screen)
       if not opt.debug or not ((side==1 and opt.red) or (side==2 and opt.blue)) then return end
       local now=timer.getTime()
@@ -41,13 +48,10 @@ do
       -- Routine authority and availability details remain available in dcs.log.
       if topic=='authority' or (topic=='availability' and
         (detail=='not airborne' or detail=='flight unavailable' or detail=='landing approach')) then return end
-      local budget=debugBudget[side]
-      if not budget or now-budget.time>=60 then budget={time=now,count=0};debugBudget[side]=budget end
-      if topic~='active' and budget.count<4 and screen~=false then
-        budget.count=budget.count+1
-        trigger.action.outTextForCoalition(side,
-          'IMAC DEBUG ['..(side==2 and 'BLUE' or 'RED')..'] '..group..': '..topic..' - '..detail,15)
-      end
+      if screen==false then return end
+      local message='IMAC DEBUG ['..(side==2 and 'BLUE' or 'RED')..'] '..group..': '..topic..' - '..detail
+      if topic~='active' then showDebug(side,side,4,now,message) end
+      if side==1 and opt.debugOpfor==true then showDebug(2,'opfor',8,now,message) end
     end
     local function warning(key,detail)
       if warnings[key] and timer.getTime()-warnings[key]<60 then return end
