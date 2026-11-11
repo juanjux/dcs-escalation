@@ -69,6 +69,8 @@ class TgoJs(BaseModel):
     sidc: str  # TODO: Event stream
     task: Optional[tuple[str, str]]
     mobile: bool
+    # Campaign movement state, independent of IADS membership or ship dragging.
+    in_transit: bool = False
     destination: Optional[LeafletPoint]
     # What the IADS will do with this site when the mission starts: "networked",
     # "autonomous", "relocating" or "dark", or None outside an IADS. Derived
@@ -248,6 +250,7 @@ class TgoJs(BaseModel):
                 else None
             ),
             mobile=mobile,
+            in_transit=getattr(tgo, "in_transit", False),
             destination=destination,
             iads_state=iads.state.value if iads is not None else None,
             iads_reason=iads.reason if iads is not None else None,

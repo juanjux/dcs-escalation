@@ -5,6 +5,7 @@ import {
   iconForTgo,
   isJammer,
   isRepairing,
+  movementBarColor,
 } from "./shared";
 
 // APP-6(D) SIDC with the status/condition digit (index 6) parameterised.
@@ -130,6 +131,92 @@ describe("iadsBarColor", () => {
     const svg = decodeURIComponent(url.slice(url.indexOf(",") + 1));
     expect(svg).toContain("rgb(178,120,255)");
     expect(svg).not.toContain("rgb(0,255,0)");
+  });
+});
+
+describe("moving armor health-bar colour", () => {
+  const armor = (
+    status: string,
+    overrides: Partial<TgoModel> = {},
+  ): TgoModel => ({
+    ...fakeTgo(status === "4", status, false),
+    category: "armor",
+    sidc:
+      (overrides.blue === false ? "100610" : "100310") +
+      status +
+      "0001205000000",
+    in_transit: true,
+    ...overrides,
+  });
+  const svgFor = (tgo: TgoModel) => {
+    const url = iconForTgo(tgo).options.iconUrl ?? "";
+    return decodeURIComponent(url.slice(url.indexOf(",") + 1));
+  };
+
+  it.each([true, false])("uses SAM blue for moving armor (blue %s)", (blue) => {
+    for (const status of ["2", "3"]) {
+      for (const repairing of [false, true]) {
+        const tgo = armor(status, { blue, repairing });
+        expect(movementBarColor(tgo)).toBe("rgb(70,160,255)");
+        expect(svgFor(tgo)).toContain("rgb(70,160,255)");
+        expect(iadsStateLabel(tgo)).toBeNull();
+      }
+    }
+  });
+
+  it.each([undefined, false])(
+    "restores the normal bar without an active transit (%s)",
+    (in_transit) => {
+      for (const status of ["2", "3"]) {
+        const tgo = armor(status, { in_transit });
+        expect(movementBarColor(tgo)).toBeNull();
+        expect(svgFor(tgo)).not.toContain("rgb(70,160,255)");
+      }
+    },
+  );
+
+  it("keeps a destroyed armor group's bar red", () => {
+    const tgo = armor("4");
+    expect(movementBarColor(tgo)).toBeNull();
+    expect(svgFor(tgo)).toContain("rgb(255,0,0)");
+    expect(svgFor(tgo)).not.toContain("rgb(70,160,255)");
+  });
+
+  it.each(["aa", "ship", "motorpool", "fuel"])(
+    "does not use armor transit colour for %s",
+    (category) => {
+      expect(movementBarColor(armor("2", { category }))).toBeNull();
+    },
+  );
+
+  it("retains proportional persistent health while recolouring the moving bar", () => {
+    const tgo = armor("3", {
+      health: {
+        health_percent: 65,
+        damage_repaired_per_turn_percent: 30,
+        repair_next_turn_percent: 10,
+        health_next_turn_percent: 75,
+        units: [
+          {
+            id: 7,
+            name: "Tank",
+            health_percent: 65,
+            persistent: true,
+            damage_repaired_per_turn_percent: 30,
+            repair_next_turn_percent: 10,
+            health_next_turn_percent: 75,
+          },
+        ],
+      },
+    });
+    const svg = svgFor(tgo);
+    const document = new DOMParser().parseFromString(svg, "image/svg+xml");
+    const fill = document.querySelector('path[fill="rgb(70,160,255)"]');
+    const track = document.querySelector('path[fill="#35404a"]');
+    const width = (path: Element | null) =>
+      Number(/ l([\d.]+),0/.exec(path?.getAttribute("d") ?? "")?.[1]);
+    expect(width(fill) / width(track)).toBeCloseTo(0.65);
+    expect(svgFor({ ...tgo, in_transit: false })).toContain("rgb(255,140,0)");
   });
 });
 

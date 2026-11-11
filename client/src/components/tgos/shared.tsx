@@ -28,7 +28,15 @@ const REPAIRING_ORANGE = "rgb(255,140,0)";
 const MILSYMBOL_INTACT_GREEN = "rgb(0,255,0)";
 const IADS_DARK_GREY = "rgb(130,140,150)";
 const IADS_AUTONOMOUS_VIOLET = "rgb(178,120,255)";
-const IADS_RELOCATING_BLUE = "rgb(70,160,255)";
+const RELOCATING_BLUE = "rgb(70,160,255)";
+
+export function movementBarColor(tgo: TgoModel): string | null {
+  return tgo.category === "armor" &&
+    tgo.in_transit === true &&
+    tgo.sidc.charAt(6) !== "4"
+    ? RELOCATING_BLUE
+    : null;
+}
 
 // A destroyed site keeps its red bar. It is dark, of course it is -- but "destroyed" is
 // the more useful of the two things to be told, and the red bar is the only place the
@@ -41,7 +49,7 @@ export function iadsBarColor(tgo: TgoModel): string | null {
     return IADS_DARK_GREY;
   }
   if (tgo.iads_state === "relocating") {
-    return IADS_RELOCATING_BLUE;
+    return RELOCATING_BLUE;
   }
   if (tgo.iads_state === "autonomous") {
     return IADS_AUTONOMOUS_VIOLET;
@@ -130,9 +138,10 @@ export function iconForTgo(tgo: TgoModel) {
   const repairing = isRepairing(tgo);
   const jammer = isJammer(tgo);
   const store = isStore(tgo);
-  const iadsColor = iadsBarColor(tgo);
+  const movementColor = movementBarColor(tgo);
+  const barColor = movementColor ?? iadsBarColor(tgo);
   const damaged = hasPersistentDamage(tgo.health);
-  if (!repairing && !jammer && !store && !iadsColor && !damaged) {
+  if (!repairing && !jammer && !store && !barColor && !damaged) {
     return new TgoIcon(tgo.id, { iconUrl: symbol.toDataURL(), iconAnchor });
   }
   let svg = healthBarSvg(symbol.asSVG(), tgo.health);
@@ -142,15 +151,14 @@ export function iconForTgo(tgo: TgoModel) {
   if (repairing) {
     svg = svg.split(MILSYMBOL_DAMAGED_YELLOW).join(REPAIRING_ORANGE);
   }
-  if (iadsColor && !damaged) {
-    // Over the repair orange as well: a site with no power is not being brought back
-    // this turn whatever else is pending on it.
+  if (barColor && (!damaged || movementColor !== null)) {
+    // Movement and IADS state override repair colours without changing bar width.
     for (const was of [
       MILSYMBOL_INTACT_GREEN,
       MILSYMBOL_DAMAGED_YELLOW,
       REPAIRING_ORANGE,
     ]) {
-      svg = svg.split(was).join(iadsColor);
+      svg = svg.split(was).join(barColor);
     }
   }
   if (jammer) {
