@@ -572,6 +572,7 @@ export type Tgo = {
   sidc: string;
   task?: [string, string];
   mobile: boolean;
+  in_transit?: boolean;
   destination?: LatLng;
   iads_state?: string | null;
   iads_reason?: string | null;

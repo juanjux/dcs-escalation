@@ -3,6 +3,7 @@ import { Tgo as TgoModel } from "../../api/liberationApi";
 import { renderWithProviders } from "../../testutils";
 import { waitFor } from "@testing-library/react";
 import MobileTgo from "./MobileTgo";
+import Tgo from "./Tgo";
 import { formatInventory, TgoTooltip } from "./shared";
 
 const mockMarker = jest.fn((_props: any) => null);
@@ -135,6 +136,25 @@ describe("TgoTooltip", () => {
         ),
       ).toBe(true);
     });
+  });
+
+  it("updates armor bar colour when its streamed transit state changes", () => {
+    mockMarker.mockClear();
+    const moving = tgo({
+      category: "armor",
+      sidc: "10031020001205000000",
+      in_transit: true,
+    });
+    const { rerender } = renderWithProviders(<Tgo tgo={moving} />);
+    const lastIconSvg = () => {
+      const props = mockMarker.mock.calls[mockMarker.mock.calls.length - 1][0];
+      const url = props.icon.options.iconUrl as string;
+      return decodeURIComponent(url.slice(url.indexOf(",") + 1));
+    };
+    expect(lastIconSvg()).toContain("rgb(70,160,255)");
+    rerender(<Tgo tgo={{ ...moving, in_transit: false }} />);
+    expect(lastIconSvg()).not.toContain("rgb(70,160,255)");
+    expect(lastIconSvg()).toContain("rgb(0,255,0)");
   });
 
   it("keeps legacy units for non-motorpool TGOs", () => {

@@ -70,6 +70,36 @@ def test_full_move_hides_empty_source_live_and_after_reload(
     assert transit.detachment_id == moving.id
 
 
+@pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
+@pytest.mark.parametrize("finish", ["stop", "arrive"])
+def test_map_exports_transit_state_until_armor_stops_or_arrives(
+    world: Any, owner: Player, finish: str
+) -> None:
+    w = setup(world, owner)
+    assert not TgoJs.for_tgo(w.source).in_transit
+    transit = dispatch_armor(
+        w.game,
+        w.source.id,
+        owner,
+        (7,),
+        MovementDestination(DestinationKind.POSITION, GroundPosition(90, 10)),
+        GameUpdateEvents(),
+    )
+    moving = w.game.db.tgos.get(transit.detachment_id)
+    snapshot = TgoJs.for_tgo(moving)
+    assert snapshot.category == "armor" and snapshot.iads_state is None
+    assert snapshot.in_transit and snapshot.dict()["in_transit"] is True
+    assert not TgoJs.for_tgo(w.source).in_transit
+    restored = deepcopy(w.game)
+    assert TgoJs.for_tgo(restored.db.tgos.get(moving.id)).in_transit
+    if finish == "stop":
+        stop_armor(w.game, transit.order_id, owner, GameUpdateEvents())
+    else:
+        w.game.turn += 1
+        advance_armor(w.game, GameUpdateEvents())
+    assert transit.finished and not TgoJs.for_tgo(moving).in_transit
+
+
 def test_partial_move_keeps_remaining_source_and_real_losses_visible(
     world: Any,
 ) -> None:
