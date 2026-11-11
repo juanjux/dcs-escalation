@@ -26,6 +26,7 @@ DEFAULTS: dict[str, float | bool] = {
     "red": True,
     "reports": True,
     "debug": False,
+    "debugOpfor": False,
     "avoidSamThreats": True,
     "neverDivertSead": True,
     "evadeFighters": True,

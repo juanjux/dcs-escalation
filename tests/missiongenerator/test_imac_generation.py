@@ -80,7 +80,12 @@ def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> 
     plugin.set_value(True)
     for option in plugin.options:
         option.set_settings(settings)
-        if option.identifier in ("imac.blue", "imac.red", "imac.debug"):
+        if option.identifier in (
+            "imac.blue",
+            "imac.red",
+            "imac.debug",
+            "imac.debugOpfor",
+        ):
             option.set_value(option.identifier != "imac.blue")
     restored = pickle.loads(pickle.dumps(settings))
     plugin.set_settings(restored)
@@ -91,9 +96,11 @@ def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> 
     assert options["blue"] is False
     assert options["red"] is True
     assert options["debug"] is True
+    assert options["debugOpfor"] is True
     assert restored.plugins["imac.blue"] is False
     assert restored.plugins["imac.red"] is True
     assert restored.plugins["imac.debug"] is True
+    assert restored.plugins["imac.debugOpfor"] is True
 
 
 @pytest.mark.parametrize(
@@ -101,6 +108,7 @@ def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> 
     [
         ("blue", 1),
         ("reports", "yes"),
+        ("debugOpfor", "true"),
         ("avoidSamThreats", 1),
         ("neverDivertSead", "true"),
         ("evadeFighters", 1),
