@@ -347,6 +347,29 @@ def test_sead_escort_is_marked_for_sam_exemption_without_becoming_a_fighter_esco
 
 
 @pytest.mark.parametrize(
+    "role,waypoint",
+    [(FlightType.ESCORT, "JOIN"), (FlightType.SWEEP, "SWEEP START")],
+)
+@pytest.mark.parametrize("human", [False, True])
+def test_package_defense_uses_the_native_engagement_waypoint(
+    role: FlightType, waypoint: str, human: bool
+) -> None:
+    s = scenario()
+    s.cap.flight_type = role
+    s.cap.aircraft_type.task_priorities = {FlightType.INTERCEPTION: 1}
+    s.cap.client_units = [object()] if human else []
+    s.group.points[1].name = waypoint
+    s.group.points[2].name = "NAV"
+    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    assert data is not None
+    flight = data["flights"][0]
+    assert flight["mode"] == "observe"
+    assert flight["returnInterceptor"] is False
+    assert flight["packageDefenseStart"] == (None if human else 2)
+    assert ("EscalationIMAC.reached" in str(s.group.points[1].tasks)) is not human
+
+
+@pytest.mark.parametrize(
     "aircraft,eligible",
     [
         ("F-16C_50", True),

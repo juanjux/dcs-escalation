@@ -14,7 +14,8 @@ do
       if sead then
         if opt.avoidSamThreats==false or opt.neverDivertSead~=false then return noThreats end
       elseif opt.avoidSamThreats==false and
-        (s.meta.mode=='strike' or s.meta.mode=='cap' or s.meta.returnInterceptor) then return noThreats end
+        (s.meta.mode=='strike' or s.meta.mode=='cap' or s.meta.returnInterceptor or
+          s.meta.packageDefenseStart) then return noThreats end
       return threats[s.meta.side]
     end
     local function diagnose(s,topic,detail)
@@ -30,13 +31,20 @@ do
       if #api.history>128 then table.remove(api.history,1) end
       io.report(entry)
     end
-    local function release(s,reason)
+    local function release(s,reason,restoreAvoidance)
       if not s.order then return end
-      if s.order.kind=='samAvoid' then
+      local avoidance=s.order.data.avoidance
+      -- An intercept pushed over SAM avoidance leaves the orbit as the native root.
+      if s.order.kind=='samAvoid' or (avoidance and not restoreAvoidance) then
         local ok,why=io.resumeCap(s)
         if not ok then diagnose(s,'resume blocked',tostring(why));return end
       end
-      s.revision=s.revision+1;s.order=nil;s.cooldown=now+30
+      s.revision=s.revision+1;s.order=restoreAvoidance and avoidance or nil;s.cooldown=now+30
+      if s.order then
+        s.order.clearSince=nil
+        record(s,'samAvoid','intercept ended; return to SAM avoidance orbit')
+        return
+      end
       record(s,'resume',reason)
       -- No popTask: it could remove a tanker's or human commander's task.
     end
@@ -48,13 +56,17 @@ do
       return s.meta.returnInterceptor==true and s.meta.returnStartIndex and
         s.index>=s.meta.returnStartIndex and s.index<(s.meta.approachIndex or #s.meta.route)
     end
+    local function packageDefender(s)
+      return s.meta.packageDefenseStart and s.index>=s.meta.packageDefenseStart and
+        s.index<math.min(s.meta.recoveryIndex,s.meta.approachIndex or #s.meta.route)
+    end
     local function home(s)
       local point=s.meta.route[#s.meta.route]
       return {x=point.x,z=point.y}
     end
     local function anchor(s,p)
       if s.order and s.order.data.anchor then return s.order.data.anchor end
-      if returningFighter(s) then return G.copy(p.point) end
+      if returningFighter(s) or packageDefender(s) then return G.copy(p.point) end
       local point=s.meta.route[s.meta.stationStart]
       return {x=point.x,z=point.y}
     end
@@ -84,15 +96,29 @@ do
       return unavailable(s,p)==nil
     end
     local function bingoWhileWaiting(s,p,why)
+      local attackEvasion=s.order and s.order.kind=='evade' and
+        (s.meta.mode=='strike' or s.meta.mode=='dead')
       return why=='fuel at BINGO reserve or unavailable' and p and G.finite(p.fuel) and
-        (s.pendingHold or (s.order and (s.order.kind=='hold' or s.order.kind=='samAvoid')))
+        (s.pendingHold or attackEvasion or
+          (s.order and (s.order.kind=='hold' or s.order.kind=='samAvoid' or s.order.data.avoidance)))
+    end
+    local function bingoReason(s)
+      if s.order and (s.order.kind=='samAvoid' or s.order.data.avoidance) then
+        return 'BINGO during SAM avoidance'
+      end
+      if s.pendingHold or (s.order and s.order.kind=='hold') then
+        return 'BINGO while waiting for DEAD/SEAD'
+      end
+      return 'BINGO during fighter evasion'
     end
     local function push(s,kind,data,duration)
-      if s.order or now<s.cooldown then return false end
+      local previous=s.order
+      if now<s.cooldown or (previous and not (kind=='intercept' and previous.kind=='samAvoid')) then return false end
+      data.avoidance=previous
       s.revision=s.revision+1
       s.order={kind=kind,data=data,issued=now,deadline=now+duration,revision=s.revision}
       local ok,why=io.order(s,s.order)
-      if not ok then s.order=nil;s.cooldown=now+60;record(s,'error',tostring(why));return false end
+      if not ok then s.order=previous;s.cooldown=now+60;record(s,'error',tostring(why));return false end
       record(s,kind,data.reason or kind)
       local detail='target group='..tostring(data.groupId)
       if data.point then detail=string.format('%s x=%.0f z=%.0f',
@@ -131,7 +157,7 @@ do
       local why=unavailable(s,p)
       if bingoWhileWaiting(s,p,why) then
         -- Keep the attack suspended until the decision cycle installs recovery.
-        s.abortReason='BINGO while waiting for DEAD/SEAD';return false
+        s.abortReason=bingoReason(s);return false
       end
       if why then
         release(s,'temporary order ended');return true
@@ -143,7 +169,7 @@ do
           -- Safety, not lease age, decides when to resume. The next tick still
           -- checks clearance; BINGO and command loss remain higher priority.
           s.order.deadline=now+ORBIT_LEASE
-        else release(s,'temporary order expired');return true end
+        else release(s,'temporary order expired',true);return true end
       end
       return false
     end
@@ -313,10 +339,16 @@ do
     local function service(s,p)
       local why=unavailable(s,p)
       if why then
-        if s.meta.mode~='observe' or s.meta.returnInterceptor then diagnose(s,'availability',why) end
+        if s.meta.mode~='observe' or s.meta.returnInterceptor or s.meta.packageDefenseStart then
+          local detail=why
+          if why=='fuel at BINGO reserve or unavailable' and p and G.finite(p.fuel) then
+            detail=string.format('fuel at BINGO reserve (%.0f%% fuel, %.0f%% reserve)',
+              p.fuel*100,(s.meta.bingo+0.05)*100)
+          end
+          diagnose(s,'availability',detail)
+        end
         if bingoWhileWaiting(s,p,why) then
-          retreat(s,p,s.order and s.order.kind=='samAvoid' and 'BINGO during SAM avoidance' or
-            'BINGO while waiting for DEAD/SEAD');return
+          retreat(s,p,bingoReason(s));return
         end
         release(s,'unavailable, BINGO, recovery or command lost');return
       end
@@ -347,7 +379,7 @@ do
           order.kind,s.index,p.fuel*100,math.max(0,order.deadline-now)))
         if now>=order.deadline then
           if order.kind=='hold' or order.kind=='evade' or order.kind=='samAvoid' then order.deadline=now+ORBIT_LEASE
-          else release(s,'temporary order expired');resumeHold(s,p) end
+          else release(s,'temporary order expired',true);resumeHold(s,p) end
           if order.kind~='evade' and order.kind~='hold' and order.kind~='samAvoid' then return end
         end
         if order.kind=='intercept' then
@@ -361,6 +393,8 @@ do
           end
           local reason
           if not target then reason='contact expired; resume original route'
+          elseif order.data.packageDefense and not packageDefender(s) then
+            reason='package defense leg ended; resume original route'
           elseif not p.ammo then reason='air-to-air ammunition exhausted; resume original route'
           elseif nativeRefuel(s) then reason='native refuelling owns the flight'
           elseif p.fuel<=s.meta.bingo+0.08+(s.meta.burnPerMeter or 0)*
@@ -380,13 +414,13 @@ do
               if not threat then _,threat=G.leg(p.point,target.point,math.min(p.point.y,target.point.y),flightThreats(s),12000)end
               if threat then avoidCapSam(s,p,threat);return end
             end
-            release(s,reason);return
+            release(s,reason,true);return
           end
           local d=G.distance(target.point,order.data.asset)
           if d>order.data.nearest+5000 then order.retreatSince=order.retreatSince or now
           else order.retreatSince=nil;order.data.nearest=math.min(order.data.nearest,d) end
           if order.retreatSince and now-order.retreatSince>=opt.pursuitSeconds then
-            release(s,'enemy withdrawing; resume original route')
+            release(s,'enemy withdrawing; resume original route',true)
           end
         elseif order.kind=='samAvoid' then
           if not capPathSafe(s,p,order.data.point,true) or
@@ -445,21 +479,31 @@ do
     end
     local function targetPriority(t,side)
       local best,asset
+      local packages={}
       for name,s in pairs(api.states) do
         local p=samples[name]
         if s.meta.side==side and p and p.airborne and not s.finished then
           local vulnerable=s.meta.mode~='cap'
+          local avoidingSAM=s.order and s.order.kind=='samAvoid'
           local distance=G.distance(p.point,t.point)
-          local closing=G.closing(p.point,p.velocity,t.point,t.velocity)
+          local closing=distance<15*NM or G.closing(p.point,p.velocity,t.point,t.velocity)>20
           local attacker=t.kind=='bomber' or t.kind=='attack' or t.kind=='transport' or t.kind=='missile'
-          if (closing>20 or distance<15*NM) and
-            ((vulnerable and distance<opt.defendRangeNm*NM) or (attacker and distance<opt.interceptRangeNm*NM)) then
+          local defend=(vulnerable and closing) or (avoidingSAM and t.kind=='fighter')
+          if (defend and distance<opt.defendRangeNm*NM) or
+            (attacker and closing and distance<opt.interceptRangeNm*NM) then
             local score=(vulnerable and 1000000 or 0)+(attacker and 200000 or 0)-distance
             if not best or score>best then best,asset=score,G.copy(p.point) end
           end
+          if closing and s.meta.package and s.order and s.order.kind=='evade' and
+            (t.kind=='fighter' or t.kind=='unknown') and distance<opt.defendRangeNm*NM then
+            local defended=packages[s.meta.package]
+            if not defended or distance<defended.distance then
+              packages[s.meta.package]={distance=distance,asset=G.copy(p.point)}
+            end
+          end
         end
       end
-      return best,asset
+      return best,asset,packages
     end
     local function assign(side)
       local reserved,targets={},{}
@@ -469,8 +513,10 @@ do
         end
       end
       for _,t in ipairs(tracks[side]) do
-        local priority,asset=targetPriority(t,side)
-        if priority and not reserved[reservation(t)] then targets[#targets+1]={track=t,priority=priority,asset=asset} end
+        local priority,asset,packages=targetPriority(t,side)
+        if priority and not reserved[reservation(t)] then
+          targets[#targets+1]={track=t,priority=priority,asset=asset,packages=packages}
+        end
       end
       table.sort(targets,function(a,b)
         if a.priority==b.priority then return a.track.key<b.track.key end
@@ -479,12 +525,14 @@ do
       for _,candidate in ipairs(targets) do
         local t=candidate.track
         if not reserved[reservation(t)] then
-          local best,bestDistance,bestAim
+          local best,bestDistance,bestAim,bestDefense
           for name,s in pairs(api.states) do
             local p=samples[name]
             local patrol=s.meta.mode=='cap' and s.index>=s.meta.stationStart and s.index<s.meta.recoveryIndex
             local returning=returningFighter(s)
-            if s.meta.side==side and (patrol or returning) and not s.order and now>=s.cooldown and
+            local defense=packageDefender(s) and candidate.packages[s.meta.package] or nil
+            local onAvoidance=patrol and s.order and s.order.kind=='samAvoid'
+            if s.meta.side==side and (patrol or returning or defense) and (not s.order or onAvoidance) and now>=s.cooldown and
               available(s,p) and p.ammo then
               local centre=anchor(s,p)
               local d=G.distance(p.point,t.point)
@@ -498,7 +546,7 @@ do
               elseif p.fuel<=reserve then reason='insufficient fuel for intercept and return'
               elseif G.distance(t.point,centre)>=opt.patrolLeashNm*NM or
                 G.distance(aim,centre)>=opt.patrolLeashNm*NM then reason='contact beyond patrol leash'
-              elseif not returning and now+d/math.max(100,p.speed)+120>=s.meta.endTime then reason='insufficient station time'
+              elseif patrol and now+d/math.max(100,p.speed)+120>=s.meta.endTime then reason='insufficient station time'
               elseif not G.safe(p.point,t.point,t.kind=='missile' and p.point.y or math.min(p.point.y,t.point.y),
                 flightThreats(s),io.height,12000) or
                 not G.safe(p.point,aim,t.kind=='missile' and p.point.y or math.min(p.point.y,aim.y),
@@ -506,16 +554,22 @@ do
                 reason='known SAM or terrain blocks intercept corridor'
               end
               if reason then diagnose(s,'intercept rejected',reason)
-              elseif not bestDistance or d<bestDistance or (d==bestDistance and name<best.meta.group) then
-                best,bestDistance,bestAim=s,d,aim
+              elseif not best or (defense and not bestDefense) or
+                ((defense~=nil)==(bestDefense~=nil) and
+                  (d<bestDistance or (d==bestDistance and name<best.meta.group))) then
+                best,bestDistance,bestAim,bestDefense=s,d,aim,defense
               end
             end
           end
-          if best and push(best,'intercept',{key=t.key,groupId=t.groupId,reservation=reservation(t),
-            missile=t.kind=='missile',point=t.kind=='missile' and bestAim or nil,
-            anchor=anchor(best,samples[best.meta.group]),asset=candidate.asset,
-            nearest=G.distance(t.point,candidate.asset),reason='intercept detected '..t.kind..' threat'},900) then
-            reserved[reservation(t)]=true
+          if best then
+            local asset=bestDefense and bestDefense.asset or candidate.asset
+            if push(best,'intercept',{key=t.key,groupId=t.groupId,reservation=reservation(t),
+              missile=t.kind=='missile',point=t.kind=='missile' and bestAim or nil,
+              packageDefense=bestDefense~=nil,
+              anchor=anchor(best,samples[best.meta.group]),asset=asset,
+              nearest=G.distance(t.point,asset),reason='intercept detected '..t.kind..' threat'},900) then
+              reserved[reservation(t)]=true
+            end
           end
         end
       end
