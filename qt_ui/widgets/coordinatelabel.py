@@ -1,18 +1,11 @@
-"""A position, and what can be done with it.
-
-Copying it was the only thing on offer, which is one keystroke short of the thing
-anybody actually wants: the point in the aeroplane. The button is a small menu now --
-copy, or write it down for one of the flights the player is sitting in, as a waypoint
-or a markpoint. A campaign with nobody flying anything still gets the plain Copy it
-always had.
-"""
+"""Copy coordinates or save a waypoint shared by all player aircraft."""
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from PySide6.QtCore import QPoint, QRectF, Qt
-from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPen, QPixmap
+from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -23,7 +16,11 @@ from PySide6.QtWidgets import (
 )
 from dcs import Point
 
+from game.ato.savedpoints import PointKind, SavedPoint, campaign_points
 from game.coordinates import format_for
+
+if TYPE_CHECKING:
+    from game import Game
 
 
 class CoordinateLabel(QWidget):
@@ -32,8 +29,7 @@ class CoordinateLabel(QWidget):
     The text is selectable, so it can also be picked out by hand. The format comes from
     the campaign's ``coordinate_format`` setting.
 
-    ``game`` is optional: without it -- a test double, a dialog that has no way to
-    reach one -- the button copies and nothing more.
+    Without a campaign, the button just copies the coordinates.
     """
 
     def __init__(
@@ -42,7 +38,7 @@ class CoordinateLabel(QWidget):
         settings: Any,
         parent: Optional[QWidget] = None,
         compact: bool = False,
-        game: Any = None,
+        game: Optional[Game] = None,
     ) -> None:
         super().__init__(parent)
         self.text = format_for(settings, position)
@@ -63,9 +59,13 @@ class CoordinateLabel(QWidget):
             )
         layout.addWidget(label)
 
-        self.button = QPushButton("" if compact else "Copy")
+        self.button = QPushButton("" if compact else ("GPS" if game else "Copy"))
         self.button.setProperty("style", "btn-small")
-        self.button.setToolTip("Copy these coordinates to the clipboard")
+        self.button.setToolTip(
+            "Copy or save these coordinates as a campaign waypoint"
+            if game is not None
+            else "Copy these coordinates to the clipboard"
+        )
         if compact:
             # A row has no room for a word, and the glyph is the one the map uses.
             # Styled here rather than left to the app sheet, whose grey gradient
@@ -90,20 +90,13 @@ class CoordinateLabel(QWidget):
     # ------------------------------------------------------------------ actions
 
     def pressed(self) -> None:
-        """Copy, unless there is an aircraft to put it in and a choice to make."""
-        receivers = self._receivers()
-        if not receivers:
+        if self.game is None:
             self.copy()
             return
         menu = QMenu(self)
-        copy = QAction("Copy coordinates", menu)
-        copy.triggered.connect(self.copy)
-        menu.addAction(copy)
-        kinds = {kind for flight in receivers for kind in _kinds(flight)}
-        if kinds:
-            menu.addSeparator()
-        for kind in sorted(kinds, key=lambda k: k.value):
-            self._add_kind(menu, kind, [f for f in receivers if kind in _kinds(f)])
+        menu.addAction("Copy coordinates", self.copy)
+        menu.addSeparator()
+        menu.addAction("Save as waypoint", self._save)
         menu.exec(self.button.mapToGlobal(QPoint(0, self.button.height())))
 
     def copy(self) -> None:
@@ -111,79 +104,25 @@ class CoordinateLabel(QWidget):
         if clipboard is not None:
             clipboard.setText(self.text)
 
-    def _receivers(self) -> list[Any]:
+    def _save(self) -> None:
         if self.game is None:
-            return []
-        try:
-            from game.ato.savedpoints import receivers
-
-            return list(receivers(self.game.blue))
-        except Exception:
-            return []
-
-    def _add_kind(self, menu: QMenu, kind: Any, receivers: list[Any]) -> None:
-        """One entry per kind, with the aircraft behind it when there is a choice."""
-        from game.ato.savedpoints import room_for
-
-        label = f"Save as {kind.label.lower()}"
-        if len(receivers) == 1:
-            flight = receivers[0]
-            action = QAction(f"{label} ({_name(flight)})", menu)
-            self._wire(action, flight, kind, room_for(flight, kind))
-            menu.addAction(action)
             return
-        submenu = menu.addMenu(label)
-        for flight in receivers:
-            action = QAction(_name(flight), submenu)
-            self._wire(action, flight, kind, room_for(flight, kind))
-            submenu.addAction(action)
-
-    def _wire(self, action: QAction, flight: Any, kind: Any, room: int) -> None:
-        if room <= 0:
-            action.setEnabled(False)
-            action.setToolTip(f"{_name(flight)} has no room for another {kind.label}")
-            return
-        action.setToolTip(f"Room for {room} more")
-        action.triggered.connect(
-            lambda _checked=False, f=flight, k=kind: self._save(f, k)
-        )
-
-    def _save(self, flight: Any, kind: Any) -> None:
-        from game.ato.savedpoints import SavedPoint, add_point
         from game.elevation import elevation_ft
+        from game.server.savedpoints.notifications import publish_points_changed
 
         latlng = self.position.latlng()
         height = elevation_ft(latlng.lat, latlng.lng)
 
-        add_point(
-            flight,
+        campaign_points(self.game.blue).append(
             SavedPoint(
-                kind=kind,
+                kind=PointKind.WAYPOINT,
                 name=self.text,
                 x=self.position.x,
                 y=self.position.y,
                 altitude_ft=height if height is not None else 0,
-            ),
+            )
         )
-        from game.server.savedpoints.notifications import publish_points_changed
-
         publish_points_changed()
-
-
-def _kinds(flight: Any) -> list[Any]:
-    """What this aircraft can be handed, which is all the menu offers."""
-    from game.ato.savedpoints import kinds_for
-
-    return kinds_for(flight.unit_type.dcs_unit_type.id)
-
-
-def _name(flight: Any) -> str:
-    """A flight has no callsign until the mission is generated, so this is what the
-    rest of the app shows: the name the player gave it, or its task."""
-    return (
-        str(getattr(flight, "custom_name", None) or flight.flight_type.value)
-        + f" · {flight.unit_type.display_name}"
-    )
 
 
 def _copy_icon(ink: str = "#9FADB9") -> QPixmap:

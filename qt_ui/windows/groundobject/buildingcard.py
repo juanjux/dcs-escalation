@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 from functools import partial
-from typing import Any, Callable, Optional
+from typing import Callable, Optional, TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter, QPixmap
@@ -39,6 +39,9 @@ from qt_ui.windows.pilot.common import (
     chip,
     label,
 )
+
+if TYPE_CHECKING:
+    from game import Game
 
 RepairCall = Callable[[TheaterUnit, float], None]
 
@@ -116,10 +119,13 @@ class BuildingCard(QWidget):
         settings: object,
         repair: Optional[RepairCall],
         cancel_repair: Optional[Callable[[TheaterUnit], None]] = None,
+        *,
+        game: Optional[Game] = None,
     ) -> None:
         super().__init__()
         self.ground_object = ground_object
         self.settings = settings
+        self.game = game
         self.repair = repair
         self.cancel_repair = cancel_repair
 
@@ -187,7 +193,7 @@ class BuildingCard(QWidget):
                 building.position,
                 self.settings,
                 compact=True,
-                game=_game_of(self.ground_object),
+                game=self.game,
             )
         )
         return row
@@ -238,17 +244,3 @@ class BuildingCard(QWidget):
             f"${price:g}M",
             handler=partial(self.repair, building, price),
         )
-
-
-def _game_of(ground_object: Any) -> Any:
-    """The campaign this objective belongs to, for the coordinate menu.
-
-    Reached through the objective rather than passed in: the card is built from a
-    handful of call sites that have one and no game, and a coordinate row that can
-    write a point down needs to know which flights the player is in.
-    """
-    return getattr(
-        getattr(getattr(ground_object, "control_point", None), "coalition", None),
-        "game",
-        None,
-    )

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from functools import partial
-from typing import Any, Callable, Optional, Sequence
+from typing import Callable, Optional, Sequence, TYPE_CHECKING
 
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
@@ -43,6 +43,9 @@ from qt_ui.windows.pilot.common import (
     label,
     rich,
 )
+
+if TYPE_CHECKING:
+    from game import Game
 
 RepairCall = Callable[[TheaterUnit, int], None]
 
@@ -130,10 +133,13 @@ class UnitCard(QWidget):
         settings: object,
         repair: Optional[RepairCall],
         cancel_repair: Optional[Callable[[TheaterUnit], None]] = None,
+        *,
+        game: Optional[Game] = None,
     ) -> None:
         super().__init__()
         self.ground_object = ground_object
         self.settings = settings
+        self.game = game
         self.repair = repair
         self.cancel_repair = cancel_repair
 
@@ -270,7 +276,7 @@ class UnitCard(QWidget):
                 unit.position,
                 self.settings,
                 compact=True,
-                game=_game_of(self.ground_object),
+                game=self.game,
             )
         )
         return row
@@ -326,18 +332,4 @@ def _tally(alive: int, hurt: int) -> QWidget:
         f"<span style='color:{TEXT_LABEL}'> · </span>"
         f"<b style='color:{RED}'>{hurt} down</b>",
         11.5,
-    )
-
-
-def _game_of(ground_object: Any) -> Any:
-    """The campaign this objective belongs to, for the coordinate menu.
-
-    Reached through the objective rather than passed in: the card is built from a
-    handful of call sites that have one and no game, and a coordinate row that can
-    write a point down needs to know which flights the player is in.
-    """
-    return getattr(
-        getattr(getattr(ground_object, "control_point", None), "coalition", None),
-        "game",
-        None,
     )

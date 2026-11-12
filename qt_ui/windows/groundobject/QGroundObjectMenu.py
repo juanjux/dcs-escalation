@@ -262,6 +262,7 @@ class QGroundObjectMenu(QDialog):
             self.game.settings,
             self._repair_unit if self._can_repair else None,
             self._cancel_unit_repair if self._can_repair else None,
+            game=self.game,
         )
         caption = heading("Units")
         if units.folds:
@@ -646,6 +647,7 @@ class QGroundObjectMenu(QDialog):
             self.game.settings,
             self._repair_building if self._can_repair else None,
             self._cancel_building_repair if self._can_repair else None,
+            game=self.game,
         )
         caption = heading("Buildings")
         wrecks = repairable_buildings(self.ground_object) if self._can_repair else []
