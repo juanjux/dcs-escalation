@@ -12,6 +12,8 @@ import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
 
+from game.theater.daytimecalculator import polar_daylight
+
 COVERS = frozenset({"desert", "grassland", "tundra", "forest", "city"})
 SunTimes = Callable[[float, float, timezone, date], tuple[datetime, datetime] | None]
 
@@ -76,10 +78,7 @@ def export_environment(
             # Only used AFTER the existing solar calculator establishes no
             # horizon crossing. Seasonal declination sign distinguishes polar
             # summer from winter; not a model of polar twilight brightness.
-            declination = -23.44 * math.cos(
-                2 * math.pi * (date.timetuple().tm_yday + 10) / 365.2425
-            )
-            light = 1 if lat * declination > 0 else 0
+            light = 1 if polar_daylight(lat, date) else 0
             days.append({"constantLight": light})
             warnings.append(
                 f"{date}: polar illumination approximated as constant {light}"
