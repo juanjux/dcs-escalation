@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import math
 
 from dcs.mapping import LatLng
 from suntime import Sun, SunTimeException  # type: ignore
@@ -67,31 +68,55 @@ def solar_noon(
 def _sun_times(
     latitude: float, longitude: float, tz: datetime.timezone, date: datetime.date
 ) -> tuple[datetime.datetime, datetime.datetime] | None:
-    """Local sunrise and sunset, or None where the sun does not cross the horizon.
-
-    suntime answers in UTC for a UTC day. The local sunrise of a far-eastern
-    theater falls on the previous UTC day and the local sunset of a far-western
-    one on the next, so each event gets its own UTC date derived from a
-    representative local hour.
-    """
+    """Local sunrise and sunset, or None where the sun does not cross the horizon."""
     sun = Sun(latitude, longitude)
-    sunrise_local = datetime.datetime(date.year, date.month, date.day, 6, tzinfo=tz)
-    sunset_local = datetime.datetime(date.year, date.month, date.day, 18, tzinfo=tz)
+    midnight = datetime.datetime.combine(date, datetime.time(), tzinfo=tz)
     try:
-        sunrise = sun.get_sunrise_time(
-            datetime.datetime.combine(
-                sunrise_local.astimezone(datetime.timezone.utc).date(),
-                datetime.time(),
-            )
-        )
-        sunset = sun.get_sunset_time(
-            datetime.datetime.combine(
-                sunset_local.astimezone(datetime.timezone.utc).date(), datetime.time()
-            )
-        )
+        sunrise = sun.get_sunrise_time(midnight, tz)
+        sunset = sun.get_sunset_time(midnight, tz)
     except SunTimeException:
         return None
-    return sunrise.astimezone(tz), sunset.astimezone(tz)
+    # suntime wraps the local sunrise hour but can return a negative sunset
+    # hour even when calculating for the requested local date.
+    return (
+        datetime.datetime.combine(date, sunrise.timetz()),
+        datetime.datetime.combine(date, sunset.timetz()),
+    )
+
+
+def polar_daylight(latitude: float, date: datetime.date) -> bool:
+    """Approximate daylight when there is no daily horizon crossing."""
+    declination = -23.44 * math.cos(
+        2 * math.pi * (date.timetuple().tm_yday + 10) / 365.2425
+    )
+    return latitude * declination > 0
+
+
+def includes_darkness(
+    position: LatLng,
+    tz: datetime.timezone,
+    start: datetime.datetime,
+    end: datetime.datetime,
+) -> bool:
+    """Check the local interval for pre-sunrise or sunset-and-later conditions."""
+    start = start.replace(tzinfo=tz) if start.tzinfo is None else start.astimezone(tz)
+    end = end.replace(tzinfo=tz) if end.tzinfo is None else end.astimezone(tz)
+    day = start.date()
+    while day <= end.date():
+        times = _sun_times(position.lat, position.lng, tz, day)
+        if times is None:
+            if not polar_daylight(position.lat, day):
+                return True
+        else:
+            sunrise, sunset = times
+            if sunrise <= sunset:
+                if start < sunrise or end >= sunset:
+                    return True
+            # At high latitudes the daylight period can span local midnight.
+            elif start < sunrise and end >= sunset:
+                return True
+        day += datetime.timedelta(days=1)
+    return False
 
 
 def solar_daytime_map(
@@ -116,9 +141,8 @@ def solar_daytime_map(
         )
 
     sunrise, sunset = times
-    # Solar noon comes from the longitude rather than the midpoint of sunrise and
-    # sunset: those two are computed on their own UTC days, so their midpoint is
-    # half a day out whenever they fall on different ones.
+    # The midpoint of the local rise and set clocks is not solar noon if
+    # the daylight period spans local midnight.
     return DaytimeMap(
         dawn=_hour_range(sunrise + DAWN_AFTER_SUNRISE),
         day=_hour_range(solar_noon(position.lng, tz, date)),

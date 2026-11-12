@@ -1,5 +1,6 @@
 """The native C-130J Strike payload matches the validated MOAB configuration."""
 
+from datetime import date
 from pathlib import Path
 from types import SimpleNamespace as NS
 from typing import Any
@@ -22,6 +23,7 @@ from game.missiongenerator.aircraft.flightgroupconfigurator import (
     FlightGroupConfigurator,
 )
 from game.missiongenerator.aircraft.waypoints.strikeingress import StrikeIngressBuilder
+from game.settings import NightMissions
 from game.squadrons import Pilot
 
 MOAB = "{GBU-43}"
@@ -69,11 +71,13 @@ def scenario(aircraft: AircraftType, *, task: FlightType = FlightType.STRIKE) ->
         package=NS(target=None),
     )
     generator.game = NS(
+        date=date(2026, 1, 1),
         settings=NS(
+            night_day_missions=NightMissions.DayAndNight,
             restrict_weapons_by_date=False,
             restrict_props_by_date=False,
             apply_target_overrides_to_loadouts=False,
-        )
+        ),
     )
     return NS(mission=mission, group=group, generator=generator, members=members)
 
