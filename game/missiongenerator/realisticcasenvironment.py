@@ -125,23 +125,29 @@ def export_environment(
     preset = weather.clouds_preset
     thickness: float
     if preset is not None:
-        # Names such as Preset1 are reused by different cloud packs. Classify
-        # descriptive text instead; unsupported custom text has a logged fallback.
-        text = f"{preset.ui_name} {preset.description}".lower()
-        if re.search(r"\b(rain|storm|precipitation)\b", text):
+        # Cloud packs reuse preset IDs. The UI name describes overall cover;
+        # descriptions can mention a different cover in one of several layers.
+        if re.search(
+            r"\b(rain|storm|precipitation)\b",
+            f"{preset.ui_name} {preset.description}".lower(),
+        ):
             config["weather"] = 0.7
-        if re.search(r"\b(overcast|ovc)\b", text):
-            label, thickness, visual, ir = "overcast", 3000, 0.05, 0.35
-        elif re.search(r"\b(broken|bkn)\b", text):
-            label, thickness, visual, ir = "broken", 2000, 0.25, 0.55
-        elif re.search(r"\b(scattered|sct)\b", text):
-            label, thickness, visual, ir = "scattered", 1250, 0.6, 0.8
-        elif re.search(r"\b(few)\b", text):
-            label, thickness, visual, ir = "few", 750, 0.8, 0.9
-        elif re.search(r"\b(clear|clr|cavok)\b", text):
-            label, thickness, visual, ir = "clear", 0, 1, 1
-        else:
-            label, thickness, visual, ir = "unclassified fallback", 2000, 0.3, 0.6
+        profiles = (
+            (r"\b(overcast|ovc)\b", "overcast", 3000, 0.05, 0.35),
+            (r"\b(broken|bkn)\b", "broken", 2000, 0.25, 0.55),
+            (r"\b(scattered|sct)\b", "scattered", 1250, 0.6, 0.8),
+            (r"\bfew\b", "few", 750, 0.8, 0.9),
+            (r"\b(clear|clr|cavok)\b", "clear", 0, 1, 1),
+        )
+        label, thickness, visual, ir = next(
+            (
+                (label, thickness, visual, ir)
+                for text in (preset.ui_name.lower(), preset.description.lower())
+                for pattern, label, thickness, visual, ir in profiles
+                if re.search(pattern, text)
+            ),
+            ("unclassified fallback", 2000, 0.3, 0.6),
+        )
         warnings.append(
             f"Cloud preset {preset.name!r}: {label} approximate slab; not native layer geometry"
         )

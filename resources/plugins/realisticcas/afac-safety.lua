@@ -97,12 +97,34 @@ do
   function A.requirement(input)
     local needed,unknown=input.altitude,false
     local hazardous=false
+    local legs={}
+    if input.searchPath then
+      local path=input.searchPath
+      for i,p in ipairs(path)do legs[#legs+1]={p,path[i%#path+1]} end
+      if input.checkEntry then
+        legs[#legs+1]={input.source,input.points[1]}
+        legs[#legs+1]={input.points[1],path[1]}
+      end
+      if input.patrolAltType=='BARO' then
+        -- The on-station legs are flown at patrol altitude after the ingress climb.
+        local level={source={y=input.altitude},height=input.height,clearance=input.clearance}
+        for _,leg in ipairs(legs)do
+          if not terrainSafe(level,leg[1],leg[2],input.altitude) then hazardous=true;break end
+        end
+      end
+    else
+      legs={{input.points[1],input.points[2]},{input.source,input.points[1]}}
+    end
     for _,t in ipairs(input.threats) do
-      local closest=math.min(segmentDistance(input.points[1],input.points[2],t.point),
-        segmentDistance(input.source,input.points[1],t.point))
-      if below(input.altitude,t) and closest<=t.radius+1000+input.footprint then
-        hazardous=true
-        if t.ceiling then needed=math.max(needed,t.point.y+t.ceiling+500) else unknown=true end
+      if below(input.altitude,t) then
+        local radius=t.radius+1000+input.footprint
+        for _,leg in ipairs(legs)do
+          if segmentDistance(leg[1],leg[2],t.point)<=radius then
+            hazardous=true
+            if t.ceiling then needed=math.max(needed,t.point.y+t.ceiling+500) else unknown=true end
+            break
+          end
+        end
       end
     end
     return hazardous,needed,unknown

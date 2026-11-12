@@ -21,7 +21,10 @@ from game.dcs.afaccapabilities import capabilities_for
 from game.dcs.aircrafttype import AircraftType
 from game.dcs.skills import CADET_SKILL
 from game.missiongenerator.aircraft.aircraftbehavior import AircraftBehavior
-from game.missiongenerator.aircraft.waypoints.afac import AfacSearchBuilder
+from game.missiongenerator.aircraft.waypoints.afac import (
+    AfacSearchBuilder,
+    add_frontline_search_loop,
+)
 from game.missiongenerator.aircraft.waypoints.racetrackend import RaceTrackEndBuilder
 from game.missiongenerator.realisticcasluadata import (
     _native_route_value,
@@ -30,7 +33,8 @@ from game.missiongenerator.realisticcasluadata import (
 )
 from game.settings import Settings
 from game.squadrons.squadron import Squadron
-from game.utils import feet
+from game.theater import FrontLine, Player
+from game.utils import Heading, feet
 
 
 @pytest.fixture(autouse=True)
@@ -262,6 +266,111 @@ def test_native_orbit_uses_relative_duration_and_fuel_stop() -> None:
     assert lua.execute(condition) is True
     lua.execute("fuel=0.5; RealisticCAS.afacReturn={AFAC='station complete'}")
     assert lua.execute(condition) is True
+
+
+@pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
+@pytest.mark.parametrize("alternate", [False, True])
+def test_frontline_search_circuit_flies_both_sides_and_keeps_its_native_exit(
+    side: Player, alternate: bool, tmp_path: Path
+) -> None:
+    from dcs.lua import loads
+
+    s = scenario(FlightType.AFAC_FRONTLINE)
+    front = MagicMock(spec=FrontLine, blue_forward_heading=Heading.from_degrees(90))
+    package = NS(target=front, flights=[s.flight])
+    previous = NS(target=front, flights=[NS(flight_type=FlightType.AFAC_FRONTLINE)])
+    s.flight.package = package
+    s.flight.coalition.player = side
+    s.flight.coalition.ato = NS(
+        packages=[previous, package] if alternate else [package]
+    )
+    start, end = s.plan.ui_zone().points
+    anchor = s.group.add_waypoint(start, 3000, speed=250, name="SEARCH START")
+    finish = s.group.add_waypoint(end, 3000, speed=250, name="SEARCH END")
+    outbound = s.group.add_waypoint(end, 3000, speed=250, name="RECOVERY")
+    AfacSearchBuilder(
+        s.plan.layout.patrol_start,
+        s.group,
+        s.flight,
+        s.mission,
+        datetime(2026, 1, 1),
+        MagicMock(),
+    ).add_tasks(anchor)
+    add_frontline_search_loop(s.flight, s.group)
+    loop = s.group.points[2:6]
+    assert len(loop) == 4 and s.group.points[6:] == [finish, outbound]
+    assert [task.id for task in anchor.tasks] == ["WrappedAction", "WrappedAction"]
+    assert [p.name for p in loop] == [f"SEARCH {i}" for i in range(1, 5)]
+    expected_direction = 1 if side.is_blue else -1
+    depth = [point.position.y * expected_direction for point in loop]
+    radius = s.plan.engagement_distance.meters
+    assert max(depth) == pytest.approx(radius * (0.60 if alternate else 0.45))
+    assert min(depth) == pytest.approx(-radius * (0.30 if alternate else 0.20))
+
+    data: Any = NS(
+        jtacs=[],
+        flights=[
+            NS(
+                flight_type=FlightType.AFAC_FRONTLINE,
+                units=s.group.units,
+                squadron=NS(pilot_skill=lambda _: CADET_SKILL),
+                work_zone=s.plan.ui_zone(),
+                group_name=s.group.name,
+            )
+        ],
+    )
+    mapping: Any = NS(
+        theater_objects={}, flight=lambda _: NS(pilot=object(), flight=s.flight)
+    )
+    registry = collect_registry(s.mission, data, enabled=True, unit_map=mapping)
+    assert registry is not None
+    afac = registry["observers"][0]["afac"]
+    navigation = afac["navigation"]
+    assert len(navigation["searchPath"]) == 4
+    assert afac["zone"]["points"] == [{"x": p.x, "z": p.y} for p in (start, end)]
+    assert navigation["searchWaypoint"] == 2
+    assert navigation["exitWaypoint"] == 8
+    assert navigation["route"][7]["name"] == "RECOVERY"
+
+    path = tmp_path / "circuit.miz"
+    s.mission.save(path)
+    with ZipFile(path) as archive:
+        assert archive.testzip() is None
+        mission = loads(archive.read("mission").decode("utf-8"))["mission"]
+    group = next(
+        g
+        for country in mission["coalition"]["blue"]["country"].values()
+        for g in country.get("plane", {}).get("group", {}).values()
+        if g["name"] == s.group.name
+    )
+    assert [group["route"]["points"][i]["name"] for i in range(3, 7)] == [
+        p.name for p in loop
+    ]
+
+    lua = pytest.importorskip("lupa.lua51").LuaRuntime()
+    lua.execute("""
+        now=10;fuel=.8
+        timer={getTime=function()return now end}
+        RealisticCAS={afacStations={AFAC=10}}
+        local unit={isExist=function()return true end,getFuel=function()return fuel end,
+          getPlayerName=function()return player end}
+        local controller={setCommand=function(self,cmd) command=cmd end}
+        Group={getByName=function()return {isExist=function()return true end,
+          getUnits=function()return {unit}end,getController=function()return controller end}end}
+    """)
+    task = group["route"]["points"][6]["task"]["params"]["tasks"][1]
+    script = task["params"]["action"]["params"]["command"]
+    lua.execute(script)
+    assert lua.eval("command.params.goToWaypointIndex") == 3
+    lua.execute("fuel=.19")
+    lua.execute(script)
+    assert lua.eval("command.params.goToWaypointIndex") == 7
+    lua.execute("fuel=.8;now=3611;command=nil")
+    lua.execute(script)
+    assert lua.eval("command.params.goToWaypointIndex") == 7
+    lua.execute("player='human';command=nil")
+    lua.execute(script)
+    assert lua.eval("command") is None
 
 
 @pytest.mark.parametrize(
