@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import datetime
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from typing import Any, Iterator, Mapping, Optional, Union
 
 from dcs.unitpropertydescription import UnitPropertyDescription
@@ -144,6 +145,7 @@ class PropertyDateGate:
 _NVG_SWITCHES = frozenset(
     {
         "MountNVG",
+        "Night_Vision",  # Community A-4E-C
         "LoadNVGCase",
         "IsNvgAllowed",
         "PltNVG",
@@ -160,6 +162,61 @@ _HELMET_OPT_OUT_LABELS = frozenset(
 )
 
 
+_NVG_DEVICE_LABELS = ("HMCS + NVG", "NVG")
+
+# Verified cockpit equipment without a corresponding DCS mission property.
+# See docs/game/night-vision.rst for the module and mod references.
+_COCKPIT_NVG_AIRCRAFT = frozenset(
+    {
+        "A-10C",
+        "CH-47Fbl1",
+        "F-14A-95-GR",
+        "F-14A-135-GR",
+        "F-14A-135-GR-Early",
+        "F-14B",
+        "F-14BU",
+        "F15EX",
+        "F15EX_CFT",
+        "F15IA",
+        "JF-17",
+        "Ka-50",
+        "Mi-8MT",
+        "OH-6A",
+        "OH58D",
+        "SA342M",
+        "SA342Minigun",
+        "UH-1H",
+        "UH-60L",
+        "UH-60L_DAP",
+    }
+)
+
+
+class NightVision(Enum):
+    MISSION_PROPERTY = auto()
+    COCKPIT = auto()
+
+
+def _is_nvg_property(prop: UnitPropertyDescription) -> bool:
+    if prop.control == "checkbox":
+        return prop.identifier in _NVG_SWITCHES
+    return (
+        prop.identifier in _HELMET_DEVICE_PROPERTIES
+        and prop.values is not None
+        and any(label in _NVG_DEVICE_LABELS for label in prop.values.values())
+    )
+
+
+def night_vision_support(
+    aircraft_id: str, properties: Mapping[str, UnitPropertyDescription]
+) -> NightVision | None:
+    if any(_is_nvg_property(prop) for prop in properties.values()):
+        return NightVision.MISSION_PROPERTY
+    if aircraft_id in _COCKPIT_NVG_AIRCRAFT:
+        return NightVision.COCKPIT
+    return None
+
+
 def night_vision_overrides(
     properties: Mapping[str, UnitPropertyDescription],
     overrides: Mapping[str, bool | float | int | str],
@@ -168,11 +225,13 @@ def night_vision_overrides(
 ) -> Iterator[tuple[str, bool | float | int | str]]:
     """Select the available NVG configuration for each crew position."""
     for identifier, prop in properties.items():
-        if prop.control == "checkbox" and identifier in _NVG_SWITCHES:
+        if not _is_nvg_property(prop):
+            continue
+        if prop.control == "checkbox":
             if identifier not in overrides and prop.default is not True:
                 yield identifier, True
             continue
-        if identifier not in _HELMET_DEVICE_PROPERTIES or prop.values is None:
+        if prop.values is None:
             continue
 
         current = overrides.get(identifier)
@@ -186,6 +245,9 @@ def night_vision_overrides(
             for value_id in gate.available_value_ids(prop, date)
             if value_id is not None
         }
-        device = available.get("HMCS + NVG", available.get("NVG"))
+        device = next(
+            (available[label] for label in _NVG_DEVICE_LABELS if label in available),
+            None,
+        )
         if device is not None and device != overrides.get(identifier, prop.default):
             yield identifier, device

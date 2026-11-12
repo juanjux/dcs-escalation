@@ -23,6 +23,7 @@ from game.missiongenerator.aircraft.flightgroupconfigurator import (
 from game.settings import NightMissions
 from game.squadrons import Pilot
 from game.timeofday import TimeOfDay
+from pydcs_extensions.a4ec import A_4E_C
 from pydcs_extensions.fa18efg.fa18efg import FA_18F
 
 HELMET = A_10C_2.Properties.HelmetMountedDevice
@@ -178,7 +179,7 @@ def test_automatic_selection_respects_era_restrictions(
     assert s.group.units[0].addpropaircraft[HELMET.id] == expected
 
 
-def test_aircraft_without_an_nvg_property_keeps_its_defaults() -> None:
+def test_cockpit_nvg_aircraft_exports_without_an_extra_property() -> None:
     s = scenario(aircraft=A_10C)
     before = dict(s.group.units[0].addpropaircraft or {})
     s.generator.setup_props()
@@ -230,6 +231,7 @@ def test_explicitly_disabled_nvg_switch_stays_disabled() -> None:
     "aircraft,prop,player_value,ai_value",
     [
         (A_10C_2, HELMET.id, 2, 1),
+        (A_4E_C, "Night_Vision", True, False),
         (FA_18C_hornet, HELMET.id, 2, 1),
         (F_16C_50, HELMET.id, 2, 1),
         (F_15ESE, "MountNVG", True, False),
