@@ -130,17 +130,26 @@ def test_existing_aircraft_pickles_reload_current_capabilities() -> None:
 
 
 @pytest.mark.parametrize("enabled", [False, True])
-def test_mod_switch_filters_all_variants(enabled: bool) -> None:
+@pytest.mark.parametrize(
+    ("faction_name", "expected_variants"),
+    [
+        ("bluefor_modern", {"F15EX", "F15EX_CFT", "F15IA"}),
+        ("blufor_current", {"F15EX_CFT"}),
+        ("wrl_taskforceblue", {"F15EX_CFT"}),
+    ],
+)
+def test_mod_switch_filters_all_variants(
+    enabled: bool, faction_name: str, expected_variants: set[str]
+) -> None:
     faction = Faction.from_dict(
         json.loads(
-            Path("resources/factions/bluefor_modern.json").read_text(encoding="utf-8")
+            Path(f"resources/factions/{faction_name}.json").read_text(encoding="utf-8")
         )
     )
     faction.apply_mod_settings(ModSettings(f15ex=enabled))
     ids = {a.dcs_id for a in faction.aircraft}
-    assert ({"F15EX", "F15EX_CFT", "F15IA"} <= ids) is enabled
-    if not enabled:
-        assert not {"F15EX", "F15EX_CFT", "F15IA"} & ids
+    mod_ids = {"F15EX", "F15EX_CFT", "F15IA"} & ids
+    assert mod_ids == (expected_variants if enabled else set())
 
 
 def test_all_variants_serialize_with_valid_loadouts_and_nato_callsigns(

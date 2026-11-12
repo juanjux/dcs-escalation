@@ -5,7 +5,7 @@
 * **[Intel]** Economy map links with icon hover highlighting and direct base-tab links from Air and Ground forces.
 * **[Ground Movement]** Buy faction towing trucks for mobile SAM batteries in the location dialog and REST/MCP API, limited to the total number of towable units plus two.
 * **[Pilots]** Assign names by drag-and-drop or ordered squadron autofill, with thirteen themed name lists and editable user categories shared across campaigns.
-* **[Mods]** Update Spino's F-15EX to v3.0 with three air-to-air variants, fifteen stations, revised payloads, fuel capacities and radio presets.
+* **[Mods]** Update Spino's F-15EX to v3.0 with three air-to-air variants, fifteen stations, revised payloads, fuel capacities and radio presets. Blufor Current and WRL - Task Force Blue can field the CFT variant.
 * **[IMAC]** Optional in-mission scripted air coordination with aircraft and cruise-missile interception, returning-fighter tasking, support evasion, DEAD waiting and F10 pause controls for both coalitions.
 * **[IADS]** Rebuild sparse topology with configurable fixed power feeds (default two), automatic radio failover and 35 nm coverage defaults; reduce redundant campaign infrastructure.
 * **[Map]** Add separate Blue/Red visibility filters for destroyed repairable sites, alongside the non-repairable filters.
