@@ -135,6 +135,10 @@ class WaypointGenerator:
             FlightType.ARMED_RECON,
         ):
             add_search_pattern(self.flight, self.group, self.time, generated)
+        if self.flight.flight_type is FlightType.AFAC_FRONTLINE:
+            from .afac import add_frontline_search_loop
+
+            add_frontline_search_loop(self.flight, self.group)
 
         self._resolve_locked_speed_time_conflicts()
         enable_route_vnav(self.flight, self.group)

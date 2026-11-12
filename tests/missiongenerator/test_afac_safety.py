@@ -33,6 +33,23 @@ def test_verified_ceilings_and_unknown_air_defence_are_conservative() -> None:
     assert envelope("unknown mod") is None
 
 
+def test_search_circuit_checks_off_axis_segments_and_terrain(lua: Any) -> None:
+    lua.execute("""
+        t.radius=500;t.point.z=10000
+        assert(A.plan(input).mode=='original')
+        input.searchPath={{x=-2000,z=10000},{x=2000,z=10000},
+          {x=2000,z=-5000},{x=-2000,z=-5000}}
+        input.patrolAltType='BARO'
+        assert(A.requirement(input))
+        assert(A.plan(input).mode~='original')
+        input.threats={}
+        assert(A.plan(input).mode=='original')
+        input.height=function(p)return p.z>=10000 and 2500 or 0 end
+        assert(A.requirement(input))
+        assert(A.plan(input).mode~='original')
+    """)
+
+
 def test_sa18_exports_verified_ceilings_for_both_native_variants() -> None:
     igla = envelope("SA-18 Igla manpad")
     assert igla is not None and igla["radius"] > 0

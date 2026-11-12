@@ -35,6 +35,13 @@ do
           n.searchWaypoint<n.exitWaypoint and type(n.route)=='table' and
           #n.route>=n.exitWaypoint and #n.route<=1000, 'invalid AFAC native route')
         for _,p in ipairs(n.points)do assert(S.finite(p.x) and S.finite(p.z), 'invalid AFAC patrol point')end
+        if n.searchPath then
+          assert(type(n.searchPath)=='table' and #n.searchPath==4 and
+            n.exitWaypoint==n.searchWaypoint+#n.searchPath+2, 'invalid AFAC search circuit')
+          for _,p in ipairs(n.searchPath)do
+            assert(S.finite(p.x) and S.finite(p.z), 'invalid AFAC search circuit point')
+          end
+        end
         for _,p in ipairs(n.route)do
           assert(S.finite(p.x) and S.finite(p.y) and S.finite(p.alt) and
             S.finite(p.speed) and p.speed>=0, 'invalid AFAC original waypoint')
@@ -504,6 +511,7 @@ end)()]],name,revision,name,name,name,seconds)
       local turnSpeed=math.max(n.speed,r.measuredSpeed)
       local footprint=math.max(500,turnSpeed*turnSpeed/3.5)*1.5+250
       local input={source=p,zone=m.zone,points=n.points,altitude=altitude,
+        searchPath=n.searchPath,patrolAltType=n.altType,checkEntry=not start or r.applied,
         maxAltitude=maxAltitude,footprint=footprint,threats=knownThreats,clearance=150,
         directOnly=n.exitWaypoint==3,
         holdPoint=r.plan and r.plan.point,
@@ -539,8 +547,8 @@ end)()]],name,revision,name,name,name,seconds)
       end
       local plan=A.plan(input)
       if plan.mode=='abort' then
-        local why=knownThreats[1] and knownThreats[1].typeName or 'air defence'
-        waitForArea(name,r,controller,p,plan.reason..' ('..why..')')
+        local why=knownThreats[1] and knownThreats[1].typeName
+        waitForArea(name,r,controller,p,plan.reason..(why and ' ('..why..')' or ''))
       elseif plan.mode=='original' then
         if r.applied then
           if release(name,r,controller) then notice(name,r,'resuming assigned search route.') end
