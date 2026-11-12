@@ -110,6 +110,56 @@ def start(lua: Any) -> None:
     lua.execute("EscalationIMAC.start(cfg);EscalationIMAC.reached('CAP',2)")
 
 
+@pytest.mark.parametrize(
+    "timed,ingress_reached", [(True, False), (False, False), (True, True)]
+)
+def test_attack_resume_after_evasion_preserves_tasks_without_catching_up_to_etas(
+    timed: bool, ingress_reached: bool
+) -> None:
+    lua = runtime()
+    lua.globals().timed = timed
+    lua.globals().ingressReached = ingress_reached
+    lua.execute("""
+        local flight=cfg.flights[1]
+        flight.mode='dead';flight.endTime=nil;flight.deadSupport=true
+        local ingress=flight.route[3]
+        ingress.name='INGRESS';ingress.ETA=120;ingress.ETA_locked=timed;ingress.speed_locked=false
+        ingress.task={id='ComboTask',params={tasks={
+          {id='WrappedAction',params={action={id='Script',params={command="EscalationIMAC.reached('CAP',3)"}}}},
+          {id='AttackGroup',params={groupId=123,weaponType=14}}
+        }}}
+        flight.route[5].ETA_locked=timed
+        bandit.attributes={Fighters=true};bandit.observedX=18000
+        awacs.detections={bandit}
+    """)
+    start(lua)
+    lua.execute("""
+        if ingressReached then EscalationIMAC.reached('CAP',3) end
+        tick(5)
+        local state=EscalationIMAC.instance.states.CAP
+        local route=cfg.flights[1].route
+        assert(state.order.kind=='evade' and #groups.CAP.rtbs==0)
+        local stop=loadstring(groups.CAP.pushes[1].params.stopCondition.condition)
+        awacs.detections={};cap.x=-20000;cap.velocity.x=350
+        tick(840);tick(870)
+        assert(state.order==nil and stop())
+        if timed and not ingressReached then
+          assert(#groups.CAP.rtbs==1)
+          local restored=groups.CAP.rtbs[1].params.route.points
+          assert(#restored==4 and restored[1].x==cap.x and restored[1].speed==route[3].speed)
+          assert(restored[2].name=='INGRESS' and restored[2].task~=route[3].task)
+          assert(restored[2].task.params.tasks[1].params.action.id=='Script')
+          assert(restored[2].task.params.tasks[2].params.groupId==123)
+          assert(restored[2].task.params.tasks[2].params.weaponType==14)
+          assert(restored[4].type=='Land' and restored[4].airdromeId==route[5].airdromeId)
+          for _,point in ipairs(restored) do assert(point.speed_locked and not point.ETA_locked) end
+          assert(route[3].ETA_locked and not route[3].speed_locked)
+        else
+          assert(#groups.CAP.rtbs==0)
+        end
+    """)
+
+
 def test_native_detection_uses_last_observed_position_not_live_enemy_position() -> None:
     lua = runtime()
     lua.execute("bandit.x=999999;bandit.observedX=120000;awacs.detections={bandit}")

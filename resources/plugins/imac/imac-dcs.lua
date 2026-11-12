@@ -362,18 +362,38 @@ do
         condition=string.format('return EscalationIMAC.shouldStop(%q,%d)',s.meta.group,order.revision)}}})
       return true
     end
+    local function restoreRoute(controller,p,route,first,plannedSpeed)
+      local points={{x=p.point.x,y=p.point.z,alt=p.point.y,alt_type='BARO',type='Turning Point',
+        action='Turning Point',speed=plannedSpeed and route[first].speed or math.max(200,p.speed),
+        speed_locked=true,ETA_locked=false,
+        task={id='ComboTask',params={tasks={}}}}}
+      for i=first,#route do
+        local q=copy(route[i])
+        q.ETA_locked=false
+        if plannedSpeed then q.speed_locked=true end
+        points[#points+1]=q
+      end
+      controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
+    end
     function io.resumeCap(s)
       local controller,p=controllerFor(s)
       if not controller then return true end -- Never overwrite a human takeover.
       local first=s.index<s.meta.recoveryIndex and s.meta.stationStart or s.index+1
       first=math.max(1,math.min(first,#s.meta.route))
-      local points={{x=p.point.x,y=p.point.z,alt=p.point.y,alt_type='BARO',type='Turning Point',
-        action='Turning Point',speed=math.max(200,p.speed),speed_locked=true,ETA_locked=false,
-        task={id='ComboTask',params={tasks={}}}}}
-      for i=first,#s.meta.route do
-        local q=copy(s.meta.route[i]);q.ETA_locked=false;points[#points+1]=q
+      restoreRoute(controller,p,s.meta.route,first,false)
+      return true
+    end
+    function io.resumeAttack(s)
+      local route,first=s.meta.route,s.index+1
+      for i=first,#route do
+        if route[i].ETA_locked then
+          local controller,p=controllerFor(s)
+          if not controller then return false,'no airborne AI controller' end
+          -- The original timestamps no longer fit after an IMAC orbit.
+          restoreRoute(controller,p,route,first,true)
+          return true,'resuming from waypoint '..first..' at planned speeds without locked ETAs'
+        end
       end
-      controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
       return true
     end
     function io.recover(s,p,threats)

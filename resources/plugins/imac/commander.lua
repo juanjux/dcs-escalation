@@ -48,6 +48,17 @@ do
       record(s,'resume',reason)
       -- No popTask: it could remove a tanker's or human commander's task.
     end
+    local function resumeDelayedAttack(s,reason)
+      local attack=s.meta.mode=='strike' or
+        (s.meta.mode=='dead' and (s.meta.deadSupport or not s.meta.seadMission))
+      if attack and s.index<s.meta.attackIndex and not s.pendingHold then
+        local ok,detail=io.resumeAttack(s)
+        if not ok then diagnose(s,'resume blocked',detail);return false end
+        if detail then diagnose(s,'resume route',detail) end
+      end
+      release(s,reason)
+      return true
+    end
     local function nativeRefuel(s)
       local state=EscalationBARCAP and EscalationBARCAP.states[s.meta.group]
       return state and (state.refuelling or state.finished)
@@ -434,10 +445,13 @@ do
         elseif order.kind=='evade' then
           if evasionClear(s,p) then
             order.clearSince=order.clearSince or now
-            if now-order.clearSince>=30 then release(s,'air threat cleared');resumeHold(s,p) end
+            if now-order.clearSince>=30 then
+              if resumeDelayedAttack(s,'air threat cleared') then resumeHold(s,p) end
+              return
+            end
           else order.clearSince=nil end
           if not G.safe(p.point,order.data.point,p.point.y,flightThreats(s),io.height,15000,true) then
-            release(s,'evasion corridor changed')
+            resumeDelayedAttack(s,'evasion corridor changed')
           end
         elseif order.kind=='hold' then
           local danger=dangers(s,p)
@@ -452,7 +466,7 @@ do
             end
           end
           local clear,threat=G.leg(order.data.from,order.data.to,order.data.altitude,flightThreats(s),10000)
-          if clear then release(s,'attack corridor clear')
+          if clear then resumeDelayedAttack(s,'attack corridor clear')
           elseif not pendingDEAD(s,threat,order.data.support) then retreat(s,p,'DEAD/SEAD ended; attack corridor still unsafe') end
         end
         return
