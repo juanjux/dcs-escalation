@@ -1,155 +1,157 @@
-"""What the button beside a set of coordinates offers.
-
-Copying them was all it did, which is one step short of what anybody wants them for:
-the point in the aeroplane. It is a small menu now, and the plain copy is still what
-a campaign with nobody flying anything gets.
-"""
-
-from __future__ import annotations
+"""Location coordinate buttons save campaign GPS points without a player flight."""
 
 import os
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import QPoint
+from PySide6.QtWidgets import QApplication, QMenu
+
+from game.ato.savedpoints import PointKind, SavedPoint, campaign_points, points_of
+from qt_ui.widgets import coordinatelabel
+from qt_ui.widgets.coordinatelabel import CoordinateLabel
+from qt_ui.windows.groundobject import buildingcard, unitcard
+
 
 @pytest.fixture(scope="module")
 def qt_app() -> Any:
-    from PySide6.QtWidgets import QApplication
-
     return QApplication.instance() or QApplication([])
 
 
-def _flight(task: str = "SEAD", aircraft: str = "AV-8B", crewed: int = 1) -> Any:
+def _game() -> Any:
     return SimpleNamespace(
-        custom_name=None,
-        flight_type=SimpleNamespace(value=task),
-        unit_type=SimpleNamespace(
-            display_name=aircraft, dcs_unit_type=SimpleNamespace(id="FA-18C_hornet")
-        ),
-        client_count=crewed,
-        # The points live on the squadron, not on the flight.
-        squadron=SimpleNamespace(saved_points=[]),
+        settings=SimpleNamespace(),
+        blue=SimpleNamespace(ato=SimpleNamespace(packages=[])),
     )
 
 
-def _game(*flights: Any) -> Any:
+def _position() -> Any:
     return SimpleNamespace(
-        blue=SimpleNamespace(
-            ato=SimpleNamespace(packages=[SimpleNamespace(flights=list(flights))])
-        )
+        x=1.0, y=2.0, latlng=lambda: SimpleNamespace(lat=36.0, lng=-115.0)
     )
 
 
-def _label(qt_app: Any, game: Any = None) -> Any:
-    from dcs.mapping import Point
-    from qt_ui.widgets.coordinatelabel import CoordinateLabel
+def _choose_action(monkeypatch: pytest.MonkeyPatch, text: str) -> Mock:
+    opened = Mock()
 
-    settings = SimpleNamespace(coordinate_format=None)
-    position = cast(
-        Any,
-        SimpleNamespace(
-            x=1.0, y=2.0, latlng=lambda: SimpleNamespace(lat=36.0, lng=-115.0)
-        ),
-    )
-    widget = CoordinateLabel.__new__(CoordinateLabel)
-    # Built without its constructor: what is under test is the menu, and the
-    # constructor is a pile of styling that wants a real Point to format.
-    widget.text = "N36 W115"
-    widget.position = position
-    widget.game = game
-    del Point, settings
-    return widget
+    class SelectingMenu(QMenu):
+        def exec(self, _position: QPoint) -> None:  # type: ignore[override]
+            opened()
+            actions = {a.text(): a for a in self.actions() if not a.isSeparator()}
+            assert list(actions) == ["Copy coordinates", "Save as waypoint"]
+            assert actions[text].isEnabled()
+            actions[text].trigger()
+
+    monkeypatch.setattr(coordinatelabel, "QMenu", SelectingMenu)
+    return opened
 
 
-def test_nobody_flying_means_the_button_just_copies(qt_app: Any) -> None:
-    assert _label(qt_app)._receivers() == []
-
-
-def test_a_crewed_flight_is_offered(qt_app: Any) -> None:
-    flying = _flight()
-    ai = _flight(crewed=0)
-
-    found = _label(qt_app, _game(flying, ai))._receivers()
-
-    assert found == [flying]
-
-
+@pytest.mark.parametrize("building", [True, False], ids=["building", "vehicle"])
 @pytest.mark.parametrize("height", [338, 0, None])
-def test_the_point_goes_into_the_flight_with_ground_elevation(
-    qt_app: Any, monkeypatch: Any, height: int | None
+def test_location_row_saves_with_no_scheduled_flights(
+    qt_app: Any, monkeypatch: pytest.MonkeyPatch, building: bool, height: int | None
 ) -> None:
-    from game.ato.savedpoints import PointKind, points_of
-
-    flight = _flight()
-    label = _label(qt_app, _game(flight))
-    looked_up = []
-
-    def elevation(lat: float, lng: float) -> int | None:
-        looked_up.append((lat, lng))
-        return height
-
+    game = _game()
+    position = _position()
+    unit: Any = SimpleNamespace(
+        name="Location element",
+        id=1,
+        alive=True,
+        health_fraction=1.0,
+        repairable=False,
+        position=position,
+    )
+    site: Any = SimpleNamespace(category="oil", repair_cost=lambda: 40, groups=[])
+    if building:
+        monkeypatch.setattr(buildingcard, "buildings_of", lambda _: [])
+        monkeypatch.setattr(buildingcard, "thumbnail", lambda _: None)
+        card = buildingcard.BuildingCard(site, game.settings, None, game=game)
+        row = card._row(unit)
+    else:
+        monkeypatch.setattr(unitcard, "type_name", lambda _: "Depot vehicle")
+        monkeypatch.setattr(unitcard, "describe_unit", lambda _: "")
+        monkeypatch.setattr(unitcard, "unit_note", lambda _: "")
+        units = unitcard.UnitCard(site, game.settings, None, game=game)
+        row = units._unit_row(unit, 0)
+    coordinate = row.findChild(CoordinateLabel)
+    assert coordinate is not None
+    opened = _choose_action(monkeypatch, "Save as waypoint")
+    elevation = Mock(return_value=height)
+    publish = Mock()
     monkeypatch.setattr("game.elevation.elevation_ft", elevation)
+    monkeypatch.setattr(
+        "game.server.savedpoints.notifications.publish_points_changed", publish
+    )
 
-    label._save(flight, PointKind.WAYPOINT)
+    coordinate.button.click()
 
-    (point,) = points_of(flight)
+    opened.assert_called_once()
+    elevation.assert_called_once_with(36.0, -115.0)
+    publish.assert_called_once()
+    (point,) = campaign_points(game.blue)
     assert point.kind is PointKind.WAYPOINT
-    assert point.name == "N36 W115"
-    assert (point.x, point.y) == (1.0, 2.0)
-    assert looked_up == [(36.0, -115.0)]
+    assert point.name == coordinate.text
+    assert (point.x, point.y) == (position.x, position.y)
     assert point.altitude_ft == (height if height is not None else 0)
 
-
-def test_a_full_aircraft_is_greyed_rather_than_hidden(qt_app: Any) -> None:
-    """Knowing the aircraft is full beats wondering where the entry went."""
-    from PySide6.QtWidgets import QMenu
-
-    from game.ato.savedpoints import PointKind, SavedPoint, add_point
-
-    flight = _flight()
-    # Steerpoint 25 is reserved for the Viper's bullseye.
-    flight.unit_type.dcs_unit_type.id = "F-16C_50"
-    for n in range(24):
-        assert add_point(flight, SavedPoint(PointKind.WAYPOINT, f"P{n}", 0.0, 0.0))
-    label = _label(qt_app, _game(flight))
-
-    menu = QMenu()
-    label._add_kind(menu, PointKind.WAYPOINT, [flight])
-
-    (action,) = menu.actions()
-    assert not action.isEnabled()
-    assert "no room" in action.toolTip()
+    flight: Any = SimpleNamespace(
+        squadron=SimpleNamespace(coalition=game.blue), client_count=1
+    )
+    game.blue.ato.packages.append(SimpleNamespace(flights=[flight]))
+    assert points_of(flight)[0] is point
+    row.close()
 
 
-def test_a_kind_the_aircraft_cannot_be_given_is_not_in_the_menu(qt_app: Any) -> None:
-    """Nothing loads a markpoint into a Hornet, so the menu does not offer one."""
-    from PySide6.QtWidgets import QMenu
+@pytest.mark.parametrize(
+    "crewed,dcs_id", [(0, "FA-18C_hornet"), (1, "F-16C_50"), (1, "unknown")]
+)
+def test_save_is_not_gated_by_crew_or_export_capacity(
+    qt_app: Any, monkeypatch: pytest.MonkeyPatch, crewed: int, dcs_id: str
+) -> None:
+    game = _game()
+    flight = SimpleNamespace(
+        client_count=crewed,
+        unit_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id=dcs_id)),
+    )
+    game.blue.ato.packages.append(SimpleNamespace(flights=[flight]))
+    points = campaign_points(game.blue)
+    points.extend(SavedPoint(PointKind.WAYPOINT, f"P{n}", 0, 0) for n in range(24))
+    coordinate = CoordinateLabel(_position(), game.settings, game=game)
+    _choose_action(monkeypatch, "Save as waypoint")
+    monkeypatch.setattr("game.elevation.elevation_ft", lambda *_: 100)
+    monkeypatch.setattr(
+        "game.server.savedpoints.notifications.publish_points_changed", Mock()
+    )
 
-    flight = _flight()
-    label = _label(qt_app, _game(flight))
+    coordinate.button.click()
 
-    menu = QMenu()
-    label.pressed = lambda: None  # the real one would raise a window
-    offered = {kind.label for kind in _kinds_of(flight)}
-
-    assert offered == {"Waypoint"}
-    del menu
+    assert len(points) == 25
 
 
-def _kinds_of(flight: Any) -> Any:
-    from qt_ui.widgets.coordinatelabel import _kinds
-
-    return _kinds(flight)
-
-
-def test_a_flight_is_named_by_its_task_when_it_has_no_name(qt_app: Any) -> None:
-    from qt_ui.widgets.coordinatelabel import _name
-
-    assert _name(_flight()) == "SEAD · AV-8B"
-    named = _flight()
-    named.custom_name = "TARSIER"
-    assert _name(named) == "TARSIER · AV-8B"
+@pytest.mark.parametrize("has_campaign", [False, True])
+def test_copy_coordinates_still_works(
+    qt_app: Any, monkeypatch: pytest.MonkeyPatch, has_campaign: bool
+) -> None:
+    game = _game() if has_campaign else None
+    coordinate = CoordinateLabel(_position(), None, game=game)
+    if has_campaign:
+        _choose_action(monkeypatch, "Copy coordinates")
+    else:
+        monkeypatch.setattr(
+            coordinatelabel, "QMenu", Mock(side_effect=AssertionError("No menu"))
+        )
+    clipboard = QApplication.clipboard()
+    assert clipboard is not None
+    before = clipboard.text()
+    try:
+        coordinate.button.click()
+        assert clipboard.text() == coordinate.text
+        if game is not None:
+            assert not campaign_points(game.blue)
+    finally:
+        clipboard.setText(before)

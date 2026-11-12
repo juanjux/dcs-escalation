@@ -28,6 +28,13 @@ do
     local debugLast,debugBudget={},{}
     local instance
     local io={time=timer.getTime}
+    local function showDebug(recipient,key,limit,now,message)
+      local budget=debugBudget[key]
+      if not budget or now-budget.time>=60 then budget={time=now,count=0};debugBudget[key]=budget end
+      if budget.count>=limit then return end
+      budget.count=budget.count+1
+      trigger.action.outTextForCoalition(recipient,message,15)
+    end
     function io.debug(side,group,topic,detail,screen)
       if not opt.debug or not ((side==1 and opt.red) or (side==2 and opt.blue)) then return end
       local now=timer.getTime()
@@ -41,13 +48,10 @@ do
       -- Routine authority and availability details remain available in dcs.log.
       if topic=='authority' or (topic=='availability' and
         (detail=='not airborne' or detail=='flight unavailable' or detail=='landing approach')) then return end
-      local budget=debugBudget[side]
-      if not budget or now-budget.time>=60 then budget={time=now,count=0};debugBudget[side]=budget end
-      if topic~='active' and budget.count<4 and screen~=false then
-        budget.count=budget.count+1
-        trigger.action.outTextForCoalition(side,
-          'IMAC DEBUG ['..(side==2 and 'BLUE' or 'RED')..'] '..group..': '..topic..' - '..detail,15)
-      end
+      if screen==false then return end
+      local message='IMAC DEBUG ['..(side==2 and 'BLUE' or 'RED')..'] '..group..': '..topic..' - '..detail
+      if topic~='active' then showDebug(side,side,4,now,message) end
+      if side==1 and opt.debugOpfor==true then showDebug(2,'opfor',8,now,message) end
     end
     local function warning(key,detail)
       if warnings[key] and timer.getTime()-warnings[key]<60 then return end
@@ -358,18 +362,38 @@ do
         condition=string.format('return EscalationIMAC.shouldStop(%q,%d)',s.meta.group,order.revision)}}})
       return true
     end
+    local function restoreRoute(controller,p,route,first,plannedSpeed)
+      local points={{x=p.point.x,y=p.point.z,alt=p.point.y,alt_type='BARO',type='Turning Point',
+        action='Turning Point',speed=plannedSpeed and route[first].speed or math.max(200,p.speed),
+        speed_locked=true,ETA_locked=false,
+        task={id='ComboTask',params={tasks={}}}}}
+      for i=first,#route do
+        local q=copy(route[i])
+        q.ETA_locked=false
+        if plannedSpeed then q.speed_locked=true end
+        points[#points+1]=q
+      end
+      controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
+    end
     function io.resumeCap(s)
       local controller,p=controllerFor(s)
       if not controller then return true end -- Never overwrite a human takeover.
       local first=s.index<s.meta.recoveryIndex and s.meta.stationStart or s.index+1
       first=math.max(1,math.min(first,#s.meta.route))
-      local points={{x=p.point.x,y=p.point.z,alt=p.point.y,alt_type='BARO',type='Turning Point',
-        action='Turning Point',speed=math.max(200,p.speed),speed_locked=true,ETA_locked=false,
-        task={id='ComboTask',params={tasks={}}}}}
-      for i=first,#s.meta.route do
-        local q=copy(s.meta.route[i]);q.ETA_locked=false;points[#points+1]=q
+      restoreRoute(controller,p,s.meta.route,first,false)
+      return true
+    end
+    function io.resumeAttack(s)
+      local route,first=s.meta.route,s.index+1
+      for i=first,#route do
+        if route[i].ETA_locked then
+          local controller,p=controllerFor(s)
+          if not controller then return false,'no airborne AI controller' end
+          -- The original timestamps no longer fit after an IMAC orbit.
+          restoreRoute(controller,p,route,first,true)
+          return true,'resuming from waypoint '..first..' at planned speeds without locked ETAs'
+        end
       end
-      controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
       return true
     end
     function io.recover(s,p,threats)
@@ -435,7 +459,8 @@ do
           end)
           local names={}
           for name,s in pairs(instance.states) do
-            if s.meta.side==side and (s.meta.mode~='observe' or s.meta.returnInterceptor) then
+            if s.meta.side==side and (s.meta.mode~='observe' or s.meta.returnInterceptor or
+              s.meta.packageDefenseStart) then
               names[#names+1]=name
             end
           end

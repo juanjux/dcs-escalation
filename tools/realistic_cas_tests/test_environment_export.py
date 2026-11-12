@@ -144,6 +144,15 @@ class EnvironmentExportTests(unittest.TestCase):
         self.assertIn("clouds", cfg)
         self.assertTrue(any("unclassified fallback" in w for w in warnings))
 
+    def test_primary_broken_cover_is_not_overridden_by_a_layer_description(self):
+        self.m.weather.clouds_preset = CloudPreset(
+            "Preset18", "Broken 6", "Three Layers Broken/Overcast", 500, 5000
+        )
+        cfg, warnings = self.export()
+        self.assertEqual(cfg["clouds"]["visualTransmission"], 0.25)
+        self.assertEqual(cfg["clouds"]["irTransmission"], 0.55)
+        self.assertTrue(any("broken approximate slab" in w for w in warnings))
+
     def test_numeric_clouds_ir_not_universal_veto(self):
         self.m.weather.clouds_density = 8
         self.m.weather.clouds_thickness = 1700

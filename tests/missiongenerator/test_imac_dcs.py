@@ -110,6 +110,56 @@ def start(lua: Any) -> None:
     lua.execute("EscalationIMAC.start(cfg);EscalationIMAC.reached('CAP',2)")
 
 
+@pytest.mark.parametrize(
+    "timed,ingress_reached", [(True, False), (False, False), (True, True)]
+)
+def test_attack_resume_after_evasion_preserves_tasks_without_catching_up_to_etas(
+    timed: bool, ingress_reached: bool
+) -> None:
+    lua = runtime()
+    lua.globals().timed = timed
+    lua.globals().ingressReached = ingress_reached
+    lua.execute("""
+        local flight=cfg.flights[1]
+        flight.mode='dead';flight.endTime=nil;flight.deadSupport=true
+        local ingress=flight.route[3]
+        ingress.name='INGRESS';ingress.ETA=120;ingress.ETA_locked=timed;ingress.speed_locked=false
+        ingress.task={id='ComboTask',params={tasks={
+          {id='WrappedAction',params={action={id='Script',params={command="EscalationIMAC.reached('CAP',3)"}}}},
+          {id='AttackGroup',params={groupId=123,weaponType=14}}
+        }}}
+        flight.route[5].ETA_locked=timed
+        bandit.attributes={Fighters=true};bandit.observedX=18000
+        awacs.detections={bandit}
+    """)
+    start(lua)
+    lua.execute("""
+        if ingressReached then EscalationIMAC.reached('CAP',3) end
+        tick(5)
+        local state=EscalationIMAC.instance.states.CAP
+        local route=cfg.flights[1].route
+        assert(state.order.kind=='evade' and #groups.CAP.rtbs==0)
+        local stop=loadstring(groups.CAP.pushes[1].params.stopCondition.condition)
+        awacs.detections={};cap.x=-20000;cap.velocity.x=350
+        tick(840);tick(870)
+        assert(state.order==nil and stop())
+        if timed and not ingressReached then
+          assert(#groups.CAP.rtbs==1)
+          local restored=groups.CAP.rtbs[1].params.route.points
+          assert(#restored==4 and restored[1].x==cap.x and restored[1].speed==route[3].speed)
+          assert(restored[2].name=='INGRESS' and restored[2].task~=route[3].task)
+          assert(restored[2].task.params.tasks[1].params.action.id=='Script')
+          assert(restored[2].task.params.tasks[2].params.groupId==123)
+          assert(restored[2].task.params.tasks[2].params.weaponType==14)
+          assert(restored[4].type=='Land' and restored[4].airdromeId==route[5].airdromeId)
+          for _,point in ipairs(restored) do assert(point.speed_locked and not point.ETA_locked) end
+          assert(route[3].ETA_locked and not route[3].speed_locked)
+        else
+          assert(#groups.CAP.rtbs==0)
+        end
+    """)
+
+
 def test_native_detection_uses_last_observed_position_not_live_enemy_position() -> None:
     lua = runtime()
     lua.execute("bandit.x=999999;bandit.observedX=120000;awacs.detections={bandit}")
@@ -525,6 +575,93 @@ def test_debug_suppresses_disabled_sides_and_limits_screen_messages() -> None:
     assert lua.eval("#messages") <= 8
 
 
+def capture_debug_io(lua: Any) -> None:
+    lua.execute("""
+        local create=EscalationIMAC.newCommander
+        EscalationIMAC.newCommander=function(config,io)
+          testIO=io;return create(config,io)
+        end
+    """)
+    start(lua)
+
+
+@pytest.mark.parametrize(
+    "opfor,debug,red,blue,mirrored",
+    [
+        (None, True, True, True, False),  # Legacy missions omit the option.
+        (False, True, True, True, False),
+        (True, False, True, True, False),
+        (True, True, False, True, False),
+        (True, True, True, True, True),
+        (True, True, True, False, True),
+    ],
+)
+def test_opfor_debug_routes_to_blue_only_when_enabled(
+    opfor: bool | None, debug: bool, red: bool, blue: bool, mirrored: bool
+) -> None:
+    lua = runtime()
+    options = lua.globals().cfg.options
+    options.debugOpfor, options.debug, options.red, options.blue = (
+        opfor,
+        debug,
+        red,
+        blue,
+    )
+    capture_debug_io(lua)
+    lua.execute("""
+        testIO.debug(1,'RED PATROL','order','red test')
+        testIO.debug(2,'BLUE PATROL','order','blue test')
+    """)
+    received = [
+        (msg["side"], "[RED]" in msg["text"])
+        for _, msg in lua.globals().messages.items()
+    ]
+    assert received.count((2, True)) == int(mirrored)
+    assert received.count((1, True)) == int(debug and red)
+    assert received.count((2, False)) == int(debug and blue)
+    assert (1, False) not in received
+
+
+def test_opfor_debug_has_its_own_budget_and_keeps_routine_status_off_screen() -> None:
+    lua = runtime()
+    lua.execute("cfg.options.debug=true;cfg.options.debugOpfor=true")
+    capture_debug_io(lua)
+    lua.execute("""
+        testIO.debug(1,'commander','authority','AWACS test',true)
+        testIO.debug(1,'commander','status','test snapshot',false)
+        for _,reason in ipairs({'landing approach','not airborne','flight unavailable'})do
+          testIO.debug(1,'RED PATROL','availability',reason,true)
+        end
+        assert(#messages==0)
+        testIO.debug(1,'RED PATROL','active','fuel=80%; remaining=90s')
+        assert(#messages==1 and messages[1].side==2)
+        assert(messages[1].text:find('IMAC DEBUG [RED]',1,true))
+        assert(messages[1].text:find('fuel=80%',1,true))
+        for i=1,12 do testIO.debug(1,'red'..i,'intercept rejected','test')end
+        for i=1,6 do testIO.debug(2,'blue'..i,'order','test')end
+        local red,blue,opfor=0,0,0
+        for _,message in ipairs(messages)do
+          if message.side==1 then red=red+1
+          elseif message.text:find('[RED]',1,true)then opfor=opfor+1
+          else blue=blue+1 end
+        end
+        assert(red==4 and blue==4 and opfor==8)
+        now=65
+        testIO.debug(1,'RED PATROL','active','fuel=77%; remaining=25s')
+        assert(#messages==17 and messages[17].side==2)
+    """)
+
+
+def test_opfor_debug_does_not_mirror_normal_order_reports() -> None:
+    lua = runtime()
+    lua.execute("cfg.options.debug=true;cfg.options.debugOpfor=true")
+    capture_debug_io(lua)
+    lua.execute("""
+        testIO.report({kind='intercept',time=0,side=1,group='RED PATROL',reason='test'})
+        assert(#messages==1 and messages[1].side==1)
+    """)
+
+
 @pytest.mark.parametrize(
     "change,reason",
     [
@@ -551,20 +688,18 @@ def test_routine_availability_debug_stays_in_the_log_without_using_screen_budget
         "if m.text:find(quietReason,1,true) then return false end end return true end)()"
     )
     lua.execute("cap.air=true;cap.active=true;cap.fuel=.1;tick(75)")
-    assert "fuel at BINGO reserve" in lua.eval("messages[#messages].text")
+    assert "fuel at BINGO reserve (10% fuel, 30% reserve)" in lua.eval(
+        "messages[#messages].text"
+    )
     assert lua.eval("#groups.CAP.pushes") == 0
 
 
 def test_authority_debug_is_log_only_even_if_a_caller_requests_screen_output() -> None:
     lua = runtime()
-    lua.execute("""
-        cfg.options.debug=true;cfg.options.reports=false;cfg.options.red=false
-        local create=EscalationIMAC.newCommander
-        EscalationIMAC.newCommander=function(config,io)
-          testIO=io;return create(config,io)
-        end
-    """)
-    start(lua)
+    lua.execute(
+        "cfg.options.debug=true;cfg.options.reports=false;cfg.options.red=false"
+    )
+    capture_debug_io(lua)
     lua.execute("""
         for i=1,8 do testIO.debug(2,'commander'..i,'authority','AWACS test '..i,true)end
         assert(#messages==0)

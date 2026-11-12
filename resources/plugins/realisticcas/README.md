@@ -104,6 +104,9 @@ creation dialog after changing these settings. Choose **AFAC — Frontline** for
 frontline segment or **AFAC — Area** for an area target. Compatible drones, scout
 aircraft and helicopters use normal squadrons, aircraft inventories and pilots;
 remote UAV operators cannot be killed, wounded or go missing with their aircraft.
+Frontline AFAC flights patrol both sides of their assigned segment. The circuit
+extends farther toward the opposing side, and consecutive flights use different
+offsets. The navigation safety checks cover the whole circuit.
 Eligible transport helicopters carry a thermal-equipped JTAC. Aircraft without
 thermal observation show a warning when creating a night flight.
 

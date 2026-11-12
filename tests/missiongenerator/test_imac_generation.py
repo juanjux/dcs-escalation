@@ -80,7 +80,12 @@ def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> 
     plugin.set_value(True)
     for option in plugin.options:
         option.set_settings(settings)
-        if option.identifier in ("imac.blue", "imac.red", "imac.debug"):
+        if option.identifier in (
+            "imac.blue",
+            "imac.red",
+            "imac.debug",
+            "imac.debugOpfor",
+        ):
             option.set_value(option.identifier != "imac.blue")
     restored = pickle.loads(pickle.dumps(settings))
     plugin.set_settings(restored)
@@ -91,9 +96,11 @@ def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> 
     assert options["blue"] is False
     assert options["red"] is True
     assert options["debug"] is True
+    assert options["debugOpfor"] is True
     assert restored.plugins["imac.blue"] is False
     assert restored.plugins["imac.red"] is True
     assert restored.plugins["imac.debug"] is True
+    assert restored.plugins["imac.debugOpfor"] is True
 
 
 @pytest.mark.parametrize(
@@ -101,6 +108,7 @@ def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> 
     [
         ("blue", 1),
         ("reports", "yes"),
+        ("debugOpfor", "true"),
         ("avoidSamThreats", 1),
         ("neverDivertSead", "true"),
         ("evadeFighters", 1),
@@ -336,6 +344,29 @@ def test_sead_escort_is_marked_for_sam_exemption_without_becoming_a_fighter_esco
     flight = data["flights"][0]
     assert flight["seadMission"] is True and flight["fighterMission"] is False
     assert flight["mode"] == "dead"
+
+
+@pytest.mark.parametrize(
+    "role,waypoint",
+    [(FlightType.ESCORT, "JOIN"), (FlightType.SWEEP, "SWEEP START")],
+)
+@pytest.mark.parametrize("human", [False, True])
+def test_package_defense_uses_the_native_engagement_waypoint(
+    role: FlightType, waypoint: str, human: bool
+) -> None:
+    s = scenario()
+    s.cap.flight_type = role
+    s.cap.aircraft_type.task_priorities = {FlightType.INTERCEPTION: 1}
+    s.cap.client_units = [object()] if human else []
+    s.group.points[1].name = waypoint
+    s.group.points[2].name = "NAV"
+    data = imac.configure(s.generator, dict(imac.DEFAULTS))
+    assert data is not None
+    flight = data["flights"][0]
+    assert flight["mode"] == "observe"
+    assert flight["returnInterceptor"] is False
+    assert flight["packageDefenseStart"] == (None if human else 2)
+    assert ("EscalationIMAC.reached" in str(s.group.points[1].tasks)) is not human
 
 
 @pytest.mark.parametrize(

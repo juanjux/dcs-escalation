@@ -541,10 +541,11 @@ def collect_registry(
                                 )
                                 if search_point in group.points:
                                     index = group.points.index(search_point)
-                                    end = group.points[index + 1]
+                                    loop = getattr(group, "_afac_search_loop", ())
+                                    end = group.points[index + len(loop) + 1]
                                     meta["navigation"] = {
                                         "searchWaypoint": index + 1,
-                                        "exitWaypoint": index + 3,
+                                        "exitWaypoint": index + len(loop) + 3,
                                         "route": [
                                             _native_route_value(p.dict())
                                             for p in group.points
@@ -564,6 +565,11 @@ def collect_registry(
                                             for p in (search_point, end)
                                         ],
                                     }
+                                    if loop:
+                                        meta["navigation"]["searchPath"] = [
+                                            {"x": p.position.x, "z": p.position.y}
+                                            for p in loop
+                                        ]
                                 meta["smokeRounds"] = smoke_rounds(
                                     v["CLSID"]
                                     for v in unit.pylons.values()
