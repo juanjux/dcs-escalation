@@ -896,6 +896,11 @@ def run_opfor_fallback_if_needed() -> dict:
     ]
     try:
         red.plan_missions(game.conditions.start_time)
+    except Exception:
+        # The fallback starts with an empty ATO. A failed planning pass can leave
+        # packages whose flights are reserved but whose times are still unset.
+        red.ato.clear()
+        raise
     finally:
         for cp, previous in stances:
             cp.stances.clear()
