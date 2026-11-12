@@ -47,9 +47,11 @@ TASKS = [
 @pytest.fixture(autouse=True)
 def setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     persistency.setup(str(tmp_path), prefer_liberation_payloads=False, port=16885)
+    payloads = Path("resources/customized_payloads")
     monkeypatch.setattr(
-        PayloadDirectories, "preferred", Path("resources/customized_payloads")
+        PayloadDirectories, "payload_dirs", classmethod(lambda cls: iter([payloads]))
     )
+    monkeypatch.setattr(FlyingType, "_payload_cache", None)
     for _, unit, _ in VARIANTS:
         monkeypatch.setattr(unit, "payloads", None)
 
