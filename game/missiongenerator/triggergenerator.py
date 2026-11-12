@@ -165,6 +165,8 @@ class TriggerGenerator:
                         # Retain their original positions when the whole site is gone.
                         if not locations:
                             locations = [unit.position for unit in units]
+                    if category in {"aa", "ewr"}:
+                        name += " [INITIAL POSITION]"
                     for location in locations:
                         zone = self.mission.triggers.add_triggerzone(
                             location, radius=10, hidden=True, name="MARK"
