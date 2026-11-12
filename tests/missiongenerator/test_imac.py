@@ -94,6 +94,10 @@ def runtime(extra: list[dict[str, Any]] | None = None) -> Any:
             resumed[#resumed+1]=state.meta.group
             return not rejectResume,'blocked'
           end,
+          resumeAttack=function(state)
+            resumed[#resumed+1]=state.meta.group
+            return not rejectResume,'blocked'
+          end,
           report=function(event)reports[#reports+1]=event end
         }
         commander=EscalationIMAC.newCommander(cfg,adapter)
