@@ -16,16 +16,18 @@ from game.theater import TheaterGroundObject
 
 
 @pytest.mark.parametrize(
-    ("store", "point_masks"),
+    ("stores", "use_coordinates"),
     [
-        ("{BRU55_2*AGM-154C}", [262144, 8]),
-        ("{GBU-31}", [8]),
-        ("{8_x_AGM_86C}", [WeaponType.CruiseMissile.value]),
-        ("LAU_117_AGM_65G", []),
+        (("{BRU55_2*AGM-154C}",), True),
+        (("{GBU-31}",), True),
+        (("{8_x_AGM_86C}",), True),
+        (("LAU_117_AGM_65G",), False),
+        (("{BRU55_2*AGM-154C}", "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"), False),
+        (("{BRU55_2*AGM-154C}", "LAU_117_AGM_65G"), False),
     ],
 )
 def test_dead_exports_coordinate_tasks_for_gps_stores(
-    tmp_path: Path, store: str, point_masks: list[int]
+    tmp_path: Path, stores: tuple[str, ...], use_coordinates: bool
 ) -> None:
     terrain = Caucasus()
     mission = Mission(terrain)
@@ -40,8 +42,11 @@ def test_dead_exports_coordinate_tasks_for_gps_stores(
         mission.country("USA"), "DEAD", FA_18C_hornet, departure, 1000
     )
     flight.units[0].pylons = {
-        2: {"CLSID": store},
-        3: {"CLSID": "{B06DD79A-F21E-4EB9-BD9D-AB3844618C93}"},  # HARM
+        i: {"CLSID": clsid}
+        for i, clsid in enumerate(
+            ("{5CE2FF2A-645A-4197-B48D-8720AC69394F}", "{FPU_8A_FUEL_TANK}", *stores),
+            start=1,
+        )
     }
     ingress = flight.add_waypoint(departure, 1000)
     builder: Any = object.__new__(DeadIngressBuilder)
@@ -64,15 +69,23 @@ def test_dead_exports_coordinate_tasks_for_gps_stores(
     tasks = exported["plane"]["group"][1]["route"]["points"][2]["task"]["params"][
         "tasks"
     ].values()
-    bombing = [task["params"] for task in tasks if task["id"] == "Bombing"]
-    groups = [task["params"] for task in tasks if task["id"] == "AttackGroup"]
-
-    assert [task["weaponType"] for task in bombing] == point_masks
-    assert all((task["x"], task["y"]) == (100, 200) for task in bombing)
-    assert all(task["groupId"] == battery.id for task in groups)
-    assert [task["weaponType"] for task in groups] == [
+    attack_tasks = [task for task in tasks if task["id"] in {"Bombing", "AttackGroup"}]
+    expected_task = "Bombing" if use_coordinates else "AttackGroup"
+    assert [task["id"] for task in attack_tasks] == [expected_task] * 4
+    params = [task["params"] for task in attack_tasks]
+    assert [task["weaponType"] for task in params] == [
         WeaponType.ARM.value,
-        WeaponType.ASM.value & ~sum(point_masks),
-        WeaponType.GuidedBombs.value & ~sum(point_masks),
+        WeaponType.ASM.value,
+        WeaponType.GuidedBombs.value,
         WeaponType.Unguided.value,
     ]
+    assert [task["expend"] for task in params] == ["All", "All", "Auto", "All"]
+    assert [task["groupAttack"] for task in params] == [True, True, False, False]
+    assert [task["altitudeEnabled"] for task in params] == [True, True, True, False]
+    assert [task["directionEnabled"] for task in params] == [False, False, False, True]
+    assert [task["attackQtyLimit"] for task in params] == [False, False, False, True]
+    if use_coordinates:
+        assert all((task["x"], task["y"]) == (100, 200) for task in params)
+        assert all("groupId" not in task for task in params)
+    else:
+        assert all(task["groupId"] == battery.id for task in params)
