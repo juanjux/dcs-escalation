@@ -3,7 +3,12 @@ import datetime
 import pytest
 from dcs.mapping import LatLng
 
-from game.theater.daytimecalculator import solar_daytime_map, solar_noon
+from game.theater.daytimecalculator import (
+    _sun_times,
+    includes_darkness,
+    solar_daytime_map,
+    solar_noon,
+)
 
 KOLA_TZ = datetime.timezone(datetime.timedelta(hours=3))
 SYRIA_TZ = datetime.timezone(datetime.timedelta(hours=3))
@@ -84,3 +89,38 @@ def test_solar_noon_tracks_longitude() -> None:
     east = solar_noon(45.0, SYRIA_TZ, date)
     west = solar_noon(30.0, SYRIA_TZ, date)
     assert east < west
+
+
+@pytest.mark.parametrize("month", [1, 6])
+def test_darkness_includes_sunset_and_uses_local_times(month: int) -> None:
+    day = datetime.date(2020, month, 1)
+    times = _sun_times(NEVADA.lat, NEVADA.lng, NEVADA_TZ, day)
+    assert times is not None
+    sunrise, sunset = times
+    assert sunrise.date() == sunset.date() == day
+    minute = datetime.timedelta(minutes=1)
+    start = sunrise.replace(tzinfo=None)
+    assert not includes_darkness(NEVADA, NEVADA_TZ, start, sunset - minute)
+    assert includes_darkness(
+        NEVADA, NEVADA_TZ, start, sunset.astimezone(datetime.timezone.utc)
+    )
+    assert includes_darkness(NEVADA, NEVADA_TZ, sunrise - minute, sunrise)
+
+
+@pytest.mark.parametrize("month,dark", [(6, False), (12, True)])
+def test_darkness_for_polar_flights_that_cross_midnight(month: int, dark: bool) -> None:
+    start = datetime.datetime(2020, month, 15, 23, tzinfo=KOLA_TZ)
+    end = start + datetime.timedelta(hours=2)
+    assert includes_darkness(KOLA, KOLA_TZ, start, end) is dark
+
+
+def test_darkness_when_local_sunset_is_shortly_after_midnight() -> None:
+    day = datetime.date(2020, 5, 16)
+    times = _sun_times(KOLA.lat, KOLA.lng, KOLA_TZ, day)
+    assert times is not None
+    sunrise, sunset = times
+    assert sunset < sunrise
+    midnight = datetime.datetime.combine(day, datetime.time(), tzinfo=KOLA_TZ)
+    assert not includes_darkness(KOLA, KOLA_TZ, midnight, midnight)
+    assert includes_darkness(KOLA, KOLA_TZ, midnight, sunrise)
+    assert not includes_darkness(KOLA, KOLA_TZ, sunrise, sunrise)

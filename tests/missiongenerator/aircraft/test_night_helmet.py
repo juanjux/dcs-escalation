@@ -1,6 +1,6 @@
-"""Player A-10C II night equipment is selected when generating the mission."""
+"""Player night equipment is selected when generating the mission."""
 
-from datetime import date
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace as NS
 from typing import Any
@@ -9,7 +9,9 @@ from zipfile import ZipFile
 import pytest
 import yaml
 from dcs import Mission, Point, lua
-from dcs.planes import A_10C, A_10C_2, FA_18C_hornet
+from dcs.mapping import LatLng
+from dcs.helicopters import Ka_50_3
+from dcs.planes import A_10C, A_10C_2, AV8BNA, F_15ESE, F_16C_50, FA_18C_hornet, M_2000C
 from dcs.terrain import Caucasus
 
 from game.ato.flightmember import FlightMember
@@ -21,6 +23,8 @@ from game.missiongenerator.aircraft.flightgroupconfigurator import (
 from game.settings import NightMissions
 from game.squadrons import Pilot
 from game.timeofday import TimeOfDay
+from pydcs_extensions.a4ec import A_4E_C
+from pydcs_extensions.fa18efg.fa18efg import FA_18F
 
 HELMET = A_10C_2.Properties.HelmetMountedDevice
 
@@ -33,6 +37,8 @@ def scenario(
     helmet: int | None = None,
     year: int = 2020,
     restrict: bool = False,
+    start: time = time(21),
+    duration: timedelta = timedelta(hours=1),
 ) -> Any:
     mission = Mission(Caucasus())
     group = mission.flight_group(
@@ -69,11 +75,24 @@ def scenario(
     )
     generator = FlightGroupConfigurator.__new__(FlightGroupConfigurator)
     generator.group = group
-    generator.flight = NS(unit_type=aircraft_type, iter_members=lambda: iter(members))  # type: ignore[assignment]
+    generator.time = mission.start_time = datetime.combine(date(year, 1, 1), start)
+    plan = NS(
+        startup_time=lambda: mission.start_time,
+        landing_time=mission.start_time + duration,
+    )
+    generator.flight = NS(  # type: ignore[assignment]
+        unit_type=aircraft_type,
+        iter_members=lambda: iter(members),
+        flight_plan=plan,
+    )
     generator.game = NS(  # type: ignore[assignment]
         conditions=NS(time_of_day=phase),
         settings=NS(night_day_missions=policy, restrict_props_by_date=restrict),
         date=date(year, 1, 1),
+        theater=NS(
+            reference_position=LatLng(42.0, 42.0),
+            timezone=timezone(timedelta(hours=4)),
+        ),
     )
     return NS(generator=generator, mission=mission, group=group, members=members)
 
@@ -95,7 +114,7 @@ def test_night_equips_only_the_player_without_mutating_saved_properties(
 @pytest.mark.parametrize("phase", [TimeOfDay.Dawn, TimeOfDay.Day, TimeOfDay.Dusk])
 @pytest.mark.parametrize("helmet", [None, HELMET.Values.HMCS___NVG])
 def test_non_night_equipment_is_unchanged(phase: TimeOfDay, helmet: int | None) -> None:
-    s = scenario(phase=phase, helmet=helmet)
+    s = scenario(phase=phase, helmet=helmet, start=time(12))
     s.generator.setup_props()
     assert s.group.units[0].addpropaircraft[HELMET.id] == (
         HELMET.Values.HMCS if helmet is None else helmet
@@ -109,16 +128,37 @@ def test_explicitly_disabled_helmet_stays_disabled() -> None:
 
 
 @pytest.mark.parametrize(
-    "phase,policy,expected",
+    "phase,start",
+    [(TimeOfDay.Dusk, time(19)), (TimeOfDay.Dawn, time(6))],
+)
+def test_actual_darkness_at_start_overrides_the_turn_label(
+    phase: TimeOfDay, start: time
+) -> None:
+    s = scenario(phase=phase, start=start)
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft[HELMET.id] == HELMET.Values.HMCS___NVG
+
+
+def test_only_the_planned_flight_window_counts() -> None:
+    s = scenario(phase=TimeOfDay.Night, start=time(6), duration=timedelta(hours=6))
+    s.generator.flight.flight_plan.startup_time = lambda: s.generator.time.replace(
+        hour=10
+    )
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft[HELMET.id] == HELMET.Values.HMCS
+
+
+@pytest.mark.parametrize(
+    "phase,start,policy,expected",
     [
-        (TimeOfDay.Night, NightMissions.OnlyDay, HELMET.Values.HMCS),
-        (TimeOfDay.Day, NightMissions.OnlyNight, HELMET.Values.HMCS___NVG),
+        (TimeOfDay.Night, time(21), NightMissions.OnlyDay, HELMET.Values.HMCS),
+        (TimeOfDay.Day, time(12), NightMissions.OnlyNight, HELMET.Values.HMCS___NVG),
     ],
 )
 def test_forced_lighting_policy_overrides_turn_slot(
-    phase: TimeOfDay, policy: NightMissions, expected: int
+    phase: TimeOfDay, start: time, policy: NightMissions, expected: int
 ) -> None:
-    s = scenario(phase=phase, policy=policy)
+    s = scenario(phase=phase, policy=policy, start=start)
     s.generator.setup_props()
     assert s.group.units[0].addpropaircraft[HELMET.id] == expected
 
@@ -139,18 +179,81 @@ def test_automatic_selection_respects_era_restrictions(
     assert s.group.units[0].addpropaircraft[HELMET.id] == expected
 
 
-@pytest.mark.parametrize("aircraft", [A_10C, FA_18C_hornet])
-def test_other_airframes_are_not_modified(aircraft: Any) -> None:
-    s = scenario(aircraft=aircraft)
+def test_cockpit_nvg_aircraft_exports_without_an_extra_property() -> None:
+    s = scenario(aircraft=A_10C)
     before = dict(s.group.units[0].addpropaircraft or {})
     s.generator.setup_props()
-    assert s.group.units[0].addpropaircraft.get(HELMET.id) == before.get(HELMET.id)
+    assert s.group.units[0].addpropaircraft == {**before, "SADL_TN": "0601"}
 
 
-def test_generated_miz_contains_combined_device_for_player_only(tmp_path: Path) -> None:
-    s = scenario()
+@pytest.mark.parametrize("start,expected", [(time(12), 1), (time(21), 2)])
+def test_exclusive_helmet_uses_nvg_only_if_the_flight_needs_it(
+    start: time, expected: int
+) -> None:
+    s = scenario(aircraft=FA_18C_hornet, helmet=1, start=start)
     s.generator.setup_props()
-    output = tmp_path / "a10-night.miz"
+    assert s.group.units[0].addpropaircraft[HELMET.id] == expected
+    assert s.members[0].properties[HELMET.id] == 1
+
+
+def test_nvg_remains_available_before_jhmcs_was_introduced() -> None:
+    s = scenario(aircraft=FA_18C_hornet, year=2000, restrict=True)
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft[HELMET.id] == 2
+    assert s.group.units[1].addpropaircraft[HELMET.id] == 0
+
+
+def test_two_seat_super_hornet_equips_both_positions() -> None:
+    s = scenario(aircraft=FA_18F)
+    s.generator.setup_props()
+    for identifier in (HELMET.id, "HelmetMountedDeviceWSO"):
+        assert s.group.units[0].addpropaircraft[identifier] == 2
+        assert s.group.units[1].addpropaircraft[identifier] == 1
+
+
+def test_black_shark_uses_its_own_helmet_property() -> None:
+    s = scenario(aircraft=Ka_50_3)
+    identifier = "Helmet-mounted device"
+    ai_helmet = (s.group.units[1].addpropaircraft or {}).get(identifier)
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft[identifier] == 2
+    assert s.group.units[1].addpropaircraft.get(identifier) == ai_helmet
+
+
+def test_explicitly_disabled_nvg_switch_stays_disabled() -> None:
+    s = scenario(aircraft=F_15ESE)
+    s.members[0].properties["MountNVG"] = False
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft["MountNVG"] is False
+
+
+@pytest.mark.parametrize(
+    "aircraft,prop,player_value,ai_value",
+    [
+        (A_10C_2, HELMET.id, 2, 1),
+        (A_4E_C, "Night_Vision", True, False),
+        (FA_18C_hornet, HELMET.id, 2, 1),
+        (F_16C_50, HELMET.id, 2, 1),
+        (F_15ESE, "MountNVG", True, False),
+        (AV8BNA, "MountNVG", True, False),
+        (M_2000C, "LoadNVGCase", True, False),
+    ],
+)
+def test_generated_miz_equips_player_when_the_flight_crosses_sunset(
+    tmp_path: Path,
+    aircraft: Any,
+    prop: str,
+    player_value: int | bool,
+    ai_value: int | bool,
+) -> None:
+    s = scenario(
+        aircraft=aircraft,
+        phase=TimeOfDay.Dusk,
+        start=time(16),
+        duration=timedelta(hours=3),
+    )
+    s.generator.setup_props()
+    output = tmp_path / "dusk.miz"
     s.mission.save(str(output))
     with ZipFile(output) as archive:
         data = lua.loads(archive.read("mission").decode())["mission"]
@@ -161,4 +264,4 @@ def test_generated_miz_contains_combined_device_for_player_only(tmp_path: Path) 
         for unit in group["units"].values()
     ]
     assert units[0]["skill"] == "Client"
-    assert [unit["AddPropAircraft"][HELMET.id] for unit in units] == [2, 1]
+    assert [unit["AddPropAircraft"][prop] for unit in units] == [player_value, ai_value]

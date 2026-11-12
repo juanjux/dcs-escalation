@@ -18,7 +18,7 @@ from dcs.planes import FA_18C_hornet, F_16C_50
 from dcs.unitpropertydescription import UnitPropertyDescription
 
 from game import persistency
-from game.dcs.aircraftproperties import PropertyDateGate
+from game.dcs.aircraftproperties import NightVision, PropertyDateGate
 from game.dcs.aircrafttype import AircraftType
 
 # Real-world JHMCS fielding; keep in lockstep with the aircraft yaml data.
@@ -171,3 +171,28 @@ def test_from_data_tolerates_absence() -> None:
     gate = PropertyDateGate.from_data({"HelmetMountedDevice": {"JHMCS": 2003}})
     assert gate
     assert gate.introduction_years == {"HelmetMountedDevice": {"JHMCS": 2003}}
+
+
+@pytest.mark.parametrize(
+    "dcs_id,expected",
+    [
+        ("A-4E-C", NightVision.MISSION_PROPERTY),
+        ("A-10C_2", NightVision.MISSION_PROPERTY),
+        ("FA-18C_hornet", NightVision.MISSION_PROPERTY),
+        ("A-10C", NightVision.COCKPIT),
+        ("F-14A-135-GR", NightVision.COCKPIT),
+        ("F-14B", NightVision.COCKPIT),
+        ("F-14BU", NightVision.COCKPIT),
+        ("CH-47Fbl1", NightVision.COCKPIT),
+        ("UH-1H", NightVision.COCKPIT),
+        ("MiG-29 Fulcrum", None),
+        ("MiG-29A", None),
+        ("A6E", None),
+        ("FA-18ET", None),
+    ],
+)
+def test_catalog_exposes_nvg_support_for_player_aircraft(
+    dcs_id: str, expected: NightVision | None
+) -> None:
+    aircraft = next(a for a in AircraftType.iter_all() if a.dcs_id == dcs_id)
+    assert aircraft.night_vision is expected
