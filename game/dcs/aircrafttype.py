@@ -18,7 +18,11 @@ from dcs.weapons_data import weapon_ids
 from game.ato import FlightType
 from game.dcs.afaccapabilities import capabilities_for
 from game.data.units import UnitClass
-from game.dcs.aircraftproperties import PropertyDateGate
+from game.dcs.aircraftproperties import (
+    NightVision,
+    PropertyDateGate,
+    night_vision_support,
+)
 from game.dcs.lasercodeconfig import LaserCodeConfig
 from game.dcs.unittype import UnitType
 from game.persistency import user_custom_weapon_injections_dir
@@ -313,6 +317,12 @@ class AircraftType(UnitType[Type[FlyingType]]):
     @property
     def flyable(self) -> bool:
         return self.dcs_unit_type.flyable
+
+    @cached_property
+    def night_vision(self) -> NightVision | None:
+        if self.flyable:
+            return night_vision_support(self.dcs_id, self.dcs_unit_type.properties)
+        return None
 
     @property
     def helicopter(self) -> bool:
