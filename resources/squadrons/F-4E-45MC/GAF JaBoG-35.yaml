@@ -1,0 +1,25 @@
+---
+name: Jagdbombergeschwader 35
+nickname: JaBoG 35
+country: Germany
+role: Fighter Bomber
+aircraft: F-4E-45MC Phantom II
+livery: "38+10_N72_JG71"
+livery_set:
+  - "38+10_N72_JG71"
+  - "37+49_N81A_JG73"
+female_pilot_percentage: 0
+mission_types:
+  - Anti-ship
+  - BAI
+  - BARCAP
+  - CAS
+  - DEAD
+  - Escort
+  - OCA/Aircraft
+  - OCA/Runway
+  - SEAD
+  - SEAD Escort
+  - Strike
+  - Fighter sweep
+  - TARCAP

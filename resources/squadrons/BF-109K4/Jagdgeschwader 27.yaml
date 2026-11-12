@@ -1,0 +1,9 @@
+---
+name: "Jagdgeschwader 27"
+country: Third Reich
+role: Fighter
+aircraft: "Bf 109 K-4 Kurfürst"
+livery_set:
+  - "Germany_standard"
+  - "Bf-109 K4 IIIJG27"
+  - "Bf-109 K4 9.JG27 (W10+I)"

@@ -5,6 +5,9 @@ country: South Korea
 role: Fighter Bomber
 aircraft: F-4E-45MC Phantom II
 livery: ROKAF-80470-CG-153FS
+livery_set:
+  - "ROKAF-80470-CG-153FS"
+  - "ROKAF-80728-H2-153FS"
 mission_types:
   - Anti-ship
   - BAI

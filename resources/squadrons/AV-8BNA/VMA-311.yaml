@@ -1,0 +1,8 @@
+---
+name: "VMA-311"
+country: USA
+role: V/STOL Attack
+aircraft: "AV-8B Harrier II Night Attack"
+livery_set:
+  - "VMA-311"
+  - "VMA-311D"

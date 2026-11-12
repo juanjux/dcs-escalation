@@ -5,6 +5,9 @@ country: USA
 role: Fighter Bomber
 aircraft: F-4E-45MC Phantom II
 livery: ADC AF66-300
+livery_set:
+  - "ADC AF66-300"
+  - "ADC AF66-382"
 mission_types:
   - Anti-ship
   - BAI

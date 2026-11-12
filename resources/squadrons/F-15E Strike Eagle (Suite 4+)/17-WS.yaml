@@ -6,3 +6,7 @@ country: USA
 role: Strike Fighter
 aircraft: F-15E Strike Eagle (Suite 4+)
 livery: USAF 17th WS AF90 Low Vis Clean
+livery_set:
+  - "USAF 17th WS AF90 Low Vis Clean"
+  - "USAF 17th WS AF90 High Vis Clean"
+  - "USAF 17th WPS AF90-257"

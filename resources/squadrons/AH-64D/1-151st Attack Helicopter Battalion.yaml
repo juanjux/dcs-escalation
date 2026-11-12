@@ -1,0 +1,11 @@
+---
+name: "1-151st Attack Helicopter Battalion"
+nickname: "Ghostriders"
+country: USA
+role: Attack Helicopter
+aircraft: "AH-64D Apache Longbow"
+livery_set:
+  - "South Carolina National Guard"
+  - "South Carolina National Guard - 40331"
+  - "South Carolina National Guard - 40332"
+  - "South Carolina National Guard - Drab TADS"

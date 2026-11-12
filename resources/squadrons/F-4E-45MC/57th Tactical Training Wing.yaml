@@ -1,0 +1,8 @@
+---
+name: "57th Tactical Training Wing"
+country: USA
+role: Fighter Bomber
+aircraft: "F-4E-45MC Phantom II"
+livery_set:
+  - "WA66-376_E1_57TTW"
+  - "WA68-373_SEA_57TTW"

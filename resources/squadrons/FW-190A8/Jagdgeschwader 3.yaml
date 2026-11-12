@@ -1,0 +1,8 @@
+---
+name: "Jagdgeschwader 3"
+country: Third Reich
+role: Fighter
+aircraft: "Fw 190 A-8 Anton"
+livery_set:
+  - "JG3 White nose Wulf"
+  - "FW-190A8 JG3 Maximowitz"

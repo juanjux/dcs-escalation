@@ -5,6 +5,9 @@ country: Iran
 role: Air Superiority Fighter
 aircraft: MiG-21bis Fishbed-N
 livery: "iran - standard"
+livery_set:
+  - "iran - standard"
+  - "Iran - 51st Sqn"
 mission_types:
   - BARCAP
   - TARCAP

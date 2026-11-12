@@ -5,6 +5,10 @@ country: Israel
 role: Fighter Bomber
 aircraft: F-4E-45MC Phantom II
 livery: IAF-Kurnass-175-69SQN
+livery_set:
+  - "IAF-Kurnass-175-69SQN"
+  - "IAF-Kurnass-175-69SQN_mod"
+  - "IAF-Kurnass-303-69SQN"
 mission_types:
   - Anti-ship
   - BAI

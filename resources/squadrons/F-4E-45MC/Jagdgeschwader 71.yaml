@@ -1,0 +1,9 @@
+---
+name: "Jagdgeschwader 71"
+nickname: "Richthofen"
+country: Germany
+role: Fighter Bomber
+aircraft: "F-4E-45MC Phantom II"
+livery_set:
+  - "38+59_N90_JG71"
+  - "37+01_PP_JG71"

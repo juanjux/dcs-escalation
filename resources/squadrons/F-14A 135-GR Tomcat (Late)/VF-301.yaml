@@ -1,0 +1,11 @@
+---
+name: "VF-301"
+nickname: "Devil's Disciples"
+country: USA
+role: Strike Fighter
+aircraft: "F-14A Tomcat (Block 135-GR Late)"
+livery_set:
+  - "VF-301 ND101 HiVis"
+  - "VF-301 ND104"
+  - "VF-301 ND111"
+  - "VF-301 ND113"

@@ -1,0 +1,8 @@
+---
+name: "Jagdgeschwader 1"
+country: Third Reich
+role: Fighter
+aircraft: "Fw 190 A-8 Anton"
+livery_set:
+  - "Black 13 Schwarze Katze from JG1"
+  - "Fw190_Alfred_Bindseil"

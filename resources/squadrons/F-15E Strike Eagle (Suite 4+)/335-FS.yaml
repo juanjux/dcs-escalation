@@ -6,3 +6,7 @@ country: USA
 role: Strike Fighter
 aircraft: F-15E Strike Eagle (Suite 4+)
 livery: USAF 335th Chiefs FS AF89 Low Vis Combat
+livery_set:
+  - "USAF 335th Chiefs FS AF89 Low Vis Combat"
+  - "USAF 335th Chiefs FS AF89 High Vis Clean"
+  - "USAF 335th Chiefs FS AF89-0487 Lucky"

@@ -1,0 +1,17 @@
+description:
+  The Mirage F1CR is the French Air Force reconnaissance variant of the Mirage F1.
+  It is an AI-only aircraft in DCS.
+introduced: 1983
+manufacturer: Dassault
+origin: France
+price: 14
+role: Reconnaissance/Attack
+max_range: 200
+variants:
+  Mirage-F1CR: {}
+tasks:
+  BAI: 300
+  CAS: 300
+  OCA/Aircraft: 300
+  OCA/Runway: 280
+  Strike: 280

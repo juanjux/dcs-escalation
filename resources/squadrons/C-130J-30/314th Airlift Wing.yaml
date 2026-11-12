@@ -1,0 +1,8 @@
+---
+name: "314th Airlift Wing"
+country: USA
+role: Transport
+aircraft: "C-130J-30"
+livery_set:
+  - "USAF 314 AW 5728, Little Rock AFB"
+  - "USAF 314 AW 5802, Little Rock AFB"

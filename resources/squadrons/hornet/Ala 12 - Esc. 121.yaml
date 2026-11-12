@@ -4,6 +4,10 @@ country: Spain
 role: Multirole Fighter
 aircraft: F/A-18C Hornet (Lot 20)
 livery: Spain 121th Escuadron C.15-45
+livery_set:
+  - "Spain 121th Escuadron C.15-45"
+  - "Spain 121th Escuadron C.15-50"
+  - "Spain 121th Escuadron C.15-60"
 mission_types:
   - BARCAP
   - TARCAP

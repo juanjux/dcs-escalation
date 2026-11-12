@@ -1,0 +1,9 @@
+---
+name: "VF-14"
+nickname: "Tophatters"
+country: USA
+role: Fleet Defense Fighter
+aircraft: "F-14A Tomcat (Block 135-GR Early)"
+livery_set:
+  - "VF-14 Tophatters AB100 (1976)"
+  - "VF-14 Tophatters AB103 (1976)"

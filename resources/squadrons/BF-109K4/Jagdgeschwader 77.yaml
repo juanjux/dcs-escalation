@@ -1,0 +1,8 @@
+---
+name: "Jagdgeschwader 77"
+country: Third Reich
+role: Fighter
+aircraft: "Bf 109 K-4 Kurfürst"
+livery_set:
+  - "Bf-109 K4 Jagdgeschwader 77"
+  - "Bf-109 K4 9.JG77"

@@ -1,0 +1,8 @@
+---
+name: "Jagdgeschwader 52"
+country: Third Reich
+role: Fighter
+aircraft: "Bf 109 K-4 Kurfürst"
+livery_set:
+  - "Bf-109 K4 Stab JG52"
+  - "Bf-109 K4 IIJG52"

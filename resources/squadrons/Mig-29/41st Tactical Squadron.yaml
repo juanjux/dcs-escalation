@@ -1,0 +1,8 @@
+---
+name: "41st Tactical Squadron"
+country: Poland
+role: Fighter
+aircraft: "MiG-29A Fulcrum-A"
+livery_set:
+  - "Polish 41st Sqn Standard1"
+  - "Polish 41st Sqn Standard2"

@@ -692,8 +692,7 @@ class SquadronCard(QWidget):
             self.name_edit.setText(self.squadron.name)
             self.nickname_edit.setText(self.squadron.nickname)
             self.primary_task_selector.setCurrentText(self.squadron.primary_task.value)
-            index = self.livery_selector.findText(self.squadron.livery)
-            self.livery_selector.setCurrentIndex(index)
+            self.livery_selector.bind_squadron(self.squadron)
             self.max_size_selector.setValue(self.squadron.max_size)
             self.base_selector.setCurrentText(self.squadron.location.name)
         finally:

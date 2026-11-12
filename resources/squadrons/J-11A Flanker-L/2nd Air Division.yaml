@@ -1,0 +1,8 @@
+---
+name: "2nd Air Division"
+country: China
+role: Air Superiority Fighter
+aircraft: "J-11A Flanker-L"
+livery_set:
+  - "PLAAF 2nd AD"
+  - "PLAAF 2nd AD (Reworked)"

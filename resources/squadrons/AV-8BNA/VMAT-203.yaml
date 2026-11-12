@@ -1,0 +1,8 @@
+---
+name: "VMAT-203"
+country: USA
+role: V/STOL Attack
+aircraft: "AV-8B Harrier II Night Attack"
+livery_set:
+  - "VMAT-203"
+  - "VMAT-203S"

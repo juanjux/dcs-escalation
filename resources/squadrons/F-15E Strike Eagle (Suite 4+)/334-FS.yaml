@@ -6,3 +6,6 @@ country: USA
 role: Strike Fighter
 aircraft: F-15E Strike Eagle (Suite 4+)
 livery: USAF 334th Eagles FS AF89 Aim High
+livery_set:
+  - "USAF 334th Eagles FS AF89 Aim High"
+  - "USAF 334th Eagles FS AF89 High Vis Clean"

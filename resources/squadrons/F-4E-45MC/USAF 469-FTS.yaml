@@ -5,6 +5,9 @@ country: USA
 role: Fighter Bomber
 aircraft: F-4E-45MC Phantom II
 livery: JV67-288_SEAW_469TFS
+livery_set:
+  - "JV67-288_SEAW_469TFS"
+  - "JV67-287_SEAW_469TFS"
 mission_types:
   - Anti-ship
   - BAI

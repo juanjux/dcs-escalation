@@ -5,6 +5,9 @@ country: USA
 role: Fighter Bomber
 aircraft: F-4E-45MC Phantom II
 livery: CA68-426_H2_163tfg
+livery_set:
+  - "CA68-426_H2_163tfg"
+  - "CA69-382_H2_163tfg"
 mission_types:
   - Anti-ship
   - BAI

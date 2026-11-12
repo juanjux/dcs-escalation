@@ -1,5 +1,6 @@
 import logging
 
+from PySide6.QtCore import QSignalBlocker
 from PySide6.QtWidgets import QComboBox
 
 from game.squadrons import Squadron
@@ -17,14 +18,20 @@ class SquadronLiverySelector(SearchableComboBox):
     def __init__(self, squadron: Squadron, update_squadron: bool = True) -> None:
         super().__init__(placeholder="Type to find a livery…")
         self.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
-
-        self.squadron = squadron
-        self.aircraft_type = squadron.aircraft
-        selected_livery = squadron.livery
-
+        self.bind_squadron(squadron)
         if update_squadron:
             self.currentTextChanged.connect(self.on_change)
 
+    def bind_squadron(self, squadron: Squadron) -> None:
+        self.squadron = squadron
+        self.aircraft_type = squadron.aircraft
+        with QSignalBlocker(self):
+            self.clear()
+            self._populate()
+
+    def _populate(self) -> None:
+        squadron = self.squadron
+        selected_livery = squadron.livery
         liveries = set()
         cc = squadron.coalition.faction.country.shortname
         aircraft_liveries = set(self.aircraft_type.dcs_unit_type.iter_liveries())
@@ -52,18 +59,32 @@ class SquadronLiverySelector(SearchableComboBox):
             self.addItem("Use livery overrides", userData=None)
         if (
             selected_livery is None
-            and not squadron.livery_set
+            and not squadron.use_livery_set
             and squadron.aircraft.default_livery
         ):
             selected_livery = squadron.aircraft.default_livery
         for livery in sorted(liveries):
             self.addItem(livery.name, userData=livery.id)
-            if selected_livery is not None and not squadron.livery_set:
-                if selected_livery.lower() == livery.id:
-                    self.setCurrentText(livery.name)
-        if len(liveries) == 0:
+            if (
+                selected_livery is not None
+                and not squadron.use_livery_set
+                and selected_livery.casefold() == livery.id.casefold()
+            ):
+                self.setCurrentIndex(self.count() - 1)
+        if (
+            squadron.livery_set
+            and not squadron.use_livery_set
+            and self.using_livery_set
+        ):
+            if overrides:
+                self.setCurrentText("Use livery overrides")
+            else:
+                self.addItem("DCS default")
+                self.setCurrentIndex(self.count() - 1)
+        has_options = bool(liveries or squadron.livery_set)
+        if not has_options:
             self.addItem("No available liveries (using DCS default)")
-            self.setEnabled(False)
+        self.setEnabled(has_options)
 
     @property
     def using_livery_set(self) -> bool:

@@ -6,6 +6,9 @@ country: USA
 role: Strike Fighter
 aircraft: F/A-18C Hornet (Lot 20)
 livery: VMFA-122 high visibility
+livery_set:
+  - "VMFA-122 high visibility"
+  - "VMFA-122"
 bases:
   shore: true
   carrier: true

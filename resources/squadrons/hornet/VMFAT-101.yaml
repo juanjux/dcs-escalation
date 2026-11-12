@@ -1,0 +1,9 @@
+---
+name: "VMFAT-101"
+country: USA
+role: Strike Fighter
+aircraft: "F/A-18C Hornet (Lot 20)"
+livery_set:
+  - "VMFAT-101"
+  - "VMFAT-101 high visibility"
+  - "VMFAT-101 high visibility 2005"
