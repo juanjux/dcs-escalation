@@ -10,6 +10,7 @@ from dcs.unitpropertydescription import UnitPropertyDescription
 
 from game.ato import Flight
 from game.ato.flightmember import FlightMember
+from game.dcs.aircraftproperties import NightVision
 from .missingpropertydataerror import MissingPropertyDataError
 from .propertycheckbox import PropertyCheckBox
 from .propertycombobox import PropertyComboBox
@@ -39,6 +40,11 @@ class PropertyEditor(QGridLayout):
         self.setGeometry(QRect())
         last_label: QWidget | None = None
         row = itertools.count()
+        if flight.client_count and flight.unit_type.night_vision is NightVision.COCKPIT:
+            nvg_row = next(row)
+            self.addWidget(QLabel("Night vision goggles"), nvg_row, 0)
+            self.addWidget(QLabel("Available in the DCS cockpit"), nvg_row, 1)
+
         for prop in flight.unit_type.iter_props():
             if prop.label is None:
                 if prop.control != "label":
