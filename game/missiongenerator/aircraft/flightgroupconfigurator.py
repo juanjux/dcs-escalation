@@ -40,7 +40,7 @@ from game.runways import RunwayData
 from game.settings import NightMissions
 from game.missiongenerator.missiondata import EscortInfo
 from game.squadrons import Pilot
-from game.timeofday import TimeOfDay
+from game.theater.daytimecalculator import includes_darkness
 from .aircraftbehavior import AircraftBehavior
 from .aircraftpainter import AircraftPainter
 from .bingoestimator import BingoEstimator
@@ -397,20 +397,27 @@ class FlightGroupConfigurator:
     def setup_night_helmet(
         self, props: dict[str, bool | float | int | str], member: FlightMember
     ) -> None:
-        """Add NVG to the player's A-10C II HMCS for night missions."""
+        """Add NVG when the player's A-10C II will encounter darkness."""
         if not member.is_player or self.flight.unit_type.dcs_id != A_10C_2.id:
-            return
-        policy = self.game.settings.night_day_missions
-        if policy is NightMissions.OnlyDay or (
-            policy is not NightMissions.OnlyNight
-            and self.game.conditions.time_of_day is not TimeOfDay.Night
-        ):
             return
         helmet = A_10C_2.Properties.HelmetMountedDevice
         # Keep an explicitly disabled helmet and any other selected equipment.
         # Date restrictions are applied afterwards, as for all other properties.
-        if props.get(helmet.id, helmet.Values.HMCS) == helmet.Values.HMCS:
-            props[helmet.id] = helmet.Values.HMCS___NVG
+        if props.get(helmet.id, helmet.Values.HMCS) != helmet.Values.HMCS:
+            return
+        policy = self.game.settings.night_day_missions
+        if policy is NightMissions.OnlyDay:
+            return
+        if policy is not NightMissions.OnlyNight:
+            plan = self.flight.flight_plan
+            start = max(self.time, plan.startup_time())
+            end = max(start, plan.landing_time)
+            theater = self.game.theater
+            if not includes_darkness(
+                theater.reference_position, theater.timezone, start, end
+            ):
+                return
+        props[helmet.id] = helmet.Values.HMCS___NVG
 
     def degrade_props_for_date(
         self, props: dict[str, bool | float | int | str]

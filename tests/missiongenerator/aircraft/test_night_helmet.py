@@ -1,6 +1,6 @@
 """Player A-10C II night equipment is selected when generating the mission."""
 
-from datetime import date
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace as NS
 from typing import Any
@@ -9,6 +9,7 @@ from zipfile import ZipFile
 import pytest
 import yaml
 from dcs import Mission, Point, lua
+from dcs.mapping import LatLng
 from dcs.planes import A_10C, A_10C_2, FA_18C_hornet
 from dcs.terrain import Caucasus
 
@@ -33,6 +34,8 @@ def scenario(
     helmet: int | None = None,
     year: int = 2020,
     restrict: bool = False,
+    start: time = time(21),
+    duration: timedelta = timedelta(hours=1),
 ) -> Any:
     mission = Mission(Caucasus())
     group = mission.flight_group(
@@ -69,11 +72,24 @@ def scenario(
     )
     generator = FlightGroupConfigurator.__new__(FlightGroupConfigurator)
     generator.group = group
-    generator.flight = NS(unit_type=aircraft_type, iter_members=lambda: iter(members))  # type: ignore[assignment]
+    generator.time = mission.start_time = datetime.combine(date(year, 1, 1), start)
+    plan = NS(
+        startup_time=lambda: mission.start_time,
+        landing_time=mission.start_time + duration,
+    )
+    generator.flight = NS(  # type: ignore[assignment]
+        unit_type=aircraft_type,
+        iter_members=lambda: iter(members),
+        flight_plan=plan,
+    )
     generator.game = NS(  # type: ignore[assignment]
         conditions=NS(time_of_day=phase),
         settings=NS(night_day_missions=policy, restrict_props_by_date=restrict),
         date=date(year, 1, 1),
+        theater=NS(
+            reference_position=LatLng(42.0, 42.0),
+            timezone=timezone(timedelta(hours=4)),
+        ),
     )
     return NS(generator=generator, mission=mission, group=group, members=members)
 
@@ -95,7 +111,7 @@ def test_night_equips_only_the_player_without_mutating_saved_properties(
 @pytest.mark.parametrize("phase", [TimeOfDay.Dawn, TimeOfDay.Day, TimeOfDay.Dusk])
 @pytest.mark.parametrize("helmet", [None, HELMET.Values.HMCS___NVG])
 def test_non_night_equipment_is_unchanged(phase: TimeOfDay, helmet: int | None) -> None:
-    s = scenario(phase=phase, helmet=helmet)
+    s = scenario(phase=phase, helmet=helmet, start=time(12))
     s.generator.setup_props()
     assert s.group.units[0].addpropaircraft[HELMET.id] == (
         HELMET.Values.HMCS if helmet is None else helmet
@@ -109,16 +125,37 @@ def test_explicitly_disabled_helmet_stays_disabled() -> None:
 
 
 @pytest.mark.parametrize(
-    "phase,policy,expected",
+    "phase,start",
+    [(TimeOfDay.Dusk, time(19)), (TimeOfDay.Dawn, time(6))],
+)
+def test_actual_darkness_at_start_overrides_the_turn_label(
+    phase: TimeOfDay, start: time
+) -> None:
+    s = scenario(phase=phase, start=start)
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft[HELMET.id] == HELMET.Values.HMCS___NVG
+
+
+def test_only_the_planned_flight_window_counts() -> None:
+    s = scenario(phase=TimeOfDay.Night, start=time(6), duration=timedelta(hours=6))
+    s.generator.flight.flight_plan.startup_time = lambda: s.generator.time.replace(
+        hour=10
+    )
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft[HELMET.id] == HELMET.Values.HMCS
+
+
+@pytest.mark.parametrize(
+    "phase,start,policy,expected",
     [
-        (TimeOfDay.Night, NightMissions.OnlyDay, HELMET.Values.HMCS),
-        (TimeOfDay.Day, NightMissions.OnlyNight, HELMET.Values.HMCS___NVG),
+        (TimeOfDay.Night, time(21), NightMissions.OnlyDay, HELMET.Values.HMCS),
+        (TimeOfDay.Day, time(12), NightMissions.OnlyNight, HELMET.Values.HMCS___NVG),
     ],
 )
 def test_forced_lighting_policy_overrides_turn_slot(
-    phase: TimeOfDay, policy: NightMissions, expected: int
+    phase: TimeOfDay, start: time, policy: NightMissions, expected: int
 ) -> None:
-    s = scenario(phase=phase, policy=policy)
+    s = scenario(phase=phase, policy=policy, start=start)
     s.generator.setup_props()
     assert s.group.units[0].addpropaircraft[HELMET.id] == expected
 
@@ -147,8 +184,10 @@ def test_other_airframes_are_not_modified(aircraft: Any) -> None:
     assert s.group.units[0].addpropaircraft.get(HELMET.id) == before.get(HELMET.id)
 
 
-def test_generated_miz_contains_combined_device_for_player_only(tmp_path: Path) -> None:
-    s = scenario()
+def test_generated_miz_equips_player_when_the_flight_crosses_sunset(
+    tmp_path: Path,
+) -> None:
+    s = scenario(phase=TimeOfDay.Dusk, start=time(16), duration=timedelta(hours=3))
     s.generator.setup_props()
     output = tmp_path / "a10-night.miz"
     s.mission.save(str(output))

@@ -7,6 +7,7 @@ from dcs.mapping import Point
 from dcs.point import MovingPoint, PointProperties, VNav
 from dcs.terrain import Caucasus
 
+from game.ato.flighttype import FlightType
 from game.missiongenerator.aircraft.waypoints.waypointgenerator import (
     WaypointGenerator,
 )
@@ -101,6 +102,7 @@ def test_route_generation_enables_vnav_for_player_a10_including_spawn() -> None:
         flight_plan=SimpleNamespace(waypoints=route),
         state=SimpleNamespace(),
         client_count=1,
+        flight_type=FlightType.STRIKE,
         unit_type=SimpleNamespace(dcs_unit_type=SimpleNamespace(id="A-10C_2")),
     )
     gen.set_takeoff_time = MagicMock(return_value=timedelta())
