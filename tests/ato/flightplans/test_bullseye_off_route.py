@@ -13,9 +13,9 @@ from dcs.lua import loads
 from dcs.mapping import Point
 from dcs.planes import A_10C_2
 
-from game.ato import FlightType
 from game.ato.flightplans.custom import CustomFlightPlan, CustomLayout
 from game.ato.flightplans.ferry import FerryFlightPlan, FerryLayout
+from game.ato.flighttype import FlightType
 from game.ato.flightwaypoint import FlightWaypoint
 from game.ato.flightwaypointtype import FlightWaypointType as Kind
 from game.missiongenerator.aircraft.waypoints.waypointgenerator import WaypointGenerator
@@ -69,7 +69,7 @@ def test_export_and_kneeboard_share_route_without_bullseye(custom: bool) -> None
     flight = SimpleNamespace(
         points=plan.waypoints[1:],
         flight_plan=plan,
-        flight_type=FlightType.BAI if custom else FlightType.FERRY,
+        flight_type=FlightType.FERRY,
         client_count=1,
         state=None,
         unit_type=SimpleNamespace(dcs_unit_type=A_10C_2),
