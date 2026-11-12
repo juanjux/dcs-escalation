@@ -60,6 +60,29 @@ def vm() -> Any:
     return lua
 
 
+@pytest.mark.parametrize("unit_id", ["SON_9", "Fire Can radar"])
+def test_fire_can_registers_as_an_early_warning_radar(vm: Any, unit_id: str) -> None:
+    make_radar = vm.eval("""
+        function(unitType)
+            local unit = {
+                getName = function() return "Test Fire Can" end,
+                getTypeName = function() return unitType end,
+                isExist = function() return true end,
+                getSensors = function() return {} end,
+            }
+            local iads = {registerElementEvents = function() end}
+            local radar = SkynetIADSEWRadar:create(unit, iads)
+            radar:setupElements()
+            return radar
+        end
+    """)
+    radar = make_radar(unit_id)
+
+    assert len(radar.searchRadars) == 1
+    assert radar.getNatoName(radar) == "Fire Can"
+    assert radar.getHARMDetectionChance(radar) == 20
+
+
 def test_clear_ground_cover_uses_radar_mast_and_terrain_relative_height(
     vm: Any,
 ) -> None:
