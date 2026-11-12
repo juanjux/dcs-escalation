@@ -1,4 +1,4 @@
-"""Player A-10C II night equipment is selected when generating the mission."""
+"""Player night equipment is selected when generating the mission."""
 
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
@@ -10,7 +10,8 @@ import pytest
 import yaml
 from dcs import Mission, Point, lua
 from dcs.mapping import LatLng
-from dcs.planes import A_10C, A_10C_2, FA_18C_hornet
+from dcs.helicopters import Ka_50_3
+from dcs.planes import A_10C, A_10C_2, AV8BNA, F_15ESE, F_16C_50, FA_18C_hornet, M_2000C
 from dcs.terrain import Caucasus
 
 from game.ato.flightmember import FlightMember
@@ -22,6 +23,7 @@ from game.missiongenerator.aircraft.flightgroupconfigurator import (
 from game.settings import NightMissions
 from game.squadrons import Pilot
 from game.timeofday import TimeOfDay
+from pydcs_extensions.fa18efg.fa18efg import FA_18F
 
 HELMET = A_10C_2.Properties.HelmetMountedDevice
 
@@ -176,20 +178,80 @@ def test_automatic_selection_respects_era_restrictions(
     assert s.group.units[0].addpropaircraft[HELMET.id] == expected
 
 
-@pytest.mark.parametrize("aircraft", [A_10C, FA_18C_hornet])
-def test_other_airframes_are_not_modified(aircraft: Any) -> None:
-    s = scenario(aircraft=aircraft)
+def test_aircraft_without_an_nvg_property_keeps_its_defaults() -> None:
+    s = scenario(aircraft=A_10C)
     before = dict(s.group.units[0].addpropaircraft or {})
     s.generator.setup_props()
-    assert s.group.units[0].addpropaircraft.get(HELMET.id) == before.get(HELMET.id)
+    assert s.group.units[0].addpropaircraft == {**before, "SADL_TN": "0601"}
 
 
+@pytest.mark.parametrize("start,expected", [(time(12), 1), (time(21), 2)])
+def test_exclusive_helmet_uses_nvg_only_if_the_flight_needs_it(
+    start: time, expected: int
+) -> None:
+    s = scenario(aircraft=FA_18C_hornet, helmet=1, start=start)
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft[HELMET.id] == expected
+    assert s.members[0].properties[HELMET.id] == 1
+
+
+def test_nvg_remains_available_before_jhmcs_was_introduced() -> None:
+    s = scenario(aircraft=FA_18C_hornet, year=2000, restrict=True)
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft[HELMET.id] == 2
+    assert s.group.units[1].addpropaircraft[HELMET.id] == 0
+
+
+def test_two_seat_super_hornet_equips_both_positions() -> None:
+    s = scenario(aircraft=FA_18F)
+    s.generator.setup_props()
+    for identifier in (HELMET.id, "HelmetMountedDeviceWSO"):
+        assert s.group.units[0].addpropaircraft[identifier] == 2
+        assert s.group.units[1].addpropaircraft[identifier] == 1
+
+
+def test_black_shark_uses_its_own_helmet_property() -> None:
+    s = scenario(aircraft=Ka_50_3)
+    identifier = "Helmet-mounted device"
+    ai_helmet = (s.group.units[1].addpropaircraft or {}).get(identifier)
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft[identifier] == 2
+    assert s.group.units[1].addpropaircraft.get(identifier) == ai_helmet
+
+
+def test_explicitly_disabled_nvg_switch_stays_disabled() -> None:
+    s = scenario(aircraft=F_15ESE)
+    s.members[0].properties["MountNVG"] = False
+    s.generator.setup_props()
+    assert s.group.units[0].addpropaircraft["MountNVG"] is False
+
+
+@pytest.mark.parametrize(
+    "aircraft,prop,player_value,ai_value",
+    [
+        (A_10C_2, HELMET.id, 2, 1),
+        (FA_18C_hornet, HELMET.id, 2, 1),
+        (F_16C_50, HELMET.id, 2, 1),
+        (F_15ESE, "MountNVG", True, False),
+        (AV8BNA, "MountNVG", True, False),
+        (M_2000C, "LoadNVGCase", True, False),
+    ],
+)
 def test_generated_miz_equips_player_when_the_flight_crosses_sunset(
     tmp_path: Path,
+    aircraft: Any,
+    prop: str,
+    player_value: int | bool,
+    ai_value: int | bool,
 ) -> None:
-    s = scenario(phase=TimeOfDay.Dusk, start=time(16), duration=timedelta(hours=3))
+    s = scenario(
+        aircraft=aircraft,
+        phase=TimeOfDay.Dusk,
+        start=time(16),
+        duration=timedelta(hours=3),
+    )
     s.generator.setup_props()
-    output = tmp_path / "a10-night.miz"
+    output = tmp_path / "dusk.miz"
     s.mission.save(str(output))
     with ZipFile(output) as archive:
         data = lua.loads(archive.read("mission").decode())["mission"]
@@ -200,4 +262,4 @@ def test_generated_miz_equips_player_when_the_flight_crosses_sunset(
         for unit in group["units"].values()
     ]
     assert units[0]["skill"] == "Client"
-    assert [unit["AddPropAircraft"][HELMET.id] for unit in units] == [2, 1]
+    assert [unit["AddPropAircraft"][prop] for unit in units] == [player_value, ai_value]

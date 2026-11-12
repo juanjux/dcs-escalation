@@ -139,3 +139,53 @@ class PropertyDateGate:
             prop = properties.get(identifier)
             if prop is not None:
                 yield prop
+
+
+_NVG_SWITCHES = frozenset(
+    {
+        "MountNVG",
+        "LoadNVGCase",
+        "IsNvgAllowed",
+        "PltNVG",
+        "CpgNVG",
+        "PilotNVG",
+        "OperatorNVG",
+    }
+)
+_HELMET_DEVICE_PROPERTIES = frozenset(
+    {"HelmetMountedDevice", "HelmetMountedDeviceWSO", "Helmet-mounted device"}
+)
+_HELMET_OPT_OUT_LABELS = frozenset(
+    {"Not installed", "Visor Only", "Helmet Only, No Visor"}
+)
+
+
+def night_vision_overrides(
+    properties: Mapping[str, UnitPropertyDescription],
+    overrides: Mapping[str, bool | float | int | str],
+    gate: PropertyDateGate,
+    date: datetime.date,
+) -> Iterator[tuple[str, bool | float | int | str]]:
+    """Select the available NVG configuration for each crew position."""
+    for identifier, prop in properties.items():
+        if prop.control == "checkbox" and identifier in _NVG_SWITCHES:
+            if identifier not in overrides and prop.default is not True:
+                yield identifier, True
+            continue
+        if identifier not in _HELMET_DEVICE_PROPERTIES or prop.values is None:
+            continue
+
+        current = overrides.get(identifier)
+        if current is not None and (
+            current not in prop.values or prop.values[current] in _HELMET_OPT_OUT_LABELS
+        ):
+            continue
+
+        available = {
+            prop.values[value_id]: value_id
+            for value_id in gate.available_value_ids(prop, date)
+            if value_id is not None
+        }
+        device = available.get("HMCS + NVG", available.get("NVG"))
+        if device is not None and device != overrides.get(identifier, prop.default):
+            yield identifier, device
