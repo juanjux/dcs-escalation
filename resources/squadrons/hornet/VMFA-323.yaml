@@ -1,0 +1,8 @@
+---
+name: "VMFA-323"
+country: USA
+role: Strike Fighter
+aircraft: "F/A-18C Hornet (Lot 20)"
+livery_set:
+  - "VMFA-323"
+  - "VMFA-323 high visibility"

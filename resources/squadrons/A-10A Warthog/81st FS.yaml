@@ -6,6 +6,9 @@ country: USA
 role: Close Air Support
 aircraft: A-10A Thunderbolt II
 livery: 81st FS Spangdahlem AB, Germany (SP) 2
+livery_set:
+  - "81st FS Spangdahlem AB, Germany (SP) 2"
+  - "81st FS Spangdahlem AB, Germany (SP) 1"
 mission_types:
   - BAI
   - CAS

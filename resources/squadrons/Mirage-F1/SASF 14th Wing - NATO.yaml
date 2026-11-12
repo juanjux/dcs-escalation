@@ -6,6 +6,9 @@ country: Spain
 role: Fighter
 aircraft: Mirage-F1M-EE
 livery: ALA 14 NATO Skin 1 (M-EE)
+livery_set:
+  - "ALA 14 NATO Skin 1 (M-EE)"
+  - "ALA 14 NATO Skin 2 (M-EE)"
 mission_types:
   - BARCAP
   - Escort

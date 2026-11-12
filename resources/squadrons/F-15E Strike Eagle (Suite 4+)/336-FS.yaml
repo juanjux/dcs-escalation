@@ -6,3 +6,14 @@ country: USA
 role: Strike Fighter
 aircraft: F-15E Strike Eagle (Suite 4+)
 livery: USAF 336th Rocketeers FS AF88 Low Vis Combat
+livery_set:
+  - "USAF 336th Rocketeers FS AF88 Low Vis Combat"
+  - "USAF 336th Rocketeers FS AF88 High Vis Clean"
+  - "USAF 336th Rocketeers FS AF88-1673 336 FGS"
+  - "USAF 336th Rocketeers FS AF88-1687 Mad Duck IV"
+  - "USAF 336th Rocketeers FS AF88-1690 Darkness Falls"
+  - "USAF 336th Rocketeers FS AF88-1700 Dragon Betty"
+  - "USAF 336th Rocketeers FS AF89 High Vis Clean"
+  - "USAF 336th Rocketeers FS AF89 Low Vis Combat"
+  - "USAF 336th Rocketeers FS AF89-496 Shadow"
+  - "USAF 336th Rocketeers FS AF89-501"

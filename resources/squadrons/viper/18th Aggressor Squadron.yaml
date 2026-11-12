@@ -1,0 +1,9 @@
+---
+name: "18th Aggressor Squadron"
+country: USA
+role: Strike Fighter
+aircraft: "F-16CM Fighting Falcon (Block 50)"
+livery_set:
+  - "18th AGRS Splinter"
+  - "18th AGRS Arctic Splinter"
+  - "18th AGRS BDU Splinter"

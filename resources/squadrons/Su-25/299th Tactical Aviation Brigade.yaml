@@ -1,0 +1,9 @@
+---
+name: "299th Tactical Aviation Brigade"
+country: Ukraine
+role: Ground Attack
+aircraft: "Su-25 Frogfoot"
+livery_set:
+  - "broken camo scheme #1 (native). 299th oshap"
+  - "petal camo scheme #1 (native). 299th brigade"
+  - "petal camo scheme #2 (native). 299th brigade"

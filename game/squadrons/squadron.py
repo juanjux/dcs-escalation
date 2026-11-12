@@ -1358,7 +1358,7 @@ class Squadron:
             squadron_def.aircraft,
             max_size,
             squadron_def.livery,
-            squadron_def.livery_set,
+            squadron_def.livery_set.copy(),
             primary_task,
             squadron_def.auto_assignable_mission_types,
             squadron_def.radio_presets,
@@ -1369,4 +1369,6 @@ class Squadron:
             game.db.flights,
             game.settings,
             base,
+            use_livery_set=bool(squadron_def.livery_set)
+            and squadron_def.livery is None,
         )

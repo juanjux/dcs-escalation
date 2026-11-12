@@ -6,6 +6,9 @@ country: USA
 role: Strike Fighter
 aircraft: F/A-18C Hornet (Lot 20)
 livery: VFA-106 high visibility
+livery_set:
+  - "VFA-106 high visibility"
+  - "VFA-106"
 mission_types:
   - Anti-ship
   - BAI

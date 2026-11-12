@@ -1,0 +1,9 @@
+---
+name: "No. 101 Squadron"
+nickname: "Falcons"
+country: India
+role: Air Superiority Fighter
+aircraft: "MiG-21bis Fishbed-N"
+livery_set:
+  - "India - 101st Sqn (1)"
+  - "India - 101st Sqn (2)"

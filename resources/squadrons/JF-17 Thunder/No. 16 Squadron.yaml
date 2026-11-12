@@ -1,0 +1,12 @@
+---
+name: "No. 16 Squadron"
+nickname: "Black Panthers"
+country: Pakistan
+role: Multirole Fighter
+aircraft: "JF-17 Thunder"
+livery_set:
+  - "PAF Black Panthers"
+  - "PAF Black Panthers (Reworked)"
+  - "PAF Black Panthers (B2V1)"
+  - "PAF Black Panthers (B2V2)"
+  - "PAF Black Panthers 07-101"

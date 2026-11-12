@@ -6,3 +6,9 @@ country: USA
 role: Strike Fighter
 aircraft: F-15E Strike Eagle (Suite 4+)
 livery: USAF 391st Bold Tigers FS AF90-241 High Vis Combat
+livery_set:
+  - "USAF 391st Bold Tigers FS AF90-241 High Vis Combat"
+  - "USAF 391st Bold Tigers FS AF90 Low Vis Combat"
+  - "USAF 391st Bold Tigers FS AF90-247 Kraken"
+  - "USAF 391st Bold Tigers FS AF91-300 Leo"
+  - "USAF 391st Bold Tigers FS AF92-366 Billy the Kid"

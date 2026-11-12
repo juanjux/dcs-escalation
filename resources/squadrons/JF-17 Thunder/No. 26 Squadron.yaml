@@ -1,0 +1,9 @@
+---
+name: "No. 26 Squadron"
+nickname: "Black Spiders"
+country: Pakistan
+role: Multirole Fighter
+aircraft: "JF-17 Thunder"
+livery_set:
+  - "PAF Black Spiders (default)"
+  - "PAF Black Spiders (Web Camo)"

@@ -6,3 +6,9 @@ country: USA
 role: Strike Fighter
 aircraft: F-15E Strike Eagle (Suite 4+)
 livery: USAF 494th Panthers FS 91-603 75th D-Day Anniversary
+livery_set:
+  - "USAF 494th Panthers FS 91-603 75th D-Day Anniversary"
+  - "USAF 494th Panthers FS AF00 Low Vis Combat"
+  - "USAF 494th Panthers FS AF01 Low Vis Clean"
+  - "USAF 494th Panthers FS AF01 Low Vis Combat"
+  - "USAF 494th Panthers FS AF91-324 El Jefe"

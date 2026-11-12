@@ -1,0 +1,9 @@
+---
+name: "VF-11"
+country: USA
+role: Fleet Defense Fighter
+aircraft: "F-14A Tomcat (Block 135-GR Early)"
+livery_set:
+  - "VF-11 AE101 1988"
+  - "VF-11 AE103 1988"
+  - "VF-11 AE106 1988"

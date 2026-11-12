@@ -5,6 +5,10 @@ country: Germany
 role: Fighter Bomber
 aircraft: F-4E-45MC Phantom II
 livery: 37+36_N72_JG74
+livery_set:
+  - "37+36_N72_JG74"
+  - "37+45_N90_JG74"
+  - "37+83_N81A_JG74"
 mission_types:
   - Anti-ship
   - BAI

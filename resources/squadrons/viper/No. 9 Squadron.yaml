@@ -1,0 +1,9 @@
+---
+name: "No. 9 Squadron"
+nickname: "Griffins"
+country: Pakistan
+role: Strike Fighter
+aircraft: "F-16CM Fighting Falcon (Block 50)"
+livery_set:
+  - "PAF_No.9 Griffins_2"
+  - "PAF_No.9_Griffins_1"

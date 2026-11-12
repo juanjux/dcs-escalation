@@ -1,0 +1,8 @@
+---
+name: "Jagdgeschwader 54"
+country: Third Reich
+role: Fighter
+aircraft: "Fw 190 A-8 Anton"
+livery_set:
+  - "FW-190A8_2.JG 54"
+  - "FW-190A8_2.JG 54_Hans Dortenmann"

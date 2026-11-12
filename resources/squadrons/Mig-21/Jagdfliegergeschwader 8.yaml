@@ -1,0 +1,8 @@
+---
+name: "Jagdfliegergeschwader 8"
+country: GDR
+role: Air Superiority Fighter
+aircraft: "MiG-21bis Fishbed-N"
+livery_set:
+  - "Germany East - JG-8"
+  - "Germany East - JG-8 Brown"

@@ -1,0 +1,8 @@
+---
+name: "Escadron de Chasse 1/2 Cigognes"
+country: France
+role: Fighter
+aircraft: "Mirage 2000-5"
+livery_set:
+  - "ec1_2  spa103 `cigogne de fonck`"
+  - "ec1_2 spa3 `cigogne de guynemer`"

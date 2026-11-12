@@ -1,0 +1,8 @@
+---
+name: "Escadron de Chasse 2/2 Cote d'Or"
+country: France
+role: Fighter
+aircraft: "Mirage 2000-5"
+livery_set:
+  - "ec2_2 spa94 `lamort qui fauche`"
+  - "ec2_2 `cote d'or` spa65 `chimere`"

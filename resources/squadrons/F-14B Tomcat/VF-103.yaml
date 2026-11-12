@@ -1,0 +1,11 @@
+---
+name: "VF-103"
+nickname: "Jolly Rogers"
+country: USA
+role: Strike Fighter
+aircraft: "F-14B Tomcat"
+livery_set:
+  - "VF-103 Jolly Rogers Hi Viz"
+  - "VF-103 Last Ride"
+  - "VF-103 Sluggers 206 (1995)"
+  - "VF-103 Sluggers 207 (1991)"

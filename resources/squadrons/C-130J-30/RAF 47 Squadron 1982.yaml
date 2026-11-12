@@ -1,0 +1,11 @@
+---
+name: No. 47 Squadron RAF
+female_pilot_percentage: 0
+country: UK
+role: Transport
+aircraft: C-130J-30
+livery: "RAF 47 Sqn, RAF Brize Norton"
+mission_types:
+  - Transport
+  - Air Assault
+# Hercules C.1, 1982.

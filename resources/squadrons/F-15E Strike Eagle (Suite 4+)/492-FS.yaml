@@ -6,3 +6,16 @@ country: USA
 role: Strike Fighter
 aircraft: F-15E Strike Eagle (Suite 4+)
 livery: USAF 492nd Madhatters FS AF91-315 Vader
+livery_set:
+  - "USAF 492nd Madhatters FS AF91-315 Vader"
+  - "USAF 492nd Madhatters FS AF91 Low Vis Clean"
+  - "USAF 492nd Madhatters FS AF91 Low VIs Combat"
+  - "USAF 492nd Madhatters FS AF91-308 Low Vis Clean"
+  - "USAF 492nd Madhatters FS AF91-321 Loki"
+  - "USAF 492nd Madhatters FS AF91-327 Green Goblin"
+  - "USAF 492nd Madhatters FS AF96 Low Vis Clean"
+  - "USAF 492nd Madhatters FS AF96 Low VIs Combat"
+  - "USAF 492nd Madhatters FS AF97-220 Thanos"
+  - "USAF 492nd Madhatters FS AF97-221 Low VIs Combat"
+  - "USAF 492nd Madhatters FS AF98 Low Vis CLean"
+  - "USAF 492nd Madhatters FS AF98 Low VIs Combat"

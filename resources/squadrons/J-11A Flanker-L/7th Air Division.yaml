@@ -1,0 +1,8 @@
+---
+name: "7th Air Division"
+country: China
+role: Air Superiority Fighter
+aircraft: "J-11A Flanker-L"
+livery_set:
+  - "PLAAF 7th AD"
+  - "PLAAF 7th AD (Reworked)"

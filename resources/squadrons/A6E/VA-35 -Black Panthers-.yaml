@@ -1,0 +1,17 @@
+---
+name: VA-35
+nickname: Black Panthers
+country: USA
+role: Carrier-based Attack
+aircraft: A-6E Intruder
+livery: "VA35-500-1977"
+mission_types:
+  - Anti-ship
+  - BAI
+  - CAS
+  - DEAD
+  - OCA/Aircraft
+  - OCA/Runway
+  - SEAD
+  - SEAD Escort
+  - Strike

@@ -6,6 +6,9 @@ country: USA
 role: Close Air Support
 aircraft: A-10C Thunderbolt II (Suite 3)
 livery: 118th FS Bradley ANGB, Connecticut (CT)
+livery_set:
+  - "118th FS Bradley ANGB, Connecticut (CT)"
+  - "118th FS Bradley ANGB, Connecticut (CT) N621"
 mission_types:
   - BAI
   - CAS

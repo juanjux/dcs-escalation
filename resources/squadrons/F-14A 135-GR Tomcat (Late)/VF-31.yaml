@@ -1,0 +1,9 @@
+---
+name: "VF-31"
+country: USA
+role: Strike Fighter
+aircraft: "F-14A Tomcat (Block 135-GR Late)"
+livery_set:
+  - "VF-31 AE200 1988"
+  - "VF-31 AE204 1988"
+  - "VF-31 1991 AE205"

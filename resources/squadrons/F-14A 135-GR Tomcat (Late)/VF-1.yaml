@@ -1,0 +1,11 @@
+---
+name: "VF-1"
+nickname: "Wolfpack"
+country: USA
+role: Strike Fighter
+aircraft: "F-14A Tomcat (Block 135-GR Late)"
+livery_set:
+  - "VF-1 Wolfpack NK100 (1974)"
+  - "VF-1 Wolfpack NK101 (1974)"
+  - "VF-1 Wolfpack NK102 (1974)"
+  - "VF-1 Wolfpack NK103 (1974)"

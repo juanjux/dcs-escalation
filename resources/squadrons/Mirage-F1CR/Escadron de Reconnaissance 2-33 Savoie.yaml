@@ -1,0 +1,9 @@
+---
+name: "Escadron de Reconnaissance 2/33 Savoie"
+country: France
+role: Reconnaissance
+aircraft: "Mirage-F1CR"
+livery_set:
+  - "ER 233 Savoie BA 118 Mont de Marsan"
+  - "ER 233 Savoie BA 118 Mont de Marsan Blue Scheme"
+  - "ER 233 Savoie BA 118 Mont de Marsan Dessert Camu"

@@ -6,6 +6,9 @@ country: Spain
 role: Fighter
 aircraft: Mirage-F1BE
 livery: ALA 46 Camu Lagarto 1975-1990 Gando SQ 462
+livery_set:
+  - "ALA 46 Camu Lagarto 1975-1990 Gando SQ 462"
+  - "ALA 46 Blue Skin (BE) Gando"
 mission_types:
   - BARCAP
   - Escort

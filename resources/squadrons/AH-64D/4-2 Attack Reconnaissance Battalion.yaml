@@ -1,0 +1,9 @@
+---
+name: "4-2 Attack Reconnaissance Battalion"
+country: USA
+role: Attack Helicopter
+aircraft: "AH-64D Apache Longbow"
+livery_set:
+  - "Archangel 4-2 ARB"
+  - "Grim Reapers 4-2 ARB"
+  - "Slayers 4-2 ARB"
