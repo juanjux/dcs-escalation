@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from dcs.payloads import PayloadDirectories
+from dcs.unittype import FlyingType
 
 from game import persistency
 from game.ato import FlightType
@@ -60,9 +61,11 @@ def test_mirage_f1cr_is_usable_in_french_factions(
         )
         assert aircraft in Faction.from_dict(json.loads(data)).aircraft
 
+    payloads = Path("resources/customized_payloads")
     monkeypatch.setattr(
-        PayloadDirectories, "preferred", Path("resources/customized_payloads")
+        PayloadDirectories, "payload_dirs", classmethod(lambda cls: iter([payloads]))
     )
+    monkeypatch.setattr(FlyingType, "_payload_cache", None)
     monkeypatch.setattr(aircraft.dcs_unit_type, "payloads", None)
     for task in aircraft.iter_task_capabilities():
         loadout = Loadout.default_for_task_and_aircraft(task, aircraft.dcs_unit_type)
