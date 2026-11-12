@@ -16,6 +16,7 @@ from game.theater import Player
 from game.theater.presetlocation import PresetLocation
 from game.theater.theatergroundobject import (
     BuildingGroundObject,
+    EwrGroundObject,
     NAME_BY_CATEGORY,
     MotorpoolGroundObject,
     SamGroundObject,
@@ -40,6 +41,8 @@ def generate_markers(
             objective = VehicleGroupGroundObject(f"BONGO {index}", location, cp, None)
         elif category == "aa":
             objective = SamGroundObject(f"BONGO {index}", location, cp, None)
+        elif category == "ewr":
+            objective = EwrGroundObject(f"BONGO {index}", location, cp)
         elif category == "motorpool":
             objective = MotorpoolGroundObject(f"BONGO {index}", location, cp, None)
         else:
@@ -104,7 +107,8 @@ def test_every_objective_category_has_a_marker_label(category: str) -> None:
     action = marker_actions(mission)[0]
     label = str(action.text.id)
     assert label.startswith("BONGO 0 - ")
-    assert label.endswith(" [ENEMY]")
+    suffix = " [INITIAL POSITION]" if category in {"aa", "ewr"} else ""
+    assert label.endswith(f" [ENEMY]{suffix}")
     expected = NAME_BY_CATEGORY.get(category, category).upper()
     assert expected in label
 
@@ -173,7 +177,8 @@ def test_empty_military_sites_are_reported_as_destroyed(
     mission = generate_markers([category], owner, unit_states=(), cleared=cleared)
     action = marker_actions(mission)[0]
     allegiance = "ALLY" if owner.is_blue else "ENEMY"
-    assert str(action.text.id).endswith(f"[{allegiance}] [DESTROYED]")
+    suffix = " [INITIAL POSITION]" if category == "aa" else ""
+    assert str(action.text.id).endswith(f"[{allegiance}] [DESTROYED]{suffix}")
     assert len(list(mission.triggers.zones())) == 1
 
 
@@ -198,7 +203,10 @@ def test_empty_military_site_labels_are_written_to_the_miz(
         text = archive.read("mission").decode("utf-8")
     allegiance = "ALLY" if owner.is_blue else "ENEMY"
     assert f"BONGO 0 - RESERVE ARMOR GROUP [{allegiance}] [DESTROYED]" in text
-    assert f"BONGO 1 - AA DEFENSE SITE [{allegiance}] [DESTROYED]" in text
+    assert (
+        f"BONGO 1 - AA DEFENSE SITE [{allegiance}] [DESTROYED] [INITIAL POSITION]"
+        in text
+    )
 
 
 def test_destroyed_building_markers_keep_their_actual_positions() -> None:
