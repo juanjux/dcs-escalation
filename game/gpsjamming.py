@@ -86,8 +86,7 @@ if TYPE_CHECKING:
 #: moves, so satellite guidance only refines a search basket that an active radar or
 #: imaging seeker then searches for real -- and the ship is not where the GPS said in
 #: the first place. That is the line between JASSM and the AGM-158C LRASM.
-GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
-    # Satellite-guided bombs and dispensers.
+GPS_GUIDED_BOMB_PATTERNS: tuple[str, ...] = (
     "GBU_31",  # JDAM, 2000 lb -- all (V) variants
     "GBU_32",  # JDAM, 1000 lb
     "GBU_38",  # JDAM, 500 lb
@@ -98,12 +97,13 @@ GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
     "KAB_1500S",
     "CBU_103",  # WCMD -- inertial/GPS-corrected dispensers
     "CBU_105",
-    # Glide weapons.
+)
+GPS_GLIDE_WEAPON_PATTERNS: tuple[str, ...] = (
     "AGM_154",  # JSOW A/B/C
     "JSOW",
-    # Cruise missiles with no map of their own. AGM-158A/B only: the C is the LRASM,
-    # which hunts ships. Both spellings of the JASSM -- CurrentHill's B-21 drops the
-    # underscore.
+)
+GPS_CRUISE_MISSILE_PATTERNS: tuple[str, ...] = (
+    # AGM-158A/B only. The C is the LRASM. CurrentHill also uses AGM158B.
     # CALCM: the ALCM-to-CALCM conversion deleted its TERCOM and put GPS in its
     # place. The bare fragment is safe because DCS ships no AGM-86B, the nuclear
     # ALCM that kept the terrain database; check that again if one ever appears.
@@ -112,6 +112,11 @@ GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
     "AGM_158B",
     "AGM158B",
     "JASSM",
+)
+GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
+    *GPS_GUIDED_BOMB_PATTERNS,
+    *GPS_GLIDE_WEAPON_PATTERNS,
+    *GPS_CRUISE_MISSILE_PATTERNS,
     # Guided rockets and loitering munitions.
     "GMLRS",
     "GLSDB",
