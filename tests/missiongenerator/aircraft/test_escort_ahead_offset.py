@@ -16,7 +16,8 @@ from datetime import datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
 
-from dcs.task import ControlledTask
+import pytest
+from dcs.task import ControlledTask, OptROE
 
 from game.ato import FlightType
 from game.missiongenerator.aircraft.waypoints.joinpoint import JoinPointBuilder
@@ -83,6 +84,29 @@ def _escort_task(waypoint: Any) -> ControlledTask:
 def _start_time(waypoint: Any) -> int | None:
     condition = _escort_task(waypoint).params.get("condition")
     return None if condition is None else condition.get("time")
+
+
+@pytest.mark.parametrize(
+    ("flight_type", "roe", "target_type"),
+    [
+        (FlightType.ESCORT, OptROE.Values.OpenFire, "Fighters"),
+        (FlightType.SEAD_ESCORT, OptROE.Values.OpenFireWeaponFree, "SAM related"),
+    ],
+)
+def test_join_sets_escort_roe_and_keeps_escort_task(
+    flight_type: FlightType, roe: int, target_type: str
+) -> None:
+    waypoint = _waypoint()
+    _builder(flight_type, timedelta()).add_tasks(waypoint)
+
+    assert [
+        task.dict()["params"]["action"]["params"]["value"]
+        for task in waypoint.tasks
+        if isinstance(task, OptROE)
+    ] == [roe]
+    escort = _escort_task(waypoint).dict()["params"]["task"]
+    assert escort["id"] == "Escort"
+    assert target_type in escort["params"]["targetTypes"].values()
 
 
 def test_escort_ahead_waits_for_the_package_ingress() -> None:
