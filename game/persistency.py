@@ -4,6 +4,7 @@ import hashlib
 import logging
 import pickle
 import shutil
+from datetime import date
 from pathlib import Path
 from typing import Optional, TYPE_CHECKING, Any
 
@@ -541,6 +542,15 @@ def user_custom_weapon_injections_dir() -> Path:
 
 def save_dir() -> Path:
     return _create_dir_if_needed(base_path() / "Retribution" / "Saves")
+
+
+def suggested_save_path(game: Game, today: date) -> Path:
+    campaign_name = game.campaign_name or game.theater.terrain.name
+    name = "".join(
+        "_" if char in '<>:"/\\|?*' or ord(char) < 32 else char
+        for char in campaign_name
+    ).strip(" .")
+    return save_dir() / f"{name or 'Campaign'} {today.isoformat()}.retribution"
 
 
 def server_port() -> int:

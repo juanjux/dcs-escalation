@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import Mock
@@ -53,9 +55,9 @@ def test_save_result_reaches_close(monkeypatch: Any, save_ok: bool) -> None:
 
 
 def test_cancel_save_as_keeps_untitled_campaign_open(monkeypatch: Any) -> None:
-    window = window_for(SimpleNamespace(savepath=""))
+    window = window_for(SimpleNamespace(savepath="", campaign_name="Campaign"))
     monkeypatch.setattr(persistency, "has_unsaved_changes", lambda game: True)
-    monkeypatch.setattr(persistency, "save_dir", lambda: "saves")
+    monkeypatch.setattr(persistency, "save_dir", lambda: Path("saves"))
     monkeypatch.setattr(
         QMessageBox, "question", lambda *args: QMessageBox.StandardButton.Yes
     )
@@ -70,6 +72,39 @@ def test_cancel_save_as_keeps_untitled_campaign_open(monkeypatch: Any) -> None:
     window._shut_down.assert_not_called()
     save.assert_not_called()
     assert window.game.savepath == ""
+
+
+@pytest.mark.parametrize(
+    ("campaign_name", "savepath", "expected"),
+    [
+        ('Op: "Red/Blue"?', "", "saves/Op_ _Red_Blue__ 2026-10-24.retribution"),
+        (None, "", "saves/Caucasus 2026-10-24.retribution"),
+        ("Campaign", "original.retribution", "original.retribution"),
+    ],
+)
+def test_save_as_prefills_path(
+    monkeypatch: pytest.MonkeyPatch,
+    campaign_name: str | None,
+    savepath: str,
+    expected: str,
+) -> None:
+    window = window_for(
+        SimpleNamespace(
+            savepath=savepath,
+            campaign_name=campaign_name,
+            theater=SimpleNamespace(terrain=SimpleNamespace(name="Caucasus")),
+        )
+    )
+    monkeypatch.setattr(persistency, "save_dir", lambda: Path("saves"))
+    monkeypatch.setattr(
+        "qt_ui.windows.QLiberationWindow.date",
+        SimpleNamespace(today=lambda: date(2026, 10, 24)),
+    )
+    dialog = Mock(return_value=("", ""))
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", dialog)
+
+    assert not window.saveGameAs()
+    assert Path(dialog.call_args.kwargs["dir"]) == Path(expected)
 
 
 def test_failed_save_as_preserves_previous_path(monkeypatch: Any) -> None:

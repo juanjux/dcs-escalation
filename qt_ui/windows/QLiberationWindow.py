@@ -1,7 +1,7 @@
 import logging
 import traceback
 import webbrowser
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
@@ -469,7 +469,7 @@ class QLiberationWindow(QMainWindow):
         if self.game.savepath:
             save_dir = self.game.savepath
         else:
-            save_dir = str(persistency.save_dir())
+            save_dir = str(persistency.suggested_save_path(self.game, date.today()))
         file = QFileDialog.getSaveFileName(
             self,
             "Save As",
