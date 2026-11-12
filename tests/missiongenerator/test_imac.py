@@ -103,6 +103,57 @@ def runtime(extra: list[dict[str, Any]] | None = None) -> Any:
     return lua
 
 
+@pytest.mark.parametrize("role", ["ESCORT", "SWEEP"])
+def test_package_fighters_cover_their_evading_flight_and_release_on_clearance(
+    role: str,
+) -> None:
+    defender = dict(
+        metadata(role, "observe"), fighterMission=True, packageDefenseStart=3
+    )
+    other = dict(
+        metadata("OTHER", "observe"),
+        fighterMission=True,
+        packageDefenseStart=2,
+        package="other",
+    )
+    lua = runtime([metadata("STRIKE", "strike"), defender, other])
+    lua.globals().defender = role
+    lua.execute("""
+        own.CAP.ammo=false
+        own[defender].point.x=-5000
+        observations[2]={track('fighter',18000,0,-220,'fighter')}
+        tick(5)
+        assert(commander.states.STRIKE.order.kind=='evade')
+        assert(commander.states[defender].order==nil)
+        assert(commander.states.OTHER.order==nil)
+        commander:reached(defender,3);own[defender].fuel=.29;tick(15)
+        assert(commander.states[defender].order==nil)
+        own[defender].fuel=.95;tick(25)
+        assert(commander.states[defender].order.kind=='intercept')
+        assert(commander.states[defender].order.data.key=='fighter')
+        assert(commander.states.STRIKE.order.kind=='evade')
+        observations[2]={};tick(35);tick(65)
+        assert(commander.states[defender].order==nil)
+        assert(commander.states.STRIKE.order==nil)
+    """)
+
+
+def test_evading_strike_recovers_at_bingo() -> None:
+    lua = runtime([metadata("STRIKE", "strike")])
+    lua.execute("""
+        own.CAP.ammo=false
+        observations[2]={track('fighter',18000,0,-220,'fighter')}
+        tick(5)
+        local state=commander.states.STRIKE
+        assert(state.order.kind=='evade')
+        own.STRIKE.fuel=.29
+        assert(not commander:shouldStop('STRIKE',state.order.revision))
+        tick(15)
+        assert(state.finished and recovered[1]=='STRIKE')
+        assert(reports[#reports].reason=='BINGO during fighter evasion')
+    """)
+
+
 def test_redirects_nearest_patrol_beyond_fifty_nm_and_reserves_target() -> None:
     lua = runtime([metadata("FAR_CAP", "cap")])
     lua.execute(

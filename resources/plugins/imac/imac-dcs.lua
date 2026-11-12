@@ -439,7 +439,8 @@ do
           end)
           local names={}
           for name,s in pairs(instance.states) do
-            if s.meta.side==side and (s.meta.mode~='observe' or s.meta.returnInterceptor) then
+            if s.meta.side==side and (s.meta.mode~='observe' or s.meta.returnInterceptor or
+              s.meta.packageDefenseStart) then
               names[#names+1]=name
             end
           end

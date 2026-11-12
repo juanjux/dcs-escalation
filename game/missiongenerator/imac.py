@@ -185,9 +185,14 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
             continue
         start, end, end_time = 0, len(group.points), None
         return_start = None
+        defense_start = None
         approach = len(group.points)
         attack_index = len(group.points)
         for index, point in enumerate(group.points, 1):
+            if (role == FlightType.ESCORT and point.name == "JOIN") or (
+                role == FlightType.SWEEP and point.name == "SWEEP START"
+            ):
+                defense_start = defense_start or index
             if point.name == "RACETRACK START":
                 start = index
                 for task in point.tasks:
@@ -211,25 +216,25 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
         if mode == "cap" and (not start or end_time is None):
             mode = "observe"  # Never invent a patrol window.
         fighter_tasks = getattr(flight.aircraft_type, "task_priorities", {})
+        fighter_capable = any(
+            task in fighter_tasks
+            for task in (FlightType.BARCAP, FlightType.TARCAP, FlightType.INTERCEPTION)
+        )
         return_interceptor = (
             not human
             and return_start is not None
             and return_start < approach
-            and any(
-                task in fighter_tasks
-                for task in (
-                    FlightType.BARCAP,
-                    FlightType.TARCAP,
-                    FlightType.INTERCEPTION,
-                )
-            )
+            and fighter_capable
         )
+        if human or not fighter_capable:
+            defense_start = None
         maximum = flight.aircraft_type.max_fuel * 2.2046226218
         bingo = (flight.bingo_fuel / maximum) if maximum and flight.bingo_fuel else 0.25
         # Missing or implausible performance data must not authorize long detours.
         if not math.isfinite(bingo) or not 0 < bingo < 0.8:
             mode, bingo = "observe", 0.25
             return_interceptor = False
+            defense_start = None
         burn = getattr(flight.aircraft_type, "fuel_consumption", None)
         if burn is None:
             burn = getattr(flight.aircraft_type, "assumed_consumption", None)
@@ -240,7 +245,7 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
             burn_per_meter = None
         # Hook every point before blocking Orbit/attack tasks. Recovery is a copy
         # of the final route, including carrier links and off-map despawn actions.
-        if mode != "observe" or return_interceptor:
+        if mode != "observe" or return_interceptor or defense_start is not None:
             for index, point in enumerate(group.points, 1):
                 point.tasks.insert(
                     0,
@@ -259,6 +264,7 @@ def configure(generator: Any, config: dict[str, Any] | None) -> dict[str, Any] |
                 "deadSupport": role in DEAD_TYPES,
                 "seadMission": role in SEAD_TYPES,
                 "fighterMission": role in FIGHTER_MISSIONS,
+                "packageDefenseStart": defense_start,
                 "route": route,
                 "stationStart": start,
                 "recoveryIndex": end,

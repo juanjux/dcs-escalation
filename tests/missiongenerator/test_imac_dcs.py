@@ -638,7 +638,9 @@ def test_routine_availability_debug_stays_in_the_log_without_using_screen_budget
         "if m.text:find(quietReason,1,true) then return false end end return true end)()"
     )
     lua.execute("cap.air=true;cap.active=true;cap.fuel=.1;tick(75)")
-    assert "fuel at BINGO reserve" in lua.eval("messages[#messages].text")
+    assert "fuel at BINGO reserve (10% fuel, 30% reserve)" in lua.eval(
+        "messages[#messages].text"
+    )
     assert lua.eval("#groups.CAP.pushes") == 0
 
 

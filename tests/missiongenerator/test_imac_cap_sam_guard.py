@@ -108,6 +108,52 @@ def test_visible_enemy_inside_a_sam_does_not_restart_native_pursuit() -> None:
     """)
 
 
+def test_safe_intercept_can_interrupt_avoidance_and_return_to_the_same_orbit() -> None:
+    lua = exposed_cap()
+    lua.execute("""
+        tick(5)
+        local orbit=commander.states.CAP.order
+        own.CAP.velocity.x=0
+        observations[2]={track('fighter',-18000,0,220,'fighter')}
+        tick(15)
+        local intercept=commander.states.CAP.order
+        assert(intercept.kind=='intercept' and intercept.data.key=='fighter')
+        assert(#sent==2 and #resumed==0)
+        observations[2]={};tick(25)
+        assert(commander.states.CAP.order==orbit and #resumed==0)
+        assert(commander:shouldStop('CAP',intercept.revision))
+        rings[2]={};tick(35);tick(95)
+        assert(commander.states.CAP.order==nil and #resumed==1)
+    """)
+
+
+def test_rejected_native_intercept_keeps_avoidance_and_applies_cooldown() -> None:
+    lua = exposed_cap()
+    lua.execute("""
+        tick(5)
+        local orbit=commander.states.CAP.order
+        own.CAP.velocity.x=0
+        observations[2]={track('fighter',-18000,0,220,'fighter')}
+        rejectOrder=true;tick(15);tick(25)
+        assert(commander.states.CAP.order==orbit and #sent==2)
+        rejectOrder=false;tick(75)
+        assert(commander.states.CAP.order.kind=='intercept')
+    """)
+
+
+def test_manual_pause_releases_both_intercept_and_the_underlying_sam_orbit() -> None:
+    lua = exposed_cap()
+    lua.execute("""
+        tick(5)
+        own.CAP.velocity.x=0
+        observations[2]={track('fighter',-18000,0,220,'fighter')}
+        tick(15)
+        assert(commander.states.CAP.order.kind=='intercept')
+        commander:pauseFlight('CAP',true)
+        assert(commander.states.CAP.order==nil and #resumed==1)
+    """)
+
+
 def test_bingo_during_avoidance_requests_safe_recovery_not_a_return_to_patrol() -> None:
     lua = exposed_cap()
     lua.execute("tick(5);own.CAP.fuel=.26;tick(15)")
@@ -150,6 +196,30 @@ def test_safety_route_replaces_native_enroute_tasks_and_restores_them_once() -> 
         local restored=groups.CAP.rtbs[2].params.route.points
         assert(restored[2].task.params.tasks[1].id=='EngageTargets')
         tick(85);assert(#groups.CAP.rtbs==2)
+    """)
+
+
+def test_intercept_uses_a_temporary_task_above_the_native_avoidance_route() -> None:
+    lua = native_runtime()
+    lua.execute("""
+        cap.velocity.x=300
+        sam=add('SAM',1,28000,false);sam.alt=0
+        cfg.threats={{name='SAM-unit',group='SAM',side=1,known=true,radius=5000,ceiling=20000}}
+        fighter=add('FIGHTER',1,-35000,true,{Fighters=true})
+        fighter.observedVelocity={x=0,y=0,z=0}
+    """)
+    start(lua)
+    lua.execute("""
+        tick(5)
+        local state=EscalationIMAC.instance.states.CAP
+        assert(state.order.kind=='samAvoid' and #groups.CAP.rtbs==1)
+        cap.velocity.x=0;awacs.detections={fighter};tick(15)
+        assert(state.order.kind=='intercept' and #groups.CAP.rtbs==1)
+        local lease=groups.CAP.pushes[1].params
+        assert(lease.task.id=='AttackGroup' and lease.task.params.groupId=='FIGHTER')
+        fighter.life=0;tick(75)
+        assert(state.order.kind=='samAvoid' and #groups.CAP.rtbs==1)
+        assert(loadstring(lease.stopCondition.condition)())
     """)
 
 
