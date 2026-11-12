@@ -3,12 +3,13 @@ from __future__ import annotations
 import logging
 import random
 from datetime import datetime
+from functools import cached_property
 from typing import Any, Optional, TYPE_CHECKING
 
 from dcs import Mission, Point
 from dcs.action import DoScript
 from dcs.flyingunit import FlyingUnit
-from dcs.planes import A_10C_2, C_130J_30
+from dcs.planes import C_130J_30
 from dcs.task import OptReactOnThreat
 from dcs.translation import String
 from dcs.triggers import TriggerStart
@@ -26,6 +27,7 @@ from game.data.gunammunition import (
     GAU8_AMMUNITION,
     GAU8_DEFAULT_AMMUNITION,
 )
+from game.dcs.aircraftproperties import PropertyDateGate, night_vision_overrides
 from game.lasercodes.lasercode import LaserCode
 from game.missiongenerator.logisticsgenerator import LogisticsGenerator
 from game.missiongenerator.missiondata import MissionData, AwacsInfo, TankerInfo
@@ -40,7 +42,7 @@ from game.runways import RunwayData
 from game.settings import NightMissions
 from game.missiongenerator.missiondata import EscortInfo
 from game.squadrons import Pilot
-from game.timeofday import TimeOfDay
+from game.theater.daytimecalculator import includes_darkness
 from .aircraftbehavior import AircraftBehavior
 from .aircraftpainter import AircraftPainter
 from .bingoestimator import BingoEstimator
@@ -383,7 +385,7 @@ class FlightGroupConfigurator:
         member: FlightMember
         for unit, member in zip(self.group.units, self.flight.iter_members()):
             props = dict(member.properties)
-            self.setup_night_helmet(props, member)
+            self.setup_night_vision(props, member)
             if (code := member.weapon_laser_code) is not None:
                 for laser_code_config in self.flight.unit_type.laser_code_configs:
                     props.update(laser_code_config.property_dict_for_code(code.code))
@@ -394,23 +396,39 @@ class FlightGroupConfigurator:
             for prop_id, value in props.items():
                 unit.set_property(prop_id, value)
 
-    def setup_night_helmet(
+    def setup_night_vision(
         self, props: dict[str, bool | float | int | str], member: FlightMember
     ) -> None:
-        """Add NVG to the player's A-10C II HMCS for night missions."""
-        if not member.is_player or self.flight.unit_type.dcs_id != A_10C_2.id:
+        """Equip player slots for flights that encounter darkness."""
+        if not member.is_player:
             return
         policy = self.game.settings.night_day_missions
-        if policy is NightMissions.OnlyDay or (
-            policy is not NightMissions.OnlyNight
-            and self.game.conditions.time_of_day is not TimeOfDay.Night
-        ):
+        if policy is NightMissions.OnlyDay:
             return
-        helmet = A_10C_2.Properties.HelmetMountedDevice
-        # Keep an explicitly disabled helmet and any other selected equipment.
-        # Date restrictions are applied afterwards, as for all other properties.
-        if props.get(helmet.id, helmet.Values.HMCS) == helmet.Values.HMCS:
-            props[helmet.id] = helmet.Values.HMCS___NVG
+
+        unit_type = self.flight.unit_type
+        gate = (
+            unit_type.property_date_gate
+            if self.game.settings.restrict_props_by_date
+            else PropertyDateGate()
+        )
+        nvg = dict(
+            night_vision_overrides(
+                unit_type.dcs_unit_type.properties, props, gate, self.game.date
+            )
+        )
+        if nvg and (policy is NightMissions.OnlyNight or self.encounters_darkness):
+            props.update(nvg)
+
+    @cached_property
+    def encounters_darkness(self) -> bool:
+        plan = self.flight.flight_plan
+        start = max(self.time, plan.startup_time())
+        end = max(start, plan.landing_time)
+        theater = self.game.theater
+        return includes_darkness(
+            theater.reference_position, theater.timezone, start, end
+        )
 
     def degrade_props_for_date(
         self, props: dict[str, bool | float | int | str]
