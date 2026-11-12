@@ -41,8 +41,8 @@ class GameLoop:
     def start(self) -> None:
         if self.started:
             raise RuntimeError("Cannot start game loop because it has already started")
-        self.started = True
         self.sim.begin_simulation()
+        self.started = True
 
     def generate_miz(self, output: Path) -> None:
         if not self.started:

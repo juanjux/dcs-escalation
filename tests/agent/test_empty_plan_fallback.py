@@ -18,6 +18,7 @@ from dcs.vehicles import Armor
 
 from game import Game
 from game.agent import planner, schemas, service
+from game.ato.airtaaskingorder import AirTaskingOrder
 from game.ground_forces.ai_ground_planner import CombatGroupRole
 from game.ground_forces.combat_stance import CombatStance
 from game.missiongenerator.flotgenerator import FlotGenerator
@@ -28,7 +29,7 @@ from game.utils import Heading
 @pytest.fixture
 def state(monkeypatch: pytest.MonkeyPatch) -> Any:
     own = SimpleNamespace(stances={"enemy": CombatStance.DEFENSIVE})
-    red = SimpleNamespace(ato=SimpleNamespace(packages=[]), plan_missions=Mock())
+    red = SimpleNamespace(ato=AirTaskingOrder(), plan_missions=Mock())
     game = SimpleNamespace(
         turn=17,
         opfor_ai_orders_turn=None,
@@ -58,7 +59,6 @@ def test_ground_order_keeps_an_empty_air_plan(state: Any) -> None:
 
 def test_explicitly_clearing_an_empty_ato_counts_as_an_order(state: Any) -> None:
     state.game.coalition_for = lambda _: state.red
-    state.red.ato.clear = state.red.ato.packages.clear
     assert service.clear_packages("red").ok
     assert not service.run_opfor_fallback_if_needed()["ran"]
 
@@ -145,9 +145,13 @@ def test_legacy_fallback_restores_ground_orders_even_on_error(
 ) -> None:
     del state.game.opfor_ai_orders_turn
 
+    flight = object()
+    package = SimpleNamespace(flights=[flight], remove_flight=Mock())
+
     def replan(_: datetime) -> None:
         state.own.stances["enemy"] = CombatStance.RETREAT
         state.own.stances["other"] = CombatStance.AGGRESSIVE
+        state.red.ato.add_package(package)
         if fail:
             raise ValueError("planning failed")
 
@@ -156,8 +160,12 @@ def test_legacy_fallback_restores_ground_orders_even_on_error(
         with pytest.raises(ValueError):
             service.run_opfor_fallback_if_needed()
         assert not hasattr(state.game, "opfor_ai_orders_turn")
+        assert state.red.ato.packages == []
+        package.remove_flight.assert_called_once_with(flight)
     else:
         assert service.run_opfor_fallback_if_needed()["ran"]
+        assert state.red.ato.packages == [package]
+        package.remove_flight.assert_not_called()
     assert state.own.stances == {"enemy": CombatStance.DEFENSIVE}
     state.game.theater.control_points_for.assert_called_once_with(Player.RED)
 

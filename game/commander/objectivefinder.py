@@ -232,20 +232,20 @@ class ObjectiveFinder:
     def convoys(self) -> Iterator[Convoy]:
         if self.game.settings.perf_disable_convoys:
             return
+        convoys = self.game.coalition_for(self.is_player.opponent).transfers.convoys
         for front_line in self.front_lines():
-            yield from self.game.coalition_for(
-                self.is_player
-            ).transfers.convoys.travelling_to(
-                front_line.control_point_hostile_to(self.is_player)
-            )
+            destination = front_line.control_point_hostile_to(self.is_player)
+            for convoy in convoys.travelling_to(destination):
+                if not convoy.is_friendly(self.is_player):
+                    yield convoy
 
     def cargo_ships(self) -> Iterator[CargoShip]:
+        ships = self.game.coalition_for(self.is_player.opponent).transfers.cargo_ships
         for front_line in self.front_lines():
-            yield from self.game.coalition_for(
-                self.is_player
-            ).transfers.cargo_ships.travelling_to(
-                front_line.control_point_hostile_to(self.is_player)
-            )
+            destination = front_line.control_point_hostile_to(self.is_player)
+            for ship in ships.travelling_to(destination):
+                if not ship.is_friendly(self.is_player):
+                    yield ship
 
     def friendly_control_points(self) -> Iterator[ControlPoint]:
         """Iterates over all friendly control points."""
