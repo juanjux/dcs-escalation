@@ -38,6 +38,18 @@ export function movementBarColor(tgo: TgoModel): string | null {
     : null;
 }
 
+export function movementLabel(tgo: TgoModel): string | null {
+  if (
+    !["armor", "aa", "ewr"].includes(tgo.category) ||
+    (!tgo.in_transit && tgo.iads_state !== "relocating")
+  ) {
+    return null;
+  }
+  return tgo.blue && tgo.movement_destination_label
+    ? `Moving to ${tgo.movement_destination_label}`
+    : "Moving";
+}
+
 // A destroyed site keeps its red bar. It is dark, of course it is -- but "destroyed" is
 // the more useful of the two things to be told, and the red bar is the only place the
 // map says it.
@@ -209,11 +221,18 @@ export function TgoTooltipContent(props: { tgo: TgoModel }) {
   );
   const transit = formatAggregateInventory(props.tgo.in_transit_units ?? []);
   const units = props.tgo.units;
+  const movement = movementLabel(props.tgo);
 
   return (
     <>
       {`${props.tgo.name} (${props.tgo.control_point_name})`}
       <br />
+      {movement && (
+        <>
+          <b>{movement}</b>
+          <br />
+        </>
+      )}
       {props.tgo.health && hasPersistentDamage(props.tgo.health) && (
         <>
           Health: {props.tgo.health.health_percent}% · next turn:{" "}

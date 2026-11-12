@@ -67,6 +67,73 @@ describe("formatInventory", () => {
 });
 
 describe("TgoTooltip", () => {
+  it.each(["armor", "aa", "ewr"])(
+    "shows movement and destination for a moving %s group",
+    (category) => {
+      render(
+        <TgoTooltip
+          tgo={tgo({
+            category,
+            in_transit: true,
+            movement_destination_label: "Tonopah Test Range",
+          })}
+        />,
+      );
+      expect(document.body.textContent).toContain("Moving to Tonopah Test Range");
+    },
+  );
+
+  it.each([
+    "front line Tonopah / Groom Lake",
+    "N37.53200° W116.29400°",
+  ])("shows a front or GPS destination (%s)", (label) => {
+    render(
+      <TgoTooltip
+        tgo={tgo({
+          category: "armor",
+          in_transit: true,
+          movement_destination_label: label,
+        })}
+      />,
+    );
+    expect(document.body.textContent).toContain(`Moving to ${label}`);
+  });
+
+  it("removes movement text when the group stops even if its old label remains", () => {
+    const moving = tgo({
+      category: "armor",
+      in_transit: true,
+      movement_destination_label: "Tonopah",
+    });
+    const { rerender } = render(<TgoTooltip tgo={moving} />);
+    expect(document.body.textContent).toContain("Moving to Tonopah");
+    rerender(<TgoTooltip tgo={{ ...moving, in_transit: false }} />);
+    expect(document.body.textContent).not.toContain("Moving");
+  });
+
+  it("shows generic movement without exposing an enemy destination", () => {
+    render(
+      <TgoTooltip
+        tgo={tgo({
+          category: "armor",
+          blue: false,
+          in_transit: true,
+          movement_destination_label: "Secret destination",
+        })}
+      />,
+    );
+    expect(document.body.textContent).toContain("Moving");
+    expect(document.body.textContent).not.toContain("Secret destination");
+  });
+
+  it("supports a relocating SAM without destination metadata", () => {
+    render(
+      <TgoTooltip tgo={tgo({ category: "aa", iads_state: "relocating" })} />,
+    );
+    expect(document.body.textContent).toContain("Moving");
+    expect(document.body.textContent).not.toContain("Moving to");
+  });
+
   it("renders count-only motorpool aggregates without fabricated ids", () => {
     const { container } = render(
       <TgoTooltip
