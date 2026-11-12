@@ -38,16 +38,8 @@ class JoinPointBuilder(PydcsWaypointBuilder):
 
         doctrine = self.flight.coalition.doctrine
 
-        if self.flight.flight_type in (FlightType.ESCORT, FlightType.SEAD_ESCORT):
-            # Escorts spawn at ReturnFire (see configure_escort): under OpenFire --
-            # "engage ONLY designated targets" -- a pre-join escort has an empty
-            # legal-target set and cannot even shoot back. The Escort ControlledTask
-            # below is the first target designation, so escalate here, where escort
-            # duty actually begins. The in-flight spawn path re-applies JOIN tasks to
-            # a mid-mission spawn's first point, so late spawns pick this up too.
-            waypoint.tasks.append(OptROE(OptROE.Values.OpenFire))
-
         if self.flight.flight_type == FlightType.ESCORT:
+            waypoint.tasks.append(OptROE(OptROE.Values.OpenFire))
             targets = [
                 Targets.All.Air.Planes.Fighters.id,
                 Targets.All.Air.Planes.MultiroleFighters.id,
@@ -74,6 +66,8 @@ class JoinPointBuilder(PydcsWaypointBuilder):
             FlightType.DEAD,
         ]:
             if self.flight.flight_type == FlightType.SEAD_ESCORT:
+                # DCS does not release HARMs for the Escort task under Open Fire.
+                waypoint.tasks.append(OptROE(OptROE.Values.OpenFireWeaponFree))
                 self.handle_sead_escort(doctrine, waypoint)
                 # Let the AI use ECM to preemptively defend themselves.
                 ecm_option = OptECMUsing(
