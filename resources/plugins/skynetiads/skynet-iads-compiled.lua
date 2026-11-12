@@ -445,6 +445,23 @@ samTypesDB = {
 		},
 		['harm_detection_chance'] = 60
 	},
+	-- The KS-19 site exports its Fire Can as an EWR. The second ID is for old mod units.
+	['Fire Can'] = {
+		['type'] = 'ewr',
+		['searchRadar'] = {
+			['SON_9'] = {
+				['name'] = {
+					['NATO'] = 'Fire Can',
+				},
+			},
+			['Fire Can radar'] = {
+				['name'] = {
+					['NATO'] = 'Fire Can',
+				},
+			},
+		},
+		['harm_detection_chance'] = 20
+	},
 	['Dog Ear'] = {
 		['type'] = 'ewr',
 		['searchRadar'] = {
