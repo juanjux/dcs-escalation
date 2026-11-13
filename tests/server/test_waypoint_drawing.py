@@ -215,6 +215,9 @@ def test_an_altitude_the_flight_flies_at_is(kind: FlightWaypointType) -> None:
     [
         (FlightWaypointType.PATROL_TRACK, "RACETRACK START", "track"),
         (FlightWaypointType.PATROL, "RACETRACK END", "track"),
+        (FlightWaypointType.INGRESS_SWEEP, "SWEEP START", "ingress"),
+        (FlightWaypointType.EGRESS, "SWEEP END", "track"),
+        (FlightWaypointType.EGRESS, "EGRESS", ""),
         (FlightWaypointType.LOITER, "ORBIT", "track"),
         (FlightWaypointType.INGRESS_STRIKE, "INGRESS", "ingress"),
         (FlightWaypointType.INGRESS_DEAD, "INGRESS", "ingress"),
