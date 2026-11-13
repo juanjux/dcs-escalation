@@ -179,9 +179,9 @@ squadrons:
       pilots: 16
 
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
 
 ground_forces:
   "Ground-27": GPS Jamming Site (Red, Unescorted)

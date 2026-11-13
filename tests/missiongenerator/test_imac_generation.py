@@ -1,7 +1,6 @@
 """Generate native missions with IMAC enabled and disabled."""
 
 import copy
-import json
 import pickle
 from pathlib import Path
 from types import SimpleNamespace as NS
@@ -22,8 +21,8 @@ from game.dcs.aircrafttype import AircraftType
 from game.missiongenerator import imac
 from game.missiongenerator.luagenerator import LuaGenerator
 from game.missiongenerator.missiondata import MissionData
-from game.plugins.luaplugin import LuaPlugin, LuaPluginDefinition
 from game.settings import Settings
+from game.settings.settings import IMAC_OPTIONS
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.player import Player
 from game.unitmap import UnitMap
@@ -54,53 +53,37 @@ def scenario() -> Any:
 
 
 def test_disabled_is_inert_without_inspecting_the_mission() -> None:
-    assert imac.options([]) is None
+    assert imac.options(Settings()) is None
     assert imac.configure(object(), None) is None
     imac.inject(object(), None)
 
 
-def test_manifest_is_opt_in_and_all_exported_defaults_match() -> None:
-    definition = LuaPluginDefinition.from_json(
-        "imac", Path("resources/plugins/imac/plugin.json")
-    )
-    assert definition.enabled_by_default is False
-    assert {
-        o.identifier.removeprefix("imac."): o.value for o in definition.options
-    } == imac.DEFAULTS
-    assert "imac" in json.loads(Path("resources/plugins/plugins.json").read_text())
+def test_integrated_settings_are_opt_in_and_exported_defaults_match() -> None:
+    assert imac.options(Settings()) is None
+    assert imac.options(Settings(imac_enabled=True)) == imac.DEFAULTS
 
 
 def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> None:
-    definition = LuaPluginDefinition.from_json(
-        "imac", Path("resources/plugins/imac/plugin.json")
-    )
-    plugin = LuaPlugin(definition)
     settings = Settings()
-    plugin.set_settings(settings)
-    plugin.set_value(True)
-    for option in plugin.options:
-        option.set_settings(settings)
-        if option.identifier in (
-            "imac.blue",
-            "imac.red",
-            "imac.debug",
-            "imac.debugOpfor",
-        ):
-            option.set_value(option.identifier != "imac.blue")
+    settings.__setstate__(
+        {
+            "plugins": {
+                "imac": True,
+                "imac.blue": False,
+                "imac.red": True,
+                "imac.debug": True,
+                "imac.debugOpfor": True,
+            }
+        }
+    )
     restored = pickle.loads(pickle.dumps(settings))
-    plugin.set_settings(restored)
-    for option in plugin.options:
-        option.set_settings(restored)
-    options = imac.options([plugin])
+    options = imac.options(restored)
     assert options is not None
     assert options["blue"] is False
     assert options["red"] is True
     assert options["debug"] is True
     assert options["debugOpfor"] is True
-    assert restored.plugins["imac.blue"] is False
-    assert restored.plugins["imac.red"] is True
-    assert restored.plugins["imac.debug"] is True
-    assert restored.plugins["imac.debugOpfor"] is True
+    assert not any(key.startswith("imac") for key in restored.plugins)
 
 
 @pytest.mark.parametrize(
@@ -121,13 +104,10 @@ def test_imac_side_and_debug_settings_survive_campaign_settings_round_trip() -> 
 def test_options_reject_invalid_values_before_modifying_routes(
     key: str, value: Any
 ) -> None:
-    plugin = NS(
-        identifier="imac",
-        enabled=True,
-        options=[NS(identifier="imac." + key, get_value=value)],
-    )
+    settings = Settings(imac_enabled=True)
+    setattr(settings, IMAC_OPTIONS[key], value)
     with pytest.raises(ValueError, match="IMAC"):
-        imac.options([plugin])
+        imac.options(settings)
 
 
 def test_miz_embeds_runtime_in_dependency_order_and_native_route() -> None:
@@ -292,15 +272,10 @@ def test_dead_and_sead_roles_export_support_and_completion_hooks(
 def test_avoidance_dependencies_are_enforced_without_opening_the_ui(
     parent: str, child: str, active: bool, exempt: bool
 ) -> None:
-    plugin = LuaPlugin.from_json("imac", Path("resources/plugins/imac/plugin.json"))
-    assert plugin is not None
-    settings = Settings()
-    plugin.set_settings(settings)
-    plugin.set_value(True)
-    settings.set_plugin_option("imac." + parent, active)
-    settings.set_plugin_option("imac." + child, exempt)
-    plugin.set_settings(pickle.loads(pickle.dumps(settings)))
-    options = imac.options([plugin])
+    settings = Settings(imac_enabled=True)
+    setattr(settings, IMAC_OPTIONS[parent], active)
+    setattr(settings, IMAC_OPTIONS[child], exempt)
+    options = imac.options(pickle.loads(pickle.dumps(settings)))
     assert options is not None
     assert options[parent] is active
     assert options[child] is (not active or exempt)

@@ -25,7 +25,7 @@ def test_replacements_update_map_category_and_header_without_mutating_save_data(
     world: Any, owner: Player, radar_slot: bool
 ) -> None:
     w = world
-    w.game.settings.set_plugin_option("gpsjamming", False)
+    w.game.settings.gps_jamming_enabled = False
     w.a._coalition.player = owner
     w.a._coalition.game = w.game
     location = PresetLocation("SITE", Point(0, 0, w.game.theater.terrain))

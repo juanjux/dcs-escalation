@@ -3,7 +3,6 @@
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import patch
 from zipfile import ZipFile
 
 import pytest
@@ -25,11 +24,7 @@ def pilot_preamble(enabled: bool, empty: bool = False) -> str:
         ),
     )
     fake.unit_map = SimpleNamespace(aircraft={} if empty else {"blue": flying_unit})
-    with patch(
-        "game.missiongenerator.luagenerator.LuaPluginManager.plugins",
-        return_value=[SimpleNamespace(identifier="missionlog", enabled=True)],
-    ):
-        generator._seed_pilot_roster()
+    generator._seed_pilot_roster()
     return str(fake.mission.triggerrules.triggers[0].actions[0].text.id)
 
 
@@ -126,10 +121,10 @@ def test_defending_player_filter(
         blue.getPlayerName = function() return player_name end
         blue.getCoalition = function() return victim_side end
         red.getCoalition = function() return 3 - victim_side end
-        dcsRetribution = {plugins={missionlog={}}}
+        dcsRetribution = {missionLog={}}
         """)
     if hide is not None:
-        lua.globals().dcsRetribution.plugins.missionlog.hideplayerdefending = hide
+        lua.globals().dcsRetribution.missionLog.hideplayerdefending = hide
     lua.execute("shot(red, blue)")
     messages = list(lua.globals().messages.values())
     defending = [m for m in messages if m.side == side]
@@ -144,7 +139,7 @@ def test_defending_player_filter(
 def test_hidden_defending_does_not_consume_message_budget() -> None:
     lua = mission_log(False)
     lua.execute("""
-        dcsRetribution = {plugins={missionlog={maxmessages=3}}}
+        dcsRetribution = {missionLog={maxmessages=3}}
         blue.getPlayerName = function() return 'Human pilot' end
         shot(red, blue)
         for i=1,3 do shot(red, aircraft('wingman' .. i, 2)) end
@@ -167,23 +162,12 @@ def test_defending_handles_unavailable_player_name(getter: str) -> None:
 
 
 def test_player_defending_option_defaults_and_saved_override() -> None:
-    from game.plugins.luaplugin import LuaPluginDefinition
     from game.settings import Settings
 
-    definition = LuaPluginDefinition.from_json(
-        "missionlog", Path("resources/plugins/missionlog/plugin.json")
-    )
-    option = next(
-        o
-        for o in definition.options
-        if o.identifier == "missionlog.hideplayerdefending"
-    )
     settings = Settings()
-    option.set_settings(settings)
-    assert option.get_value is True
-    option.set_value(False)
-    option.set_settings(settings)
-    assert option.get_value is False
+    assert settings.mission_log_hide_player_defending is True
+    settings.__setstate__({"plugins": {"missionlog.hideplayerdefending": False}})
+    assert settings.mission_log_hide_player_defending is False
 
 
 def test_pilot_roster_survives_miz_export(tmp_path: Path) -> None:

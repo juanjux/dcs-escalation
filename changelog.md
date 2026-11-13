@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mission Generator]** Integrate GPS Jamming, Mission Log, Ground Movement and IMAC. Remove Carsten’s Arty Spotter.
 * **[Mission Generation]** Retire automatic frontline JTAC drones and CTLD-deployed JTACs.
 * **[UI]** Name GPS waypoints when saving them from the map or Location dialog.
 * **[UI]** Suggest the campaign name and current date when saving a new campaign for the first time (adapted from RetLab #1387).

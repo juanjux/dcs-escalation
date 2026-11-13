@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from PySide6 import QtWidgets, QtGui
 
 from game.campaignloader import Campaign
+from game.groundmovement.settings import reconcile
 from game.settings import Settings
 from qt_ui.windows.settings.QSettingsWindow import QSettingsWidget
 
@@ -40,6 +41,7 @@ class NewGameSettings(QtWidgets.QWizardPage):
                 **campaign_settings["plugins"],
             }
         settings.__dict__.update(campaign_settings)
+        reconcile(settings)
 
     def set_campaign_values(self, c: Campaign):
         sw = self.settings_widget

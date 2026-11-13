@@ -26,7 +26,7 @@ def log() -> Any:
         function lost(target)
             handler:onEvent({id=world.event.S_EVENT_UNIT_LOST,initiator=target})
         end
-        dcsRetribution={plugins={missionlog={maxmessages=60}}}
+        dcsRetribution={missionLog={maxmessages=60}}
         """)
     return lua
 
@@ -63,7 +63,7 @@ def test_losses_are_reported_to_surface_owner(
 def test_losses_and_groundkills_are_independent_settings(
     log: Any, losses: bool, kills: bool
 ) -> None:
-    options = log.globals().dcsRetribution.plugins.missionlog
+    options = log.globals().dcsRetribution.missionLog
     options.losses, options.groundkills = losses, kills
     log.execute("kill(red,surface('0123 | SA-11 Buk',2));flush()")
     messages = list(log.globals().messages.values())

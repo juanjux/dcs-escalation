@@ -23,7 +23,6 @@ from game.groundmovement.orders import (
     plan_transport,
 )
 from game.groundmovement import settings as movement
-from game.plugins import LuaPluginManager
 from game.settings import Settings
 from game.theater import Player
 
@@ -89,12 +88,10 @@ def test_enable_requires_explicit_dependency_and_disable_preserves_options() -> 
     settings.motorpool_enabled = False
     with pytest.raises(ValueError, match="Motor Pool"):
         movement.set_enabled(settings, True)
-    with pytest.raises(ValueError, match="Motor Pool"):
-        settings.set_plugin_option("groundmovement", True)
     assert vars(settings)["motorpool_enabled"] is False
     assert not movement.enabled(settings)
     movement.set_enabled(settings, True, enable_motorpool=True)
-    settings.set_plugin_option("groundmovement.roadMilesPerTurn", 80)
+    settings.ground_movement_road_miles_per_turn = 80
     assert vars(settings)["motorpool_enabled"] is True
     assert movement.enabled(settings)
     movement.disable_motorpool(settings)
@@ -105,19 +102,20 @@ def test_enable_requires_explicit_dependency_and_disable_preserves_options() -> 
     )
 
 
-def test_invalid_imported_dependency_disables_plugin_without_enabling_motorpool() -> (
+def test_invalid_imported_dependency_disables_movement_without_enabling_motorpool() -> (
     None
 ):
     settings = Settings()
     settings.motorpool_enabled = False
-    settings.plugins["groundmovement"] = True
-    LuaPluginManager.load_settings(settings)
+    settings.__setstate__(
+        {"motorpool_enabled": False, "plugins": {"groundmovement": True}}
+    )
     assert not settings.motorpool_enabled and not movement.requested(settings)
 
 
 @pytest.mark.parametrize("value", [0, -1, 1001, True, "120", math.inf, math.nan])
 def test_invalid_saved_distance_is_rejected(settings: Settings, value: Any) -> None:
-    settings.set_plugin_option("groundmovement.roadMilesPerTurn", value)
+    settings.ground_movement_road_miles_per_turn = value
     with pytest.raises(ValueError, match="distance"):
         movement.distance_per_turn(settings, on_road=True)
 
@@ -267,6 +265,7 @@ def test_old_game_save_initializes_separate_empty_order_book(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(Game, "on_load", lambda self: None)
+    monkeypatch.setattr(Game, "_retire_frontline_laser_codes", lambda self: None)
     first, second = Game.__new__(Game), Game.__new__(Game)
     for game in (first, second):
         game.__setstate__({"laser_code_registry": object()})
@@ -280,6 +279,7 @@ def test_campaign_pickle_preserves_nonempty_movement_orders(
     units: dict[int, GroundUnitType],
 ) -> None:
     monkeypatch.setattr(Game, "on_load", lambda self: None)
+    monkeypatch.setattr(Game, "_retire_frontline_laser_codes", lambda self: None)
     game = Game.__new__(Game)
     game.__setstate__({"laser_code_registry": object(), "settings": settings})
     order = _plan(game.ground_movements, settings, units, [1])

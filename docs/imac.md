@@ -1,6 +1,6 @@
 # In-Mission Air Commander (IMAC)
 
-IMAC provides optional in-mission scripted air coordination, without an LLM. Enable it in the campaign's plugin settings and regenerate the mission. BLUE and RED have independent commanders and enable switches. It is off by default.
+IMAC provides optional in-mission scripted air coordination, without an LLM. Enable it under **Mission Generator → In-Mission Air Commander** and regenerate the mission. BLUE and RED have independent commanders and enable switches. It is off by default.
 
 ## Authority and intelligence
 
@@ -43,13 +43,13 @@ Active AFAC and air-assault navigation remain under their existing controllers. 
 
 ## Settings and validation
 
-Both commanders and coalition order reports are enabled inside the opt-in plugin. The default decision interval is 10 seconds. Intercept range, patrol leash, pursuit time and danger radius are configurable. Holding and evasion use renewable task leases, not mission-cancellation deadlines. AWACS and long-range radars are sampled every cycle; up to 64 other sensors per side rotate fairly. A source processes at most 512 detection entries per pass. Short-lived local-only contacts may be missed between scans. The event history is capped at 128 entries. Native-query errors are rate-limited in the log, and a decision-cycle failure stops automatic command and releases its leases.
+Both commanders and coalition order reports are enabled when IMAC is enabled. The default decision interval is 10 seconds. Intercept range, patrol leash, pursuit time and danger radius are configurable. Holding and evasion use renewable task leases, not mission-cancellation deadlines. AWACS and long-range radars are sampled every cycle; up to 64 other sensors per side rotate fairly. A source processes at most 512 detection entries per pass. Short-lived local-only contacts may be missed between scans. The event history is capped at 128 entries. Native-query errors are rate-limited in the log, and a decision-cycle failure stops automatic command and releases its leases.
 
 **Divert attacks and BARCAPs away from SAM threat rings** is on by default and also applies to TARCAP and returning-fighter interception corridors. **Never divert DEAD/SEAD missions for SAM rings** is on by default and covers DEAD, SEAD, SEAD Escort and SEAD Sweep. Turn it off to allow SAM avoidance for those missions. When SAM avoidance is off, its exemption is checked and disabled. Support-aircraft evasion still chooses SAM-safe routes; terrain and fuel limits remain active.
 
 **Divert flights away from enemy fighters** is a separate, default-on protective-evasion switch. **Never divert Escort or Fighter Sweep away from fighters** is also on by default. When fighter evasion is off, that exemption is checked and disabled; when it is on, the exemption is editable. These settings do not disable native combat tasks or IMAC CAP interception, and the dependencies are enforced during mission generation as well as in the settings dialog.
 
-**Enable BLUE commander** and **Enable RED commander** are independent campaign plugin settings. **Debug messages and decision logging** is off by default. When enabled, the owning coalition sees orders and rejection reasons, limited to four debug messages per minute. Detailed `IMAC|DEBUG|` log entries also include command authority, active-order fuel, waypoint and remaining lease time. Repeated messages and active-order snapshots are throttled to one per minute per flight/topic. Debug is independent of normal order reports. F10 commander status includes the current source of command authority.
+**Enable BLUE commander** and **Enable RED commander** are independent campaign settings. **Debug messages and decision logging** is off by default. When enabled, the owning coalition sees orders and rejection reasons, limited to four debug messages per minute. Detailed `IMAC|DEBUG|` log entries also include command authority, active-order fuel, waypoint and remaining lease time. Repeated messages and active-order snapshots are throttled to one per minute per flight/topic. Debug is independent of normal order reports. F10 commander status includes the current source of command authority.
 
 **Show OPFOR debug messages on BLUE** is an optional testing aid, off by default. With debug and the RED commander enabled, it mirrors RED decisions, rejection reasons and active-order details to BLUE with a separate eight-message-per-minute limit. BLUE command does not need to be enabled. Routine authority and availability messages stay in the log. Normal order reports remain coalition-only.
 

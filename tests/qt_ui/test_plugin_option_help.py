@@ -84,53 +84,59 @@ def qt_app() -> Any:
 @pytest.mark.parametrize(
     "parent,child",
     [
-        ("avoidSamThreats", "neverDivertSead"),
-        ("evadeFighters", "neverEvadeFighterMissions"),
+        ("imac_avoid_sam_threats", "imac_never_divert_sead"),
+        ("imac_evade_fighters", "imac_never_evade_fighter_missions"),
     ],
 )
 def test_imac_avoidance_exemptions_are_forced_only_when_parent_is_off(
     qt_app: Any, parent: str, child: str
 ) -> None:
-    from PySide6.QtWidgets import QCheckBox
+    from types import SimpleNamespace
+    from PySide6.QtWidgets import QCheckBox, QWidget
     from game.settings import Settings
-    from qt_ui.windows.settings.plugins import PluginOptionsBox
+    from game.settings.settings import IMAC_SECTION, MISSION_GENERATOR_PAGE
+    from qt_ui.windows.settings.QSettingsWindow import AutoSettingsLayout
 
-    plugin = LuaPlugin.from_json("imac", ROOT / "resources/plugins/imac/plugin.json")
-    assert plugin is not None
-    settings = Settings()
-    plugin.set_settings(settings)
-    box = PluginOptionsBox(plugin)
+    settings = Settings(imac_enabled=True)
+    container: Any = SimpleNamespace(settings=settings)
+    widget = QWidget()
+    layout = AutoSettingsLayout(
+        MISSION_GENERATOR_PAGE, IMAC_SECTION, container, lambda: None
+    )
+    widget.setLayout(layout)
+    box = next(box for box in layout.boxes if parent in box.settings_map)
+
+    def refresh() -> None:
+        layout.apply_visibility()
+
+    box.on_settings_changed = refresh
     try:
-        main = box.widgets["imac." + parent]
-        exception = box.widgets["imac." + child]
+        main = box.settings_map[parent]
+        exception = box.settings_map[child]
         assert isinstance(main, QCheckBox) and isinstance(exception, QCheckBox)
         assert main.isChecked() and exception.isChecked() and exception.isEnabled()
         exception.setChecked(False)
-        assert settings.plugin_option("imac." + child) is False
+        assert getattr(settings, child) is False
         main.setChecked(False)
         assert exception.isChecked() and not exception.isEnabled()
-        assert not box.labels["imac." + child].isEnabled()
-        assert settings.plugin_option("imac." + child) is True
+        assert not box.label_map[child].isEnabled()
+        assert getattr(settings, child) is True
         main.setChecked(True)
         assert exception.isEnabled() and exception.isChecked()
-        assert box.labels["imac." + child].isEnabled()
         exception.setChecked(False)
-        box.update_from_settings(settings)
+        layout.update_from_settings()
         assert not exception.isChecked() and exception.isEnabled()
-        restored = Settings()
-        restored.set_plugin_option("imac." + parent, False)
-        restored.set_plugin_option("imac." + child, False)
-        plugin.set_settings(restored)
-        box.update_from_settings(restored)
+        setattr(settings, parent, False)
+        setattr(settings, child, False)
+        layout.update_from_settings()
         assert exception.isChecked() and not exception.isEnabled()
-        assert restored.plugin_option("imac." + child) is True
-        # The same parent state emits no toggled signal on a second refresh.
-        restored.set_plugin_option("imac." + child, False)
-        box.update_from_settings(restored)
+        assert getattr(settings, child) is True
+        setattr(settings, child, False)
+        layout.update_from_settings()
         assert exception.isChecked() and not exception.isEnabled()
-        assert restored.plugin_option("imac." + child) is True
+        assert getattr(settings, child) is True
     finally:
-        box.close()
+        widget.close()
 
 
 @pytest.mark.parametrize("value", [True, 20, 0.5, "text"])

@@ -584,8 +584,8 @@ def test_empty_sams_and_disabled_movement_are_not_accepted(world: Any) -> None:
 
 def test_preview_estimates_multiple_turns_and_the_first_stop(world: Any) -> None:
     world.b.position.x = 4000
-    world.game.settings.set_plugin_option("groundmovement.roadMilesPerTurn", 1)
-    world.game.settings.set_plugin_option("groundmovement.offRoadMilesPerTurn", 1)
+    world.game.settings.ground_movement_road_miles_per_turn = 1
+    world.game.settings.ground_movement_off_road_miles_per_turn = 1
     destination = movement_destination(
         world.game, Player.BLUE, DestinationKind.BASE, base_id=world.b.id
     )

@@ -32,9 +32,9 @@ recommended_enemy_money: 0
 recommended_player_income_multiplier: 0.2
 recommended_enemy_income_multiplier: 0.2
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
   fa_18efg: true
   f22_raptor: true
   uh_60l: true

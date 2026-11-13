@@ -8,12 +8,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game.settings import Settings
 
-PLUGIN = "groundmovement"
 METERS_PER_MILE = 1609.344
 
 
 def requested(settings: Settings) -> bool:
-    return settings.plugin_option_or(PLUGIN, False) is True
+    return getattr(settings, "ground_movement_enabled", False) is True
 
 
 def enabled(settings: Settings) -> bool:
@@ -27,23 +26,26 @@ def set_enabled(
         if not enable_motorpool:
             raise ValueError("Ground Movement requires Motor Pool")
         settings.motorpool_enabled = True
-    settings.set_plugin_option(PLUGIN, value)
+    settings.ground_movement_enabled = value
 
 
 def disable_motorpool(settings: Settings) -> None:
-    settings.set_plugin_option(PLUGIN, False)
+    settings.ground_movement_enabled = False
     settings.motorpool_enabled = False
 
 
 def reconcile(settings: Settings) -> None:
     """Invalid imported combinations disable movement, preserving saved orders."""
     if requested(settings) and not settings.motorpool_enabled:
-        settings.set_plugin_option(PLUGIN, False)
+        settings.ground_movement_enabled = False
 
 
 def distance_per_turn(settings: Settings, *, on_road: bool) -> float:
-    key, default = ("roadMilesPerTurn", 120) if on_road else ("offRoadMilesPerTurn", 60)
-    value = settings.plugin_option_or(f"{PLUGIN}.{key}", default)
+    value = (
+        settings.ground_movement_road_miles_per_turn
+        if on_road
+        else settings.ground_movement_off_road_miles_per_turn
+    )
     if (
         isinstance(value, bool)
         or not isinstance(value, (int, float))

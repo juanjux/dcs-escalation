@@ -117,6 +117,9 @@ LIVE_PILOTS_FRIENDSHIP_EFFECTS_SECTION = "What it does"
 
 
 GAMEPLAY_SECTION = "Gameplay"
+IMAC_SECTION = "In-Mission Air Commander"
+GROUND_MOVEMENT_SECTION = "Ground Movement"
+GPS_JAMMING_SECTION = "GPS Jamming"
 MISSION_START_SECTION = "Mission Start"
 AI_BEHAVIOUR_SECTION = "AI"
 KNEEBOARD_SECTION = "Kneeboard"
@@ -125,6 +128,58 @@ KNEEBOARD_SECTION = "Kneeboard"
 # This section had the header: "Disabling settings below may improve performance, but
 # will impact the overall quality of the experience."
 PERFORMANCE_SECTION = "Performance"
+
+
+GPS_JAMMING_OPTIONS = {
+    "degradeChancePct": "gps_jamming_degrade_chance_pct",
+    "terminalAglFt": "gps_jamming_terminal_agl_ft",
+    "missPower": "gps_jamming_miss_power",
+    "missPowerScalePct": "gps_jamming_miss_power_scale_pct",
+    "cueShooter": "gps_jamming_cue_shooter",
+    "startGraceS": "gps_jamming_start_grace_s",
+    "trackStepS": "gps_jamming_track_step_s",
+    "maxTrackS": "gps_jamming_max_track_s",
+    "defaultReachNm": "gps_jamming_default_reach_nm",
+    "missRadiusM": "gps_jamming_miss_radius_m",
+}
+
+
+IMAC_OPTIONS = {
+    "blue": "imac_blue",
+    "red": "imac_red",
+    "avoidSamThreats": "imac_avoid_sam_threats",
+    "neverDivertSead": "imac_never_divert_sead",
+    "evadeFighters": "imac_evade_fighters",
+    "neverEvadeFighterMissions": "imac_never_evade_fighter_missions",
+    "reports": "imac_reports",
+    "debug": "imac_debug",
+    "debugOpfor": "imac_debug_opfor",
+    "interval": "imac_interval",
+    "interceptRangeNm": "imac_intercept_range_nm",
+    "patrolLeashNm": "imac_patrol_leash_nm",
+    "pursuitSeconds": "imac_pursuit_seconds",
+    "defendRangeNm": "imac_defend_range_nm",
+}
+
+
+MISSION_LOG_OPTIONS = {
+    "airkills": "mission_log_air_kills",
+    "groundkills": "mission_log_ground_kills",
+    "damage": "mission_log_damage",
+    "losses": "mission_log_losses",
+    "crashes": "mission_log_crashes",
+    "basecaptures": "mission_log_base_captures",
+    "flightstatus": "mission_log_flight_status",
+    "intercepts": "mission_log_intercepts",
+    "monitoring": "mission_log_monitoring",
+    "engaging": "mission_log_engaging",
+    "defending": "mission_log_defending",
+    "hideplayerdefending": "mission_log_hide_player_defending",
+    "goodnews": "mission_log_good_news",
+    "badnews": "mission_log_bad_news",
+    "duration": "mission_log_duration",
+    "maxmessages": "mission_log_max_messages",
+}
 
 
 def _atmosx_pack_selected(settings: Any) -> bool:
@@ -3179,6 +3234,424 @@ class Settings:
     #: Destroy or revive everything at a location from its window.
     enable_location_cheat: bool = False
 
+    gps_jamming_enabled: bool = boolean_option(
+        "Enable GPS jamming",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=True,
+        tooltip="Powered GPS jammers degrade eligible satellite-guided weapons in their coverage area.",
+    )
+
+    gps_jamming_degrade_chance_pct: int = bounded_int_option(
+        "Chance of degrading a weapon (%)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=85,
+        min=0,
+        max=100,
+        tooltip="Rolled once per weapon when it first enters the coverage of a live jammer.",
+    )
+
+    gps_jamming_terminal_agl_ft: int = bounded_int_option(
+        "Terminal altitude for spoofed weapons (ft AGL)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=100,
+        min=0,
+        max=10000,
+        tooltip="The scripted miss is applied this close to the ground.",
+    )
+
+    gps_jamming_miss_power: int = bounded_int_option(
+        "Fallback miss explosion power (kg TNT eq)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=400,
+        min=0,
+        max=10000,
+        tooltip="Used when the weapon does not report its own warhead.",
+    )
+
+    gps_jamming_miss_power_scale_pct: int = bounded_int_option(
+        "Miss detonation size (% of warhead)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=100,
+        min=0,
+        max=200,
+        tooltip="At 100%, the detonation uses the weapon’s full explosive mass.",
+    )
+
+    gps_jamming_cue_shooter: bool = boolean_option(
+        "Announce the first spoofed weapon to the firing flight",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=True,
+    )
+
+    gps_jamming_start_grace_s: int = bounded_int_option(
+        "Startup grace before jamming begins (s)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=60,
+        min=0,
+        max=10000,
+    )
+
+    gps_jamming_track_step_s: float = bounded_float_option(
+        "Weapon-track sample step (s)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=0.2,
+        min=0.01,
+        max=10000,
+        divisor=100,
+        prefix="",
+        decimals=2,
+        tooltip="A longer interval can apply the scripted miss earlier in the descent.",
+    )
+
+    gps_jamming_max_track_s: int = bounded_int_option(
+        "Give up tracking a released weapon after (s)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=2400,
+        min=1,
+        max=10000,
+        tooltip="Tracking must last long enough for the weapon to enter jammer coverage.",
+    )
+
+    gps_jamming_default_reach_nm: float = bounded_float_option(
+        "Default reach (nm)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=30.0,
+        min=5.0,
+        max=150.0,
+        divisor=100,
+        prefix="",
+        decimals=2,
+        tooltip="Each site uses the greater of this value and the reach specified for its unit type.",
+    )
+
+    gps_jamming_miss_radius_m: float = bounded_float_option(
+        "Miss distance at full strength (m)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GPS_JAMMING_SECTION,
+        default=200.0,
+        min=25.0,
+        max=1000.0,
+        divisor=100,
+        prefix="",
+        decimals=2,
+        tooltip="Distance from the aimpoint at full jamming strength. Misses are smaller near the edge of coverage.",
+    )
+
+    ground_movement_enabled: bool = boolean_option(
+        "Enable ground movement",
+        page=MISSION_GENERATOR_PAGE,
+        section=GROUND_MOVEMENT_SECTION,
+        default=False,
+        tooltip="Convoys and reserve groups can advance over multiple turns. Requires Motor Pool. Disabling movement pauses existing orders.",
+    )
+
+    ground_movement_road_miles_per_turn: int = bounded_int_option(
+        "Road distance per turn (miles)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GROUND_MOVEMENT_SECTION,
+        default=120,
+        min=1,
+        max=1000,
+        tooltip="Road travel budget per turn, in statute miles. Default 120 miles (193.1 km). Long journeys continue over several turns. Road and off-road portions share one turn's budget.",
+        enabled_when=lambda settings: settings.ground_movement_enabled,
+    )
+
+    ground_movement_off_road_miles_per_turn: int = bounded_int_option(
+        "Off-road distance per turn (miles)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GROUND_MOVEMENT_SECTION,
+        default=60,
+        min=1,
+        max=1000,
+        tooltip="Cross-country travel budget per turn, in statute miles. Default 60 miles (96.6 km), half the road budget. Includes access to and from roads.",
+        enabled_when=lambda settings: settings.ground_movement_enabled,
+    )
+
+    imac_enabled: bool = boolean_option(
+        "Enable In-Mission Air Commander",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=False,
+        tooltip="Scripted air coordination for both sides when an operating airborne AWACS or a powered command centre is available. F10 pause controls allow manual tasking.",
+    )
+
+    imac_blue: bool = boolean_option(
+        "Enable BLUE commander",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=True,
+        tooltip="Allow IMAC to command BLUE AI flights. Independent of the RED setting; Player/Client groups are never commanded.",
+    )
+
+    imac_red: bool = boolean_option(
+        "Enable RED commander",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=True,
+        tooltip="Allow IMAC to command RED AI flights. Independent of the BLUE setting; Player/Client groups are never commanded.",
+    )
+
+    imac_avoid_sam_threats: bool = boolean_option(
+        "Divert attacks and BARCAPs away from SAM threat rings",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=True,
+        tooltip="Allow known SAM rings to hold or cancel attacks and limit BARCAP/TARCAP and returning-fighter interceptions. When disabled, IMAC ignores SAM rings for these flights. Terrain, fighter evasion and fuel limits are controlled separately.",
+        subsection="SAM threat avoidance",
+    )
+
+    imac_never_divert_sead: bool = boolean_option(
+        "Never divert DEAD/SEAD missions for SAM rings",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=True,
+        tooltip="Never divert DEAD, SEAD, SEAD Escort or SEAD Sweep flights because of SAM threat rings. Fighter evasion and fuel limits still apply. Checked and disabled when SAM avoidance is off; editable when SAM avoidance is on.",
+        subsection="SAM threat avoidance",
+        forced_true_when_off="imac_avoid_sam_threats",
+    )
+
+    imac_evade_fighters: bool = boolean_option(
+        "Divert flights away from enemy fighters",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=True,
+        tooltip="Move vulnerable flights into a safe orbit when detected enemy fighters approach. This controls protective evasion, not CAP interception or the flight's own attack tasks. Fuel limits and SAM avoidance remain separate.",
+        subsection="Fighter evasion",
+    )
+
+    imac_never_evade_fighter_missions: bool = boolean_option(
+        "Never divert Escort or Fighter Sweep away from fighters",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=True,
+        tooltip="Never make Escort or Fighter Sweep flights evade enemy fighters: these missions are intended to engage them. Does not disable their native combat tasks or returning-fighter interception. Checked and disabled when fighter evasion is off; editable when fighter evasion is on.",
+        subsection="Fighter evasion",
+        forced_true_when_off="imac_evade_fighters",
+    )
+
+    imac_reports: bool = boolean_option(
+        "Report orders to own coalition",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=True,
+    )
+
+    imac_debug: bool = boolean_option(
+        "Debug messages and decision logging",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=False,
+        tooltip="Show decisions and rejection reasons to the owning coalition (at most four debug messages per minute). Also write detailed IMAC|DEBUG diagnostics to dcs.log, including command authority, active orders, fuel and remaining lease time. Independent of normal order reports; disabled sides generate no debug messages.",
+    )
+
+    imac_debug_opfor: bool = boolean_option(
+        "Show OPFOR debug messages on BLUE",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=False,
+        tooltip="Mirror RED decisions, rejection reasons and active-order details to BLUE, with a separate limit of eight messages per minute. Requires debug and the RED commander; the BLUE commander need not be enabled. Routine status messages remain log-only.",
+        enabled_when=lambda settings: settings.imac_debug and settings.imac_red,
+    )
+
+    imac_interval: int = bounded_int_option(
+        "Decision interval (seconds)",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=10,
+        min=5,
+        max=60,
+    )
+
+    imac_intercept_range_nm: int = bounded_int_option(
+        "Maximum intercept distance (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=120,
+        min=20,
+        max=200,
+    )
+
+    imac_patrol_leash_nm: int = bounded_int_option(
+        "Maximum distance from intercept anchor (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=80,
+        min=10,
+        max=150,
+        tooltip="Measured from the patrol station or, for a returning fighter, its position when the diversion began.",
+    )
+
+    imac_pursuit_seconds: int = bounded_int_option(
+        "Maximum pursuit time (seconds)",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=180,
+        min=30,
+        max=600,
+    )
+
+    imac_defend_range_nm: int = bounded_int_option(
+        "Vulnerable flight danger radius (NM)",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=45,
+        min=10,
+        max=100,
+    )
+
+    mission_log_enabled: bool = boolean_option(
+        "Enable Mission Log",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=False,
+        tooltip="Show in-mission commentary and record events for the campaign debrief.",
+        subsection="Mission Log",
+    )
+
+    mission_log_air_kills: bool = boolean_option(
+        "Air-to-air kills",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        subsection="Mission Log",
+    )
+
+    mission_log_ground_kills: bool = boolean_option(
+        "Ground and naval targets destroyed",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        subsection="Mission Log",
+    )
+
+    mission_log_damage: bool = boolean_option(
+        "Targets damaged but not destroyed",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=False,
+        subsection="Mission Log",
+    )
+
+    mission_log_losses: bool = boolean_option(
+        "Our losses (aircraft, ground units, SAMs and ships)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        subsection="Mission Log",
+    )
+
+    mission_log_crashes: bool = boolean_option(
+        "Crashes with nobody shooting",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        subsection="Mission Log",
+    )
+
+    mission_log_base_captures: bool = boolean_option(
+        "Bases captured or lost",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        subsection="Mission Log",
+    )
+
+    mission_log_flight_status: bool = boolean_option(
+        "Takeoffs, landings and air spawns",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=False,
+        subsection="Mission Log",
+    )
+
+    mission_log_intercepts: bool = boolean_option(
+        "Fighters moving to intercept (and how they found the target)",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        subsection="Mission Log",
+    )
+
+    mission_log_monitoring: bool = boolean_option(
+        "Fighters monitoring a contact without committing to it",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=False,
+        subsection="Mission Log",
+    )
+
+    mission_log_engaging: bool = boolean_option(
+        "Our flights launching on a target",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        subsection="Mission Log",
+    )
+
+    mission_log_defending: bool = boolean_option(
+        "Defending against an incoming missile",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        subsection="Mission Log",
+    )
+
+    mission_log_hide_player_defending: bool = boolean_option(
+        'Hide "is defending" messages for players',
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=True,
+        tooltip="Hide incoming-missile commentary about human-controlled aircraft to avoid revealing threats that their sensors or wingmen have not detected. AI aircraft messages and debriefing records are unchanged.",
+        subsection="Mission Log",
+        enabled_when=lambda settings: settings.mission_log_defending,
+    )
+
+    mission_log_good_news: str = text_option(
+        "Prefix for kills",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default="YEAH!",
+        subsection="Mission Log",
+    )
+
+    mission_log_bad_news: str = text_option(
+        "Prefix for losses",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default="OH NO!",
+        subsection="Mission Log",
+    )
+
+    mission_log_duration: int = bounded_int_option(
+        "Seconds each message stays on screen",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=20,
+        min=5,
+        max=60,
+        subsection="Mission Log",
+    )
+
+    mission_log_max_messages: int = bounded_int_option(
+        "Maximum on-screen messages per minute",
+        page=MISSION_GENERATOR_PAGE,
+        section=GAMEPLAY_SECTION,
+        default=12,
+        min=3,
+        max=60,
+        subsection="Mission Log",
+    )
+
     # LUA Plugins system
     plugins: Dict[str, bool] = field(default_factory=dict)
 
@@ -3210,12 +3683,6 @@ class Settings:
             return default
 
     def set_plugin_option(self, identifier: str, value: Any) -> None:
-        if (
-            identifier == "groundmovement"
-            and value is True
-            and not self.motorpool_enabled
-        ):
-            raise ValueError("Ground Movement requires Motor Pool")
         self.plugins[self.plugin_settings_key(identifier)] = value
 
     def __setstate__(self, state: dict[str, Any]) -> None:
@@ -3227,14 +3694,18 @@ class Settings:
         new_state = Settings().__dict__
         new_state.update(self.deserialize_state_dict(state))
         self.__dict__.update(new_state)
+        from game.groundmovement.settings import reconcile
         from game.plugins import LuaPluginManager
 
-        LuaPluginManager().load_settings(self)
+        reconcile(self)
+        LuaPluginManager.load_settings(self)
 
     @staticmethod
     def deserialize_state_dict(state: dict[str, Any]) -> dict[str, Any]:
+        state = state.copy()
         state.pop("use_jtac", None)
         if isinstance(plugins := state.get("plugins"), dict):
+            plugins = state["plugins"] = plugins.copy()
             for name in ("ctld.autolase", "ctld.jtacsmoke", "ctld.fc3LaserCode"):
                 plugins.pop(name, None)
             for name in tuple(plugins):
@@ -3248,6 +3719,7 @@ class Settings:
             state.setdefault("aircraft_mechanic_cost", round(old_price * 1_000_000))
         Settings._migrate_legacy_bandit_clouds(state)
         Settings._migrate_settings_into_plugins(state)
+        Settings._migrate_integrated_mission_settings(state)
         Settings._migrate_lopsided_friendship_bands(state)
         for key, value in list(state.items()):
             default = s.__dict__.get(key)
@@ -3295,8 +3767,6 @@ class Settings:
     #: switch of the same name is ANDed, because the feature used to need both.
     _MOVED_INTO_PLUGINS: ClassVar[dict[str, str]] = {
         "gps_jamming": "gpsjamming",
-        "gps_jamming_default_reach_nm": "gpsjamming.defaultReachNm",
-        "gps_jamming_miss_radius_m": "gpsjamming.missRadiusM",
         "naval_magazines": "navalmagazines",
         "naval_weapon_release_stagger": "navalmagazines.releaseStagger",
         "cruise_missile_strikes": "cruisemissiles",
@@ -3317,11 +3787,39 @@ class Settings:
         for setting, option in Settings._MOVED_INTO_PLUGINS.items():
             if setting not in state:
                 continue
-            value = state[setting]
+            value = state.pop(setting)
             if "." not in option and isinstance(value, bool):
                 # The feature ran only when the setting AND the plugin were on.
                 value = value and bool(plugins.get(option, True))
             plugins[option] = value
+
+    @staticmethod
+    def _migrate_integrated_mission_settings(state: dict[str, Any]) -> None:
+        plugins = state["plugins"]
+        integrated = (
+            ("gpsjamming", "gps_jamming_enabled", GPS_JAMMING_OPTIONS),
+            ("missionlog", "mission_log_enabled", MISSION_LOG_OPTIONS),
+            (
+                "groundmovement",
+                "ground_movement_enabled",
+                {
+                    "roadMilesPerTurn": "ground_movement_road_miles_per_turn",
+                    "offRoadMilesPerTurn": "ground_movement_off_road_miles_per_turn",
+                },
+            ),
+            ("imac", "imac_enabled", IMAC_OPTIONS),
+        )
+        for plugin, master, options in integrated:
+            if plugin in plugins:
+                state.setdefault(master, plugins.pop(plugin))
+            for option, setting in options.items():
+                key = f"{plugin}.{option}"
+                if key in plugins:
+                    state.setdefault(setting, plugins.pop(key))
+        retired = {"arty", *(plugin for plugin, _, _ in integrated)}
+        for key in tuple(plugins):
+            if key.partition(".")[0] in retired:
+                del plugins[key]
 
     #: The floors the friendship bands shipped with, and what they should have been.
     #: Drift moves a pair by a whole point from a start of five, so one quiet turn

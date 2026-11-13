@@ -32,14 +32,11 @@ MISSION_LOG_DEFAULTS = {
 
 local function option(name)
     local fallback = MISSION_LOG_DEFAULTS[name]
-    if dcsRetribution == nil or dcsRetribution.plugins == nil then
+    local options = dcsRetribution and dcsRetribution.missionLog
+    if options == nil or options[name] == nil then
         return fallback
     end
-    local plugin = dcsRetribution.plugins.missionlog
-    if plugin == nil or plugin[name] == nil then
-        return fallback
-    end
-    return plugin[name]
+    return options[name]
 end
 
 local DURATION = tonumber(option("duration")) or MISSION_LOG_DEFAULTS.duration

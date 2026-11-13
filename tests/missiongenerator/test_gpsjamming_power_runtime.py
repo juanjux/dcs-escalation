@@ -26,7 +26,7 @@ def world(
     side: Player = Player.RED, *, skynet: bool = True, advanced: bool = True
 ) -> Any:
     settings = Settings()
-    settings.set_plugin_option("gpsjamming", True)
+    settings.gps_jamming_enabled = True
     settings.set_plugin_option("skynetiads", skynet)
     jammer = site("JAMMER", IadsRole.EWR, side=side, settings=settings)
     variant = GroundUnitType.named(

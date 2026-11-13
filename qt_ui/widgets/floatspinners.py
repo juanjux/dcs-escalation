@@ -28,7 +28,7 @@ class FloatSpinner(QSpinBox):
         if maximum is not None:
             self.setMaximum(int(maximum * divisor))
         if initial is not None:
-            self.setValue(int(initial * divisor))
+            self.setValue(round(initial * divisor))
 
     def textFromValue(self, val: int) -> str:
         return f"{self.prefix}{val / self.divisor:.{self.decimals}f}"

@@ -228,7 +228,7 @@ def test_stale_or_unavailable_commands_leave_inventory_unchanged(
             unit for unit in world.source.units if unit.id != 7
         ]
     elif change == "budget":
-        world.game.settings.set_plugin_option("groundmovement.roadMilesPerTurn", 100)
+        world.game.settings.ground_movement_road_miles_per_turn = 100
     elif change == "destination":
         world.b._coalition.player = Player.RED
     elif change == "mission":
@@ -462,7 +462,7 @@ def test_invalid_budget_pauses_but_does_not_prevent_stopping(
     report = controls.request(
         "POST", controls.url, json=confirmed_body(controls)
     ).json()
-    world.game.settings.set_plugin_option("groundmovement.roadMilesPerTurn", 0)
+    world.game.settings.ground_movement_road_miles_per_turn = 0
     paused = controls.request("GET", controls.url).json()[0]
     assert paused["status"] == "paused" and "distance" in paused["pause_reason"]
     assert (

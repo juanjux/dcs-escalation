@@ -10,9 +10,9 @@ performance: 2
 advanced_iads: true
 recommended_start_date: 2002-12-21
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
   squadron_start_full: true
 version: "10.7"
 squadrons:

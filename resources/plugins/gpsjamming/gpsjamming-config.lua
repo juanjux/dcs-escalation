@@ -24,8 +24,8 @@
 -- Symmetric: a site degrades the OPPOSING coalition's weapons only. Its owner's own
 -- satellite-guided stores are never touched.
 --
--- Reads plugin options from dcsRetribution.plugins.gpsjamming and its world from
--- dcsRetribution.gpsJamming (emitted only when the setting is on and a live site exists, so
+-- Reads settings and site data from dcsRetribution.gpsJamming
+-- (emitted only when the setting is on and a live site exists, so
 -- an ordinary mission loads this file and does nothing). Definition order matters (Lua 5.1):
 -- helpers precede use. pcall-guarded throughout so a hiccup never takes the mission down.
 ---------------------------------------------------------------------------------------------------
@@ -45,8 +45,8 @@ local MIN_MISS_FRACTION = 0.35 -- a weapon clipping the bubble edge still misses
 
 local cfg = (dcsRetribution and dcsRetribution.gpsJamming) or nil
 
-if dcsRetribution and dcsRetribution.plugins and dcsRetribution.plugins.gpsjamming then
-    local o = dcsRetribution.plugins.gpsjamming
+if cfg and cfg.options then
+    local o = cfg.options
     if tonumber(o.degradeChancePct) then
         DEGRADE_CHANCE = tonumber(o.degradeChancePct) / 100
     end

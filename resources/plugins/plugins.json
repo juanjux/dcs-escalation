@@ -1,7 +1,6 @@
 [
     "base",
     "ctld",
-    "arty",
     "bigeye",
     "dismounts",
     "lotatc",
@@ -13,9 +12,5 @@
     "ai_reaction",
     "cruisemissiles",
     "navalmagazines",
-    "gpsjamming",
-    "missionlog",
-    "realisticcas",
-    "groundmovement",
-    "imac"
+    "realisticcas"
 ]

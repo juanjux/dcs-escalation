@@ -209,6 +209,6 @@ ground_forces:
   Aleppo: SA-3/S-125
   Blue GPS Jammer Taftanaz: GPS Jamming Site (Blue, Unescorted)
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true

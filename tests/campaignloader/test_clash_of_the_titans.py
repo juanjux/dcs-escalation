@@ -94,7 +94,7 @@ def test_campaign_recommends_modern_factions_and_enables_its_features(
     assert campaign.advanced_iads
     assert campaign.settings["motorpool_enabled"]
     assert campaign.settings["plugins"]["skynetiads"]
-    assert campaign.settings["plugins"]["gpsjamming"]
+    assert campaign.settings["gps_jamming_enabled"]
     assert campaign.settings["squadrons_start_full"]
     assert "squadron_start_full" not in campaign.settings
 

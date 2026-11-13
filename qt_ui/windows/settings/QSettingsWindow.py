@@ -762,18 +762,28 @@ class AutoSettingsLayout(QGridLayout):
         def on_toggle(value: bool) -> None:
             if description.invert:
                 value = not value
-            if name == "motorpool_enabled":
-                from qt_ui.windows.settings.groundmovement import change_motorpool
+            if name in ("motorpool_enabled", "ground_movement_enabled"):
+                from qt_ui.windows.settings.groundmovement import (
+                    change_motorpool,
+                    change_movement,
+                )
 
-                if not change_motorpool(checkbox, self.sc.settings, value):
+                change = (
+                    change_motorpool if name == "motorpool_enabled" else change_movement
+                )
+
+                if not change(checkbox, self.sc.settings, value):
                     blocked = checkbox.blockSignals(True)
-                    checkbox.setChecked(self.sc.settings.motorpool_enabled)
+                    checkbox.setChecked(getattr(self.sc.settings, name))
                     checkbox.blockSignals(blocked)
                     return
             else:
                 self.sc.settings.__dict__[name] = value
             self.settings_changed()
-            if description.causes_expensive_game_update:
+            if description.causes_expensive_game_update or name in (
+                "motorpool_enabled",
+                "ground_movement_enabled",
+            ):
                 self.write_full_settings()
 
         checkbox = QCheckBox()
@@ -911,7 +921,22 @@ class AutoSettingsLayout(QGridLayout):
         """
         any_visible = False
         for name, description in self.own_fields():
-            if description.enabled_when is not None:
+            if (
+                isinstance(description, BooleanOption)
+                and description.forced_true_when_off
+            ):
+                enabled = bool(
+                    getattr(self.sc.settings, description.forced_true_when_off)
+                )
+                if not enabled:
+                    setattr(self.sc.settings, name, True)
+                    checkbox = self.settings_map[name]
+                    assert isinstance(checkbox, QCheckBox)
+                    blocked = checkbox.blockSignals(True)
+                    checkbox.setChecked(True)
+                    checkbox.blockSignals(blocked)
+                self.set_enabled(name, enabled)
+            elif description.enabled_when is not None:
                 self.set_enabled(name, bool(description.enabled_when(self.sc.settings)))
             if description.visible_when is None:
                 any_visible = True
@@ -943,7 +968,17 @@ class AutoSettingsLayout(QGridLayout):
             widget = self.settings_map[name]
             value = self.sc.settings.__dict__[name]
             if isinstance(widget, QCheckBox):
-                widget.setChecked(value)
+                blocked = widget.blockSignals(True)
+                widget.setChecked(
+                    not value
+                    if isinstance(description, BooleanOption) and description.invert
+                    else value
+                )
+                widget.blockSignals(blocked)
+            elif isinstance(widget, QLineEdit):
+                blocked = widget.blockSignals(True)
+                widget.setText(value)
+                widget.blockSignals(blocked)
             elif isinstance(widget, QComboBox):
                 if (index := widget.findData(value)) > -1:
                     widget.setCurrentIndex(index)
@@ -954,7 +989,7 @@ class AutoSettingsLayout(QGridLayout):
                         f"Incompatible type '{type(value)}' for ComboBox option {name}"
                     )
             elif isinstance(widget, FloatSpinSlider):
-                widget.spinner.setValue(int(value * widget.spinner.divisor))
+                widget.spinner.setValue(round(value * widget.spinner.divisor))
             elif isinstance(widget, QSpinBox):
                 widget.setValue(value)
             elif isinstance(widget, TimeInputs):
@@ -1618,11 +1653,12 @@ class QSettingsWidget(QtWidgets.QWizardPage, SettingsContainer):
         self.pluginsPage.update_from_settings()
         for page in self.pages.values():
             for group in page.groups:
-                motorpool = group.layout.settings_map.get("motorpool_enabled")
-                if isinstance(motorpool, QCheckBox):
-                    blocked = motorpool.blockSignals(True)
-                    motorpool.setChecked(self.settings.motorpool_enabled)
-                    motorpool.blockSignals(blocked)
+                for name in ("motorpool_enabled", "ground_movement_enabled"):
+                    checkbox = group.layout.settings_map.get(name)
+                    if isinstance(checkbox, QCheckBox):
+                        blocked = checkbox.blockSignals(True)
+                        checkbox.setChecked(getattr(self.settings, name))
+                        checkbox.blockSignals(blocked)
             page.refresh_page()
 
     def update_from_settings(self) -> None:

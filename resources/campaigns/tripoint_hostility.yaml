@@ -10,9 +10,9 @@ performance: 2
 advanced_iads: true
 version: "10.7"
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
 recommended_start_date: 2006-08-03
 recommended_player_money: 900
 recommended_enemy_money: 1200

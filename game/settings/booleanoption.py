@@ -7,6 +7,7 @@ from .optiondescription import OptionDescription, SETTING_DESCRIPTION_KEY
 @dataclass(frozen=True)
 class BooleanOption(OptionDescription):
     invert: bool
+    forced_true_when_off: Optional[str] = None
 
 
 def boolean_option(
@@ -22,6 +23,7 @@ def boolean_option(
     subsection: Optional[str] = None,
     opens_section: Optional[str] = None,
     enabled_when: Optional[Callable[[Any], bool]] = None,
+    forced_true_when_off: Optional[str] = None,
     **kwargs: Any,
 ) -> bool:
     return field(
@@ -38,6 +40,7 @@ def boolean_option(
                 subsection=subsection,
                 enabled_when=enabled_when,
                 opens_section=opens_section,
+                forced_true_when_off=forced_true_when_off,
             )
         },
         default=default,

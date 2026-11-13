@@ -20,7 +20,7 @@ took_off = {}   -- unit name -> true (S_EVENT_TAKEOFF); a ground-start unit abse
 death_time = {} -- unit name -> first death-event mission time (s), for indirect-kill timing
 cruise_missiles_state = {} -- cruisemissiles plugin appends/updates {group=, fired=} per ship group that launched; Python debits the campaign magazine at the turn boundary
 naval_magazines_state = {} -- navalmagazines plugin appends/updates {group=, fired=} per naval group that fired ANTI-SHIP missiles (a disjoint weapon set from cruise_missiles_state); Python debits the campaign magazine at the turn boundary
-mission_log_events = {} -- missionlog plugin appends one flat record per event (kill, loss, crash, intercept...); Python renders the mission chronicle from it. Contiguous integer array, capped by the plugin: see the numeric-key warning further down.
+mission_log_events = {} -- Mission Log appends one flat record per event (kill, loss, crash, intercept...); Python renders the mission chronicle from it. Contiguous integer array, capped by Mission Log: see the numeric-key warning further down.
 aircraft_damage_state = {}
 aircraft_damage_mission_id = nil
 EscalationAircraftMaintenance = nil

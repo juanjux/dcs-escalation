@@ -31,8 +31,8 @@ settings:
   # data["settings"] (game/campaignloader/campaign.py), so a top-level `plugins:`
   # block parses as valid YAML and is then silently discarded -- which is exactly
   # what happened to four of these five from 2026-06 until 2026-08-08.
+  gps_jamming_enabled: true
   plugins:
-    gpsjamming: true
     mobilemissiles: true
     cruisemissiles: true
     aisleep: true
