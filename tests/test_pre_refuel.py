@@ -29,7 +29,9 @@ def wp(name: str, kind: W = W.NAV, x: float = 0) -> FlightWaypoint:
 
 
 def attack() -> Any:
-    flight: Any = SimpleNamespace(count=2, tanking_minutes=None)
+    flight: Any = SimpleNamespace(
+        count=2, tanking_minutes=None, departure=SimpleNamespace(is_offmap=False)
+    )
     flight.package = SimpleNamespace(
         flights=[flight, object()],
         time_over_target=NOW,
@@ -87,6 +89,26 @@ def test_no_early_stop_keeps_original_push_time(travel: Any) -> None:
     assert flight.flight_plan.push_time == flight.flight_plan.join_time - timedelta(
         minutes=1
     )
+
+
+def test_off_map_push_time_includes_the_nav_leg(travel: Any) -> None:
+    flight = attack()
+    flight.departure.is_offmap = True
+    plan = flight.flight_plan
+    plan.layout.pre_push_refuel = None
+
+    assert plan.push_time == plan.join_time - timedelta(minutes=2)
+
+
+def test_early_stop_keeps_its_time_without_a_hold(travel: Any) -> None:
+    flight = attack()
+    flight.departure.is_offmap = True
+    plan = flight.flight_plan
+    refuel_time = plan.tot_for_waypoint(plan.layout.pre_push_refuel)
+
+    plan.layout.hold = None
+
+    assert plan.tot_for_waypoint(plan.layout.pre_push_refuel) == refuel_time
 
 
 def test_patrol_tanks_before_station_without_shortening_the_station(

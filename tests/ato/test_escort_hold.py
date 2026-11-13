@@ -119,7 +119,7 @@ def _attack_builder(
         divert=None,
     )
     builder: Any = Builder(flight)  # type: ignore[arg-type]
-    builder._hold_point = lambda: Point(10000, 0, None)
+    builder._hold_point = lambda _: Point(10000, 0, None)
     builder._get_split = lambda: waypoints.split
     builder._build_refuel = lambda waypoint_builder: None
     return builder
