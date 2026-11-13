@@ -63,10 +63,11 @@ def pin_for(waypoint: FlightWaypoint) -> str:
     """Which pin the map gives the waypoint, by what it is for: "track", "ingress",
     "refuel" or "hold", and "" for a plain one."""
     kind = waypoint.waypoint_type
-    # A circular orbit is a hold by type, and the station of an AEW&C or a tanker by
-    # purpose; the builder names it ORBIT.
-    if kind in TRACK_TYPES or (
-        kind is FlightWaypointType.LOITER and waypoint.name == "ORBIT"
+    # Circular orbits and sweep endpoints share types with ordinary holds and egress.
+    if (
+        kind in TRACK_TYPES
+        or (kind is FlightWaypointType.LOITER and waypoint.name == "ORBIT")
+        or (kind is FlightWaypointType.EGRESS and waypoint.name == "SWEEP END")
     ):
         return "track"
     if kind in INGRESS_TYPES:
