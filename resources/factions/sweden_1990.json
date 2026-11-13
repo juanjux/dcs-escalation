@@ -45,7 +45,5 @@
   "air_defense_units": [
     "EWR AN/FPS-117 Radar",
     "M1097 Heavy HMMWV Avenger"
-  ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper"
+  ]
 }

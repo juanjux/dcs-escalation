@@ -80,7 +80,5 @@
   "navy_generators": [
     "OliverHazardPerryGroupGenerator",
     "ArleighBurkeGroupGenerator"
-  ],
-  "has_jtac": true,
-  "jtac_unit": "MQ_9_Reaper"
+  ]
 }

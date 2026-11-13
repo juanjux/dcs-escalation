@@ -8,7 +8,6 @@ from dcs.flyingunit import FlyingUnit
 from dcs.unitgroup import ShipGroup
 
 from game.dcs.aircrafttype import AircraftType
-from game.dcs.groundunittype import GroundUnitType
 from game.missiongenerator.aircraft.flightdata import FlightData
 from game.runways import RunwayData
 
@@ -64,14 +63,6 @@ class CarrierInfo(UnitInfo):
 
 
 @dataclass
-class JtacInfo(UnitInfo):
-    """JTAC information."""
-
-    region: str
-    code: str
-
-
-@dataclass
 class EscortInfo:
     """Escort leash information."""
 
@@ -107,12 +98,6 @@ class LogisticsInfo:
 
 
 @dataclass
-class FrontlineUnitGroupsInfo:
-    group_name: str
-    unit_type: GroundUnitType
-
-
-@dataclass
 class MissionData:
     awacs: list[AwacsInfo] = field(default_factory=list)
     runways: list[RunwayData] = field(default_factory=list)
@@ -120,11 +105,8 @@ class MissionData:
     flights: list[FlightData] = field(default_factory=list)
     packages: dict[int, list[FlightData]] = field(default_factory=dict)
     tankers: list[TankerInfo] = field(default_factory=list)
-    jtacs: list[JtacInfo] = field(default_factory=list)
     logistics: list[LogisticsInfo] = field(default_factory=list)
     escorts: list[EscortInfo] = field(default_factory=list)
     cp_stack: dict[UUID, Distance] = field(default_factory=dict)
-    player_frontline_groups: list[FrontlineUnitGroupsInfo] = field(default_factory=list)
-    enemy_frontline_groups: list[FrontlineUnitGroupsInfo] = field(default_factory=list)
-    # Includes support infantry/MANPADS, independently of JTAC or inventory tracking.
+    # Includes support infantry/MANPADS, independently of inventory tracking.
     frontline_visibility_groups: set[str] = field(default_factory=set)

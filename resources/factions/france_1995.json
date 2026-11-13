@@ -75,7 +75,5 @@
   "carrier_names": [],
   "helicopter_carrier_names": [
     "Jeanne d'Arc"
-  ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper"
+  ]
 }

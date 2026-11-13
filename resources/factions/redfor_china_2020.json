@@ -153,7 +153,5 @@
   ],
   "requirements": {
     "CurrentHill China Asset Pack": "https://www.currenthill.com/china"
-  },
-  "has_jtac": true,
-  "jtac_unit": "WingLoong-I"
+  }
 }

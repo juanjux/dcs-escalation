@@ -66,8 +66,6 @@
   ],
   "requirements": {},
   "carrier_names": [],
-  "helicopter_carrier_names": [],
-  "has_jtac": true,
-  "jtac_unit": "Mi-8MTV2 Hip"
+  "helicopter_carrier_names": []
 }
 

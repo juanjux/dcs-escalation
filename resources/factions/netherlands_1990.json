@@ -56,7 +56,5 @@
   "requirements": {},
   "carrier_names": [],
   "helicopter_carrier_names": [],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "unrestricted_satnav": true
 }

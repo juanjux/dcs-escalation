@@ -46,7 +46,6 @@ class RegistryTests(unittest.TestCase):
         self.air.units[1].pylons = {4: {"CLSID": "{ALQ_164_RF_Jammer}"}}
         self.data = NS(
             frontline_visibility_groups={"GROUND"},
-            jtacs=[],
             flights=[NS(flight_type=NS(value="BAI"), units=self.air.units)],
         )
 
@@ -172,12 +171,10 @@ class RegistryTests(unittest.TestCase):
         self.assertNotIn(self.air.units[0].name, names)
         self.assertIn(self.air.units[1].name, names)
 
-    def test_jtac_exact_name_and_unknown_air_omitted(self):
+    def test_air_without_flight_data_omitted(self):
         self.data.flights = []
-        self.data.jtacs = [NS(unit_name=self.air.units[0].name)]
         air = [o for o in self.collect()["observers"] if o["category"] == "air"]
-        self.assertEqual(len(air), 1)
-        self.assertEqual(air[0]["role"], "JTAC")
+        self.assertEqual(air, [])
 
     def test_duplicate_unit_fails_before_lua_emission(self):
         self.g.units[1].name = self.g.units[0].name

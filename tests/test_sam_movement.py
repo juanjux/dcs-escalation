@@ -453,7 +453,7 @@ def test_exported_miz_keeps_surviving_vehicles_offline_and_redeploys_after_arriv
 
 def test_realistic_cas_does_not_avoid_a_packed_mobile_sam(world: Any) -> None:
     make_site(world)
-    data: Any = SimpleNamespace(flights=[], jtacs=[])
+    data: Any = SimpleNamespace(flights=[])
     deployed, deployed_map = generate_site(world)
     before = collect_registry(deployed, data, enabled=True, unit_map=deployed_map)
     assert before is not None and before["airDefenseThreats"]

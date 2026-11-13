@@ -105,10 +105,3 @@ AWACS:
 {% for i in awacs %}{{ i.callsign }} -- Fréq : {{i.freq.mhz}}
 {% endfor %}
 {% endif %}
-
-{%- if jtacs|length > 0 %}
-JTACS [Menu F-10] :
-====================
-{% for jtac in jtacs %}Ligne de front {{ jtac.region }} -- Code : {{ jtac.code }}, Fréq : {{ jtac.freq.mhz }}
-{% endfor %}
-{% endif %}

@@ -79,8 +79,6 @@
     "L52 Castilla"
   ],
   "missiles": [],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "doctrine": "modern",
   "building_set": [
     "ware",

@@ -351,17 +351,6 @@ class LuaGenerator:
             awacs_item.add_key_value("callsign", awacs.callsign)
             awacs_item.add_key_value("radio", str(awacs.freq.mhz))
 
-        jtacs_object = lua_data.add_item("JTACs")
-        for jtac in self.mission_data.jtacs:
-            jtac_item = jtacs_object.add_item()
-            jtac_item.add_key_value("dcsGroupName", jtac.group_name)
-            jtac_item.add_key_value("callsign", jtac.callsign)
-            jtac_item.add_key_value("zone", jtac.region)
-            jtac_item.add_key_value("dcsUnit", jtac.unit_name)
-            jtac_item.add_key_value("laserCode", jtac.code)
-            jtac_item.add_key_value("radio", str(jtac.freq.mhz))
-            jtac_item.add_key_value("modulation", jtac.freq.modulation.name)
-
         logistics_object = lua_data.add_item("Logistics")
         logistics_flights = logistics_object.add_item("flights")
         crates_object = logistics_object.add_item("crates")

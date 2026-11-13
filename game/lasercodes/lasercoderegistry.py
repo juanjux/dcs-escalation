@@ -9,7 +9,6 @@ class LaserCodeRegistry(ILaserCodeRegistry):
     def __init__(self) -> None:
         self.allocated_codes: set[int] = set()
         self.available_codes = LaserCodeRegistry._all_valid_laser_codes()
-        self.fc3_code = LaserCode(1113, self)
 
     def alloc_laser_code(self) -> LaserCode:
         try:

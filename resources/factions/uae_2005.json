@@ -51,7 +51,5 @@
   ],
   "requirements": {},
   "carrier_names": [],
-  "has_jtac": true,
-  "jtac_unit": "WingLoong-I",
   "unrestricted_satnav": true
 }

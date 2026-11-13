@@ -190,8 +190,6 @@
     "LHA-4 Nassau",
     "LHA-5 Peleliu"
   ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "doctrine": "modern",
   "unrestricted_satnav": true
 }

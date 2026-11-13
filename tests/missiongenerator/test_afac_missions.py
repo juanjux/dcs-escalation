@@ -308,7 +308,6 @@ def test_frontline_search_circuit_flies_both_sides_and_keeps_its_native_exit(
     assert min(depth) == pytest.approx(-radius * (0.30 if alternate else 0.20))
 
     data: Any = NS(
-        jtacs=[],
         flights=[
             NS(
                 flight_type=FlightType.AFAC_FRONTLINE,
@@ -388,7 +387,6 @@ def test_final_registry_exports_zone_skill_and_thermal_equipment(variant: str) -
     pilot = object()
     squadron = NS(pilot_skill=lambda _: CADET_SKILL)
     data: Any = NS(
-        jtacs=[],
         flights=[
             NS(
                 flight_type=FlightType.AFAC_AREA,
@@ -477,7 +475,6 @@ def test_historical_registry_and_saved_mission_keep_visual_only_equipment(
     AircraftBehavior(FlightType.AFAC_AREA, MagicMock()).apply_to(s.flight, s.group)
     unit = s.group.units[0]
     data: Any = NS(
-        jtacs=[],
         flights=[
             NS(
                 flight_type=FlightType.AFAC_AREA,

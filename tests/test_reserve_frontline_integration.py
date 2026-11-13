@@ -18,7 +18,6 @@ from game.groundmovement.frontline import integrate_reached_reserves, snapshot_f
 from game.groundmovement.orders import GroundPosition
 from game.groundmovement.report import movement_reports
 from game.groundmovement.settings import set_enabled
-from game.lasercodes.lasercoderegistry import LaserCodeRegistry
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.sim.missionresultsprocessor import MissionResultsProcessor
 from game.theater.frontline import FrontLine, FrontLineSegment
@@ -47,7 +46,7 @@ def front(world: Any) -> Any:
     w.game.settings.max_frontline_width = 2
     for cp in (w.a, w.b, w.enemy):
         cp.coalition.game = w.game
-    w.line = FrontLine(w.a, w.enemy, LaserCodeRegistry().alloc_laser_code())
+    w.line = FrontLine(w.a, w.enemy)
     w.a.front_lines[w.enemy] = w.line
     w.enemy.front_lines[w.a] = w.line
     w.game.db.front_lines.add(w.line.id, w.line)

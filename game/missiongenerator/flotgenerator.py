@@ -12,16 +12,11 @@ from dcs.country import Country
 from dcs.mapping import Point, Vector2
 from dcs.point import PointAction
 from dcs.task import (
-    AFAC,
     AttackGroup,
     ControlledTask,
-    FAC,
     FireAtPoint,
     GoToWaypoint,
     Hold,
-    OrbitAction,
-    SetImmortalCommand,
-    SetInvisibleCommand,
     OptAlarmState,
 )
 from dcs.triggers import Event, TriggerOnce
@@ -30,9 +25,7 @@ from dcs.unit import Skill, Vehicle
 from game.dcs.skills import ground_skill
 from dcs.unitgroup import VehicleGroup
 
-from game.callsigns import callsign_for_support_unit
 from game.data.units import UnitClass
-from game.dcs.aircrafttype import AircraftType
 from game.dcs.groundunittype import GroundUnitType
 from game.ground_forces.ai_ground_planner import (
     CombatGroup,
@@ -46,16 +39,12 @@ from game.ground_forces.manpads import (
     select_manpad_hosts,
 )
 from game.naming import namegen
-from game.plugins import LuaPluginManager
-from game.radio.radios import RadioRegistry
 from game.theater.controlpoint import ControlPoint, Player
 from game.unitmap import UnitMap
 from game.utils import Heading
-from .aircraft.aircraftpainter import AircraftPainterJtac
 from .frontlineconflictdescription import FrontLineConflictDescription
 from .groundforcepainter import GroundForcePainter
-from .missiondata import JtacInfo, MissionData, FrontlineUnitGroupsInfo
-from .realisticcascampaign import suppress_legacy_jtac
+from .missiondata import MissionData
 from ..ato import FlightType
 
 if TYPE_CHECKING:
@@ -91,7 +80,6 @@ class FlotGenerator:
         player_stance: CombatStance,
         enemy_stance: CombatStance,
         unit_map: UnitMap,
-        radio_registry: RadioRegistry,
         mission_data: MissionData,
     ) -> None:
         self.mission = mission
@@ -102,14 +90,9 @@ class FlotGenerator:
         self.enemy_stance = enemy_stance
         self.game = game
         self.unit_map = unit_map
-        self.radio_registry = radio_registry
         self.mission_data = mission_data
 
     def generate(self) -> None:
-        position = FrontLineConflictDescription.frontline_position(
-            self.conflict.front_line, self.game.theater, self.game.settings
-        )
-
         # Create player groups at random position
         player_groups = self._generate_groups(
             self.player_planned_combat_groups, is_player=Player.BLUE
@@ -153,85 +136,6 @@ class FlotGenerator:
 
         self.gen_manpad_teams(player_groups, Player.BLUE)
         self.gen_manpad_teams(enemy_groups, Player.RED)
-
-        # Add JTAC
-        if (
-            self.game.settings.use_jtac
-            and self.game.blue.faction.has_jtac
-            and not suppress_legacy_jtac(LuaPluginManager.plugins())
-        ):
-            freq = self.radio_registry.alloc_uhf()
-            # If the option fc3LaserCode is enabled, force all JTAC
-            # laser codes to 1113 to allow lasing for Su-25 Frogfoots and A-10A Warthogs.
-            # Otherwise use 1688 for the first JTAC, 1687 for the second etc.
-            if self.game.settings.plugins.get("ctld.fc3LaserCode"):
-                code = self.game.laser_code_registry.fc3_code
-            else:
-                code = self.conflict.front_line.laser_code
-
-            utype = self.game.blue.faction.jtac_unit
-            if utype is None:
-                utype = AircraftType.named("MQ-9 Reaper")
-
-            country = self.mission.country(self.game.blue.faction.country.name)
-            jtac = self.mission.flight_group(
-                country=country,
-                name=namegen.next_jtac_name(),
-                aircraft_type=utype.dcs_unit_type,
-                position=position[0],
-                airport=None,
-                altitude=5000,
-                maintask=AFAC,
-            )
-            AircraftPainterJtac(self.game.blue.faction, utype, jtac).apply_livery()
-            cs = jtac.units[0].callsign_dict
-            assert type(cs[1]) == int
-            assert type(cs[2]) == int
-            jtac.points[0].tasks.append(
-                FAC(
-                    callsign=cs[1],
-                    number=cs[2],
-                    frequency=int(freq.mhz),
-                    modulation=freq.modulation,
-                )
-            )
-            jtac.points[0].tasks.append(SetInvisibleCommand(True))
-            jtac.points[0].tasks.append(SetImmortalCommand(True))
-            jtac.points[0].tasks.append(
-                OrbitAction(5000, 300, OrbitAction.OrbitPattern.Circle)
-            )
-            frontline = (
-                f"Frontline {self.conflict.blue_cp.name}/{self.conflict.red_cp.name}"
-            )
-            # Note: Will need to change if we ever add ground based JTAC.
-            callsign = callsign_for_support_unit(jtac)
-            self.mission_data.jtacs.append(
-                JtacInfo(
-                    group_name=jtac.name,
-                    unit_name=jtac.units[0].name,
-                    callsign=callsign,
-                    region=frontline,
-                    code=str(code),
-                    blue=Player.BLUE,
-                    freq=freq,
-                )
-            )
-
-        # Keep the existing frontline metadata even when only the JTAC is omitted.
-        if self.game.blue.faction.has_jtac:
-            for vehicle_group, combat_group in player_groups:
-                self.mission_data.player_frontline_groups.append(
-                    FrontlineUnitGroupsInfo(
-                        group_name=vehicle_group.name, unit_type=combat_group.unit_type
-                    )
-                )
-
-            for vehicle_group, combat_group in enemy_groups:
-                self.mission_data.enemy_frontline_groups.append(
-                    FrontlineUnitGroupsInfo(
-                        group_name=vehicle_group.name, unit_type=combat_group.unit_type
-                    )
-                )
 
     def gen_infantry_group_for_group(
         self,

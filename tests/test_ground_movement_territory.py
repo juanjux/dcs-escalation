@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pickle
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 from dcs import Point
 import pytest
@@ -71,7 +71,7 @@ def make_front(world: Any, curved: bool = False) -> FrontLine:
     world.enemy.convoy_routes = {world.a: tuple(reversed(points))}
     world.a.base.strength = 1
     world.enemy.base.strength = 0.25
-    front = FrontLine(world.a, world.enemy, cast(Any, None))
+    front = FrontLine(world.a, world.enemy)
     world.a.front_lines = {world.enemy: front}
     world.enemy.front_lines = {world.a: front}
     return front

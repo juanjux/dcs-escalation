@@ -81,8 +81,6 @@
     "LHA-4 Nassau",
     "LHA-5 Peleliu"
   ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "doctrine": "modern",
   "liveries_overrides": {
     "F-14B Tomcat": [

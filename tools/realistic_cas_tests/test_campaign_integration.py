@@ -16,7 +16,6 @@ from game.missiongenerator.luagenerator import LuaGenerator
 from game.missiongenerator.realisticcascampaign import (
     inject_campaign,
     prepare_campaign,
-    suppress_legacy_jtac,
     validate_compatibility,
     RealisticCASConfigurationError,
 )
@@ -49,7 +48,6 @@ class CampaignIntegrationTests(unittest.TestCase):
         self.p.set_value(False)
         self.assertIsNone(prepare_campaign(object(), [self.p]))
         inject_campaign(object(), None)
-        self.assertFalse(suppress_legacy_jtac([self.p]))
         definition = json.loads(
             (ROOT / "resources/plugins/realisticcas/plugin.json").read_text()
         )
@@ -92,16 +90,11 @@ class CampaignIntegrationTests(unittest.TestCase):
         self.assertEqual(before, self.m.weather.dict())
         self.assertEqual(units_before, [u.dict() for u in self.air.units])
         self.assertEqual(len(self.m.triggerrules.triggers), 0)
-        self.assertTrue(suppress_legacy_jtac([self.p]))
 
-    def test_incompatible_plugins_and_legacy_jtac_rejected_before_injection(self):
-        for name in ("ctld", "MooseAutolase"):
-            with self.assertRaisesRegex(ValueError, name):
-                prepare_campaign(self.g, [self.p, NS(identifier=name, enabled=True)])
-            self.assertEqual(len(self.m.triggerrules.triggers), 0)
-        self.data.jtacs.append(NS())
-        with self.assertRaisesRegex(ValueError, "legacy JTAC"):
-            prepare_campaign(self.g, [self.p])
+    def test_ctld_autolase_rejected_before_injection(self):
+        with self.assertRaisesRegex(ValueError, "ctld"):
+            prepare_campaign(self.g, [self.p, NS(identifier="ctld", enabled=True)])
+        self.assertEqual(len(self.m.triggerrules.triggers), 0)
 
     def test_ctld_logistics_allowed_with_autolase_off_regardless_of_human_slots(self):
         ctld = LuaPlugin.from_json("ctld", ROOT / "resources/plugins/ctld/plugin.json")
@@ -113,13 +106,10 @@ class CampaignIntegrationTests(unittest.TestCase):
         ):
             validate_compatibility([self.p, ctld])
         options["ctld.autolase"].set_value(False)
-        # Smoke is subordinate to autolase; logistics and human seats are not JTAC AI.
-        for smoke in (False, True):
-            options["ctld.jtacsmoke"].set_value(smoke)
-            for slots in (0, 3):
-                self.game.settings = NS(jtac_count=slots, use_jtac=False)
-                validate_compatibility([self.p, ctld])
-                self.assertIsNotNone(prepare_campaign(self.g, [self.p, ctld]))
+        for slots in (0, 3):
+            self.game.settings = NS(jtac_count=slots)
+            validate_compatibility([self.p, ctld])
+            self.assertIsNotNone(prepare_campaign(self.g, [self.p, ctld]))
         options["ctld.autolase"].set_value(True)
         ctld.set_value(False)
         validate_compatibility([self.p, ctld])
@@ -319,21 +309,6 @@ class CampaignIntegrationTests(unittest.TestCase):
             self.m.triggerrules.triggers[-1].comment,
             "Realistic CAS: campaign registry and start",
         )
-
-    def test_flot_jtac_guard_does_not_swallow_frontline_metadata(self):
-        # Structural regression for the legacy branch; creating a real FLOT needs
-        # the campaign fixtures in the subsequent full-campaign acceptance test.
-        tree = ast.parse((ROOT / "game/missiongenerator/flotgenerator.py").read_text())
-        guards = [
-            n
-            for n in ast.walk(tree)
-            if isinstance(n, ast.If) and "suppress_legacy_jtac" in ast.unparse(n.test)
-        ]
-        self.assertEqual(len(guards), 1)
-        text = ast.unparse(guards[0])
-        self.assertIn("mission_data.jtacs.append", text)
-        self.assertNotIn("mission_data.player_frontline_groups.append", text)
-        self.assertNotIn("mission_data.enemy_frontline_groups.append", text)
 
 
 if __name__ == "__main__":

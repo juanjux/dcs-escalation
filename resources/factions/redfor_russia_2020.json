@@ -163,7 +163,5 @@
   },
   "carrier_names": [
     "Admiral Kuznetsov"
-  ],
-  "has_jtac": true,
-  "jtac_unit": "WingLoong-I"
+  ]
 }

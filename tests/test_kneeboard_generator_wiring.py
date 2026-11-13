@@ -48,7 +48,6 @@ def test_generate_flight_kneeboard_calls_generate_recon_pages() -> None:
         gen.comms = []
         gen.awacs = []
         gen.tankers = []
-        gen.jtacs = []
         gen.flights = []
         gen.generate_flight_kneeboard(flight, package_flights)
         mocked.assert_called_once()
@@ -99,7 +98,6 @@ def test_generate_flight_kneeboard_passes_dark_mode_when_enabled() -> None:
         gen.comms = []
         gen.awacs = []
         gen.tankers = []
-        gen.jtacs = []
         gen.flights = []
         gen.generate_flight_kneeboard(flight, package_flights)
         _, kwargs = mocked.call_args
@@ -145,7 +143,6 @@ def test_generate_flight_kneeboard_skips_recon_when_setting_off() -> None:
         gen.comms = []
         gen.awacs = []
         gen.tankers = []
-        gen.jtacs = []
         gen.flights = []
         gen.generate_flight_kneeboard(flight, package_flights)
         mocked.assert_not_called()

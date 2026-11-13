@@ -162,8 +162,6 @@
     "LHA-4 Nassau",
     "LHA-5 Peleliu"
   ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "unrestricted_satnav": true,
   "liveries_overrides": {
     "J-11A Flanker-L": [

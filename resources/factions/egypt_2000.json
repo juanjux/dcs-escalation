@@ -95,8 +95,6 @@
     "ZU-23 on Ural-375",
     "ZSU-57-2 'Sparka'"
   ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "weapons_introduction_year_overrides": {
     "AIM-120B": 2050,
     "2xAIM-120B": 2050,

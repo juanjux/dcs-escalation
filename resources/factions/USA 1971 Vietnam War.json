@@ -88,8 +88,6 @@
     "CV-60 USS Saratoga",
     "CV-62 USS Independence"
   ],
-  "has_jtac": true,
-  "jtac_unit": "OV-10A Bronco",
   "doctrine": "coldwar",
   "liveries_overrides": {
     "CH-47D": [

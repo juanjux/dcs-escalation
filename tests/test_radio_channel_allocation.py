@@ -199,7 +199,6 @@ def test_native_mission_and_support_page_agree_on_shared_tanker_channels(
         [],
         s.data.awacs,
         s.data.tankers,
-        [],
         datetime(2026, 1, 1, 10),
         dark_kneeboard=False,
     )

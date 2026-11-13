@@ -129,13 +129,6 @@ TANKERS:
 
 {% endif %}
 
-{%- if jtacs|length > 0 %}
-JTACS [F-10 Menu] :
-====================
-{% for jtac in jtacs %}Frontline {{ jtac.region }} -- Code : {{ jtac.code }}, Freq : {{ jtac.freq.mhz }}
-{% endfor %}
-
-{% endif %}
 {%- if cruise_missile_ships|length > 0 %}
 CRUISE MISSILES [F-10 Menu] :
 ====================

@@ -119,8 +119,6 @@
     "LHA-4 Nassau",
     "LHA-5 Peleliu"
   ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "doctrine": "coldwar",
   "weapons_introduction_year_overrides": {
     "4 x BGM-71D TOW ATGM": 1970,

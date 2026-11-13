@@ -320,8 +320,6 @@ def test_complete_generation_assigns_each_side_after_planning_routes() -> None:
     s.gen.conflict.red_cp = NS()
     s.gen.conflict.front_line = NS()
     s.gen.game.theater = NS()
-    s.gen.game.blue = NS(faction=NS(has_jtac=False))
-    s.settings.use_jtac = False
     s.gen.player_stance = CombatStance.DEFENSIVE
     s.gen.enemy_stance = CombatStance.AGGRESSIVE
     s.gen.player_planned_combat_groups = []
@@ -335,11 +333,9 @@ def test_complete_generation_assigns_each_side_after_planning_routes() -> None:
     s.gen.gen_manpad_teams = Mock(
         side_effect=lambda groups, side: events.append((groups, side))
     )
-    with patch(
-        "game.missiongenerator.flotgenerator.FrontLineConflictDescription.frontline_position"
-    ):
-        s.gen.generate()
+    s.gen.generate()
     assert events == ["route", "route", (blue, Player.BLUE), (red, Player.RED)]
+    assert not s.side.plane_group and not s.side.helicopter_group
 
 
 def test_inventory_manpads_are_deployed_and_not_reported_as_reserves() -> None:

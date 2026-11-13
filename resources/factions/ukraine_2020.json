@@ -81,7 +81,5 @@
   "requirements": {
     "Currenthill Ukraine Asset Pack": "https://www.currenthill.com/ukraine"
   },
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "unrestricted_satnav": true
 }

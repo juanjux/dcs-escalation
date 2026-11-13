@@ -77,7 +77,5 @@
   "requirements": {},
   "carrier_names": [
     "Admiral Kuznetsov"
-  ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper"
+  ]
 }

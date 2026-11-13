@@ -97,8 +97,6 @@
     "CV-60 USS Saratoga",
     "CV-62 USS Independence"
   ],
-  "has_jtac": true,
-  "jtac_unit": "OV-10A Bronco",
   "requirements": {
     "OV-10A Bronco": "https://forum.dcs.world/topic/307951-ov-10a-bronco-mod-by-split-air-teamand-more/",
     "Vietnam War Vessels (v2.3.0)": "https://forum.dcs.world/topic/338387-tetets-vietnam-war-vessels/"

@@ -5243,7 +5243,7 @@ ctld.jtacRadioData = {}
 
 function ctld.JTACAutoLase(_jtacGroupName, _laserCode, _smoke, _lock, _colour, _radio)
     -- Honour the option for every entry point, including deployed troops/crates
-    -- and timer callbacks, not just the campaign's initially generated JTACs.
+    -- and timer callbacks.
     if dcsRetribution and dcsRetribution.plugins and dcsRetribution.plugins.ctld
         and dcsRetribution.plugins.ctld.autolase == false then
         return

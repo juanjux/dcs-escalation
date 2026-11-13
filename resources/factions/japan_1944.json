@@ -42,7 +42,6 @@
   "carrier_names": [],
   "helicopter_carrier_names": [],
   "missiles": [],
-  "has_jtac": false,
   "doctrine": "ww2",
   "building_set": "ww2free",
   "liveries_overrides": {
