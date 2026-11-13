@@ -195,6 +195,8 @@ SELF_CONTAINED_AIR_DEFENCES: set[type[VehicleType]] = (
     AirDefence.Gepard,
     AirDefence.Vulcan,
     AirDefence.ZSU_23_4_Shilka,
+    AirDefence.Strela_1_9P31,
+    AirDefence.Strela_10M3,
     AirDefence.HEMTT_C_RAM_Phalanx,
     AirDefence.CHAP_PantsirS1,
     AirDefence.CHAP_TorM2,
@@ -208,6 +210,7 @@ SELF_CONTAINED_AIR_DEFENCES: set[type[VehicleType]] = (
     rmap.CH_PantsirS2,
     rmap.CH_TorM2K,
     rmap.CH_ZSU234,
+    rmap.CH_9K35,
     usamap.CH_Centurion_C_RAM,
 }
 

@@ -40,15 +40,11 @@ class IadsState(Enum):
     #: during transit is handled separately, not disabled by this state.
     RELOCATING = "relocating"
 
-    #: Switched off. Skynet will not bring the radar up, so the site is silent for the
-    #: whole mission unless it is repaired first.
+    #: Skynet will not bring the primary radar group up. Separate point defences
+    #: can still operate.
     DARK = "dark"
 
-    #: Nothing left of it. Kept apart from DARK because the two want opposite things
-    #: said about them: a site with no power keeps a threat ring it cannot enforce and
-    #: needs that ring taken away, while a destroyed one has already lost its ring and
-    #: what the map still has to show is whatever survives around it -- the point
-    #: defence of a flattened battery is alive and will shoot.
+    #: Nothing remains of the primary group. Separate point defences may survive.
     DESTROYED = "destroyed"
 
 
