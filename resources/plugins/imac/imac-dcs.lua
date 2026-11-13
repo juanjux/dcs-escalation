@@ -15,6 +15,16 @@ do
     if type(value)~='table' then return value end
     local out={};for key,item in pairs(value) do out[key]=copy(item) end;return out
   end
+  local function groundWeapon(desc)
+    local categories=Weapon and Weapon.Category
+    local missiles=Weapon and Weapon.MissileCategory
+    if missiles and desc.missileCategory~=nil then
+      return desc.missileCategory~=missiles.AAM and desc.missileCategory~=missiles.SAM
+    end
+    if categories and desc.category~=nil and desc.category~=categories.MISSILE then
+      return desc.category==categories.BOMB or desc.category==categories.ROCKET
+    end
+  end
   function API.start(config)
     if API.instance then return nil,'already started' end
     assert(type(config)=='table' and type(config.options)=='table','IMAC configuration required')
@@ -80,6 +90,7 @@ do
         if not g or not g:isExist() or g:getCoalition()~=meta.side then return end
         local result={fuel=1,healthy=true,ammo=false,airborne=true,player=false,members={}}
         local count=0
+        local groundAmmoKnown=true
         for _,u in ipairs(g:getUnits()) do
           if activeUnit(u) then
             count=count+1
@@ -88,9 +99,16 @@ do
             result.healthy=result.healthy and u:getLife()/math.max(1,u:getLife0())>=0.95
             result.fuel=math.min(result.fuel,u:getFuel())
             local hasAmmo=false
-            for _,ammo in ipairs(u:getAmmo() or {}) do
+            local stores=u:getAmmo()
+            if stores==nil then groundAmmoKnown=false end
+            for _,ammo in ipairs(stores or {}) do
               local desc=ammo.desc or {}
               if ammo.count>0 and (desc.missileCategory==1 or (meta.gunfighter and desc.category==0)) then hasAmmo=true end
+              if meta.deadSupport and ammo.count>0 then
+                local ground=groundWeapon(desc)
+                if ground then result.groundAmmo=true
+                elseif ground==nil then groundAmmoKnown=false end
+              end
             end
             -- The entire patrol must be combat-ready, not only the leader.
             if count==1 then result.ammo=hasAmmo else result.ammo=result.ammo and hasAmmo end
@@ -104,6 +122,7 @@ do
           end
         end
         if count==0 then return end
+        if meta.deadSupport and groundAmmoKnown and result.groundAmmo==nil then result.groundAmmo=false end
         local state=instance and instance.states[meta.group]
         local point=state and meta.route[state.index]
         result.refuelling=point and point.name=='REFUEL'
@@ -396,7 +415,7 @@ do
       end
       return true
     end
-    function io.recover(s,p,threats)
+    function io.recover(s,p,threats,clear)
       local controller=controllerFor(s)
       if not controller then return false,'no AI controller' end
       local route=s.meta.route
@@ -425,6 +444,7 @@ do
         q.ETA_locked=false;q.speed_locked=true;points[#points+1]=q
         previous={x=target.x,y=q.type=='Land' and altitude or target.y,z=target.z}
       end
+      if clear and not clear(points) then return false,'air threat on recovery corridor' end
       controller:setTask({id='Mission',params={route={points=points}}})
       return true
     end

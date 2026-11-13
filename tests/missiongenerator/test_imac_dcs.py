@@ -171,6 +171,58 @@ def test_native_detection_uses_last_observed_position_not_live_enemy_position() 
     assert lua.eval("#groups.CAP.rtbs") == 0
 
 
+@pytest.mark.parametrize("recovery_blocked", [False, True])
+def test_evading_sead_sweep_recovers_when_all_survivors_are_winchester(
+    recovery_blocked: bool,
+) -> None:
+    lua = runtime()
+    lua.globals().recoveryBlocked = recovery_blocked
+    lua.execute("""
+        Weapon={Category={SHELL=0,MISSILE=1,ROCKET=2,BOMB=3},
+          MissileCategory={AAM=1,SAM=2,OTHER=6}}
+        local flight=cfg.flights[1]
+        flight.mode='dead';flight.seadMission=true;flight.deadSupport=true;flight.endTime=nil
+        flight.route[4].name='SEAD Sweep';flight.route[4].x=80000
+        flight.route[6]=flight.route[5]
+        flight.route[5]={name='ALIGN',x=recoveryBlocked and 60000 or -30000,y=0,
+          alt=1500,type='Turning Point',speed=220}
+        bandit.attributes={Fighters=true};bandit.observedX=18000
+        awacs.detections={bandit}
+        wingman=add('WINGMAN',2,0,true,{Fighters=true})
+        groups.CAP.units[2]=wingman
+        function wingman:getAmmo()return self.stores end
+        wingman.stores={{count=1,desc={category=1,missileCategory=6}}}
+    """)
+    start(lua)
+    lua.execute("""
+        EscalationIMAC.reached('CAP',3)
+        tick(5)
+        local state=EscalationIMAC.instance.states.CAP
+        assert(state.order.kind=='evade')
+        local stop=loadstring(groups.CAP.pushes[1].params.stopCondition.condition)
+        cap.x=15000;wingman.x=15000
+        cap.velocity.x=220;wingman.velocity.x=220
+        bandit.observedX=148500;bandit.observedVelocity={x=0,y=0,z=0}
+        tick(15)
+        assert(state.order.kind=='evade' and #groups.CAP.rtbs==0)
+        wingman.stores=nil
+        tick(25)
+        assert(state.order.kind=='evade' and #groups.CAP.rtbs==0)
+        wingman.stores={{count=4,desc={category=1,missileCategory=1}}}
+        tick(35)
+        if recoveryBlocked then
+          assert(state.order.kind=='evade' and #groups.CAP.rtbs==0 and not stop())
+          bandit.observedX=250000
+          tick(65)
+        end
+        assert(state.finished and #groups.CAP.rtbs==1 and stop())
+        local route=groups.CAP.rtbs[1].params.route.points
+        assert(#route==3 and route[2].name=='ALIGN' and route[3].type=='Land')
+        assert(EscalationIMAC.instance.history[#EscalationIMAC.instance.history].reason==
+          'WINCHESTER during fighter evasion')
+    """)
+
+
 def test_current_native_detection_returns_four_flags_without_memory_vectors() -> None:
     lua = runtime()
     lua.execute("""

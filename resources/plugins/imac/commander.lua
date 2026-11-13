@@ -3,6 +3,8 @@ assert(EscalationIMAC and EscalationIMAC.geometry,'load IMAC geometry first')
 do
   local API,G=EscalationIMAC,EscalationIMAC.geometry
   local NM,ORBIT_LEASE=1852,600
+  local AIR_CLEARANCE_SECONDS=180
+  local WINCHESTER='WINCHESTER during fighter evasion'
   function API.newCommander(config,io)
     local opt=config.options
     local api={states={},paused={},active=true,history={}}
@@ -197,28 +199,47 @@ do
       end
       return out
     end
+    local function airLegClear(s,from,to,startTime,endTime)
+      local margin=(opt.defendRangeNm+10)*NM
+      for _,t in ipairs(tracks[s.meta.side]) do
+        if t.kind=='fighter' or t.kind=='unknown' then
+          local relativeFrom={x=from.x-t.point.x-t.velocity.x*startTime,
+            z=from.z-t.point.z-t.velocity.z*startTime}
+          local relativeTo={x=to.x-t.point.x-t.velocity.x*endTime,
+            z=to.z-t.point.z-t.velocity.z*endTime}
+          if G.segment(from,to,t.point)<margin or
+            G.segment(relativeFrom,relativeTo,{x=0,z=0})<margin then return false end
+        end
+      end
+      return true
+    end
     local function evasionClear(s,p)
       local target=s.pendingHold and s.pendingHold.data.point
       if not target then
         local wp=s.meta.route[math.min(#s.meta.route,s.index+1)]
         target={x=wp.x,z=wp.y}
       end
-      local seconds=180
+      local seconds=AIR_CLEARANCE_SECONDS
       local length=G.distance(p.point,target)
       local f=length>0 and math.min(1,p.speed*seconds/length) or 0
       local finish={x=p.point.x+(target.x-p.point.x)*f,z=p.point.z+(target.z-p.point.z)*f}
-      -- Returning must not recreate the threat that the escape just removed.
-      -- Use spatial hysteresis and check the first three minutes of the return
-      -- leg, including observed hostile motion, rather than current closure alone.
-      local margin=(opt.defendRangeNm+10)*NM
-      for _,t in ipairs(tracks[s.meta.side]) do
-        if t.kind=='fighter' or t.kind=='unknown' then
-          local relativeFrom={x=p.point.x-t.point.x,z=p.point.z-t.point.z}
-          local relativeTo={x=finish.x-t.point.x-t.velocity.x*seconds,
-            z=finish.z-t.point.z-t.velocity.z*seconds}
-          if G.segment(p.point,finish,t.point)<margin or
-            G.segment(relativeFrom,relativeTo,{x=0,z=0})<margin then return false end
+      return airLegClear(s,p.point,finish,0,seconds)
+    end
+    local function recoveryClear(s,points)
+      -- Use the actual recovery legs, including any detours inserted by DCS's adapter.
+      local elapsed=0
+      for i=2,#points do
+        local start,finish=points[i-1],points[i]
+        local from,to={x=start.x,z=start.y},{x=finish.x,z=finish.y}
+        local duration=G.distance(from,to)/math.max(1,finish.speed)
+        local seconds=math.min(duration,AIR_CLEARANCE_SECONDS-elapsed)
+        if seconds<duration then
+          local f=seconds/duration
+          to={x=from.x+(to.x-from.x)*f,z=from.z+(to.z-from.z)*f}
         end
+        if not airLegClear(s,from,to,elapsed,elapsed+seconds) then return false end
+        elapsed=elapsed+seconds
+        if elapsed>=AIR_CLEARANCE_SECONDS then break end
       end
       return true
     end
@@ -229,7 +250,9 @@ do
     end
     local function retreat(s,p,reason)
       s.abortReason=reason
-      local ok,why=io.recover(s,p,flightThreats(s))
+      local clear
+      if reason==WINCHESTER then clear=function(points)return recoveryClear(s,points)end end
+      local ok,why=io.recover(s,p,flightThreats(s),clear)
       if ok then
         s.revision=s.revision+1;s.order=nil;s.pendingHold=nil;s.finished=true;s.abortReason=nil;record(s,'rtb',reason)
       else
@@ -443,6 +466,10 @@ do
             if now-order.clearSince>=60 then release(s,'SAM-safe patrol and pursuit corridors restored')end
           else order.clearSince=nil end
         elseif order.kind=='evade' then
+          if s.meta.deadSupport and s.index>=s.meta.attackIndex and p.groundAmmo==false then
+            s.retryRecovery=now+30
+            retreat(s,p,WINCHESTER);return
+          end
           if evasionClear(s,p) then
             order.clearSince=order.clearSince or now
             if now-order.clearSince>=30 then
