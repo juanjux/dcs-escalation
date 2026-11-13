@@ -125,25 +125,6 @@ GPS_GUIDED_WEAPON_PATTERNS: tuple[str, ...] = (
     "SHAHED",  # the loitering munition the real world jams with exactly this
 )
 
-#: The reach a jammer gets when its unit definition names none.
-#:
-#: Sized off what the bubble actually IS: a GPS-denied **target** area, not a
-#: denied release area. A weapon aimed at anything inside the bubble flies
-#: through the bubble whatever range it was released from, so standing off does
-#: not help a covered target -- the radius is simply the size of the target set
-#: that loses satellite guidance.
-#:
-#: This is only the fallback for a jammer whose unit definition names no reach. What
-#: a campaign actually gets is the ``defaultReachNm`` plugin option, which ships at
-#: 30 nm; 15 nm here denies a target cluster, so nothing silently grows a bubble it
-#: was never given.
-DEFAULT_REACH = nautical_miles(15)
-
-#: How far off the aimpoint a fully-jammed weapon lands when the unit definition
-#: and the campaign setting both stay quiet. Far enough to be a clean miss, close
-#: enough to read as "the bomb went long", not "the bomb vanished".
-DEFAULT_MISS_RADIUS = meters(200)
-
 
 @dataclass(frozen=True)
 class GpsJammerSite:
@@ -173,12 +154,7 @@ class GpsJammerSite:
 
 
 def gps_jamming_enabled(game: "Game") -> bool:
-    """Whether the feature is switched on for this campaign.
-
-    The plugin's own switch, and nothing else: a setting that only said "yes, if the
-    plugin is on too" is one switch too many.
-    """
-    return bool(game.settings.plugin_option("gpsjamming"))
+    return game.settings.gps_jamming_enabled
 
 
 def gps_jammer_sites(
@@ -348,25 +324,12 @@ def _live_jammers(group: Any) -> Iterator[tuple[Any, Any]]:
             yield unit, props
 
 
-def _plugin_option(game: "Game", name: str) -> Any:
-    try:
-        return game.settings.plugin_option(f"gpsjamming.{name}")
-    except KeyError:
-        return None
-
-
 def _campaign_default_reach(game: "Game") -> Distance:
-    value = _plugin_option(game, "defaultReachNm")
-    if not value:
-        return DEFAULT_REACH
-    return nautical_miles(float(value))
+    return nautical_miles(game.settings.gps_jamming_default_reach_nm or 15)
 
 
 def _campaign_default_miss(game: "Game") -> Distance:
-    value = _plugin_option(game, "missRadiusM")
-    if not value:
-        return DEFAULT_MISS_RADIUS
-    return meters(float(value))
+    return meters(game.settings.gps_jamming_miss_radius_m or 200)
 
 
 def _is_blue(player: Any) -> bool:

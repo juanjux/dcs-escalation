@@ -192,9 +192,9 @@ squadrons:
       size: 4
       pilots: 8
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
 
 ground_forces:
   "FOB Gecitkale-26": GPS Jamming Site (Red, Unescorted)

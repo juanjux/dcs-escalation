@@ -30,7 +30,7 @@ class FloatSpinSlider(QHBoxLayout):
         slider.setMinimumWidth(SLIDER_WIDTH)
         slider.setMinimum(int(minimum * divisor))
         slider.setMaximum(int(maximum * divisor))
-        slider.setValue(int(initial * divisor))
+        slider.setValue(round(initial * divisor))
         self.spinner = FloatSpinner(
             divisor, minimum, maximum, initial, prefix, decimals
         )

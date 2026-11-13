@@ -830,7 +830,7 @@ def test_generated_miz_packages_the_graph_and_runtime_in_load_order(
         skynet_culled=lambda _: False,
     )
     mission = Mission()
-    game.settings.set_plugin_option("gpsjamming", False)
+    game.settings.gps_jamming_enabled = False
     generator = LuaGenerator(game, mission, MissionData())
     generator.generate_plugin_data()
     plugin = LuaPlugin.from_json(

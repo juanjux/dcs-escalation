@@ -559,11 +559,11 @@ needed before the enemy recovers. Missing health data is not evidence of full he
 
 ## 4. Missions: packages, flights, and roles
 
-The optional **In-Mission Air Commander (IMAC)** plugin provides scripted air
+The optional **In-Mission Air Commander (IMAC)** provides scripted air
 coordination during the DCS mission, without an LLM. With an operating airborne
 AWACS or powered command centre, it can redirect BARCAP/TARCAP patrols against
 detected air threats, move vulnerable flights to safety and hold attacks for DEAD.
-It is off by default; the human can enable it under **Mission Plugins**,
+It is off by default; the human can enable it under **Mission Generator → In-Mission Air Commander**,
 independently for BLUE and RED, with optional debug messages. You cannot configure
 or command IMAC through the OPFOR API/MCP; ask the human if you want it enabled.
 It does not replace turn planning or control Player/Client flights.

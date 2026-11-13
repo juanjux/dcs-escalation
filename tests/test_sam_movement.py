@@ -129,7 +129,7 @@ def test_relocating_map_range_does_not_reactivate_operational_coverage(
     move(world)
     assert site.in_transit and group.max_threat_range().meters == 0
     assert group.max_detection_range().meters == 0
-    world.game.settings.set_plugin_option("gpsjamming", False)
+    world.game.settings.gps_jamming_enabled = False
     model = TgoJs.for_tgo(site)
     assert model.iads_state == "relocating"
     assert model.threat_ranges == [radius] and model.detection_ranges == []
@@ -141,7 +141,7 @@ def test_relocating_map_range_still_requires_live_launcher_and_tracker(
 ) -> None:
     site = make_site(world)
     move(world)
-    world.game.settings.set_plugin_option("gpsjamming", False)
+    world.game.settings.gps_jamming_enabled = False
     site.groups[0].units[0].alive = False
     assert TgoJs.for_tgo(site).threat_ranges == []
     site.groups[0].units[0].alive = True
@@ -156,7 +156,7 @@ def test_towed_battery_keeps_nominal_map_range_while_packed(world: Any) -> None:
     move(world)
     assert any(unit.transported_by_id is not None for unit in site.units)
     assert site.groups[0].max_threat_range().meters == 0
-    world.game.settings.set_plugin_option("gpsjamming", False)
+    world.game.settings.gps_jamming_enabled = False
     assert TgoJs.for_tgo(site).threat_ranges == [radius]
 
 

@@ -14,7 +14,7 @@ def log() -> Any:
         now=10
         timer.getTime=function()return now end
         world.event.S_EVENT_CRASH=6
-        dcsRetribution={plugins={missionlog={maxmessages=60}}}
+        dcsRetribution={missionLog={maxmessages=60}}
         function crash(unit)
             handler:onEvent({id=world.event.S_EVENT_CRASH,initiator=unit})
         end
@@ -112,16 +112,14 @@ def test_unrelated_crash_is_not_suppressed_by_another_aircraft_kill(log: Any) ->
 
 
 def test_crash_setting_hides_message_but_keeps_the_fact(log: Any) -> None:
-    log.execute(
-        "dcsRetribution.plugins.missionlog.crashes=false;crash(blue);advance(14)"
-    )
+    log.execute("dcsRetribution.missionLog.crashes=false;crash(blue);advance(14)")
     assert not list(log.globals().messages.values())
     assert list(log.globals().mission_log_events.values())[0].kind == "crash"
 
 
 def test_disabled_loss_messages_still_suppress_the_provisional_crash(log: Any) -> None:
     log.execute(
-        "dcsRetribution.plugins.missionlog.losses=false;crash(blue);kill(red,blue);advance(14)"
+        "dcsRetribution.missionLog.losses=false;crash(blue);kill(red,blue);advance(14)"
     )
     assert all(m.side != 2 for m in log.globals().messages.values())
     assert all(e.kind != "crash" for e in log.globals().mission_log_events.values())

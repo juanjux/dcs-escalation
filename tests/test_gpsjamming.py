@@ -13,6 +13,7 @@ from typing import Any
 
 from game.dcs.groundunittype import GpsJammingProperties
 from game.gpsjamming import GPS_GUIDED_WEAPON_PATTERNS
+from game.settings import Settings
 
 
 def test_declaring_no_block_is_not_a_jammer() -> None:
@@ -189,11 +190,10 @@ def _game(states: dict[Any, Any], *, nodes: bool = True, plugin: bool = True) ->
         nodes=[object()] if nodes else [],
         state_map=SimpleNamespace(status_for=states.get),
     )
+    settings = Settings()
+    settings.set_plugin_option("skynetiads", plugin)
     return SimpleNamespace(
-        settings=SimpleNamespace(
-            plugin_option_or=lambda _name, default: plugin,
-            plugin_option=lambda _name: True,
-        ),
+        settings=settings,
         theater=SimpleNamespace(iads_network=network, controlpoints=[]),
     )
 

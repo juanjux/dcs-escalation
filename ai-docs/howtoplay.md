@@ -155,9 +155,9 @@ its ship writes off immobile damaged aircraft without a resale refund. Returning
 a loan removes its workshop jobs along with that squadron. Disabling maintenance
 releases existing repair jobs at the next turn boundary without selling airframes.
 
-## Ground Movement (experimental)
+## Ground Movement
 
-Ground Movement is an opt-in Mission Plugin. Enabling it offers to enable Motor
+Enable Ground Movement under **Mission Generator → Ground Movement**. Enabling it offers to enable Motor
 Pool if necessary. Disabling Motor Pool asks before also disabling Ground
 Movement; saved movement orders are retained and paused. Imported settings with
 Ground Movement on and Motor Pool off disable Ground Movement.
@@ -370,11 +370,11 @@ leave previously recorded damage unchanged.
 
 ## 4. Missions: packages, flights, and roles
 
-The optional **In-Mission Air Commander (IMAC)** plugin provides scripted air
+The optional **In-Mission Air Commander (IMAC)** provides scripted air
 coordination during the DCS mission, without an LLM. With an operating airborne
 AWACS or powered command centre, it can redirect BARCAP/TARCAP patrols against
 detected air threats, move vulnerable flights to safety and hold attacks for DEAD.
-It is off by default; the human can enable it under **Mission Plugins**,
+It is off by default; the human can enable it under **Mission Generator → In-Mission Air Commander**,
 independently for BLUE and RED, with optional debug messages. You cannot configure
 or command IMAC through the OPFOR API/MCP; ask the human if you want it enabled.
 It does not replace turn planning or control Player/Client flights.

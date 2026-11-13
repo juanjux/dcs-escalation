@@ -1040,11 +1040,7 @@ class PendingTransfers:
 
     def _movement_enabled(self) -> bool:
         settings = getattr(self.game, "settings", None)
-        return (
-            settings is not None
-            and getattr(settings, "plugins", {}).get("groundmovement") is True
-            and movement_enabled(settings)
-        )
+        return settings is not None and movement_enabled(settings)
 
     def plan_transports(self, now: datetime, events: GameUpdateEvents) -> None:
         """

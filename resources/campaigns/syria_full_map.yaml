@@ -318,6 +318,6 @@ squadrons:
         - AV-8B Harrier II Night Attack
 
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true

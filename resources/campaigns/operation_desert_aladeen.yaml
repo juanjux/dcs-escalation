@@ -26,9 +26,9 @@ advanced_iads: true
 recommended_start_date: 2012-05-16
 version: "10.9"
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
   usamilitaryassetspack: true
   f22_raptor: true
   squadron_start_full: true

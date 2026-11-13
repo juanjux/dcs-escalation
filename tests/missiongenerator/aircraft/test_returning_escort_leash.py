@@ -47,7 +47,7 @@ def test_release_flag_survives_lua_export() -> None:
             iads_network=NS(advanced_iads=False, skynet_nodes=lambda _: []),
         ),
     )
-    game.settings.set_plugin_option("gpsjamming", False)
+    game.settings.gps_jamming_enabled = False
     mission = Mission()
     data = MissionData()
     data.escorts.append(EscortInfo(2, 1, 50000, "split-test"))

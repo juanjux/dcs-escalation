@@ -354,7 +354,7 @@ def test_convoy_corridor_in_exclusion_keeps_moving_across_turns(world: Any) -> N
         world.game.theater.landmap,
         exclusion_zones=MultiPolygon([box(1000, -100, 1800, 100)]),
     )
-    world.game.settings.set_plugin_option("groundmovement.roadMilesPerTurn", 1)
+    world.game.settings.ground_movement_road_miles_per_turn = 1
     transit = dispatch(world, (7,))
     world.game.turn += 1
     advance_armor(world.game, GameUpdateEvents())

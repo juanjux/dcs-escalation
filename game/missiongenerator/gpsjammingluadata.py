@@ -1,8 +1,6 @@
 """GPS jamming -> Lua config bridge (``dcsRetribution.gpsJamming``).
 
-The the fork's emitter. Python owns which ground sites deny GPS and how far each
-reaches (``game/gpsjamming.py``); this hands the ``gpsjamming``
-plugin the runtime's whole world view:
+Python resolves jamming sites and their coverage. The Lua script receives:
 
 * ``sites`` -- one record per live jammer: the owning coalition, the campaign
   position, the denial reach, the miss it scores at full strength, and the
@@ -13,7 +11,7 @@ plugin the runtime's whole world view:
   (Python) and a campaign can never drift from it.
 
 Emits nothing unless the setting is on and a live jammer exists, so a normal
-mission carries no ``gpsJamming`` node and the plugin no-ops.
+mission has no GPS jamming configuration.
 """
 
 from __future__ import annotations
@@ -22,6 +20,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from game.data.units import UnitClass
+from game.settings.settings import GPS_JAMMING_OPTIONS
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.theatergroup import SceneryUnit
 
@@ -60,6 +59,9 @@ def populate_gps_jamming_lua(
         return
 
     node = root.add_item("gpsJamming")
+    options = node.add_item("options")
+    for key, field in GPS_JAMMING_OPTIONS.items():
+        options.add_key_value(key, getattr(game.settings, field))
     # As its OWN child item, never add_data_array on the node: LuaData.serialize
     # drops an object's scalar key-values once it also has nested items, so the
     # pattern list would silently vanish alongside `sites` (the same trap the

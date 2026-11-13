@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Optional
 from uuid import uuid4
 
 from dcs import Mission
+from dcs.lua import dumps
 from dcs.action import DoScript, DoScriptFile
 from dcs.translation import String
 from dcs.triggers import TriggerStart
@@ -16,6 +17,7 @@ from game.ato import FlightType
 from game.data.units import UnitClass
 from game.dcs.aircrafttype import AircraftType
 from game.plugins import LuaPluginManager
+from game.settings.settings import MISSION_LOG_OPTIONS
 from game.theater import TheaterGroundObject
 from game.theater.theatergroup import SceneryUnit
 from game.theater.iadsnetwork.iadsrole import IadsRole
@@ -49,13 +51,18 @@ class LuaGenerator:
     def generate(self) -> None:
         # Same plugin-manager settings as injection; preflight before adding Lua.
         realistic_cas = prepare_campaign(self, LuaPluginManager.plugins())
-        imac_options = imac.options(LuaPluginManager.plugins())
+        imac_options = imac.options(self.game.settings)
         existing_start_triggers = [
             x for x in self.mission.triggerrules.triggers if isinstance(x, TriggerStart)
         ]
         self.generate_plugin_data()
-        self._seed_pilot_roster()
         self.inject_plugins()
+        if self.game.settings.gps_jamming_enabled:
+            self.inject_plugin_script(
+                "gpsjamming", "gpsjamming-config.lua", "gpsjamming-config"
+            )
+        if self.game.settings.mission_log_enabled:
+            self._inject_mission_log()
         self._inject_aircraft_maintenance()
         self._seed_scenery_objectives()
         self._seed_persistent_damage()
@@ -248,30 +255,26 @@ class LuaGenerator:
         self.mission.triggerrules.triggers.append(trigger)
         logging.info("Seeded %d building objectives for scenery matching", len(rows))
 
+    def _inject_mission_log(self) -> None:
+        self._seed_pilot_roster()
+        options = {
+            key: getattr(self.game.settings, field)
+            for key, field in MISSION_LOG_OPTIONS.items()
+        }
+        self.inject_lua_trigger(
+            "dcsRetribution.missionLog = " + dumps(options), "Mission Log settings"
+        )
+        self.inject_plugin_script("missionlog", "missionlog.lua", "missionlog")
+
     def _seed_pilot_roster(self) -> None:
         """Hand the Mission Log the name of the pilot behind every unit.
 
         A DCS event names a unit "STAG BARCAP|2|14|F-15C Eagle| Pilot #2". The
         aircraft is in there, but the pilot is not: only Escalation knows who
-        was rostered into that seat. This is that mapping, and it is seeded only
-        when the plugin that reads it is switched on -- an unused table of a few
-        hundred names in every mission is pure weight.
+        was rostered into that seat. Export that mapping for the mission log.
         """
         if self.unit_map is None:
             return
-        # Asked of the plugin manager, which is also what decides whether the
-        # script that reads this table gets injected. Reading game.settings
-        # directly looked equivalent and was not: the manager is a class-level
-        # singleton holding whatever Settings it was last loaded with, so
-        # starting a second campaign left it answering for the first. The script
-        # went in and the roster did not, and every message named an aircraft
-        # with no pilot behind it.
-        if not any(
-            plugin.identifier == "missionlog" and plugin.enabled
-            for plugin in LuaPluginManager.plugins()
-        ):
-            return
-
         rows = []
         for unit_name, flying_unit in self.unit_map.aircraft.items():
             if flying_unit.pilot is None:
@@ -519,10 +522,10 @@ class LuaGenerator:
         # Its weapon set is disjoint from the cruise-missile one above, so a shot is
         # never charged to both magazines.
         populate_naval_magazines_lua(lua_data, self.game, self.mission_data)
-        # GPS jamming: hands the plugin every live jammer's position, reach and miss
+        # GPS jamming: exports every live jammer's position, reach and miss
         # radius, plus the curated satellite-guided weapon patterns. Emits nothing
         # unless the setting is on and a live jammer exists, so an ordinary mission
-        # carries no gpsJamming node at all and the plugin no-ops.
+        # carries no gpsJamming node at all and the script no-ops.
         populate_gps_jamming_lua(lua_data, self.game, self.mission_data)
 
         trigger = TriggerStart(comment="Set DCS Escalation data")
@@ -580,9 +583,9 @@ class LuaGenerator:
 
 class LuaValue:
     key: Optional[str]
-    value: str | list[str] | bool | int
+    value: str | list[str] | bool | int | float
 
-    def __init__(self, key: Optional[str], value: str | list[str] | bool | int):
+    def __init__(self, key: Optional[str], value: str | list[str] | bool | int | float):
         self.key = key
         self.value = value
 
@@ -590,7 +593,7 @@ class LuaValue:
         serialized_value = self.key + " = " if self.key else ""
         if isinstance(self.value, bool):
             serialized_value += "true" if self.value else "false"
-        elif isinstance(self.value, int):
+        elif isinstance(self.value, (int, float)):
             serialized_value += str(self.value)
         elif isinstance(self.value, str):
             serialized_value += f'"{escape_string_for_lua(self.value)}"'
@@ -617,7 +620,7 @@ class LuaItem(ABC):
     def add_data_array(self, key: str, values: list[str]) -> None:
         self._add_value(LuaValue(key, values))
 
-    def add_key_value(self, key: str, value: str | bool | int) -> None:
+    def add_key_value(self, key: str, value: str | bool | int | float) -> None:
         self._add_value(LuaValue(key, value))
 
     def _add_value(self, value: LuaValue) -> None:

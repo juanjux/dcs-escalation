@@ -17,6 +17,7 @@ from game.missiongenerator.realisticcascampaign import (
     prepare_campaign,
 )
 from game.plugins.luaplugin import LuaPlugin
+from game.settings import Settings
 from lupa.lua51 import LuaRuntime
 
 import test_registry_export
@@ -284,16 +285,15 @@ class CampaignIntegrationTests(unittest.TestCase):
                     rt.compile(action)
 
     def test_real_generate_hook_calls_prepare_before_other_lua_and_starts_last(self):
+        self.game.settings = Settings(gps_jamming_enabled=False)
         # Exercise the real generate() control flow, isolating unrelated plugins.
         with patch(
             "game.missiongenerator.luagenerator.LuaPluginManager.plugins",
             return_value=[self.p],
         ):
             with patch.object(self.g, "generate_plugin_data"), patch.object(
-                self.g, "_seed_pilot_roster"
-            ), patch.object(self.g, "_seed_scenery_objectives"), patch.object(
-                self.g, "_seed_persistent_damage"
-            ), patch.object(
+                self.g, "_seed_scenery_objectives"
+            ), patch.object(self.g, "_seed_persistent_damage"), patch.object(
                 self.g, "_inject_aircraft_maintenance"
             ):
                 self.g.generate()

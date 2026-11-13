@@ -297,8 +297,6 @@ class PluginRow(QWidget):
             # plug belongs to the plugin list, not to its options.
             self.gear = gear_button(f"{plugin.name} options")
             self.gear.clicked.connect(self.open_options)
-            if plugin.identifier == "groundmovement":
-                self.gear.setEnabled(plugin.enabled)
             head.addWidget(self.gear)
         head.addStretch()
 
@@ -318,19 +316,7 @@ class PluginRow(QWidget):
         self.dialog: Optional[PluginOptionsDialog] = None
 
     def set_enabled(self, value: bool) -> None:
-        if self.plugin.identifier == "groundmovement":
-            from qt_ui.windows.settings.groundmovement import change_movement
-
-            if not change_movement(self, self.settings, value):
-                blocked = self.checkbox.blockSignals(True)
-                self.checkbox.setChecked(
-                    bool(self.settings.plugin_option_or("groundmovement", False))
-                )
-                self.checkbox.blockSignals(blocked)
-                return
-            self.gear.setEnabled(value)
-        else:
-            self.settings.set_plugin_option(self.plugin.identifier, value)
+        self.settings.set_plugin_option(self.plugin.identifier, value)
         self.changed.emit()
 
     def open_options(self, flash: Optional[str] = None) -> None:
@@ -380,5 +366,3 @@ class PluginsPage(QWidget):
                 blocked = row.checkbox.blockSignals(True)
                 row.checkbox.setChecked(enabled[row.plugin.identifier])
                 row.checkbox.blockSignals(blocked)
-            if row.plugin.identifier == "groundmovement":
-                row.gear.setEnabled(row.plugin.enabled)

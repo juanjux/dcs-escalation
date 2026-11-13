@@ -1,7 +1,6 @@
 """Dependency confirmations leave both switches coherent on accept and cancel."""
 
 import os
-from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -12,7 +11,6 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QGridLayout, QMessageBox, QSpinBox, QWidget
 
 from game.groundmovement import settings as movement
-from game.plugins import LuaPlugin, LuaPluginManager
 from game.settings import Settings
 from game.settings.optiondescription import SETTING_DESCRIPTION_KEY
 
@@ -28,57 +26,40 @@ def app(monkeypatch: pytest.MonkeyPatch) -> Any:
 def test_enable_cancel_and_accept_update_switches_and_options(
     app: Any,
     monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
 ) -> None:
-    from qt_ui.windows.settings.plugins import PluginsPage, PluginOptionsBox
+    from PySide6.QtWidgets import QCheckBox
+    from game.settings.settings import GROUND_MOVEMENT_SECTION, MISSION_GENERATOR_PAGE
+    from qt_ui.windows.settings.QSettingsWindow import AutoSettingsLayout
 
-    plugin = LuaPlugin.from_json(
-        "groundmovement", Path("resources/plugins/groundmovement/plugin.json")
-    )
-    assert plugin is not None
-    monkeypatch.setattr(LuaPluginManager, "_plugins", {"groundmovement": plugin})
-    monkeypatch.setattr(LuaPluginManager, "_plugins_loaded", True)
-    settings = Settings()
-    settings.motorpool_enabled = False
+    settings = Settings(motorpool_enabled=False)
     container: Any = SimpleNamespace(settings=settings)
-    page = PluginsPage(container)
-    row = page.rows[0]
-    notices: list[str] = []
-    changed: list[bool] = []
-    page.changed.connect(lambda: changed.append(True))
+    widget = QWidget()
+    layout = AutoSettingsLayout(
+        MISSION_GENERATOR_PAGE, GROUND_MOVEMENT_SECTION, container, lambda: None
+    )
+    widget.setLayout(layout)
+    checkbox = layout.settings_map["ground_movement_enabled"]
+    budget = layout.settings_map["ground_movement_road_miles_per_turn"]
+    assert isinstance(checkbox, QCheckBox) and isinstance(budget, QSpinBox)
 
-    def decline(*args: Any) -> Any:
-        notices.append(args[2])
-        return QMessageBox.StandardButton.No
-
-    monkeypatch.setattr(QMessageBox, "question", decline)
-    row.checkbox.setChecked(True)
-    assert notices and not changed
-    assert not row.checkbox.isChecked() and not row.gear.isEnabled()
+    monkeypatch.setattr(
+        QMessageBox, "question", lambda *args: QMessageBox.StandardButton.No
+    )
+    checkbox.setChecked(True)
+    assert not checkbox.isChecked() and not budget.isEnabled()
     assert vars(settings)["motorpool_enabled"] is False
     assert not movement.requested(settings)
 
     monkeypatch.setattr(
         QMessageBox, "question", lambda *args: QMessageBox.StandardButton.Yes
     )
-    row.checkbox.setChecked(True)
-    assert changed == [True]
-    assert row.checkbox.isChecked() and row.gear.isEnabled()
-    assert movement.enabled(settings)
-    assert vars(settings)["motorpool_enabled"] is True
-    options = PluginOptionsBox(plugin)
-    budget = options.widgets["groundmovement.roadMilesPerTurn"]
-    assert isinstance(budget, QSpinBox) and budget.value() == 120
-    options.resize(700, 220)
-    options.show()
-    app.processEvents()
-    assert options.grab().save(str(tmp_path / "ground-movement-options.png"))
-    options.close()
-    row.checkbox.setChecked(False)
-    assert vars(settings)["motorpool_enabled"] is True
-    assert not movement.requested(settings)
-    assert not row.gear.isEnabled()
-    page.close()
+    checkbox.setChecked(True)
+    assert checkbox.isChecked() and budget.isEnabled() and budget.value() == 120
+    assert movement.enabled(settings) and settings.motorpool_enabled
+    checkbox.setChecked(False)
+    assert not movement.requested(settings) and not budget.isEnabled()
+    assert settings.motorpool_enabled
+    widget.close()
 
 
 def test_motorpool_checkbox_cancel_accept_and_programmatic_refresh(

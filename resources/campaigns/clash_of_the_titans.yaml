@@ -38,9 +38,9 @@ settings:
   su57_felon: true
   squadrons_start_full: true
   motorpool_enabled: true
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
 
 advanced_iads: true
 

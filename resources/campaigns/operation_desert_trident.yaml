@@ -21,9 +21,9 @@ advanced_iads: true
 recommended_start_date: 1999-03-01
 version: "10.9"
 settings:
+  gps_jamming_enabled: false
   plugins:
     skynetiads: true
-    gpsjamming: false
   uh_60l: true
   squadron_start_full: true
 squadrons:

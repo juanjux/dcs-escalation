@@ -23,7 +23,7 @@ from tests.test_armor_movement_planning import world  # noqa: F401
 
 def setup(world: Any, owner: Player = Player.BLUE) -> Any:
     prepare(world)
-    world.game.settings.set_plugin_option("gpsjamming", False)
+    world.game.settings.gps_jamming_enabled = False
     for cp in world.game.theater.controlpoints:
         cp._coalition.game = world.game
     world.a._coalition.player = owner

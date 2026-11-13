@@ -213,6 +213,6 @@ squadrons:
       pilots: 16
 
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true

@@ -164,7 +164,7 @@ class StateData:
     #: feature is off or the state file predates it.
     cruise_missiles_state: List[Tuple[str, int]] = field(default_factory=list)
 
-    #: One flat record per event the Mission Log plugin saw -- kills, losses,
+    #: One flat record per event the Mission Log recorded -- kills, losses,
     #: crashes, interceptions, missiles defended against -- in the order they
     #: happened, each with its mission time.
     #: Empty when the plugin is off, and absent from every state file written

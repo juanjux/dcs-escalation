@@ -15,7 +15,7 @@ def scenery_log(owner: Player | None) -> Any:
     lua.execute("""
         logger=mist.Logger:new('SceneryTest','info')
         dead_events={};kill_details={}
-        dcsRetribution={plugins={missionlog={maxmessages=60}}}
+        dcsRetribution={missionLog={maxmessages=60}}
         function scenery(id)
             return {
                 getName=function()return id end,
@@ -104,7 +104,7 @@ def test_campaign_owner_overrides_native_scenery_side(native_side: str) -> None:
 def test_friendly_loss_setting_and_groundkill_setting_remain_independent() -> None:
     lua = scenery_log(Player.RED)
     lua.execute(
-        "dcsRetribution.plugins.missionlog.groundkills=false;kill(blue,scenery(71000001));flush()"
+        "dcsRetribution.missionLog.groundkills=false;kill(blue,scenery(71000001));flush()"
     )
     messages = list(lua.globals().messages.values())
     assert len(messages) == 1 and messages[0].side == 1

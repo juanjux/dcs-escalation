@@ -1,6 +1,5 @@
 """Campaign capture triggers announce ownership changes through the real Lua log."""
 
-import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -97,19 +96,19 @@ def test_base_owners_are_tracked_independently(log: Any) -> None:
 
 
 def test_disabled_capture_messages_still_update_ownership_and_records(log: Any) -> None:
-    log.execute("dcsRetribution = {plugins={missionlog={basecaptures=false}}}")
+    log.execute("dcsRetribution = {missionLog={basecaptures=false}}")
     capture(log, Player.BLUE, 1)
     assert len(log.globals().messages) == 0
     assert len(log.globals().logs) == 3  # Startup and both coalition messages.
     assert len(log.globals().mission_log_events) == 1
-    log.globals().dcsRetribution.plugins.missionlog.basecaptures = True
+    log.globals().dcsRetribution.missionLog.basecaptures = True
     capture(log, Player.BLUE, 2)
     assert len(log.globals().messages) == 2
 
 
 def test_capture_messages_respect_budget_and_configured_prefixes(log: Any) -> None:
     log.execute("""
-        dcsRetribution = {plugins={missionlog={maxmessages=1,goodnews='',badnews='Lost:'}}}
+        dcsRetribution = {missionLog={maxmessages=1,goodnews='',badnews='Lost:'}}
         """)
     capture(log, Player.BLUE, 1)
     capture(log, Player.BLUE, 2)
@@ -162,14 +161,8 @@ def test_saved_mission_capture_trigger_preserves_names(
     assert log.globals().messages[1].text == f"YEAH! We CAPTURED {name}"
 
 
-def test_plugin_and_lua_defaults_enable_base_capture_messages(log: Any) -> None:
-    definition = json.loads(
-        Path("resources/plugins/missionlog/plugin.json").read_text(encoding="utf-8")
-    )
-    option = next(
-        option
-        for option in definition["specificOptions"]
-        if option["mnemonic"] == "basecaptures"
-    )
-    assert option["defaultValue"] is True
+def test_campaign_and_lua_defaults_enable_base_capture_messages(log: Any) -> None:
+    from game.settings import Settings
+
+    assert Settings().mission_log_base_captures is True
     assert log.globals().MISSION_LOG_DEFAULTS.basecaptures is True

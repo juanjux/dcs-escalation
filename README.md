@@ -39,7 +39,7 @@ it will probably be removed in the future.
 
 ## In-Mission Air Commander (IMAC)
 
-Optional in-mission scripted air coordination for each coalition, without an LLM. While an operating airborne AWACS or a powered command centre survives, IMAC redirects available BARCAP/TARCAP patrols and returning fighter-capable flights against detected air threats, including interceptable cruise and anti-ship missiles. It temporarily repositions vulnerable flights and holds attacks behind known SAM defences while DEAD remains available. SAM avoidance and protective fighter evasion have independent switches; DEAD/SEAD missions ignore SAM rings by default, and Escort/Fighter Sweep flights do not evade fighters by default. Orders retain fuel, terrain and pursuit limits; the original mission remains suspended underneath. Active attack and escort missions are not interrupted for interception. Player/Client groups are never tasked, and F10 controls can pause automatic command before manual orders. Off by default; see [IMAC behaviour and limits](docs/imac.md).
+Optional in-mission scripted air coordination for each coalition, without an LLM. While an operating airborne AWACS or a powered command centre survives, IMAC redirects available BARCAP/TARCAP patrols and returning fighter-capable flights against detected air threats, including interceptable cruise and anti-ship missiles. It temporarily repositions vulnerable flights and holds attacks behind known SAM defences while DEAD remains available. SAM avoidance and protective fighter evasion have independent switches; DEAD/SEAD missions ignore SAM rings by default, and Escort/Fighter Sweep flights do not evade fighters by default. Orders retain fuel, terrain and pursuit limits; the original mission remains suspended underneath. Active attack and escort missions are not interrupted for interception. Player/Client groups are never tasked, and F10 controls can pause automatic command before manual orders. Off by default under **Mission Generator → In-Mission Air Commander**. See [IMAC behaviour and limits](docs/imac.md).
 
 ## Saved map drawings
 
@@ -145,7 +145,7 @@ campaign magazines. OPFOR has equivalent REST/MCP commands and target discovery.
 
 ## Ground Movement
 
-The optional Ground Movement plugin moves convoys and reserve armor groups over
+Ground Movement, under **Mission Generator → Ground Movement**, moves convoys and reserve armor groups over
 multiple turns, with route previews, transport requirements and persistent losses.
 From a base's Transfer Units dialog, deploy a custom mix of available vehicles to
 friendly GPS coordinates. Survivors form an active Reserve Armor Group that can
@@ -326,7 +326,7 @@ previous map view and campaign controls are restored when selection ends.
   [#213](https://github.com/juanjux/dcs-escalation/pull/213),
   [#214](https://github.com/juanjux/dcs-escalation/pull/214))
   
-- **Mission Log** (plugin, off by default) — a running commentary of what happens to your
+- **Mission Log** (under Mission Generator → Gameplay, off by default) — a running commentary of what happens to your
   side while you fly: who shot down whom and with what, which targets went down, who
   ejected, who crashed, and which bases were captured or lost.
   ([#120](https://github.com/juanjux/dcs-escalation/pull/120))
@@ -414,7 +414,7 @@ previous map view and campaign controls are restored when selection ends.
   ([#290](https://github.com/juanjux/dcs-escalation/pull/290),
   [#295](https://github.com/juanjux/dcs-escalation/pull/295))
 
-- **GPS jamming (a feature from the 414ret fork) is available in every modern campaign.** 
+- **GPS jamming** is available in modern campaigns under **Mission Generator → GPS Jamming**.
   ([#183](https://github.com/juanjux/dcs-escalation/pull/183))
 
 ## Modding & data
@@ -555,8 +555,8 @@ and it is longer than this section.
   ([#176](https://github.com/juanjux/dcs-escalation/pull/176))
   
 - **Four obsolete or duplicated plugins removed.** EWRS is the 2016 script BigEye EWR was rewritten from; Mbot's Call
-  Artillery only ever answered a player flying Armed Recon, while Carsten's answers
-  anyone in range; the C-130 cargo script is for a mod their authors don't support anymore; and the EW
+  Artillery only answered a player flying Armed Recon. Carsten's Arty Spotter has since
+  been removed as well. The C-130 cargo script is for a mod their authors don't support anymore; and the EW
   Jammer script cannot model jamming honestly without engine support.
   ([#175](https://github.com/juanjux/dcs-escalation/pull/175))
   

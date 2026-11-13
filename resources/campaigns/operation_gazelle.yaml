@@ -22,9 +22,9 @@ advanced_iads: true
 recommended_start_date: 1973-10-15
 version: "10.9"
 settings:
+  gps_jamming_enabled: false
   plugins:
     skynetiads: true
-    gpsjamming: false
   a4_skyhawk: true
   squadron_start_full: true
 squadrons:

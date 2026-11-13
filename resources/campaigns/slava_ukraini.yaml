@@ -17,9 +17,9 @@ advanced_iads: true
 recommended_start_date: 2026-02-24
 version: "10.9"
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
   ukrainemilitaryassetspack: true
   russianmilitaryassetspack: true
   squadron_start_full: true

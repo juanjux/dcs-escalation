@@ -110,6 +110,6 @@ squadrons:
     - primary: AEW&C
 
 settings:
+  gps_jamming_enabled: false
   plugins:
     skynetiads: true
-    gpsjamming: false

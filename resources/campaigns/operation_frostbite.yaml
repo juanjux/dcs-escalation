@@ -15,9 +15,9 @@ advanced_iads: true
 recommended_start_date: 2016-06-06
 version: "10.7"
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
   restrict_weapons_by_date: false
 squadrons:
   #Lakselv

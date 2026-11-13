@@ -83,9 +83,9 @@ squadrons:
     - primary: Transport
 
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
 
 ground_forces:
   "Blue GPS Jammer Shiraz Intl": GPS Jamming Site (Blue, Unescorted)

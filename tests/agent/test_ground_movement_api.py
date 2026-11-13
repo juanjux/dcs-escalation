@@ -368,7 +368,7 @@ def test_stale_confirmation_has_no_side_effects(
     if change == "turn":
         stock.game.turn += 1
     elif change == "budget":
-        stock.game.settings.set_plugin_option("groundmovement.roadMilesPerTurn", 1)
+        stock.game.settings.ground_movement_road_miles_per_turn = 1
     elif change == "casualty":
         next(u for u in stock.source.units if u.id == 7).alive = False
     elif change == "territory":

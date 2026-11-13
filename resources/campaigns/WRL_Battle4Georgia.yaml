@@ -15,9 +15,9 @@ recommended_player_income_multiplier: 5.0
 recommended_enemy_income_multiplier: 1.0
 advanced_iads: true
 settings:
+  gps_jamming_enabled: true
   plugins:
     skynetiads: true
-    gpsjamming: true
   max_frontline_width: 30
 squadrons:
   Blue CV-1:

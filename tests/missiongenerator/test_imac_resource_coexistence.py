@@ -18,7 +18,7 @@ def test_saved_miz_keeps_both_adapters_and_starts_both_plugins(
 ) -> None:
     s = scenario()
     s.game.settings.set_plugin_option("realisticcas", True)
-    s.game.settings.set_plugin_option("imac", True)
+    s.game.settings.imac_enabled = True
     cas = {
         "enabled": True,
         "acquisitionSeconds": 0,

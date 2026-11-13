@@ -87,7 +87,7 @@ def test_click_revalidates_after_a_valid_hover(
     elif change == "enemy":
         world.b._coalition.player = Player.RED
     elif change == "disabled":
-        world.game.settings.set_plugin_option("groundmovement", False)
+        world.game.settings.ground_movement_enabled = False
     else:
         world.source.groups[0].units = [u for u in world.source.units if u.id != 7]
     before = pickle.dumps(world.game)

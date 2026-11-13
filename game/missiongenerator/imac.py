@@ -15,6 +15,7 @@ from dcs.unit import Static
 
 from game.ato import FlightType
 from game.groundmovement.samdefense import transit_defense
+from game.settings.settings import IMAC_OPTIONS, Settings
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsnetwork import SkynetNode
 from game.theater.player import Player
@@ -72,14 +73,10 @@ def _array(value: Any) -> Any:
     return value
 
 
-def options(plugins: Any) -> dict[str, Any] | None:
-    plugin = next((p for p in plugins if p.identifier == "imac" and p.enabled), None)
-    if plugin is None:
+def options(settings: Settings) -> dict[str, Any] | None:
+    if not settings.imac_enabled:
         return None
-    result: dict[str, Any] = dict(DEFAULTS)
-    result.update(
-        (o.identifier.removeprefix("imac."), o.get_value) for o in plugin.options
-    )
+    result = {key: getattr(settings, field) for key, field in IMAC_OPTIONS.items()}
     bounds = {
         "interval": (5, 60),
         "interceptRangeNm": (20, 200),

@@ -32,6 +32,7 @@ def text_option(
     tooltip: Optional[str] = None,
     causes_expensive_game_update: bool = False,
     visible_when: Optional[Callable[[Any], bool]] = None,
+    subsection: Optional[str] = None,
     **kwargs: Any,
 ) -> str:
     return field(
@@ -46,6 +47,7 @@ def text_option(
                 placeholder,
                 max_length,
                 visible_when=visible_when,
+                subsection=subsection,
             )
         },
         default=default,
