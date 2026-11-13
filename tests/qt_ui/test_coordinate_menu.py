@@ -10,7 +10,7 @@ import pytest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QPoint
-from PySide6.QtWidgets import QApplication, QMenu
+from PySide6.QtWidgets import QApplication, QInputDialog, QMenu
 
 from game.ato.savedpoints import PointKind, SavedPoint, campaign_points, points_of
 from qt_ui.widgets import coordinatelabel
@@ -81,6 +81,8 @@ def test_location_row_saves_with_no_scheduled_flights(
     coordinate = row.findChild(CoordinateLabel)
     assert coordinate is not None
     opened = _choose_action(monkeypatch, "Save as waypoint")
+    name_dialog = Mock(return_value=("  Depot waypoint  ", True))
+    monkeypatch.setattr(QInputDialog, "getText", name_dialog)
     elevation = Mock(return_value=height)
     publish = Mock()
     monkeypatch.setattr("game.elevation.elevation_ft", elevation)
@@ -91,11 +93,12 @@ def test_location_row_saves_with_no_scheduled_flights(
     coordinate.button.click()
 
     opened.assert_called_once()
+    assert name_dialog.call_args.kwargs["text"] == coordinate.text
     elevation.assert_called_once_with(36.0, -115.0)
     publish.assert_called_once()
     (point,) = campaign_points(game.blue)
     assert point.kind is PointKind.WAYPOINT
-    assert point.name == coordinate.text
+    assert point.name == "Depot waypoint"
     assert (point.x, point.y) == (position.x, position.y)
     assert point.altitude_ft == (height if height is not None else 0)
 
@@ -123,6 +126,7 @@ def test_save_is_not_gated_by_crew_or_export_capacity(
     points.extend(SavedPoint(PointKind.WAYPOINT, f"P{n}", 0, 0) for n in range(24))
     coordinate = CoordinateLabel(_position(), game.settings, game=game)
     _choose_action(monkeypatch, "Save as waypoint")
+    monkeypatch.setattr(QInputDialog, "getText", lambda *args, text: (text, True))
     monkeypatch.setattr("game.elevation.elevation_ft", lambda *_: 100)
     monkeypatch.setattr(
         "game.server.savedpoints.notifications.publish_points_changed", Mock()
@@ -131,6 +135,30 @@ def test_save_is_not_gated_by_crew_or_export_capacity(
     coordinate.button.click()
 
     assert len(points) == 25
+    assert points[-1].name == coordinate.text
+
+
+def test_cancelling_waypoint_name_leaves_campaign_unchanged(
+    qt_app: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    game = _game()
+    coordinate = CoordinateLabel(_position(), game.settings, game=game)
+    _choose_action(monkeypatch, "Save as waypoint")
+    monkeypatch.setattr(
+        QInputDialog, "getText", Mock(return_value=("Discarded", False))
+    )
+    elevation = Mock()
+    publish = Mock()
+    monkeypatch.setattr("game.elevation.elevation_ft", elevation)
+    monkeypatch.setattr(
+        "game.server.savedpoints.notifications.publish_points_changed", publish
+    )
+
+    coordinate.button.click()
+
+    assert not campaign_points(game.blue)
+    elevation.assert_not_called()
+    publish.assert_not_called()
 
 
 @pytest.mark.parametrize("has_campaign", [False, True])

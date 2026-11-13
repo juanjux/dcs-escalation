@@ -9,6 +9,7 @@ from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QMenu,
     QPushButton,
@@ -107,6 +108,12 @@ class CoordinateLabel(QWidget):
     def _save(self) -> None:
         if self.game is None:
             return
+        name, accepted = QInputDialog.getText(
+            self, "Save as waypoint", "Waypoint name", text=self.text
+        )
+        if not accepted:
+            return
+
         from game.elevation import elevation_ft
         from game.server.savedpoints.notifications import publish_points_changed
 
@@ -116,7 +123,7 @@ class CoordinateLabel(QWidget):
         campaign_points(self.game.blue).append(
             SavedPoint(
                 kind=PointKind.WAYPOINT,
-                name=self.text,
+                name=name.strip() or self.text,
                 x=self.position.x,
                 y=self.position.y,
                 altitude_ft=height if height is not None else 0,
