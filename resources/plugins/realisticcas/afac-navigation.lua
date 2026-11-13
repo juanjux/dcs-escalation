@@ -529,7 +529,7 @@ g:getController():setCommand({id='SwitchWaypoint',
       local aircraftLimit=ceiling and ceiling>300 and ceiling-300 or altitude
       local maxAltitude=math.min(aircraftLimit,ground+(c.probability and c.probability.opticalMaxAGL or 7010.4))
       local clouds=c.afacAvoidance.clouds
-      if clouds then maxAltitude=math.min(maxAltitude,clouds.base-300) end
+      if clouds then maxAltitude=math.min(maxAltitude,clouds.base-150) end
       local turnSpeed=math.max(n.speed,r.measuredSpeed)
       local footprint=math.max(500,turnSpeed*turnSpeed/3.5)*1.5+250
       local input={source=p,zone=m.zone,points=n.points,altitude=altitude,

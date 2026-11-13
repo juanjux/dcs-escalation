@@ -115,7 +115,7 @@ class AfacNavigationTests(unittest.TestCase):
                 elseif scenario=='new' then
                   config.airDefenseThreats[1].radius=12000
                 elseif scenario=='terrain' then
-                  land.getHeight=function()return 2850 end
+                  land.getHeight=function()return 2900 end
                 end
                 beginNavigation();tick()
                 assert(not RealisticCAS.afacAbort.blue and not RealisticCAS.afacReturn.blue)
@@ -127,7 +127,7 @@ class AfacNavigationTests(unittest.TestCase):
                 local points=assigned[1].params.route.points
                 local count=n.searchPath and #n.searchPath or #n.points
                 for i=2,count+1 do
-                  assert(points[i].alt==2700 and points[i].alt_type=='BARO')
+                  assert(points[i].alt==2850 and points[i].alt_type=='BARO')
                   if scenario=='local' then assert(math.abs(points[i].y)>4000)end
                 end
                 assert(points[#points].type=='Land' and points[#points].airdromeId==12)
@@ -138,7 +138,7 @@ class AfacNavigationTests(unittest.TestCase):
                 for _=1,6 do tick()end
                 assert(#assigned==1)
                 if scenario=='new' then
-                  observer.point.x=-18000;observer.point.y=2700
+                  observer.point.x=-18000;observer.point.y=2850
                   known();tick()
                   assert(#assigned==2 and orbit(assigned[2]).params.altitude==6000)
                   assert(not RealisticCAS.afacReturn.blue)
