@@ -302,9 +302,8 @@ previous map view and campaign controls are restored when selection ends.
   time. Ground units also spot enemies, and revealing one vehicle reveals its group.
   Fixed map SAM sites stay known; frontline SAMs participate in the fog. F10 and
   weapon accuracy are unchanged. Enable **Realistic CAS (experimental)** in Mission
-  Plugins. CTLD logistics can remain
-  enabled with **JTAC autolase targets** off; runtime-created units are not yet
-  registered in the fog.
+  Plugins. CTLD logistics can run alongside it. Runtime-created units are
+  not yet registered in the fog.
 
   Enable **AFAC missions** separately in the plugin options to add **AFAC — Area**
   and **AFAC — Frontline**. Compatible aircraft search without attacking, report

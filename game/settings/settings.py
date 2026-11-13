@@ -3235,7 +3235,7 @@ class Settings:
     def deserialize_state_dict(state: dict[str, Any]) -> dict[str, Any]:
         state.pop("use_jtac", None)
         if isinstance(plugins := state.get("plugins"), dict):
-            for name in ("ctld.jtacsmoke", "ctld.fc3LaserCode"):
+            for name in ("ctld.autolase", "ctld.jtacsmoke", "ctld.fc3LaserCode"):
                 plugins.pop(name, None)
             for name in tuple(plugins):
                 if name == "MooseAutolase" or name.startswith("MooseAutolase."):

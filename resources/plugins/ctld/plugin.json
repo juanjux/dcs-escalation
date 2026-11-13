@@ -1,6 +1,6 @@
 {
     "nameInUI": "CTLD",
-    "descriptionInUI": "Helicopter and transport logistics: sling-loading crates, deploying troops and vehicles, and JTAC autolasing for laser-guided strikes.",
+    "descriptionInUI": "Helicopter and transport logistics: sling-loading crates and deploying troops and vehicles.",
     "defaultValue": true,
     "specificOptions": [
         {
@@ -31,12 +31,6 @@
         {
             "nameInUI": "Dropped troops clear enemy ground units around them",
             "mnemonic": "troopsassault",
-            "defaultValue": true
-        },
-        {
-            "nameInUI": "JTAC autolase targets",
-            "descriptionInUI": "Automatically find and lase ground targets with JTAC troops and vehicles deployed by CTLD. Disable for Realistic CAS; CTLD logistics can stay enabled. Unrelated to Combined Arms JTAC controller slots.",
-            "mnemonic": "autolase",
             "defaultValue": true
         },
         {

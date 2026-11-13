@@ -130,7 +130,7 @@ if dcsRetribution then
                 { name = "Retribution Troops (6)", inf = 4, mg = 1, at = 1 },
                 { name = "Retribution Troops (10)", inf = 5, mg = 2, at = 2, aa = 1 },
                 { name = "Retribution Troops (12)", inf = 6, mg = 2, at = 2, aa = 2 },
-                { name = "Retribution Troops (24)", inf = 12, mg = 4, at = 4, aa = 3, jtac = 1 },
+                { name = "Retribution Troops (24)", inf = 13, mg = 4, at = 4, aa = 3 },
             }
             if dcsRetribution.plugins.ctld.tailorctld then
                 --- remove all default CTLD spawning settings

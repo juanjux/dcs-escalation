@@ -17,43 +17,6 @@ from .realisticcasluadata import (
 )
 
 
-def enabled(plugins: Any) -> bool:
-    return any(p.identifier == "realisticcas" and p.enabled for p in plugins)
-
-
-class RealisticCASConfigurationError(ValueError):
-    """Actionable plugin conflict, not an unexpected generation failure."""
-
-
-def validate_compatibility(plugins: Any) -> None:
-    """Shared preflight for Take Off and non-UI mission generation."""
-    plugins = list(plugins)
-    if not enabled(plugins):
-        return
-    incompatible = []
-    for plugin in plugins:
-        if not plugin.enabled:
-            continue
-        if plugin.identifier == "ctld":
-            autolase = next(
-                (
-                    option.get_value
-                    for option in getattr(plugin, "options", [])
-                    if option.identifier == "ctld.autolase"
-                ),
-                True,  # Matches the manifest default for older definitions.
-            )
-            if autolase is not False:
-                incompatible.append("ctld: turn off 'JTAC autolase targets'")
-    if incompatible:
-        raise RealisticCASConfigurationError(
-            "Realistic CAS experimental: "
-            + "; ".join(sorted(incompatible))
-            + ". CTLD logistics may remain enabled with autolase off. "
-            "Combined Arms JTAC controller slots do not enable AI autolase."
-        )
-
-
 def prepare_campaign(
     generator: Any, plugins: Any, *, sun_times: SunTimes | None = None
 ) -> dict[str, Any] | None:
@@ -63,7 +26,6 @@ def prepare_campaign(
     )
     if plugin is None:
         return None  # Do not even inspect the mission when disabled.
-    validate_compatibility(plugins)
     options = {
         o.identifier.removeprefix("realisticcas."): o.get_value for o in plugin.options
     }

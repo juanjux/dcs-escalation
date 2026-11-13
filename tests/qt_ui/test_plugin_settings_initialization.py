@@ -13,7 +13,6 @@ from PySide6.QtWidgets import QApplication
 from game.plugins import LuaPlugin, LuaPluginManager
 from game.plugins.luaplugin import PluginSettings
 from game.settings import Settings
-from game.missiongenerator.realisticcascampaign import validate_compatibility
 
 
 @pytest.fixture
@@ -54,16 +53,6 @@ def test_existing_plugin_values_are_not_replaced(value: Any) -> None:
     option = PluginSettings("test.value", 42)
     option.set_value(value)
     assert option.get_value == value
-
-
-def test_missing_realistic_cas_setting_does_not_break_preflight(
-    plugins: dict[str, LuaPlugin],
-) -> None:
-    settings = Settings()
-    LuaPluginManager.load_settings(settings)
-    settings.plugins.clear()
-    validate_compatibility(LuaPluginManager.plugins())
-    assert not plugins["realisticcas"].enabled
 
 
 def test_plugin_page_uses_its_settings_and_initializes_missing_options(
@@ -107,32 +96,3 @@ def test_plugin_page_uses_its_settings_and_initializes_missing_options(
     assert plugins["ctld"].settings is active
     assert stale.plugin_option("ctld") is False
     page.close()
-
-
-def test_takeoff_binds_plugins_before_compatibility_check(
-    app: Any,
-    plugins: dict[str, LuaPlugin],
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    import importlib
-    from game.agent.session import AI_SESSION
-
-    top = importlib.import_module("qt_ui.widgets.QTopPanel")
-    monkeypatch.setattr(type(AI_SESSION), "active", property(lambda _: False))
-    stale, active = Settings(), Settings()
-    LuaPluginManager.load_settings(stale)
-    active.set_plugin_option("realisticcas", True)
-    messages: list[str] = []
-    monkeypatch.setattr(
-        top.QMessageBox, "warning", lambda _self, _title, text: messages.append(text)
-    )
-
-    def check(items: Any) -> None:
-        assert all(plugin.settings is active for plugin in items)
-        assert plugins["realisticcas"].enabled
-        raise top.RealisticCASConfigurationError("Test preflight stop")
-
-    monkeypatch.setattr(top, "validate_compatibility", check)
-    panel: Any = SimpleNamespace(game=SimpleNamespace(settings=active))
-    top.QTopPanel.launch_mission(panel)
-    assert messages == ["Test preflight stop"]

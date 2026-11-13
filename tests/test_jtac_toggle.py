@@ -25,7 +25,7 @@ def test_retired_jtac_settings_are_ignored_in_old_saves() -> None:
 
     assert "use_jtac" not in vars(settings)
     assert settings.jtac_count == 2
-    assert settings.plugin_option("ctld.autolase") is False
+    assert "ctld.autolase" not in settings.plugins
     assert "ctld.jtacsmoke" not in settings.plugins
     assert "ctld.fc3LaserCode" not in settings.plugins
     assert not any(key.startswith("MooseAutolase") for key in settings.plugins)

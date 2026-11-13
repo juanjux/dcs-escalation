@@ -43,10 +43,6 @@ from qt_ui.widgets.QConditionsWidget import QConditionsWidget
 from qt_ui.widgets.clientslots import MaxPlayerCount
 from qt_ui.widgets.QMissionProgressPanel import MissionProgressPanel
 from game.income import Income
-from game.missiongenerator.realisticcascampaign import (
-    RealisticCASConfigurationError,
-    validate_compatibility,
-)
 from game.plugins.manager import LuaPluginManager
 from game.theater import Player
 from qt_ui.dialogs import open_once
@@ -486,11 +482,6 @@ class QTopPanel(QFrame):
             return
 
         LuaPluginManager.load_settings(self.game.settings)
-        try:
-            validate_compatibility(LuaPluginManager.plugins())
-        except RealisticCASConfigurationError as ex:
-            QMessageBox.warning(self, "Incompatible mission plugins", str(ex))
-            return
 
         # Fill an unplanned OPFOR air turn, but preserve ground orders and any
         # deliberately empty air plan recorded by the external commander.
