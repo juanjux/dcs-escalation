@@ -76,7 +76,5 @@
   "missiles": [
     "SSM SS-1C Scud-B"
   ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "doctrine": "coldwar"
 }

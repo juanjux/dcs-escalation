@@ -68,7 +68,6 @@
     "EWR AN/FPS-117 Radar"
   ],
   "requirements": {},
-  "has_jtac": false,
   "doctrine": "modern",
   "liveries_overrides": {
     "C-130": [

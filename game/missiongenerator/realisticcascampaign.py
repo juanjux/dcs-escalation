@@ -17,50 +17,6 @@ from .realisticcasluadata import (
 )
 
 
-def enabled(plugins: Any) -> bool:
-    return any(p.identifier == "realisticcas" and p.enabled for p in plugins)
-
-
-def suppress_legacy_jtac(plugins: Any) -> bool:
-    """Temporary scope explicitly accepted by the user: no legacy generated JTAC."""
-    return enabled(plugins)
-
-
-class RealisticCASConfigurationError(ValueError):
-    """Actionable plugin conflict, not an unexpected generation failure."""
-
-
-def validate_compatibility(plugins: Any) -> None:
-    """Shared preflight for Take Off and non-UI mission generation."""
-    plugins = list(plugins)
-    if not enabled(plugins):
-        return
-    incompatible = []
-    for plugin in plugins:
-        if not plugin.enabled:
-            continue
-        if plugin.identifier == "ctld":
-            autolase = next(
-                (
-                    option.get_value
-                    for option in getattr(plugin, "options", [])
-                    if option.identifier == "ctld.autolase"
-                ),
-                True,  # Matches the manifest default for older definitions.
-            )
-            if autolase is not False:
-                incompatible.append("ctld: turn off 'JTAC autolase targets'")
-        elif plugin.identifier == "MooseAutolase":
-            incompatible.append("MooseAutolase: disable the autolase plugin")
-    if incompatible:
-        raise RealisticCASConfigurationError(
-            "Realistic CAS experimental: "
-            + "; ".join(sorted(incompatible))
-            + ". CTLD logistics may remain enabled with autolase off. "
-            "Combined Arms JTAC controller slots do not enable AI autolase."
-        )
-
-
 def prepare_campaign(
     generator: Any, plugins: Any, *, sun_times: SunTimes | None = None
 ) -> dict[str, Any] | None:
@@ -70,11 +26,6 @@ def prepare_campaign(
     )
     if plugin is None:
         return None  # Do not even inspect the mission when disabled.
-    validate_compatibility(plugins)
-    if generator.mission_data.jtacs:
-        raise ValueError(
-            "Realistic CAS experimental requires no legacy JTACs in the generated mission"
-        )
     options = {
         o.identifier.removeprefix("realisticcas."): o.get_value for o in plugin.options
     }
@@ -146,9 +97,7 @@ def prepare_campaign(
             t["name"]: (t["groupName"], t["coalition"])
             for t in registry["targets"] + registry["afacKnownTargets"]
         }
-    registry["warnings"].append(
-        "Experimental: legacy JTAC generation suppressed; runtime-created units need adapters"
-    )
+    registry["warnings"].append("Runtime-created units need Realistic CAS adapters")
     # Ignore the retired option in older saves; no continuous-observation delay.
     acquisition = 0
     probabilistic = options.get("probabilisticDetection", True)

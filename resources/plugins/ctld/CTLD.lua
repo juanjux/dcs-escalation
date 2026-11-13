@@ -6,7 +6,6 @@
 
     Supports all of the original CTTS functionality such as AI auto troop load and unload as well as group spawning and preloading of troops into units.
 
-    Supports deployment of Auto Lasing JTAC to the field
 
     See https://github.com/ciribob/DCS-CTLD for a user manual and the latest version
 
@@ -127,31 +126,9 @@ ctld.AASystemLimitBLUE = 20 -- Blue side limit
 
 --END AA SYSTEM CONFIG --
 
--- ***************** JTAC CONFIGURATION *****************
-
-ctld.JTAC_LIMIT_RED = 10 -- max number of JTAC Crates for the RED Side
-ctld.JTAC_LIMIT_BLUE = 10 -- max number of JTAC Crates for the BLUE Side
-
-ctld.JTAC_dropEnabled = true -- allow JTAC Crate spawn from F10 menu
-
-ctld.JTAC_maxDistance = 10000 -- How far a JTAC can "see" in meters (with Line of Sight)
-
-ctld.JTAC_smokeOn_RED = true -- enables marking of target with smoke for RED forces
-ctld.JTAC_smokeOn_BLUE = true -- enables marking of target with smoke for BLUE forces
-
-ctld.JTAC_smokeColour_RED = 4 -- RED side smoke colour -- Green = 0 , Red = 1, White = 2, Orange = 3, Blue = 4
-ctld.JTAC_smokeColour_BLUE = 1 -- BLUE side smoke colour -- Green = 0 , Red = 1, White = 2, Orange = 3, Blue = 4
-
-ctld.JTAC_jtacStatusF10 = true -- enables F10 JTAC Status menu
-
-ctld.JTAC_location = true -- shows location of target in JTAC message
-ctld.location_DMS = false -- shows coordinates as Degrees Minutes Seconds instead of Degrees Decimal minutes
-
-ctld.JTAC_lock = "all" -- "vehicle" OR "troop" OR "all" forces JTAC to only lock vehicles or troops or all ground units
-
-ctld.JTAC_laseSpotCorrections = false -- if true, the JTAC will attempt to lead the target, taking into account current wind conditions and the speed of the target (particularily useful against moving heavy armor)
-
 -- ***************** Pickup, dropoff and waypoint zones *****************
+
+ctld.location_DMS = false -- Show coordinates as degrees and decimal minutes
 
 -- Available colors (anything else like "none" disables smoke): "green", "red", "white", "orange", "blue", "none",
 
@@ -466,7 +443,6 @@ ctld.unitActions = {
 -- AA soldiers have a MANPAD tube (ctld.MANPAD_WEIGHT)
 -- Anti-tank soldiers have a RPG and a rocket (ctld.RPG_WEIGHT)
 -- Machine gunners have the squad MG and 200 bullets (ctld.MG_WEIGHT)
--- JTAC have the laser sight, radio and binoculars (ctld.JTAC_WEIGHT)
 -- Mortar servants carry their tube and a few rounds (ctld.MORTAR_WEIGHT)
 
 ctld.SOLDIER_WEIGHT = 80 -- kg, will be randomized between 90% and 120%
@@ -476,7 +452,6 @@ ctld.MANPAD_WEIGHT = 18 -- kg
 ctld.RPG_WEIGHT = 7.6 -- kg
 ctld.MG_WEIGHT = 10 -- kg
 ctld.MORTAR_WEIGHT = 26 -- kg
-ctld.JTAC_WEIGHT = 15 -- kg
 
 -- ************** INFANTRY GROUPS FOR PICKUP ******************
 -- Unit Types
@@ -485,7 +460,6 @@ ctld.JTAC_WEIGHT = 15 -- kg
 -- at is RPG-16
 -- aa is Stinger or Igla
 -- mortar is a 2B11 mortar unit
--- jtac is a JTAC soldier, which will use JTACAutoLase
 -- You must add a name to the group for it to work
 -- You can also add an optional coalition side to limit the group to one side
 -- for the side - 2 is BLUE and 1 is RED
@@ -494,8 +468,6 @@ ctld.loadableGroups = {
     {name = "Anti Air", inf = 2, aa = 3  },
     {name = "Anti Tank", inf = 2, at = 6  },
     {name = "Mortar Squad", mortar = 6 },
-    {name = "JTAC Group", inf = 4, jtac = 1 }, -- will make a loadable group with 4 infantry and a JTAC soldier for both coalitions
-    {name = "Single JTAC", jtac = 1 }, -- will make a loadable group witha single JTAC soldier for both coalitions
     -- {name = "Mortar Squad Red", inf = 2, mortar = 5, side =1 }, --would make a group loadable by RED only
 }
 
@@ -519,8 +491,6 @@ ctld.spawnableCrates = {
         { weight = 510, desc = "BTR-D", unit = "BTR_D", side = 1 },
         { weight = 515, desc = "BRDM-2", unit = "BRDM-2", side = 1 },
 
-        { weight = 520, desc = "HMMWV - JTAC", unit = "Hummer", side = 2, }, -- used as jtac and unarmed, not on the crate list if JTAC is disabled
-        { weight = 525, desc = "SKP-11 - JTAC", unit = "SKP-11", side = 1, }, -- used as jtac and unarmed, not on the crate list if JTAC is disabled
 
         { weight = 100, desc = "2B11 Mortar", unit = "2B11 mortar" },
 
@@ -634,12 +604,6 @@ ctld.spawnableCratesModel_sling = {
     ["shape_name"] = "trunks_small_cargo",
     ["type"] = "trunks_small_cargo",
 ]]--
-
--- if the unit is on this list, it will be made into a JTAC when deployed
-ctld.jtacUnitTypes = {
-    "SKP", "Hummer" -- there are some wierd encoding issues so if you write SKP-11 it wont match as the - sign is encoded differently...
-}
-
 
 -- ***************************************************************
 -- **************** Mission Editor Functions *********************
@@ -1227,6 +1191,28 @@ function ctld.deactivateWaypointZone(_zoneName)
     end
 end
 
+local function hasVisibleEnemy(unit, distance)
+    local side = unit:getCoalition()
+    local point = unit:getPoint()
+    point.y = point.y + 2
+    local found = false
+    local volume = { id = world.VolumeType.SPHERE, params = { point = point, radius = distance } }
+    world.searchObjects(Object.Category.UNIT, volume, function(candidate)
+        local ok, visible = pcall(function()
+            if candidate:getLife() <= 0 or not candidate:isActive()
+                    or candidate:getCoalition() == side or candidate:inAir() then
+                return false
+            end
+            local target = candidate:getPoint()
+            target.y = target.y + 2
+            return ctld.getDistance(point, target) < distance and land.isVisible(point, target)
+        end)
+        found = ok and visible
+        return not found
+    end)
+    return found
+end
+
 -- Continuous Trigger Function
 -- Causes an AI unit with the specified name to unload troops / vehicles when
 -- an enemy is detected within a specified distance
@@ -1238,11 +1224,7 @@ function ctld.unloadInProximityToEnemy(_unitName,_distance)
     if _unit ~= nil and _unit:getPlayerName() == nil then
 
         -- no player name means AI!
-        -- the findNearest visible enemy you'd want to modify as it'll find enemies quite far away
-        -- limited by  ctld.JTAC_maxDistance
-        local _nearestEnemy = ctld.findNearestVisibleEnemy(_unit,"all",_distance)
-
-        if _nearestEnemy ~= nil then
+        if hasVisibleEnemy(_unit, _distance or 10000) then
 
             if ctld.troopsOnboard(_unit, true) then
                 ctld.deployTroops(_unit, true)
@@ -1679,31 +1661,6 @@ function ctld.spawnCrate(_arguments)
                 return
             end
 
-            if ctld.isJTACUnitType(_crateType.unit) then
-
-                local _limitHit = false
-
-                if _heli:getCoalition() == 1 then
-
-                    if ctld.JTAC_LIMIT_RED == 0 then
-                        _limitHit = true
-                    else
-                        ctld.JTAC_LIMIT_RED = ctld.JTAC_LIMIT_RED - 1
-                    end
-                else
-                    if ctld.JTAC_LIMIT_BLUE == 0 then
-                        _limitHit = true
-                    else
-                        ctld.JTAC_LIMIT_BLUE = ctld.JTAC_LIMIT_BLUE - 1
-                    end
-                end
-
-                if _limitHit then
-                    ctld.displayMessageToGroup(_heli, "No more JTAC Crates Left!", 10)
-                    return
-                end
-            end
-
             local _position = _heli:getPosition()
 
             -- check crate spam
@@ -1861,14 +1818,6 @@ function ctld.deployTroops(_heli, _troops)
 
                     local _droppedTroops = ctld.spawnDroppedGroup(_heli:getPoint(), _onboard.troops, false)
                     ctld.logTrace(string.format("_onboard.troops=%s", ctld.p(_onboard.troops)))
-                    if _onboard.troops.jtac or _droppedTroops:getName():lower():find("jtac") then
-                        local _code = table.remove(ctld.jtacGeneratedLaserCodes, 1)
-                        ctld.logTrace(string.format("_code=%s", ctld.p(_code)))
-                        table.insert(ctld.jtacGeneratedLaserCodes, _code)
-                        ctld.logTrace(string.format("_droppedTroops:getName()=%s", ctld.p(_droppedTroops:getName())))
-                        ctld.JTACAutoLase(_droppedTroops:getName(), _code)
-                    end
-
                     if _heli:getCoalition() == 1 then
 
                         table.insert(ctld.droppedTroopsRED, _droppedTroops:getName())
@@ -1951,7 +1900,6 @@ end
 function ctld.generateTroopTypes(_side, _countOrTemplate, _country)
     local _troops = {}
     local _weight = 0
-    local _hasJTAC = false
 
     local function getSoldiersWeight(count, additionalWeight)
         local _weight = 0
@@ -2012,18 +1960,6 @@ function ctld.generateTroopTypes(_side, _countOrTemplate, _country)
             ctld.logTrace(string.format("_weight=%s", ctld.p(_weight)))
         end
 
-        if _countOrTemplate.jtac then
-            ctld.logTrace(string.format("_countOrTemplate.jtac=%s", ctld.p(_countOrTemplate.jtac)))
-            if _side == 2 then
-                _troops = ctld.insertIntoTroopsArray("Soldier M4",_countOrTemplate.jtac,_troops, "JTAC")
-            else
-                _troops = ctld.insertIntoTroopsArray("Soldier AK",_countOrTemplate.jtac,_troops, "JTAC")
-            end
-            _hasJTAC = true
-            _weight = _weight + getSoldiersWeight(_countOrTemplate.jtac, ctld.JTAC_WEIGHT + ctld.RIFLE_WEIGHT)
-            ctld.logTrace(string.format("_weight=%s", ctld.p(_weight)))
-        end
-
     else
         for _i = 1, _countOrTemplate do
 
@@ -2075,10 +2011,7 @@ function ctld.generateTroopTypes(_side, _countOrTemplate, _country)
 
     local _groupId = ctld.getNextGroupId()
     local _groupName = "Dropped Group"
-    if _hasJTAC then
-        _groupName = "Dropped JTAC Group"
-    end
-    local _details = { units = _troops, groupId = _groupId, groupName = string.format("%s %i", _groupName, _groupId), side = _side, country = _country, weight = _weight, jtac = _hasJTAC }
+    local _details = { units = _troops, groupId = _groupId, groupName = string.format("%s %i", _groupName, _groupId), side = _side, country = _country, weight = _weight }
     ctld.logTrace(string.format("total  weight=%s", ctld.p(_weight)))
 
     return _details
@@ -2459,10 +2392,6 @@ function ctld.extractTroops(_args)
 
             _onboard.troops = _extractTroops.details
             _onboard.troops.weight = #_extractTroops.group:getUnits() * 130 -- default to 130kg per soldier
-
-            if _extractTroops.group:getName():lower():find("jtac") then
-                _onboard.troops.jtac = true
-            end
 
             trigger.action.outTextForCoalition(_heli:getCoalition(), ctld.getPlayerNameOrType(_heli) .. " extracted troops in " .. _heli:getTypeName() .. " from combat", 10)
 
@@ -3203,14 +3132,6 @@ function ctld.unpackCrates(_arguments)
 
                     trigger.action.outTextForCoalition(_heli:getCoalition(), ctld.getPlayerNameOrType(_heli) .. " successfully deployed " .. _crate.details.desc .. " to the field", 10)
 
-                    if ctld.isJTACUnitType(_crate.details.unit) and ctld.JTAC_dropEnabled then
-
-                        local _code = table.remove(ctld.jtacGeneratedLaserCodes, 1)
-                        --put to the end
-                        table.insert(ctld.jtacGeneratedLaserCodes, _code)
-
-                        ctld.JTACAutoLase(_spawnedGroups:getName(), _code) --(_jtacGroupName, _laserCode, _smoke, _lock, _colour)
-                    end
                 end
 
             else
@@ -4744,20 +4665,6 @@ function ctld.unitCanCarryVehicles(_unit)
     return false
 end
 
-function ctld.isJTACUnitType(_type)
-
-    _type = string.lower(_type)
-
-    for _, _name in ipairs(ctld.jtacUnitTypes) do
-        local _nameLower = string.lower(_name)
-        if string.match(_type, _nameLower) then
-            return true
-        end
-    end
-
-    return false
-end
-
 function ctld.updateZoneCounter(_index, _diff)
 
     if ctld.pickupZones[_index] ~= nil then
@@ -4949,19 +4856,16 @@ function ctld.addF10MenuOptions()
                                     local _cratePath = missionCommands.addSubMenuForGroup(_groupId, _subMenuName, _rootPath)
                                     for _, _crate in pairs(_crates) do
 
-                                        if ctld.isJTACUnitType(_crate.unit) == false
-                                                or (ctld.isJTACUnitType(_crate.unit) == true and ctld.JTAC_dropEnabled) then
-                                            if _crate.side == nil or (_crate.side == _unit:getCoalition()) then
+                                        if _crate.side == nil or (_crate.side == _unit:getCoalition()) then
 
-                                                local _crateRadioMsg = _crate.desc
+                                            local _crateRadioMsg = _crate.desc
 
-                                                --add in the number of crates required to build something
-                                                if _crate.cratesRequired ~= nil and _crate.cratesRequired > 1 then
-                                                    _crateRadioMsg = _crateRadioMsg.." (".._crate.cratesRequired..")"
-                                                end
-
-                                                missionCommands.addCommandForGroup(_groupId,_crateRadioMsg, _cratePath, ctld.spawnCrate, { _unitName, _crate.weight })
+                                            --add in the number of crates required to build something
+                                            if _crate.cratesRequired ~= nil and _crate.cratesRequired > 1 then
+                                                _crateRadioMsg = _crateRadioMsg.." (".._crate.cratesRequired..")"
                                             end
+
+                                            missionCommands.addCommandForGroup(_groupId,_crateRadioMsg, _cratePath, ctld.spawnCrate, { _unitName, _crate.weight })
                                         end
                                     end
                                 end
@@ -5034,15 +4938,6 @@ function ctld.addF10MenuOptions()
         end
 
 
-        if ctld.JTAC_jtacStatusF10 then
-
-            -- get all BLUE players
-            ctld.addJTACRadioCommand(2)
-
-            -- get all RED players
-            ctld.addJTACRadioCommand(1)
-        end
-
     end)
 
     if (not status) then
@@ -5074,128 +4969,6 @@ function ctld.addRadioListCommand(_side)
     end
 end
 
-function ctld.addJTACRadioCommand(_side)
-
-    local _players = coalition.getPlayers(_side)
-
-    if _players ~= nil then
-
-        for _, _playerUnit in pairs(_players) do
-
-            local _groupId = ctld.getGroupId(_playerUnit)
-
-            if _groupId then
-
-                local newGroup = false
-                --   env.info("adding command for "..index)
-                if ctld.jtacRadioAdded[tostring(_groupId)] == nil then
-                    -- env.info("about command for "..index)
-                    newGroup = true
-                    local JTACpath = missionCommands.addSubMenuForGroup(_groupId, ctld.jtacMenuName)
-                    missionCommands.addCommandForGroup(_groupId, "JTAC Status", JTACpath, ctld.getJTACStatus, { _playerUnit:getName() })
-                    ctld.jtacRadioAdded[tostring(_groupId)] = true
-                    -- env.info("Added command for " .. index)
-                end
-
-                --fetch the time to check for a regular refresh
-                local time = timer.getTime()
-
-                --depending on the delay, this part of the radio menu will be refreshed less often or as often as the static JTAC status command, this is for better reliability for the user when navigating through the menus. New groups will get the lists regardless and if a new JTAC is added all lists will be refreshed regardless of the delay.
-                if ctld.jtacLastRadioRefresh + ctld.jtacRadioRefreshDelay <= time or ctld.newJtac[_side] or newGroup then
-
-                    ctld.jtacLastRadioRefresh = time
-
-                    --build the path to the CTLD JTAC menu
-                    local jtacCurrentPagePath = {[1]=ctld.jtacMenuName}
-                    --build the path for the NextPage submenu on the first page of the CTLD JTAC menu
-                    local NextPageText = "Next Page"
-                    local MainNextPagePath = {[1]=ctld.jtacMenuName, [2]=NextPageText}
-                    --remove it along with everything that's in it
-                    missionCommands.removeItemForGroup(_groupId, MainNextPagePath)
-
-                    --counter to know when to add the next page submenu to fit all of the JTAC group submenus
-                    local jtacCounter = 0
-                
-                    for _jtacGroupName,jtacUnit in pairs(ctld.jtacUnits) do
-
-                        local jtacCoalition = ctld.jtacUnits[_jtacGroupName].side
-                        --if the JTAC is on the same team as the group being considered
-                        if jtacCoalition and jtacCoalition == _side then
-                            --only bother removing the submenus on the first page of the CTLD JTAC menu as the other pages were deleted entirely above
-                            if ctld.jtacGroupSubMenuPath[_jtacGroupName] and #ctld.jtacGroupSubMenuPath[_jtacGroupName]==2 then
-                                missionCommands.removeItemForGroup(_groupId, ctld.jtacGroupSubMenuPath[_jtacGroupName])
-                            end
-
-                            ctld.logTrace(string.format("jtacTargetsList for %s is : %s", ctld.p(_jtacGroupName), ctld.p(ctld.jtacTargetsList[_jtacGroupName])))
-
-                            if #ctld.jtacTargetsList[_jtacGroupName] > 1 then
-
-                                local jtacGroupSubMenuName = string.format(_jtacGroupName .. " TGT Selection")
-
-                                jtacCounter = jtacCounter + 1
-                                --F2 through F10 makes 9 entries possible per page, with one being the NextMenu submenu
-                                if jtacCounter%9 == 0 then
-                                    --recover the path to the current page with space available for JTAC group submenus
-                                    jtacCurrentPagePath = missionCommands.addSubMenuForGroup(_groupId, NextPageText, jtacCurrentPagePath)
-                                end
-                                --add the JTAC group submenu to the current page
-                                ctld.jtacGroupSubMenuPath[_jtacGroupName] = missionCommands.addSubMenuForGroup(_groupId, jtacGroupSubMenuName, jtacCurrentPagePath)
-
-                                ctld.logTrace(string.format("jtacGroupSubMenuPath for %s is : %s", ctld.p(_jtacGroupName), ctld.p(ctld.jtacGroupSubMenuPath[_jtacGroupName])))
-
-                                --make a copy of the JTAC group submenu's path to insert the target's list on as many pages as required. The JTAC's group submenu path only leads to the first page
-                                local jtacTargetPagePath = mist.utils.deepCopy(ctld.jtacGroupSubMenuPath[_jtacGroupName])
-                                --add a reset targeting option to revert to automatic JTAC unit targeting
-                                missionCommands.addCommandForGroup(_groupId, "Reset TGT Selection", jtacTargetPagePath, ctld.setJTACTarget, {jtacGroupName = _jtacGroupName, targetName = nil})
-                                
-                                --counter to know when to add the next page submenu to fit all of the targets in the JTAC's group submenu
-                                local itemCounter = 0
-
-                                --indicator table to know which unitType was already added to the radio submenu
-                                local typeNameList = {}
-                                for _,target in pairs(ctld.jtacTargetsList[_jtacGroupName]) do
-                                    local targetName = target.unit:getName()
-                                    --check if the jtac has a current target before filtering it out if possible
-                                    if (ctld.jtacCurrentTargets[_jtacGroupName] and targetName ~= ctld.jtacCurrentTargets[_jtacGroupName].name) then
-                                        local targetType_name = target.unit:getTypeName()
-
-                                        if targetType_name then
-                                                if typeNameList[targetType_name] then
-                                                    typeNameList[targetType_name].amount = typeNameList[targetType_name].amount + 1
-                                            else
-                                                    typeNameList[targetType_name] = {}
-                                                    typeNameList[targetType_name].targetName = targetName --store the first targetName
-                                                    typeNameList[targetType_name].amount = 1
-                                            end
-                                        end
-                                    end
-                                end
-
-                                for typeName,info in pairs(typeNameList) do
-                                    local amount = info.amount
-                                    local targetName = info.targetName
-                                    itemCounter = itemCounter + 1
-
-                                    --F2 through F10 makes 9 entries possible per page, with one being the NextMenu submenu. Pages other than the first would have 10 entires but worse case scenario is considered
-                                    if itemCounter%9 == 0 then
-                                        jtacTargetPagePath = missionCommands.addSubMenuForGroup(_groupId, NextPageText, jtacTargetPagePath)
-                                    end
-
-                                    missionCommands.addCommandForGroup(_groupId, string.format(typeName .. "(" .. amount .. ")"), jtacTargetPagePath, ctld.setJTACTarget, {jtacGroupName = _jtacGroupName, targetName = targetName})
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        if ctld.newJtac[_side] then
-            ctld.newJtac[_side] = false
-        end
-    end
-end
-
 function ctld.getGroupId(_unit)
 
     local _unitDB =  mist.DBs.unitsById[tonumber(_unit:getID())]
@@ -5220,760 +4993,6 @@ function ctld.getDistance(_point1, _point2)
     return math.sqrt(xDiff * xDiff + yDiff * yDiff)
 end
 
-
------------- JTAC -----------
-
-ctld.jtacMenuName = "JTAC" --name of the CTLD JTAC radio menu
-ctld.jtacLaserPoints = {}
-ctld.jtacIRPoints = {}
-ctld.jtacSmokeMarks = {}
-ctld.jtacUnits = {} -- list of JTAC units for f10 command
-ctld.jtacStop = {} -- jtacs to tell to stop lasing
-ctld.jtacCurrentTargets = {}
-ctld.jtacTargetsList = {} --current available targets to each JTAC for lasing (targets from other JTACs are filtered out). Contains DCS unit objects with their methods and the distance to the JTAC {unit, dist}
-ctld.jtacSelectedTarget = {} --currently user selected target if it contains a unit's name, otherwise contains 1 or nil (if not initialized)
-ctld.jtacRadioAdded = {} --keeps track of who's had the radio command added
-ctld.jtacGroupSubMenuPath = {} --keeps track of which submenu contains each JTAC's target selection menu
-ctld.jtacRadioRefreshDelay = 60 --determines how often in seconds the dynamic parts of the jtac radio menu (target lists) will be refreshed
-ctld.jtacLastRadioRefresh = 0 -- time at which the target lists were refreshed for everyone at least
-ctld.newJtac = {} --indicator to know when a new JTAC is added to a coalition in order to rebuild the corresponding target lists
-ctld.jtacGeneratedLaserCodes = {} -- keeps track of generated codes, cycles when they run out
-ctld.jtacLaserPointCodes = {}
-ctld.jtacRadioData = {}
-
-function ctld.JTACAutoLase(_jtacGroupName, _laserCode, _smoke, _lock, _colour, _radio)
-    -- Honour the option for every entry point, including deployed troops/crates
-    -- and timer callbacks, not just the campaign's initially generated JTACs.
-    if dcsRetribution and dcsRetribution.plugins and dcsRetribution.plugins.ctld
-        and dcsRetribution.plugins.ctld.autolase == false then
-        return
-    end
-    ctld.logDebug(string.format("ctld.JTACAutoLase(_jtacGroupName=%s, _laserCode=%s", ctld.p(_jtacGroupName), ctld.p(_laserCode)))
-
-    local _radio = _radio
-    if not _radio then
-        _radio = {}
-        if _laserCode then
-            local _laserCode = tonumber(_laserCode)
-            if _laserCode and _laserCode >= 1111 and _laserCode <= 1688 then
-                local _laserB = math.floor((_laserCode - 1000)/100)
-                local _laserCD = _laserCode - 1000 - _laserB*100
-                local _frequency = tostring(30+_laserB+_laserCD*0.05)
-                ctld.logTrace(string.format("_laserB=%s", ctld.p(_laserB)))
-                ctld.logTrace(string.format("_laserCD=%s", ctld.p(_laserCD)))
-                ctld.logTrace(string.format("_frequency=%s", ctld.p(_frequency)))
-                _radio.freq = _frequency
-                _radio.mod = "fm"
-            end        
-        end
-    end
-
-    if _radio and not _radio.name then
-        _radio.name = _jtacGroupName
-    end
-
-    if ctld.jtacStop[_jtacGroupName] == true then
-        ctld.jtacStop[_jtacGroupName] = nil -- allow it to be started again
-        ctld.cleanupJTAC(_jtacGroupName)
-        return
-    end
-
-    if _lock == nil then
-        _lock = ctld.JTAC_lock
-    end
-
-    ctld.jtacLaserPointCodes[_jtacGroupName] = _laserCode
-    ctld.jtacRadioData[_jtacGroupName] = _radio
-
-    local _jtacGroup = ctld.getGroup(_jtacGroupName)
-    local _jtacUnit
-
-    if _jtacGroup == nil or #_jtacGroup == 0 then
-
-        --check not in a heli
-        if ctld.inTransitTroops then
-            for _, _onboard in pairs(ctld.inTransitTroops) do
-                if _onboard ~= nil then
-                    if _onboard.troops ~= nil and _onboard.troops.groupName ~= nil and _onboard.troops.groupName == _jtacGroupName then
-
-                        --jtac soldier being transported by heli
-                        ctld.cleanupJTAC(_jtacGroupName)
-
-                        env.info(_jtacGroupName .. ' in Transport - Waiting 10 seconds')
-                        timer.scheduleFunction(ctld.timerJTACAutoLase, { _jtacGroupName, _laserCode, _smoke, _lock, _colour, _radio }, timer.getTime() + 10)
-                        return
-                    end
-
-                    if _onboard.vehicles ~= nil and _onboard.vehicles.groupName ~= nil and _onboard.vehicles.groupName == _jtacGroupName then
-                        --jtac vehicle being transported by heli
-                        ctld.cleanupJTAC(_jtacGroupName)
-
-                        env.info(_jtacGroupName .. ' in Transport - Waiting 10 seconds')
-                        timer.scheduleFunction(ctld.timerJTACAutoLase, { _jtacGroupName, _laserCode, _smoke, _lock, _colour, _radio }, timer.getTime() + 10)
-                        return
-                    end
-                end
-            end
-        end
-
-        if ctld.jtacUnits[_jtacGroupName] ~= nil then
-            ctld.notifyCoalition("JTAC Group " .. _jtacGroupName .. " KIA!", 10, ctld.jtacUnits[_jtacGroupName].side, _radio)
-        end
-
-        --remove from list
-        ctld.cleanupJTAC(_jtacGroupName)
-
-        return
-    else
-
-        _jtacUnit = _jtacGroup[1]
-        local _jtacCoalition = _jtacUnit:getCoalition()
-        --add to list
-        ctld.jtacUnits[_jtacGroupName] = { name = _jtacUnit:getName(), side = _jtacCoalition, radio = _radio }
-        
-        --Targets list and Selected target initialization
-        if not ctld.jtacTargetsList[_jtacGroupName] then
-            ctld.jtacTargetsList[_jtacGroupName] = {}
-            if _jtacCoalition then ctld.newJtac[_jtacCoalition] = true end
-        end
-
-        if not ctld.jtacSelectedTarget[_jtacGroupName] then
-            ctld.jtacSelectedTarget[_jtacGroupName] = 1
-        end
-
-        -- work out smoke colour
-        if _colour == nil then
-
-            if _jtacUnit:getCoalition() == 1 then
-                _colour = ctld.JTAC_smokeColour_RED
-            else
-                _colour = ctld.JTAC_smokeColour_BLUE
-            end
-        end
-
-
-        if _smoke == nil then
-
-            if _jtacUnit:getCoalition() == 1 then
-                _smoke = ctld.JTAC_smokeOn_RED
-            else
-                _smoke = ctld.JTAC_smokeOn_BLUE
-            end
-        end
-    end
-
-
-    -- search for current unit
-
-    if _jtacUnit:isActive() == false then
-
-        ctld.cleanupJTAC(_jtacGroupName)
-
-        env.info(_jtacGroupName .. ' Not Active - Waiting 30 seconds')
-        timer.scheduleFunction(ctld.timerJTACAutoLase, { _jtacGroupName, _laserCode, _smoke, _lock, _colour, _radio }, timer.getTime() + 30)
-
-        return
-    end
-
-    local _enemyUnit = ctld.getCurrentUnit(_jtacUnit, _jtacGroupName)
-    --update targets list and store the next potential target if the selected one was lost
-    local _defaultEnemyUnit = ctld.findNearestVisibleEnemy(_jtacUnit, _lock) 
-
-    -- if the JTAC sees a unit and a target was selected by users but is not the current unit, check if the selected target is in the targets list, if it is, then it's been reacquired
-    if _enemyUnit and ctld.jtacSelectedTarget[_jtacGroupName] ~= 1 and ctld.jtacSelectedTarget[_jtacGroupName] ~= _enemyUnit:getName() then
-        for _,target in pairs(ctld.jtacTargetsList[_jtacGroupName]) do
-            if target then
-                local targetUnit = target.unit
-                local targetName = targetUnit:getName()
-
-                if ctld.jtacSelectedTarget[_jtacGroupName] == targetName then
-
-                    ctld.jtacCurrentTargets[_jtacGroupName] = { name = targetName, unitType = targetUnit:getTypeName(), unitId = targetUnit:getID() }
-                    _enemyUnit = targetUnit
-
-                    local message = _jtacGroupName .. ", selected target reacquired, " .. _enemyUnit:getTypeName()
-                    local fullMessage = message .. '. CODE: ' .. _laserCode .. ". POSITION: " .. ctld.getPositionString(_enemyUnit)
-                    ctld.notifyCoalition(fullMessage, 10, _jtacUnit:getCoalition(), _radio, message)
-                end
-            end
-        end
-    end
-
-    local targetDestroyed = false
-    local targetLost = false
-    local wasSelected = false
-
-    if _enemyUnit == nil and ctld.jtacCurrentTargets[_jtacGroupName] ~= nil then
-
-        local _tempUnitInfo = ctld.jtacCurrentTargets[_jtacGroupName]
-
-        --      env.info("TEMP UNIT INFO: " .. tempUnitInfo.name .. " " .. tempUnitInfo.unitType)
-
-        local _tempUnit = Unit.getByName(_tempUnitInfo.name)
-
-        wasSelected = (ctld.jtacCurrentTargets[_jtacGroupName].name == ctld.jtacSelectedTarget[_jtacGroupName])
-
-        if _tempUnit ~= nil and _tempUnit:getLife() > 0 and _tempUnit:isActive() == true then
-            targetLost = true
-        else
-            targetDestroyed = true
-            ctld.jtacSelectedTarget[_jtacGroupName] = 1
-        end
-
-        --remove from smoke list
-        ctld.jtacSmokeMarks[_tempUnitInfo.name] = nil
-
-    	-- JTAC Unit: resume his route ------------
-	    trigger.action.groupContinueMoving(Group.getByName(_jtacGroupName)) 	
-
-        -- remove from target list
-        ctld.jtacCurrentTargets[_jtacGroupName] = nil
-
-        --stop lasing
-        ctld.cancelLase(_jtacGroupName)
-    end
-
-
-    if _enemyUnit == nil then
-        if _defaultEnemyUnit ~= nil then
-
-            -- store current target for easy lookup
-            ctld.jtacCurrentTargets[_jtacGroupName] = { name = _defaultEnemyUnit:getName(), unitType = _defaultEnemyUnit:getTypeName(), unitId = _defaultEnemyUnit:getID() }
-             
-            local action = "lasing new target, "
-            
-            if wasSelected and targetLost then
-                action = ", temporarily " .. action
-            else
-                action = ", " .. action
-            end
-            
-            if targetLost then
-                action = "target lost" .. action
-            elseif targetDestroyed then
-                action = "target destroyed" .. action
-            end
-
-            if wasSelected then
-                action = ", selected " .. action
-            elseif targetLost or targetDestroyed then
-                action = ", " .. action
-            end
-            wasSelected = false
-            targetDestroyed = false
-            targetLost = false
-        
-            local message = _jtacGroupName .. action .. _defaultEnemyUnit:getTypeName()
-            local fullMessage = message .. '. CODE: ' .. _laserCode .. ". POSITION: " .. ctld.getPositionString(_defaultEnemyUnit)
-            ctld.notifyCoalition(fullMessage, 10, _jtacUnit:getCoalition(), _radio, message)
-
-	        -- JTAC Unit stop his route -----------------
-	        trigger.action.groupStopMoving(Group.getByName(_jtacGroupName)) -- stop JTAC
-            
-            -- create smoke
-            if _smoke == true then
-
-                --create first smoke
-                ctld.createSmokeMarker(_defaultEnemyUnit, _colour)
-            end
-        end
-    end
-
-    if _enemyUnit ~= nil then
-
-        local refreshDelay = 15 --delay in between JTACAutoLase scheduled calls when a target is tracked
-        local targetSpeedVec = _enemyUnit:getVelocity()
-        local targetSpeed = math.sqrt(targetSpeedVec.x^2+targetSpeedVec.y^2+targetSpeedVec.z^2)
-        local maxUpdateDist = 5 --maximum distance the unit will be allowed to travel before the lase spot is updated again
-        ctld.logDebug(string.format("targetSpeed=%s", ctld.p(targetSpeed)))
-
-        ctld.laseUnit(_enemyUnit, _jtacUnit, _jtacGroupName, _laserCode)
-
-        --if the target is going sufficiently fast for it to wander off futher than the maxUpdateDist, schedule laseUnit calls to update the lase spot only (we consider that the unit lives and drives on between JTACAutoLase calls)
-        if targetSpeed >= maxUpdateDist/refreshDelay then
-            local updateTimeStep = maxUpdateDist/targetSpeed --calculate the time step so that the target is never more than maxUpdateDist from it's last lased position
-            ctld.logDebug(string.format("updateTimeStep=%s", ctld.p(updateTimeStep)))
-
-            local i = 1
-            while i*updateTimeStep <= refreshDelay - updateTimeStep do --while the scheduled time for the laseUnit call isn't greater than the time between two JTACAutoLase() calls minus one time step (because at the next time step JTACAutoLase() should have been called and this in term also calls laseUnit())
-                ctld.logTrace("ctld.laseUnit scheduled " .. i)
-                timer.scheduleFunction(ctld.timerLaseUnit,{_enemyUnit, _jtacUnit, _jtacGroupName, _laserCode}, timer.getTime()+i*updateTimeStep)
-                i = i + 1
-            end
-        end
-
-        --   env.info('Timer timerSparkleLase '..jtacGroupName.." "..laserCode.." "..enemyUnit:getName())
-        timer.scheduleFunction(ctld.timerJTACAutoLase, { _jtacGroupName, _laserCode, _smoke, _lock, _colour, _radio }, timer.getTime() + refreshDelay)
-
-        if _smoke == true then
-            local _nextSmokeTime = ctld.jtacSmokeMarks[_enemyUnit:getName()]
-
-            --recreate smoke marker after 5 mins
-            if _nextSmokeTime ~= nil and _nextSmokeTime < timer.getTime() then
-
-                ctld.createSmokeMarker(_enemyUnit, _colour)
-            end
-        end
-
-    else
-        -- env.info('LASE: No Enemies Nearby')
-
-        -- stop lazing the old spot
-        ctld.cancelLase(_jtacGroupName)
-        --  env.info('Timer Slow timerSparkleLase '..jtacGroupName.." "..laserCode.." "..enemyUnit:getName())
-
-        timer.scheduleFunction(ctld.timerJTACAutoLase, { _jtacGroupName, _laserCode, _smoke, _lock, _colour, _radio }, timer.getTime() + 5)
-    end
-
-    local action = ", "
-    if wasSelected then
-        action = action .. "selected "
-    end
-
-    if targetLost then
-        ctld.notifyCoalition(_jtacGroupName .. action .. "target lost.", 10, _jtacUnit:getCoalition(), _radio)
-    elseif targetDestroyed then
-        ctld.notifyCoalition(_jtacGroupName .. action .. "target destroyed.", 10, _jtacUnit:getCoalition(), _radio)
-    end
-end
-
-function ctld.JTACAutoLaseStop(_jtacGroupName)
-    ctld.jtacStop[_jtacGroupName] = true
-end
-
--- used by the timer function
-function ctld.timerJTACAutoLase(_args)
-
-    ctld.JTACAutoLase(_args[1], _args[2], _args[3], _args[4], _args[5], _args[6])
-end
-
-function ctld.cleanupJTAC(_jtacGroupName)
-    -- clear laser - just in case
-    ctld.cancelLase(_jtacGroupName)
-
-    -- Cleanup
-    ctld.jtacCurrentTargets[_jtacGroupName] = nil
-
-    ctld.jtacTargetsList[_jtacGroupName] = nil
-
-    ctld.jtacSelectedTarget[_jtacGroupName] = nil
-
-    ctld.jtacRadioData[_jtacGroupName] = nil
-
-    --remove the JTAC's group submenu and all of the target pages it potentially contained if the JTAC has or had a menu
-    if ctld.jtacUnits[_jtacGroupName] and ctld.jtacUnits[_jtacGroupName].side and ctld.jtacGroupSubMenuPath[_jtacGroupName] then
-        local _players = coalition.getPlayers(ctld.jtacUnits[_jtacGroupName].side)
-
-        if _players ~= nil then
-
-            for _, _playerUnit in pairs(_players) do
-
-                local _groupId = ctld.getGroupId(_playerUnit)
-
-                if _groupId then
-                    missionCommands.removeItemForGroup(_groupId, ctld.jtacGroupSubMenuPath[_jtacGroupName])
-                end
-            end
-        end
-    end
-
-    ctld.jtacUnits[_jtacGroupName] = nil
-
-    ctld.jtacGroupSubMenuPath[_jtacGroupName] = nil
-end
-
-
---- send a message to the coalition
---- if _radio is set, the message will be read out loud via SRS
-function ctld.notifyCoalition(_message, _displayFor, _side, _radio, _shortMessage)
-    ctld.logDebug(string.format("ctld.notifyCoalition(_message=%s)", ctld.p(_message)))
-    ctld.logTrace(string.format("_radio=%s", ctld.p(_radio)))
-
-    local _shortMessage = _shortMessage
-    if _shortMessage == nil then 
-        _shortMessage = _message
-    end
-    
-    if STTS and STTS.TextToSpeech and _radio and _radio.freq then
-        local _freq = _radio.freq
-        local _modulation = _radio.mod or "FM"
-        local _volume = _radio.volume or "1.0"
-        local _name = _radio.name or "JTAC"
-        local _gender = _radio.gender or "male"
-        local _culture = _radio.culture or "en-US"
-        local _voice = _radio.voice
-        local _googleTTS = _radio.googleTTS or false
-        ctld.logTrace(string.format("calling STTS.TextToSpeech(%s)", ctld.p(_shortMessage)))
-        ctld.logTrace(string.format("_freq=%s", ctld.p(_freq)))
-        ctld.logTrace(string.format("_modulation=%s", ctld.p(_modulation)))
-        ctld.logTrace(string.format("_volume=%s", ctld.p(_volume)))
-        ctld.logTrace(string.format("_name=%s", ctld.p(_name)))
-        ctld.logTrace(string.format("_gender=%s", ctld.p(_gender)))
-        ctld.logTrace(string.format("_culture=%s", ctld.p(_culture)))
-        ctld.logTrace(string.format("_voice=%s", ctld.p(_voice)))
-        ctld.logTrace(string.format("_googleTTS=%s", ctld.p(_googleTTS)))
-        STTS.TextToSpeech(_shortMessage, _freq, _modulation, _volume, _name, _side, nil, 1, _gender, _culture, _voice, _googleTTS)
-    end
-
-    trigger.action.outTextForCoalition(_side, _message, _displayFor)
-    trigger.action.outSoundForCoalition(_side, "radiobeep.ogg")
-end
-
-function ctld.createSmokeMarker(_enemyUnit, _colour)
-
-    --recreate in 5 mins
-    ctld.jtacSmokeMarks[_enemyUnit:getName()] = timer.getTime() + 300.0
-
-    -- move smoke 2 meters above target for ease
-    local _enemyPoint = _enemyUnit:getPoint()
-    trigger.action.smoke({ x = _enemyPoint.x, y = _enemyPoint.y + 2.0, z = _enemyPoint.z }, _colour)
-end
-
-function ctld.cancelLase(_jtacGroupName)
-
-    --local index = "JTAC_"..jtacUnit:getID()
-
-    local _tempLase = ctld.jtacLaserPoints[_jtacGroupName]
-
-    if _tempLase ~= nil then
-        Spot.destroy(_tempLase)
-        ctld.jtacLaserPoints[_jtacGroupName] = nil
-
-        --      env.info('Destroy laze  '..index)
-
-        _tempLase = nil
-    end
-
-    local _tempIR = ctld.jtacIRPoints[_jtacGroupName]
-
-    if _tempIR ~= nil then
-        Spot.destroy(_tempIR)
-        ctld.jtacIRPoints[_jtacGroupName] = nil
-
-        --  env.info('Destroy laze  '..index)
-
-        _tempIR = nil
-    end
-end
-
--- used by the timer function
-function ctld.timerLaseUnit(_args)
-
-    ctld.laseUnit(_args[1], _args[2], _args[3], _args[4])
-end
-
-function ctld.laseUnit(_enemyUnit, _jtacUnit, _jtacGroupName, _laserCode)
-
-    --cancelLase(jtacGroupName)
-    ctld.logTrace("ctld.laseUnit()")
-
-    local _spots = {}
-
-    if _enemyUnit:isExist() then
-        local _enemyVector = _enemyUnit:getPoint()
-        local _enemyVectorUpdated = { x = _enemyVector.x, y = _enemyVector.y + 2.0, z = _enemyVector.z }
-
-        if ctld.JTAC_laseSpotCorrections then
-            local _enemySpeedVector = _enemyUnit:getVelocity()
-            ctld.logTrace(string.format("_enemySpeedVector=%s", ctld.p(_enemySpeedVector)))
-
-            local _WindSpeedVector = atmosphere.getWind(_enemyVectorUpdated)
-            ctld.logTrace(string.format("_WindSpeedVector=%s", ctld.p(_WindSpeedVector)))
-            
-            --if target speed is greater than 0, calculated using absolute value norm
-            if math.abs(_enemySpeedVector.x) + math.abs(_enemySpeedVector.y) + math.abs(_enemySpeedVector.z) > 0 then
-                local CorrectionFactor = 1 --correction factor in seconds applied to the target speed components to determine the lasing spot for a direct hit on a moving vehicle
-
-                --correct in the direction of the movement
-                _enemyVectorUpdated.x = _enemyVectorUpdated.x + _enemySpeedVector.x * CorrectionFactor
-                _enemyVectorUpdated.y = _enemyVectorUpdated.y + _enemySpeedVector.y * CorrectionFactor
-                _enemyVectorUpdated.z = _enemyVectorUpdated.z + _enemySpeedVector.z * CorrectionFactor
-            end
-
-            --if wind speed is greater than 0, calculated using absolute value norm
-            if math.abs(_WindSpeedVector.x) + math.abs(_WindSpeedVector.y) + math.abs(_WindSpeedVector.z) > 0 then
-                local CorrectionFactor = 1.05 --correction factor in seconds applied to the wind speed components to determine the lasing spot for a direct hit in adverse conditions
-
-                --correct to the opposite of the wind direction
-                _enemyVectorUpdated.x = _enemyVectorUpdated.x - _WindSpeedVector.x * CorrectionFactor
-                _enemyVectorUpdated.y = _enemyVectorUpdated.y - _WindSpeedVector.y * CorrectionFactor --not sure about correcting altitude but that component is always 0 in testing
-                _enemyVectorUpdated.z = _enemyVectorUpdated.z - _WindSpeedVector.z * CorrectionFactor
-            end
-            --combination of both should result in near perfect accuracy if the bomb doesn't stall itself following fast vehicles or correcting for heavy winds, correction factors can be adjusted but should work up to 40kn of wind for vehicles moving at 90kph (beware to drop the bomb in a way to not stall it, facing which ever is larger, target speed or wind)
-        end
-
-        local _oldLase = ctld.jtacLaserPoints[_jtacGroupName]
-        local _oldIR = ctld.jtacIRPoints[_jtacGroupName]
-
-        if _oldLase == nil or _oldIR == nil then
-
-            -- create lase
-
-            local _status, _result = pcall(function()
-                _spots['irPoint'] = Spot.createInfraRed(_jtacUnit, { x = 0, y = 2.0, z = 0 }, _enemyVectorUpdated)
-                _spots['laserPoint'] = Spot.createLaser(_jtacUnit, { x = 0, y = 2.0, z = 0 }, _enemyVectorUpdated, _laserCode)
-                return _spots
-            end)
-
-            if not _status then
-                env.error('ERROR: ' .. _result, false)
-            else
-                if _result.irPoint then
-
-                    --    env.info(jtacUnit:getName() .. ' placed IR Pointer on '..enemyUnit:getName())
-
-                    ctld.jtacIRPoints[_jtacGroupName] = _result.irPoint --store so we can remove after
-                end
-                if _result.laserPoint then
-
-                    --  env.info(jtacUnit:getName() .. ' is Lasing '..enemyUnit:getName()..'. CODE:'..laserCode)
-
-                    ctld.jtacLaserPoints[_jtacGroupName] = _result.laserPoint
-                end
-            end
-
-        else
-
-            -- update lase
-
-            if _oldLase ~= nil then
-                _oldLase:setPoint(_enemyVectorUpdated)
-            end
-
-            if _oldIR ~= nil then
-                _oldIR:setPoint(_enemyVectorUpdated)
-            end
-        end
-    end
-end
-
--- get currently selected unit and check they're still in range
-function ctld.getCurrentUnit(_jtacUnit, _jtacGroupName)
-
-    local _unit = nil
-
-    if ctld.jtacCurrentTargets[_jtacGroupName] ~= nil then
-        _unit = Unit.getByName(ctld.jtacCurrentTargets[_jtacGroupName].name)
-    end
-
-    local _tempPoint = nil
-    local _tempDist = nil
-    local _tempPosition = nil
-
-    local _jtacPosition = _jtacUnit:getPosition()
-    local _jtacPoint = _jtacUnit:getPoint()
-
-    if _unit ~= nil and _unit:getLife() > 0 and _unit:isActive() == true then
-
-        -- calc distance
-        _tempPoint = _unit:getPoint()
-        --   tempPosition = unit:getPosition()
-
-        _tempDist = ctld.getDistance(_unit:getPoint(), _jtacUnit:getPoint())
-        if _tempDist < ctld.JTAC_maxDistance then
-            -- calc visible
-
-            -- check slightly above the target as rounding errors can cause issues, plus the unit has some height anyways
-            local _offsetEnemyPos = { x = _tempPoint.x, y = _tempPoint.y + 2.0, z = _tempPoint.z }
-            local _offsetJTACPos = { x = _jtacPoint.x, y = _jtacPoint.y + 2.0, z = _jtacPoint.z }
-
-            if land.isVisible(_offsetEnemyPos, _offsetJTACPos) then
-                return _unit
-            end
-        end
-    end
-    return nil
-end
-
-
--- Find nearest enemy to JTAC that isn't blocked by terrain
-function ctld.findNearestVisibleEnemy(_jtacUnit, _targetType,_distance)
-
-    --local startTime = os.clock()
-
-    local _maxDistance = _distance or ctld.JTAC_maxDistance
-
-    local _nearestDistance = _maxDistance
-
-    local _jtacGroupName = _jtacUnit:getName()
-    local _jtacPoint = _jtacUnit:getPoint()
-    local _coa =    _jtacUnit:getCoalition()
-
-    local _offsetJTACPos = { x = _jtacPoint.x, y = _jtacPoint.y + 2.0, z = _jtacPoint.z }
-
-    local _volume = {
-        id = world.VolumeType.SPHERE,
-        params = {
-            point = _offsetJTACPos,
-            radius = _maxDistance
-        }
-    }
-
-    local _unitList = {}
-
-
-    local _search = function(_unit, _coa)
-        pcall(function()
-
-            if _unit ~= nil
-                    and _unit:getLife() > 0
-                    and _unit:isActive()
-                    and _unit:getCoalition() ~= _coa
-                    and not _unit:inAir()
-                    and not ctld.alreadyTarget(_jtacUnit,_unit) then
-
-                local _tempPoint = _unit:getPoint()
-                local _offsetEnemyPos = { x = _tempPoint.x, y = _tempPoint.y + 2.0, z = _tempPoint.z }
-
-                if land.isVisible(_offsetJTACPos,_offsetEnemyPos ) then
-
-                    local _dist = ctld.getDistance(_offsetJTACPos, _offsetEnemyPos)
-
-                    if _dist < _maxDistance then
-                        table.insert(_unitList,{unit=_unit, dist=_dist})
-
-                    end
-                end
-            end
-        end)
-
-        return true
-    end
-
-    world.searchObjects(Object.Category.UNIT, _volume, _search, _coa)
-
-    --log.info(string.format("JTAC Search elapsed time: %.4f\n", os.clock() - startTime))
-
-    -- generate list order by distance & visible
-
-    -- first check
-    -- hpriority
-    -- priority
-    -- vehicle
-    -- unit
-
-
-    ctld.jtacTargetsList[_jtacGroupName] = _unitList
-    --from the units in range, build the targets list, unsorted as to keep consistency between radio menu refreshes
-
-    local _sort = function( a,b ) return a.dist < b.dist end
-    table.sort(_unitList,_sort)
-    -- sort list
-
-    -- check for hpriority
-    for _, _enemyUnit in ipairs(_unitList) do
-        local _enemyName = _enemyUnit.unit:getName()
-
-        if string.match(_enemyName, "hpriority") then
-            return _enemyUnit.unit
-        end
-    end
-
-    for _, _enemyUnit in ipairs(_unitList) do
-        local _enemyName = _enemyUnit.unit:getName()
-
-        if string.match(_enemyName, "priority") then
-            return _enemyUnit.unit
-        end
-    end
-
-    local result = nil
-    for _, _enemyUnit in ipairs(_unitList) do
-        local _enemyName = _enemyUnit.unit:getName()
-        --log.info(string.format("CTLD - checking _enemyName=%s", _enemyName))
-
-        -- check for air defenses
-        --log.info(string.format("CTLD - _enemyUnit.unit:getDesc()[attributes]=%s", ctld.p(_enemyUnit.unit:getDesc()["attributes"])))
-        local airdefense = (_enemyUnit.unit:getDesc()["attributes"]["Air Defence"] ~= nil)
-        --log.info(string.format("CTLD - airdefense=%s", tostring(airdefense)))
-
-        if (_targetType == "vehicle" and ctld.isVehicle(_enemyUnit.unit)) or _targetType == "all" then
-            if airdefense then
-                return _enemyUnit.unit
-            else
-                result = _enemyUnit.unit
-            end
-
-        elseif (_targetType == "troop" and ctld.isInfantry(_enemyUnit.unit)) or _targetType == "all" then
-            if airdefense then
-                return _enemyUnit.unit
-            else
-                result = _enemyUnit.unit
-            end
-        end
-    end
-
-    return result
-
-end
-
-
-function ctld.listNearbyEnemies(_jtacUnit)
-
-    local _maxDistance =  ctld.JTAC_maxDistance
-
-    local _jtacPoint = _jtacUnit:getPoint()
-    local _coa =    _jtacUnit:getCoalition()
-
-    local _offsetJTACPos = { x = _jtacPoint.x, y = _jtacPoint.y + 2.0, z = _jtacPoint.z }
-
-    local _volume = {
-        id = world.VolumeType.SPHERE,
-        params = {
-            point = _offsetJTACPos,
-            radius = _maxDistance
-        }
-    }
-    local _enemies = nil
-
-    local _search = function(_unit, _coa)
-        pcall(function()
-
-            if _unit ~= nil
-                    and _unit:getLife() > 0
-                    and _unit:isActive()
-                    and _unit:getCoalition() ~= _coa
-                    and not _unit:inAir() then
-
-                local _tempPoint = _unit:getPoint()
-                local _offsetEnemyPos = { x = _tempPoint.x, y = _tempPoint.y + 2.0, z = _tempPoint.z }
-
-                if land.isVisible(_offsetJTACPos,_offsetEnemyPos ) then
-
-                    if not _enemies then
-                        _enemies = {}
-                    end
-
-                    _enemies[_unit:getTypeName()] = _unit:getTypeName()
-
-                end
-            end
-        end)
-
-        return true
-    end
-
-    world.searchObjects(Object.Category.UNIT, _volume, _search, _coa)
-
-    return _enemies
-end
-
--- tests whether the unit is targeted by another JTAC
-function ctld.alreadyTarget(_jtacUnit, _enemyUnit)
-
-    for _, _jtacTarget in pairs(ctld.jtacCurrentTargets) do
-
-        if _jtacTarget.unitId == _enemyUnit:getID() then
-            -- env.info("ALREADY TARGET")
-            return true
-        end
-    end
-
-    return false
-end
-
-
--- Returns only alive units from group but the group / unit may not be active
 
 function ctld.getGroup(groupName)
 
@@ -6007,199 +5026,6 @@ function ctld.getAliveGroup(_groupName)
     end
 
     return nil
-end
-
--- gets the JTAC status and displays to coalition units
-function ctld.getJTACStatus(_args)
-
-    --returns the status of all JTAC units
-
-    local _playerUnit = ctld.getTransportUnit(_args[1])
-
-    if _playerUnit == nil then
-        return
-    end
-
-    local _side = _playerUnit:getCoalition()
-
-    local _jtacGroupName = nil
-    local _jtacUnit = nil
-
-    local _message = "JTAC STATUS: \n\n"
-
-    for _jtacGroupName, _jtacDetails in pairs(ctld.jtacUnits) do
-
-        --look up units
-        _jtacUnit = Unit.getByName(_jtacDetails.name)
-
-        if _jtacUnit ~= nil and _jtacUnit:getLife() > 0 and _jtacUnit:isActive() == true and _jtacUnit:getCoalition() == _side then
-
-            local _enemyUnit = ctld.getCurrentUnit(_jtacUnit, _jtacGroupName)
-
-            local _laserCode = ctld.jtacLaserPointCodes[_jtacGroupName]
-
-            local _start = "->" .. _jtacGroupName
-            if (_jtacDetails.radio) then
-                _start = _start .. ", available on ".._jtacDetails.radio.freq.." ".._jtacDetails.radio.mod ..","
-            end
-
-            if _laserCode == nil then
-                _laserCode = "UNKNOWN"
-            end
-
-            if _enemyUnit ~= nil and _enemyUnit:getLife() > 0 and _enemyUnit:isActive() == true then
-
-                local action = " targeting "
-
-                if ctld.jtacSelectedTarget[_jtacGroupName] == _enemyUnit:getName() then 
-                    action = " targeting selected unit "
-                else
-                    if ctld.jtacSelectedTarget[_jtacGroupName] ~= 1 then
-                        action = " attempting to find selected unit, temporarily targeting "
-                    end
-                end
-
-                _message = _message .. "" .. _start .. action .. _enemyUnit:getTypeName() .. " CODE: " .. _laserCode .. ctld.getPositionString(_enemyUnit) .. "\n"
-
-                local _list = ctld.listNearbyEnemies(_jtacUnit)
-
-                if _list then
-                    _message = _message.."Visual On: "
-
-                    for _,_type in pairs(_list) do
-                        _message = _message.._type.." "
-                    end
-                    _message = _message.."\n"
-                end
-
-            else
-                _message = _message .. "" .. _start .. " searching for targets" .. ctld.getPositionString(_jtacUnit) .. "\n"
-            end
-        end
-    end
-
-    if _message == "JTAC STATUS: \n\n" then
-        _message = "No Active JTACs"
-    end
-
-
-    ctld.notifyCoalition(_message, 10, _side)
-end
-
-function ctld.setJTACTarget(_args)
-    if _args then
-        local _jtacGroupName = _args.jtacGroupName
-        local targetName = _args.targetName
-
-        if _jtacGroupName and targetName and ctld.jtacSelectedTarget[_jtacGroupName] and ctld.jtacTargetsList[_jtacGroupName] then
-            
-            --look for the unit's (target) name in the Targets List, create the required data structure for jtacCurrentTargets and then assign it to the JTAC called _jtacGroupName
-            for _, target in pairs(ctld.jtacTargetsList[_jtacGroupName]) do
-
-                if target then
-
-                    local ListedTargetUnit = target.unit
-                    local ListedTargetName = ListedTargetUnit:getName()
-
-                    if ListedTargetName == targetName then
-
-                        ctld.jtacSelectedTarget[_jtacGroupName] = targetName
-                        ctld.jtacCurrentTargets[_jtacGroupName] = { name = targetName, unitType = ListedTargetUnit:getTypeName(), unitId = ListedTargetUnit:getID() }
-            
-                        local message = _jtacGroupName .. ", targeting selected unit, " .. ListedTargetUnit:getTypeName()
-                        local fullMessage = message .. '. CODE: ' .. ctld.jtacLaserPointCodes[_jtacGroupName] .. ". POSITION: " .. ctld.getPositionString(ListedTargetUnit)
-                        ctld.notifyCoalition(fullMessage, 10, ctld.jtacUnits[_jtacGroupName].side, ctld.jtacRadioData[_jtacGroupName], message)
-                    end
-                end
-            end
-        elseif not targetName and ctld.jtacSelectedTarget[_jtacGroupName] ~= 1 then
-            ctld.jtacSelectedTarget[_jtacGroupName] = 1
-            ctld.jtacCurrentTargets[_jtacGroupName] = nil
-
-            local message = _jtacGroupName .. ", target selection reset."
-            ctld.notifyCoalition(message, 10, ctld.jtacUnits[_jtacGroupName].side, ctld.jtacRadioData[_jtacGroupName])
-        end
-    end
-end
-
-function ctld.isInfantry(_unit)
-
-    local _typeName = _unit:getTypeName()
-
-    --type coerce tostring
-    _typeName = string.lower(_typeName .. "")
-
-    local _soldierType = { "infantry", "paratrooper", "stinger", "manpad", "mortar" }
-
-    for _key, _value in pairs(_soldierType) do
-        if string.match(_typeName, _value) then
-            return true
-        end
-    end
-
-    return false
-end
-
--- assume anything that isnt soldier is vehicle
-function ctld.isVehicle(_unit)
-
-    if ctld.isInfantry(_unit) then
-        return false
-    end
-
-    return true
-end
-
--- The entered value can range from 1111 - 1788,
--- -- but the first digit of the series must be a 1 or 2
--- -- and the last three digits must be between 1 and 8.
---  The range used to be bugged so its not 1 - 8 but 0 - 7.
--- function below will use the range 1-7 just incase
-function ctld.generateLaserCode()
-
-    ctld.jtacGeneratedLaserCodes = {}
-
-    -- generate list of laser codes
-    local _code = 1511
-
-    local _count = 1
-
-    while _code < 1777 and _count < 30 do
-
-        while true do
-
-            _code = _code + 1
-
-            if not ctld.containsDigit(_code, 8)
-                    and not ctld.containsDigit(_code, 9)
-                    and not ctld.containsDigit(_code, 0) then
-
-                table.insert(ctld.jtacGeneratedLaserCodes, _code)
-
-                --env.info(_code.." Code")
-                break
-            end
-        end
-        _count = _count + 1
-    end
-end
-
-function ctld.containsDigit(_number, _numberToFind)
-
-    local _thisNumber = _number
-    local _thisDigit = 0
-
-    while _thisNumber ~= 0 do
-
-        _thisDigit = _thisNumber % 10
-        _thisNumber = math.floor(_thisNumber / 10)
-
-        if _thisDigit == _numberToFind then
-            return true
-        end
-    end
-
-    return false
 end
 
 -- 200 - 400 in 10KHz
@@ -6359,22 +5185,6 @@ function ctld.generateFMFrequencies()
         end
     end
 end
-
-function ctld.getPositionString(_unit)
-
-    if ctld.JTAC_location == false then
-        return ""
-    end
-
-    local _lat, _lon = coord.LOtoLL(_unit:getPosition().p)
-
-    local _latLngStr = mist.tostringLL(_lat, _lon, 3, ctld.location_DMS)
-
-    local _mgrsString = mist.tostringMGRS(coord.LLtoMGRS(coord.LOtoLL(_unit:getPosition().p)), 5)
-
-    return " @ " .. _latLngStr .. " - MGRS " .. _mgrsString
-end
-
 
 -- ***************** SETUP SCRIPT ****************
 function ctld.initialize(force)
@@ -6634,12 +5444,6 @@ function ctld.initialize(force)
     --world.addEventHandler(ctld.eventHandler)
 
     --env.info("CTLD event handler added")
-
-    env.info("Generating Laser Codes")
-    ctld.generateLaserCode()
-    env.info("Generated Laser Codes")
-
-
 
     env.info("Generating UHF Frequencies")
     ctld.generateUHFrequencies()

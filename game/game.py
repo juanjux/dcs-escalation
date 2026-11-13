@@ -241,8 +241,6 @@ class Game:
             self._dedup_destroyed_units()
         if not hasattr(self, "laser_code_registry"):
             self.laser_code_registry = LaserCodeRegistry()
-            for front_line in self.theater.conflicts():
-                front_line.laser_code = self.laser_code_registry.alloc_laser_code()
         if not hasattr(self, "stored_context"):
             self.stored_context = {}
         if not hasattr(self, "opfor_ai_orders_turn"):
@@ -264,8 +262,27 @@ class Game:
         if not getattr(self, "opfor_ai_token", None):
             # Pre-feature save: mint a token now; it sticks once this save is written.
             self.opfor_ai_token = secrets.token_urlsafe()
+        self._retire_frontline_laser_codes()
         # Regenerate any state that was not persisted.
         self.on_load()
+
+    def _retire_frontline_laser_codes(self) -> None:
+        """Release codes reserved for automatic JTACs in older saves."""
+        retired = set()
+        for front in self.theater.conflicts():
+            code = vars(front).pop("laser_code", None)
+            if code is not None:
+                retired.add(code)
+        if not retired:
+            return
+        for package in itertools.chain(self.blue.ato.packages, self.red.ato.packages):
+            for flight in package.flights:
+                for member in flight.iter_members():
+                    if member.weapon_laser_code in retired:
+                        member.weapon_laser_code = None
+        for code in retired:
+            if code.code in self.laser_code_registry.allocated_codes:
+                self.laser_code_registry.release_code(code)
 
     def record_debrief(self, debriefing: Any) -> None:
         """Capture a concise per-turn loss summary (counts + who-killed-what) for the
@@ -698,7 +715,7 @@ class Game:
             self.theater.iads_network.initialize_network(self.theater.ground_objects)
 
         for control_point in self.theater.controlpoints:
-            control_point.initialize_turn_0(self.laser_code_registry)
+            control_point.initialize_turn_0()
             for tgo in control_point.connected_objectives:
                 self.db.tgos.add(tgo.id, tgo)
 

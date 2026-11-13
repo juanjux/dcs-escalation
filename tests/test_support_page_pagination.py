@@ -2,7 +2,7 @@
 """SupportPage.paginate: splits by measured height so nothing is cut off.
 
 The single-page SupportPage.write incremented y without bounds, so a long
-flights comm-ladder pushed the AEW&C / Tankers / JTAC tables off the bottom of
+flights comm-ladder pushed the AEW&C / Tankers tables off the bottom of
 the fixed 960x1080 page. paginate() must spill onto extra pages instead, keeping
 every section reachable, while a mission that fits on one page renders with no
 ``(1/1)`` suffix.
@@ -19,7 +19,7 @@ from game.missiongenerator.kneeboard import SupportPage
 
 # --- Minimal fakes -----------------------------------------------------------
 #
-# We avoid the heavy FlightData / AwacsInfo / TankerInfo / JtacInfo / CommInfo
+# We avoid the heavy FlightData / AwacsInfo / TankerInfo / CommInfo
 # machinery: SupportPage only touches a handful of attributes, and by making
 # channels_for() return [] the frequency formatting degrades to str(freq),
 # which sidesteps needing real radio/channel objects.
@@ -84,20 +84,11 @@ class FakeTanker:
     end_time: datetime.datetime = datetime.datetime(2020, 1, 1, 12, 0, 0)
 
 
-@dataclass
-class FakeJtac:
-    callsign: str
-    region: str = "Region Alpha"
-    code: str = "1688"
-    freq: str = "251.000 MHz"
-
-
 def _paginate(
     flight: FakeFlight,
     package_flights: List[FakeFlight],
     awacs: List[FakeAwacs],
     tankers: List[FakeTanker],
-    jtacs: List[FakeJtac],
 ) -> List[SupportPage]:
     return SupportPage.paginate(
         flight,  # type: ignore[arg-type]
@@ -105,7 +96,6 @@ def _paginate(
         [],  # comms (paginate appends the intra-flight entry itself)
         awacs,  # type: ignore[arg-type]
         tankers,  # type: ignore[arg-type]
-        jtacs,  # type: ignore[arg-type]
         datetime.datetime(2020, 1, 1, 8, 0, 0),
         dark_kneeboard=False,
     )
@@ -122,20 +112,19 @@ def test_small_mission_fits_on_one_page(tmp_path: Path) -> None:
     package_flights = [FakeFlight(f"Package {i}") for i in range(3)]
     awacs = [FakeAwacs("Overlord")]
     tankers = [FakeTanker("Texaco")]
-    jtacs = [FakeJtac("Warthog")]
 
-    pages = _paginate(flight, package_flights, awacs, tankers, jtacs)
+    pages = _paginate(flight, package_flights, awacs, tankers)
 
     assert len(pages) == 1
     text = _sidecar_text(pages[0], tmp_path, 0)
     # Every section present on the single page.
-    for token in ("STRIKE Package", "AEW&C", "Tankers", "JTAC", "Overlord", "Texaco"):
+    for token in ("STRIKE Package", "AEW&C", "Tankers", "Overlord", "Texaco"):
         assert token in text
 
 
 def test_single_page_has_no_pagination_suffix(tmp_path: Path) -> None:
     flight = FakeFlight("Colt 1-1")
-    pages = _paginate(flight, [], [FakeAwacs("Overlord")], [], [])
+    pages = _paginate(flight, [], [FakeAwacs("Overlord")], [])
 
     assert len(pages) == 1
     assert pages[0].total_pages == 1
@@ -151,9 +140,8 @@ def test_many_flights_paginate_without_losing_support_tables(tmp_path: Path) -> 
     package_flights = [FakeFlight(f"Package {i}") for i in range(48)]
     awacs = [FakeAwacs("Overlord"), FakeAwacs("Magic")]
     tankers = [FakeTanker("Texaco"), FakeTanker("Arco")]
-    jtacs = [FakeJtac("Warthog"), FakeJtac("Springfield")]
 
-    pages = _paginate(flight, package_flights, awacs, tankers, jtacs)
+    pages = _paginate(flight, package_flights, awacs, tankers)
 
     assert len(pages) > 1, "many flights must spill onto multiple pages"
 
@@ -169,9 +157,6 @@ def test_many_flights_paginate_without_losing_support_tables(tmp_path: Path) -> 
         "Tankers",
         "Texaco",
         "Arco",
-        "JTAC",
-        "Warthog",
-        "Springfield",
     ):
         assert token in all_text, f"{token!r} was lost during pagination"
 
@@ -188,9 +173,8 @@ def test_pagination_never_overflows_page_height(tmp_path: Path) -> None:
     package_flights = [FakeFlight(f"Package {i}") for i in range(60)]
     awacs = [FakeAwacs("Overlord")]
     tankers = [FakeTanker("Texaco")]
-    jtacs = [FakeJtac("Warthog")]
 
-    pages = _paginate(flight, package_flights, awacs, tankers, jtacs)
+    pages = _paginate(flight, package_flights, awacs, tankers)
     assert len(pages) > 1
 
     proto = KneeboardPageWriter()

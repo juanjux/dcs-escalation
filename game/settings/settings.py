@@ -1737,18 +1737,6 @@ class Settings:
             "Tactical commanders can control & direct friendly units."
         ),
     )
-    use_jtac: bool = boolean_option(
-        "Use JTAC if the faction has one defined",
-        MISSION_GENERATOR_PAGE,
-        GAMEPLAY_SECTION,
-        default=True,
-        detail=(
-            "Spawns the faction's JTAC aircraft on each front line. Off, no JTAC is "
-            "generated even for a faction that defines one. Separate from the number "
-            "of JTAC controller slots below, which are Combined Arms seats."
-            " Disable this option when using Realistic CAS to avoid conflicting JTAC generation."
-        ),
-    )
     jtac_count: int = bounded_int_option(
         "Number of JTAC controllers",
         page=MISSION_GENERATOR_PAGE,
@@ -3245,6 +3233,13 @@ class Settings:
 
     @staticmethod
     def deserialize_state_dict(state: dict[str, Any]) -> dict[str, Any]:
+        state.pop("use_jtac", None)
+        if isinstance(plugins := state.get("plugins"), dict):
+            for name in ("ctld.autolase", "ctld.jtacsmoke", "ctld.fc3LaserCode"):
+                plugins.pop(name, None)
+            for name in tuple(plugins):
+                if name == "MooseAutolase" or name.startswith("MooseAutolase."):
+                    plugins.pop(name)
         # restore Enum & timedelta types
         s = Settings()
         # The old mechanic price was expressed in millions, including in presets.

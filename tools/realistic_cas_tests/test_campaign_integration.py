@@ -1,6 +1,5 @@
 """Real campaign plugin manager/generator/pydcs wiring, without running DCS."""
 
-import ast
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -16,9 +15,6 @@ from game.missiongenerator.luagenerator import LuaGenerator
 from game.missiongenerator.realisticcascampaign import (
     inject_campaign,
     prepare_campaign,
-    suppress_legacy_jtac,
-    validate_compatibility,
-    RealisticCASConfigurationError,
 )
 from game.plugins.luaplugin import LuaPlugin
 from lupa.lua51 import LuaRuntime
@@ -49,7 +45,6 @@ class CampaignIntegrationTests(unittest.TestCase):
         self.p.set_value(False)
         self.assertIsNone(prepare_campaign(object(), [self.p]))
         inject_campaign(object(), None)
-        self.assertFalse(suppress_legacy_jtac([self.p]))
         definition = json.loads(
             (ROOT / "resources/plugins/realisticcas/plugin.json").read_text()
         )
@@ -92,67 +87,75 @@ class CampaignIntegrationTests(unittest.TestCase):
         self.assertEqual(before, self.m.weather.dict())
         self.assertEqual(units_before, [u.dict() for u in self.air.units])
         self.assertEqual(len(self.m.triggerrules.triggers), 0)
-        self.assertTrue(suppress_legacy_jtac([self.p]))
 
-    def test_incompatible_plugins_and_legacy_jtac_rejected_before_injection(self):
-        for name in ("ctld", "MooseAutolase"):
-            with self.assertRaisesRegex(ValueError, name):
-                prepare_campaign(self.g, [self.p, NS(identifier=name, enabled=True)])
-            self.assertEqual(len(self.m.triggerrules.triggers), 0)
-        self.data.jtacs.append(NS())
-        with self.assertRaisesRegex(ValueError, "legacy JTAC"):
-            prepare_campaign(self.g, [self.p])
-
-    def test_ctld_logistics_allowed_with_autolase_off_regardless_of_human_slots(self):
+    def test_ctld_runs_alongside_realistic_cas(self):
         ctld = LuaPlugin.from_json("ctld", ROOT / "resources/plugins/ctld/plugin.json")
         assert ctld is not None
         ctld.set_value(True)
-        options = {o.identifier: o for o in ctld.options}
-        with self.assertRaisesRegex(
-            RealisticCASConfigurationError, "JTAC autolase targets"
-        ):
-            validate_compatibility([self.p, ctld])
-        options["ctld.autolase"].set_value(False)
-        # Smoke is subordinate to autolase; logistics and human seats are not JTAC AI.
-        for smoke in (False, True):
-            options["ctld.jtacsmoke"].set_value(smoke)
-            for slots in (0, 3):
-                self.game.settings = NS(jtac_count=slots, use_jtac=False)
-                validate_compatibility([self.p, ctld])
-                self.assertIsNotNone(prepare_campaign(self.g, [self.p, ctld]))
-        options["ctld.autolase"].set_value(True)
-        ctld.set_value(False)
-        validate_compatibility([self.p, ctld])
+        self.game.settings = NS(jtac_count=3)
+        self.assertIsNotNone(prepare_campaign(self.g, [self.p, ctld]))
 
-    def test_ctld_autolase_off_blocks_dynamic_and_timer_entry_points(self):
-        source = (ROOT / "resources/plugins/ctld/CTLD.lua").read_text()
+    def test_ctld_keeps_full_infantry_capacity_without_jtacs(self):
         lua = LuaRuntime()
-        lua.compile(source)  # The shipped script, not just the extracted function.
-        start = source.index("function ctld.JTACAutoLase(")
-        end = source.index("function ctld.JTACAutoLaseStop(", start)
         lua.execute("""
-            calls=0
-            ctld={
-              p=tostring,
-              logDebug=function()
-                calls=calls+1
-                error('reached native autolase body')
-              end
-            }
+        env={info=function()end,error=function()end,setErrorMessageBoxEnabled=function()end}
+        timer={getTime=function()return 0 end,scheduleFunction=function()end}
         """)
-        lua.execute(source[start:end])
+        scripts = ROOT / "resources/plugins/ctld"
+        lua.execute((scripts / "CTLD.lua").read_text(encoding="utf-8"))
         lua.execute("""
-            dcsRetribution={plugins={ctld={autolase=false}}}
-            -- Initial JTACs, dropped troops, crates and the timer use this entry.
-            for _,name in ipairs({'initial','troops','crate','timer'}) do
-              assert(pcall(ctld.JTACAutoLase,name,1688))
-            end
-            assert(calls==0)
-            dcsRetribution.plugins.ctld.autolase=true
-            assert(not pcall(ctld.JTACAutoLase,'enabled',1688) and calls==1)
-            -- Standalone CTLD, without campaign options, retains its behaviour.
-            dcsRetribution=nil
-            assert(not pcall(ctld.JTACAutoLase,'standalone',1688) and calls==2)
+        assert(not ctld.JTACAutoLase and not ctld.addJTACRadioCommand)
+        dcsRetribution={plugins={ctld={tailorctld=true}},Logistics={
+          flights={},crates={},transports={},spawnable_crates={}
+        }}
+        """)
+        lua.execute((scripts / "ctld-config.lua").read_text(encoding="utf-8"))
+        lua.execute("""
+        for _,squad in ipairs(ctld.loadableGroups)do
+          assert(not squad.jtac)
+          if squad.name=='Retribution Troops (24)'then
+            assert(squad.inf+squad.mg+squad.at+squad.aa==24)
+            return
+          end
+        end
+        error('missing 24-person squad')
+        """)
+
+    def test_ctld_ai_transport_unloads_when_an_enemy_is_visible(self):
+        lua = LuaRuntime()
+        lua.execute("""
+        env={info=function()end,error=function()end,setErrorMessageBoxEnabled=function()end}
+        timer={getTime=function()return 0 end,scheduleFunction=function()end}
+        """)
+        source = ROOT / "resources/plugins/ctld/CTLD.lua"
+        lua.execute(source.read_text(encoding="utf-8"))
+        lua.execute("""
+        local function unit(side, x)
+          return {
+            getPoint=function()return {x=x,y=0,z=0} end,
+            getCoalition=function()return side end,
+            getPlayerName=function()end,
+            getLife=function()return 100 end,
+            isActive=function()return true end,
+            inAir=function()return false end,
+          }
+        end
+        local transport, enemy = unit(2,0), unit(1,1000)
+        local visible, deployments = false, 0
+        ctld.getTransportUnit=function()return transport end
+        ctld.troopsOnboard=function(_,troops)return troops end
+        ctld.unitCanCarryVehicles=function()return false end
+        ctld.deployTroops=function()deployments=deployments+1 end
+        land={isVisible=function()return visible end}
+        Object={Category={UNIT=1}}
+        world={VolumeType={SPHERE=1},searchObjects=function(_,volume,visit)
+          assert(volume.params.radius==10000)
+          visit(enemy)
+        end}
+        assert(not ctld.unloadInProximityToEnemy('transport'))
+        visible=true
+        assert(ctld.unloadInProximityToEnemy('transport'))
+        assert(deployments==1)
         """)
 
     def test_actual_pydcs_sinai_and_falklands_names(self):
@@ -166,27 +169,6 @@ class CampaignIntegrationTests(unittest.TestCase):
                 self.assertEqual(config["environment"]["defaultCover"], cover)
                 self.assertEqual(config["observerBudget"], 64)
                 self.assertEqual(config["losBudget"], 64)
-
-    def test_compatibility_preflight_is_actionable_and_disabled_is_inert(self):
-        ctld = NS(identifier="ctld", enabled=True)
-        with self.assertRaisesRegex(RealisticCASConfigurationError, "ctld"):
-            validate_compatibility([self.p, ctld])
-        self.p.set_value(False)
-        validate_compatibility([self.p, ctld])
-        # Take Off must check before fallback planning or beginning the simulation.
-        tree = ast.parse((ROOT / "qt_ui/widgets/QTopPanel.py").read_text())
-        launch = next(
-            n
-            for n in ast.walk(tree)
-            if isinstance(n, ast.FunctionDef) and n.name == "launch_mission"
-        )
-        text = ast.unparse(launch)
-        self.assertLess(
-            text.index("validate_compatibility("),
-            text.index("run_opfor_fallback_if_needed("),
-        )
-        self.assertIn("except RealisticCASConfigurationError", text)
-        self.assertIn("Incompatible mission plugins", text)
 
     def test_option_source_is_same_plugin_as_injection_not_game_settings(self):
         for option in self.p.options:
@@ -319,21 +301,6 @@ class CampaignIntegrationTests(unittest.TestCase):
             self.m.triggerrules.triggers[-1].comment,
             "Realistic CAS: campaign registry and start",
         )
-
-    def test_flot_jtac_guard_does_not_swallow_frontline_metadata(self):
-        # Structural regression for the legacy branch; creating a real FLOT needs
-        # the campaign fixtures in the subsequent full-campaign acceptance test.
-        tree = ast.parse((ROOT / "game/missiongenerator/flotgenerator.py").read_text())
-        guards = [
-            n
-            for n in ast.walk(tree)
-            if isinstance(n, ast.If) and "suppress_legacy_jtac" in ast.unparse(n.test)
-        ]
-        self.assertEqual(len(guards), 1)
-        text = ast.unparse(guards[0])
-        self.assertIn("mission_data.jtacs.append", text)
-        self.assertNotIn("mission_data.player_frontline_groups.append", text)
-        self.assertNotIn("mission_data.enemy_frontline_groups.append", text)
 
 
 if __name__ == "__main__":

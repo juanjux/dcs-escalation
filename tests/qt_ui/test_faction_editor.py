@@ -94,9 +94,7 @@ def test_filter_clears_hidden_selection_and_has_empty_state(editor: Any) -> None
 def test_settings_update_faction_and_notify_campaign(editor: Any) -> None:
     changes: list[Any] = []
     editor.faction_changed.connect(changes.append)
-    editor.jtac.click()
-    assert editor.faction.has_jtac == editor.jtac.isChecked()
     index = (editor.doctrine_combo.currentIndex() + 1) % editor.doctrine_combo.count()
     editor.doctrine_combo.setCurrentIndex(index)
     assert editor.faction.doctrine is editor.doctrine_combo.currentData()
-    assert len(changes) == 2
+    assert len(changes) == 1

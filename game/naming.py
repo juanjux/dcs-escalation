@@ -460,7 +460,6 @@ class NameGenerator:
     aircraft_number = 0
     convoy_number = 0
     cargo_ship_number = 0
-    jtac_number = 0
 
     animals: list[str] = list(ANIMALS)
     existing_alphas: List[str] = []
@@ -471,7 +470,6 @@ class NameGenerator:
         cls.infantry_number = 0
         cls.convoy_number = 0
         cls.cargo_ship_number = 0
-        cls.jtac_number = 0
         cls.animals = list(ANIMALS)
         cls.existing_alphas = []
 
@@ -486,7 +484,6 @@ class NameGenerator:
         cls.number = 0
         cls.infantry_number = 0
         cls.aircraft_number = 0
-        cls.jtac_number = 0
 
     @classmethod
     def next_aircraft_name(cls, country: Country, flight: Flight) -> str:
@@ -556,16 +553,6 @@ class NameGenerator:
         cls.cargo_ship_number = max(
             cls.cargo_ship_number, _highest_numbered(names, "Cargo Ship")
         )
-
-    @classmethod
-    def next_jtac_name(cls) -> str:
-        name = (
-            ALPHA_MILITARY[cls.jtac_number]
-            if cls.jtac_number < len(ALPHA_MILITARY)
-            else str(cls.jtac_number + 1)
-        )
-        cls.jtac_number += 1
-        return f"JTAC {name}"
 
     @classmethod
     def random_objective_name(cls) -> str:

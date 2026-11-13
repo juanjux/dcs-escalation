@@ -55,7 +55,5 @@
   ],
   "requirements": {
     "JAS39 Gripen Mod by Community": "https://github.com/whisky-actual/Community-JAS-39-C"
-  },
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper"
+  }
 }

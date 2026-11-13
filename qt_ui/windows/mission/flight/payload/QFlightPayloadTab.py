@@ -341,7 +341,7 @@ class QFlightPayloadTab(QFrame):
         scrolling_layout.addLayout(self.own_laser_code_info)
 
         self.weapon_laser_code_selector = WeaponLaserCodeSelector(
-            game, self.member_selector.selected_member, self
+            self.member_selector.selected_member, self
         )
         self.own_laser_code_info.assigned_laser_code_changed.connect(
             self.weapon_laser_code_selector.rebuild

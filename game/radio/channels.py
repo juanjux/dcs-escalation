@@ -59,7 +59,7 @@ class CommonRadioChannelAllocator(RadioChannelAllocator):
             return
 
         # The ordered set of inter-flight preset frequencies (departure ATC,
-        # AWACS, JTAC, package, arrival ATC, tankers, divert ATC).
+        # AWACS, package, arrival ATC, tankers, divert ATC).
         frequencies = self._inter_flight_frequencies(flight, mission_data)
 
         # For cases where the inter-flight and intra-flight radios share presets
@@ -90,7 +90,6 @@ class CommonRadioChannelAllocator(RadioChannelAllocator):
             frequencies.append(flight.departure.atc)
         # TODO: If there ever are multiple AWACS, limit to mission relevant.
         frequencies.extend(awacs.freq for awacs in mission_data.awacs)
-        frequencies.extend(jtac.freq for jtac in mission_data.jtacs)
         if (freq := flight.package.frequency) is not None:
             frequencies.append(freq)
         if flight.arrival != flight.departure and flight.arrival.atc is not None:
@@ -190,7 +189,7 @@ class ViggenRadioChannelAllocator(RadioChannelAllocator):
     ) -> None:
         # The Viggen's preset channels are handled differently from other
         # aircraft. Since 2.7.9 the group channels will not be generated automatically
-        # anymore. So we have to set AWACS and JTAC manually. There are also seven
+        # anymore. So we have to set AWACS manually. There are also seven
         # special channels we can modify. We'll set the first channel of the main radio
         # to the intra-flight channel, and the first three emergency channels to each
         # of the flight plan's airfields. The fourth emergency channel is always
@@ -208,9 +207,6 @@ class ViggenRadioChannelAllocator(RadioChannelAllocator):
 
         for awacs in mission_data.awacs:
             flight.assign_channel(radio_id, next(channel_alloc), awacs.freq)
-
-        for jtac in mission_data.jtacs:
-            flight.assign_channel(radio_id, next(channel_alloc), jtac.freq)
 
         if flight.departure.atc is not None:
             flight.assign_channel(radio_id, 44, flight.departure.atc)  # FR24 E

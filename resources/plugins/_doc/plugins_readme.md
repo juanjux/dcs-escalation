@@ -12,7 +12,7 @@ This file is the description of the plugin.
 
 ### plugin.json
 
-The *base* and *jtacautolase* plugins both are included in the standard dcs-liberation distribution.
+The *base* plugin is included in the standard distribution.
 You can check their respective `plugin.json` files to understand how they work.
 Here's a quick rundown of the file's components :
  
@@ -41,10 +41,6 @@ Here's a quick rundown of the file's components :
 The *base* plugin contains the scripts that are going to be injected in every dcs-liberation missions.
 It is mandatory.
 
-### The *JTACAutolase* plugin
-
-This plugin replaces the vanilla JTAC functionality in dcs-liberation.
-
 ### Known third-party plugins
 
 Plugins not included with Liberation can be installed by adding them to the
@@ -66,7 +62,7 @@ Custom plugins can be enabled or disabled in the new *LUA Plugins* settings page
 
 ![LUA Plugins settings page](1.png "LUA Plugins settings page")
 
-For plugins which expose specific options (such as "use smoke" for the *JTACAutoLase* plugin), the *LUA Plugins Options* settings page lists these options.
+For plugins which expose specific options, the *LUA Plugins Options* settings page lists these options.
 
 ![LUA Plugins Options settings page](2.png "LUA Plugins settings page")
 

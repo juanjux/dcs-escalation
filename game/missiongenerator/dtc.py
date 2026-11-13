@@ -961,11 +961,11 @@ def hornet_radio_presets(flight: Any, mission_data: Optional[Any]) -> dict[str, 
 
     put(getattr(flight, "intra_flight_channel", None), flight.callsign)
     side = getattr(flight, "friendly", None)
-    for kind in ("awacs", "tankers", "jtacs"):
+    for kind in ("awacs", "tankers"):
         for support in getattr(mission_data, kind, []):
             if getattr(support, "blue", None) != side:
                 continue
-            put(support.freq, "JTAC" if kind == "jtacs" else support.callsign)
+            put(support.freq, support.callsign)
     put(getattr(getattr(flight, "package", None), "frequency", None), "PKG")
     put(getattr(getattr(flight, "departure", None), "atc", None), "DEP")
     put(getattr(getattr(flight, "arrival", None), "atc", None), "ARR")

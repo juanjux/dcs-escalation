@@ -269,7 +269,7 @@ previous map view and campaign controls are restored when selection ends.
   ([#12](https://github.com/juanjux/dcs-escalation/pull/12),
   [#20](https://github.com/juanjux/dcs-escalation/pull/20))
 - The **Support Info** page spans several pages when a package has many flights, instead
-  of silently pushing the AEW&C, tanker and JTAC tables off the bottom of one.
+  of silently pushing the AEW&C and tanker tables off the bottom of one.
   ([#69](https://github.com/juanjux/dcs-escalation/pull/69))
 
 
@@ -302,9 +302,8 @@ previous map view and campaign controls are restored when selection ends.
   time. Ground units also spot enemies, and revealing one vehicle reveals its group.
   Fixed map SAM sites stay known; frontline SAMs participate in the fog. F10 and
   weapon accuracy are unchanged. Enable **Realistic CAS (experimental)** in Mission
-  Plugins; **Moose Autolase must be disabled**. CTLD logistics can remain
-  enabled with **JTAC autolase targets** off; runtime-created units are not yet
-  registered in the fog. Legacy generated JTACs are omitted.
+  Plugins. CTLD logistics can run alongside it. Runtime-created units are
+  not yet registered in the fog.
 
   Enable **AFAC missions** separately in the plugin options to add **AFAC — Area**
   and **AFAC — Frontline**. Compatible aircraft search without attacking, report

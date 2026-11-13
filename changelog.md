@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Mission Generation]** Retire automatic frontline JTAC drones and CTLD-deployed JTACs.
 * **[UI]** Name GPS waypoints when saving them from the map or Location dialog.
 * **[UI]** Suggest the campaign name and current date when saving a new campaign for the first time (adapted from RetLab #1387).
 * **[Flight Plans]** Place attack Escort and SEAD Escort holds at ingress instead of near the target, preserving patrol and transport protection.

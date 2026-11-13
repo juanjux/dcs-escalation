@@ -49,7 +49,6 @@ class QFactionUnits(QScrollArea):
         self,
         faction: Faction,
         parent=None,
-        show_jtac: bool = False,
         show_doctrine: bool = False,
         editable: bool = False,
         in_use: Optional[Callable[[Any], Optional[str]]] = None,
@@ -74,8 +73,7 @@ class QFactionUnits(QScrollArea):
         #: every time something is added to it, and a rebuilt tick box is ticked.
         self._unticked: set[str] = set()
         self.checkboxes: dict[str, QCheckBox] = {}
-        self._create_checkboxes(show_jtac, show_doctrine)
-        self.show_jtac = show_jtac
+        self._create_checkboxes(show_doctrine)
         self.show_doctrine = show_doctrine
 
     def _add_checkboxes(
@@ -122,7 +120,7 @@ class QFactionUnits(QScrollArea):
         counter += 1
         return counter
 
-    def _create_checkboxes(self, show_jtac: bool, show_doctrine: bool) -> None:
+    def _create_checkboxes(self, show_doctrine: bool) -> None:
         counter = 0
         self.checkboxes = {}
         grid = QGridLayout()
@@ -279,25 +277,7 @@ class QFactionUnits(QScrollArea):
         grid.addWidget(QLabel("<strong>Missile units:</strong>"), counter, 0)
         counter = self._add_checkboxes(self.faction.missiles, counter, grid, hbox)
 
-        if show_jtac:
-            grid.addWidget(QLabel("<strong>JTAC</strong>"), counter, 0)
-            self.create_has_jtac_checkbox(counter, grid)
-
         self.content.setLayout(grid)
-
-    def create_has_jtac_checkbox(self, counter: int, grid: QGridLayout) -> None:
-        counter += 1
-        cb = QCheckBox("Has JTAC")
-        cb.setCheckState(
-            Qt.CheckState.Checked if self.faction.has_jtac else Qt.CheckState.Unchecked
-        )
-        cb.clicked.connect(self._set_jtac)
-        self.checkboxes["Has JTAC"] = cb
-        grid.addWidget(cb, counter, 1)
-        counter += 2
-
-    def _set_jtac(self, state: bool) -> None:
-        self.faction.has_jtac = state
 
     def _set_doctrine(self, _: int) -> None:
         self.faction.doctrine = self.doctrine_combo.currentData()
@@ -434,7 +414,7 @@ class QFactionUnits(QScrollArea):
         self.faction = faction
         self.content = QWidget()
         self.setWidget(self.content)
-        self._create_checkboxes(self.show_jtac, self.show_doctrine)
+        self._create_checkboxes(self.show_doctrine)
         self.update()
         if self.parent:
             self.parent.update()
@@ -537,10 +517,10 @@ class FactionSelection(QtWidgets.QWizardPage):
 
         # Faction units
         self.blueFactionUnits = QFactionUnits(
-            self.blueFactionSelect.currentData(), self.blueGroupLayout, show_jtac=True
+            self.blueFactionSelect.currentData(), self.blueGroupLayout
         )
         self.redFactionUnits = QFactionUnits(
-            self.redFactionSelect.currentData(), self.redGroupLayout, show_jtac=False
+            self.redFactionSelect.currentData(), self.redGroupLayout
         )
 
         self.blueGroupLayout.addWidget(blueFaction, 0, 0)

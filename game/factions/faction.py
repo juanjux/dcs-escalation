@@ -100,12 +100,6 @@ class Faction:
     # Available Naval Units
     naval_units: Set[ShipUnitType] = field(default_factory=set)
 
-    # Whether this faction has JTAC access
-    has_jtac: bool = field(default=False)
-
-    # Unit to use as JTAC for this faction
-    jtac_unit: Optional[AircraftType] = field(default=None)
-
     # doctrine
     doctrine: Doctrine = field(default=MODERN_DOCTRINE)
 
@@ -135,6 +129,8 @@ class Faction:
     weapons_introduction_year_overrides: Dict[str, int] = field(default_factory=dict)
 
     def __setstate__(self, state: dict[str, Any]) -> None:
+        state.pop("has_jtac", None)
+        state.pop("jtac_unit", None)
         self.__dict__.update(state)
         if not hasattr(self, "weapons_introduction_year_overrides"):
             self.weapons_introduction_year_overrides = {}
@@ -272,13 +268,6 @@ class Faction:
         faction.carriers = loaded_carriers
         faction.naval_units.union(faction.carriers.keys())
 
-        faction.has_jtac = json.get("has_jtac", False)
-        jtac_name = json.get("jtac_unit", None)
-        if jtac_name is not None:
-            faction.jtac_unit = AircraftType.named(jtac_name)
-        else:
-            faction.jtac_unit = None
-
         # Load doctrine
         doctrine = json.get("doctrine", "modern")
         if doctrine == "modern":
@@ -350,8 +339,6 @@ class Faction:
             "air_defense_units": [unit.variant_id for unit in self.air_defense_units],
             "naval_units": [unit.variant_id for unit in self.naval_units],
             "missiles": [unit.variant_id for unit in self.missiles],
-            "has_jtac": self.has_jtac,
-            "jtac_unit": self.jtac_unit.variant_id if self.jtac_unit else None,
             "doctrine": self.doctrine.name,
             "building_set": list(self.building_set),
             "liveries_overrides": {

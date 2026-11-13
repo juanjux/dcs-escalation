@@ -73,8 +73,6 @@
   "requirements": {},
   "carrier_names": [],
   "helicopter_carrier_names": [],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "liveries_overrides": {
     "A-10C Thunderbolt II (Suite 3)": [
       "Fictional Israel 115 Sqn Flying Dragon"

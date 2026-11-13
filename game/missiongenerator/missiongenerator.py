@@ -142,8 +142,6 @@ class MissionGenerator:
 
         self.generate_destroyed_units()
 
-        # Generate ground conflicts first so the JTACs get the first laser code (1688)
-        # rather than the first player flight with a TGP.
         self.generate_ground_conflicts()
         self.generate_air_units(tgo_generator)
 
@@ -264,7 +262,7 @@ class MissionGenerator:
                 # beacon list.
 
     def generate_ground_conflicts(self) -> None:
-        """Generate FLOTs and JTACs for each active front line."""
+        """Generate FLOTs for each active front line."""
         # Re-planned here rather than reused from the start of the turn: anything the
         # player did since -- a transfer, most of all -- has already changed what each
         # base owns, and the mission must deploy what is actually there.
@@ -289,7 +287,6 @@ class MissionGenerator:
                 player_cp.stances[enemy_cp.id],
                 enemy_cp.stances[player_cp.id],
                 self.unit_map,
-                self.radio_registry,
                 self.mission_data,
             )
             ground_conflict_gen.generate()
@@ -408,10 +405,6 @@ class MissionGenerator:
             for aewc in mission_data.awacs:
                 if aewc.blue.is_blue:
                     gen.add_awacs(aewc)
-
-            for jtac in mission_data.jtacs:
-                if jtac.blue.is_blue:
-                    gen.add_jtac(jtac)
 
             for flight in mission_data.flights:
                 gen.add_flight(flight)

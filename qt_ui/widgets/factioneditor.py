@@ -11,7 +11,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
-    QCheckBox,
     QComboBox,
     QFrame,
     QHBoxLayout,
@@ -104,14 +103,13 @@ class FactionEditor(QFactionUnits):
         super().__init__(
             faction,
             parent,
-            show_jtac=True,
             show_doctrine=True,
             editable=True,
             in_use=in_use,
         )
         self.setFrameShape(QFrame.Shape.NoFrame)
 
-    def _create_checkboxes(self, show_jtac: bool, show_doctrine: bool) -> None:
+    def _create_checkboxes(self, show_doctrine: bool) -> None:
         layout = QVBoxLayout(self.content)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(14)
@@ -142,13 +140,6 @@ class FactionEditor(QFactionUnits):
         self.doctrine_combo.setCurrentText(self.faction.doctrine.name)
         self.doctrine_combo.currentIndexChanged.connect(self._set_doctrine)
         settings.addWidget(self.doctrine_combo)
-        self.jtac = QCheckBox("JTAC support")
-        self.jtac.setChecked(self.faction.has_jtac)
-        self.jtac.setStyleSheet(
-            "QCheckBox { color: #B7C6D2; font-size: 12px; background: transparent; }"
-        )
-        self.jtac.toggled.connect(self._set_jtac)
-        settings.addWidget(self.jtac)
         head.addLayout(settings)
         layout.addWidget(headline)
 
@@ -356,8 +347,4 @@ class FactionEditor(QFactionUnits):
 
     def _set_doctrine(self, index: int) -> None:
         super()._set_doctrine(index)
-        self.faction_changed.emit(self.faction)
-
-    def _set_jtac(self, state: bool) -> None:
-        super()._set_jtac(state)
         self.faction_changed.emit(self.faction)

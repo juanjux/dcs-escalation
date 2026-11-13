@@ -18,7 +18,6 @@ from game.radio.radios import RadioFrequency
 from game.runways import RunwayData
 from game.theater import ControlPoint, FrontLine
 from .aircraft.flightdata import FlightData
-from .flotgenerator import JtacInfo
 from .missiondata import AwacsInfo, TankerInfo
 
 if TYPE_CHECKING:
@@ -70,7 +69,6 @@ class MissionInfoGenerator:
         self.comms: List[CommInfo] = []
         self.flights: List[FlightData] = []
         self.player_flights: List[FlightData] = []
-        self.jtacs: List[JtacInfo] = []
         self.tankers: List[TankerInfo] = []
         self.frontlines: List[FrontLineInfo] = []
         self.dynamic_runways: List[RunwayData] = []
@@ -101,14 +99,6 @@ class MissionInfoGenerator:
         self.flights.append(flight)
         if len(flight.client_units) > 0:
             self.player_flights.append(flight)
-
-    def add_jtac(self, jtac: JtacInfo) -> None:
-        """Adds a JTAC to the mission.
-
-        Args:
-            jtac: JTAC information.
-        """
-        self.jtacs.append(jtac)
 
     def add_tanker(self, tanker: TankerInfo) -> None:
         """Adds a tanker to the mission.

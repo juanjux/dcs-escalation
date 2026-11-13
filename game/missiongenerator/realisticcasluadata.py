@@ -332,12 +332,6 @@ def collect_registry(
                     ),
                     "equipment": profile.equipment(),
                 }
-    for jtac in mission_data.jtacs:
-        previous = roles.get(jtac.unit_name)
-        if previous is not None and previous != "JTAC":
-            raise ValueError(f"Conflicting JTAC/flight role: {jtac.unit_name}")
-        roles[jtac.unit_name] = "JTAC"
-
     excluded = set(excluded_groups)
     group_names: set[str] = set()
     unit_names: set[str] = set()
@@ -517,7 +511,7 @@ def collect_registry(
                                 )
                             if unit.name not in roles:
                                 result["warnings"].append(
-                                    f"No FlightData/JTAC role; observer omitted: {unit.name}"
+                                    f"No FlightData role; observer omitted: {unit.name}"
                                 )
                                 continue
                             observer["role"] = roles[unit.name]
@@ -580,9 +574,7 @@ def collect_registry(
                                 observer["allowPlayer"] = False
                         result["observers"].append(observer)
     for name in sorted(roles.keys() - present_air):
-        result["warnings"].append(
-            f"FlightData/JTAC absent from generated mission: {name}"
-        )
+        result["warnings"].append(f"FlightData absent from generated mission: {name}")
     for field in (
         "groups",
         "targets",

@@ -86,8 +86,6 @@
   "helicopter_carrier_names": [
     "Juan Carlos I"
   ],
-  "has_jtac": true,
-  "jtac_unit": "C-101CC Aviojet",
   "doctrine": "modern",
   "liveries_overrides": {
     "EF-18A+ Hornet": [

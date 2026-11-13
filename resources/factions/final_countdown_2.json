@@ -78,8 +78,6 @@
   "helicopter_carrier_names": [
     "LHA-4 Nassau"
   ],
-  "has_jtac": true,
-  "jtac_unit": "MQ-9 Reaper",
   "unrestricted_satnav": true,
   "doctrine": "ww2",
   "building_set": "ww2ally",

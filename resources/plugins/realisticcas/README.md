@@ -17,17 +17,9 @@ Adapters for arbitrary CTLD/MOOSE runtime-created units remain unsupported.
   immediate discovery attempts, detection rolls on, contact lifetime600s,
   approximate theater cover,
   debug off. The plugin itself remains off by default.
-- Disable **Moose Autolase**.
-  **CTLD logistics may stay enabled**: turn off its **JTAC autolase targets**
-  option. This also prevents autolase from deployed troops/vehicles, not just
-  generated JTACs. Smoke and laser-code settings do nothing with autolase off.
-  Runtime-created CTLD units are not yet registered as fog targets/observers;
-  this remains a documented limitation, not a generation blocker.
-- Combined Arms **Number of JTAC controllers** is a human slot count, not an AI
-  autolase switch; zero is fine but is not required by this compatibility check.
-- Generated legacy JTACs are omitted while Realistic CAS is enabled. Use the
-  separate **Enable AFAC missions (experimental)** option for airborne JTACs.
-  Turning the plugin off restores the original JTAC generator path.
+- CTLD logistics can run alongside Realistic CAS. Runtime-created CTLD units
+  are not yet registered as fog targets or observers.
+- Combined Arms **Number of JTAC controllers** sets the number of human slots.
 - Discovery affects only frontline groups by default, including support infantry
   and MANPADS. **Include armor groups in discovery** also conceals campaign armor
   groups from AI on both sides; it is off by default, including in existing saves.
@@ -512,8 +504,7 @@ visibility if sensor startup fails. `RealisticCAS.mission:stop()` and the native
 mission-end event stop detectors and restore visibility. A failed restoration
 keeps the recovery handle for a later retry; it is not silently reported as success.
 Lua integration tests cover these paths using DCS doubles, not native engine
-acceptance. The experimental campaign hook rejects active CTLD autolase, Moose
-Autolase, not CTLD logistics. AFAC search and marking use the same
+acceptance. AFAC search and marking use the same
 visibility and compatibility rules.
 In-engine controls 35–37 additionally passed night/IR, controlled cloud
 transmission, and RBM/GMTI with live DCS radar-on/target velocities. These validate

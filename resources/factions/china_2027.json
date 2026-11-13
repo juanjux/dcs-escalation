@@ -104,7 +104,5 @@
   "requirements": {
     "Chinese Military Assets for DCS by Currenthill": "https://www.currenthill.com/china",
     "High Digit SAMs (Ultimate Compilation)": "https://github.com/dcs-sams/HighDigitSAMs-Ultimate-Compilation"
-  },
-  "has_jtac": true,
-  "jtac_unit": "WingLoong-I"
+  }
 }

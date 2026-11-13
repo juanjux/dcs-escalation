@@ -7,7 +7,6 @@ The player kneeboard includes the following information:
 * Comm channels.
 * AWACS info.
 * Tanker info.
-* JTAC info.
 
 Things we should add:
 
@@ -55,7 +54,7 @@ from game.theater.bullseye import Bullseye
 from game.utils import Distance, UnitSystem, meters, mps, pounds
 from game.weather.weather import Weather
 from .aircraft.flightdata import FlightData
-from .briefinggenerator import CommInfo, JtacInfo, MissionInfoGenerator
+from .briefinggenerator import CommInfo, MissionInfoGenerator
 from .kneeboard_page import KneeboardPage
 from .drawingspage import DrawingsPage
 from .kneeboard_recon import airport_imagery as _airport_imagery
@@ -661,12 +660,10 @@ class SupportPage(KneeboardPage):
     """A kneeboard page containing information about support units.
 
     Rendered across as many pages as needed: the flights comm-ladder can be long
-    enough on its own to push the AEW&C / Tankers / JTAC tables off the bottom of
+    enough on its own to push the AEW&C / Tankers tables off the bottom of
     a single fixed-height page, so the content is measured and paginated instead
     of being cut off. Build instances via :meth:`paginate`, not the constructor.
     """
-
-    JTAC_REGION_MAX_LEN = 25
 
     def __init__(
         self,
@@ -690,7 +687,6 @@ class SupportPage(KneeboardPage):
         comms: List[CommInfo],
         awacs: List[AwacsInfo],
         tankers: List[TankerInfo],
-        jtacs: List[JtacInfo],
         start_time: datetime.datetime,
         dark_kneeboard: bool,
     ) -> List["SupportPage"]:
@@ -704,7 +700,7 @@ class SupportPage(KneeboardPage):
         first of its pages).
         """
         sections = cls._build_sections(
-            flight, package_flights, comms, awacs, tankers, jtacs, start_time
+            flight, package_flights, comms, awacs, tankers, start_time
         )
 
         # Height budget for section content on a page = usable content height
@@ -797,10 +793,9 @@ class SupportPage(KneeboardPage):
         comms: List[CommInfo],
         awacs: List[AwacsInfo],
         tankers: List[TankerInfo],
-        jtacs: List[JtacInfo],
         start_time: datetime.datetime,
     ) -> List[_SupportSection]:
-        """Builds the four Support sections (Package, AEW&C, Tankers, JTAC).
+        """Builds the Support sections (Package, AEW&C, Tankers).
 
         Row contents are exactly what the single-page layout produced; only the
         splitting across pages is new.
@@ -908,30 +903,6 @@ class SupportPage(KneeboardPage):
                 # (now COMM1 + COMM2) and TOT/TOS no longer run off the page edge.
                 ["Callsign", "Type", "TCN", "FREQ", "TOT / TOS"],
                 tanker_ladder,
-            )
-        )
-
-        # JTAC
-        jtac_rows = []
-        for jtac in jtacs:
-            jtac_rows.append(
-                [
-                    jtac.callsign,
-                    KneeboardPageWriter.wrap_line(
-                        jtac.region,
-                        cls.JTAC_REGION_MAX_LEN,
-                    ),
-                    jtac.code,
-                    cls._format_frequency(flight, jtac.freq),
-                ]
-            )
-        # "Laser" instead of "Laser Code": the code is 4 digits, so the longer
-        # header padded the column and pushed the FREQ column off the page.
-        sections.append(
-            _SupportSection(
-                lambda w: w.heading("JTAC"),
-                ["Callsign", "Region", "Laser", "FREQ"],
-                jtac_rows,
             )
         )
 
@@ -1620,7 +1591,6 @@ class KneeboardGenerator(MissionInfoGenerator):
                 self.comms,
                 self.awacs,
                 self.tankers,
-                self.jtacs,
                 zoned_time,
                 self.dark_kneeboard,
             )

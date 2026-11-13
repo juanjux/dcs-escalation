@@ -110,7 +110,7 @@ def test_rbs98_relocates_packed_with_a_nonblocking_warning(
         for task in group.points[0].tasks
     )
     registry = collect_registry(
-        mission, cast(Any, NS(flights=[], jtacs=[])), enabled=True, unit_map=mapping
+        mission, cast(Any, NS(flights=[])), enabled=True, unit_map=mapping
     )
     assert registry is not None and registry["airDefenseThreats"] == []
 
@@ -159,7 +159,7 @@ def test_exported_registry_and_trigger_preserve_route(
     move(world)
     mission, mapping = generate_site(world)
     registry = collect_registry(
-        mission, cast(Any, NS(flights=[], jtacs=[])), enabled=True, unit_map=mapping
+        mission, cast(Any, NS(flights=[])), enabled=True, unit_map=mapping
     )
     assert registry is not None and registry["airDefenseThreats"]
     for threat in registry["airDefenseThreats"]:

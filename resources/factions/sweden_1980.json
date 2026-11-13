@@ -46,7 +46,5 @@
     "EWR AN/FPS-117 Radar",
     "M1097 Heavy HMMWV Avenger",
     "M48 Chaparral"
-  ],
-  "has_jtac": true,
-  "jtac_unit": "SK-60"
+  ]
 }

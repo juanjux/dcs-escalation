@@ -15,7 +15,6 @@ from dcs.planes import (
     B_52H,
     B_1B,
     F_117A,
-    MQ_9_Reaper,
     E_3A,
     E_2C,
     KC130,
@@ -71,9 +70,6 @@ class TestFactionLoader(unittest.TestCase):
             self.assertEqual(len(faction.tankers), 2)
             self.assertIn(KC_135, faction.tankers)
             self.assertIn(KC130, faction.tankers)
-
-            self.assertTrue(faction.has_jtac)
-            self.assertEqual(faction.jtac_unit, MQ_9_Reaper)
 
             self.assertIn(Armor.M_1_Abrams, faction.frontline_units)
             self.assertIn(Armor.M1134_Stryker_ATGM, faction.frontline_units)
