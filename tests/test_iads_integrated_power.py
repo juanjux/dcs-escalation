@@ -2,11 +2,13 @@
 
 from typing import Any
 from operator import attrgetter
+from types import SimpleNamespace
 
 from dcs.vehicles import AirDefence, Unarmed
 import pytest
 
 from game.data.radar_db import LAUNCHER_TRACKER_PAIRS, SELF_CONTAINED_AIR_DEFENCES
+from game.server.tgos.models import TgoJs
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.theater.iadsnetwork.iadsexplain import describe
 from game.theater.iadsnetwork.iadsnetwork import IadsNetwork
@@ -14,7 +16,7 @@ from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.iadsnetwork.iadsstate import IadsState, mains_are_up
 from game.theater.iadsnetwork.power import integrated_power_units
 from game.theater.player import Player
-from game.theater.theatergroup import TheaterUnit
+from game.theater.theatergroup import IadsGroundGroup, TheaterUnit
 from pydcs_extensions import chinesemilitaryassetspack as cmap
 from pydcs_extensions import russianmilitaryassetspack as rmap
 from pydcs_extensions import ukmilitaryassetspack as ukmap
@@ -176,3 +178,53 @@ def test_legacy_grid_links_do_not_override_integrated_power() -> None:
 
 def test_separate_tracking_radars_always_exclude_integrated_power() -> None:
     assert not SELF_CONTAINED_AIR_DEFENCES.intersection(LAUNCHER_TRACKER_PAIRS)
+
+
+def test_dark_primary_battery_keeps_only_surviving_point_defence_ranges() -> None:
+    sam = site("WOLVERINE")
+    sam.control_point.name = "BASE"
+    plant = site("POWER", IadsRole.POWER_SOURCE)
+    battery = sam.groups[0]
+    battery.units.append(
+        TheaterUnit(2, "LAUNCHER", AirDefence.Kub_2P25_ln, battery.position, sam)
+    )
+    tor = TheaterUnit(3, "TOR", AirDefence.Tor_9A331, battery.position, sam)
+    shilka = TheaterUnit(4, "SHILKA", AirDefence.ZSU_23_4_Shilka, battery.position, sam)
+    point_defence = IadsGroundGroup(
+        2, "POINT DEFENCE", battery.position, [tor, shilka], sam
+    )
+    point_defence.iads_role = IadsRole.POINT_DEFENSE
+    sam.groups.append(point_defence)
+
+    network = IadsNetwork(True)
+    sam.control_point.theater = SimpleNamespace(iads_network=network)
+    sam.control_point.coalition.game.theater = sam.control_point.theater
+    network.initialize_network(iter([sam, plant]))
+    before = TgoJs.for_tgo(sam)
+    assert before.threat_ranges == [
+        battery.max_threat_range().meters,
+        tor.threat_range.meters,
+    ]
+    assert before.detection_ranges == [
+        battery.max_detection_range().meters,
+        tor.detection_range.meters,
+    ]
+
+    plant.groups[0].units[0].alive = False
+    events = GameUpdateEvents()
+    network.update_tgo(plant, events)
+    assert sam in events.updated_tgos
+    dark = TgoJs.for_tgo(sam)
+    assert dark.iads_state == "dark"
+    assert dark.threat_ranges == [tor.threat_range.meters]
+    assert dark.detection_ranges == [tor.detection_range.meters]
+    assert (
+        dark.iads_reason
+        and "Local point defences remain operational" in dark.iads_reason
+    )
+
+    tor.alive = False
+    assert TgoJs.for_tgo(sam).threat_ranges == [shilka.threat_range.meters]
+    shilka.alive = False
+    assert TgoJs.for_tgo(sam).threat_ranges == []
+    assert TgoJs.for_tgo(sam).detection_ranges == []

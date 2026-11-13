@@ -198,6 +198,7 @@ describe("AirDefenseRangeLayer", () => {
     state: string | null,
     blind = false,
     detection_ranges: number[] = [],
+    threat_ranges: number[] = [500],
   ) => ({
     tgos: {
       tgos: {
@@ -209,7 +210,7 @@ describe("AirDefenseRangeLayer", () => {
           blue: false,
           position: { lat: 10, lng: 20 },
           units: [],
-          threat_ranges: [500],
+          threat_ranges,
           detection_ranges,
           dead: false,
           purchasable: true,
@@ -224,22 +225,29 @@ describe("AirDefenseRangeLayer", () => {
     },
   });
 
-  // A site Skynet will not switch on gets no ring at all: it will not see and it will
-  // not shoot for the whole mission, so drawing the circle it would have had is drawing
-  // a threat that is not there.
-  it("draws no ring at all for a dark site", () => {
-    renderWithProviders(<AirDefenseRangeLayer blue={false} />, {
-      preloadedState: withIadsState("dark") as any,
-    });
-    expect(mockCircle).not.toHaveBeenCalled();
-  });
+  it.each([false, true])(
+    "draws no rings for a dark site without point defences (detection %s)",
+    (detection) => {
+      renderWithProviders(
+        <AirDefenseRangeLayer blue={false} detection={detection} />,
+        { preloadedState: withIadsState("dark", false, [], []) as any },
+      );
+      expect(mockCircle).not.toHaveBeenCalled();
+    },
+  );
 
-  it("draws no detection ring for a dark site either", () => {
-    renderWithProviders(<AirDefenseRangeLayer blue={false} detection />, {
-      preloadedState: withIadsState("dark", false, [400]) as any,
-    });
-    expect(mockCircle).not.toHaveBeenCalled();
-  });
+  it.each([false, true])(
+    "draws point-defence rings even when the main battery is dark (detection %s)",
+    (detection) => {
+      renderWithProviders(
+        <AirDefenseRangeLayer blue={false} detection={detection} />,
+        { preloadedState: withIadsState("dark", false, [400], [500]) as any },
+      );
+      expect(mockCircle).toHaveBeenCalledWith(
+        expect.objectContaining({ radius: detection ? 400 : 500 }),
+      );
+    },
+  );
 
   it.each([false, true])(
     "keeps threat rings visible during relocation (blue %s)",

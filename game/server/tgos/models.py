@@ -22,7 +22,8 @@ from game.missiongenerator.motorpoolpopulator import (
     select_capped,
 )
 from game.server.leaflet import LeafletPoint
-from game.theater.iadsnetwork.iadsstate import IadsStatus
+from game.theater.iadsnetwork.iadsstate import IadsState, IadsStatus
+from game.theater.theatergroup import IadsGroundGroup
 from game.theater.theatergroundobject import (
     AirDefenceKind,
     IadsGroundObject,
@@ -184,6 +185,17 @@ class TgoJs(BaseModel):
                 category = "aa"
             elif kind is AirDefenceKind.RADAR:
                 category = "ewr"
+        iads = TgoJs._iads_status(tgo)
+        dark = iads is not None and iads.state is IadsState.DARK
+        # A dark network node only controls its own battery. Separate point-defence
+        # and native groups keep their own coverage.
+        groups = [
+            group
+            for group in tgo.groups
+            if not dark
+            or not isinstance(group, IadsGroundGroup)
+            or not group.iads_role.participate
+        ]
         # Only include non-zero ranges: a zero-radius circle renders as a stray
         # dot (normally hidden under the unit icon, but visible once the icon is
         # hidden by the destroyed-object layers). Matches ControlPointJs.
@@ -198,12 +210,12 @@ class TgoJs(BaseModel):
                 if relocating
                 else group.max_threat_range().meters
             )
-            for group in tgo.groups
+            for group in groups
         )
         threat_ranges = [radius for radius in ranges if radius > 0]
         detection_ranges = [
             meters
-            for meters in (group.max_detection_range().meters for group in tgo.groups)
+            for meters in (group.max_detection_range().meters for group in groups)
             if meters > 0
         ]
         jamming_range = TgoJs._jamming_range_of(tgo)
@@ -219,7 +231,6 @@ class TgoJs(BaseModel):
             and tgo.target_position is not None
         ):
             destination = LeafletPoint.from_latlng(tgo.target_position.latlng())
-        iads = TgoJs._iads_status(tgo)
         reserve_units: list[str] = []
         expected_inventory: list[AggregateGroundUnitEntry] = []
         unrendered_reserve: list[AggregateGroundUnitEntry] = []
@@ -298,7 +309,16 @@ class TgoJs(BaseModel):
             movement_destination_label=TgoJs._movement_destination_label(tgo),
             destination=destination,
             iads_state=iads.state.value if iads is not None else None,
-            iads_reason=iads.reason if iads is not None else None,
+            iads_reason=(
+                iads.reason
+                + (
+                    " Local point defences remain operational."
+                    if dark and threat_ranges
+                    else ""
+                )
+                if iads is not None
+                else None
+            ),
             iads_blind=iads is not None and iads.blind,
         )
 
