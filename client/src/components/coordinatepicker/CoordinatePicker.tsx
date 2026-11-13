@@ -140,8 +140,9 @@ export default function CoordinatePicker() {
               {copied ? "Copied" : "Copy"}
             </button>
             <SavePoint
+              key={`${picked.at.lat},${picked.at.lng}`}
               at={picked.at}
-              name={picked.text}
+              defaultName={picked.text}
               elevationFt={picked.elevationFt}
             />
             <div className="cp-others">

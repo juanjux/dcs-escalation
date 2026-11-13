@@ -5,16 +5,17 @@ import { useState } from "react";
 
 export default function SavePoint(props: {
   at: LatLng;
-  name: string;
+  defaultName: string;
   elevationFt?: number;
 }) {
   const [said, setSaid] = useState("");
   const [busy, setBusy] = useState(false);
+  const [name, setName] = useState<string | null>(null);
   const [feet, setFeet] = useState<string>(
     props.elevationFt === undefined ? "" : String(props.elevationFt),
   );
 
-  const save = async () => {
+  const save = async (name: string) => {
     setBusy(true);
     setSaid("");
     try {
@@ -23,7 +24,7 @@ export default function SavePoint(props: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kind: "waypoint",
-          name: props.name,
+          name: name.trim() || props.defaultName,
           lat: props.at.lat,
           lng: props.at.lng,
           altitude_ft: Math.max(0, Math.round(Number(feet) || 0)),
@@ -39,6 +40,7 @@ export default function SavePoint(props: {
         return;
       }
       window.dispatchEvent(new Event("saved-points-changed"));
+      setName(null);
       setSaid("Saved to campaign");
     } catch (error) {
       console.error("Could not save the point", error);
@@ -64,12 +66,59 @@ export default function SavePoint(props: {
         />
         ft
       </label>
-      <div className="cp-save-buttons">
-        <button disabled={busy} onClick={() => void save()}>
-          Save as waypoint
-        </button>
-      </div>
-      {said !== "" && <div className="cp-save-said">{said}</div>}
+      {name === null ? (
+        <div className="cp-save-buttons">
+          <button
+            type="button"
+            onClick={() => {
+              setSaid("");
+              setName(props.defaultName);
+            }}
+          >
+            Save as waypoint
+          </button>
+        </div>
+      ) : (
+        <form
+          className="cp-save-asking"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!busy) void save(name);
+          }}
+        >
+          <label className="cp-save-name">
+            Waypoint name
+            <input
+              type="text"
+              autoFocus
+              onFocus={(event) => event.target.select()}
+              value={name}
+              disabled={busy}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </label>
+          <div className="cp-save-buttons">
+            <button type="submit" disabled={busy}>
+              Save
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setName(null);
+                setSaid("");
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+      {said !== "" && (
+        <div className="cp-save-said" role="status">
+          {said}
+        </div>
+      )}
     </div>
   );
 }
