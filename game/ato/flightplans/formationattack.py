@@ -150,23 +150,22 @@ class FormationAttackFlightPlan(FormationFlightPlan, ABC):
 
     @property
     def push_time(self) -> datetime:
-        if self.layout.pre_push_refuel is None or self.layout.hold is None:
+        hold = self.layout.hold
+        if hold is None or (
+            self.layout.pre_push_refuel is None and not self.flight.departure.is_offmap
+        ):
             return super().push_time
-        points = [
-            self.layout.hold,
-            self.layout.pre_push_refuel,
-            *self.layout.nav_to,
-            self.layout.join,
-        ]
-        duration = sum(
-            (
-                self.total_time_between_waypoints(a, b)
-                for a, b in zip(points, points[1:])
-            ),
+        tanker = self.layout.pre_push_refuel
+        points = [hold, tanker] if tanker is not None else [hold]
+        # The hold's dwell is planned before its departure.
+        return self.join_time - self._time_to_join(points) + self.hold_duration
+
+    def _time_to_join(self, points: list[FlightWaypoint]) -> timedelta:
+        route = [*points, *self.layout.nav_to, self.layout.join]
+        return sum(
+            (self.total_time_between_waypoints(a, b) for a, b in zip(route, route[1:])),
             timedelta(),
         )
-        # The hold's dwell is planned before its departure, not after it.
-        return self.join_time - duration + self.hold_duration
 
     @property
     def split_time(self) -> datetime:
@@ -208,10 +207,8 @@ class FormationAttackFlightPlan(FormationFlightPlan, ABC):
             return self.initial_time
         elif waypoint in self.layout.targets:
             return self.tot
-        elif waypoint is self.layout.pre_push_refuel and self.layout.hold is not None:
-            return self.push_time + self.travel_time_between_waypoints(
-                self.layout.hold, waypoint
-            )
+        elif waypoint is self.layout.pre_push_refuel:
+            return self.join_time - self._time_to_join([waypoint])
         return super().tot_for_waypoint(waypoint)
 
 
@@ -302,9 +299,6 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
                 )
             )
 
-        hold = None
-        if not self.flight.is_helo:
-            hold = builder.hold(self._hold_point())
         join_pos = self.package.waypoints.join
         if self.flight.is_helo:
             join_pos = self.package.waypoints.ingress
@@ -312,7 +306,18 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
         join = builder.join(join_pos)
         split = builder.split(self._get_split())
         refuel = self._build_refuel(builder)
-        pre_refuel = prerefuel.build_stop(self.flight, join.position) if hold else None
+        pre_refuel = (
+            prerefuel.build_stop(self.flight, join.position)
+            if not self.flight.is_helo
+            else None
+        )
+        hold = None
+        if not self.flight.is_helo:
+            hold_position = self._hold_point(
+                pre_refuel.position if pre_refuel else join.position
+            )
+            if hold_position is not None:
+                hold = builder.hold(hold_position)
 
         ingress = builder.ingress(
             ingress_type, self.package.waypoints.ingress, self.package.target
@@ -471,12 +476,31 @@ class FormationAttackBuilder(IBuilder[FlightPlanT, LayoutT], ABC):
         else:
             return builder.strike_area(location)
 
-    def _hold_point(self) -> Point:
+    def _hold_point(self, next_position: Point) -> Point | None:
         assert self.package.waypoints is not None
+        departure = self.flight.departure
+        origin = departure.position
+        if departure.is_offmap:
+            # The departure is already an airborne entry point. Use the first
+            # leg so reaching the hold never requires a turn back toward entry.
+            path = self.coalition.nav_mesh.shortest_path(origin, next_position)
+            first_turn = next(
+                (point for point in path if point.distance_to_point(origin) > 1),
+                origin,
+            )
+            leg_distance = origin.distance_to_point(first_turn)
+            # Leave room to reach and exit the orbit. Short routes can use the
+            # scheduled air spawn to make their rendezvous directly.
+            if leg_distance < nautical_miles(4).meters:
+                return None
+            hold_distance = min(leg_distance / 2, self.doctrine.hold_distance.meters)
+            hold = origin.lerp(first_turn, hold_distance / leg_distance)
+            if self.threat_zones.path_threatened(origin, hold):
+                return None
+            return hold
         aligned = alignpoint.hold_point(self.flight, self.coalition.doctrine)
         if aligned is not None:
             return aligned
-        origin = self.flight.departure.position
         target = self.package.target.position
         join = self.package.waypoints.join
         ip = self.package.waypoints.ingress

@@ -105,10 +105,6 @@ class Builder(FormationAttackBuilder[EscortFlightPlan, FormationAttackLayout]):
             target.position = self.package.waypoints.join
         ingress.only_for_player = True
         target.only_for_player = True
-        hold = None
-        if not (self.flight.is_helo or non_formation_escort):
-            hold = builder.hold(self._hold_point())
-
         join_pos = (
             WaypointBuilder.perturb(self.package.waypoints.ingress, feet(500))
             if self.flight.is_helo
@@ -148,6 +144,11 @@ class Builder(FormationAttackBuilder[EscortFlightPlan, FormationAttackLayout]):
 
         refuel = self._build_refuel(builder)
 
+        hold = None
+        if not (self.flight.is_helo or non_formation_escort):
+            hold_position = self._hold_point(join.position)
+            if hold_position is not None:
+                hold = builder.hold(hold_position)
         departure = builder.takeoff(self.flight.departure)
         nav_to = builder.nav_path(
             hold.position if hold else departure.position,

@@ -134,7 +134,7 @@ def test_empty_motorpool_strike_uses_target_area_waypoint(monkeypatch: Any) -> N
     )
     builder = cast(Any, object.__new__(StrikeFlightPlan.builder_type()))
     builder.flight = flight
-    builder._hold_point = lambda: Point(0, 0, terrain)
+    builder._hold_point = lambda _: Point(0, 0, terrain)
     builder._get_split = lambda: Point(0, 0, terrain)
     builder._build_refuel = lambda _builder: None
 
@@ -335,7 +335,7 @@ def _layout_with_fake_builder(
 ) -> FormationAttackLayout:
     builder = cast(Any, object.__new__(builder_type))
     builder.flight = flight
-    builder._hold_point = lambda: flight.package.target.position
+    builder._hold_point = lambda _: flight.package.target.position
     builder._get_split = lambda: flight.package.target.position
     builder._build_refuel = lambda _builder: None
     monkeypatch.setattr(
