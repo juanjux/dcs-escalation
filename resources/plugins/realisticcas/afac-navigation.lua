@@ -372,6 +372,23 @@ if done then s.finished=true end
 return done==true
 end)()]],name,revision,name,name,name,seconds)
     end
+    local function patrolProgress(name,revision,index,count)
+      local progress=string.format([[
+local s=(RealisticCAS.afacNavigation or {})[%q]
+if not s or not s.active or s.revision~=%d then return end
+s.nextPoint=%d
+]],name,revision,index%count+1)
+      if index<count then return progress end
+      return progress..string.format([[
+local g=Group.getByName(%q)
+if not g or not g:isExist() then return end
+for _,u in ipairs(g:getUnits())do
+  if u:isExist() and u:getPlayerName() then return end
+end
+g:getController():setCommand({id='SwitchWaypoint',
+  params={fromWaypointIndex=%d,goToWaypointIndex=2}})
+]],name,index+1)
+    end
     local function push(name,r,controller,source,plan)
       assert(#plan.path+1<r.meta.navigation.exitWaypoint, 'AFAC route lacks safe approach slots')
       deactivate(name)
@@ -384,24 +401,26 @@ end)()]],name,revision,name,name,name,seconds)
       end
       points[1]=waypoint(source,source.y,r.meta.navigation.speed)
       for index,p in ipairs(plan.path)do
-        -- Climb during the validated safe transit, not only after reaching its end.
         local point=waypoint(p,plan.altitude,r.meta.navigation.speed)
+        local command=plan.cloud and patrolProgress(name,r.revision,index,#plan.path) or string.format(
+          'local s=(RealisticCAS.afacNavigation or {})[%q]; if s and s.revision==%d then s.nextPoint=%d end',
+          name,r.revision,index+1)
         point.task.params.tasks[1]={number=1,auto=false,enabled=true,id='WrappedAction',
-          params={action={id='Script',params={command=string.format(
-            'local s=(RealisticCAS.afacNavigation or {})[%q]; if s and s.revision==%d then s.nextPoint=%d end',
-            name,r.revision,index+1)}}}}
+          params={action={id='Script',params={command=command}}}}
         points[index+1]=point
       end
       if plan.escape then
         points[1].speed=r.fastSpeed or r.meta.navigation.speed
         points[2].speed=r.fastSpeed or r.meta.navigation.speed
       end
-      local last=points[#plan.path+1]
-      last.task.params.tasks[2]={number=2,auto=false,enabled=true,id='ControlledTask',params={
-        task={id='Orbit',params={
-        pattern='Circle',point={x=plan.point.x,y=plan.point.z},
-        altitude=plan.altitude,speed=r.meta.navigation.speed}},
-        stopCondition={condition=condition(name,r.revision,r.meta.stationSeconds)}}}
+      if not plan.cloud then
+        local last=points[#plan.path+1]
+        last.task.params.tasks[2]={number=2,auto=false,enabled=true,id='ControlledTask',params={
+          task={id='Orbit',params={
+          pattern='Circle',point={x=plan.point.x,y=plan.point.z},
+          altitude=plan.altitude,speed=r.meta.navigation.speed}},
+          stopCondition={condition=condition(name,r.revision,r.meta.stationSeconds)}}}
+      end
       if plan.waiting or(r.plan and r.plan.waiting)then
         points[1].task.params.tasks[#points[1].task.params.tasks+1]={number=#points[1].task.params.tasks+1,
           auto=false,enabled=true,id='WrappedAction',params={action={id='Option',
@@ -414,7 +433,10 @@ end)()]],name,revision,name,name,name,seconds)
       r.applied=true;r.plan=plan
       env.info(string.format('REALISTIC_CAS_AFAC_NAV|PLAN|%s|revision=%d|altitude=%.0f|points=%d',
         name,r.revision,plan.altitude,#plan.path))
-      if not plan.waiting then
+      if plan.cloud then
+        r.climbingFromCloud=true
+        notice(name,r,string.format('searching below the cloud base at %.0f m MSL.',plan.altitude))
+      elseif not plan.waiting then
         notice(name,r,string.format('avoiding known air defence; orbit %.0f m MSL.',plan.altitude))
       end
       return true
@@ -504,10 +526,10 @@ end)()]],name,revision,name,name,name,seconds)
       local center={x=(n.points[1].x+n.points[2].x)/2,z=(n.points[1].z+n.points[2].z)/2}
       local ground=land.getHeight({x=center.x,y=center.z})
       local altitude=n.altitude+(n.altType=='RADIO' and ground or 0)
-      local maxAltitude=ceiling and ceiling>300 and ceiling-300 or altitude
-      maxAltitude=math.min(maxAltitude,ground+(c.probability and c.probability.opticalMaxAGL or 7010.4))
+      local aircraftLimit=ceiling and ceiling>300 and ceiling-300 or altitude
+      local maxAltitude=math.min(aircraftLimit,ground+(c.probability and c.probability.opticalMaxAGL or 7010.4))
       local clouds=c.afacAvoidance.clouds
-      if clouds then maxAltitude=math.min(maxAltitude,clouds.base-300) end
+      if clouds then maxAltitude=math.min(maxAltitude,clouds.base-150) end
       local turnSpeed=math.max(n.speed,r.measuredSpeed)
       local footprint=math.max(500,turnSpeed*turnSpeed/3.5)*1.5+250
       local input={source=p,zone=m.zone,points=n.points,altitude=altitude,
@@ -538,7 +560,25 @@ end)()]],name,revision,name,name,name,seconds)
           return
         end
       end
-      if r.applied and not r.plan.waiting and state and state.active and not state.finished and
+      local lowPatrol=r.applied and r.plan.cloud
+      if start and clouds and clouds.visualTransmission and clouds.visualTransmission<=0.4 and
+        (p.y>=clouds.base or lowPatrol)then
+        if lowPatrol and state and state.active and A.cloudPatrolSafe(input,r.plan,state.nextPoint)then return end
+        local count=n.searchPath and #n.searchPath or #n.points
+        if count+1<n.exitWaypoint then
+          local patrol=A.cloudPatrol(input,maxAltitude)
+          if patrol then push(name,r,controller,p,patrol);return end
+        end
+        -- A blocked descent does not remove the previously usable altitude.
+        input.maxAltitude=math.max(maxAltitude,math.min(aircraftLimit,math.max(p.y,altitude)))
+      end
+      if lowPatrol or r.climbingFromCloud then
+        -- A low patrol may have to climb before it can safely rejoin the original route.
+        input.maxAltitude=math.max(input.maxAltitude,math.min(altitude,aircraftLimit))
+        input.checkLowEntry=p.y<altitude-100
+        r.climbingFromCloud=input.checkLowEntry
+      end
+      if r.applied and not lowPatrol and not r.plan.waiting and state and state.active and not state.finished and
         p.y<r.plan.altitude-100 and A.requirement(input) and A.safePlan(input,r.plan,state.nextPoint) then
         if not start and not r.plan.approach and RealisticCAS.AFACSearch.inside(p,m.zone) then
           RealisticCAS.afacStations=RealisticCAS.afacStations or {};RealisticCAS.afacStations[name]=timer.getTime()
@@ -557,7 +597,7 @@ end)()]],name,revision,name,name,name,seconds)
         if not start and not plan.approach and RealisticCAS.AFACSearch.inside(p,m.zone) then
           RealisticCAS.afacStations=RealisticCAS.afacStations or {};RealisticCAS.afacStations[name]=timer.getTime()
         end
-        local changed=not r.applied or r.plan.waiting~=plan.waiting or A.distance(r.plan.point,plan.point)>250 or
+        local changed=not r.applied or lowPatrol or r.plan.waiting~=plan.waiting or A.distance(r.plan.point,plan.point)>250 or
           math.abs(r.plan.altitude-plan.altitude)>100
         if not changed then
           local remaining=state and state.nextPoint or 1

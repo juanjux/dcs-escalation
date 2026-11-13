@@ -91,6 +91,64 @@ class AfacNavigationTests(unittest.TestCase):
         assert(#assigned==0 and not RealisticCAS.afacAbort.blue)
         """)
 
+    def test_below_cloud_patrol_preserves_coverage_and_recovery(self) -> None:
+        for scenario in ("clear", "local", "broad", "terrain", "thin", "area", "new"):
+            with self.subTest(scenario=scenario):
+                self.setUp()
+                self.rt.globals().scenario = scenario
+                self.rt.execute("""
+                local n=config.observers[1].afac.navigation
+                n.altitude=6000
+                observer.point={x=-12000,y=6000,z=0}
+                if scenario~='area' then
+                  n.searchPath={{x=-10000,z=4000},{x=10000,z=4000},
+                    {x=10000,z=-4000},{x=-10000,z=-4000}}
+                  n.exitWaypoint=8
+                  for _=1,4 do table.insert(n.route,3,n.route[2])end
+                end
+                config.afacAvoidance.clouds={base=3000,top=4500,
+                  visualTransmission=scenario=='thin' and .8 or .05}
+                if scenario=='local' or scenario=='broad' then
+                  local t=config.airDefenseThreats[1]
+                  t.radius=scenario=='local' and 1500 or 25000
+                  known()
+                elseif scenario=='new' then
+                  config.airDefenseThreats[1].radius=12000
+                elseif scenario=='terrain' then
+                  land.getHeight=function()return 2900 end
+                end
+                beginNavigation();tick()
+                assert(not RealisticCAS.afacAbort.blue and not RealisticCAS.afacReturn.blue)
+                if scenario=='broad' or scenario=='terrain' or scenario=='thin' then
+                  assert(#assigned==0)
+                  return
+                end
+                assert(#assigned==1 and RealisticCAS.afacStations.blue==0)
+                local points=assigned[1].params.route.points
+                local count=n.searchPath and #n.searchPath or #n.points
+                for i=2,count+1 do
+                  assert(points[i].alt==2850 and points[i].alt_type=='BARO')
+                  if scenario=='local' then assert(math.abs(points[i].y)>4000)end
+                end
+                assert(points[#points].type=='Land' and points[#points].airdromeId==12)
+                local last=points[count+1].task.params.tasks[1]
+                assert(loadstring(last.params.action.params.command))()
+                assert(switches[1].params.fromWaypointIndex==count+1)
+                assert(switches[1].params.goToWaypointIndex==2)
+                for _=1,6 do tick()end
+                assert(#assigned==1)
+                if scenario=='new' then
+                  observer.point.x=-18000;observer.point.y=2850
+                  known();tick()
+                  assert(#assigned==2 and orbit(assigned[2]).params.altitude==6000)
+                  assert(not RealisticCAS.afacReturn.blue)
+                  return
+                end
+                observer.fuel=.1;tick()
+                assert(RealisticCAS.afacReturn.blue=='BINGO fuel')
+                assert(assigned[#assigned].params.route.points[#points].airdromeId==12)
+                """)
+
     def test_missing_tracking_radar_does_not_block_with_a_live_search_radar(self):
         self.rt.execute("""
         search=unit('search',red,'CH_HQ22_SR',0,0)

@@ -18,10 +18,10 @@ do
     end
     return true
   end
-  function A.leg(a,b,alt,threats,escape)
+  function A.leg(a,b,alt,threats,escape,padding)
     for _,t in ipairs(threats) do
       if below(alt,t) then
-        local radius=t.radius+1000
+        local radius=t.radius+(padding or 1000)
         local closest=segmentDistance(a,b,t.point)
         if closest<=radius then
           local start=distance(a,t.point)
@@ -73,6 +73,55 @@ do
     end
     return true
   end
+  function A.patrolEntrySafe(input,point,altitude)
+    local minimum=math.min(input.source.y,altitude)
+    return A.leg(input.source,point,minimum,input.threats,false,1000+input.footprint) and
+      terrainSafe(input,input.source,point,altitude)
+  end
+  function A.cloudPatrolSafe(input,plan,nextPoint)
+    local path,altitude=plan.path,plan.altitude
+    if altitude>input.maxAltitude then return false end
+    local zone={radius=input.zone.radius-input.footprint,points=input.zone.points}
+    local level={source={y=altitude},height=input.height,clearance=input.clearance,footprint=input.footprint}
+    for i,p in ipairs(path)do
+      local q=path[i%#path+1]
+      if zone.radius<=0 or not RealisticCAS.AFACSearch.inside(p,zone) or
+        not A.leg(p,q,altitude,input.threats,false,1000+input.footprint) or
+        not terrainSafe(level,p,q,altitude) or not orbitTerrainSafe(level,p,altitude) then return false end
+    end
+    return not nextPoint or A.patrolEntrySafe(input,path[nextPoint],altitude)
+  end
+  function A.cloudPatrol(input,altitude)
+    local path=input.searchPath or input.points
+    local first,last=input.points[1],input.points[2]
+    local length=distance(first,last)
+    if length<1 and not input.searchPath then return nil end
+    local dx,dz=0,1
+    if length>1 then dx,dz=(first.z-last.z)/length,(last.x-first.x)/length end
+    -- Translate the complete circuit within its assigned zone. This keeps the
+    -- original length and width, rather than replacing the patrol with a hold.
+    for _,fraction in ipairs({0,0.25,-0.25,0.5,-0.5,0.75,-0.75})do
+      local shift=input.zone.radius*fraction
+      local route={}
+      for i,p in ipairs(path)do route[i]={x=p.x+shift*dx,z=p.z+shift*dz}end
+      local plan={cloud=true,altitude=altitude,path=route}
+      if A.cloudPatrolSafe(input,plan)then
+        local entry,best
+        for i,p in ipairs(route)do
+          local d=distance(input.source,p)
+          if (not best or d<best) and A.patrolEntrySafe(input,p,altitude)then entry,best=i,d end
+        end
+        if entry then
+          for _=1,entry-1 do
+            local p=table.remove(route,1)
+            route[#route+1]=p
+          end
+          plan.point=route[1]
+          return plan
+        end
+      end
+    end
+  end
   -- Keep an in-progress climb only while its remaining native route is safe
   -- against current knowledge. A new threat or lower altitude cap invalidates it.
   function A.safePlan(input,plan,nextPoint)
@@ -96,7 +145,7 @@ do
   end
   function A.requirement(input)
     local needed,unknown=input.altitude,false
-    local hazardous=false
+    local hazardous=input.checkLowEntry and not A.patrolEntrySafe(input,input.points[1],input.altitude)
     local legs={}
     if input.searchPath then
       local path=input.searchPath

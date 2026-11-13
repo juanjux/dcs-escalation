@@ -141,7 +141,11 @@ payload smoke in green, red, orange or blue. Each aircraft keeps its assigned
 smoke colour; colours repeat if necessary. Only one AFAC reserves an enemy group
 at a time. Discovery and effective marking award separate pilot experience.
 AI flights climb above verified threat ceilings when aircraft and cloud limits
-permit, otherwise keep lateral separation. Newly revealed threats can trigger an
+permit, otherwise keep lateral separation. On station, AI flights can search
+at least 150 m below the estimated base of a dense cloud layer if the descent and
+patrol circuit clear terrain and known defences. They can shift the circuit
+inside the assigned area to bypass a local obstruction. If no complete lower
+circuit fits, they stay at a safe altitude. Newly revealed threats can trigger an
 urgent escape outside the patrol zone; recovery legs are also checked. A blocked
 recovery causes a warning and a safe hold where possible, with fuel still burning.
 If defences block the assigned work area, AFACs wait in a reachable safe orbit
