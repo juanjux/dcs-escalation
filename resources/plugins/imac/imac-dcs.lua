@@ -57,7 +57,8 @@ do
       env.info(string.format('IMAC|DEBUG|t=%.1f|side=%d|group=%s|%s|%s',now,side,group,topic,detail))
       -- Routine authority and availability details remain available in dcs.log.
       if topic=='authority' or (topic=='availability' and
-        (detail=='not airborne' or detail=='flight unavailable' or detail=='landing approach')) then return end
+        (detail=='not airborne' or detail=='flight unavailable' or detail=='landing approach' or
+         detail=='no active command authority')) then return end
       if screen==false then return end
       local message='IMAC DEBUG ['..(side==2 and 'BLUE' or 'RED')..'] '..group..': '..topic..' - '..detail
       if topic~='active' then showDebug(side,side,4,now,message) end
@@ -338,8 +339,8 @@ do
       if not controller then return false,'not an airborne AI group' end
       local task
       if order.kind=='samAvoid' then
-        -- Replace the root mission to remove native EngageTargets and an
-        -- already-running pursuit. A pushed Orbit would retain en-route tasks.
+        -- Replace the root mission to end the existing native pursuit.
+        -- The escape leg stays clear of engagement tasks.
         local q=order.data.point
         local speed=math.max(200,p.speed)
         local function waypoint(point)
@@ -348,8 +349,14 @@ do
             task={id='ComboTask',params={tasks={}}}}
         end
         local finish=waypoint(q)
-        finish.task.params.tasks[1]={id='Orbit',enabled=true,auto=false,number=1,
-          params={pattern='Circle',point={x=q.x,y=q.z},altitude=q.y,speed=speed}}
+        -- Engage contacts in the cleared orbit area before starting the orbit.
+        -- The commander checks at least 17 km of SAM clearance at this point.
+        finish.task.params.tasks={
+          {id='EngageTargetsInZone',enabled=true,auto=false,number=1,
+            params={x=q.x,y=q.z,zoneRadius=10000,targetTypes={'Air'},value='Air',priority=0}},
+          {id='Orbit',enabled=true,auto=false,number=2,
+            params={pattern='Circle',point={x=q.x,y=q.z},altitude=q.y,speed=speed}},
+        }
         controller:setTask({id='Mission',params={airborne=true,route={points={waypoint(p.point),finish}}}})
         return true
       elseif order.kind=='intercept' then

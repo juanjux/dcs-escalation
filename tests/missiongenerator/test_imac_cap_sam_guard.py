@@ -172,8 +172,12 @@ def test_red_native_patrol_has_the_same_guard() -> None:
     """)
 
 
-def test_safety_route_replaces_native_enroute_tasks_and_restores_them_once() -> None:
+@pytest.mark.parametrize("lose_awacs", [False, True])
+def test_safety_route_keeps_local_defence_and_restores_native_patrol_once(
+    lose_awacs: bool,
+) -> None:
     lua = native_runtime()
+    lua.globals().loseAwacs = lose_awacs
     lua.execute("""
         cap.velocity.x=300
         sam=add('SAM',1,28000,false);sam.alt=0
@@ -189,8 +193,20 @@ def test_safety_route_replaces_native_enroute_tasks_and_restores_them_once() -> 
         assert(#groups.CAP.pushes==0 and #groups.CAP.rtbs==1)
         local safe=groups.CAP.rtbs[1].params.route.points
         assert(#safe[1].task.params.tasks==0)
-        assert(safe[2].task.params.tasks[1].id=='Orbit')
-        sam.life=0;cap.velocity.x=0;tick(15);tick(75)
+        local tasks=safe[2].task.params.tasks
+        assert(#tasks==2 and tasks[1].id=='EngageTargetsInZone' and tasks[2].id=='Orbit')
+        local zone=tasks[1].params
+        assert(zone.x==safe[2].x and zone.y==safe[2].y)
+        assert(zone.zoneRadius==10000 and #zone.targetTypes==1 and zone.targetTypes[1]=='Air')
+        assert(EscalationIMAC.geometry.distance({x=zone.x,z=zone.y},{x=28000,z=0})>
+          5000+zone.zoneRadius)
+        cap.velocity.x=0
+        if loseAwacs then
+          awacs.life=0;tick(15)
+          assert(EscalationIMAC.status(2):find('command authority: unavailable',1,true))
+        else
+          sam.life=0;tick(15);tick(75)
+        end
         assert(EscalationIMAC.instance.states.CAP.order==nil)
         assert(#groups.CAP.rtbs==2)
         local restored=groups.CAP.rtbs[2].params.route.points

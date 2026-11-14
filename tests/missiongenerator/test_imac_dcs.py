@@ -681,7 +681,8 @@ def test_opfor_debug_has_its_own_budget_and_keeps_routine_status_off_screen() ->
     lua.execute("""
         testIO.debug(1,'commander','authority','AWACS test',true)
         testIO.debug(1,'commander','status','test snapshot',false)
-        for _,reason in ipairs({'landing approach','not airborne','flight unavailable'})do
+        for _,reason in ipairs({'landing approach','not airborne','flight unavailable',
+          'no active command authority'})do
           testIO.debug(1,'RED PATROL','availability',reason,true)
         end
         assert(#messages==0)
@@ -719,6 +720,7 @@ def test_opfor_debug_does_not_mirror_normal_order_reports() -> None:
     [
         ("cap.air=false", "not airborne"),
         ("cap.active=false", "flight unavailable"),
+        ("awacs.radar=false", "no active command authority"),
         (
             "cfg.flights[1].returnInterceptor=true;cfg.flights[1].returnStartIndex=2;"
             "cfg.flights[1].approachIndex=5;cap.x=-50000;cap.alt=1000",
@@ -739,7 +741,7 @@ def test_routine_availability_debug_stays_in_the_log_without_using_screen_budget
         "(function() for _,m in ipairs(messages) do "
         "if m.text:find(quietReason,1,true) then return false end end return true end)()"
     )
-    lua.execute("cap.air=true;cap.active=true;cap.fuel=.1;tick(75)")
+    lua.execute("awacs.radar=true;cap.air=true;cap.active=true;cap.fuel=.1;tick(75)")
     assert "fuel at BINGO reserve (10% fuel, 30% reserve)" in lua.eval(
         "messages[#messages].text"
     )
