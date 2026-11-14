@@ -3709,7 +3709,7 @@ class Settings:
             for name in ("ctld.autolase", "ctld.jtacsmoke", "ctld.fc3LaserCode"):
                 plugins.pop(name, None)
             for name in tuple(plugins):
-                if name == "MooseAutolase" or name.startswith("MooseAutolase."):
+                if name.partition(".")[0] in {"MooseAutolase", "MooseSoundhandler"}:
                     plugins.pop(name)
         # restore Enum & timedelta types
         s = Settings()
