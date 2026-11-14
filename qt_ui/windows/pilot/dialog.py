@@ -27,6 +27,7 @@ from qt_ui.uiconstants import app_settings
 from game.game import Game
 from game.squadrons.pilot import Pilot
 from game.squadrons.squadron import Squadron
+from game.squadrons.pilotnameformat import format_pilot_name
 from qt_ui.widgets.cards import make_transparent
 from qt_ui.widgets.controls import button
 from qt_ui.windows.pilot.cheats import CheatStrip
@@ -83,7 +84,8 @@ class PilotDialog(QDialog):
             raise RuntimeError(f"{pilot.name} belongs to no squadron in this game")
         self.squadron = squadron
 
-        self.setWindowTitle(f"Pilot — {pilot.name}")
+        name = format_pilot_name(pilot.name, squadron.settings)
+        self.setWindowTitle(f"Pilot — {name}")
         self.setMinimumSize(MIN_WIDTH, MIN_HEIGHT)
         self.setStyleSheet(
             "QDialog { background: #2D3E50; }" "QLabel { background: transparent; }"
@@ -131,6 +133,7 @@ class PilotDialog(QDialog):
             record_column(
                 self.pilot,
                 relationships_section(self.pilot, self.squadron, wing),
+                settings=self.squadron.settings,
             ),
             1,
         )
@@ -188,7 +191,8 @@ class PilotDialog(QDialog):
         QTimer.singleShot(0, self._rebuild)
 
     def _rebuild(self) -> None:
-        self.setWindowTitle(f"Pilot — {self.pilot.name}")
+        name = format_pilot_name(self.pilot.name, self.squadron.settings)
+        self.setWindowTitle(f"Pilot — {name}")
         old = self.content
         self.content = self._build()
         self.root.replaceWidget(old, self.content)

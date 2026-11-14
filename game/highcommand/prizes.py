@@ -28,6 +28,7 @@ from game.income import Income
 from game.squadrons.experience import SaveCompatible
 from game.squadrons.morale import clamp
 from game.squadrons.pilot import PilotStatus
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.theater import Airfield, Player
 from game.theater.theatergroundobject import IadsGroundObject
 
@@ -760,7 +761,7 @@ def _wounded_pilots(game: Game, prize: Prize, picked: tuple[str, ...]) -> list[C
     return [
         Choice(
             str(pilot.id),
-            pilot.name,
+            format_pilot_name(pilot.name, game.settings),
             f"{squadron.name}, {squadron.aircraft}: "
             f"{_turns(pilot.wounded_turns)} in hospital",
         )
@@ -819,7 +820,8 @@ def _give_heal(game: Game, prize: Prize, picked: tuple[str, ...]) -> str:
         if str(pilot.id) == picked[0]
     )
     pilot.recover()
-    return f"{pilot.name}, of {squadron.name}, is back on duty."
+    name = format_pilot_name(pilot.name, game.settings)
+    return f"{name}, of {squadron.name}, is back on duty."
 
 
 def _air_defence_sites(

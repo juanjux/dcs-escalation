@@ -42,6 +42,7 @@ from game.runways import RunwayData
 from game.settings import NightMissions
 from game.missiongenerator.missiondata import EscortInfo
 from game.squadrons import Pilot
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.theater.daytimecalculator import includes_darkness
 from .aircraftbehavior import AircraftBehavior
 from .aircraftpainter import AircraftPainter
@@ -370,13 +371,16 @@ class FlightGroupConfigurator:
             rank = squadron.pilot_rank(pilot)
             if rank is not None:
                 parts.append(rank.abbreviation)
-            parts.append(pilot.name)
+            parts.append(format_pilot_name(pilot.name, settings))
             head, separator, _ = str(unit.name).rpartition(PILOT_NAME_SEPARATOR)
             if not separator:
                 continue
             name = f"{head} {' '.join(parts)}"
-            if name in used:
-                name = f"{name} #{index}"
+            candidate = name
+            suffix = index
+            while name in used:
+                name = f"{candidate} #{suffix}"
+                suffix += 1
             used.add(name)
             unit.name = name
 

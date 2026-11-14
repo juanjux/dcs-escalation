@@ -25,6 +25,7 @@ from game.server import EventStream
 from game.sim import GameUpdateEvents
 from game.squadrons import Squadron
 from game.squadrons.morale import emoji_for
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.theater import ConflictTheater, Player
 from qt_ui.widgets.squadrondelegate import SquadronDelegate
 from qt_ui.widgets.squadronpanel import (
@@ -130,7 +131,7 @@ class AircraftInventoryData:
                 pilot_name = "Unassigned"
                 player = ""
             else:
-                pilot_name = pilot.name
+                pilot_name = format_pilot_name(pilot.name, squadron.settings)
                 squadron = flight.squadron
                 if squadron.morale_in_play and pilot.has_morale:
                     pilot_name += f"  {emoji_for(pilot.morale, squadron.settings)}"

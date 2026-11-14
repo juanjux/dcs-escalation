@@ -18,6 +18,7 @@ from game.data.units import UnitClass
 from game.dcs.aircrafttype import AircraftType
 from game.plugins import LuaPluginManager
 from game.settings.settings import MISSION_LOG_OPTIONS
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.theater import TheaterGroundObject
 from game.theater.theatergroup import SceneryUnit
 from game.theater.iadsnetwork.iadsrole import IadsRole
@@ -292,8 +293,7 @@ class LuaGenerator:
         self.mission.triggerrules.triggers.append(trigger)
         logging.info("Seeded %d pilots for the mission log", len(rows))
 
-    @staticmethod
-    def _addressed(flying_unit: "FlyingUnit") -> str:
+    def _addressed(self, flying_unit: "FlyingUnit") -> str:
         """The pilot as the rest of the game addresses him: rank first, when he holds one.
 
         The in-mission log is the one place a pilot is named while you are flying with
@@ -303,7 +303,8 @@ class LuaGenerator:
         pilot = flying_unit.pilot
         assert pilot is not None
         rank = flying_unit.flight.squadron.pilot_rank(pilot)
-        return pilot.name if rank is None else f"{rank.abbreviation} {pilot.name}"
+        name = format_pilot_name(pilot.name, self.game.settings)
+        return name if rank is None else f"{rank.abbreviation} {name}"
 
     def generate_plugin_data(self) -> None:
         lua_data = LuaData("dcsRetribution")

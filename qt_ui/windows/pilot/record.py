@@ -11,11 +11,14 @@ from the kill log, which is capped, so the remainder is shown as "and n earlier"
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from html import escape
 from typing import Optional, Sequence
 
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+from game.settings import Settings
 from game.squadrons.pilot import Kill, Pilot, PilotRecord, PilotStatus
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.sim.missionresultsprocessor import (
     AIR_DEFENCE,
     ARMOUR,
@@ -377,7 +380,7 @@ def _key_value(key: str, value_html: str, height: int = 36) -> Row:
     return row
 
 
-def killed_in_action(pilot: Pilot) -> Optional[Stack]:
+def killed_in_action(pilot: Pilot, settings: Settings | None = None) -> Optional[Stack]:
     """How it ended, for the man it ended for."""
     if pilot.status is not PilotStatus.Dead:
         return None
@@ -396,7 +399,7 @@ def killed_in_action(pilot: Pilot) -> Optional[Stack]:
 
     who = (
         f"<span style='color:{TEXT_PRIMARY};font-weight:600'>"
-        f"{killed_by.pilot_name}</span>"
+        f"{escape(format_pilot_name(killed_by.pilot_name, settings))}</span>"
     )
     trailing = " · ".join(
         part
@@ -447,7 +450,9 @@ SURVIVAL_TOOLTIP = (
 )
 
 
-def record_column(pilot: Pilot, also: Optional[QWidget] = None) -> QVBoxLayout:
+def record_column(
+    pilot: Pilot, also: Optional[QWidget] = None, *, settings: Settings | None = None
+) -> QVBoxLayout:
     """The left-hand half of the dialog, top to bottom.
 
     ``also`` is whatever else wants the elastic column rather than the fixed one --
@@ -457,7 +462,7 @@ def record_column(pilot: Pilot, also: Optional[QWidget] = None) -> QVBoxLayout:
     column.setContentsMargins(0, 0, 0, 0)
     column.setSpacing(22)
 
-    fallen = killed_in_action(pilot)
+    fallen = killed_in_action(pilot, settings)
     if fallen is not None:
         where = pilot.record.killed_by
         hint = f"turn {where.turn}" if where is not None and where.turn else ""

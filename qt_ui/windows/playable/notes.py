@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from PySide6.QtWidgets import QLabel, QPlainTextEdit, QScrollArea, QVBoxLayout, QWidget
 
+from game.squadrons.pilotnameformat import format_pilot_name
 from qt_ui.windows.playable.model import Aircraft
 
 
@@ -43,9 +44,11 @@ class AircraftNotesPane(QWidget):
             else []
         )
         airframe = aircraft.dcs_id if aircraft is not None else ""
+        settings = aircraft.settings if aircraft is not None else None
         for pilot in pilots or [None]:
+            name = format_pilot_name(pilot.name, settings) if pilot is not None else ""
             if len(pilots) > 1:
-                fields.addWidget(QLabel(pilot.name))
+                fields.addWidget(QLabel(name))
             editor = QPlainTextEdit()
             editor.setMinimumHeight(120)
             editor.setPlaceholderText(
@@ -54,9 +57,7 @@ class AircraftNotesPane(QWidget):
                 else "Select an aircraft to edit its notes."
             )
             editor.setAccessibleName(
-                f"Aircraft notes for {pilot.name}"
-                if pilot is not None
-                else "Aircraft notes"
+                f"Aircraft notes for {name}" if pilot is not None else "Aircraft notes"
             )
             editor.setPlainText(getattr(pilot, "aircraft_notes", {}).get(airframe, ""))
             editor.setEnabled(pilot is not None)

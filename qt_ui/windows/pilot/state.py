@@ -24,6 +24,7 @@ from game.squadrons import hardening
 from game.squadrons import morale as morale_rules
 from game.squadrons.pilot import Pilot
 from game.squadrons.squadron import Squadron
+from game.squadrons.pilotnameformat import format_pilot_name
 from qt_ui.widgets.cards import make_transparent, shrinkable
 from qt_ui.widgets.controls import wrapped_tooltip
 from qt_ui.widgets.pilotrow import MORALE_COLOURS, affinity_tint
@@ -520,7 +521,8 @@ def _friend_row(friend: Friend, squadron: Squadron, alpha: float) -> Row:
             dimmed=not friend.other.alive,
         )
     )
-    name_row.addWidget(Elided(friend.other.name, 13, TEXT_PRIMARY, bold=True))
+    name = format_pilot_name(friend.other.name, squadron.settings)
+    name_row.addWidget(Elided(name, 13, TEXT_PRIMARY, bold=True))
     if friend.other.player:
         name_row.addWidget(chip("PLAYER", ACCENT, "#22384A"))
     name_row.addStretch()

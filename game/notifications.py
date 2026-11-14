@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 from game.ground_forces.ai_ground_planner import deployable_armor
 from game.squadrons.morale import morale_state
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.theater.player import Player
 from game.theater.theatergroundobject import (
     BuildingGroundObject,
@@ -133,11 +134,12 @@ def _active(game: Game) -> list[CampaignNotice]:
                 morale = morale_state(pilot.morale, game.settings)
                 if morale.name not in ("Shattered", "Broken"):
                     continue
+                name = format_pilot_name(pilot.name, game.settings)
                 alerts.append(
                     CampaignNotice(
                         f"morale:{pilot.id}:{game.turn}",
                         "pilot_morale",
-                        f"{pilot.name}: very low morale",
+                        f"{name}: very low morale",
                         f"{squadron} · {squadron.aircraft.display_name} · "
                         f"{morale.name} ({pilot.morale}). Consider rest or leave.",
                         game.turn,

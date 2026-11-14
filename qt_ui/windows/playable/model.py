@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Iterator, Optional, Sequence
 
+from game.squadrons.pilotnameformat import format_pilot_name
+from game.settings import Settings
 from game.ato.savedpoints import (
     PointKind,
     SavedPoint,
@@ -32,8 +34,12 @@ class Aircraft:
         """The player's own name, which is the row's identity until it is renamed."""
         for member in self.flight.iter_members():
             if member.is_player and member.pilot is not None:
-                return str(member.pilot.name)
+                return format_pilot_name(str(member.pilot.name), self.settings)
         return "Player"
+
+    @property
+    def settings(self) -> Settings | None:
+        return getattr(getattr(self.flight, "squadron", None), "settings", None)
 
     @property
     def alias(self) -> Optional[str]:

@@ -1,4 +1,5 @@
-from typing import Any, Dict, Optional
+from pathlib import Path
+from typing import Any, Dict, Optional, cast
 
 import pytest
 
@@ -120,3 +121,60 @@ def test_merge_does_not_mutate_input_base(laser_code: LaserCode) -> None:
         base, _StubWeapon(), laser_code  # type: ignore[arg-type]
     )
     assert base == snapshot
+
+
+def test_latin_pilot_names_in_mission_tags(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+    from zipfile import ZipFile
+
+    from dcs import Mission
+    from dcs.countries import Russia
+    from dcs.mapping import Point
+    from dcs.planes import MiG_29A
+
+    from game.settings import Settings
+    from game.squadrons.pilot import Pilot
+
+    mission = Mission()
+    country = mission.country(Russia.name)
+    assert country is not None
+    group = mission.flight_group_inflight(
+        country,
+        "Test flight",
+        MiG_29A,
+        Point(0, 0, mission.terrain),
+        3000,
+        group_size=3,
+    )
+    pilots = [Pilot("Иван"), Pilot("Ivan"), Pilot("Ivan #2")]
+    settings = Settings()
+    settings.__setstate__({"live_pilots_enabled": True})
+    assert not settings.latin_pilot_names
+    cfg = FlightGroupConfigurator.__new__(FlightGroupConfigurator)
+    cfg.game = cast(Any, SimpleNamespace(settings=settings))
+    cfg.flight = cast(
+        Any,
+        SimpleNamespace(
+            squadron=SimpleNamespace(pilot_rank=lambda pilot: None),
+            iter_members=lambda: (SimpleNamespace(pilot=pilot) for pilot in pilots),
+        ),
+    )
+    cfg.group = group
+
+    cfg.name_pilots()
+    assert group.units[0].name == "Test flight Иван"
+
+    # The generator normally starts with pydcs' default names on each mission.
+    for index, unit in enumerate(group.units, start=1):
+        unit.name = f"Test flight Pilot #{index}"
+    settings.latin_pilot_names = True
+    cfg.name_pilots()
+
+    expected = ["Test flight Ivan", "Test flight Ivan #2", "Test flight Ivan #2 #3"]
+    assert [unit.name for unit in group.units] == expected
+    assert [pilot.name for pilot in pilots] == ["Иван", "Ivan", "Ivan #2"]
+    miz = tmp_path / "pilot-names.miz"
+    mission.save(str(miz))
+    with ZipFile(miz) as archive:
+        mission_table = archive.read("mission").decode("utf-8")
+    assert all(f'"{name}"' in mission_table for name in expected)

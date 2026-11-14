@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 from game.squadrons import friendship
 from game.squadrons import morale as morale_rules
 from game.squadrons.pilot import Pilot
+from game.squadrons.pilotnameformat import format_pilot_name
 from qt_ui.rankstars import (
     STAR_EMPTY,
     STAR_EMPTY_SELECTED,
@@ -235,7 +236,9 @@ def paint_pilot(
     painter.setPen(TEXT_SELECTED if selected else TEXT_PRIMARY)
     available = max(0, int(right - x))
     name = QFontMetrics(name_font).elidedText(
-        pilot.name, Qt.TextElideMode.ElideMiddle, available
+        format_pilot_name(pilot.name, getattr(squadron, "settings", None)),
+        Qt.TextElideMode.ElideMiddle,
+        available,
     )
     painter.drawText(int(x), baseline, name)
 
@@ -246,8 +249,10 @@ def row_width_hint(squadron: Any) -> int:
     """Wide enough for the longest name in the squadron plus everything beside it."""
     metrics = QFontMetrics(_font(13, QFont.Weight.DemiBold))
     longest = 0
+    settings = getattr(squadron, "settings", None)
     for pilot in getattr(squadron, "available_pilots", []) or []:
-        longest = max(longest, metrics.horizontalAdvance(pilot.name))
+        name = format_pilot_name(pilot.name, settings)
+        longest = max(longest, metrics.horizontalAdvance(name))
     # stars + rank + name + PLAYER + morale, with the gaps between them.
     return int(longest) + 260
 

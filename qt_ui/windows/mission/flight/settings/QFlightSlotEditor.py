@@ -27,6 +27,7 @@ from game.dcs.aircrafttype import AircraftType
 from game.squadrons import Squadron, friendship
 from game.squadrons.morale import emoji_for, rank_level
 from game.squadrons.pilot import Pilot
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.theater import ControlPoint, OffMapSpawn
 from game.utils import nautical_miles
 from qt_ui.models import PackageModel
@@ -161,11 +162,12 @@ class PilotSelector(PaintedPilotCombo):
         mood = ""
         if self.squadron.morale_in_play and pilot.has_morale:
             mood = f"  {emoji_for(pilot.morale, self.squadron.settings)}"
+        name = format_pilot_name(pilot.name, self.squadron.settings)
         rank = self.squadron.pilot_rank(pilot)
         if rank is None:
-            return f"{pilot.name}{mood}"
+            return f"{name}{mood}"
         stars = rank_stars_text(rank_level(self.squadron.pilot_skill(pilot)))
-        return f"{stars}  {rank.abbreviation} {pilot.name}{mood}"
+        return f"{stars}  {rank.abbreviation} {name}{mood}"
 
     def _do_rebuild(self) -> None:
         self.clear()

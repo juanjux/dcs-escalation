@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 from game.squadrons import friendship
 from game.squadrons import morale as morale_rules
 from game.squadrons.pilot import Pilot
+from game.squadrons.pilotnameformat import format_pilot_name
 from qt_ui.widgets.cards import make_transparent
 from qt_ui.widgets.pilotrow import SELECTED_FILL, affinity_tint
 
@@ -184,7 +185,9 @@ class LeaveRequestsDialog(QDialog):
             grid.addWidget(backdrop, row, 0, 1, COLUMNS)
 
             rank = squadron.pilot_rank(pilot)
-            name = pilot.name if rank is None else f"{rank.abbreviation} {pilot.name}"
+            name = format_pilot_name(pilot.name, self.game.settings)
+            if rank is not None:
+                name = f"{rank.abbreviation} {name}"
             cells: list[QWidget] = [
                 QLabel(name),
                 QLabel(str(squadron)),
@@ -337,7 +340,8 @@ class LeaveRequestsDialog(QDialog):
         for position, row in enumerate(self.rows):
             if position == index:
                 row.fill(SELECTED_FILL.name())
-                row.explain(f"What the others here make of {chosen.pilot.name}.")
+                name = format_pilot_name(chosen.pilot.name, self.game.settings)
+                row.explain(f"What the others here make of {name}.")
                 continue
             row.fill(self._tint(chosen.pilot, row.pilot))
             row.explain(self._explanation(chosen, row))
@@ -361,9 +365,10 @@ class LeaveRequestsDialog(QDialog):
         """
         value = friendship.group_affinity(other.pilot, [chosen.pilot])
         band = friendship.band_name(value, self.game.settings)
+        name = format_pilot_name(chosen.pilot.name, self.game.settings)
         if other.squadron is not chosen.squadron:
             return (
-                f"{band} with {chosen.pilot.name}, but a different squadron:"
+                f"{band} with {name}, but a different squadron:"
                 " leave together is worth nothing extra."
             )
         multiplier = friendship.leave_multiplier(
@@ -371,9 +376,9 @@ class LeaveRequestsDialog(QDialog):
         )
         extra = round((multiplier - 1.0) * 100)
         if extra <= 0:
-            return f"{band} with {chosen.pilot.name}."
+            return f"{band} with {name}."
         return (
-            f"{band} with {chosen.pilot.name}: a week off at the same time is worth"
+            f"{band} with {name}: a week off at the same time is worth"
             f" {extra}% more to him."
         )
 
