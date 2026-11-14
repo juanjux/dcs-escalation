@@ -17,6 +17,7 @@ from game.orderedset import OrderedSet
 from game.procurement import AircraftProcurementRequest, ProcurementAi
 from game.profiling import MultiEventTracer, logged_duration
 from game.squadrons import AirWing, friendship
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.theater.bullseye import Bullseye
 from game.theater.player import Player
 from game.theater.transitnetwork import TransitNetwork, TransitNetworkBuilder
@@ -168,7 +169,8 @@ class Coalition:
         restored = []
         for squadron in self.air_wing.iter_squadrons():
             for pilot in squadron.reconcile_available_pilots(flying):
-                restored.append(f"{pilot.name} ({squadron.name})")
+                name = format_pilot_name(pilot.name, squadron.settings)
+                restored.append(f"{name} ({squadron.name})")
         if restored:
             logging.warning(
                 "Pilots were off their squadron's available list with nothing "

@@ -8,7 +8,9 @@ The palette and the vocabulary (stars for a rank, a coloured dot for morale) are
 Wing's.
 """
 
+from dataclasses import replace
 from functools import partial
+from html import escape
 from typing import Any, Optional, Sequence
 
 from PySide6.QtCore import QRectF, Qt, QTimer, Signal
@@ -51,6 +53,7 @@ from game.squadrons.experience import (
     turns_phrase,
 )
 from game.squadrons.morale import morale_state
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.theater import Player
 from qt_ui.rankstars import (
     STAR_EMPTY,
@@ -1133,8 +1136,19 @@ class QDebriefingWindow(QDialog):
         if outcomes.empty:
             return None
 
+        settings = getattr(debriefing.game, "settings", None)
+
         def shown(records: list) -> list:
-            return aircrew_reported(debriefing, records)
+            visible = aircrew_reported(debriefing, records)
+            if not getattr(settings, "latin_pilot_names", False):
+                return visible
+            rendered = []
+            for record in visible:
+                changes = {"pilot_name": format_pilot_name(record.pilot_name, settings)}
+                if isinstance(record, (PilotDeath, PilotWound)) and record.killed_by:
+                    changes["killed_by"] = format_pilot_name(record.killed_by, settings)
+                rendered.append(replace(record, **changes))
+            return rendered
 
         card = _card()
         column = QVBoxLayout()
@@ -1431,8 +1445,11 @@ class QDebriefingWindow(QDialog):
                 f"in {mine[0].squadron}."
             )
         else:
+            settings = getattr(self.debriefing.game, "settings", None)
             named = "<br>".join(
-                f"{p.pilot_name} — <b>{p.to_rank_full}</b>, {p.squadron}" for p in mine
+                f"{escape(format_pilot_name(p.pilot_name, settings))}"
+                f" — <b>{p.to_rank_full}</b>, {p.squadron}"
+                for p in mine
             )
             body = f"Your pilots have been promoted:<br><br>{named}"
         box = QMessageBox(self)

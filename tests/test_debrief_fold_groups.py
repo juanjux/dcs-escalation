@@ -84,3 +84,25 @@ def test_a_click_opens_a_folded_group(qt_app: Any) -> None:
 
     assert not header.folded
     assert not any(row.isHidden() for row in rows)
+
+
+@pytest.mark.parametrize("enabled, expected", [(False, "Иван"), (True, "Ivan")])
+def test_debriefing_uses_display_spelling(
+    qt_app: Any, enabled: bool, expected: str
+) -> None:
+    from qt_ui.windows.QDebriefingWindow import QDebriefingWindow
+
+    report = _report()
+    report.game.settings.latin_pilot_names = enabled
+    original = PilotDeath("Иван", "VFA-113", "F/A-18C", killed_by="Павел (MiG-29)")
+    report.pilot_outcomes.deaths[:] = [original]
+    shell = SimpleNamespace(_section=lambda caption, hint, card: card)
+    card = QDebriefingWindow._pilots_section(shell, report)  # type: ignore[arg-type]
+    _, rows = _groups(card)["KILLED IN ACTION"]
+
+    assert rows[0].name == expected
+    assert rows[0].record.killed_by == (
+        "Pavel (MiG-29)" if enabled else "Павел (MiG-29)"
+    )
+    assert original.pilot_name == "Иван"
+    assert original.killed_by == "Павел (MiG-29)"

@@ -28,6 +28,7 @@ from game.radio.tacan import TacanChannel
 from game.server import EventStream
 from game.sim.gameupdateevents import GameUpdateEvents
 from game.squadrons.squadron import Pilot, Squadron
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.theater import NavalControlPoint, Player
 from game.theater.missiontarget import MissionTarget
 from game.transfers import PendingTransfers, TransferOrder
@@ -660,14 +661,13 @@ class SquadronModel(QAbstractListModel):
             return pilot
         return None
 
-    @staticmethod
-    def text_for_pilot(pilot: Pilot) -> str:
+    def text_for_pilot(self, pilot: Pilot) -> str:
         """Returns the text that should be displayed for the pilot.
 
         No rank here: the detail line under the name already carries it in full,
         and an abbreviation on top of that is the same fact twice.
         """
-        return pilot.name
+        return format_pilot_name(pilot.name, self.squadron.settings)
 
     @staticmethod
     def icon_for_pilot(_pilot: Pilot) -> Optional[QIcon]:

@@ -51,6 +51,7 @@ from game.ato.flightwaypointtype import FlightWaypointType
 from game.dcs.aircrafttype import AircraftType
 from game.settings import Settings
 from game import persistency
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.squadrons.namepresets import NameLibrary
 from game.squadrons import friendship
 from game.squadrons import hardening
@@ -299,7 +300,7 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
         metrics = painter.fontMetrics()
         chip_room = 62 if pilot.player else 0
         name = metrics.elidedText(
-            pilot.name,
+            format_pilot_name(pilot.name, self.squadron_model.squadron.settings),
             Qt.TextElideMode.ElideRight,
             COLUMN_A_RIGHT - MARGIN - chip_room,
         )
@@ -398,7 +399,8 @@ class PilotDelegate(QStyledItemDelegate, PilotRowPainter):
         pilot = self.squadron_model.pilot_at_index(index)
         level, rank_name = self.rank_of(pilot)
         count, word = self.missions_of(pilot)
-        lines = [f"<b>{pilot.name}</b>{' — player' if pilot.player else ''}"]
+        name = format_pilot_name(pilot.name, self.squadron_model.squadron.settings)
+        lines = [f"<b>{name}</b>{' — player' if pilot.player else ''}"]
         if rank_name:
             lines.append(f"{rank_name} ({level} of {RANK_LEVELS})")
         lines.append(f"{count} {word} flown")
@@ -532,8 +534,9 @@ class FallenPilotDelegate(QStyledItemDelegate, PilotRowPainter):
 
             painter.setFont(_font(13, QFont.Weight.DemiBold))
             painter.setPen(QColor(RANK_NAME))
-            painter.drawText(MARGIN, 23, pilot.name)
-            x = float(MARGIN + painter.fontMetrics().horizontalAdvance(pilot.name) + 8)
+            name = format_pilot_name(pilot.name, self.squadron_model.squadron.settings)
+            painter.drawText(MARGIN, 23, name)
+            x = float(MARGIN + painter.fontMetrics().horizontalAdvance(name) + 8)
 
             level, rank_name = self.rank_of(pilot)
             x += paint_rank_stars(
@@ -1653,7 +1656,11 @@ class SquadronDialog(QDialog):
         if not current.on_leave:
             # For how long, rather than until you remember him: leave granted here now
             # runs down on its own like a wound.
-            who = pilots[0].name if len(pilots) == 1 else f"{len(pilots)} pilots"
+            who = (
+                self.squadron_model.text_for_pilot(pilots[0])
+                if len(pilots) == 1
+                else f"{len(pilots)} pilots"
+            )
             turns, ok = QInputDialog.getInt(
                 self,
                 "Send on leave",
@@ -1697,11 +1704,8 @@ class SquadronDialog(QDialog):
             return
         if len(pilots) == 1:
             rank = self.squadron.pilot_rank(pilots[0])
-            addressed = (
-                pilots[0].name
-                if rank is None
-                else f"{rank.abbreviation} {pilots[0].name}"
-            )
+            name = self.squadron_model.text_for_pilot(pilots[0])
+            addressed = name if rank is None else f"{rank.abbreviation} {name}"
             question = (
                 f"Discharge {addressed} from {self.squadron}? "
                 "He leaves the squadron for good."
@@ -1709,7 +1713,9 @@ class SquadronDialog(QDialog):
         else:
             # Named, not counted: discharging the wrong man is not undoable, and a
             # number is not something you can check.
-            named = "\n".join(f"  {pilot.name}" for pilot in pilots)
+            named = "\n".join(
+                f"  {self.squadron_model.text_for_pilot(pilot)}" for pilot in pilots
+            )
             question = (
                 f"Discharge {len(pilots)} pilots from {self.squadron}?\n\n{named}"
                 "\n\nThey leave the squadron for good."

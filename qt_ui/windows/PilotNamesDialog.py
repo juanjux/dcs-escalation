@@ -29,6 +29,7 @@ from game.squadrons.namepresets import (
 )
 from game.squadrons.pilot import Pilot
 from game.squadrons.squadron import Squadron
+from game.squadrons.pilotnameformat import format_pilot_name
 from qt_ui.widgets.controls import button
 from qt_ui.widgets.cards import card, make_transparent, shrinkable
 from qt_ui.widgets.pilotnamelist import DETAIL_ROLE, StyledNameList
@@ -407,13 +408,16 @@ class PilotNamesDialog(QDialog):
         squadron = self.squadron
         if squadron is not None:
             for pilot in squadron.current_roster:
-                item = QListWidgetItem(pilot.name)
+                name = format_pilot_name(
+                    pilot.name, getattr(squadron, "settings", None)
+                )
+                item = QListWidgetItem(name)
                 item.setData(USER_ROLE, pilot)
                 status = pilot.status.value.replace("OnLeave", "On leave")
                 item.setData(
                     DETAIL_ROLE, f"{'PLAYER' if pilot.player else 'AI'} · {status}"
                 )
-                item.setToolTip(f"{pilot.name} · {status}")
+                item.setToolTip(f"{name} · {status}")
                 self.pilots.addItem(item)
         self.update_buttons()
 
@@ -564,19 +568,23 @@ class PilotNamesDialog(QDialog):
             return
         rename_pilot(pilot, name)
         self.update_pilot_name(pilot)
-        self.status.setText(f"Assigned {name}.")
+        display_name = format_pilot_name(
+            pilot.name, getattr(squadron, "settings", None)
+        )
+        self.status.setText(f"Assigned {display_name}.")
         self.status.setStyleSheet(
             f"font-size: 12px; color: {GREEN}; background: transparent; border: none;"
         )
         self.pilots_changed.emit(squadron)
 
     def update_pilot_name(self, pilot: Pilot) -> None:
+        name = format_pilot_name(pilot.name, getattr(self.squadron, "settings", None))
         for row in range(self.pilots.count()):
             item = self.pilots.item(row)
             if item.data(USER_ROLE) is pilot:
-                item.setText(pilot.name)
+                item.setText(name)
                 status = pilot.status.value.replace("OnLeave", "On leave")
-                item.setToolTip(f"{pilot.name} · {status}")
+                item.setToolTip(f"{name} · {status}")
                 break
 
     def autofill_names(self) -> None:

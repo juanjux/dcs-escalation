@@ -208,6 +208,16 @@ class Settings:
             " dialog and the map's coordinate picker."
         ),
     )
+    latin_pilot_names: bool = boolean_option(
+        "Always show pilot names in latin alphabet",
+        page=GENERAL_PAGE,
+        section=GENERAL_PAGE_SECTION,
+        default=False,
+        detail=(
+            "Transliterate pilot names in Escalation and in newly generated DCS "
+            "missions. The original spelling is kept in the campaign."
+        ),
+    )
     version: Optional[str] = None
 
     # Difficulty settings

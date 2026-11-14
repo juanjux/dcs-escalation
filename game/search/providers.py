@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Iterator, Optional
 
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.search.index import Entry, Follow
 
 #: Kinds, so the rows can be chipped and the Follow resolved. Strings rather than an
@@ -213,8 +214,9 @@ def pilot_entries(game: Any) -> Iterator[Entry]:
                 # None while Live Pilots is off, when everyone is just a name.
                 rank = squadron.pilot_rank(pilot)
                 abbreviation = rank.abbreviation if rank is not None else ""
+                name = format_pilot_name(pilot.name, getattr(game, "settings", None))
                 yield Entry(
-                    label=f"{abbreviation} {pilot.name}".strip(),
+                    label=f"{abbreviation} {name}".strip(),
                     detail=f"{squadron} · {pilot.status.value}",
                     follow=Follow(PILOT, str(pilot.id)),
                     keywords=" ".join(
@@ -223,6 +225,7 @@ def pilot_entries(game: Any) -> Iterator[Entry]:
                             owner,
                             abbreviation,
                             rank.name if rank is not None else "",
+                            pilot.name,
                             squadron.aircraft.display_name,
                             str(squadron),
                         ]

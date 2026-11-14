@@ -25,6 +25,7 @@ from game.squadrons import morale as morale_rules
 from game.squadrons.pilot import Pilot, PilotStatus
 from game.squadrons.pilotranks import rank_for_skill
 from game.squadrons.squadron import Squadron
+from game.squadrons.pilotnameformat import format_pilot_name
 from qt_ui.uiconstants import AIRCRAFT_ICONS
 from qt_ui.widgets.cards import make_transparent, shrinkable_widget
 from qt_ui.windows.pilot.common import (
@@ -221,7 +222,12 @@ class PilotHeader(QWidget):
         title.setContentsMargins(0, 0, 0, 0)
         title.setSpacing(10)
         title.addWidget(
-            Elided(self.pilot.name, 26, NAME_LIVING if self.living else NAME_GONE, True)
+            Elided(
+                format_pilot_name(self.pilot.name, self.squadron.settings),
+                26,
+                NAME_LIVING if self.living else NAME_GONE,
+                True,
+            )
         )
 
         rung = QHBoxLayout()

@@ -28,6 +28,7 @@ from game.squadrons.morale import MoraleLogEntry
 from game.squadrons.pilot import Pilot, PilotStatus
 from game.squadrons.pilotranks import rank_for_skill
 from game.squadrons.squadron import Squadron
+from game.squadrons.pilotnameformat import format_pilot_name
 from qt_ui.rankstars import rank_stars_text
 from qt_ui.windows.airwingconfig.common import (
     AMBER,
@@ -192,7 +193,7 @@ class CheatStrip(QWidget):
         answer = QMessageBox.question(
             self,
             f"{word} pilot",
-            f"{word} {self.pilot.name}? He keeps his record and his log, and goes "
+            f"{word} {format_pilot_name(self.pilot.name, self.squadron.settings)}? He keeps his record and his log, and goes "
             f"back on the roster of {self.squadron}.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,

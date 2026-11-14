@@ -54,7 +54,7 @@ analysis = Analysis(
         # OPFOR-AI served briefings (GET /start, /howtoplay).
         ('game/agent/docs', 'game/agent/docs'),
     ]
-    + _mcp_datas,
+    + _mcp_datas + collect_data_files("text_unidecode"),
     hiddenimports=['mgrs', 'mgrs.core', 'packaging.tags'] + _mcp_hiddenimports,
     hookspath=[],
     runtime_hooks=[],

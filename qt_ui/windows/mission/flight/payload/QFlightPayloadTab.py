@@ -20,6 +20,7 @@ from game.ato.loadouts import Loadout
 from game.ato.fuelestimate import estimate_fuel_segments
 from qt_ui.windows.mission.flight.fuelsummary import FuelSummary
 from game.data.fueltanks import loadout_fuel
+from game.squadrons.pilotnameformat import format_pilot_name
 from game.utils import kgs
 from qt_ui.widgets.QLabeledWidget import QLabeledWidget
 from qt_ui.widgets.cards import CARD_BG, carded, make_transparent
@@ -86,9 +87,14 @@ class FlightMemberSelector(QWidget):
             self._segmented.setParent(None)
             self._segmented.deleteLater()
         options = []
+        settings = getattr(getattr(self.flight, "squadron", None), "settings", None)
         for index in range(self.flight.count):
             pilot = self.flight.roster.pilot_at(index)
-            name = pilot.name if pilot is not None else "Unassigned"
+            name = (
+                format_pilot_name(pilot.name, settings)
+                if pilot is not None
+                else "Unassigned"
+            )
             options.append((f"{index + 1}  {name}", index))
         self._index = min(self._index, max(0, self.flight.count - 1))
         self._segmented = Segmented(options, current=self._index)
