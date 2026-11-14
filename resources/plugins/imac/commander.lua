@@ -91,7 +91,7 @@ do
       if not p then return 'flight unavailable' end
       if p.player then return 'human-controlled flight' end
       if s.paused or api.paused[s.meta.side] then return 'manual control / commander paused' end
-      if not authority[s.meta.side] then return 'no active command authority or side disabled' end
+      if not authority[s.meta.side] then return 'no active command authority' end
       if not p.airborne then return 'not airborne' end
       if not p.healthy then return 'aircraft damaged' end
       if p.refuelling or nativeRefuel(s) then return 'native refuelling or recovery owns the flight' end

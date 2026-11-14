@@ -125,6 +125,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[IMAC]** Let patrols defend their SAM avoidance orbit and log per-flight command loss.
 * **[IADS]** Show live point-defence rings around dark batteries and let Strela sites use their own power.
 * **[Ground Movement]** Let existing armor groups and mobile SAMs leave a nearby terrain exclusion through a bounded off-road exit, retaining terrain and ownership checks for the rest of the route.
 * **[OPFOR AI]** Preserve ground orders and deliberately empty air plans instead of replacing them with the scripted Take Off fallback.
