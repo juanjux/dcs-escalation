@@ -180,16 +180,15 @@ class CampaignGroundRouter:
     def base_access_position(self, base: ControlPoint) -> GroundPosition:
         """Resolve a stock handoff, not a drive through an invalid base marker.
 
-        Prefer the existing marker, then a nearby authored convoy endpoint. Bases
-        without usable endpoints may receive/deploy stock on safe land within
-        600 m, matching reserve formation placement. Only the abstract stock
-        handoff moves: all actual travel still passes normal route validation.
-        Arbitrary GPS destinations never use this fallback.
+        Prefer the existing marker, then an authored endpoint or safe land
+        within 600 m. If the local search fails, an authored endpoint farther
+        away can serve a large base if it is on safe ground on the friendly
+        road network. Travel to the handoff still uses normal route validation.
         """
         center = GroundPosition(base.position.x, base.position.y)
 
-        def valid(position: GroundPosition) -> bool:
-            segment = GroundSegment(position, position, True)
+        def valid(position: GroundPosition, *, on_road: bool = True) -> bool:
+            segment = GroundSegment(position, position, on_road)
             return self.allowed(segment) and (
                 self.offroad_permission is None or self.offroad_permission(segment)
             )
@@ -201,13 +200,15 @@ class CampaignGroundRouter:
             for points in base.convoy_routes.values()
             if points
         }
-        for position in sorted(
+        endpoints_by_distance = sorted(
             endpoints,
             key=lambda p: (math.hypot(p.x - center.x, p.z - center.z), p.x, p.z),
-        ):
-            if math.hypot(position.x - center.x, position.z - center.z) <= 600:
-                if valid(position):
-                    return position
+        )
+        for position in endpoints_by_distance:
+            if math.hypot(position.x - center.x, position.z - center.z) > 600:
+                break
+            if valid(position):
+                return position
         for radius in range(15, 601, 15):
             for heading in range(0, 360, 15):
                 angle = math.radians(heading)
@@ -217,7 +218,15 @@ class CampaignGroundRouter:
                 )
                 if valid(position):
                     return position
-        raise GroundRouteError("No safe ground access within 600 m of this base")
+        if self._convoy_roads is not None:
+            for position in endpoints_by_distance:
+                if self._convoy_roads.covers(Point(position.x, position.z)) and valid(
+                    position, on_road=False
+                ):
+                    return position
+        raise GroundRouteError(
+            "No safe ground access within 600 m of this base or at its convoy endpoints"
+        )
 
     @classmethod
     def for_game(cls, game: Game, owner: Player) -> CampaignGroundRouter:

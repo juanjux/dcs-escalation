@@ -517,6 +517,33 @@ def test_base_access_search_does_not_teleport_to_remote_safe_ground(world: Any) 
         )
 
 
+def test_frontline_handoff_uses_friendly_convoy_endpoint_beyond_local_radius(
+    world: Any,
+) -> None:
+    terrain = world.game.theater.terrain
+    endpoint = Point(-1500, 0, terrain)
+    world.a.position = Point(-2000, 0, terrain)
+    world.source.position = Point(-1800, 10, terrain)
+    world.a.convoy_routes[world.b] = (world.a.position, endpoint)
+    world.b.convoy_routes[world.a] = (endpoint, world.a.position)
+    world.b.convoy_routes[world.enemy] = (Point(950, 0, terrain), world.enemy.position)
+    world.b.front_lines[world.enemy] = object()
+    world.game.theater.landmap = landmap(box(-700, -800, 900, 800))
+
+    destination = movement_destination(
+        world.game,
+        Player.BLUE,
+        DestinationKind.FRONTLINE,
+        base_id=world.b.id,
+        opposing_base_id=world.enemy.id,
+    )
+    assert destination.position == P(-1500, 0)
+    preview = preview_armor_movement(
+        world.game, world.source.id, Player.BLUE, [7], destination
+    )
+    assert preview.route.segments[-1].end == destination.position
+
+
 def test_base_access_fallback_rejects_water_and_hostile_ground(world: Any) -> None:
     mask = landmap(box(90, -10, 110, 10))
     mask = replace(mask, sea_zones=MultiPolygon([box(110, -1000, 1000, 1000)]))
