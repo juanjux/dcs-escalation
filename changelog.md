@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Plugins]** Remove Moose Soundhandler and its sound files.
 * **[Mission Generator]** Integrate GPS Jamming, Mission Log, Ground Movement and IMAC. Remove Carsten’s Arty Spotter.
 * **[Mission Generation]** Retire automatic frontline JTAC drones and CTLD-deployed JTACs.
 * **[UI]** Name GPS waypoints when saving them from the map or Location dialog.
