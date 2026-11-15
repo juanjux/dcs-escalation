@@ -146,15 +146,17 @@ def test_objective_types_are_written_to_the_miz(
         assert f"BONGO {index} - {kind} [ENEMY]{suffix}" in text
 
 
-@pytest.mark.parametrize("category", ["ammo", "armor", "aa", "oil"])
+@pytest.mark.parametrize("category", ["ammo", "armor", "aa", "ewr", "oil"])
 @pytest.mark.parametrize("owner", [Player.BLUE, Player.RED])
 def test_fully_destroyed_sites_retain_labels(category: str, owner: Player) -> None:
     mission = generate_markers([category], owner, unit_states=(False, False))
     actions = marker_actions(mission)
     assert actions
-    assert all("[DESTROYED]" in str(action.text.id) for action in actions)
     allegiance = "ALLY" if owner.is_blue else "ENEMY"
-    assert all(f"[{allegiance}]" in str(action.text.id) for action in actions)
+    assert all(
+        str(action.text.id).endswith(f"[{allegiance}] [DESTROYED]")
+        for action in actions
+    )
 
 
 @pytest.mark.parametrize("category", ["ammo", "armor", "aa"])
@@ -177,8 +179,7 @@ def test_empty_military_sites_are_reported_as_destroyed(
     mission = generate_markers([category], owner, unit_states=(), cleared=cleared)
     action = marker_actions(mission)[0]
     allegiance = "ALLY" if owner.is_blue else "ENEMY"
-    suffix = " [INITIAL POSITION]" if category == "aa" else ""
-    assert str(action.text.id).endswith(f"[{allegiance}] [DESTROYED]{suffix}")
+    assert str(action.text.id).endswith(f"[{allegiance}] [DESTROYED]")
     assert len(list(mission.triggers.zones())) == 1
 
 
@@ -203,10 +204,7 @@ def test_empty_military_site_labels_are_written_to_the_miz(
         text = archive.read("mission").decode("utf-8")
     allegiance = "ALLY" if owner.is_blue else "ENEMY"
     assert f"BONGO 0 - RESERVE ARMOR GROUP [{allegiance}] [DESTROYED]" in text
-    assert (
-        f"BONGO 1 - AA DEFENSE SITE [{allegiance}] [DESTROYED] [INITIAL POSITION]"
-        in text
-    )
+    assert f'"BONGO 1 - AA DEFENSE SITE [{allegiance}] [DESTROYED]"' in text
 
 
 def test_destroyed_building_markers_keep_their_actual_positions() -> None:
