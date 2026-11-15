@@ -16,6 +16,7 @@ from dcs.terrain import Caucasus
 from game.data.units import UnitClass
 from game.highcommand.approach import Approach, Release
 from game.highcommand.campaign import DIRECT_RELEASE, Campaign
+from game.settings import Settings
 from game.theater import Player
 from game.theater.iadsnetwork.iadsrole import IadsRole
 from game.theater.presetlocation import PresetLocation
@@ -232,10 +233,10 @@ def campaign(**parts: Any) -> Any:
             controlpoints=parts.pop("enemy_bases", []),
             ground_objects=parts.pop("ground_objects", []),
         ),
-        settings=SimpleNamespace(
+        settings=Settings(
             motorpool_enabled=False,
             motorpool_spawn_cap=0,
-            plugin_option=lambda name: False,
+            gps_jamming_enabled=False,
         ),
     )
     made.groups = parts.pop("groups", {})
