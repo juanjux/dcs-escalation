@@ -45,8 +45,12 @@ do
       budget.count=budget.count+1
       trigger.action.outTextForCoalition(recipient,message,15)
     end
-    function io.debug(side,group,topic,detail,screen)
+    local activeDebugOption={samAvoid='debugSamAvoid',evade='debugEvade'}
+    function io.debug(side,group,topic,detail,screen,orderKind)
       if not opt.debug or not ((side==1 and opt.red) or (side==2 and opt.blue)) then return end
+      if topic=='availability' and opt.debugAvailability~=true then return end
+      if topic=='active' and opt[activeDebugOption[orderKind] or 'debugOrbit']~=true then return end
+      if topic=='order' and orderKind=='evade' and opt.debugEvade~=true then return end
       local now=timer.getTime()
       local key=side..'|'..group..'|'..topic
       local previous=debugLast[key]

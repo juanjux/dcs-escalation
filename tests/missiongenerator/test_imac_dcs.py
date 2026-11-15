@@ -602,7 +602,7 @@ def test_debug_reports_source_orders_and_rejection_reasons_without_normal_report
     assert "IMAC|DEBUG|" in log
     assert "AWACS AWACS" in log
     assert "intercept; target group=" in log
-    assert "fuel=" in log and "remaining=" in log
+    assert "|active|" not in log
     assert lua.eval("#messages") > 0
     assert lua.eval("#messages") <= 4
     assert lua.eval("messages[1].side") == 2
@@ -676,7 +676,9 @@ def test_opfor_debug_routes_to_blue_only_when_enabled(
 
 def test_opfor_debug_has_its_own_budget_and_keeps_routine_status_off_screen() -> None:
     lua = runtime()
-    lua.execute("cfg.options.debug=true;cfg.options.debugOpfor=true")
+    lua.execute(
+        "cfg.options.debug=true;cfg.options.debugOpfor=true;cfg.options.debugOrbit=true"
+    )
     capture_debug_io(lua)
     lua.execute("""
         testIO.debug(1,'commander','authority','AWACS test',true)
@@ -732,7 +734,10 @@ def test_routine_availability_debug_stays_in_the_log_without_using_screen_budget
     change: str, reason: str
 ) -> None:
     lua = runtime()
-    lua.execute("cfg.options.debug=true;cfg.options.reports=false;" + change)
+    lua.execute(
+        "cfg.options.debug=true;cfg.options.debugAvailability=true;cfg.options.reports=false;"
+        + change
+    )
     start(lua)
     lua.execute("tick(5);tick(65)")
     assert "availability|" + reason in lua.eval("table.concat(logs,';')")
@@ -751,7 +756,7 @@ def test_routine_availability_debug_stays_in_the_log_without_using_screen_budget
 def test_authority_debug_is_log_only_even_if_a_caller_requests_screen_output() -> None:
     lua = runtime()
     lua.execute(
-        "cfg.options.debug=true;cfg.options.reports=false;cfg.options.red=false"
+        "cfg.options.debug=true;cfg.options.debugAvailability=true;cfg.options.reports=false;cfg.options.red=false"
     )
     capture_debug_io(lua)
     lua.execute("""
@@ -973,3 +978,40 @@ def test_mission_end_cleans_up_and_invalidates_outstanding_leases() -> None:
     assert lua.eval("EscalationIMAC.instance.active") is False
     assert lua.eval("EscalationIMAC.shouldStop('CAP',1)") is True
     assert lua.eval("#groups.CAP.rtbs") == 0
+
+
+@pytest.mark.parametrize("debug", [False, True])
+@pytest.mark.parametrize(
+    "enabled",
+    [None, "debugAvailability", "debugOrbit", "debugSamAvoid", "debugEvade"],
+)
+def test_routine_debug_categories_are_independent(
+    debug: bool, enabled: str | None
+) -> None:
+    lua = runtime()
+    options = lua.globals().cfg.options
+    options.debug = debug
+    options.debugOpfor = True
+    if enabled:
+        options[enabled] = True
+    capture_debug_io(lua)
+    lua.execute("""
+        testIO.debug(1,'AVAIL','availability','fuel at reserve')
+        testIO.debug(1,'HOLD','active','hold; waypoint=2; fuel=90%',nil,'hold')
+        testIO.debug(1,'SAM','active','samAvoid; waypoint=3; fuel=90%',nil,'samAvoid')
+        testIO.debug(1,'EVADE','active','evade; waypoint=4; fuel=90%',nil,'evade')
+        testIO.debug(1,'EVADE','order','evade; safe orbit',nil,'evade')
+        testIO.debug(1,'CAP','order','intercept; target group=4',nil,'intercept')
+        testIO.report({kind='evade',time=0,side=1,group='EVADE',reason='new evasion'})
+    """)
+    log = lua.eval("table.concat(logs,';')")
+    assert "IMAC|evade|" in log and "new evasion" in log
+    for flag, detail in [
+        ("debugAvailability", "|availability|fuel at reserve"),
+        ("debugOrbit", "|active|hold; waypoint="),
+        ("debugSamAvoid", "|active|samAvoid; waypoint="),
+        ("debugEvade", "|active|evade; waypoint="),
+        ("debugEvade", "|order|evade; safe orbit"),
+    ]:
+        assert (detail in log) is (debug and enabled == flag)
+    assert ("|order|intercept;" in log) is debug

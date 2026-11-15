@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[IMAC]** Make routine debug messages opt-in by category.
 * **[Pilots]** Add an opt-in setting to show pilot names in the Latin alphabet in Escalation and DCS.
 * **[Plugins]** Remove Moose Soundhandler and its sound files.
 * **[Mission Generator]** Integrate GPS Jamming, Mission Log, Ground Movement and IMAC. Remove Carsten’s Arty Spotter.
