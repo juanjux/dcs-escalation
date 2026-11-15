@@ -135,6 +135,7 @@
 * **[Flight Plans]** Keep individual altitude profiles on shared routes and add vertical separation between overlapping flights.
 * **[Ground Movement]** Find terrain-safe off-road detours when campaign roads cannot connect, retaining off-road travel budgets and friendly-territory checks.
 * **[Map]** Initialize the map view before vector layers mount and preserve error stacks in the embedded console.
+* **[F10 Map]** Drop the initial position suffix from destroyed objective markers.
 * **[UI]** Exclude sold aircraft from squadron counts, totals and sorting immediately.
 * **[Squadrons]** Allow empty relocations from damaged runways after selling all aircraft, including when reloading a campaign.
 * **[Payload]** Match Shrike seekers independently of date restrictions, preserve manual weapon settings and correct AGM-45/78 head tables (adapted from RetLab #1366).
