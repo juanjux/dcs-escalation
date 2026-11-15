@@ -125,6 +125,7 @@ class AircraftInventoryData:
         num_units = flight.count
         flight_type = flight.flight_type.value
         target = flight.package.target.name
+        squadron = flight.squadron
         for idx in range(0, num_units):
             pilot = flight.roster.pilot_at(idx)
             if pilot is None:
@@ -132,7 +133,6 @@ class AircraftInventoryData:
                 player = ""
             else:
                 pilot_name = format_pilot_name(pilot.name, squadron.settings)
-                squadron = flight.squadron
                 if squadron.morale_in_play and pilot.has_morale:
                     pilot_name += f"  {emoji_for(pilot.morale, squadron.settings)}"
                 player = "Player" if pilot.player else "AI"
