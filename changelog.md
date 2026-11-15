@@ -126,6 +126,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Air Wing]** Fix a crash when opening the inventory with assigned pilots.
 * **[IMAC]** Let patrols defend their SAM avoidance orbit and log per-flight command loss.
 * **[IADS]** Show live point-defence rings around dark batteries and let Strela sites use their own power.
 * **[Ground Movement]** Let existing armor groups and mobile SAMs leave a nearby terrain exclusion through a bounded off-road exit, retaining terrain and ownership checks for the rest of the route.
