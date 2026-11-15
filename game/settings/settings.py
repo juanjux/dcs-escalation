@@ -154,6 +154,10 @@ IMAC_OPTIONS = {
     "reports": "imac_reports",
     "debug": "imac_debug",
     "debugOpfor": "imac_debug_opfor",
+    "debugAvailability": "imac_debug_availability",
+    "debugOrbit": "imac_debug_orbit",
+    "debugSamAvoid": "imac_debug_sam_avoid",
+    "debugEvade": "imac_debug_evade",
     "interval": "imac_interval",
     "interceptRangeNm": "imac_intercept_range_nm",
     "patrolLeashNm": "imac_patrol_leash_nm",
@@ -3461,7 +3465,8 @@ class Settings:
         page=MISSION_GENERATOR_PAGE,
         section=IMAC_SECTION,
         default=False,
-        tooltip="Show decisions and rejection reasons to the owning coalition (at most four debug messages per minute). Also write detailed IMAC|DEBUG diagnostics to dcs.log, including command authority, active orders, fuel and remaining lease time. Independent of normal order reports; disabled sides generate no debug messages.",
+        subsection="Debug",
+        tooltip="Show decisions and rejection reasons to the owning coalition (at most four debug messages per minute). Write decisions to dcs.log. Enable the options below to include routine flight and active-order diagnostics. Independent of normal order reports; disabled sides generate no debug messages.",
     )
 
     imac_debug_opfor: bool = boolean_option(
@@ -3470,7 +3475,48 @@ class Settings:
         section=IMAC_SECTION,
         default=False,
         tooltip="Mirror RED decisions, rejection reasons and active-order details to BLUE, with a separate limit of eight messages per minute. Requires debug and the RED commander; the BLUE commander need not be enabled. Routine status messages remain log-only.",
+        subsection="Debug",
         enabled_when=lambda settings: settings.imac_debug and settings.imac_red,
+    )
+
+    imac_debug_availability: bool = boolean_option(
+        "Show flight availability",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=False,
+        tooltip="Include reasons flights cannot receive orders.",
+        subsection="Debug",
+        enabled_when=lambda settings: settings.imac_debug,
+    )
+
+    imac_debug_orbit: bool = boolean_option(
+        "Show orbit and active order status",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=False,
+        tooltip="Include status updates for holds and other active orders.",
+        subsection="Debug",
+        enabled_when=lambda settings: settings.imac_debug,
+    )
+
+    imac_debug_sam_avoid: bool = boolean_option(
+        "Show SAM avoidance status",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=False,
+        tooltip="Include waypoint, fuel and time remaining during SAM avoidance.",
+        subsection="Debug",
+        enabled_when=lambda settings: settings.imac_debug,
+    )
+
+    imac_debug_evade: bool = boolean_option(
+        "Show fighter evasion and safe orbit details",
+        page=MISSION_GENERATOR_PAGE,
+        section=IMAC_SECTION,
+        default=False,
+        tooltip="Include safe orbit details and status updates for fighter evasion.",
+        subsection="Debug",
+        enabled_when=lambda settings: settings.imac_debug,
     )
 
     imac_interval: int = bounded_int_option(

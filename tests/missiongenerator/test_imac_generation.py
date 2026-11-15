@@ -534,3 +534,20 @@ def test_standalone_command_centre_does_not_require_advanced_iads_or_skynet() ->
     assert data["commandCenters"] == [
         {"name": "BASIC CC object", "key": "BASIC CC", "side": 2, "power": []}
     ]
+
+
+@pytest.mark.parametrize(
+    "key", ["debugAvailability", "debugOrbit", "debugSamAvoid", "debugEvade"]
+)
+def test_debug_category_defaults_and_ui_dependency(key: str) -> None:
+    settings = Settings(imac_enabled=True)
+    field = IMAC_OPTIONS[key]
+    enabled_when = dict(Settings.all_fields())[field].enabled_when
+    assert enabled_when is not None
+    assert not enabled_when(settings)
+    assert getattr(settings, field) is False
+    settings.imac_debug = True
+    assert enabled_when(settings)
+    setattr(settings, field, True)
+    options = imac.options(pickle.loads(pickle.dumps(settings)))
+    assert options is not None and options[key] is True

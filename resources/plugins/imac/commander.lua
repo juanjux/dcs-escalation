@@ -20,8 +20,8 @@ do
           s.meta.packageDefenseStart) then return noThreats end
       return threats[s.meta.side]
     end
-    local function diagnose(s,topic,detail)
-      if opt.debug and io.debug then io.debug(s.meta.side,s.meta.group,topic,detail) end
+    local function diagnose(s,topic,detail,orderKind)
+      if opt.debug and io.debug then io.debug(s.meta.side,s.meta.group,topic,detail,nil,orderKind) end
     end
     for _,meta in ipairs(config.flights) do
       assert(not api.states[meta.group],'duplicate IMAC group')
@@ -136,7 +136,7 @@ do
       local detail='target group='..tostring(data.groupId)
       if data.point then detail=string.format('%s x=%.0f z=%.0f',
         kind=='intercept' and 'missile intercept' or 'safe orbit',data.point.x,data.point.z) end
-      diagnose(s,'order',kind..'; '..detail..'; lease='..duration..'s')
+      diagnose(s,'order',kind..'; '..detail..'; lease='..duration..'s',kind)
       return true
     end
     function api:reached(name,index)
@@ -409,8 +409,10 @@ do
       end
       local order=s.order
       if order then
-        diagnose(s,'active',string.format('%s; waypoint=%d; fuel=%.0f%%; remaining=%.0fs',
-          order.kind,s.index,p.fuel*100,math.max(0,order.deadline-now)))
+        if opt.debug then
+          diagnose(s,'active',string.format('%s; waypoint=%d; fuel=%.0f%%; remaining=%.0fs',
+            order.kind,s.index,p.fuel*100,math.max(0,order.deadline-now)),order.kind)
+        end
         if now>=order.deadline then
           if order.kind=='hold' or order.kind=='evade' or order.kind=='samAvoid' then order.deadline=now+ORBIT_LEASE
           else release(s,'temporary order expired',true);resumeHold(s,p) end
