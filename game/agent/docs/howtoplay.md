@@ -161,8 +161,9 @@ in `turn_context.ground_convoys`.
    must stay on your side. A front delivery reinforces its supporting base's stock;
    normal deployment caps and Motor Pool surplus rules still apply.
    If a base marker is excluded by the terrain mask, its stock handoff uses a
-   nearby valid convoy endpoint or safe ground within 600 m. This does not relax
-   GPS validation or allow travel through excluded terrain or water.
+   valid convoy endpoint or safe ground within 600 m. If neither is available,
+   an authored endpoint farther away on safe ground and a friendly convoy road
+   can serve as the handoff. Travel to the handoff uses normal route validation.
    If the reserve is already at the receiving base's exact position, confirming
    the delivery adds the selected units to its stock immediately (zero turns).
 4. Check the returned distance, `arrival_in_turns`, `first_turn_stop`, warnings
