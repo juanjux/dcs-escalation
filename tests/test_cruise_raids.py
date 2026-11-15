@@ -239,6 +239,7 @@ def test_magazines_survive_a_save_round_trip(monkeypatch: pytest.MonkeyPatch) ->
     # state we do not need here.
     monkeypatch.setattr(Game, "on_load", lambda self: None)
     base_state = {
+        "theater": SimpleNamespace(conflicts=lambda: []),
         "laser_code_registry": object(),
         "stored_context": {},
         "debrief_history": [],

@@ -57,6 +57,7 @@ def campaign() -> Any:
     faction, income, forces = _side(GroupTask.SHORAD, GroupTask.MERAD, GroupTask.LORAD)
     wings: dict[Player, list[Any]] = {Player.BLUE: [], Player.RED: []}
     game: Any = SimpleNamespace(
+        settings=settings,
         coalition_for=lambda side: SimpleNamespace(
             air_wing=SimpleNamespace(iter_squadrons=lambda: wings[side])
         ),

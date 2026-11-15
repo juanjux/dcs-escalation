@@ -10,6 +10,7 @@ import pytest
 from game.highcommand import prizes
 from game.highcommand.orders import Closed, HighCommand, Order, Outcome, Ticket
 from game.highcommand.prizes import KINDS, Prize, Step, kind_of
+from game.settings import Settings
 from game.squadrons.morale import MORALE_MAX
 from game.squadrons.pilot import Pilot, PilotStatus
 from game.data.groups import GroupTask
@@ -55,6 +56,7 @@ def _game(**parts: Any) -> Any:
     )
     return SimpleNamespace(
         turn=12,
+        settings=Settings(),
         coalition_for=lambda player: coalition,
         theater=SimpleNamespace(controlpoints=parts.get("bases", [])),
         blue=coalition,

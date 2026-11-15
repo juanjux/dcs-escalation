@@ -15,6 +15,7 @@ from game.server.tgos.routes import (
     set_tgo_destination,
     tgo_destination_in_range,
 )
+from game.settings import Settings
 from game.sim import GameUpdateEvents
 from game.theater.base import Base
 from game.theater.controlpoint import ControlPoint, OffMapSpawn, Player
@@ -41,15 +42,9 @@ def _ship(blue: bool = True) -> ShipGroundObject:
         theater=None,  # type: ignore[arg-type]
         starts_blue=player,
     )
-    # This fork's TgoJs.for_tgo also reads tgo.repairable (the destroyed-object
-    # map layers), which resolves to control_point.coalition.game.turn, and asks
-    # whether the site jams GPS, which reads the plugin switch. So the fake
-    # coalition needs a game stub the upstream test didn't require.
     cp._coalition = SimpleNamespace(  # type: ignore[assignment]
         player=player,
-        game=SimpleNamespace(
-            turn=1, settings=SimpleNamespace(plugin_option=lambda name: False)
-        ),
+        game=SimpleNamespace(turn=1, settings=Settings(gps_jamming_enabled=False)),
     )
     return ShipGroundObject(name="ship", location=location, control_point=cp)
 
@@ -160,12 +155,10 @@ def _populated_motorpools(
 
     game = SimpleNamespace(
         theater=SimpleNamespace(controlpoints=[cp]),
-        # plugin_option: the serializer asks whether GPS jamming is on before it
-        # works out a jamming ring. No plugin here, so no ring.
-        settings=SimpleNamespace(
+        settings=Settings(
             motorpool_enabled=True,
             motorpool_spawn_cap=cap,
-            plugin_option=lambda name: False,
+            gps_jamming_enabled=False,
         ),
         next_unit_id=next_unit_id,
         next_group_id=next_group_id,

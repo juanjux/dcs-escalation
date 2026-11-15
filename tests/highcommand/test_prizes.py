@@ -18,10 +18,11 @@ from game.highcommand.prizes import (
     PrizeKind,
     Prizes,
 )
+from game.settings import Settings
 
 
-def _settings(live_pilots: bool = True, morale: bool = True) -> Any:
-    return SimpleNamespace(live_pilots_enabled=live_pilots, morale_enabled=morale)
+def _settings(live_pilots: bool = True, morale: bool = True) -> Settings:
+    return Settings(live_pilots_enabled=live_pilots, morale_enabled=morale)
 
 
 class _Aircraft:
