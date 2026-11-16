@@ -11,6 +11,7 @@ do
     end
     assert(type(c.coordinateFormat)=='number' and c.coordinateFormat==math.floor(c.coordinateFormat)
       and c.coordinateFormat>=0 and c.coordinateFormat<=2, 'invalid AFAC coordinate format')
+    assert(c.orbitMarkedTarget==nil or type(c.orbitMarkedTarget)=='boolean', 'invalid AFAC mark orbit flag')
     -- The pure coordinator validates code and time bounds without native effects.
     RealisticCAS.newAFAC({markSeconds=c.markSeconds,messageSeconds=c.messageSeconds,laserCode=c.laserCode})
   end
@@ -72,6 +73,9 @@ do
       env.info('REALISTIC_CAS_AFAC|side='..side..'|'..full)
     end
     local function stopMark(id)
+      if settings.orbitMarkedTarget and navigation then
+        navigation:endMarkOrbit(records[id].meta.afac.groupName,id)
+      end
       local handles=spots[id]
       if not handles then return true end
       local success=true
@@ -188,6 +192,13 @@ do
         end
       end
     end
+    local function canObserve(observer,t,weather,profile)
+      if weather.visualTransmission<=0 or not S.assess(observer,t,weather,profile) then return false end
+      local clouds=c.afacAvoidance and c.afacAvoidance.clouds
+      if clouds and math.min(observer.point.y,t.point.y)<=clouds.top and
+        math.max(observer.point.y,t.point.y)>=clouds.base then return false end
+      return land.isVisible(observer.point,t.point)
+    end
     local function refresh(id,r,state)
       local source=live(id)
       if not source then
@@ -197,7 +208,8 @@ do
       r.seen=true
       -- Human AFACs fire their own smoke stores; do not duplicate those rounds
       -- with scripted puffs while leaving their native payload untouched.
-      if source:getPlayerName() then coordinator:disableSmoke(id) end
+      local manual=source:getPlayerName()
+      if manual then coordinator:disableSmoke(id) end
       local report={alive=true,fuel=source:getFuel(),onStation=false,contacts={}}
       local meta=r.meta.afac
       local start=(RealisticCAS.afacStations or {})[meta.groupName]
@@ -234,14 +246,15 @@ do
       local weather=c.environment(observer,t,timer.getTime())
       report.night=weather.light<0.5
       r.night=report.night
-      if not S.assess(observer,t,weather,r.profile) then return report end
-      local clouds=c.afacAvoidance and c.afacAvoidance.clouds
-      if clouds and math.min(observer.point.y,t.point.y)<=clouds.top and
-        math.max(observer.point.y,t.point.y)>=clouds.base then return report end
-      -- A radar-only contact must not produce a laser through opaque cloud.
-      if weather.visualTransmission<=0 or not land.isVisible(observer.point,t.point) then return report end
+      if not canObserve(observer,t,weather,r.profile) then return report end
       report.contacts={{id=t.name,group=t.groupName,side=t.side,point=t.point,typeName=t.typeName,
         alive=true,revealed=true,observed=true,safe=true,inZone=true}}
+      if settings.orbitMarkedTarget and navigation and not manual then
+        report.canObserve=function(p,forward)
+          local agl=math.max(0,p.y-land.getHeight({x=p.x,y=p.z}))
+          return canObserve({point=p,forward=forward,agl=agl,side=observer.side,afac=meta},t,weather,r.profile)
+        end
+      end
       return report
     end
     for _,id in ipairs(order) do
@@ -259,7 +272,10 @@ do
         if not ok then
           errorLog(report);report={alive=true,fuel=1,onStation=false}
         end
-        coordinator:step(id,report)
+        local state=coordinator:step(id,report)
+        if state.state=='mark' and report.canObserve then
+          navigation:requestMarkOrbit(r.meta.afac.groupName,id,report.contacts[1].point,report.canObserve)
+        end
       end
     end
     function api:stop()

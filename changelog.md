@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Realistic CAS]** AI JTACs orbit marked targets for a configurable time or until destroyed.
 * **[IMAC]** Make routine debug messages opt-in by category.
 * **[Pilots]** Add an opt-in setting to show pilot names in the Latin alphabet in Escalation and DCS.
 * **[Plugins]** Remove Moose Soundhandler and its sound files.

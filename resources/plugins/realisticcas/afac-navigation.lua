@@ -433,13 +433,37 @@ g:getController():setCommand({id='SwitchWaypoint',
       r.applied=true;r.plan=plan
       env.info(string.format('REALISTIC_CAS_AFAC_NAV|PLAN|%s|revision=%d|altitude=%.0f|points=%d',
         name,r.revision,plan.altitude,#plan.path))
-      if plan.cloud then
+      if plan.markOrbit then
+        env.info('REALISTIC_CAS_AFAC_NAV|MARK_ORBIT|'..name..'|'..plan.markOrbit)
+      elseif plan.cloud then
         r.climbingFromCloud=true
         notice(name,r,string.format('searching below the cloud base at %.0f m MSL.',plan.altitude))
       elseif not plan.waiting then
         notice(name,r,string.format('avoiding known air defence; orbit %.0f m MSL.',plan.altitude))
       end
       return true
+    end
+    local function markOrbit(name,r,controller,input,state)
+      local mark=r.markOrbit
+      if not mark then return false end
+      local p,target=input.source,mark.point
+      local plan=r.plan
+      if r.applied and plan.markOrbit==mark.observer and state and state.active and not state.finished and
+        A.markOrbitSafe(input,plan,target,state.nextPoint,mark.canObserve) then return true end
+      local distance=A.distance(p,target)
+      for _,fraction in ipairs({0,0.4}) do
+        local shift=distance>0 and math.min(1,fraction*input.footprint/distance) or 0
+        local center={x=target.x+(p.x-target.x)*shift,z=target.z+(p.z-target.z)*shift}
+        -- Start the native orbit before crossing over the target.
+        local entryDistance=A.distance(p,center)
+        local lead=entryDistance>0 and math.min(0.5,input.footprint/(1.5*entryDistance)) or 0
+        local entry={x=center.x+(p.x-center.x)*lead,z=center.z+(p.z-center.z)*lead}
+        plan={point=center,path={entry},altitude=p.y,markOrbit=mark.observer}
+        if A.markOrbitSafe(input,plan,target,1,mark.canObserve) then
+          return push(name,r,controller,p,plan)
+        end
+      end
+      return false
     end
     local function waitForArea(name,r,controller,p,reason)
       local input=recoveryInput(r,p,r.meta.navigation.exitWaypoint)
@@ -560,6 +584,7 @@ g:getController():setCommand({id='SwitchWaypoint',
           return
         end
       end
+      if start and markOrbit(name,r,controller,input,state) then return end
       local lowPatrol=r.applied and r.plan.cloud
       if start and clouds and clouds.visualTransmission and clouds.visualTransmission<=0.4 and
         (p.y>=clouds.base or lowPatrol)then
@@ -578,7 +603,7 @@ g:getController():setCommand({id='SwitchWaypoint',
         input.checkLowEntry=p.y<altitude-100
         r.climbingFromCloud=input.checkLowEntry
       end
-      if r.applied and not lowPatrol and not r.plan.waiting and state and state.active and not state.finished and
+      if r.applied and not lowPatrol and not r.plan.waiting and not r.plan.markOrbit and state and state.active and not state.finished and
         p.y<r.plan.altitude-100 and A.requirement(input) and A.safePlan(input,r.plan,state.nextPoint) then
         if not start and not r.plan.approach and RealisticCAS.AFACSearch.inside(p,m.zone) then
           RealisticCAS.afacStations=RealisticCAS.afacStations or {};RealisticCAS.afacStations[name]=timer.getTime()
@@ -597,7 +622,7 @@ g:getController():setCommand({id='SwitchWaypoint',
         if not start and not plan.approach and RealisticCAS.AFACSearch.inside(p,m.zone) then
           RealisticCAS.afacStations=RealisticCAS.afacStations or {};RealisticCAS.afacStations[name]=timer.getTime()
         end
-        local changed=not r.applied or lowPatrol or r.plan.waiting~=plan.waiting or A.distance(r.plan.point,plan.point)>250 or
+        local changed=not r.applied or lowPatrol or r.plan.markOrbit or r.plan.waiting~=plan.waiting or A.distance(r.plan.point,plan.point)>250 or
           math.abs(r.plan.altitude-plan.altitude)>100
         if not changed then
           local remaining=state and state.nextPoint or 1
@@ -609,6 +634,18 @@ g:getController():setCommand({id='SwitchWaypoint',
           if wasWaiting then notice(name,r,'assigned area accessible; resuming the mission.')end
         end
       end
+    end
+    function api:requestMarkOrbit(name,observer,point,canObserve)
+      local r=groups[name]
+      if not self.active or not r or (r.markOrbit and r.markOrbit.observer~=observer) then return end
+      if not r.markOrbit then r.nextPlan=nil;urgent[name]=0 end
+      r.markOrbit={observer=observer,point=point,canObserve=canObserve}
+    end
+    function api:endMarkOrbit(name,observer)
+      local r=groups[name]
+      if not r or not r.markOrbit or r.markOrbit.observer~=observer then return end
+      r.markOrbit=nil
+      if r.applied and r.plan.markOrbit then r.nextPlan=nil;urgent[name]=0 end
     end
     function api:clear(name,p)
       local r=groups[name]
