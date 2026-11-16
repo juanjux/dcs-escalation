@@ -22,6 +22,10 @@ if TYPE_CHECKING:
     from game.theater import ConflictTheater
 
 
+# A small headwind component is treated as calm for runway selection.
+MIN_RUNWAY_HEADWIND_MPS = 1.0
+
+
 def runway_centerline(
     theater: ConflictTheater, airport: Airport, runway_name: str
 ) -> Optional[tuple[Point, float]]:
@@ -165,45 +169,31 @@ class RunwayAssigner:
     def __init__(self, conditions: Conditions):
         self.conditions = conditions
 
-    def angle_off_headwind(self, runway: RunwayData) -> Heading:
-        surface_wind = self.conditions.weather.wind.at_0m
-        if surface_wind.speed <= 0:
-            # A calm vector can retain any direction, especially when surface
-            # wind is disabled. Treat every runway as tied instead of using it.
-            return Heading.from_degrees(0)
-        wind = Heading.from_degrees(surface_wind.direction)
-        ideal_heading = wind.opposite
-        return runway.runway_heading.angle_between(ideal_heading)
-
     def get_preferred_runway(
         self, theater: ConflictTheater, airport: Airport
     ) -> RunwayData:
-        """Returns the preferred runway for the given airport.
+        """Choose a runway using the surface wind component along its axis.
 
-        Prefer the best headwind even in light wind. An instrument approach must
-        not select a tailwind runway over its reciprocal. At zero speed, ignore
-        the stored direction; prefer ILS and then data order to break ties.
+        When no runway has a meaningful headwind, use the calm-wind preference.
+        Calm conditions and equal headwinds use ILS and then terrain data order.
         """
         runways = list(RunwayData.for_pydcs_airport(theater, airport))
-
-        # Find the runway with the best headwind first.
-        best_runways = [runways[0]]
-        best_angle_off_headwind = self.angle_off_headwind(best_runways[0])
-        for runway in runways[1:]:
-            angle_off_headwind = self.angle_off_headwind(runway)
-            if angle_off_headwind == best_angle_off_headwind:
-                best_runways.append(runway)
-            elif angle_off_headwind < best_angle_off_headwind:
-                best_runways = [runway]
-                best_angle_off_headwind = angle_off_headwind
-
-        for runway in best_runways:
-            # But if there are multiple runways with the same heading,
-            # prefer
-            # and ILS capable runway.
-            if runway.ils is not None:
-                return runway
-
-        # Otherwise the only difference between the two is the distance from
-        # parking, which we don't know, so just pick the first one.
-        return best_runways[0]
+        wind = self.conditions.weather.wind.at_0m
+        if wind.speed >= MIN_RUNWAY_HEADWIND_MPS:
+            headwinds = []
+            for runway in runways:
+                axis = runway_centerline(theater, airport, runway.runway_name)
+                course = axis[1] if axis is not None else runway.runway_heading.degrees
+                # DCS stores the direction of travel of the wind vector.
+                headwind = -wind.speed * math.cos(math.radians(course - wind.direction))
+                headwinds.append((runway, headwind))
+            best_headwind = max(headwind for _, headwind in headwinds)
+            if best_headwind >= MIN_RUNWAY_HEADWIND_MPS:
+                runways = [
+                    runway
+                    for runway, headwind in headwinds
+                    if math.isclose(headwind, best_headwind, abs_tol=1e-6)
+                ]
+        return next(
+            (runway for runway in runways if runway.ils is not None), runways[0]
+        )

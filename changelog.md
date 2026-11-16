@@ -128,6 +128,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Flight Plans]** Keep the calm-wind runway preference when headwind is negligible.
 * **[Strike]** Restore carpet bombing for heavy bombers and separate aimpoints for lighter aircraft.
 * **[Air Wing]** Fix a crash when opening the inventory with assigned pilots.
 * **[IMAC]** Let patrols defend their SAM avoidance orbit and log per-flight command loss.
