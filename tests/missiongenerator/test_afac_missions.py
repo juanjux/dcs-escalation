@@ -357,10 +357,22 @@ def test_frontline_search_circuit_flies_both_sides_and_keeps_its_native_exit(
         Group={getByName=function()return {isExist=function()return true end,
           getUnits=function()return {unit}end,getController=function()return controller end}end}
     """)
-    task = group["route"]["points"][6]["task"]["params"]["tasks"][1]
-    script = task["params"]["action"]["params"]["command"]
-    lua.execute(script)
+    lua.execute(
+        Path("resources/plugins/realisticcas/afac-search.lua").read_text("utf-8")
+    )
+    scripts = [
+        group["route"]["points"][i]["task"]["params"]["tasks"][1]["params"]["action"][
+            "params"
+        ]["command"]
+        for i in range(3, 7)
+    ]
+    for script in scripts:
+        lua.execute(script)
     assert lua.eval("command.params.goToWaypointIndex") == 3
+    assert not lua.eval("RealisticCAS.AFACSearch.lapComplete('AFAC')")
+    lua.execute(scripts[0])
+    assert lua.eval("RealisticCAS.AFACSearch.lapComplete('AFAC')")
+    script = scripts[-1]
     lua.execute("fuel=.19")
     lua.execute(script)
     assert lua.eval("command.params.goToWaypointIndex") == 7

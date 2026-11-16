@@ -118,6 +118,27 @@ class AfacSearchTests(unittest.TestCase):
         target.point.x=11000;assert(not S.assess(o,t,e,p,true))
         """)
 
+    def test_avoidance_circle_requires_a_full_turn_on_one_route(self):
+        self.rt.execute("""
+        local search=RealisticCAS.AFACSearch
+        local center={x=0,z=0}
+        local function turn(first,last)
+          for i=first,last do
+            local angle=i*math.pi/8
+            search.circleProgress('blue',{x=math.cos(angle)*1000,z=math.sin(angle)*1000},center)
+          end
+        end
+        turn(0,10)
+        assert(not search.lapComplete('blue'))
+        search.resetLap('blue')
+        turn(10,25)
+        assert(not search.lapComplete('blue'))
+        turn(26,27)
+        assert(search.lapComplete('blue'))
+        search.resetLap('blue')
+        assert(search.lapComplete('blue'))
+        """)
+
     def test_disabled_afac_does_not_start(self):
         self.rt.execute(
             "config.afacEnabled=false;assert(not pcall(RealisticCAS.startDetection,fog,config))"
