@@ -75,11 +75,12 @@ PROBABILITY_DEFAULTS = {
 }
 
 
-def afac_marking_config(options: Mapping[str, Any]) -> dict[str, int]:
+def afac_marking_config(options: Mapping[str, Any]) -> dict[str, bool | int]:
     """Reject invalid saved options before starting any mission-side effects."""
     result = {}
     for key, default, low, high in (
         ("afacMarkMinutes", 5, 1, 60),
+        ("afacMarkOrbitMinutes", 10, 1, 60),
         ("afacMessageSeconds", 15, 1, 300),
         ("afacLaserCode", 1688, 1511, 1788),
         ("afacCoordinateFormat", 0, 0, 2),
@@ -91,8 +92,13 @@ def afac_marking_config(options: Mapping[str, Any]) -> dict[str, int]:
     code = str(result["afacLaserCode"])
     if any(digit not in "12345678" for digit in code) or code[1] not in "567":
         raise ValueError("Realistic CAS: invalid AFAC laser code")
+    orbit = options.get("afacOrbitMarkedTarget", True)
+    if type(orbit) is not bool:
+        raise ValueError("Realistic CAS: afacOrbitMarkedTarget must be a boolean")
+    minutes_key = "afacMarkOrbitMinutes" if orbit else "afacMarkMinutes"
     return {
-        "markSeconds": result["afacMarkMinutes"] * 60,
+        "orbitMarkedTarget": orbit,
+        "markSeconds": result[minutes_key] * 60,
         "messageSeconds": result["afacMessageSeconds"],
         "laserCode": result["afacLaserCode"],
         "coordinateFormat": result["afacCoordinateFormat"],

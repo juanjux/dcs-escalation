@@ -55,7 +55,7 @@ def _chosen(
         RunwayData, "for_pydcs_airport", staticmethod(lambda *_: iter(runways))
     )
     assigner = RunwayAssigner(conditions)  # type: ignore[arg-type]
-    airport: Any = SimpleNamespace(name="Mount Pleasant")
+    airport: Any = SimpleNamespace(runways=[])
     return assigner.get_preferred_runway(None, airport).runway_name  # type: ignore[arg-type]
 
 
@@ -68,26 +68,46 @@ def test_a_real_wind_still_decides(monkeypatch: pytest.MonkeyPatch) -> None:
     assert _chosen(monkeypatch, from_degrees=50, mps=10.0) == "05"
 
 
-@pytest.mark.parametrize("speed", [0.01, 1.0, 2.3260408068684355, 2.58, 10.0])
-def test_light_wind_does_not_prefer_a_tailwind_ils_runway(
+@pytest.mark.parametrize("speed", [1.2, 2.3260408068684355, 2.58, 10.0])
+def test_meaningful_headwind_wins_over_ils(
     monkeypatch: pytest.MonkeyPatch, speed: float
 ) -> None:
     assert _chosen(monkeypatch, from_degrees=29, mps=speed) == "05"
 
 
-def test_calm_air_at_a_field_with_no_aid_still_reads_the_wind(
+def test_meaningful_headwind_wins_at_an_airfield_without_ils(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     bare = [_runway("23", 230), _runway("05", 50)]
 
-    assert _chosen(monkeypatch, from_degrees=29, mps=1.0, runways=bare) == "05"
+    assert _chosen(monkeypatch, from_degrees=29, mps=1.2, runways=bare) == "05"
+
+
+@pytest.mark.parametrize("from_degrees, speed", [(0, 0.5), (88, 15.0)])
+def test_negligible_headwind_uses_the_calm_wind_preference(
+    monkeypatch: pytest.MonkeyPatch, from_degrees: int, speed: float
+) -> None:
+    # Use a weak direct wind and a strong nearly perpendicular wind.
+    runways = [_runway("36", 0), _runway("18", 180, ils=True)]
+    assert _chosen(monkeypatch, from_degrees, mps=speed, runways=runways) == "18"
+
+
+def test_headwind_projection_uses_the_surveyed_runway_course(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runways = [_runway("36", 0), _runway("18", 180, ils=True)]
+    monkeypatch.setattr(
+        "game.runways.runway_centerline",
+        lambda _theater, _airport, name: (None, {"36": 20, "18": 200}[name]),
+    )
+    assert _chosen(monkeypatch, from_degrees=100, mps=10.0, runways=runways) == "36"
 
 
 def test_instrument_runway_is_still_preferred_when_headwinds_tie(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     parallel = [_runway("09L", 90), _runway("09R", 90, ils=True)]
-    assert _chosen(monkeypatch, 90, mps=1, runways=parallel) == "09R"
+    assert _chosen(monkeypatch, 90, mps=4, runways=parallel) == "09R"
 
 
 @pytest.mark.parametrize("from_degrees", [0, 14, 90, 194, 270, 359])

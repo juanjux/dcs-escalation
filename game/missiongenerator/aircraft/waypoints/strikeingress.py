@@ -11,6 +11,9 @@ from game.theater.theatergroundobject import MotorpoolGroundObject
 from game.utils import mach, meters
 from .pydcswaypointbuilder import PydcsWaypointBuilder
 
+MIN_CARPET_LENGTH = 500.0
+MAX_CARPET_LENGTH = 3000.0
+
 
 class StrikeIngressBuilder(PydcsWaypointBuilder):
     _special_wpts_injected: bool = False
@@ -33,7 +36,14 @@ class StrikeIngressBuilder(PydcsWaypointBuilder):
             self.add_strike_tasks(waypoint, WeaponType.GuidedBombs)
 
         waypoint.tasks.append(OptFormation.ww2_bomber_element_close())
-        self.add_bombing_tasks(waypoint)
+        if (
+            bomber
+            or bomber_guided
+            or isinstance(self.package.target, MotorpoolGroundObject)
+        ):
+            self.add_bombing_tasks(waypoint)
+        else:
+            self.add_strike_tasks(waypoint, WeaponType.Bombs)
         waypoint.tasks.append(OptFormation.finger_four_open())
         self.register_special_ingress_points()
 
@@ -76,17 +86,17 @@ class StrikeIngressBuilder(PydcsWaypointBuilder):
         for target in targets[1:]:
             center += target.position
         center /= len(targets)
-        avg_spacing = 0.0
-        for t in targets:
-            avg_spacing += center.distance_to_point(t.position)
-        avg_spacing /= len(targets)
         bombing: Union[CarpetBombing, Bombing]
         if self.group.task == "Ground Attack":
+            spread = max(
+                center.distance_to_point(target.position) for target in targets
+            )
+            carpet_length = min(max(2 * spread, MIN_CARPET_LENGTH), MAX_CARPET_LENGTH)
             bombing = CarpetBombing(
                 center,
                 weapon_type=WeaponType.Bombs,
                 expend=Expend.All,
-                carpet_length=avg_spacing,
+                carpet_length=carpet_length,
                 altitude=waypoint.alt,
             )
         else:

@@ -61,6 +61,114 @@ class AfacNavigationTests(unittest.TestCase):
         end
         """)
 
+    def test_mark_orbit_keeps_the_spot_and_resumes_search_on_completion(self):
+        for ending, reason in (
+            ("expiry", "mark complete"),
+            ("destroyed", "target destroyed"),
+        ):
+            with self.subTest(ending=ending):
+                self.setUp()
+                self.rt.globals().ending = ending
+                self.rt.globals().reason = reason
+                self.rt.execute("""
+                observer.point.x=0
+                config.airDefenseThreats={}
+                config.observers[1].afac.stationSeconds=1200
+                config.afacMarking.orbitMarkedTarget=true
+                config.afacMarking.markSeconds=600
+                begin();advance(25)
+                assert(#assigned==1 and orbit(assigned[1]).params.point.x==target.point.x)
+                local entry=assigned[1].params.route.points[2]
+                assert(entry.x>observer.point.x and entry.x<target.point.x)
+                local state=marker.coordinator:get('observer')
+                assert(state.state=='mark' and state.markEnds>600 and #made==1)
+                local updates=made[1].updates
+                target.point.x=5200;advance(10)
+                assert(#assigned==1 and #made==1 and not made[1].dead)
+                assert(made[1].point.x==5200 and made[1].updates>updates)
+                if ending=='expiry' then
+                  advance(state.markEnds-now-2)
+                  assert(not made[1].dead)
+                else
+                  target.life=0
+                end
+                advance(4)
+                assert(marker.coordinator:get('observer').reason==reason)
+                assert(made[1].dead and #assigned==2)
+                assert(jump(assigned[2])==config.observers[1].afac.navigation.searchWaypoint)
+                """)
+
+    def test_mark_orbit_leaves_native_route_in_place_when_unavailable(self):
+        for scenario in ("disabled", "player", "obstructed"):
+            with self.subTest(scenario=scenario):
+                self.setUp()
+                self.rt.globals().scenario = scenario
+                self.rt.execute("""
+                observer.point.x=0
+                config.airDefenseThreats={}
+                config.afacMarking.orbitMarkedTarget=scenario~='disabled'
+                if scenario=='player' then
+                  observer.player='Pilot';config.observers[1].allowPlayer=true
+                elseif scenario=='obstructed' then
+                  land.isVisible=function(a)return a.x==observer.point.x end
+                end
+                begin();advance(25)
+                assert(marker.coordinator:get('observer').state=='mark')
+                assert(#assigned==0 and #made==1 and not made[1].dead)
+                """)
+
+    def test_mark_orbit_yields_to_bingo_or_lost_observation(self):
+        for scenario in ("bingo", "los"):
+            with self.subTest(scenario=scenario):
+                self.setUp()
+                self.rt.globals().scenario = scenario
+                self.rt.execute("""
+                observer.point.x=0
+                config.airDefenseThreats={}
+                config.afacMarking.orbitMarkedTarget=true
+                begin();advance(25)
+                assert(#assigned==1 and #made==1 and not made[1].dead)
+                if scenario=='bingo' then observer.fuel=.1
+                else land.isVisible=function()return false end end
+                advance(4)
+                assert(made[1].dead and #assigned==2)
+                local n=config.observers[1].afac.navigation
+                assert(jump(assigned[2])==(scenario=='bingo' and n.exitWaypoint or n.searchWaypoint))
+                """)
+
+    def test_mark_orbit_ends_when_a_sam_threatens_its_path(self):
+        for scenario in ("discovered", "moved"):
+            with self.subTest(scenario=scenario):
+                self.setUp()
+                self.rt.globals().scenario = scenario
+                self.rt.execute("""
+                assert(fog:stop())
+                local sam=group('sam-group',3)
+                fog=start({'red','sam-group'})
+                local gun=unit('sam',sam,'test-sam',scenario=='moved' and 15000 or 5000,0)
+                gun.point.z=3000
+                config.airDefenseThreats={{name='sam',groupName='sam-group',coalition=1,
+                  typeName='test-sam',radius=1500,ceiling=4000,known=scenario=='moved'}}
+                config.afacMarking.orbitMarkedTarget=true
+                observer.point.x=0
+                begin();advance(25)
+                assert(#assigned==1 and #made==1 and not made[1].dead)
+                local entry=assigned[1].params.route.points[2]
+                assert(loadstring(entry.task.params.tasks[1].params.action.params.command))()
+                if scenario=='discovered' then
+                  assert(fog:observe('sam-group',2,gun.point,'test intelligence'))
+                else
+                  gun.point.x=5000
+                end
+                advance(1)
+                assert(detector.afacNavigation:clear('blue',observer.point))
+                assert(#assigned==2 and made[1].dead)
+                local state=marker.coordinator:get('observer')
+                assert(state.state=='search' and state.reason=='air-defence threat to marking orbit')
+                advance(5)
+                assert(#made==1)
+                """)
+
     def test_hidden_threats_are_not_read_and_do_not_change_routes(self):
         self.rt.execute("""
         beginNavigation();tick()

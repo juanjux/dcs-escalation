@@ -54,10 +54,28 @@
         {
             "section": "Airborne forward air control (AFAC)",
             "enabledBy": "afacEnabled",
-            "nameInUI": "AFAC marking time per group (minutes)",
-            "descriptionInUI": "Mark one target for up to this long before selecting a different group. Default 5 minutes. Losing observation, terrain line of sight, leaving the assigned zone, Bingo or loss of the aircraft stops marking sooner. Only one AFAC can reserve an enemy group at a time.",
+            "nameInUI": "AFAC marking time without target orbit (minutes)",
+            "descriptionInUI": "Maximum time to mark a target when target orbit is disabled. Default 5 minutes.",
             "mnemonic": "afacMarkMinutes",
             "defaultValue": 5,
+            "minimumValue": 1,
+            "maximumValue": 60
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "Orbit marked targets",
+            "descriptionInUI": "AI JTACs orbit the target while marking it if they can maintain observation safely. The orbit ends when the target is destroyed, the marking time expires, air defences threaten the orbit, or fuel reaches Bingo.",
+            "mnemonic": "afacOrbitMarkedTarget",
+            "defaultValue": true
+        },
+        {
+            "section": "Airborne forward air control (AFAC)",
+            "enabledBy": "afacEnabled",
+            "nameInUI": "AFAC marking time with target orbit (minutes)",
+            "descriptionInUI": "Maximum time to mark a target when target orbit is enabled. Default 10 minutes.",
+            "mnemonic": "afacMarkOrbitMinutes",
+            "defaultValue": 10,
             "minimumValue": 1,
             "maximumValue": 60
         },

@@ -148,6 +148,10 @@ do
         local reason=report.fuel<=bingo and "bingo" or "station complete"
         leave(r,"rtb",reason);return snapshot(r)
       end
+      if r.mark and report.markOrbitInterrupted==true then
+        r.blockedGroup=r.mark.group
+        leave(r,"search","air-defence threat to marking orbit");return snapshot(r)
+      end
       if report.onStation~=true then
         leave(r,r.stationEnds and "search" or "transit","outside assigned zone")
         return snapshot(r)

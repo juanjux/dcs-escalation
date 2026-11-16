@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[Realistic CAS]** AI JTACs orbit marked targets for a configurable time or until destroyed.
 * **[IMAC]** Make routine debug messages opt-in by category.
 * **[Pilots]** Add an opt-in setting to show pilot names in the Latin alphabet in Escalation and DCS.
 * **[Plugins]** Remove Moose Soundhandler and its sound files.
@@ -127,7 +128,8 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
-* **[Flight Plans]** Align arrivals with Groom Lake runway 32 in light wind.
+* **[Flight Plans]** Keep the calm-wind runway preference when headwind is negligible.
+* **[Strike]** Restore carpet bombing for heavy bombers and separate aimpoints for lighter aircraft.
 * **[Air Wing]** Fix a crash when opening the inventory with assigned pilots.
 * **[IMAC]** Let patrols defend their SAM avoidance orbit and log per-flight command loss.
 * **[IADS]** Show live point-defence rings around dark batteries and let Strela sites use their own power.
