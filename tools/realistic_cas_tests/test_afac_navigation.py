@@ -136,6 +136,39 @@ class AfacNavigationTests(unittest.TestCase):
                 assert(jump(assigned[2])==(scenario=='bingo' and n.exitWaypoint or n.searchWaypoint))
                 """)
 
+    def test_mark_orbit_ends_when_a_sam_threatens_its_path(self):
+        for scenario in ("discovered", "moved"):
+            with self.subTest(scenario=scenario):
+                self.setUp()
+                self.rt.globals().scenario = scenario
+                self.rt.execute("""
+                assert(fog:stop())
+                local sam=group('sam-group',3)
+                fog=start({'red','sam-group'})
+                local gun=unit('sam',sam,'test-sam',scenario=='moved' and 15000 or 5000,0)
+                gun.point.z=3000
+                config.airDefenseThreats={{name='sam',groupName='sam-group',coalition=1,
+                  typeName='test-sam',radius=1500,ceiling=4000,known=scenario=='moved'}}
+                config.afacMarking.orbitMarkedTarget=true
+                observer.point.x=0
+                begin();advance(25)
+                assert(#assigned==1 and #made==1 and not made[1].dead)
+                local entry=assigned[1].params.route.points[2]
+                assert(loadstring(entry.task.params.tasks[1].params.action.params.command))()
+                if scenario=='discovered' then
+                  assert(fog:observe('sam-group',2,gun.point,'test intelligence'))
+                else
+                  gun.point.x=5000
+                end
+                advance(1)
+                assert(detector.afacNavigation:clear('blue',observer.point))
+                assert(#assigned==2 and made[1].dead)
+                local state=marker.coordinator:get('observer')
+                assert(state.state=='search' and state.reason=='air-defence threat to marking orbit')
+                advance(5)
+                assert(#made==1)
+                """)
+
     def test_hidden_threats_are_not_read_and_do_not_change_routes(self):
         self.rt.execute("""
         beginNavigation();tick()

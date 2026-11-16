@@ -65,7 +65,7 @@
             "section": "Airborne forward air control (AFAC)",
             "enabledBy": "afacEnabled",
             "nameInUI": "Orbit marked targets",
-            "descriptionInUI": "AI JTACs orbit the target while marking it if they can maintain observation safely. The orbit ends when the target is destroyed or the marking time expires. Safety and Bingo fuel take priority.",
+            "descriptionInUI": "AI JTACs orbit the target while marking it if they can maintain observation safely. The orbit ends when the target is destroyed, the marking time expires, air defences threaten the orbit, or fuel reaches Bingo.",
             "mnemonic": "afacOrbitMarkedTarget",
             "defaultValue": true
         },

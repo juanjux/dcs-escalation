@@ -445,7 +445,7 @@ g:getController():setCommand({id='SwitchWaypoint',
     end
     local function markOrbit(name,r,controller,input,state)
       local mark=r.markOrbit
-      if not mark then return false end
+      if not mark or mark.interrupted then return false end
       local p,target=input.source,mark.point
       local plan=r.plan
       if r.applied and plan.markOrbit==mark.observer and state and state.active and not state.finished and
@@ -536,17 +536,29 @@ g:getController():setCommand({id='SwitchWaypoint',
       end
       local p=source:getPoint()
       local knownThreats=relevant(r.side,p,m)
+      local n=m.navigation
+      local turnSpeed=math.max(n.speed,r.measuredSpeed)
+      local footprint=math.max(500,turnSpeed*turnSpeed/3.5)*1.5+250
+      local state=RealisticCAS.afacNavigation[name]
+      local mark=r.markOrbit
+      if knownThreats and discardDestroyed(knownThreats)then r.nextPlan=nil;return end
+      -- The patrol replans less often. Check the active marking route on each
+      -- update so a moved ring also interrupts it when the threat count is unchanged.
+      if mark and not mark.interrupted and r.applied and r.plan.markOrbit==mark.observer and
+        state and state.active and not state.finished and (not knownThreats or
+          A.markOrbitThreatened(p,footprint,knownThreats,r.plan,state.nextPoint)) then
+        mark.interrupted=true
+        r.nextPlan=nil
+      end
       if not knownThreats then
         if r.nextWait and timer.getTime()<r.nextWait then return end
         r.nextWait=timer.getTime()+5
         waitForArea(name,r,controller,p,'too many known threats for bounded planning');return
       end
       r.nextWait=nil
-      if discardDestroyed(knownThreats)then r.nextPlan=nil;return end
       if r.nextPlan and timer.getTime()<r.nextPlan and r.threatCount==#knownThreats and
         math.abs(p.y-r.lastAltitude)<100 then return end
       r.nextPlan=timer.getTime()+5;r.threatCount=#knownThreats;r.lastAltitude=p.y
-      local n=m.navigation
       local center={x=(n.points[1].x+n.points[2].x)/2,z=(n.points[1].z+n.points[2].z)/2}
       local ground=land.getHeight({x=center.x,y=center.z})
       local altitude=n.altitude+(n.altType=='RADIO' and ground or 0)
@@ -554,15 +566,12 @@ g:getController():setCommand({id='SwitchWaypoint',
       local maxAltitude=math.min(aircraftLimit,ground+(c.probability and c.probability.opticalMaxAGL or 7010.4))
       local clouds=c.afacAvoidance.clouds
       if clouds then maxAltitude=math.min(maxAltitude,clouds.base-150) end
-      local turnSpeed=math.max(n.speed,r.measuredSpeed)
-      local footprint=math.max(500,turnSpeed*turnSpeed/3.5)*1.5+250
       local input={source=p,zone=m.zone,points=n.points,altitude=altitude,
         searchPath=n.searchPath,patrolAltType=n.altType,checkEntry=not start or r.applied,
         maxAltitude=maxAltitude,footprint=footprint,threats=knownThreats,clearance=150,
         directOnly=n.exitWaypoint==3,
         holdPoint=r.plan and r.plan.point,
         approach=not start,height=function(q)return land.getHeight({x=q.x,y=q.z})end}
-      local state=RealisticCAS.afacNavigation[name]
       if r.plan and r.plan.escape and state and state.active and not state.finished and
         (state.nextPoint<2 or r.measuredSpeed>n.speed*1.2)then
         local egressInput=recoveryInput(r,p,n.exitWaypoint)
@@ -638,8 +647,15 @@ g:getController():setCommand({id='SwitchWaypoint',
     function api:requestMarkOrbit(name,observer,point,canObserve)
       local r=groups[name]
       if not self.active or not r or (r.markOrbit and r.markOrbit.observer~=observer) then return end
-      if not r.markOrbit then r.nextPlan=nil;urgent[name]=0 end
-      r.markOrbit={observer=observer,point=point,canObserve=canObserve}
+      if not r.markOrbit then
+        r.nextPlan=nil;urgent[name]=0
+        r.markOrbit={observer=observer}
+      end
+      r.markOrbit.point=point;r.markOrbit.canObserve=canObserve
+    end
+    function api:markOrbitInterrupted(name,observer)
+      local r=groups[name]
+      return r and r.markOrbit and r.markOrbit.observer==observer and r.markOrbit.interrupted==true
     end
     function api:endMarkOrbit(name,observer)
       local r=groups[name]

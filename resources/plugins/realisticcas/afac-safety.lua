@@ -143,6 +143,13 @@ do
     return A.leg(last,plan.point,altitude,input.threats,last==input.source) and
       terrainSafe(input,last,plan.point,plan.altitude)
   end
+  function A.markOrbitThreatened(source,footprint,threats,plan,nextPoint)
+    local altitude=math.min(source.y,plan.altitude)
+    local padding=1000+footprint
+    return not A.clear(source,threats,padding) or
+      not A.clear({x=plan.point.x,y=altitude,z=plan.point.z},threats,padding) or
+      (nextPoint<=#plan.path and not A.leg(source,plan.path[nextPoint],altitude,threats,false,padding))
+  end
   function A.markOrbitSafe(input,plan,target,nextPoint,canObserve)
     if distance(plan.point,target)>input.footprint/2 or
       not A.orbit(plan.point,math.min(input.source.y,plan.altitude),input.zone,input.threats,input.footprint) or

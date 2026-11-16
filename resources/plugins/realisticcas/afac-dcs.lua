@@ -216,6 +216,10 @@ do
       report.stationComplete=(RealisticCAS.afacAbort or {})[meta.groupName] or
         (RealisticCAS.afacReturn or {})[meta.groupName]~=nil or
         (S.finite(start) and timer.getTime()>=start+meta.stationSeconds)
+      if state.unit and settings.orbitMarkedTarget and navigation and navigation:markOrbitInterrupted(meta.groupName,id) then
+        report.markOrbitInterrupted=true
+        return report
+      end
       local observer=callbacks.readObserver(id)
       if not observer then return report end
       report.onStation=true
