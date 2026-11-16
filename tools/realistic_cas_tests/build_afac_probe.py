@@ -69,6 +69,7 @@ def build_mission(
             "realisticcas.afacEnabled": True,
             "realisticcas.afacStationMinutes": 3 if quick else (8 if safety else 2),
             "realisticcas.afacMarkMinutes": 1,
+            "realisticcas.afacOrbitMarkedTarget": False,
             "realisticcas.probabilisticDetection": False,
             "realisticcas.acquisitionSeconds": 60 if fire_discovery else 3,
             "realisticcas.debug": True,
