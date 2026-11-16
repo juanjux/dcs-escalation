@@ -55,7 +55,8 @@ def _chosen(
         RunwayData, "for_pydcs_airport", staticmethod(lambda *_: iter(runways))
     )
     assigner = RunwayAssigner(conditions)  # type: ignore[arg-type]
-    return assigner.get_preferred_runway(None, None).runway_name  # type: ignore[arg-type]
+    airport: Any = SimpleNamespace(name="Mount Pleasant")
+    return assigner.get_preferred_runway(None, airport).runway_name  # type: ignore[arg-type]
 
 
 def test_zero_wind_uses_the_instrument_runway(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -140,20 +141,29 @@ def test_kabul_zero_surface_wind_aligns_with_runway_11(direction: int) -> None:
     assert approach_heading == pytest.approx(110)
 
 
-def test_tonopah_test_range_light_wind_aligns_with_headwind_runway_32() -> None:
+@pytest.mark.parametrize(
+    "airfield, direction, speed, expected_runway",
+    [
+        ("Tonopah Test Range", 160, 2.3260408068684355, "32"),
+        ("Groom Lake", 48, 1.5766249853798402, "32"),
+        ("Groom Lake", 336, 0, "32"),
+        ("Groom Lake", 336, 7, "14"),
+    ],
+)
+def test_nevada_runway_selection_and_align(
+    airfield: str, direction: int, speed: float, expected_runway: str
+) -> None:
     terrain = Nevada()
     theater: Any = SimpleNamespace(terrain=terrain)
-    arrival = Airfield(terrain.airports["Tonopah Test Range"], theater, Player.BLUE)
+    arrival = Airfield(terrain.airports[airfield], theater, Player.BLUE)
     conditions: Any = SimpleNamespace(
         weather=SimpleNamespace(
             wind=SimpleNamespace(
-                at_0m=SimpleNamespace(direction=160, speed=2.3260408068684355)
+                at_0m=SimpleNamespace(direction=direction, speed=speed)
             )
         )
     )
-    runways = list(RunwayData.for_pydcs_airport(theater, arrival.dcs_airport))
-    assert next(r for r in runways if r.runway_name == "14").ils is not None
-    assert arrival.active_runway(theater, conditions, {}).runway_name == "32"
+    assert arrival.active_runway(theater, conditions, {}).runway_name == expected_runway
     flight: Any = SimpleNamespace(
         arrival=arrival,
         is_helo=False,
@@ -168,8 +178,8 @@ def test_tonopah_test_range_light_wind_aligns_with_headwind_runway_32() -> None:
     )
     waypoint = align_waypoint(flight)
     assert waypoint is not None
-    assert waypoint.description == "Established on Tonopah Test Range runway 32"
-    axis = runway_centerline(theater, arrival.dcs_airport, "32")
+    assert waypoint.description == f"Established on {airfield} runway {expected_runway}"
+    axis = runway_centerline(theater, arrival.dcs_airport, expected_runway)
     assert axis is not None
     center, course = axis
     expected = center.point_from_heading(

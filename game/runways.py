@@ -22,6 +22,11 @@ if TYPE_CHECKING:
     from game.theater import ConflictTheater
 
 
+# Groom Lake's native ATC assigned 32 with a 1.58 m/s surface wind
+# even though 14 had the headwind. Keep this light-wind rule local.
+GROOM_LAKE_LIGHT_WIND_MPS = 2.0
+
+
 def runway_centerline(
     theater: ConflictTheater, airport: Airport, runway_name: str
 ) -> Optional[tuple[Point, float]]:
@@ -180,11 +185,19 @@ class RunwayAssigner:
     ) -> RunwayData:
         """Returns the preferred runway for the given airport.
 
-        Prefer the best headwind even in light wind. An instrument approach must
-        not select a tailwind runway over its reciprocal. At zero speed, ignore
-        the stored direction; prefer ILS and then data order to break ties.
+        Use the best headwind and break ties by ILS and data order. At Groom
+        Lake, retain runway 32 in light wind to match the native tower.
         """
         runways = list(RunwayData.for_pydcs_airport(theater, airport))
+        if (
+            airport.name == "Groom Lake"
+            and self.conditions.weather.wind.at_0m.speed < GROOM_LAKE_LIGHT_WIND_MPS
+        ):
+            runway_32 = next(
+                (runway for runway in runways if runway.runway_name == "32"), None
+            )
+            if runway_32 is not None:
+                return runway_32
 
         # Find the runway with the best headwind first.
         best_runways = [runways[0]]

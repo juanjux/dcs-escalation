@@ -127,6 +127,7 @@
 * **[UI]** Double-clicking a log entry that names a base or site moves the map to it, without zooming.
 
 ## Fixes
+* **[Flight Plans]** Align arrivals with Groom Lake runway 32 in light wind.
 * **[Air Wing]** Fix a crash when opening the inventory with assigned pilots.
 * **[IMAC]** Let patrols defend their SAM avoidance orbit and log per-flight command loss.
 * **[IADS]** Show live point-defence rings around dark batteries and let Strela sites use their own power.
