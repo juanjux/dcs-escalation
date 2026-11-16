@@ -61,6 +61,25 @@ class AfacNavigationTests(unittest.TestCase):
         end
         """)
 
+    def test_area_first_lap_discovers_and_second_lap_can_mark(self):
+        for orbit_enabled in (False, True):
+            with self.subTest(orbit=orbit_enabled):
+                self.setUp()
+                self.rt.globals().orbitEnabled = orbit_enabled
+                self.rt.execute("""
+                config.airDefenseThreats={}
+                config.afacMarking.orbitMarkedTarget=orbitEnabled
+                observer.point.x=-2000
+                begin(true);advance(25)
+                assert(#afac_discoveries==1 and not red.hidden)
+                assert(#made==0 and #smokes==0 and #assigned==0)
+                observer.point.x=2000;advance(10)
+                assert(#made==0 and #smokes==0 and #assigned==0)
+                observer.point.x=-2000;advance(5)
+                assert(#made==1 and #smokes==1 and #afac_marks==1)
+                assert(#assigned==(orbitEnabled and 1 or 0))
+                """)
+
     def test_mark_orbit_keeps_the_spot_and_resumes_search_on_completion(self):
         for ending, reason in (
             ("expiry", "mark complete"),
@@ -239,8 +258,14 @@ class AfacNavigationTests(unittest.TestCase):
                   if scenario=='local' then assert(math.abs(points[i].y)>4000)end
                 end
                 assert(points[#points].type=='Land' and points[#points].airdromeId==12)
-                local last=points[count+1].task.params.tasks[1]
-                assert(loadstring(last.params.action.params.command))()
+                for i=2,count+1 do
+                  local task=points[i].task.params.tasks[1]
+                  assert(loadstring(task.params.action.params.command))()
+                end
+                local search=RealisticCAS.AFACSearch
+                assert(not search.lapComplete('blue'))
+                assert(loadstring(points[2].task.params.tasks[1].params.action.params.command))()
+                assert(search.lapComplete('blue'))
                 assert(switches[1].params.fromWaypointIndex==count+1)
                 assert(switches[1].params.goToWaypointIndex==2)
                 for _=1,6 do tick()end

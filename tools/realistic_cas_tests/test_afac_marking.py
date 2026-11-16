@@ -35,7 +35,12 @@ class AfacMarkingTests(unittest.TestCase):
           local untilTime=now+seconds
           while now<untilTime do run(1) end
         end
-        function begin()
+        function finishSearchLap()
+          local search=RealisticCAS.AFACSearch
+          for _,index in ipairs({1,2,1})do search.patrolWaypoint('blue',index,2) end
+        end
+        function begin(firstLapPending)
+          if not firstLapPending then finishSearchLap() end
           detector=RealisticCAS.startDetection(fog,config)
           marker=detector.afacMarking
           assert(marker)
@@ -291,6 +296,7 @@ class AfacMarkingTests(unittest.TestCase):
             afacKnownTargets=config.targets,warnings={}},
           acquisitionSeconds=0,environment={defaultCover='desert',startTime=43200,
             sunrise=21600,sunset=64800,weather=1,visibility=30000}}
+        finishSearchLap()
         local m=assert(RealisticCAS.startMission(cfg));advance(25)
         assert(not red.hidden and not m.fog.service:isRegistered(1))
         assert(#made==1 and #afac_marks==1)
@@ -307,6 +313,7 @@ class AfacMarkingTests(unittest.TestCase):
           acquisitionSeconds=5,environment={defaultCover='desert',startTime=43200,
             sunrise=21600,sunset=64800,weather=1,visibility=30000}}
         world.event.S_EVENT_MISSION_END=12
+        finishSearchLap()
         local m=assert(RealisticCAS.startMission(cfg));advance(25)
         marker=m.detectors.afacMarking
         local before=marker.coordinator:get('observer').smokeRounds

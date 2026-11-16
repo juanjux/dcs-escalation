@@ -91,6 +91,9 @@ for _,u in ipairs(g:getUnits()) do
         if u:getFuel()<0.2 then done=true end
     end
 end
+if not done and cas.AFACSearch then
+    cas.AFACSearch.patrolWaypoint({name},{index - first + 1},{len(loop)})
+end
 local nextPoint=done and {last+1} or ({index}=={last} and {first})
 if nextPoint then
     g:getController():setCommand({{id='SwitchWaypoint',params={{

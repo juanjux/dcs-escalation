@@ -223,6 +223,7 @@ do
       local observer=callbacks.readObserver(id)
       if not observer then return report end
       report.onStation=true
+      if not RealisticCAS.AFACSearch.lapComplete(meta.groupName) then return report end
       if navigation then
         local safe,reason=navigation:clear(meta.groupName,observer.point)
         if not safe then

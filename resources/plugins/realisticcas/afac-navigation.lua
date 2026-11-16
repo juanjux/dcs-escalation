@@ -2,7 +2,7 @@
 assert(RealisticCAS and RealisticCAS.AFACSafety, 'load afac-safety.lua first')
 
 do
-  local A,S=RealisticCAS.AFACSafety,RealisticCAS.Sensors
+  local A,S,Search=RealisticCAS.AFACSafety,RealisticCAS.Sensors,RealisticCAS.AFACSearch
   function RealisticCAS.newAFACNavigation(fog,c)
     local threats,groups,order,byUnit={},{},{},{}
     local definitions=c.airDefenseThreats or {}
@@ -318,6 +318,7 @@ do
       end
       local state=RealisticCAS.afacNavigation[name]
       if state then state.waiting=nil end
+      Search.resetLap(name)
       env.info('REALISTIC_CAS_AFAC_NAV|ROUTE|'..name..'|mode='..mode..'|waypoint='..nextIndex)
       r.applied=false;return true
     end
@@ -377,7 +378,8 @@ end)()]],name,revision,name,name,name,seconds)
 local s=(RealisticCAS.afacNavigation or {})[%q]
 if not s or not s.active or s.revision~=%d then return end
 s.nextPoint=%d
-]],name,revision,index%count+1)
+RealisticCAS.AFACSearch.patrolWaypoint(%q,%d,%d)
+]],name,revision,index%count+1,name,index,count)
       if index<count then return progress end
       return progress..string.format([[
 local g=Group.getByName(%q)
@@ -431,6 +433,7 @@ g:getController():setCommand({id='SwitchWaypoint',
       if plan.waiting then controller:setCommand({id='SetUnlimitedFuel',params={value=false}})end
       controller:setTask({id='Mission',params={airborne=true,route={points=points}}})
       r.applied=true;r.plan=plan
+      Search.resetLap(name)
       env.info(string.format('REALISTIC_CAS_AFAC_NAV|PLAN|%s|revision=%d|altitude=%.0f|points=%d',
         name,r.revision,plan.altitude,#plan.path))
       if plan.markOrbit then
@@ -535,11 +538,26 @@ g:getController():setCommand({id='SwitchWaypoint',
         depart(name,r,controller,bingo and 'BINGO fuel' or 'station complete',false);return
       end
       local p=source:getPoint()
-      local knownThreats=relevant(r.side,p,m)
+      local state=RealisticCAS.afacNavigation[name]
       local n=m.navigation
+      if start and not Search.lapComplete(name) then
+        if not Search.inside(p,m.zone) then
+          -- Native waypoint patrols can cut a corner between controller visits.
+          -- Their ordered waypoint actions are the source of lap progress.
+          if not n.searchPath and not (r.applied and r.plan.cloud) then Search.resetLap(name) end
+        elseif r.applied then
+          local plan=r.plan
+          if state and state.active and not state.finished and state.nextPoint>#plan.path and
+            not (plan.cloud or plan.waiting or plan.escape or plan.markOrbit) then
+            Search.circleProgress(name,p,plan.point)
+          end
+        elseif not n.searchPath then
+          Search.racetrackProgress(name,p,n.points)
+        end
+      end
+      local knownThreats=relevant(r.side,p,m)
       local turnSpeed=math.max(n.speed,r.measuredSpeed)
       local footprint=math.max(500,turnSpeed*turnSpeed/3.5)*1.5+250
-      local state=RealisticCAS.afacNavigation[name]
       local mark=r.markOrbit
       if knownThreats and discardDestroyed(knownThreats)then r.nextPlan=nil;return end
       -- The patrol replans less often. Check the active marking route on each
