@@ -22,8 +22,7 @@ from game.missiongenerator.motorpoolpopulator import (
     select_capped,
 )
 from game.server.leaflet import LeafletPoint
-from game.theater.iadsnetwork.iadsstate import IadsState, IadsStatus
-from game.theater.theatergroup import IadsGroundGroup
+from game.theater.iadsnetwork.iadsstate import IadsState
 from game.theater.theatergroundobject import (
     AirDefenceKind,
     IadsGroundObject,
@@ -35,6 +34,7 @@ from game.theater.theatergroundobject import (
 if TYPE_CHECKING:
     from game import Game
     from game.theater import TheaterGroundObject
+    from game.theater.iadsnetwork.iadsstate import IadsStateMap
 
 
 class AggregateGroundUnitEntry(BaseModel):
@@ -146,8 +146,8 @@ class TgoJs(BaseModel):
         return reach.meters if reach is not None else None
 
     @staticmethod
-    def _iads_status(tgo: TheaterGroundObject) -> Optional[IadsStatus]:
-        """What Skynet will do with this site, if it is in an IADS at all.
+    def _iads_state_map(tgo: TheaterGroundObject) -> Optional[IadsStateMap]:
+        """The cached IADS state available to both snapshots and event updates.
 
         Reached through the theater rather than passed in, because single-TGO updates
         come through the event stream one at a time. The network caches the answer for
@@ -158,7 +158,7 @@ class TgoJs(BaseModel):
         network = getattr(theater, "iads_network", None)
         if network is None:
             return None
-        return network.state_map.status_for(tgo)
+        return network.state_map
 
     @staticmethod
     def _aggregate_entries(
@@ -185,16 +185,15 @@ class TgoJs(BaseModel):
                 category = "aa"
             elif kind is AirDefenceKind.RADAR:
                 category = "ewr"
-        iads = TgoJs._iads_status(tgo)
+        state_map = TgoJs._iads_state_map(tgo)
+        iads = state_map.status_for(tgo) if state_map is not None else None
         dark = iads is not None and iads.state is IadsState.DARK
         # A dark network node only controls its own battery. Separate point-defence
         # and native groups keep their own coverage.
         groups = [
             group
             for group in tgo.groups
-            if not dark
-            or not isinstance(group, IadsGroundGroup)
-            or not group.iads_role.participate
+            if state_map is None or not state_map.is_group_dark(group)
         ]
         # Only include non-zero ranges: a zero-radius circle renders as a stray
         # dot (normally hidden under the unit icon, but visible once the icon is

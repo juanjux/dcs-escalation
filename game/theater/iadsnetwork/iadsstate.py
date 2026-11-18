@@ -18,7 +18,7 @@ from game.theater.iadsnetwork.power import integrated_power_units
 if TYPE_CHECKING:
     from game.theater.iadsnetwork.iadsnetwork import IadsNetwork, IadsNetworkNode
     from game.theater.theatergroundobject import TheaterGroundObject
-    from game.theater.theatergroup import IadsGroundGroup
+    from game.theater.theatergroup import IadsGroundGroup, TheaterGroup
 
 
 #: Skynet's own name for "go autonomous and stay switched off". No stock unit asks for
@@ -179,6 +179,7 @@ class IadsStateMap:
         destroyed: Collection[TheaterGroundObject] = (),
     ) -> None:
         self._by_tgo: dict[TheaterGroundObject, IadsStatus] = {}
+        self._dark_groups: set[int] = set()
         self._destroyed = frozenset(destroyed)
         self.connectivity = (
             IadsConnectivity(network, destroyed)
@@ -190,6 +191,10 @@ class IadsStateMap:
     def status_for(self, tgo: TheaterGroundObject) -> Optional[IadsStatus]:
         """The site's state, or None if it is not part of an IADS at all."""
         return self._by_tgo.get(tgo)
+
+    def is_group_dark(self, group: TheaterGroup) -> bool:
+        """Whether this group is a node that Skynet keeps switched off."""
+        return id(group) in self._dark_groups
 
     def __iter__(self) -> Iterator[tuple[TheaterGroundObject, IadsStatus]]:
         return iter(self._by_tgo.items())
@@ -252,7 +257,7 @@ class IadsStateMap:
             ):
                 # Infrastructure. It has no radar to switch on or off.
                 continue
-            self._by_tgo[node.group.ground_object] = self._status_for_node(
+            status = self._status_for_node(
                 node,
                 powered[id(node)],
                 connected[id(node)],
@@ -267,6 +272,9 @@ class IadsStateMap:
                 # whose substation is standing is not running on its generator.
                 generators[id(node)] if not mains[id(node)] else None,
             )
+            self._by_tgo[node.group.ground_object] = status
+            if status.state is IadsState.DARK:
+                self._dark_groups.add(id(node.group))
 
     def _status_for_node(
         self,

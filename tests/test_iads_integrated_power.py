@@ -45,7 +45,9 @@ def test_integrated_units_work_without_a_power_station(kind: Any) -> None:
 
 
 @pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
-@pytest.mark.parametrize("kind", [AirDefence.x_2S6_Tunguska, usamap.CH_Centurion_C_RAM])
+@pytest.mark.parametrize(
+    "kind", [AirDefence.x_2S6_Tunguska, usamap.CH_Centurion_C_RAM, usamap.CH_LAVAD]
+)
 def test_grid_failure_does_not_disable_integrated_sites(
     side: Player, kind: Any
 ) -> None:
@@ -226,5 +228,37 @@ def test_dark_primary_battery_keeps_only_surviving_point_defence_ranges() -> Non
     tor.alive = False
     assert TgoJs.for_tgo(sam).threat_ranges == [shilka.threat_range.meters]
     shilka.alive = False
+    assert TgoJs.for_tgo(sam).threat_ranges == []
+    assert TgoJs.for_tgo(sam).detection_ranges == []
+
+
+def test_dark_nasams_keeps_centurion_ranges_with_an_ewr_role() -> None:
+    sam = site("NASAMS", side=Player.BLUE)
+    sam.control_point.name = "BASE"
+    battery = sam.groups[0]
+    battery.units[0].type = AirDefence.NASAMS_Radar_MPQ64F1
+    battery.units.append(
+        TheaterUnit(2, "LAUNCHER", AirDefence.NASAMS_LN_C, battery.position, sam)
+    )
+    centurion = TheaterUnit(
+        3, "CENTURION", usamap.CH_Centurion_C_RAM, battery.position, sam
+    )
+    point_defence = IadsGroundGroup(
+        2, "POINT DEFENCE", battery.position, [centurion], sam
+    )
+    point_defence.iads_role = IadsRole.EWR
+    sam.groups.append(point_defence)
+
+    network = IadsNetwork(True)
+    sam.control_point.theater = SimpleNamespace(iads_network=network)
+    sam.control_point.coalition.game.theater = sam.control_point.theater
+    network.initialize_network(iter([sam]))
+
+    view = TgoJs.for_tgo(sam)
+    assert view.iads_state == "dark"
+    assert view.threat_ranges == [centurion.threat_range.meters]
+    assert view.detection_ranges == [centurion.detection_range.meters]
+
+    centurion.alive = False
     assert TgoJs.for_tgo(sam).threat_ranges == []
     assert TgoJs.for_tgo(sam).detection_ranges == []
