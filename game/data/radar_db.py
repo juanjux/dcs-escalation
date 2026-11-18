@@ -212,6 +212,7 @@ SELF_CONTAINED_AIR_DEFENCES: set[type[VehicleType]] = (
     rmap.CH_ZSU234,
     rmap.CH_9K35,
     usamap.CH_Centurion_C_RAM,
+    usamap.CH_LAVAD,
 }
 
 UNITS_WITH_RADAR = {
