@@ -378,6 +378,40 @@ def test_current_awacs_contact_is_shared_for_protection_and_evasion() -> None:
     assert lua.eval("groups.AWACS.pushes[1].params.task.id") == "Orbit"
 
 
+@pytest.mark.parametrize("visible", [False, True])
+def test_parked_aircraft_do_not_divert_a_strike(visible: bool) -> None:
+    lua = runtime()
+    lua.globals().cfg.flights[3] = lua.table_from(
+        metadata("STRIKE", "strike"), recursive=True
+    )
+    lua.globals().visible = visible
+    lua.execute("""
+        add('STRIKE',2,0,true)
+        local support=add('KJ-2000',1,12000,false,{AWACS=true})
+        bandit.air=false;bandit.x=14000;bandit.knownType=false
+        bandit.visible=visible;support.visible=visible
+        bandit.poison=false;awacs.detections={bandit,support}
+    """)
+    start(lua)
+    lua.execute("EscalationIMAC.reached('STRIKE',2);tick(5);tick(15)")
+    assert lua.eval("#groups.STRIKE.pushes") == 0
+    assert lua.eval("#groups.CAP.pushes") == 0
+    assert lua.eval("bandit.positionReads + units['KJ-2000-unit'].positionReads") == 0
+
+
+def test_detected_aircraft_can_take_off_and_land_between_sensor_updates() -> None:
+    lua = runtime()
+    lua.execute("""
+        awacs.detections={bandit};bandit.air=false;bandit.visible=true
+        bandit.poison=false;bandit.velocity.x=-250
+    """)
+    start(lua)
+    lua.execute("tick(5);bandit.air=true;tick(15)")
+    assert lua.eval("EscalationIMAC.instance.states.CAP.order.kind") == "intercept"
+    lua.execute("bandit.air=false;tick(25)")
+    assert lua.eval("EscalationIMAC.instance.states.CAP.order") is None
+
+
 @pytest.mark.parametrize(
     "change",
     [

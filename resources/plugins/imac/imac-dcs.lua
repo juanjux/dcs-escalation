@@ -219,6 +219,11 @@ do
             local missile=weapon and knownType==true and desc.category==1 and interceptableMissile(desc)
             if missile or (not weapon and
               (desc.category==Unit.Category.AIRPLANE or desc.category==Unit.Category.HELICOPTER)) then
+              -- Sensors can report active aircraft on the ramp or after landing.
+              if not weapon and not target:inAir() then
+                cache[side][tostring(target:getID())]=nil
+                return
+              end
               -- Native DCS returns four flags for a current detection. Memory
               -- time/position/velocity follow only when the contact is not visible.
               -- Read live coordinates only after positional detection and range
