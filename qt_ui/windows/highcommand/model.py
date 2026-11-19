@@ -22,7 +22,13 @@ from game.highcommand.describe import (  # noqa: F401 - the window's names for t
     ticket_state,
 )
 from game.highcommand.describe import units_standing as _units_standing
-from game.highcommand.orders import TIER_NAMES, HighCommand, Order, Ticket
+from game.highcommand.orders import (
+    TIER_NAMES,
+    HighCommand,
+    Order,
+    Ticket,
+    priority_band,
+)
 from game.highcommand.prizes import PrizeKind, Step, kind_of
 from game.highcommand.wording import counted, money
 from game.theater.player import Player
@@ -129,11 +135,7 @@ def tier_chip(tier: int, count: int) -> str:
 
 
 def tier_colour(tier: int, count: int) -> str:
-    if tier >= count - 1:
-        return "high"
-    if tier == 0:
-        return "low"
-    return "medium"
+    return TIER_NAMES[priority_band(tier, count)]
 
 
 def order_views(game: Game, side: Player = Player.BLUE) -> list[OrderView]:

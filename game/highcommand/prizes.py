@@ -44,7 +44,7 @@ if TYPE_CHECKING:
 MIN_SCORE = 2
 MAX_SCORE = 10
 MIN_SQUADRON_SCORE = 7
-MIN_SQUADRON_AIRCRAFT = 6
+SQUADRON_AIRCRAFT = 6
 BOMBER_SQUADRON_AIRCRAFT = 2
 
 #: The five rungs of pilot skill, as the mission editor names them.
@@ -116,7 +116,7 @@ class Prize(SaveCompatible):
         if terms.get("aircraft", 0) <= BOMBER_SQUADRON_AIRCRAFT:
             return
         limit = _saved_squadron_limit(terms.get("type", ""))
-        if limit is None or terms.get("aircraft", 0) <= limit:
+        if terms["aircraft"] <= limit:
             return
         terms["aircraft"] = limit
         object.__setattr__(self, "terms", tuple(sorted(terms.items())))
@@ -126,6 +126,18 @@ class Prize(SaveCompatible):
 
     def term(self, name: str) -> Any:
         return dict(self.terms)[name]
+
+    def migrate_squadron_turns(self, turns: int) -> Prize:
+        """Old combat squadron tickets promised four or five turns based on score."""
+        terms = dict(self.terms)
+        if self.kind != "squadron" or terms.get("turns", 0) <= 3:
+            return self
+        terms["turns"] = turns
+        return replace(
+            self,
+            line=_squadron_line(terms["aircraft"], terms["type"], turns),
+            terms=tuple(sorted(terms.items())),
+        )
 
 
 @dataclass(frozen=True)
@@ -145,6 +157,7 @@ class Context:
     offered: tuple[Prize, ...] = ()
     #: Live campaign state for rewards that must fill an actual need.
     game: Optional[Game] = None
+    squadron_turns: int = 3
 
 
 #: A prize's line and terms at a score, or None when it cannot be given at that score.
@@ -314,7 +327,12 @@ class Prizes:
         )
 
     def draw(
-        self, score: int, seed: object, offered: Iterable[Prize] = ()
+        self,
+        score: int,
+        seed: object,
+        offered: Iterable[Prize] = (),
+        *,
+        squadron_turns: int = 3,
     ) -> Optional[Prize]:
         """A prize for an objective of this score. The same seed draws the same one."""
         rng = random.Random(str(seed))
@@ -336,6 +354,7 @@ class Prizes:
             self.side,
             offered,
             self.game,
+            squadron_turns,
         )
         for kind in kinds:
             prize = kind.prize(score, context)
@@ -536,14 +555,14 @@ def _squadron_line(count: int, aircraft: str, turns: int) -> str:
     return f"A ticket for a squadron of {count} {aircraft} on loan for {_turns(turns)}."
 
 
-def _squadron_aircraft_limit(aircraft: AircraftType) -> Optional[int]:
+def _squadron_aircraft_limit(aircraft: AircraftType) -> int:
     role = getattr(aircraft, "role", "").casefold()
     if "bomber" in role and "fighter" not in role and "light" not in role:
         return BOMBER_SQUADRON_AIRCRAFT
-    return None
+    return SQUADRON_AIRCRAFT
 
 
-def _saved_squadron_limit(name: str) -> Optional[int]:
+def _saved_squadron_limit(name: str) -> int:
     from game.dcs.aircrafttype import AircraftType
 
     aircraft: Optional[AircraftType]
@@ -554,7 +573,11 @@ def _saved_squadron_limit(name: str) -> Optional[int]:
         aircraft = next(
             (a for a in AircraftType.iter_all() if a.display_name == name), None
         )
-    return _squadron_aircraft_limit(aircraft) if aircraft is not None else None
+    return (
+        _squadron_aircraft_limit(aircraft)
+        if aircraft is not None
+        else SQUADRON_AIRCRAFT
+    )
 
 
 @_kind("squadron", min_score=MIN_SQUADRON_SCORE, ticket=True)
@@ -588,11 +611,8 @@ def _squadron(score: int, context: Context) -> Worked:
     if not available:
         return None
     aircraft = fleet[min(available, key=lambda index: (abs(index - pick), index))]
-    count = MIN_SQUADRON_AIRCRAFT + 2 * (score - MIN_SQUADRON_SCORE)
-    limit = _squadron_aircraft_limit(aircraft)
-    if limit is not None:
-        count = min(count, limit)
-    turns = half_up(score)
+    count = _squadron_aircraft_limit(aircraft)
+    turns = context.squadron_turns
     return (
         _squadron_line(count, aircraft.display_name, turns),
         {"aircraft": count, "type": aircraft.display_name, "turns": turns},

@@ -1,6 +1,7 @@
 ﻿# Escalation v1.0.0
 
 ## Features/Improvements
+* **[High Command]** Squadron tickets grant six aircraft or two bombers for one to three turns by request priority.
 * **[Realistic CAS]** JTACs complete a search lap before marking targets.
 * **[Realistic CAS]** AI JTACs orbit marked targets for a configurable time or until destroyed.
 * **[IMAC]** Make routine debug messages opt-in by category.
