@@ -24,9 +24,10 @@ with damaged aircraft must finish repairs before relocating; healthy loans can
 still relocate normally. These rules apply while the loan remains registered,
 including its return turn.
 
-Bomber squadron rewards grant at most two aircraft, including strategic, heavy
-and maritime bombers. Fighter-bombers and light bombers keep the normal reward
-scale. This limit applies to both coalitions and does not shorten the loan.
+Combat squadron tickets grant six aircraft, or two for bomber squadrons.
+Fighter-bombers and light bombers receive six. The loan starts when the ticket
+is spent and lasts one turn for a low-priority request, two for medium or three
+for high.
 
 You are a general of **{RED_FACTION}** ({RED_COUNTRY}), commanding **OPFOR — the
 RED coalition** — in a DCS Escalation campaign against a human player who commands

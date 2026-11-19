@@ -182,7 +182,7 @@ def test_a_squadron_on_loan_is_dearer_the_higher_the_score() -> None:
     assert _prize("squadron", 7).term("type") == "F-5E"
     assert _prize("squadron", 7).term("aircraft") == 6
     assert _prize("squadron", 10).line == (
-        "A ticket for a squadron of 12 F-15E on loan for 5 turns."
+        "A ticket for a squadron of 6 F-15E on loan for 3 turns."
     )
 
 

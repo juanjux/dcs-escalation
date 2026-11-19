@@ -255,6 +255,8 @@ class Game:
             self.high_command = HighCommand()
         if not hasattr(self, "opfor_high_command"):
             self.opfor_high_command = HighCommand(side=Player.RED)
+        for command in (self.high_command, self.opfor_high_command):
+            command.migrate_squadron_turns(self.settings.high_command_orders)
         if not hasattr(self, "cruise_missile_magazines"):
             self.cruise_missile_magazines = {}
         if not hasattr(self, "naval_magazines"):

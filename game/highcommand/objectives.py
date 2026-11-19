@@ -42,6 +42,7 @@ from game.data.units import UnitClass
 from game.highcommand.campaign import Campaign, Task
 from game.highcommand.comical import comical_lines
 from game.highcommand.importance import Reason, Worth, by_worth
+from game.highcommand.orders import priority_band, tiers
 from game.highcommand.prizes import Prize, Prizes
 from game.highcommand.wording import alive, system_name
 from game.theater import Airfield, MissionTarget, Player
@@ -198,13 +199,19 @@ def enemy_objectives(game: Game, player: Player = Player.BLUE) -> list[Objective
     )
     comical = comical_lines([o for o in found if o.importance == 1], seed=game.turn)
     prizes = Prizes.of(game, player)
+    count = game.settings.high_command_orders
     found = [
         replace(
             o,
             justification=comical.get(o.name, o.justification),
-            prize=prizes.draw(o.score, seed=f"{game.turn}:{o.name}"),
+            prize=prizes.draw(
+                o.score,
+                seed=f"{game.turn}:{o.name}",
+                squadron_turns=priority_band(tier, count) + 1,
+            ),
         )
-        for o in found
+        for tier, candidates in enumerate(tiers(found, count))
+        for o in candidates
     ]
     return sorted(found, key=lambda o: (o.effort.total, o.name))
 

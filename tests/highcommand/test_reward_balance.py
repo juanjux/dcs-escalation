@@ -15,7 +15,13 @@ from game.ato.flighttype import FlightType
 from game.data.groups import GroupTask
 from game.dcs.aircrafttype import AircraftType
 from game.highcommand import prizes as rewards
-from game.highcommand.orders import HighCommand, HistoryEntry, Order, Ticket
+from game.highcommand.orders import (
+    HighCommand,
+    HistoryEntry,
+    Order,
+    Ticket,
+    priority_band,
+)
 from game.highcommand.prizes import Context, Prize, Prizes
 from game.squadrons.pilot import Pilot
 from game.theater import Player
@@ -162,13 +168,27 @@ def test_high_scores_cannot_draw_modest_utility_rewards(
     assert drawn == {"cash", "morale", "sam", "squadron"}
 
 
-def test_squadron_loans_cannot_be_low_score_rewards_and_scale_up(campaign: Any) -> None:
+def test_squadron_size_is_fixed_at_all_eligible_scores(campaign: Any) -> None:
     c = campaign
     kind = _kind("squadron")
     assert all(kind.prize(score, c.context) is None for score in range(2, 7))
     prizes = [required(kind.prize(score, c.context)) for score in range(7, 11)]
-    assert [prize.term("aircraft") for prize in prizes] == [6, 8, 10, 12]
-    assert [prize.term("turns") for prize in prizes] == [4, 4, 5, 5]
+    assert all(prize.term("aircraft") == 6 for prize in prizes)
+
+
+@pytest.mark.parametrize("turns", [(3,), (1, 3), (1, 2, 3), (1, 2, 2, 2, 2, 3)])
+def test_loan_duration_uses_the_request_priority_at_the_same_score(
+    campaign: Any, turns: tuple[int, ...]
+) -> None:
+    for tier, expected in enumerate(turns):
+        context = replace(
+            campaign.context, squadron_turns=priority_band(tier, len(turns)) + 1
+        )
+        prize = required(_kind("squadron").prize(8, context))
+        assert prize.term("turns") == expected
+        assert prize.line.endswith(
+            f"for {expected} {'turn' if expected == 1 else 'turns'}."
+        )
 
 
 @pytest.mark.parametrize(
@@ -180,12 +200,12 @@ def test_squadron_loans_cannot_be_low_score_rewards_and_scale_up(campaign: Any) 
         ("Medium bomber", 2),
         ("Heavy Bomber", 2),
         ("Long-range Bomber", 2),
-        ("Fighter-Bomber", 12),
-        ("Fighter Bomber", 12),
-        ("Fighter-Bomber/Strike Fighter", 12),
-        ("Light Bomber", 12),
-        ("Multirole Fighter", 12),
-        ("Attack", 12),
+        ("Fighter-Bomber", 6),
+        ("Fighter Bomber", 6),
+        ("Fighter-Bomber/Strike Fighter", 6),
+        ("Light Bomber", 6),
+        ("Multirole Fighter", 6),
+        ("Attack", 6),
     ],
 )
 def test_bomber_limit_depends_on_role_not_aircraft_name_or_price(
@@ -219,7 +239,7 @@ def test_fighter_bombers_and_attack_aircraft_keep_normal_reward_sizes(
         for score in range(7, 11)
     ]
 
-    assert [prize.term("aircraft") for prize in prizes] == [6, 8, 10, 12]
+    assert all(prize.term("aircraft") == 6 for prize in prizes)
     assert all(pickle.loads(pickle.dumps(prize)) == prize for prize in prizes)
 
 
@@ -233,7 +253,7 @@ def test_bomber_squadron_rewards_are_limited_to_two_aircraft(
     prize = required(_kind("squadron").prize(score, c.context))
 
     assert prize.term("aircraft") == 2
-    assert prize.term("turns") == rewards.half_up(score)
+    assert prize.term("turns") == 3
     assert prize.line == (
         f"A ticket for a squadron of 2 {aircraft_name} on loan for "
         f"{prize.term('turns')} turns."
@@ -263,14 +283,15 @@ def test_saved_bomber_requests_and_unspent_tickets_are_reduced_to_two(
     )
 
     restored = pickle.loads(pickle.dumps(command))
+    restored.migrate_squadron_turns(3)
 
     assert restored.orders[0].prize == restored.tickets[0].prize
     for reduced in (restored.orders[0].prize, restored.tickets[0].prize):
         assert reduced.term("aircraft") == 2
-        assert reduced.term("turns") == 5
+        assert reduced.term("turns") == 3
         assert reduced.score == 10 and reduced.side is side and reduced.ticket
         assert reduced.line == (
-            f"A ticket for a squadron of 2 {aircraft_name} on loan for 5 turns."
+            f"A ticket for a squadron of 2 {aircraft_name} on loan for 3 turns."
         )
         assert pickle.loads(pickle.dumps(reduced)) == reduced
     assert restored.history == [history]
@@ -279,8 +300,6 @@ def test_saved_bomber_requests_and_unspent_tickets_are_reduced_to_two(
 @pytest.mark.parametrize(
     "kind,aircraft,count",
     [
-        ("squadron", "F-16C", 12),
-        ("squadron", "Unregistered retired mod", 12),
         ("squadron", "[CH] B-21", 1),
         ("squadron", "[CH] B-21", 2),
         ("loaned-aircraft", "[CH] B-21", 12),
@@ -297,6 +316,33 @@ def test_bomber_save_migration_leaves_other_rewards_unchanged(
         (("aircraft", count), ("turns", 5), ("type", aircraft)),
     )
     assert pickle.loads(pickle.dumps(prize)) == prize
+
+
+@pytest.mark.parametrize(
+    "aircraft", ["F/A-18C Hornet (Lot 20)", "Unregistered retired mod"]
+)
+def test_legacy_squadron_orders_keep_their_priority_and_earned_tickets_are_capped(
+    aircraft: str,
+) -> None:
+    old = Prize(
+        "squadron",
+        9,
+        True,
+        "Old offer.",
+        (("aircraft", 12), ("turns", 5), ("type", aircraft)),
+    )
+    command = HighCommand(
+        orders=[Order(str(tier), tier, 1, 4, old) for tier in range(3)],
+        tickets=[Ticket(old, "Previous target", 1)],
+    )
+    loaded = pickle.loads(pickle.dumps(command))
+    loaded.migrate_squadron_turns(3)
+    for item, turns in zip([*loaded.orders, *loaded.tickets], (1, 2, 3, 3)):
+        assert item.prize.term("aircraft") == 6
+        assert item.prize.term("turns") == turns
+    reopened = pickle.loads(pickle.dumps(loaded))
+    reopened.migrate_squadron_turns(1)
+    assert reopened == loaded
 
 
 def test_saved_bomber_display_name_can_differ_from_variant_key(
@@ -355,6 +401,7 @@ def test_bomber_ticket_redeems_two_aircraft_at_a_base_with_two_free_slots(
     ticket = Ticket(prize, "Objective", 9)
     command = game.high_command
     command.tickets = [ticket]
+    command.migrate_squadron_turns(3)
     base = game.bases[0]
     base.unclaimed_parking = lambda parking: 2
     squadron = MagicMock(name="Bomber loan")
@@ -371,7 +418,7 @@ def test_bomber_ticket_redeems_two_aircraft_at_a_base_with_two_free_slots(
     assert create.call_args.args[3] is base
     assert command.tickets == []
     assert command.loans[0].squadron is squadron
-    assert command.loans[0].until == game.turn + 5
+    assert command.loans[0].until == game.turn + 3
 
 
 def test_existing_high_score_healing_tickets_remain_redeemable(campaign: Any) -> None:

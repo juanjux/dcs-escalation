@@ -61,6 +61,33 @@ def test_squadron_loan_uses_a_different_type_even_at_the_same_score(
     assert drawer.draw(7, "same", offered) is None
 
 
+def test_squadron_previews_and_replacement_offers_use_the_same_request_tier(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    game = _game(10)
+    drawer = Prizes(game.settings, *_side())
+    kind = next(kind for kind in rewards.KINDS if kind.key == "squadron")
+    monkeypatch.setattr(rewards, "KINDS", [kind])
+    monkeypatch.setattr(Prizes, "of", lambda *_: drawer)
+    board = [replace(o, difficulty=4, importance=4) for o in BOARD[:3]]
+    empty = SimpleNamespace(groups={}, enemy_bases=lambda: [])
+    monkeypatch.setattr(objectives, "Campaign", lambda *_: empty)
+    monkeypatch.setattr(
+        objectives, "Worth", lambda *_: SimpleNamespace(shared=lambda _: {})
+    )
+    monkeypatch.setattr(objectives, "ranked", lambda _: board)
+
+    previews = [o.prize for o in objectives.enemy_objectives(game) if o.prize]
+    assert [p.term("turns") for p in previews] == [1, 2, 3]
+    assert len({p.term("type") for p in previews}) == 1
+
+    command = HighCommand()
+    command.refresh(game, random.Random(1))
+    offers = [o.prize for o in command.orders if o.prize]
+    assert [p.term("turns") for p in offers] == [3, 2, 1]
+    assert len({p.term("type") for p in offers}) == 3
+
+
 @pytest.mark.parametrize("side", [Player.BLUE, Player.RED])
 def test_refresh_replaces_duplicate_previews_but_keeps_existing_promises(
     side: Player, monkeypatch: pytest.MonkeyPatch

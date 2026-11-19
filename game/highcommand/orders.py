@@ -161,6 +161,16 @@ class HighCommand(SaveCompatible):
     #: The side whose High Command this is. Its requests are against the other.
     side: Player = Player.BLUE
 
+    def migrate_squadron_turns(self, tier_count: int) -> None:
+        for order in self.orders:
+            if order.prize is not None:
+                order.prize = order.prize.migrate_squadron_turns(
+                    priority_band(order.tier, tier_count) + 1
+                )
+        # Already-earned tickets in older saves did not record the request tier.
+        for ticket in self.tickets:
+            ticket.prize = ticket.prize.migrate_squadron_turns(3)
+
     def note(self, turn: int, outcome: str, name: str, line: str) -> None:
         self.history.append(HistoryEntry(turn, outcome, name, line))
         del self.history[:-HISTORY_KEPT]
@@ -222,7 +232,10 @@ class HighCommand(SaveCompatible):
             offered = [order.prize for order in self.orders if order.prize is not None]
             if chosen.prize is not None and repeats_offer(chosen.prize, offered):
                 prize = Prizes.of(game, self.side).draw(
-                    chosen.score, seed=f"{game.turn}:{chosen.name}", offered=offered
+                    chosen.score,
+                    seed=f"{game.turn}:{chosen.name}",
+                    offered=offered,
+                    squadron_turns=priority_band(tier, count) + 1,
                 )
                 if prize is None:
                     # No distinct reward remains. Keep the slot open rather than
@@ -308,6 +321,13 @@ def tier_name(tier: int, count: int) -> str:
     if count == len(TIER_NAMES):
         return TIER_NAMES[tier]
     return f"tier {tier + 1} of {count}"
+
+
+def priority_band(tier: int, count: int) -> int:
+    """Index in TIER_NAMES, including campaigns with a custom request count."""
+    if tier >= count - 1:
+        return 2
+    return 0 if tier == 0 else 1
 
 
 def _order(objective: Objective, tier: int, turn: int, lifetime: int) -> Order:
