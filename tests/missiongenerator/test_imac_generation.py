@@ -136,6 +136,7 @@ def test_miz_embeds_runtime_in_dependency_order_and_native_route() -> None:
         assert old["x"] == new["x"] and old["y"] == new["y"]
     imac.inject(s.generator, data)
     assert [t.comment for t in s.mission.triggerrules.triggers] == [
+        "Load imac-ground-stores.lua",
         "Load imac-geometry.lua",
         "Load imac-commander.lua",
         "Load imac-dcs.lua",

@@ -24,7 +24,12 @@ def saved_probe(path: Path) -> tuple[dict[str, Any], str]:
         dictionary = loads(archive.read("l10n/DEFAULT/dictionary").decode("utf-8"))[
             "dictionary"
         ]
-        text = saved["trigrules"][4]["actions"][1]["text"]
+        driver = next(
+            rule
+            for rule in saved["trigrules"].values()
+            if rule["comment"] == "IMAC CAP probe: automatic comparison"
+        )
+        text = driver["actions"][1]["text"]
         script = dictionary.get(text, text)
         runtime = pytest.importorskip("lupa.lua51").LuaRuntime()
         runtime.compile(native)

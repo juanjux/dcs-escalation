@@ -21,7 +21,7 @@ from game.theater.iadsnetwork.iadsnetwork import SkynetNode
 from game.theater.player import Player
 from .afacthreats import disabled_iads_units, envelope, radar_support
 
-SCRIPTS = ("geometry.lua", "commander.lua", "imac-dcs.lua")
+SCRIPTS = ("ground-stores.lua", "geometry.lua", "commander.lua", "imac-dcs.lua")
 DEFAULTS: dict[str, float | bool] = {
     "blue": True,
     "red": True,

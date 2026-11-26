@@ -19,6 +19,10 @@
   --wp-tint: hue-rotate(-95deg) saturate(3) brightness(0.85);
 }
 
+.wp-pin-purple {
+  --wp-tint: hue-rotate(65deg) saturate(2);
+}
+
 .wp-pin-orange {
   --wp-tint: hue-rotate(195deg) saturate(6) brightness(1.15);
 }

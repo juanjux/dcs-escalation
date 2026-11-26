@@ -529,8 +529,8 @@ def test_new_package_save_and_cancel(
     gm = package_dialog.game_model
     gm.game = SimpleNamespace(db=SimpleNamespace(flights=Database()))
     dialog = QNewPackageDialog(gm, package_dialog.package_model.mission_target)
-    assert dialog.auto_coordinated.isChecked()
-    assert not dialog.auto_asap.isChecked()
+    assert dialog.auto_asap.isChecked()
+    assert dialog.dependencies.text() == "Depends on: None"
     assert not dialog.tot_spinner.isEnabled()
     monkeypatch.setattr(dialog.package_model.package, "set_tot_asap", lambda _: None)
     if save:
@@ -547,13 +547,8 @@ def test_package_timing_modes_are_exclusive_and_allow_manual_time(
     package_dialog: Any,
 ) -> None:
     dialog = package_dialog
-    dialog.auto_coordinated.click()
-    assert dialog.package_model.package.auto_coordinated
-    assert not dialog.auto_asap.isChecked()
+    assert dialog.auto_asap.isChecked()
     assert not dialog.tot_spinner.isEnabled()
-    dialog.auto_asap.click()
-    assert not dialog.package_model.package.auto_coordinated
-    assert not dialog.auto_coordinated.isChecked()
     dialog.auto_asap.click()
     assert dialog.tot_spinner.isEnabled()
 
@@ -565,3 +560,54 @@ def test_package_tot_redraw_does_not_write_the_spinner_back(
     package_dialog.package_model.package.time_over_target = datetime(2026, 1, 1, 13, 30)
     package_dialog.update_tot()
     package_dialog.package_model.set_tot.assert_not_called()
+
+
+def test_package_prerequisite_menu_selects_the_exact_flight(
+    package_dialog: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from uuid import uuid4
+    from PySide6.QtWidgets import QMenu
+    from game.ato.flighttype import FlightType
+    from game.ato.package import Package
+
+    dlg = package_dialog
+    package = dlg.package_model.package
+    from game.data.units import UnitClass
+    from game.theater.theatergroundobject import SamGroundObject
+
+    target: Any = object.__new__(SamGroundObject)
+    target.name = "Example"
+    target.groups = [
+        SimpleNamespace(
+            units=[
+                SimpleNamespace(
+                    unit_type=SimpleNamespace(unit_class=UnitClass.TRACK_RADAR)
+                )
+            ]
+        )
+    ]
+    source = Package(target, package._db)
+    source.time_over_target = datetime(2026, 1, 1, 12)
+    for role in (FlightType.DEAD, FlightType.DEAD, FlightType.STRIKE):
+        candidate: Any = SimpleNamespace(
+            package=source,
+            id=uuid4(),
+            flight_type=role,
+            custom_name="Demo",
+            flight_plan=SimpleNamespace(tot=source.time_over_target),
+        )
+        source.flights.append(candidate)
+        package._db.add(candidate.id, candidate)
+    dlg.game_model.ato_model.ato.packages = [source, package]
+
+    class TestMenu(QMenu):
+        def exec(self, *args: Any) -> Any:
+            return self.actions()[-1]
+
+    monkeypatch.setattr("qt_ui.windows.mission.QPackageDialog.QMenu", TestMenu)
+    dlg.add_prerequisite.click()
+    assert package.prerequisite_flights == [source.flights[1].id]
+    assert "#2 DEAD" in dlg.dependencies.text()
+    assert "automatically" in dlg.dependencies.toolTip()
+    dlg.remove_prerequisite.click()
+    assert package.prerequisite_flights == []

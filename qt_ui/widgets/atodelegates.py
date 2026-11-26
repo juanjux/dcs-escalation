@@ -20,6 +20,7 @@ from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter
 from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 
 from game.ato.flight import Flight
+from game.ato.prerequisites import depends_on_text, required_by
 from game.ato.package import Package
 from qt_ui.models import AtoModel, PackageModel
 from qt_ui.widgets.squadrondelegate import (
@@ -42,7 +43,6 @@ SEPARATOR_Y = 55
 
 #: A flight row carries a third line of times, so it is taller than a package row.
 FLIGHT_ROW_HEIGHT = 74
-FLIGHT_SEPARATOR_Y = 73
 
 CHIP_X = 14
 CHIP_Y = 9
@@ -246,7 +246,10 @@ class FlightRowDelegate(AtoRowDelegate):
     """
 
     def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
-        return QSize(0, FLIGHT_ROW_HEIGHT)
+        flight = self.flight(index)
+        return QSize(
+            0, FLIGHT_ROW_HEIGHT + (20 if flight and required_by(flight) else 0)
+        )
 
     @staticmethod
     def _paint_player_chip(
@@ -278,8 +281,8 @@ class FlightRowDelegate(AtoRowDelegate):
                 width,
                 selected,
                 hovered,
-                height=FLIGHT_ROW_HEIGHT,
-                separator_y=FLIGHT_SEPARATOR_Y,
+                height=option.rect.height(),
+                separator_y=option.rect.height() - 1,
             )
 
             # The task sits at the right of the aircraft name.
@@ -342,6 +345,14 @@ class FlightRowDelegate(AtoRowDelegate):
                 )
 
             self._paint_times(painter, flight, width)
+            if text := depends_on_text(flight):
+                painter.setFont(_font(11))
+                painter.setPen(TEXT_SECONDARY)
+                painter.drawText(
+                    CHIP_X,
+                    LINE_3 + 19,
+                    self._elided(painter, text, width - CHIP_X - MARGIN),
+                )
 
     @staticmethod
     def _paint_times(painter: QPainter, flight: Flight, width: int) -> None:

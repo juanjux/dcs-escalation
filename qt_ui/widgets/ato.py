@@ -56,7 +56,7 @@ class QFlightList(QListView):
         if package_model is not None:
             self.setItemDelegate(FlightRowDelegate())
             self.setMouseTracking(True)
-            self.setUniformItemSizes(True)
+            self.setUniformItemSizes(False)
         self.setIconSize(QSize(91, 24))
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
         self.doubleClicked.connect(self.on_double_click)
@@ -87,7 +87,7 @@ class QFlightList(QListView):
             self.package_model = model
             self.setItemDelegate(FlightRowDelegate())
             self.setMouseTracking(True)
-            self.setUniformItemSizes(True)
+            self.setUniformItemSizes(False)
             self.setModel(model)
             # noinspection PyUnresolvedReferences
             model.deleted.connect(self.disconnect_model)

@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMessageBox,
+    QMenu,
     QTimeEdit,
     QVBoxLayout,
     QLineEdit,
@@ -19,7 +20,7 @@ from PySide6.QtWidgets import (
 from game.ato.flight import Flight
 from game.ato.flightplans.planningerror import PlanningError
 from game.ato.package import Package
-from game.commander.coordinatedtot import plan_coordinated_tot
+from game.ato import prerequisites
 from game.game import Game
 from game.radio.radios import RadioFrequency
 from game.server import EventStream
@@ -57,6 +58,9 @@ class QPackageDialog(QDialog):
         super().__init__(parent)
         self.game_model = game_model
         self.package_model = model
+        self.ato_model = (
+            game_model.ato_model if game_model.is_ownfor else game_model.red_ato_model
+        )
         self.add_flight_dialog: Optional[QFlightCreator] = None
 
         self.setMinimumSize(1000, 600)
@@ -167,16 +171,6 @@ class QPackageDialog(QDialog):
         )
         self.auto_asap.toggled.connect(self.set_asap)
         self.tot_column.addWidget(self.auto_asap)
-        self.auto_coordinated = QCheckBox("Coordinated")
-        self.auto_coordinated.setStyleSheet(self.auto_asap.styleSheet())
-        self.auto_coordinated.setToolTip(
-            "Time an attack behind SEAD/DEAD covering its target. The window "
-            "opens two minutes after the latest suppressor and lasts eight minutes. "
-            "An unreachable or missing window keeps ASAP timing with a warning."
-        )
-        self.auto_coordinated.setChecked(self.package_model.package.auto_coordinated)
-        self.auto_coordinated.toggled.connect(self.set_coordinated)
-        self.tot_column.addWidget(self.auto_coordinated)
         self.tot_column.addStretch()
 
         self.tot_help_label = QLabel(
@@ -194,6 +188,30 @@ class QPackageDialog(QDialog):
         timing_layout.addWidget(self.timing_hint)
         settings_row.addWidget(timing, 1)
         self.layout.addLayout(settings_row)
+
+        prerequisite_row = QHBoxLayout()
+        self.dependencies = value_label("")
+        self.dependencies.setTextFormat(Qt.TextFormat.PlainText)
+        self.dependencies.setWordWrap(True)
+        self.dependencies.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        prerequisite_row.addWidget(self.dependencies, 1)
+        self.add_prerequisite = button(
+            "Add pre-requisite mission", handler=self.choose_prerequisite
+        )
+        self.add_prerequisite.setToolTip(
+            "The package waits for every selected flight. DEAD and targeted SEAD "
+            "succeed when all tracking radars at their objective are destroyed. "
+            "They fail if the flight returns, is lost or runs out of air-to-ground stores first."
+        )
+        self.remove_prerequisite = button(
+            "Remove prerequisite", handler=self.choose_removal
+        )
+        for control in (self.add_prerequisite, self.remove_prerequisite):
+            control.setAutoDefault(False)
+            prerequisite_row.addWidget(control)
+        self.layout.addLayout(prerequisite_row)
 
         toolbar = QHBoxLayout()
         toolbar.addWidget(caption("Flights"))
@@ -305,8 +323,65 @@ class QPackageDialog(QDialog):
     def set_asap(self, checked: bool) -> None:
         self.package_model.set_asap(checked)
 
-    def set_coordinated(self, checked: bool) -> None:
-        self.package_model.set_coordinated(checked)
+    def prerequisite_packages(self) -> list[Package]:
+        package = self.package_model.package
+        packages = list(self.ato_model.ato.packages)
+        if package not in packages:
+            packages.append(package)
+        return packages
+
+    def choose_prerequisite(self) -> None:
+        package = self.package_model.package
+        packages = self.prerequisite_packages()
+        menu = QMenu(self)
+        choices = {}
+        for candidate in packages:
+            for flight in candidate.flights:
+                if (
+                    flight.flight_type in prerequisites.ELIGIBLE
+                    and flight.id not in package.prerequisite_flights
+                ):
+                    choices[menu.addAction(prerequisites.flight_name(flight))] = flight
+        if not choices:
+            QMessageBox.information(
+                self,
+                "Mission prerequisites",
+                "There are no further DEAD, SEAD or Fighter Sweep flights in this ATO.",
+            )
+            return
+        selected = menu.exec(
+            self.add_prerequisite.mapToGlobal(self.add_prerequisite.rect().bottomLeft())
+        )
+        if selected in choices:
+            try:
+                prerequisites.add(package, choices[selected], packages)
+            except ValueError as ex:
+                QMessageBox.warning(self, "Cannot add prerequisite", str(ex))
+            else:
+                self.on_prerequisites_changed()
+
+    def choose_removal(self) -> None:
+        package = self.package_model.package
+        menu = QMenu(self)
+        choices = {
+            menu.addAction(prerequisites.describe(package, key)): key
+            for key in package.prerequisite_flights
+        }
+        selected = menu.exec(
+            self.remove_prerequisite.mapToGlobal(
+                self.remove_prerequisite.rect().bottomLeft()
+            )
+        )
+        if selected in choices:
+            package.prerequisite_flights.remove(choices[selected])
+            self.on_prerequisites_changed()
+
+    def on_prerequisites_changed(self) -> None:
+        self.package_model.update_tot()
+        EventStream.put_nowait(
+            GameUpdateEvents().update_flights_in_package(self.package_model.package)
+        )
+        self.update_package_context()
 
     def set_shared_route(self, checked: bool) -> None:
         from game.ato.sharedroute import set_enabled
@@ -456,14 +531,31 @@ class QPackageDialog(QDialog):
         self.edit_flight_button.setEnabled(selected)
         self.delete_flight_button.setEnabled(selected)
         waiting = package.all_flights_waiting_for_start()
-        self.tot_spinner.setEnabled(
-            waiting and not package.auto_asap and not package.auto_coordinated
-        )
+        self.tot_spinner.setEnabled(waiting and not package.auto_asap)
         self.auto_asap.setEnabled(waiting)
-        self.auto_coordinated.setEnabled(waiting)
-        with QSignalBlocker(self.auto_asap), QSignalBlocker(self.auto_coordinated):
+        self.add_prerequisite.setEnabled(waiting)
+        self.remove_prerequisite.setVisible(bool(package.prerequisite_flights))
+        self.remove_prerequisite.setEnabled(waiting)
+        names = [
+            prerequisites.describe(package, key) for key in package.prerequisite_flights
+        ]
+        self.dependencies.setText("Depends on: " + (", ".join(names) or "None"))
+        details = []
+        for name, key in zip(names, package.prerequisite_flights):
+            source = package.prerequisite_flight(key)
+            if source is None:
+                details.append(name)
+            elif source.flight_type in prerequisites.OBJECTIVE_FLIGHTS:
+                details.append(
+                    f"{name} — DCS checks the objective and flight status automatically."
+                )
+            else:
+                details.append(
+                    f"{name}: {prerequisites.outcome_flag(key)} (1 = success, 2 = failure)"
+                )
+        self.dependencies.setToolTip("\n".join(details))
+        with QSignalBlocker(self.auto_asap):
             self.auto_asap.setChecked(package.auto_asap)
-            self.auto_coordinated.setChecked(package.auto_coordinated)
         self.timing_hint.setText(
             "Timing is locked while flights are active."
             if not waiting
@@ -473,19 +565,11 @@ class QPackageDialog(QDialog):
                 else "Manual arrival time for this package."
             )
         )
-        if waiting and package.auto_coordinated and flights:
-            coalition = flights[0].coalition
-            plan = plan_coordinated_tot(
-                package,
-                coalition.ato.packages,
-                self.game_model.sim_controller.current_time_in_sim,
-                coalition.game.settings.desired_player_mission_duration,
-            )
-            timing = "ASAP: no applicable SEAD/DEAD window."
-            if plan.behind:
-                names = ", ".join(p.target.name for p in plan.behind)
-                timing = f"Coordinated behind SEAD/DEAD on {names}, {plan.tot:%H:%M}."
-            self.timing_hint.setText("\n".join([timing, *plan.warnings]))
+        if package.prerequisite_flights:
+            try:
+                prerequisites.validate(self.prerequisite_packages())
+            except ValueError as ex:
+                self.timing_hint.setText(str(ex))
         if not flights:
             self.package_context.setText("0 flights  ·  0 aircraft  ·  0 player slots")
             self.departures_label.setText("")
@@ -546,15 +630,11 @@ class QNewPackageDialog(QPackageDialog):
         super().__init__(
             game_model,
             PackageModel(
-                Package(target, game_model.game.db.flights, auto_coordinated=True),
+                Package(target, game_model.game.db.flights, auto_asap=True),
                 game_model,
             ),
             parent=parent,
         )
-        self.ato_model = (
-            game_model.ato_model if game_model.is_ownfor else game_model.red_ato_model
-        )
-
         # In the *new* package dialog, a package has been created and may have aircraft
         # assigned to it, but it is not a part of the ATO until the user saves it.
         #
@@ -601,7 +681,6 @@ class QEditPackageDialog(QPackageDialog):
     def __init__(self, gm: GameModel, package: PackageModel) -> None:
         super().__init__(gm, package)
         self.package_model.deleted.connect(self.close)
-        self.ato_model = gm.ato_model if gm.is_ownfor else gm.red_ato_model
 
         self.delete_button = button("Delete package", "danger", self.on_delete)
         self.delete_button.setAutoDefault(False)

@@ -53,3 +53,4 @@ class FlightWaypointType(IntEnum):
     INGRESS_SEAD_SWEEP = 33
     INGRESS_ARMED_RECON = 34
     RECOVERY_TANKER = 35  # Tanker recovery point
+    PREREQUISITE_WAIT = 36

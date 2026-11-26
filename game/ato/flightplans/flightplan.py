@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Generic, TYPE_CHECKING, TypeGuard, TypeVar
 
@@ -19,6 +19,7 @@ from game.typeguard import self_type_guard
 from game.utils import Distance, Speed, meters
 from .planningerror import PlanningError
 from ..flightwaypointtype import FlightWaypointType
+from ..prerequisites import WAIT_NAME, required_by
 from ..starttype import StartType
 from ..traveltime import GroundSpeed
 
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
 class Layout(ABC):
     departure: FlightWaypoint
     custom_waypoints: list[FlightWaypoint]
+    prerequisite_wait: FlightWaypoint | None = field(default=None, kw_only=True)
 
     @property
     def waypoints(self) -> list[FlightWaypoint]:
@@ -103,13 +105,38 @@ class FlightPlan(ABC, Generic[LayoutT]):
     def iter_waypoints(self) -> Iterator[FlightWaypoint]:
         """Iterates over all waypoints in the flight plan, in order."""
         dropped = self.layout.dropped_waypoints()
+        insert_wait = bool(required_by(self.flight))
         for waypoint in self.layout.iter_waypoints():
             # Bullseye is a coalition reference, not a leg to fly after landing.
             # Filter here so existing saves, cockpit exports and kneeboards agree.
             if waypoint.waypoint_type == FlightWaypointType.BULLSEYE:
                 continue
-            if not any(waypoint is gone for gone in dropped):
-                yield waypoint
+            if any(waypoint is gone for gone in dropped):
+                continue
+            if (
+                insert_wait
+                and waypoint is not self.layout.departure
+                and not waypoint.only_for_player
+            ):
+                from ..flightwaypoint import FlightWaypoint
+
+                if self.layout.prerequisite_wait is None:
+                    departure = self.layout.departure
+                    self.layout.prerequisite_wait = FlightWaypoint(
+                        name=WAIT_NAME,
+                        pretty_name=WAIT_NAME,
+                        waypoint_type=FlightWaypointType.PREREQUISITE_WAIT,
+                        position=departure.position.lerp(waypoint.position, 0.5),
+                        alt=(
+                            waypoint.alt
+                            if waypoint.alt.meters > 0
+                            else self.flight.unit_type.preferred_patrol_altitude
+                        ),
+                        alt_type=waypoint.alt_type,
+                    )
+                yield self.layout.prerequisite_wait
+                insert_wait = False
+            yield waypoint
 
     def can_delete_waypoint(self, waypoint: FlightWaypoint) -> bool:
         """Whether this waypoint can go without rebuilding the plan around it.

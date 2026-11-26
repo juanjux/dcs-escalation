@@ -83,6 +83,11 @@ ANTI_AIR_UNIT_CLASSES = [
 ]
 
 
+# DCS campaign roles already identified as tracking radars in the unit catalogue.
+TRACKING_RADAR_CLASSES = frozenset(
+    {UnitClass.TRACK_RADAR, UnitClass.SEARCH_TRACK_RADAR, UnitClass.TELAR}
+)
+
 #: What a SEAD flight can be pointed at. It shoots anti-radiation missiles from a
 #: standoff orbit, so its steerpoints are the site's emitters -- the radars, the
 #: launchers they serve, and the radar-directed point defence around them. The support
