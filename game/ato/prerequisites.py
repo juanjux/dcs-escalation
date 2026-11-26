@@ -10,11 +10,30 @@ from uuid import UUID
 from .flighttype import FlightType
 
 if TYPE_CHECKING:
+    from game.theater.theatergroup import TheaterUnit
     from .flight import Flight
     from .package import Package
 
 
-ELIGIBLE = {FlightType.DEAD, FlightType.SEAD, FlightType.SWEEP}
+OBJECTIVE_FLIGHTS = {FlightType.DEAD, FlightType.SEAD}
+ELIGIBLE = OBJECTIVE_FLIGHTS | {FlightType.SWEEP}
+
+
+def objective_units(target: object) -> list[TheaterUnit]:
+    from game.data.units import TRACKING_RADAR_CLASSES
+    from game.theater import TheaterGroundObject
+
+    if not isinstance(target, TheaterGroundObject):
+        return []
+    tagged = []
+    for unit in target.units:
+        try:
+            kind = unit.unit_type
+        except (KeyError, StopIteration):
+            continue
+        if kind is not None and kind.unit_class in TRACKING_RADAR_CLASSES:
+            tagged.append(unit)
+    return tagged
 
 
 def outcome_flag(key: UUID) -> str:
@@ -76,6 +95,13 @@ def validate(packages: list[Package]) -> None:
             if flight.flight_type not in ELIGIBLE:
                 raise ValueError(
                     f"{flight_name(flight)} is no longer an eligible prerequisite."
+                )
+            if flight.flight_type in OBJECTIVE_FLIGHTS and not objective_units(
+                flight.package.target
+            ):
+                raise ValueError(
+                    f"{flight_name(flight)} needs an assigned objective with a tracking "
+                    "radar in the campaign catalogue to serve as a prerequisite."
                 )
             if package is not flight.package:
                 graph.add(package, flight.package)

@@ -201,7 +201,9 @@ class QPackageDialog(QDialog):
             "Add pre-requisite mission", handler=self.choose_prerequisite
         )
         self.add_prerequisite.setToolTip(
-            "The selected flight supplies a scenario success or failure event. The package waits for all selected flights."
+            "The package waits for every selected flight. DEAD and targeted SEAD "
+            "succeed when all tracking radars at their objective are destroyed. "
+            "They fail if the flight returns, is lost or runs out of air-to-ground stores first."
         )
         self.remove_prerequisite = button(
             "Remove prerequisite", handler=self.choose_removal
@@ -538,12 +540,20 @@ class QPackageDialog(QDialog):
             prerequisites.describe(package, key) for key in package.prerequisite_flights
         ]
         self.dependencies.setText("Depends on: " + (", ".join(names) or "None"))
-        self.dependencies.setToolTip(
-            "\n".join(
-                f"{name}: {prerequisites.outcome_flag(key)} (1 = success, 2 = failure)"
-                for name, key in zip(names, package.prerequisite_flights)
-            )
-        )
+        details = []
+        for name, key in zip(names, package.prerequisite_flights):
+            source = package.prerequisite_flight(key)
+            if source is None:
+                details.append(name)
+            elif source.flight_type in prerequisites.OBJECTIVE_FLIGHTS:
+                details.append(
+                    f"{name} — DCS checks the objective and flight status automatically."
+                )
+            else:
+                details.append(
+                    f"{name}: {prerequisites.outcome_flag(key)} (1 = success, 2 = failure)"
+                )
+        self.dependencies.setToolTip("\n".join(details))
         with QSignalBlocker(self.auto_asap):
             self.auto_asap.setChecked(package.auto_asap)
         self.timing_hint.setText(

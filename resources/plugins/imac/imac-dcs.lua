@@ -15,16 +15,6 @@ do
     if type(value)~='table' then return value end
     local out={};for key,item in pairs(value) do out[key]=copy(item) end;return out
   end
-  local function groundWeapon(desc)
-    local categories=Weapon and Weapon.Category
-    local missiles=Weapon and Weapon.MissileCategory
-    if missiles and desc.missileCategory~=nil then
-      return desc.missileCategory~=missiles.AAM and desc.missileCategory~=missiles.SAM
-    end
-    if categories and desc.category~=nil and desc.category~=categories.MISSILE then
-      return desc.category==categories.BOMB or desc.category==categories.ROCKET
-    end
-  end
   function API.start(config)
     if API.instance then return nil,'already started' end
     assert(type(config)=='table' and type(config.options)=='table','IMAC configuration required')
@@ -110,7 +100,7 @@ do
               local desc=ammo.desc or {}
               if ammo.count>0 and (desc.missileCategory==1 or (meta.gunfighter and desc.category==0)) then hasAmmo=true end
               if meta.deadSupport and ammo.count>0 then
-                local ground=groundWeapon(desc)
+                local ground=EscalationGroundStores.isGroundWeapon(desc)
                 if ground then result.groundAmmo=true
                 elseif ground==nil then groundAmmoKnown=false end
               end
@@ -465,6 +455,7 @@ do
       return true
     end
     function io.report(entry)
+      if entry.kind=="rtb" and EscalationFlightOutcomes then EscalationFlightOutcomes.returning(entry.group) end
       env.info(string.format('IMAC|%s|t=%.1f|side=%d|group=%s|%s',
         entry.kind,entry.time,entry.side,entry.group,entry.reason))
       if opt.reports and entry.kind~='error' and entry.kind~='blocked' then

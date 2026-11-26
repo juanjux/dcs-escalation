@@ -18,8 +18,159 @@ from game.ato.prerequisites import (
 from game.db import Database
 
 
+def test_generated_objective_conditions(tmp_path: Path) -> None:
+    from zipfile import ZipFile
+    from dcs import Mission, lua
+    from dcs.terrain import Caucasus
+    from game.data.units import UnitClass
+    from game.missiongenerator.flightoutcomes import inject, objective_ids
+    from game.missiongenerator.luagenerator import LuaGenerator
+    from game.theater.theatergroundobject import SamGroundObject
+
+    source, dependent = packages = [package("Source", 1), package("Follow", 2)]
+    provider = flight(source, FlightType.DEAD)
+    add(dependent, provider, packages)
+    target: Any = object.__new__(SamGroundObject)
+    target.name = "Example"
+    source.target = target
+    units = [
+        SimpleNamespace(id=i, unit_type=SimpleNamespace(unit_class=kind), alive=True)
+        for i, kind in enumerate(
+            (
+                UnitClass.TRACK_RADAR,
+                UnitClass.SEARCH_TRACK_RADAR,
+                UnitClass.SEARCH_RADAR,
+            ),
+            1,
+        )
+    ]
+    target.groups = [SimpleNamespace(units=units[:1]), SimpleNamespace(units=units[1:])]
+    unit_map: Any = SimpleNamespace(
+        aircraft={"Demo #1": SimpleNamespace(flight=provider)},
+        theater_objects={
+            str(u.id): SimpleNamespace(
+                theater_unit=u, dcs_unit=SimpleNamespace(id=100 + u.id)
+            )
+            for u in units
+        },
+    )
+    game: Any = SimpleNamespace(
+        coalitions=[SimpleNamespace(ato=SimpleNamespace(packages=packages))]
+    )
+    mission = Mission(Caucasus())
+    generator = LuaGenerator(game, mission, SimpleNamespace(), unit_map)  # type: ignore[arg-type]
+    inject(generator)
+    path = tmp_path / "outcomes.miz"
+    mission.save(str(path))
+    with ZipFile(path) as archive:
+        rules = lua.loads(archive.read("mission").decode())["mission"][
+            "trigrules"
+        ].values()
+        assert "l10n/DEFAULT/ground-stores.lua" in archive.namelist()
+        assert "l10n/DEFAULT/flight-outcomes.lua" in archive.namelist()
+    report = next(r for r in rules if r["comment"].startswith("Objective complete"))
+    assert {
+        c["unit"] for c in report["rules"].values() if c["predicate"] == "c_unit_dead"
+    } == {101, 102}
+    assert report["actions"][1]["flag"] == outcome_flag(provider.id)
+    start = next(r for r in rules if r["comment"] == "Flight outcomes")
+    assert str(provider.id) in start["actions"][1]["text"]
+    assert "Demo #1" in start["actions"][1]["text"]
+    assert objective_ids(target, {1: 101}) is None
+    units[0].alive = units[1].alive = False
+    assert objective_ids(target, {}) == []
+    target.groups = []
+    assert objective_ids(target, {}) is None
+
+
+@pytest.fixture
+def outcome_vm() -> Any:
+    vm = pytest.importorskip("lupa.lua51").LuaRuntime()
+    vm.execute("""
+        flags, units = {}, {}
+        trigger = {misc={getUserFlag=function(key) return flags[key] or 0 end},
+                   action={setUserFlag=function(key,v) flags[key]=v end}}
+        world = {event={S_EVENT_SHOT=1,S_EVENT_LAND=2,S_EVENT_UNIT_LOST=3,S_EVENT_AI_ABORT_MISSION=4},
+                 addEventHandler=function(h) handler=h end, removeEventHandler=function(h) handler=nil end}
+        timer = {getTime=function() return 0 end, scheduleFunction=function(fn) poll=fn end}
+        Weapon = {Category={MISSILE=1, BOMB=2, ROCKET=3}, MissileCategory={AAM=1,SAM=2}}
+        Unit = {getByName=function(name) return units[name] end}
+        function spawn(name)
+            units[name] = {isExist=function() return true end, isActive=function() return true end,
+                getName=function() return name end, inAir=function() return true end,
+                getAmmo=function() return {{count=1,desc={category=2}}} end}
+        end
+        Group = {getByName=function() return {isExist=function() return true end,
+                 getUnits=function() return {units.one,units.two} end} end}
+        function advance() poll(nil, 3); poll(nil, 6) end
+        function event(name, kind, weapon) handler:onEvent({id=kind,initiator=units[name],weapon=weapon}) end
+    """)
+    root = Path("resources/plugins")
+    for script in ("imac/ground-stores.lua", "base/flight-outcomes.lua"):
+        vm.execute((root / script).read_text(encoding="utf-8"))
+    vm.execute('EscalationFlightOutcomes.start({x={"one","two"}})')
+    return vm
+
+
+@pytest.mark.parametrize(
+    "end",
+    [
+        "event('two',2)",
+        "event('two',3)",
+        "event('two',4)",
+        "EscalationFlightOutcomes.returning('group')",
+        "flags['prerequisite-return-x']=1",
+        "units.two.getAmmo=function() return {{count=1,desc={category=1,missileCategory=1}}} end",
+    ],
+)
+def test_flight_ends_only_after_last_member(outcome_vm: Any, end: str) -> None:
+    vm = outcome_vm
+    vm.execute(
+        "advance(); spawn('one'); spawn('two'); advance(); event('one',3); advance()"
+    )
+    assert vm.eval("flags['scenario-outcome-x']") is None
+    vm.execute(end + "; advance()")
+    assert vm.eval("flags['scenario-outcome-x']") == 2
+
+
+@pytest.mark.parametrize("objective_destroyed", [False, True])
+def test_last_release_resolves_before_winchester(
+    outcome_vm: Any, objective_destroyed: bool
+) -> None:
+    vm = outcome_vm
+    vm.execute("""
+        spawn('one'); spawn('two'); advance()
+        airborne = true
+        event('one',1,{getDesc=function() return {category=2} end, isExist=function() return airborne end})
+        units.one.getAmmo=function() return {} end
+        event('two',3)
+        advance()
+    """)
+    assert vm.eval("flags['scenario-outcome-x']") is None
+    vm.execute("airborne=false; poll(nil,9)")
+    if objective_destroyed:
+        vm.execute("flags['scenario-outcome-x']=1")
+    vm.execute("poll(nil,12)")
+    assert vm.eval("flags['scenario-outcome-x']") == (1 if objective_destroyed else 2)
+
+
 def package(name: str, hour: int) -> Any:
-    target: Any = SimpleNamespace(name=name)
+    from game.data.units import UnitClass
+    from game.theater.theatergroundobject import SamGroundObject
+
+    target: Any = object.__new__(SamGroundObject)
+    target.name = name
+    target.groups = [
+        SimpleNamespace(
+            units=[
+                SimpleNamespace(
+                    id=1,
+                    alive=True,
+                    unit_type=SimpleNamespace(unit_class=UnitClass.TRACK_RADAR),
+                )
+            ]
+        )
+    ]
     result = Package(target, Database())
     result.time_over_target = datetime(2000, 1, 1, hour)
     return result
@@ -75,6 +226,37 @@ def test_checks_later_edits_and_ato_membership() -> None:
     with pytest.raises(ValueError, match="missing"):
         validate(packages)
     assert "Removed flight" in depends_on_text(member)
+
+
+def test_untargeted_sead_cannot_be_selected() -> None:
+    a, b = packages = [package("Source", 1), package("Follow", 2)]
+    provider = flight(a)
+    a.target.groups = []
+    with pytest.raises(ValueError, match="assigned objective"):
+        add(b, provider, packages)
+    assert b.prerequisite_flights == []
+
+
+def test_only_the_return_leg_marks_the_attempt_finished() -> None:
+    from game.ato.flightwaypointtype import FlightWaypointType as Wpt
+    from game.missiongenerator.flightoutcomes import mark_return
+
+    a, b = packages = [package("Source", 1), package("Follow", 2)]
+    provider = flight(a)
+    provider.coalition = SimpleNamespace(ato=SimpleNamespace(packages=packages))
+    # A single-flight package labels both its outbound nav and split as NAV.
+    points: Any = [
+        (SimpleNamespace(waypoint_type=kind), SimpleNamespace(tasks=[]))
+        for kind in (Wpt.NAV, Wpt.LOITER, Wpt.NAV, Wpt.LANDING_POINT)
+    ]
+    provider.flight_plan.layout = SimpleNamespace(split=points[2][0])
+    mark_return(provider, points)
+    assert not any(native.tasks for _, native in points)
+    add(b, provider, packages)
+    mark_return(provider, points)
+    assert [len(native.tasks) for _, native in points] == [0, 0, 1, 0]
+    command = points[2][1].tasks[0].dict()["params"]["action"]["params"]["command"]
+    assert f"prerequisite-return-{provider.id}" in command
 
 
 def test_old_coordinated_save_keeps_its_scheduled_time() -> None:

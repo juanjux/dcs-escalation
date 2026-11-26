@@ -1,4 +1,4 @@
-"""Wire authored DCS scenario outcome flags to package prerequisites."""
+"""Wire DCS scenario outcome flags to package prerequisites."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def gate_flag(key: UUID) -> str:
 def generate_events(
     mission: Mission, packages: list[Package], side: Coalition, reports: bool
 ) -> None:
-    """The scenario author publishes an outcome. Each derived result is final."""
+    """Each derived result is final, irrespective of which scenario trigger sets it."""
     selected = {key for p in packages for key in p.prerequisite_flights}
     if not selected:
         return

@@ -28,7 +28,7 @@ from .gpsjammingluadata import populate_gps_jamming_lua
 from .navalmagazineluadata import populate_naval_magazines_lua
 from .missiondata import MissionData
 from .realisticcascampaign import prepare_campaign, inject_campaign
-from . import imac
+from . import flightoutcomes, imac
 
 if TYPE_CHECKING:
     from game import Game
@@ -70,6 +70,7 @@ class LuaGenerator:
         self._inject_barcap_refuelling()
         self._inject_sam_transit_defense()
         inject_campaign(self, realistic_cas)
+        flightoutcomes.inject(self)
         imac.inject(self, imac.configure(self, imac_options))
         for t in existing_start_triggers:
             self.mission.triggerrules.triggers.remove(t)

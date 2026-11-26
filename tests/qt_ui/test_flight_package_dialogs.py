@@ -572,7 +572,21 @@ def test_package_prerequisite_menu_selects_the_exact_flight(
 
     dlg = package_dialog
     package = dlg.package_model.package
-    source = Package(package.target, package._db)
+    from game.data.units import UnitClass
+    from game.theater.theatergroundobject import SamGroundObject
+
+    target: Any = object.__new__(SamGroundObject)
+    target.name = "Example"
+    target.groups = [
+        SimpleNamespace(
+            units=[
+                SimpleNamespace(
+                    unit_type=SimpleNamespace(unit_class=UnitClass.TRACK_RADAR)
+                )
+            ]
+        )
+    ]
+    source = Package(target, package._db)
     source.time_over_target = datetime(2026, 1, 1, 12)
     for role in (FlightType.DEAD, FlightType.DEAD, FlightType.STRIKE):
         candidate: Any = SimpleNamespace(
@@ -594,6 +608,6 @@ def test_package_prerequisite_menu_selects_the_exact_flight(
     dlg.add_prerequisite.click()
     assert package.prerequisite_flights == [source.flights[1].id]
     assert "#2 DEAD" in dlg.dependencies.text()
-    assert str(source.flights[1].id) in dlg.dependencies.toolTip()
+    assert "automatically" in dlg.dependencies.toolTip()
     dlg.remove_prerequisite.click()
     assert package.prerequisite_flights == []

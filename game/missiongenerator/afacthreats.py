@@ -6,7 +6,7 @@ from typing import Any
 
 from dcs.vehicles import AirDefence, vehicle_map
 
-from game.data.units import ANTI_AIR_UNIT_CLASSES, UnitClass
+from game.data.units import ANTI_AIR_UNIT_CLASSES, TRACKING_RADAR_CLASSES, UnitClass
 from game.data.radar_db import LAUNCHER_TRACKER_PAIRS
 from game.dcs.groundunittype import GroundUnitType
 from game.theater.iadsnetwork.iadsstate import IadsState
@@ -171,11 +171,6 @@ def radar_support(unit: Any, group: Any, unit_map: Any) -> dict[str, Any]:
     if not required and not is_launcher:
         return {"needsRadar": False, "radars": []}
     required_types = {radar.id for radar in required} if required else None
-    tracking_classes = {
-        UnitClass.TRACK_RADAR,
-        UnitClass.SEARCH_TRACK_RADAR,
-        UnitClass.TELAR,
-    }
     if objective is not None:
         radars = [
             name
@@ -185,7 +180,8 @@ def radar_support(unit: Any, group: Any, unit_map: Any) -> dict[str, Any]:
                 candidate.dcs_unit.type in required_types
                 if required_types is not None
                 else candidate.theater_unit.unit_type is not None
-                and candidate.theater_unit.unit_type.unit_class in tracking_classes
+                and candidate.theater_unit.unit_type.unit_class
+                in TRACKING_RADAR_CLASSES
             )
         ]
     else:
