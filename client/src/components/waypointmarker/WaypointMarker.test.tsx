@@ -26,6 +26,7 @@ describe("tintFor", () => {
     expect(tintFor(waypoint("ingress"))).toBe("red");
     expect(tintFor(waypoint("refuel"))).toBe("green");
     expect(tintFor(waypoint("hold"))).toBe("orange");
+    expect(tintFor(waypoint("prerequisite"))).toBe("purple");
   });
 
   it("keeps the rest blue, and every target red", () => {

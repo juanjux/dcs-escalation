@@ -27,6 +27,8 @@ export function tintFor(waypoint: Waypoint): string | null {
       return "red";
     case "refuel":
       return "green";
+    case "prerequisite":
+      return "purple";
     case "hold":
       return "orange";
     default:

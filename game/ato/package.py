@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime
+from uuid import UUID
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
 from game.db import Database
@@ -41,7 +42,6 @@ class Package(RadioFrequencyContainer):
         auto_asap: bool = False,
         custom_name: str | None = None,
         frequency: RadioFrequency | None = None,
-        auto_coordinated: bool = False,
     ) -> None:
         self.target = target
         self._db = db
@@ -53,9 +53,7 @@ class Package(RadioFrequencyContainer):
         # change. This is really a UI property rather than a game property, but we want
         # it to persist in the save.
         self.auto_asap = auto_asap
-        self.auto_coordinated = auto_coordinated
-        if auto_coordinated:
-            self.auto_asap = False
+        self.prerequisite_flights: list[UUID] = []
         self.flights: list[Flight] = []
 
         # Desired TOT as an offset from mission start. Obviously datetime.min is bogus,
@@ -67,13 +65,17 @@ class Package(RadioFrequencyContainer):
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)
-        self.__dict__.setdefault("auto_coordinated", False)
+        self.__dict__.pop("auto_coordinated", None)
+        self.__dict__.setdefault("prerequisite_flights", [])
         # Existing manually edited routes must not be silently replaced on load.
         self.__dict__.setdefault("single_route_for_all_flights", False)
 
     @property
     def has_players(self) -> bool:
         return any(flight.client_count for flight in self.flights)
+
+    def prerequisite_flight(self, key: UUID) -> Flight | None:
+        return self._db.objects.get(key)
 
     def max_standoff_range(self) -> Optional[Distance]:
         """The longest stand-off launch range among the package's flights, if any.
@@ -365,7 +367,7 @@ class Package(RadioFrequencyContainer):
     @staticmethod
     def clone_package(package: Package) -> Package:
         clone = Package(package.target, package._db, package.auto_asap)
-        clone.auto_coordinated = package.auto_coordinated
+        remapped = {}
         clone.single_route_for_all_flights = package.single_route_for_all_flights
         clone.time_over_target = deepcopy(package.time_over_target)
         for f in package.flights:
@@ -373,6 +375,10 @@ class Package(RadioFrequencyContainer):
             cf.flight_plan.layout = deepcopy(f.flight_plan.layout)
             cf.package = clone
             clone.add_flight(cf)
+            remapped[f.id] = cf.id
+        clone.prerequisite_flights = [
+            remapped.get(key, key) for key in package.prerequisite_flights
+        ]
         return clone
 
     def all_flights_waiting_for_start(self) -> bool:

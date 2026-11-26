@@ -416,9 +416,7 @@ def test_height_references_are_preserved_and_not_compared_as_equal() -> None:
 
 
 @pytest.mark.parametrize("share", [False, True])
-def test_saved_profiles_are_separated_before_simulation_and_retiming(
-    share: bool, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_saved_profiles_are_separated_before_simulation(share: bool) -> None:
     from datetime import datetime
     from game.sim import missionsimulation
 
@@ -433,12 +431,11 @@ def test_saved_profiles_are_separated_before_simulation_and_retiming(
     def record(*args: Any) -> None:
         seen.append(package.flights[1].flight_plan.layout.patrol_start.alt.feet)
 
-    monkeypatch.setattr(missionsimulation, "retime_coordinated_packages", record)
     simulation: Any = object.__new__(missionsimulation.MissionSimulation)
     simulation.game = game
     simulation.aircraft_simulation = NS(begin_simulation=record)
     simulation.begin_simulation()
-    assert seen == pytest.approx([21000 if share else 20000] * 2)
+    assert seen == pytest.approx([21000 if share else 20000])
 
 
 @pytest.mark.parametrize("manual", [False, True])

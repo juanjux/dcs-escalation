@@ -3,6 +3,7 @@
 import logging
 from typing import Optional
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -33,6 +34,7 @@ from qt_ui.models import GameModel, PackageModel
 from qt_ui.uiconstants import EVENT_ICONS
 from qt_ui.widgets.cards import make_transparent
 from qt_ui.windows.mission.refueloffer import RefuelOffer
+from game.ato.prerequisites import depends_on_text
 from qt_ui.windows.mission.flight.header import FlightHeader
 from qt_ui.windows.mission.flight.QFlightPlanner import QFlightPlanner
 
@@ -70,6 +72,7 @@ class QEditFlightDialog(QDialog):
         self.header: Optional[FlightHeader] = None
         self.flight_planner: Optional[QFlightPlanner] = None
         self._build_for_flight()
+        self.package_model.layoutChanged.connect(self.refresh_dependencies)
         self._layout.addWidget(self._footer())
         self.setLayout(self._layout)
 
@@ -89,7 +92,17 @@ class QEditFlightDialog(QDialog):
         self.flight_planner.header_changed.connect(self.header.refresh)
         self.header.jump_to_tab.connect(self.flight_planner.setCurrentIndex)
         self.header.switch_to_flight.connect(self.switch_to)
-        self._layout.insertWidget(1, self.flight_planner)
+        self.depends_on = QLabel()
+        self.depends_on.setTextFormat(Qt.TextFormat.PlainText)
+        self.depends_on.setWordWrap(True)
+        self._layout.insertWidget(1, self.depends_on)
+        self.refresh_dependencies()
+        self._layout.insertWidget(2, self.flight_planner)
+
+    def refresh_dependencies(self) -> None:
+        text = depends_on_text(self.flight)
+        self.depends_on.setText(text)
+        self.depends_on.setVisible(bool(text))
 
     def switch_to(self, flight: Flight) -> None:
         """Show another flight of the same package without closing.
@@ -105,7 +118,7 @@ class QEditFlightDialog(QDialog):
         tab = self.flight_planner.currentIndex() if self.flight_planner else 0
         self._apply_pending_changes()
 
-        for widget in (self.header, self.flight_planner):
+        for widget in (self.header, self.depends_on, self.flight_planner):
             if widget is not None:
                 self._layout.removeWidget(widget)
                 widget.setParent(None)

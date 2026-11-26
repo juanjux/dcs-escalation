@@ -7,7 +7,7 @@ from typing import Optional, TYPE_CHECKING
 
 from game.debriefing import Debriefing
 from game.ato.sharedroute import synchronize
-from game.commander.coordinatedtot import retime_coordinated_packages
+from game.ato.prerequisites import validate
 from game.missionarchive import archive_mission
 from game.missiongenerator import MissionGenerator
 from game.unitmap import UnitMap
@@ -35,9 +35,9 @@ class MissionSimulation:
     def begin_simulation(self) -> None:
         # Saved shared routes may still have the old identical altitude profiles.
         for coalition in self.game.coalitions:
+            validate(coalition.ato.packages)
             for package in coalition.ato.packages:
                 synchronize(package)
-        retime_coordinated_packages(self.game)
         self.time = self.game.conditions.start_time
         self.aircraft_simulation.begin_simulation()
 

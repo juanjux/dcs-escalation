@@ -21,6 +21,7 @@ from game.ato.starttype import StartType
 from game.missiongenerator.a10cdu import enable_route_vnav
 from game.missiongenerator.aircraft.waypoints.cargostop import CargoStopBuilder
 from game.missiongenerator.missiondata import MissionData
+from game.missiongenerator.prerequisites import configure_wait
 from game.settings import Settings
 from game.utils import pairwise
 from .airassaultingress import AirAssaultIngressBuilder
@@ -140,6 +141,7 @@ class WaypointGenerator:
 
             add_frontline_search_loop(self.flight, self.group)
 
+        configure_wait(self.flight, self.group, generated)
         self._resolve_locked_speed_time_conflicts()
         enable_route_vnav(self.flight, self.group)
 

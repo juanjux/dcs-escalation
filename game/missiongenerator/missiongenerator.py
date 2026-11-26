@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import dcs.lua
+from dcs.action import Coalition as DcsCoalition
 from dcs import Mission, Point
 from dcs.coalition import Coalition
 from dcs.countries import country_dict
@@ -15,6 +16,7 @@ from dcs.terrain import Airport
 from dcs.unit import Static
 from dcs.unitgroup import Group
 
+from game.ato.prerequisites import validate as validate_prerequisites
 from game.atcdata import AtcData
 from game.dcs.beacons import Beacons
 from game.dcs.helpers import unit_type_from_name
@@ -45,6 +47,7 @@ from .missiondata import MissionData
 from .rebelliongenerator import RebellionGenerator
 from .motorpoolpopulator import MotorpoolPopulator
 from .tgogenerator import TgoGenerator
+from .prerequisites import generate_events as generate_prerequisite_events
 from .triggergenerator import TriggerGenerator
 from .visualsgenerator import VisualsGenerator
 from ..radio.TacanContainer import TacanContainer
@@ -110,6 +113,8 @@ class MissionGenerator:
                 "Mission has already begun generating. To reset, create a new "
                 "MissionSimulation."
             )
+        for coalition in self.game.coalitions:
+            validate_prerequisites(coalition.ato.packages)
         self.generation_started = True
 
         self.setup_mission_coalitions()
@@ -144,6 +149,13 @@ class MissionGenerator:
 
         self.generate_ground_conflicts()
         self.generate_air_units(tgo_generator)
+        for coalition in self.game.coalitions:
+            generate_prerequisite_events(
+                self.mission,
+                coalition.ato.packages,
+                DcsCoalition.Blue if coalition.player.is_blue else DcsCoalition.Red,
+                self.game.settings.imac_reports,
+            )
 
         RebellionGenerator(self.mission, self.game).generate()
         TriggerGenerator(self.mission, self.game).generate()

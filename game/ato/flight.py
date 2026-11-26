@@ -186,8 +186,15 @@ class Flight(
     def degrade_to_custom_flight_plan(self) -> None:
         from .flightplans.custom import Builder as CustomBuilder
 
-        self._flight_plan_builder = CustomBuilder(self, self.flight_plan.waypoints[1:])
+        plan = self.flight_plan
+        points = [
+            point
+            for point in plan.waypoints[1:]
+            if point is not plan.layout.prerequisite_wait
+        ]
+        self._flight_plan_builder = CustomBuilder(self, points)
         self.recreate_flight_plan()
+        self.flight_plan.layout.prerequisite_wait = plan.layout.prerequisite_wait
 
     def __getstate__(self) -> dict[str, Any]:
         state = self.__dict__.copy()

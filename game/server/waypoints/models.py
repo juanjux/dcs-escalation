@@ -70,6 +70,8 @@ def pin_for(waypoint: FlightWaypoint) -> str:
         or (kind is FlightWaypointType.EGRESS and waypoint.name == "SWEEP END")
     ):
         return "track"
+    if kind is FlightWaypointType.PREREQUISITE_WAIT:
+        return "prerequisite"
     if kind in INGRESS_TYPES:
         return "ingress"
     if kind is FlightWaypointType.REFUEL:
