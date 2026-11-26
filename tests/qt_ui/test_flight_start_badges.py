@@ -25,6 +25,83 @@ from qt_ui.widgets.atodelegates import (
 )
 
 
+def test_package_list_sorts_and_paints_the_selected_dependency(qt_app: Any) -> None:
+    from unittest.mock import Mock
+    from uuid import uuid4
+    from PySide6.QtCore import Qt
+    from game.ato.airtaaskingorder import AirTaskingOrder
+    from game.ato.package import Package
+    from game.db import Database
+    from qt_ui.models import AtoModel
+    from qt_ui.widgets.ato import QPackageList
+    from qt_ui.widgets.atodelegates import PackageRowDelegate, ROW_HEIGHT
+
+    db: Database[Any] = Database()
+
+    def make_package(name: str, when: datetime) -> Package:
+        target: Any = SimpleNamespace(name=name)
+        package = Package(target, db)
+        package.time_over_target = when
+        return package
+
+    follow = make_package("Gazelle", datetime(2026, 1, 1, 20, 52, 55))
+    source = make_package("Boulder City", datetime(2026, 1, 1, 21))
+    pending = make_package("Unscheduled", datetime.min)
+    sweep: Any = SimpleNamespace(
+        id=uuid4(),
+        flight_type=FlightType.SWEEP,
+        package=source,
+        flight_plan=SimpleNamespace(tot=datetime(2026, 1, 1, 20, 45)),
+        count=1,
+        missing_pilots=0,
+        client_count=0,
+    )
+    source.flights.append(sweep)
+    db.add(sweep.id, sweep)
+    follow.prerequisite_flights.append(sweep.id)
+    gm: Any = Mock(game=None)
+    source_model = AtoModel(gm, AirTaskingOrder([pending, source, follow]))
+    view = QPackageList(gm, source_model)
+    model = view.model()
+
+    def rows() -> list[Package]:
+        return [
+            model.index(i, 0).data(AtoModel.PackageRole)
+            for i in range(model.rowCount())
+        ]
+
+    try:
+        assert rows() == [follow, source, pending]
+        view.setCurrentIndex(model.index(0, 0))
+        assert view.package_model(view.currentIndex()).package is follow
+        view.package_model(model.index(1, 0)).set_tot(datetime(2026, 1, 1, 20, 50))
+        assert rows() == [source, follow, pending]
+        assert view.selected_item is follow and view.currentIndex().row() == 1
+
+        idx = view.currentIndex()
+        label = "Depends on: Fighter Sweep #1 Boulder City TOT 20:50"
+        assert idx.data(Qt.ItemDataRole.ToolTipRole) == label
+        delegate = PackageRowDelegate()
+        option = QStyleOptionViewItem()
+        height = delegate.sizeHint(option, idx).height()
+        assert (
+            height > ROW_HEIGHT
+            and delegate.sizeHint(option, model.index(0, 0)).height() == ROW_HEIGHT
+        )
+        option.rect = QRect(0, 0, 650, height)
+        image = QImage(650, height, QImage.Format.Format_ARGB32)
+        painter = RecordingPainter(image)
+        try:
+            delegate.paint(painter, option, idx)
+            assert dict(painter.texts)[label].bottom() < height
+        finally:
+            painter.end()
+        view.delete_package(idx)
+        assert rows() == [source, pending]
+    finally:
+        view.deleteLater()
+
+
 @pytest.fixture(scope="module")
 def qt_app() -> Any:
     yield QApplication.instance() or QApplication([])

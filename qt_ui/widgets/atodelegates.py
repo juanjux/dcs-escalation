@@ -20,7 +20,7 @@ from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter
 from PySide6.QtWidgets import QStyle, QStyledItemDelegate, QStyleOptionViewItem
 
 from game.ato.flight import Flight
-from game.ato.prerequisites import depends_on_text, required_by
+from game.ato.prerequisites import depends_on_text, package_dependencies, required_by
 from game.ato.package import Package
 from qt_ui.models import AtoModel, PackageModel
 from qt_ui.widgets.squadrondelegate import (
@@ -164,6 +164,17 @@ class PackageRowDelegate(AtoRowDelegate):
     def package(index: QModelIndex) -> Package:
         return index.data(AtoModel.PackageRole)
 
+    def sizeHint(self, option: QStyleOptionViewItem, index: QModelIndex) -> QSize:
+        package = self.package(index)
+        return QSize(
+            0,
+            (
+                FLIGHT_ROW_HEIGHT
+                if package and package.prerequisite_flights
+                else ROW_HEIGHT
+            ),
+        )
+
     @staticmethod
     def note_for(package: Package) -> Optional[str]:
         """Anything you would rather not find out at take-off."""
@@ -186,7 +197,10 @@ class PackageRowDelegate(AtoRowDelegate):
 
         with _painting(painter, option):
             width = option.rect.width()
-            self._paint_background(painter, width, selected, hovered)
+            height = option.rect.height()
+            self._paint_background(
+                painter, width, selected, hovered, height, height - 1
+            )
 
             note = self.note_for(package)
             taken = self._paint_warning(painter, width, note) + 10 if note else 0
@@ -217,7 +231,11 @@ class PackageRowDelegate(AtoRowDelegate):
 
             painter.setFont(_font(12, mono=True))
             painter.setPen(TEXT_SECONDARY)
-            time = f"{package.time_over_target:%H:%M:%S}"
+            time = (
+                "—"
+                if package.time_over_target == datetime.min
+                else f"{package.time_over_target:%H:%M:%S}"
+            )
             painter.drawText(after_label, LINE_2, time)
             after_time = (
                 after_label + painter.fontMetrics().horizontalAdvance(time) + 12
@@ -235,6 +253,12 @@ class PackageRowDelegate(AtoRowDelegate):
                 painter.setFont(_font(11.5))
                 _right_text(
                     painter, width, LINE_2, f"{clients} player slots", TEXT_LABEL
+                )
+            if text := package_dependencies(package):
+                painter.setFont(_font(11))
+                painter.setPen(TEXT_SECONDARY)
+                painter.drawText(
+                    CHIP_X, LINE_3, self._elided(painter, text, width - CHIP_X - MARGIN)
                 )
 
 

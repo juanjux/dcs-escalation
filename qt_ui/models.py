@@ -17,6 +17,7 @@ from game.ato.airtaaskingorder import AirTaskingOrder
 from game.ato.flight import Flight
 from game.ato.flighttype import FlightType
 from game.ato.package import Package
+from game.ato.prerequisites import depends_on_text, package_dependencies
 from game.ato.traveltime import TotEstimator
 from game.dcs.beacons import Beacons
 from game.game import Game
@@ -144,6 +145,8 @@ class PackageModel(QAbstractListModel):
             return self.icon_for_flight(flight)
         elif role == PackageModel.FlightRole:
             return flight
+        elif role == Qt.ItemDataRole.ToolTipRole:
+            return depends_on_text(flight) or None
         return None
 
     @staticmethod
@@ -275,13 +278,18 @@ class PackageModel(QAbstractListModel):
             yield flight
 
     def on_sim_update(self, _events: GameUpdateEvents) -> None:
-        self.dataChanged.emit(self.index(0), self.index(self.rowCount()))
+        self.refresh_rows()
+
+    def refresh_rows(self) -> None:
+        if self.rowCount():
+            self.dataChanged.emit(self.index(0), self.index(self.rowCount() - 1))
 
 
 class AtoModel(QAbstractListModel):
     """The model for an AirTaskingOrder."""
 
     PackageRole = Qt.ItemDataRole.UserRole
+    TotRole = Qt.ItemDataRole.UserRole + 1
 
     client_slots_changed = Signal()
     packages_changed = Signal()
@@ -290,8 +298,23 @@ class AtoModel(QAbstractListModel):
         super().__init__()
         self.game_model = game_model
         self.ato = ato
-        self.package_models = DeletableChildModelManager(PackageModel, game_model)
+        self.package_models = DeletableChildModelManager(
+            self._create_package_model, game_model
+        )
         self.game_model.sim_controller.sim_update.connect(self.on_sim_update)
+
+    def _create_package_model(
+        self, package: Package, game_model: GameModel
+    ) -> PackageModel:
+        model = PackageModel(package, game_model)
+        model.tot_changed.connect(self.on_package_timing_changed)
+        return model
+
+    def on_package_timing_changed(self) -> None:
+        self.refresh_rows()
+        for model in self.package_models.models.values():
+            if model.package.prerequisite_flights:
+                model.refresh_rows()
 
     @property
     def game(self) -> Optional[Game]:
@@ -308,6 +331,13 @@ class AtoModel(QAbstractListModel):
             return f"{package.package_description} {package.target.name}"
         elif role == AtoModel.PackageRole:
             return package
+        elif role == AtoModel.TotRole:
+            time = package.time_over_target
+            return (
+                datetime.datetime.max if time == datetime.datetime.min else time
+            ).isoformat()
+        elif role == Qt.ItemDataRole.ToolTipRole:
+            return package_dependencies(package) or None
         return None
 
     def add_package(self, package: Package) -> None:
@@ -398,7 +428,11 @@ class AtoModel(QAbstractListModel):
             yield self.package_models.acquire(package)
 
     def on_sim_update(self, _events: GameUpdateEvents) -> None:
-        self.dataChanged.emit(self.index(0), self.index(self.rowCount()))
+        self.refresh_rows()
+
+    def refresh_rows(self) -> None:
+        if self.rowCount():
+            self.dataChanged.emit(self.index(0), self.index(self.rowCount() - 1))
 
     def release_comms_for_package(self, package: Package):
         self.game_model.release_freq(package.frequency)

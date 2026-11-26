@@ -73,6 +73,7 @@ class QEditFlightDialog(QDialog):
         self.flight_planner: Optional[QFlightPlanner] = None
         self._build_for_flight()
         self.package_model.layoutChanged.connect(self.refresh_dependencies)
+        self.package_model.dataChanged.connect(self.refresh_dependencies)
         self._layout.addWidget(self._footer())
         self.setLayout(self._layout)
 

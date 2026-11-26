@@ -237,6 +237,54 @@ def test_untargeted_sead_cannot_be_selected() -> None:
     assert b.prerequisite_flights == []
 
 
+def test_repair_previews_offsets_and_dependents_across_midnight() -> None:
+    from game.ato.prerequisites import TimingConflict
+    from game.ato.flightplans.flightplan import FlightPlan
+
+    a, b, c, independent = packages = [package(n, 23) for n in "ABCD"]
+    a.time_over_target = a.time_over_target.replace(minute=59, second=15)
+    c.time_over_target = c.time_over_target.replace(minute=59)
+
+    def make_flight(p: Any, offset: int) -> Any:
+        f = flight(p, FlightType.SWEEP)
+
+        class Plan:
+            package = p
+            tot_offset = timedelta(minutes=offset)
+            tot = FlightPlan.tot
+
+        f.flight_plan = Plan()
+        f.state = SimpleNamespace(is_waiting_for_start=True)
+        return f
+
+    provider = make_flight(a, 0)
+    early = make_flight(b, -5)
+    later = make_flight(b, 2)
+    make_flight(c, -1)
+    add(c, later, packages)
+    b.auto_asap = True
+    originals = [p.time_over_target for p in packages]
+    with pytest.raises(TimingConflict) as error:
+        add(b, provider, packages)
+    plan = error.value.adjustments
+    assert plan == {b: datetime(2000, 1, 2, 0, 5), c: datetime(2000, 1, 2, 0, 9)}
+    assert [p.time_over_target for p in packages] == originals
+    assert b.auto_asap and not b.prerequisite_flights
+    early.state.is_waiting_for_start = False
+    with pytest.raises(ValueError, match="locked"):
+        add(b, provider, packages, approved_times=plan)
+    assert [p.time_over_target for p in packages] == originals
+    early.state.is_waiting_for_start = True
+    add(b, provider, packages, approved_times=plan)
+    validate(packages)
+    assert (b.auto_asap, b.prerequisite_flights) == (False, [provider.id])
+    assert early.flight_plan.tot > provider.flight_plan.tot
+    assert (
+        a.time_over_target == originals[0]
+        and independent.time_over_target == originals[3]
+    )
+
+
 def test_only_the_return_leg_marks_the_attempt_finished() -> None:
     from game.ato.flightwaypointtype import FlightWaypointType as Wpt
     from game.missiongenerator.flightoutcomes import mark_return
