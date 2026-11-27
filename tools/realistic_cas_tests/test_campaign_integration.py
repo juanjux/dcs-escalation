@@ -11,6 +11,7 @@ import zipfile
 
 from dcs import Mission
 from dcs.action import DoScriptFile
+from game.ato.airtaaskingorder import AirTaskingOrder
 from game.missiongenerator.luagenerator import LuaGenerator
 from game.missiongenerator.realisticcascampaign import (
     inject_campaign,
@@ -30,10 +31,11 @@ class CampaignIntegrationTests(unittest.TestCase):
         test_registry_export.RegistryTests.setUp(self)
         self.m.start_time = datetime(2026, 5, 17, 5)
         self.game = NS(
+            coalitions=(NS(ato=AirTaskingOrder()), NS(ato=AirTaskingOrder())),
             theater=NS(
                 timezone=timezone(timedelta(hours=3)),
                 reference_position=NS(lat=35.4, lng=44.4),
-            )
+            ),
         )
         self.g = LuaGenerator(self.game, self.m, self.data, NS(theater_objects={}))
         self.p = LuaPlugin.from_json(

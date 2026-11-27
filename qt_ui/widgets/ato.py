@@ -8,6 +8,7 @@ from PySide6.QtCore import (
     QItemSelectionModel,
     QModelIndex,
     QSize,
+    QSortFilterProxyModel,
     Qt,
     Signal,
 )
@@ -316,10 +317,14 @@ class QPackageList(QListView):
     def __init__(self, game_model: GameModel, model: AtoModel) -> None:
         super().__init__()
         self.ato_model = model
-        self.setModel(model)
+        self.sorted_packages = QSortFilterProxyModel(self)
+        self.sorted_packages.setSourceModel(model)
+        self.sorted_packages.setSortRole(AtoModel.TotRole)
+        self.sorted_packages.sort(0)
+        self.setModel(self.sorted_packages)
         self.setItemDelegate(PackageRowDelegate())
         self.setMouseTracking(True)
-        self.setUniformItemSizes(True)
+        self.setUniformItemSizes(False)
         self.setIconSize(QSize(0, 0))
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
         self.model().rowsInserted.connect(self.on_new_packages)
@@ -331,15 +336,18 @@ class QPackageList(QListView):
         index = self.currentIndex()
         if not index.isValid():
             return None
-        return self.ato_model.package_at_index(index)
+        return index.data(AtoModel.PackageRole)
+
+    def package_model(self, index: QModelIndex) -> PackageModel:
+        return self.ato_model.get_package_model(self.sorted_packages.mapToSource(index))
 
     def edit_package(self, index: QModelIndex) -> None:
         from qt_ui.dialogs import Dialog
 
-        Dialog.open_edit_package_dialog(self.ato_model.get_package_model(index))
+        Dialog.open_edit_package_dialog(self.package_model(index))
 
     def clone_package(self, index: QModelIndex) -> None:
-        package_model = self.ato_model.get_package_model(index)
+        package_model = self.package_model(index)
         try:
             clone = Package.clone_package(package_model.package)
         except ValueError as ve:
@@ -356,7 +364,9 @@ class QPackageList(QListView):
         EventStream.put_nowait(events)
 
     def delete_package(self, index: QModelIndex) -> None:
-        self.ato_model.cancel_or_abort_package_at_index(index)
+        self.ato_model.cancel_or_abort_package_at_index(
+            self.sorted_packages.mapToSource(index)
+        )
 
     def on_new_packages(self, _parent: QModelIndex, first: int, _last: int) -> None:
         # Select the newly created pacakges. This should only ever happen due to
@@ -373,6 +383,8 @@ class QPackageList(QListView):
 
     def contextMenuEvent(self, event: QContextMenuEvent) -> None:
         index = self.indexAt(event.pos())
+        if not index.isValid():
+            return
 
         menu = QMenu("Menu")
 
@@ -416,7 +428,6 @@ class QPackagePanel(QGroupBox):
     def __init__(self, game_model: GameModel, ato_model: AtoModel) -> None:
         super().__init__("Packages")
         self.ato_model = ato_model
-        self.ato_model.layoutChanged.connect(self.on_current_changed)
 
         self.vbox = QVBoxLayout()
         self.setLayout(self.vbox)
@@ -470,7 +481,7 @@ class QPackagePanel(QGroupBox):
             EventStream.put_nowait(GameUpdateEvents().deselect_flight())
             return
 
-        package = self.ato_model.get_package_model(index)
+        package = self.package_list.package_model(index)
         if package.rowCount() == 0:
             EventStream.put_nowait(GameUpdateEvents().deselect_flight())
         else:
@@ -557,7 +568,9 @@ class QAirTaskingOrderPanel(QSplitter):
             return
         package_row = packages.index(flight.package)
         self.package_panel.package_list.selectionModel().setCurrentIndex(
-            self.ato_model.index(package_row, 0),
+            self.package_panel.package_list.sorted_packages.mapFromSource(
+                self.ato_model.index(package_row, 0)
+            ),
             QItemSelectionModel.SelectionFlag.ClearAndSelect,
         )
 
@@ -576,7 +589,9 @@ class QAirTaskingOrderPanel(QSplitter):
         index = self.package_panel.package_list.currentIndex()
         if index.isValid():
             self.package_panel.enable_buttons(True)
-            self.flight_panel.set_package(self.ato_model.get_package_model(index))
+            self.flight_panel.set_package(
+                self.package_panel.package_list.package_model(index)
+            )
         else:
             self.package_panel.enable_buttons(False)
             self.flight_panel.set_package(None)
@@ -586,13 +601,11 @@ class QAirTaskingOrderPanel(QSplitter):
         ato_model = (
             self.game_model.red_ato_model if opfor else self.game_model.ato_model
         )
-        ato_model.layoutChanged.connect(self.package_panel.on_current_changed)
         self.ato_model = ato_model
         self.package_panel.ato_model = ato_model
         self.package_panel.package_list.ato_model = ato_model
-        self.package_panel.package_list.setModel(ato_model)
+        self.package_panel.package_list.sorted_packages.setSourceModel(ato_model)
         self.package_panel.enable_buttons(False)
-        self.package_panel.current_changed.connect(self.on_package_change)
         self.flight_panel.flight_list.set_package(None)
         events = GameUpdateEvents().deselect_flight()
         EventStream.put_nowait(events)

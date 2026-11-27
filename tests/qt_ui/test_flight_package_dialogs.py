@@ -607,7 +607,61 @@ def test_package_prerequisite_menu_selects_the_exact_flight(
     monkeypatch.setattr("qt_ui.windows.mission.QPackageDialog.QMenu", TestMenu)
     dlg.add_prerequisite.click()
     assert package.prerequisite_flights == [source.flights[1].id]
-    assert "#2 DEAD" in dlg.dependencies.text()
+    assert dlg.dependencies.text() == "Depends on: DEAD #2 Example TOT 12:00"
     assert "automatically" in dlg.dependencies.toolTip()
     dlg.remove_prerequisite.click()
     assert package.prerequisite_flights == []
+
+
+@pytest.mark.parametrize("accept", [False, True])
+def test_prerequisite_time_repair_is_optional(
+    package_dialog: Any, monkeypatch: pytest.MonkeyPatch, accept: bool
+) -> None:
+    from uuid import uuid4
+    from PySide6.QtWidgets import QMenu, QMessageBox
+    from game.ato.flighttype import FlightType
+    from game.ato.package import Package
+
+    dlg = package_dialog
+    package = dlg.package_model.package
+    before = package.time_over_target
+    target: Any = Named(name="Boulder City")
+    source = Package(target, package._db)
+    source.time_over_target = before.replace(hour=20, minute=50, second=15)
+    provider: Any = SimpleNamespace(
+        package=source,
+        id=uuid4(),
+        flight_type=FlightType.SWEEP,
+        flight_plan=SimpleNamespace(tot=source.time_over_target),
+    )
+    source.flights.append(provider)
+    package._db.add(provider.id, provider)
+    dlg.ato_model.ato.packages = [source, package]
+
+    class TestMenu(QMenu):
+        def exec(self, *args: Any) -> Any:
+            return self.actions()[0]
+
+    monkeypatch.setattr("qt_ui.windows.mission.QPackageDialog.QMenu", TestMenu)
+    monkeypatch.setattr(
+        QMessageBox, "warning", lambda _, title, message: pytest.fail(message)
+    )
+    ask = Mock(
+        return_value=(
+            QMessageBox.StandardButton.Yes if accept else QMessageBox.StandardButton.No
+        )
+    )
+    monkeypatch.setattr(QMessageBox, "question", ask)
+    dlg.add_prerequisite.click()
+    assert "20:51:00" in ask.call_args.args[2]
+    if accept:
+        assert package.time_over_target == before.replace(hour=20, minute=51)
+        assert not package.auto_asap
+        assert package.prerequisite_flights == [provider.id]
+        assert (
+            dlg.dependencies.text()
+            == "Depends on: Fighter Sweep #1 Boulder City TOT 20:50"
+        )
+    else:
+        assert package.time_over_target == before and package.auto_asap
+        assert not package.prerequisite_flights

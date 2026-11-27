@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from graphlib import CycleError, TopologicalSorter
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -63,10 +63,26 @@ def required_by(flight: Flight) -> list[UUID]:
     return [key for key in ids if key not in internal]
 
 
+def dependency_label(flight: Flight) -> str:
+    package = flight.package
+    task = (
+        "Fighter Sweep"
+        if flight.flight_type is FlightType.SWEEP
+        else str(flight.flight_type)
+    )
+    number = package.flights.index(flight) + 1
+    time = (
+        "—"
+        if package.time_over_target == datetime.min
+        else f"{package.time_over_target:%H:%M}"
+    )
+    return f"{task} #{number} {package.target.name} TOT {time}"
+
+
 def describe(package: Package, key: UUID) -> str:
     flight = package.prerequisite_flight(key)
     return (
-        flight_name(flight)
+        dependency_label(flight)
         if flight is not None
         else f"Removed flight ({str(key)[:8]})"
     )
@@ -76,17 +92,38 @@ def depends_on_text(flight: Flight) -> str:
     keys = required_by(flight)
     if not keys:
         return ""
-    return "Depends on: " + ", ".join(describe(flight.package, key) for key in keys)
+    return package_dependencies(flight.package, keys)
 
 
-def validate(packages: list[Package]) -> None:
-    if not any(package.prerequisite_flights for package in packages):
+def package_dependencies(package: Package, keys: list[UUID] | None = None) -> str:
+    if keys is None:
+        keys = package.prerequisite_flights
+    return (
+        "Depends on: " + ", ".join(describe(package, key) for key in keys)
+        if keys
+        else ""
+    )
+
+
+class TimingConflict(ValueError):
+    def __init__(self, message: str, adjustments: dict[Package, datetime]):
+        super().__init__(message)
+        self.adjustments = adjustments
+
+
+def validate(
+    packages: list[Package], *, adding: tuple[Package, Flight] | None = None
+) -> None:
+    if adding is None and not any(package.prerequisite_flights for package in packages):
         return
     by_id = {flight.id: flight for package in packages for flight in package.flights}
     graph: TopologicalSorter[Package] = TopologicalSorter()
-    pairs = []
+    sources: dict[Package, list[Flight]] = {}
     for package in packages:
-        for key in package.prerequisite_flights:
+        keys = package.prerequisite_flights
+        if adding is not None and package is adding[0]:
+            keys = [*keys, adding[1].id]
+        for key in keys:
             flight = by_id.get(key)
             if flight is None:
                 raise ValueError(
@@ -105,42 +142,75 @@ def validate(packages: list[Package]) -> None:
                 )
             if package is not flight.package:
                 graph.add(package, flight.package)
-                pairs.append((package, flight))
+                sources.setdefault(package, []).append(flight)
     try:
-        graph.prepare()
+        ordered = list(graph.static_order())
     except CycleError as ex:
         chain = " → ".join(package_name(package) for package in ex.args[1])
         raise ValueError(f"Circular mission dependency: {chain}") from ex
-    for package, flight in pairs:
-        if datetime.min in (package.time_over_target, flight.package.time_over_target):
+    adjustments: dict[Package, datetime] = {}
+    message = ""
+    for package in ordered:
+        required = sources.get(package)
+        if not required:
+            continue
+        if package.time_over_target == datetime.min or any(
+            f.package.time_over_target == datetime.min for f in required
+        ):
             raise ValueError(
-                f"Set a TOT for {package_name(package)} and {flight_name(flight)}."
+                f"Set a TOT for {package_name(package)} and its prerequisite packages."
             )
-        deadline = flight.flight_plan.tot
-        for member in package.flights:
-            if member.flight_plan.tot <= deadline:
-                raise ValueError(
-                    f"{flight_name(member)} needs a TOT later than {flight_name(flight)} "
-                    f"({deadline:%H:%M:%S})."
-                )
-        if package.time_over_target <= deadline:
-            raise ValueError(
-                f"{package_name(package)} needs a package TOT later than "
-                f"{flight_name(flight)} ({deadline:%H:%M:%S})."
+        deadline = max(
+            f.flight_plan.tot
+            + (
+                adjustments.get(f.package, f.package.time_over_target)
+                - f.package.time_over_target
             )
+            for f in required
+        )
+        earliest = min(
+            [package.time_over_target, *(f.flight_plan.tot for f in package.flights)]
+        )
+        if earliest <= deadline:
+            conflict = f"{package_name(package)} and its flights need a TOT later than {deadline:%H:%M:%S}."
+            if (
+                adding is not None
+                and package is not adding[0]
+                and not any(f.package in adjustments for f in required)
+            ):
+                raise ValueError(conflict)
+            if not message:
+                message = conflict
+            threshold = package.time_over_target + (deadline - earliest)
+            adjustments[package] = threshold.replace(
+                second=0, microsecond=0
+            ) + timedelta(minutes=1)
+    if adjustments:
+        raise TimingConflict(message, adjustments)
 
 
-def add(package: Package, flight: Flight, packages: list[Package]) -> None:
+def add(
+    package: Package,
+    flight: Flight,
+    packages: list[Package],
+    *,
+    approved_times: dict[Package, datetime] | None = None,
+) -> None:
     if flight.id in package.prerequisite_flights:
         raise ValueError("This flight is already a prerequisite.")
     if package not in packages:
         raise ValueError("The dependent package is missing from the ATO.")
-    package.prerequisite_flights.append(flight.id)
     try:
-        validate(packages)
-    except Exception:
-        package.prerequisite_flights.remove(flight.id)
-        raise
+        validate(packages, adding=(package, flight))
+    except TimingConflict as conflict:
+        if conflict.adjustments != approved_times:
+            raise
+        if not all(p.all_flights_waiting_for_start() for p in conflict.adjustments):
+            raise ValueError("A package has already started and its TOT is locked.")
+        for changed, when in conflict.adjustments.items():
+            changed.time_over_target = when
+            changed.auto_asap = False
+    package.prerequisite_flights.append(flight.id)
 
 
 WAIT_NAME = "Wait for DEAD/Fighter Sweep"

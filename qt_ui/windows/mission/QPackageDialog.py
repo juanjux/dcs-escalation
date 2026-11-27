@@ -341,7 +341,9 @@ class QPackageDialog(QDialog):
                     flight.flight_type in prerequisites.ELIGIBLE
                     and flight.id not in package.prerequisite_flights
                 ):
-                    choices[menu.addAction(prerequisites.flight_name(flight))] = flight
+                    choices[menu.addAction(prerequisites.dependency_label(flight))] = (
+                        flight
+                    )
         if not choices:
             QMessageBox.information(
                 self,
@@ -352,13 +354,56 @@ class QPackageDialog(QDialog):
         selected = menu.exec(
             self.add_prerequisite.mapToGlobal(self.add_prerequisite.rect().bottomLeft())
         )
-        if selected in choices:
-            try:
-                prerequisites.add(package, choices[selected], packages)
-            except ValueError as ex:
-                QMessageBox.warning(self, "Cannot add prerequisite", str(ex))
-            else:
-                self.on_prerequisites_changed()
+        if selected not in choices:
+            return
+        try:
+            self.add_selected_prerequisite(choices[selected])
+        except ValueError as ex:
+            QMessageBox.warning(self, "Cannot add prerequisite", str(ex))
+
+    def add_selected_prerequisite(self, flight: Flight) -> None:
+        package = self.package_model.package
+        try:
+            prerequisites.add(package, flight, self.prerequisite_packages())
+        except prerequisites.TimingConflict as conflict:
+            if not all(p.all_flights_waiting_for_start() for p in conflict.adjustments):
+                raise ValueError(
+                    f"{conflict} A package has already started and its TOT is locked."
+                ) from conflict
+            changes = []
+            for changed, when in conflict.adjustments.items():
+                fmt = (
+                    "%H:%M:%S"
+                    if changed.time_over_target.date() == when.date()
+                    else "%Y-%m-%d %H:%M:%S"
+                )
+                changes.append(
+                    f"{prerequisites.package_name(changed)}: {changed.time_over_target:{fmt}} → {when:{fmt}}"
+                )
+            message = (
+                f"{conflict}\n\nAdd this prerequisite and adjust the following package times?\n\n"
+                + "\n".join(changes)
+            )
+            if any(p.auto_asap for p in conflict.adjustments):
+                message += "\n\nAdjusted packages will use a fixed TOT."
+            if (
+                QMessageBox.question(self, "Adjust times over target?", message)
+                != QMessageBox.StandardButton.Yes
+            ):
+                return
+            prerequisites.add(
+                package,
+                flight,
+                self.prerequisite_packages(),
+                approved_times=conflict.adjustments,
+            )
+            for changed in conflict.adjustments:
+                if changed is not package:
+                    self.ato_model.package_models.acquire(changed).update_tot()
+                    EventStream.put_nowait(
+                        GameUpdateEvents().update_flights_in_package(changed)
+                    )
+        self.on_prerequisites_changed()
 
     def choose_removal(self) -> None:
         package = self.package_model.package
