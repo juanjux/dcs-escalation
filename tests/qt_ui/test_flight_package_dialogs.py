@@ -610,7 +610,7 @@ def test_package_prerequisite_menu_selects_the_exact_flight(
     assert package.prerequisite_flights == [source.flights[1].id]
     item = dlg.dependencies.topLevelItem(0)
     assert item.text(1) == "DEAD #2 Example TOT 12:00"
-    assert "automatically" in item.toolTip(0)
+    assert not item.toolTip(0) and not item.toolTip(1)
     dlg.dependencies.itemWidget(item, 2).findChild(QPushButton).click()
     assert package.prerequisite_flights == []
     assert len(source.flights) == 3

@@ -15,8 +15,9 @@ from game.ato import prerequisites
 from game.ato.package import Package
 from qt_ui.models import PackageModel
 from qt_ui.widgets.atodelegates import FLIGHT_ROW_HEIGHT, FlightRowDelegate
-from qt_ui.widgets.cards import CARD_BG, CARD_BORDER
+from qt_ui.widgets.cards import CARD_BG, CARD_BORDER, make_transparent
 from qt_ui.widgets.controls import button
+from qt_ui.widgets.squadrondelegate import HOVER_FILL, SELECTED_FILL
 
 
 class PrerequisiteList(QTreeWidget):
@@ -33,6 +34,8 @@ class PrerequisiteList(QTreeWidget):
         self.setStyleSheet(
             f"QTreeWidget {{ background: {CARD_BG}; border: 1px solid {CARD_BG}; }}"
             f"QTreeWidget::item {{ border-bottom: 1px solid {CARD_BORDER}; }}"
+            f"QTreeWidget::item:hover {{ background: {HOVER_FILL.name()}; }}"
+            f"QTreeWidget::item:selected {{ background: {SELECTED_FILL.name()}; }}"
         )
         self.setMouseTracking(True)
         self.setItemDelegateForColumn(0, FlightRowDelegate(self))
@@ -58,7 +61,8 @@ class PrerequisiteList(QTreeWidget):
                 remove.setAutoDefault(False)
                 remove.setFocusPolicy(Qt.FocusPolicy.NoFocus)
                 remove.setAccessibleName("Remove prerequisite")
-                cell = QWidget()
+                remove.setToolTip("Remove prerequisite")
+                cell = make_transparent(QWidget())
                 controls = QHBoxLayout(cell)
                 controls.setContentsMargins(0, 0, 0, 0)
                 controls.addWidget(remove, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -67,23 +71,9 @@ class PrerequisiteList(QTreeWidget):
                     self.setCurrentItem(item)
         for row, key in enumerate(keys):
             item = self.topLevelItem(row)
-            flight = package.prerequisite_flight(key)
-            label = prerequisites.describe(package, key)
-            item.setData(0, PackageModel.FlightRole, flight)
-            item.setText(1, label)
-            tip = label
-            if flight is not None:
-                if flight.flight_type in prerequisites.OBJECTIVE_FLIGHTS:
-                    tip += (
-                        " — DCS checks the objective and flight status automatically."
-                    )
-                else:
-                    tip += f" — {prerequisites.outcome_flag(key)} (1 = success, 2 = failure)"
-            item.setToolTip(0, tip)
-            item.setToolTip(1, tip)
-            remove = self.itemWidget(item, 2)
-            remove.setEnabled(editable)
-            remove.setToolTip(f"Remove prerequisite: {label}")
+            item.setData(0, PackageModel.FlightRole, package.prerequisite_flight(key))
+            item.setText(1, prerequisites.describe(package, key))
+            self.itemWidget(item, 2).setEnabled(editable)
         self.setVisible(bool(keys))
         if keys:
             height = sum(self.sizeHintForRow(i) for i in range(min(2, len(keys))))
