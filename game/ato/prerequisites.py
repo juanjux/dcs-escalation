@@ -53,14 +53,9 @@ def flight_name(flight: Flight) -> str:
 
 def required_by(flight: Flight) -> list[UUID]:
     package = getattr(flight, "package", None)
-    if package is None:
+    if package is None or not getattr(package, "prerequisite_flights", None):
         return []
-    ids = getattr(package, "prerequisite_flights", [])
-    if not ids or flight.id not in ids:
-        return ids.copy()
-    # All selected flights within this package can go first, in parallel.
-    internal = {member.id for member in package.flights}
-    return [key for key in ids if key not in internal]
+    return package.external_prerequisites()
 
 
 def dependency_label(flight: Flight, *, package_tot: datetime | None = None) -> str:
@@ -164,6 +159,8 @@ def validate(
                 raise ValueError(
                     f"{flight_name(flight)} is no longer an eligible prerequisite."
                 )
+            if flight.package is package:
+                raise ValueError("A package cannot depend on one of its own flights.")
             if flight.flight_type in OBJECTIVE_FLIGHTS and not objective_units(
                 flight.package.target
             ):
@@ -171,9 +168,8 @@ def validate(
                     f"{flight_name(flight)} needs an assigned objective with a tracking "
                     "radar in the campaign catalogue to serve as a prerequisite."
                 )
-            if package is not flight.package:
-                graph.add(package, flight.package)
-                sources.setdefault(package, []).append(flight)
+            graph.add(package, flight.package)
+            sources.setdefault(package, []).append(flight)
     try:
         ordered = list(graph.static_order())
     except CycleError as ex:

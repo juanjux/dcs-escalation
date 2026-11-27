@@ -77,6 +77,13 @@ class Package(RadioFrequencyContainer):
     def prerequisite_flight(self, key: UUID) -> Flight | None:
         return self._db.objects.get(key)
 
+    def external_prerequisites(self) -> list[UUID]:
+        """Exclude legacy links to this package's own flights."""
+        if not self.prerequisite_flights:
+            return []
+        own_flights = {flight.id for flight in self.flights}
+        return [key for key in self.prerequisite_flights if key not in own_flights]
+
     def max_standoff_range(self) -> Optional[Distance]:
         """The longest stand-off launch range among the package's flights, if any.
 
@@ -367,7 +374,6 @@ class Package(RadioFrequencyContainer):
     @staticmethod
     def clone_package(package: Package) -> Package:
         clone = Package(package.target, package._db, package.auto_asap)
-        remapped = {}
         clone.single_route_for_all_flights = package.single_route_for_all_flights
         clone.time_over_target = deepcopy(package.time_over_target)
         for f in package.flights:
@@ -375,10 +381,7 @@ class Package(RadioFrequencyContainer):
             cf.flight_plan.layout = deepcopy(f.flight_plan.layout)
             cf.package = clone
             clone.add_flight(cf)
-            remapped[f.id] = cf.id
-        clone.prerequisite_flights = [
-            remapped.get(key, key) for key in package.prerequisite_flights
-        ]
+        clone.prerequisite_flights = package.external_prerequisites()
         return clone
 
     def all_flights_waiting_for_start(self) -> bool:

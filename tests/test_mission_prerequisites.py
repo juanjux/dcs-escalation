@@ -189,25 +189,46 @@ def flight(package: Any, role: FlightType = FlightType.SEAD) -> Any:
     return result
 
 
-def test_multiple_links_and_internal_providers() -> None:
+def test_multiple_external_links_and_cycles() -> None:
     a, b, c = packages = [package(n, h) for h, n in enumerate("ABC", 1)]
     external = flight(a)
-    internal, other = flight(b, FlightType.SWEEP), flight(b, FlightType.DEAD)
+    sweep, dead = flight(b, FlightType.SWEEP), flight(b, FlightType.DEAD)
     member = flight(b, FlightType.STRIKE)
     dependent = flight(c)
     add(b, external, packages)
-    add(b, internal, packages)
-    add(b, other, packages)
-    add(c, internal, packages)
+    add(c, sweep, packages)
+    add(c, dead, packages)
     add(c, external, packages)
-    assert required_by(member) == [external.id, internal.id, other.id]
-    assert required_by(internal) == required_by(other) == [external.id]
-    assert required_by(dependent) == [internal.id, external.id]
+    assert (
+        required_by(member) == required_by(sweep) == required_by(dead) == [external.id]
+    )
+    assert required_by(dependent) == [sweep.id, dead.id, external.id]
     with pytest.raises(ValueError, match="Circular"):
         add(a, dependent, packages)
     assert not a.prerequisite_flights
     with pytest.raises(ValueError, match="already"):
         add(b, external, packages)
+
+
+def test_package_cannot_require_its_own_sweep_even_with_an_escort() -> None:
+    from game.ato.prerequisites import TimingConflict
+
+    current, other = packages = [package("Boulder City", 20) for _ in range(2)]
+    other.target = current.target
+    current.time_over_target = other.time_over_target = datetime(2000, 1, 1, 20, 50, 15)
+    sweep = flight(current, FlightType.SWEEP)
+    escort = flight(current, FlightType.ESCORT)
+    with pytest.raises(ValueError, match="its own flights"):
+        add(current, sweep, packages)
+    assert not current.prerequisite_flights
+    # The same target in another package is eligible, but a tied TOT needs repair.
+    with pytest.raises(TimingConflict) as error:
+        add(other, sweep, packages)
+    assert error.value.adjustments == {other: datetime(2000, 1, 1, 20, 51)}
+    current.prerequisite_flights.append(sweep.id)
+    assert not required_by(sweep) and not required_by(escort)
+    with pytest.raises(ValueError, match="its own flights"):
+        validate(packages)
 
 
 def test_checks_later_edits_and_ato_membership() -> None:
@@ -346,6 +367,29 @@ def test_old_coordinated_save_keeps_its_scheduled_time() -> None:
     assert loaded.prerequisite_flights == []
 
 
+def test_save_migration_removes_only_own_flights_and_preserves_tot() -> None:
+    import pickle
+    from game.migrator import Migrator
+
+    db: Database[Any] = Database()
+    target: Any = SimpleNamespace(name="Boulder City")
+    source, follow = Package(target, db), Package(target, db)
+    source.time_over_target = datetime(2000, 1, 1, 20, 45)
+    follow.time_over_target = datetime(2000, 1, 1, 20, 50, 15)
+    earlier = flight(source, FlightType.SWEEP)
+    own = flight(follow, FlightType.SWEEP)
+    flight(follow, FlightType.ESCORT)
+    follow.prerequisite_flights = [own.id, earlier.id]
+    coalition = SimpleNamespace(ato=SimpleNamespace(packages=[source, follow]))
+    migrator = object.__new__(Migrator)
+    migrator.game = pickle.loads(pickle.dumps(SimpleNamespace(coalitions=[coalition])))
+    migrator._update_package_attributes()
+    loaded_source, loaded_follow = next(iter(migrator.game.coalitions)).ato.packages
+    assert loaded_follow.prerequisite_flights == [earlier.id]
+    assert loaded_follow.time_over_target == follow.time_over_target
+    validate([loaded_source, loaded_follow])
+
+
 @pytest.mark.parametrize("first", [1, 2])
 def test_generated_scenario_waits_and_propagates_results(
     tmp_path: Path, first: int
@@ -456,7 +500,7 @@ def test_generated_scenario_waits_and_propagates_results(
     assert vm.globals().nextPoint == (4 if first == 2 else None)
 
 
-def test_duplicate_remaps_internal_flights_and_keeps_external_ones(
+def test_duplicate_excludes_legacy_internal_links_and_keeps_external_ones(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from game.ato.flight import Flight
@@ -464,9 +508,9 @@ def test_duplicate_remaps_internal_flights_and_keeps_external_ones(
     a, b = packages = [package("First", 1), package("Second", 2)]
     source = flight(a)
     same_package = flight(b)
-    member = flight(b, FlightType.STRIKE)
+    flight(b, FlightType.STRIKE)
     add(b, source, packages)
-    add(b, same_package, packages)
+    b.prerequisite_flights.append(same_package.id)
     for original in b.flights:
         original.flight_plan.layout = SimpleNamespace(prerequisite_wait=None)
 
@@ -480,7 +524,6 @@ def test_duplicate_remaps_internal_flights_and_keeps_external_ones(
 
     monkeypatch.setattr(Flight, "clone_flight", staticmethod(copy))
     clone = Package.clone_package(b)
-    assert clone.prerequisite_flights == [source.id, clone.flights[0].id]
-    assert required_by(clone.flights[0]) == [source.id]
-    assert same_package.id not in required_by(clone.flights[1])
-    assert b.prerequisite_flights == required_by(member)
+    assert clone.prerequisite_flights == [source.id]
+    assert all(required_by(f) == [source.id] for f in clone.flights)
+    assert b.prerequisite_flights == [source.id, same_package.id]

@@ -105,6 +105,7 @@ class Migrator:
             for p in c.ato.packages:
                 try_set_attr(p, "custom_name")
                 try_set_attr(p, "frequency")
+                p.prerequisite_flights = p.external_prerequisites()
                 if isinstance(p.time_over_target, timedelta):  # type: ignore
                     p.time_over_target = (  # type: ignore
                         p.time_over_target + self.game.conditions.start_time
