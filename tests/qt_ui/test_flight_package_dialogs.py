@@ -563,6 +563,27 @@ def test_package_tot_redraw_does_not_write_the_spinner_back(
     package_dialog.package_model.set_tot.assert_not_called()
 
 
+def test_package_with_only_its_own_sweep_has_no_prerequisite_choices(
+    package_dialog: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from uuid import uuid4
+    from PySide6.QtWidgets import QMenu, QMessageBox
+    from game.ato.flighttype import FlightType
+
+    dlg = package_dialog
+    package = dlg.package_model.package
+    own = insert_flight(dlg)
+    own.flight_type = FlightType.SWEEP
+    own.package = package
+    own.id = uuid4()
+    info = Mock()
+    monkeypatch.setattr(QMessageBox, "information", info)
+    monkeypatch.setattr(QMenu, "exec", lambda *_: pytest.fail("Offered own flight"))
+    dlg.add_prerequisite.click()
+    info.assert_called_once()
+    assert not package.prerequisite_flights
+
+
 def test_package_prerequisite_menu_selects_the_exact_flight(
     package_dialog: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:

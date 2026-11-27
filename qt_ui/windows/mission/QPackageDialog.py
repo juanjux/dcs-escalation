@@ -396,6 +396,8 @@ class QPackageDialog(QDialog):
         menu = QMenu(self)
         choices = {}
         for candidate in packages:
+            if candidate is package:
+                continue
             for flight in candidate.flights:
                 if (
                     flight.flight_type in prerequisites.ELIGIBLE
@@ -408,7 +410,7 @@ class QPackageDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Mission prerequisites",
-                "There are no further DEAD, SEAD or Fighter Sweep flights in this ATO.",
+                "There are no further DEAD, SEAD or Fighter Sweep flights in other packages.",
             )
             return
         selected = menu.exec(
