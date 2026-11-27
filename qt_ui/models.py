@@ -255,6 +255,9 @@ class PackageModel(QAbstractListModel):
             self.package.set_tot_asap(
                 self.game_model.sim_controller.current_time_in_sim
             )
+        self.notify_tot_changed()
+
+    def notify_tot_changed(self) -> None:
         self.tot_changed.emit()
         # For some reason this is needed to make the UI update quickly.
         self.layoutChanged.emit()

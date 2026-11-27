@@ -63,7 +63,7 @@ def required_by(flight: Flight) -> list[UUID]:
     return [key for key in ids if key not in internal]
 
 
-def dependency_label(flight: Flight) -> str:
+def dependency_label(flight: Flight, *, package_tot: datetime | None = None) -> str:
     package = flight.package
     task = (
         "Fighter Sweep"
@@ -71,11 +71,8 @@ def dependency_label(flight: Flight) -> str:
         else str(flight.flight_type)
     )
     number = package.flights.index(flight) + 1
-    time = (
-        "—"
-        if package.time_over_target == datetime.min
-        else f"{package.time_over_target:%H:%M}"
-    )
+    tot = package.time_over_target if package_tot is None else package_tot
+    time = "—" if tot == datetime.min else f"{tot:%H:%M}"
     return f"{task} #{number} {package.target.name} TOT {time}"
 
 
@@ -109,6 +106,40 @@ class TimingConflict(ValueError):
     def __init__(self, message: str, adjustments: dict[Package, datetime]):
         super().__init__(message)
         self.adjustments = adjustments
+
+
+def _earliest_tot(package: Package) -> datetime:
+    return min(
+        [package.time_over_target, *(f.flight_plan.tot for f in package.flights)]
+    )
+
+
+def _prerequisite_tot(flight: Flight) -> datetime:
+    # A negative flight offset must not bring the dependent ahead of the
+    # published package TOT. A positive offset must still be respected.
+    return max(flight.package.time_over_target, flight.flight_plan.tot)
+
+
+def conflicting_links(
+    packages: list[Package], changed: Package, proposed: datetime
+) -> list[tuple[Package, Flight]]:
+    """Existing external links invalidated by an edit to either endpoint."""
+    if proposed == changed.time_over_target:
+        return []
+    delta = proposed - changed.time_over_target
+    conflicts = []
+    for dependent in packages:
+        for key in dependent.prerequisite_flights:
+            flight = dependent.prerequisite_flight(key)
+            if flight is None or flight.package is dependent:
+                continue
+            if dependent is changed:
+                if _earliest_tot(dependent) + delta <= _prerequisite_tot(flight):
+                    conflicts.append((dependent, flight))
+            elif flight.package is changed:
+                if _earliest_tot(dependent) <= _prerequisite_tot(flight) + delta:
+                    conflicts.append((dependent, flight))
+    return conflicts
 
 
 def validate(
@@ -161,18 +192,20 @@ def validate(
                 f"Set a TOT for {package_name(package)} and its prerequisite packages."
             )
         deadline = max(
-            f.flight_plan.tot
+            _prerequisite_tot(f)
             + (
                 adjustments.get(f.package, f.package.time_over_target)
                 - f.package.time_over_target
             )
             for f in required
         )
-        earliest = min(
-            [package.time_over_target, *(f.flight_plan.tot for f in package.flights)]
-        )
+        earliest = _earliest_tot(package)
         if earliest <= deadline:
-            conflict = f"{package_name(package)} and its flights need a TOT later than {deadline:%H:%M:%S}."
+            threshold = package.time_over_target + (deadline - earliest)
+            conflict = (
+                "To match the pre-requisite flights, this package needs a TOT "
+                f"later than {threshold:%H:%M:%S}."
+            )
             if (
                 adding is not None
                 and package is not adding[0]
@@ -181,7 +214,6 @@ def validate(
                 raise ValueError(conflict)
             if not message:
                 message = conflict
-            threshold = package.time_over_target + (deadline - earliest)
             adjustments[package] = threshold.replace(
                 second=0, microsecond=0
             ) + timedelta(minutes=1)

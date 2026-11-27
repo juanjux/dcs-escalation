@@ -285,6 +285,33 @@ def test_repair_previews_offsets_and_dependents_across_midnight() -> None:
     )
 
 
+def test_sweep_package_at_2050_keeps_the_following_tarcap_after_2050() -> None:
+    from game.ato.prerequisites import TimingConflict
+    from game.ato.flightplans.sweep import SweepFlightPlan
+    from game.ato.flightplans.tarcap import TarCapFlightPlan
+
+    source, follow = packages = [
+        package(name, 20) for name in ("Boulder City", "Follow")
+    ]
+    source.time_over_target = source.time_over_target.replace(minute=50, second=15)
+    sweep = flight(source, FlightType.SWEEP)
+    tarcap = flight(follow, FlightType.TARCAP)
+    # Use the real plans' TOT properties and default offsets without building routes.
+    for member, plan_type in ((sweep, SweepFlightPlan), (tarcap, TarCapFlightPlan)):
+        plan = object.__new__(plan_type)
+        plan.flight = member
+        plan.tot_offset = plan.default_tot_offset()
+        member.flight_plan = plan
+        member.state = SimpleNamespace(is_waiting_for_start=True)
+    assert sweep.flight_plan.tot == source.time_over_target.replace(minute=45)
+    with pytest.raises(TimingConflict, match="later than 20:52:15") as error:
+        add(follow, sweep, packages)
+    add(follow, sweep, packages, approved_times=error.value.adjustments)
+    assert follow.time_over_target == datetime(2000, 1, 1, 20, 53)
+    assert tarcap.flight_plan.tot > source.time_over_target
+    validate(packages)
+
+
 def test_only_the_return_leg_marks_the_attempt_finished() -> None:
     from game.ato.flightwaypointtype import FlightWaypointType as Wpt
     from game.missiongenerator.flightoutcomes import mark_return
