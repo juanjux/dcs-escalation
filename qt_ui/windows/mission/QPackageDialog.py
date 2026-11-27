@@ -1,7 +1,9 @@
 """Dialogs for creating and editing ATO packages."""
 
 import logging
+from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 from PySide6.QtCore import QItemSelection, QSignalBlocker, QTime, Qt, Signal
 from PySide6.QtWidgets import (
@@ -21,6 +23,7 @@ from game.ato.flight import Flight
 from game.ato.flightplans.planningerror import PlanningError
 from game.ato.package import Package
 from game.ato import prerequisites
+from game.ato.traveltime import TotEstimator
 from game.game import Game
 from game.radio.radios import RadioFrequency
 from game.server import EventStream
@@ -30,6 +33,7 @@ from qt_ui.models import GameModel, PackageModel
 from qt_ui.uiconstants import EVENT_ICONS
 from qt_ui.widgets.QFrequencyWidget import QFrequencyWidget
 from qt_ui.widgets.ato import QFlightList
+from qt_ui.widgets.prerequisitelist import PrerequisiteList
 from qt_ui.widgets.cards import card, caption, make_transparent
 from qt_ui.widgets.controls import (
     button,
@@ -146,6 +150,7 @@ class QPackageDialog(QDialog):
         self.tot_spinner = QTimeEdit(self.tot_qtime())
         self.tot_spinner.setMinimumTime(QTime(0, 0))
         self.tot_spinner.setDisplayFormat("hh:mm:ss")
+        self.tot_spinner.setKeyboardTracking(False)
         self.tot_spinner.timeChanged.connect(self.save_tot)
         self.tot_spinner.setToolTip(
             "Mission clock time at which the package reaches its target."
@@ -188,30 +193,6 @@ class QPackageDialog(QDialog):
         timing_layout.addWidget(self.timing_hint)
         settings_row.addWidget(timing, 1)
         self.layout.addLayout(settings_row)
-
-        prerequisite_row = QHBoxLayout()
-        self.dependencies = value_label("")
-        self.dependencies.setTextFormat(Qt.TextFormat.PlainText)
-        self.dependencies.setWordWrap(True)
-        self.dependencies.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
-        prerequisite_row.addWidget(self.dependencies, 1)
-        self.add_prerequisite = button(
-            "Add pre-requisite mission", handler=self.choose_prerequisite
-        )
-        self.add_prerequisite.setToolTip(
-            "The package waits for every selected flight. DEAD and targeted SEAD "
-            "succeed when all tracking radars at their objective are destroyed. "
-            "They fail if the flight returns, is lost or runs out of air-to-ground stores first."
-        )
-        self.remove_prerequisite = button(
-            "Remove prerequisite", handler=self.choose_removal
-        )
-        for control in (self.add_prerequisite, self.remove_prerequisite):
-            control.setAutoDefault(False)
-            prerequisite_row.addWidget(control)
-        self.layout.addLayout(prerequisite_row)
 
         toolbar = QHBoxLayout()
         toolbar.addWidget(caption("Flights"))
@@ -265,11 +246,28 @@ class QPackageDialog(QDialog):
         self.departures_label.setWordWrap(True)
         self.layout.addWidget(self.departures_label)
 
+        prerequisite_row = QHBoxLayout()
+        prerequisite_row.addWidget(caption("Required flights"))
+        prerequisite_row.addStretch()
+        self.add_prerequisite = button(
+            "Add pre-requisite package", handler=self.choose_prerequisite
+        )
+        self.add_prerequisite.setAutoDefault(False)
+        self.add_prerequisite.setToolTip(
+            "Choose the flight this package will wait for."
+        )
+        prerequisite_row.addWidget(self.add_prerequisite)
+        self.layout.addLayout(prerequisite_row)
+        self.dependencies = PrerequisiteList()
+        self.dependencies.open_requested.connect(self.open_prerequisite_package)
+        self.dependencies.remove_requested.connect(self.remove_prerequisite)
+        self.layout.addWidget(self.dependencies)
+
         self.button_layout = QHBoxLayout()
         self.layout.addLayout(self.button_layout)
 
         self.footer_hint = value_label(
-            "Double-click a flight to edit its plan and loadout."
+            "Double-click a flight to edit it, or a required flight to open its package."
         )
         self.button_layout.addWidget(self.footer_hint)
         self.button_layout.addStretch()
@@ -314,14 +312,76 @@ class QPackageDialog(QDialog):
             return
         # TODO: This is going to break horribly around midnight.
         time = self.tot_spinner.time()
-        self.package_model.set_tot(
+        self.change_timing(
             self.package_model.package.time_over_target.replace(
                 hour=time.hour(), minute=time.minute(), second=time.second()
-            )
+            ),
+            asap=False,
         )
 
     def set_asap(self, checked: bool) -> None:
-        self.package_model.set_asap(checked)
+        package = self.package_model.package
+        when = (
+            TotEstimator(package).earliest_tot(
+                self.game_model.sim_controller.current_time_in_sim
+            )
+            if checked
+            else package.time_over_target
+        )
+        self.change_timing(when, asap=checked)
+
+    def change_timing(self, when: datetime, *, asap: bool) -> None:
+        package = self.package_model.package
+        if when == package.time_over_target and asap == package.auto_asap:
+            return
+        conflicts = prerequisites.conflicting_links(
+            self.prerequisite_packages(), package, when
+        )
+        if conflicts:
+            links = "\n".join(
+                f"{prerequisites.package_name(owner)} → "
+                f"{prerequisites.dependency_label(flight, package_tot=when if flight.package is package else None)}"
+                for owner, flight in conflicts
+            )
+            proposed = when.isoformat(sep=" ", timespec="seconds")
+            if any(not owner.all_flights_waiting_for_start() for owner, _ in conflicts):
+                QMessageBox.warning(
+                    self,
+                    "Timing is locked",
+                    "A package with an affected prerequisite has already started.\n\n"
+                    + links,
+                )
+                accepted = False
+            else:
+                accepted = (
+                    QMessageBox.question(
+                        self,
+                        "Remove conflicting prerequisites?",
+                        f"A TOT of {proposed} conflicts with the following prerequisites. Apply the new time and remove these links?\n\n{links}",
+                        QMessageBox.StandardButton.Yes
+                        | QMessageBox.StandardButton.Cancel,
+                        QMessageBox.StandardButton.Cancel,
+                    )
+                    == QMessageBox.StandardButton.Yes
+                )
+            if not accepted:
+                self.update_tot()
+                with QSignalBlocker(self.auto_asap):
+                    self.auto_asap.setChecked(package.auto_asap)
+                return
+            for owner, flight in conflicts:
+                owner.prerequisite_flights.remove(flight.id)
+        package.auto_asap = asap
+        package.time_over_target = when
+        self.package_model.notify_tot_changed()
+        if conflicts:
+            with EventStream.event_context() as events:
+                for owner in {owner for owner, _ in conflicts}:
+                    events.update_flights_in_package(owner)
+                    if owner is not package:
+                        self.ato_model.package_models.acquire(
+                            owner
+                        ).notify_tot_changed()
 
     def prerequisite_packages(self) -> list[Package]:
         package = self.package_model.package
@@ -405,20 +465,32 @@ class QPackageDialog(QDialog):
                     )
         self.on_prerequisites_changed()
 
-    def choose_removal(self) -> None:
+    def open_prerequisite_package(self, key: UUID) -> None:
+        from qt_ui.dialogs import Dialog
+
+        flight = self.package_model.package.prerequisite_flight(key)
+        if flight is None:
+            return
+        if flight.package is self.package_model.package:
+            self.raise_()
+            self.activateWindow()
+            return
+        model = self.ato_model.package_models.acquire(flight.package)
+        if self.isModal():
+            dialog = QEditPackageDialog(self.game_model, model, parent=self)
+            dialog.exec()
+            dialog.deleteLater()
+            self.update_package_context()
+        else:
+            Dialog.open_edit_package_dialog(model)
+
+    def remove_prerequisite(self, key: UUID) -> None:
         package = self.package_model.package
-        menu = QMenu(self)
-        choices = {
-            menu.addAction(prerequisites.describe(package, key)): key
-            for key in package.prerequisite_flights
-        }
-        selected = menu.exec(
-            self.remove_prerequisite.mapToGlobal(
-                self.remove_prerequisite.rect().bottomLeft()
-            )
-        )
-        if selected in choices:
-            package.prerequisite_flights.remove(choices[selected])
+        if (
+            key in package.prerequisite_flights
+            and package.all_flights_waiting_for_start()
+        ):
+            package.prerequisite_flights.remove(key)
             self.on_prerequisites_changed()
 
     def on_prerequisites_changed(self) -> None:
@@ -579,26 +651,7 @@ class QPackageDialog(QDialog):
         self.tot_spinner.setEnabled(waiting and not package.auto_asap)
         self.auto_asap.setEnabled(waiting)
         self.add_prerequisite.setEnabled(waiting)
-        self.remove_prerequisite.setVisible(bool(package.prerequisite_flights))
-        self.remove_prerequisite.setEnabled(waiting)
-        names = [
-            prerequisites.describe(package, key) for key in package.prerequisite_flights
-        ]
-        self.dependencies.setText("Depends on: " + (", ".join(names) or "None"))
-        details = []
-        for name, key in zip(names, package.prerequisite_flights):
-            source = package.prerequisite_flight(key)
-            if source is None:
-                details.append(name)
-            elif source.flight_type in prerequisites.OBJECTIVE_FLIGHTS:
-                details.append(
-                    f"{name} — DCS checks the objective and flight status automatically."
-                )
-            else:
-                details.append(
-                    f"{name}: {prerequisites.outcome_flag(key)} (1 = success, 2 = failure)"
-                )
-        self.dependencies.setToolTip("\n".join(details))
+        self.dependencies.refresh(package, waiting)
         with QSignalBlocker(self.auto_asap):
             self.auto_asap.setChecked(package.auto_asap)
         self.timing_hint.setText(
@@ -723,8 +776,8 @@ class QEditPackageDialog(QPackageDialog):
     Changes to existing packages occur immediately.
     """
 
-    def __init__(self, gm: GameModel, package: PackageModel) -> None:
-        super().__init__(gm, package)
+    def __init__(self, gm: GameModel, package: PackageModel, parent=None) -> None:
+        super().__init__(gm, package, parent)
         self.package_model.deleted.connect(self.close)
 
         self.delete_button = button("Delete package", "danger", self.on_delete)

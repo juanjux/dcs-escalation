@@ -286,6 +286,7 @@ def make_package_dialog() -> Any:
     gm: Any = SimpleNamespace(
         sim_controller=Mock(), allocated_freqs=[], is_ownfor=True, ato_model=Mock()
     )
+    gm.ato_model.ato.packages = [package]
     return QEditPackageDialog(gm, PackageModel(package, gm))
 
 
@@ -530,7 +531,7 @@ def test_new_package_save_and_cancel(
     gm.game = SimpleNamespace(db=SimpleNamespace(flights=Database()))
     dialog = QNewPackageDialog(gm, package_dialog.package_model.mission_target)
     assert dialog.auto_asap.isChecked()
-    assert dialog.dependencies.text() == "Depends on: None"
+    assert dialog.dependencies.topLevelItemCount() == 0
     assert not dialog.tot_spinner.isEnabled()
     monkeypatch.setattr(dialog.package_model.package, "set_tot_asap", lambda _: None)
     if save:
@@ -566,7 +567,7 @@ def test_package_prerequisite_menu_selects_the_exact_flight(
     package_dialog: Any, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from uuid import uuid4
-    from PySide6.QtWidgets import QMenu
+    from PySide6.QtWidgets import QMenu, QPushButton
     from game.ato.flighttype import FlightType
     from game.ato.package import Package
 
@@ -607,10 +608,12 @@ def test_package_prerequisite_menu_selects_the_exact_flight(
     monkeypatch.setattr("qt_ui.windows.mission.QPackageDialog.QMenu", TestMenu)
     dlg.add_prerequisite.click()
     assert package.prerequisite_flights == [source.flights[1].id]
-    assert dlg.dependencies.text() == "Depends on: DEAD #2 Example TOT 12:00"
-    assert "automatically" in dlg.dependencies.toolTip()
-    dlg.remove_prerequisite.click()
+    item = dlg.dependencies.topLevelItem(0)
+    assert item.text(1) == "DEAD #2 Example TOT 12:00"
+    assert "automatically" in item.toolTip(0)
+    dlg.dependencies.itemWidget(item, 2).findChild(QPushButton).click()
     assert package.prerequisite_flights == []
+    assert len(source.flights) == 3
 
 
 @pytest.mark.parametrize("accept", [False, True])
@@ -632,7 +635,7 @@ def test_prerequisite_time_repair_is_optional(
         package=source,
         id=uuid4(),
         flight_type=FlightType.SWEEP,
-        flight_plan=SimpleNamespace(tot=source.time_over_target),
+        flight_plan=SimpleNamespace(tot=source.time_over_target.replace(minute=45)),
     )
     source.flights.append(provider)
     package._db.add(provider.id, provider)
@@ -653,15 +656,156 @@ def test_prerequisite_time_repair_is_optional(
     )
     monkeypatch.setattr(QMessageBox, "question", ask)
     dlg.add_prerequisite.click()
+    assert (
+        "To match the pre-requisite flights, this package needs a TOT later than 20:50:15."
+        in ask.call_args.args[2]
+    )
     assert "20:51:00" in ask.call_args.args[2]
     if accept:
         assert package.time_over_target == before.replace(hour=20, minute=51)
         assert not package.auto_asap
         assert package.prerequisite_flights == [provider.id]
         assert (
-            dlg.dependencies.text()
-            == "Depends on: Fighter Sweep #1 Boulder City TOT 20:50"
+            dlg.dependencies.topLevelItem(0).text(1)
+            == "Fighter Sweep #1 Boulder City TOT 20:50"
         )
     else:
         assert package.time_over_target == before and package.auto_asap
         assert not package.prerequisite_flights
+
+
+def add_sweep_source(dialog: Any, name: str, hour: int) -> Any:
+    from uuid import uuid4
+    from game.ato.flighttype import FlightType
+    from game.ato.package import Package
+    from game.ato.starttype import StartType
+
+    package = dialog.package_model.package
+    target: Any = Named(name=name)
+    source = Package(target, package._db)
+    source.time_over_target = datetime(2026, 1, 1, hour)
+    flight: Any = SimpleNamespace(
+        id=uuid4(),
+        package=source,
+        flight_type=FlightType.SWEEP,
+        flight_plan=SimpleNamespace(tot=source.time_over_target),
+        state=SimpleNamespace(is_waiting_for_start=True),
+        start_type=StartType.IN_FLIGHT,
+        count=2,
+        client_count=0,
+        missing_pilots=0,
+        squadron=Named(name="Squadron 006"),
+        unit_type=Named(display_name="Example aircraft"),
+        departure=Named(name="Home"),
+    )
+    source.flights.append(flight)
+    package._db.add(flight.id, flight)
+    dialog.ato_model.ato.packages.append(source)
+    package.prerequisite_flights.append(flight.id)
+    return flight
+
+
+@pytest.mark.parametrize("asap", [False, True])
+@pytest.mark.parametrize("accept", [False, True])
+def test_edit_conflicting_tot_preserves_or_removes_only_invalid_link(
+    package_dialog: Any, monkeypatch: pytest.MonkeyPatch, asap: bool, accept: bool
+) -> None:
+    from PySide6.QtCore import QTime
+    from PySide6.QtWidgets import QMessageBox
+
+    dlg = package_dialog
+    package = dlg.package_model.package
+    dlg.auto_asap.click()
+    old_time = package.time_over_target
+    earlier = add_sweep_source(dlg, "First", 9)
+    later = add_sweep_source(dlg, "Second", 12)
+    dlg.update_package_context()
+    proposal = old_time.replace(hour=11)
+    dlg.game_model.sim_controller.current_time_in_sim = proposal
+    ask = Mock(
+        return_value=(
+            QMessageBox.StandardButton.Yes
+            if accept
+            else QMessageBox.StandardButton.Cancel
+        )
+    )
+    monkeypatch.setattr(QMessageBox, "question", ask)
+    if asap:
+        dlg.auto_asap.click()
+    else:
+        dlg.tot_spinner.setTime(QTime(11, 30))
+    ask.assert_called_once()
+    assert "Second" in ask.call_args.args[2] and "First" not in ask.call_args.args[2]
+    expected = proposal if accept else old_time
+    assert package.time_over_target == expected
+    assert dlg.tot_spinner.time() == QTime(expected.hour, expected.minute)
+    assert package.auto_asap == dlg.auto_asap.isChecked() == (asap and accept)
+    assert package.prerequisite_flights == (
+        [earlier.id] if accept else [earlier.id, later.id]
+    )
+    assert dlg.dependencies.topLevelItemCount() == len(package.prerequisite_flights)
+
+
+def test_required_card_opens_package_and_delete_only_unlinks_selected_flight(
+    package_dialog: Any, qt_app: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from PySide6.QtCore import Qt
+    from PySide6.QtTest import QTest
+    from qt_ui.dialogs import Dialog
+    from qt_ui.widgets.atodelegates import FLIGHT_ROW_HEIGHT
+
+    dlg = package_dialog
+    first = add_sweep_source(dlg, "First", 9)
+    second = add_sweep_source(dlg, "Second", 10)
+    dlg.update_package_context()
+    opened = Mock()
+    monkeypatch.setattr(Dialog, "open_edit_package_dialog", opened)
+    dlg.show()
+    qt_app.processEvents()
+    view = dlg.dependencies
+    assert view.visualItemRect(view.topLevelItem(1)).height() >= FLIGHT_ROW_HEIGHT
+    target = view.visualItemRect(view.topLevelItem(1)).center()
+    QTest.mouseClick(view.viewport(), Qt.MouseButton.LeftButton, pos=target)
+    QTest.mouseDClick(view.viewport(), Qt.MouseButton.LeftButton, pos=target)
+    dlg.ato_model.package_models.acquire.assert_called_with(second.package)
+    opened.assert_called_once_with(dlg.ato_model.package_models.acquire.return_value)
+    QTest.keyClick(view, Qt.Key.Key_Delete)
+    assert dlg.package_model.package.prerequisite_flights == [first.id]
+    assert second.package.flights == [second]
+    assert view.topLevelItemCount() == 1
+
+
+def test_editing_source_tot_only_unlinks_packages_that_can_no_longer_follow(
+    package_dialog: Any, monkeypatch: pytest.MonkeyPatch, qt_app: Any
+) -> None:
+    from PySide6.QtCore import QTime
+    from PySide6.QtWidgets import QMessageBox
+    from game.ato.package import Package
+    from qt_ui.models import PackageModel
+    from qt_ui.windows.mission.QPackageDialog import QEditPackageDialog
+
+    owner = package_dialog.package_model.package
+    gm = package_dialog.game_model
+    sweep = add_sweep_source(package_dialog, "Boulder City", 9)
+    other = Package(owner.target, owner._db)
+    other.time_over_target = owner.time_over_target.replace(hour=18)
+    other.prerequisite_flights.append(sweep.id)
+    gm.ato_model.ato.packages.append(other)
+    gm.ato_model.package_models.acquire.return_value = package_dialog.package_model
+    package_dialog.update_package_context()
+    dlg = QEditPackageDialog(gm, PackageModel(sweep.package, gm))
+    ask = Mock(return_value=QMessageBox.StandardButton.Yes)
+    monkeypatch.setattr(QMessageBox, "question", ask)
+    try:
+        dlg.tot_spinner.setTime(QTime(10, 0))
+        ask.assert_not_called()
+        assert owner.prerequisite_flights == other.prerequisite_flights == [sweep.id]
+        dlg.tot_spinner.setTime(QTime(14, 0))
+        ask.assert_called_once()
+        assert "Fighter Sweep #1 Boulder City TOT 14:00" in ask.call_args.args[2]
+        assert not owner.prerequisite_flights
+        assert package_dialog.dependencies.topLevelItemCount() == 0
+        assert other.prerequisite_flights == [sweep.id]
+    finally:
+        dlg.deleteLater()
+        qt_app.processEvents()

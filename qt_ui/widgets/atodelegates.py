@@ -295,6 +295,10 @@ class FlightRowDelegate(AtoRowDelegate):
         self, painter: QPainter, option: QStyleOptionViewItem, index: QModelIndex
     ) -> None:
         flight = self.flight(index)
+        if flight is None:
+            # A prerequisite can outlive its flight in a saved ATO.
+            super().paint(painter, option, index)
+            return
         selected = bool(option.state & QStyle.StateFlag.State_Selected)
         hovered = bool(option.state & QStyle.StateFlag.State_MouseOver)
 
